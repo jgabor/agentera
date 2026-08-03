@@ -1,26 +1,17 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
-import { resolveSourceRoot } from "../core/sourceRoot.js";
-import {
-  codexCopiedHooksAreAgenteraOnly,
-  codexPluginHooksEnabled,
-  retireCodexCopiedHookTrust,
-} from "../setup/codex.js";
 import {
   hasManagedMarker,
   opencodeConfigDir,
 } from "../setup/opencode.js";
 import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
-import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { doctorRoots } from "./appModel.js";
 import {
   bindMigrationResource,
   removeBoundMigrationResource,
-  updateBoundMigrationFile,
   verifyBoundMigrationResource,
 } from "./migrationPublication.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
@@ -54,37 +45,6 @@ export function projectHasProjectLevelRuntimeHooks(project: string): boolean {
 
 const OPENCODE_COMMAND_NAMES = ["agentera"] as const;
 
-export interface NpxHookCommands {
-  cliEntrypoint: string;
-  validate: string;
-  cursorSessionStart: string;
-  cursorSessionStop: string;
-  cursorPreTool: string;
-}
-
-export function resolveNpxHookCommands(
-  ctx: Pick<MigrationContext, "channel" | "env" | "home" | "sourceRoot">,
-  resolvedChannel?: ResolvedUpdateChannel,
-): NpxHookCommands {
-  const env = ctx.env ?? process.env;
-  const home = ctx.home ?? env.HOME ?? os.homedir();
-  const sourceRoot = ctx.sourceRoot ?? resolveSourceRoot(env);
-  const channel = resolvedChannel ?? resolveInvokedUpdateChannel({
-    channel: ctx.channel ?? null,
-    env,
-    home,
-    sourceRoot,
-  });
-  const cliEntrypoint = channel.updateCommand.trim();
-  return {
-    cliEntrypoint,
-    validate: `${cliEntrypoint} hook validate-artifact`,
-    cursorSessionStart: `${cliEntrypoint} hook cursor-session-start`,
-    cursorSessionStop: `${cliEntrypoint} hook session-stop`,
-    cursorPreTool: `${cliEntrypoint} hook cursor-pre-tool-use`,
-  };
-}
-
 export function textUsesPythonManagedEntrypoint(text: string): boolean {
   if (/AGENTERA_HOME\s*=/.test(text)) {
     return true;
@@ -92,113 +52,73 @@ export function textUsesPythonManagedEntrypoint(text: string): boolean {
   return PYTHON_MANAGED_PATTERNS.some((pattern) => pattern.test(text));
 }
 
-const V3_NPX_ENTRYPOINT = /\bnpx\s+-y\s+agentera\b/;
+const RETIRED_NPX_HOOK = /\bnpx\s+-y\s+agentera(?:@(?:next|latest))?\s+hook\s+/;
+const V2_AGENTERA_HOOK = /(?:\buv(?:x|\s+run)\b[^"'\n]*(?:\$\{(?:AGENTERA_HOME|PLUGIN_ROOT)\}|hooks\/)\/[^"'\n]*\.py|\$\{AGENTERA_HOME\}\/(?:app\/scripts|(?:app\/)?hooks)\/[^"'\n]*\.py)/;
 
-export function textUsesV3NpmEntrypoint(text: string): boolean {
-  return V3_NPX_ENTRYPOINT.test(text);
-}
-
-export function rewireRuntimeText(text: string, runtime: string, commands: NpxHookCommands): string {
-  let next = text;
-  next = next.replace(
-    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/hooks\/validate_artifact\.py\\?"?/g,
-    commands.validate,
-  );
-  next = next.replace(
-    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/app\/hooks\/validate_artifact\.py\\?"?/g,
-    commands.validate,
-  );
-  next = next.replace(
-    /uv run\s+\\?"?\$\{PLUGIN_ROOT\}\/hooks\/validate_artifact\.py\\?"?/g,
-    commands.validate,
-  );
-  next = next.replace(
-    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/(?:app\/scripts|(?:app\/)?hooks)\/cursor_session_start\.py\\?"?/g,
-    `"${commands.cursorSessionStart}"`,
-  );
-  next = next.replace(
-    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/(?:app\/)?hooks\/cursor_pre_tool_use\.py\\?"?/g,
-    `"${commands.cursorPreTool}"`,
-  );
-  next = next.replace(
-    /uv run\s+\\?"?\$\{AGENTERA_HOME\}\/(?:app\/)?hooks\/cursor_session_stop\.py\\?"?/g,
-    `"${commands.cursorSessionStop}"`,
-  );
-  next = next.replace(/npx -y agentera hook /g, `${commands.cliEntrypoint} hook `);
-  next = next.replace(/npx -y agentera@latest hook /g, `${commands.cliEntrypoint} hook `);
-  if (runtime === "codex") {
-    next = next.replace(/AGENTERA_HOME\s*=\s*"[^"]*"/g, "");
-    next = next.replace(/AGENTERA_HOME\s*=\s*'[^']*'/g, "");
-    next = next.replace(/set\s*=\s*\{\s*,/g, "set = {");
-    next = next.replace(/,\s*,/g, ",");
-    next = next.replace(/,\s*\}/g, " }");
-    next = next.replace(/set\s*=\s*\{\s*\}/g, "set = { }");
+function retiredHookCommands(value: unknown, commands: string[] = []): string[] {
+  if (Array.isArray(value)) {
+    for (const entry of value) retiredHookCommands(entry, commands);
+  } else if (value !== null && typeof value === "object") {
+    for (const [key, entry] of Object.entries(value)) {
+      if (key === "command" && typeof entry === "string") commands.push(entry);
+      else retiredHookCommands(entry, commands);
+    }
   }
-  return next;
+  return commands;
 }
 
-function needsChannelNpxRewire(text: string, cliEntrypoint: string): boolean {
-  if (/npx -y agentera hook /.test(text) && !text.includes(cliEntrypoint)) {
-    return true;
+function isRetiredAgenteraHookCommand(command: string): boolean {
+  return V2_AGENTERA_HOOK.test(command) || RETIRED_NPX_HOOK.test(command);
+}
+
+/**
+ * Native hook files have no durable per-entry ownership record. Remove only a
+ * file whose every command is a retired Agentera invocation; mixed files are
+ * preserved for the owner to review rather than surgically rewritten.
+ */
+export function wholeResourceProvesV2HookOwnership(text: string): boolean {
+  let document: unknown;
+  try {
+    document = JSON.parse(text);
+  } catch {
+    return false;
   }
-  if (/npx -y agentera@latest hook /.test(text) && !text.includes(cliEntrypoint)) {
-    return true;
-  }
-  return false;
+  const commands = retiredHookCommands(document);
+  return commands.length > 0 && commands.every(isRetiredAgenteraHookCommand);
 }
 
-function textHasAuthoritativeV2AgenteraEvidence(text: string): boolean {
-  const variableReference = /\$\{AGENTERA_HOME\}\/(?:app\/scripts\/(?:agentera|cursor_session_start\.py)|(?:app\/)?hooks\/(?:validate_artifact|cursor_session_start|cursor_pre_tool_use|cursor_session_stop|session_start|session_stop)\.py)/;
-  if (variableReference.test(text)) return true;
-  if (/AGENTERA_HOME\s*=/.test(text)) return true;
-  if (/\[plugins\."agentera@agentera"\]/.test(text) && /AGENTERA_HOME\s*=/.test(text)) return true;
-  return false;
+function textContainsRetiredAgenteraHook(text: string): boolean {
+  return textUsesPythonManagedEntrypoint(text) || RETIRED_NPX_HOOK.test(text);
 }
 
-function pushRewireItem(
+function pushRetireHookItem(
   items: MigrationPhaseItem[],
   runtime: string,
   filePath: string,
-  commands: NpxHookCommands,
   allowedRoot: string,
 ): void {
   const text = fs.readFileSync(filePath, "utf8");
-  const needsBare = needsChannelNpxRewire(text, commands.cliEntrypoint);
-  const authoritative = hasManagedMarker(text)
-    || textHasAuthoritativeV2AgenteraEvidence(text)
-    || needsBare;
-  if (!authoritative) {
-    if (textUsesV3NpmEntrypoint(text)) {
-      items.push({
-        status: "noop",
-        action: "rewire-runtime",
-        runtime,
-        source: filePath,
-        message: "runtime config already references npm self-contained entrypoint",
-      });
-    }
-    // If the file has no Agentera content at all (no v2 Python, no v3 npm),
-    // it is not Agentera-managed. Do not push a blocked item — just return.
+  if (!textContainsRetiredAgenteraHook(text)) {
     return;
   }
-  const newText = rewireRuntimeText(text, runtime, commands);
-  const status: MigrationStatus = newText === text ? "blocked" : "pending";
   const item: MigrationPhaseItem = {
-    status,
-    action: "rewire-runtime",
+    status: wholeResourceProvesV2HookOwnership(text) ? "pending" : "blocked",
+    action: "retire-hooks",
     runtime,
     source: filePath,
-    target: filePath,
-    newText,
     message:
-      status === "pending"
-        ? "will rewire runtime config from Python managed app-home to npm self-contained entrypoint"
-        : "runtime config uses Python managed paths but could not be rewritten safely",
+      wholeResourceProvesV2HookOwnership(text)
+        ? "will remove whole-resource-proven retired Agentera hook"
+        : "retired Agentera hook preserved: complete resource ownership is unproven; review and remove it manually",
   };
-  const evidenceError = bindMigrationResource(item, "target", filePath, [allowedRoot], "file");
+  if (item.status === "blocked") {
+    items.push(item);
+    return;
+  }
+  const evidenceError = bindMigrationResource(item, "source", filePath, [allowedRoot], "file");
   if (evidenceError) {
     item.status = "blocked";
-    item.message = `runtime config preserved: ${evidenceError}; review the unsafe path manually`;
+    item.message = `retired Agentera hook preserved: ${evidenceError}; review the unsafe path manually`;
   }
   items.push(item);
 }
@@ -207,57 +127,11 @@ function planCodexItems(
   items: MigrationPhaseItem[],
   home: string,
   project: string,
-  commands: NpxHookCommands,
 ): void {
   for (const root of [project, home]) {
     const hooksPath = path.join(root, ".codex", "hooks", "codex-hooks.json");
-    const configPath = path.join(root, ".codex", "config.toml");
-    if (isFile(configPath)) {
-      const configText = fs.readFileSync(configPath, "utf8");
-      const pluginHooks = codexPluginHooksEnabled(configText);
-      if (pluginHooks && isFile(hooksPath)) {
-        let hooksText: string;
-        try {
-          hooksText = fs.readFileSync(hooksPath, "utf8");
-        } catch {
-          hooksText = "";
-        }
-        if (codexCopiedHooksAreAgenteraOnly(hooksText)) {
-          const rewiredConfig = rewireRuntimeText(configText, "codex", commands);
-          const item: MigrationPhaseItem = {
-            status: "pending",
-            action: "retire-hooks",
-            runtime: "codex",
-            source: hooksPath,
-            target: configPath,
-            newText: retireCodexCopiedHookTrust(rewiredConfig, hooksPath),
-            message: "will remove Agentera-owned copied Codex hooks because plugin hooks are enabled",
-          };
-          const sourceError = bindMigrationResource(item, "source", hooksPath, [root], "file");
-          const targetError = bindMigrationResource(item, "target", configPath, [root], "file");
-          if (sourceError || targetError) {
-            item.status = "blocked";
-            item.message = `copied Codex hooks preserved: ${sourceError ?? targetError}; review the unsafe path manually`;
-          }
-          items.push(item);
-          continue;
-        } else if (hooksText.includes("validate_artifact") || hooksText.includes("hook validate-artifact")) {
-          items.push({
-            status: "blocked",
-            action: "retire-hooks",
-            runtime: "codex",
-            source: hooksPath,
-            target: configPath,
-            message:
-              "plugin hooks are enabled, but copied hook target needs manual review before retirement",
-          });
-          continue;
-        }
-      }
-      pushRewireItem(items, "codex", configPath, commands, root);
-    }
     if (isFile(hooksPath)) {
-      pushRewireItem(items, "codex", hooksPath, commands, root);
+      pushRetireHookItem(items, "codex", hooksPath, root);
     }
   }
 }
@@ -266,32 +140,14 @@ function planCursorItems(
   items: MigrationPhaseItem[],
   home: string,
   project: string,
-  commands: NpxHookCommands,
 ): void {
   for (const [root, hooksPath] of [
     [project, path.join(project, ".cursor", "hooks.json")],
     [home, path.join(home, ".cursor", "hooks.json")],
   ] as const) {
     if (isFile(hooksPath)) {
-      pushRewireItem(items, "cursor", hooksPath, commands, root);
+      pushRetireHookItem(items, "cursor", hooksPath, root);
     }
-  }
-}
-
-function planOpencodeItems(
-  items: MigrationPhaseItem[],
-  home: string,
-  env: Record<string, string | undefined>,
-  commands: NpxHookCommands,
-): void {
-  const configDir = opencodeConfigDir(home, env);
-  const existingResources = [
-    path.join(configDir, "plugins", "agentera.js"),
-    ...OPENCODE_COMMAND_NAMES.map((name) => path.join(configDir, "commands", `${name}.md`)),
-    path.join(configDir, "agents", "agentera.md"),
-  ];
-  for (const resource of existingResources) {
-    if (isFile(resource)) pushRewireItem(items, "opencode", resource, commands, configDir);
   }
 }
 
@@ -464,11 +320,10 @@ function walkJsonHookFiles(dir: string): string[] {
 function planCopilotItems(
   items: MigrationPhaseItem[],
   project: string,
-  commands: NpxHookCommands,
 ): void {
   const hooksDir = path.join(project, ".github", "hooks");
   for (const hookFile of walkJsonHookFiles(hooksDir)) {
-    pushRewireItem(items, "copilot", hookFile, commands, project);
+    pushRetireHookItem(items, "copilot", hookFile, project);
   }
   if (!items.some((item) => item.runtime === "copilot")) {
     items.push({
@@ -482,7 +337,6 @@ function planCopilotItems(
 
 export function planRuntimeMigrationItems(
   ctx: MigrationContext,
-  resolvedChannel?: ResolvedUpdateChannel,
 ): MigrationPhaseItem[] {
   if (!ctx.env) {
     throw new Error(
@@ -492,21 +346,17 @@ export function planRuntimeMigrationItems(
   const home = resolvePath(ctx.home);
   const project = resolvePath(ctx.project);
   const env = ctx.env;
-  const sourceRoot = resolvePath(ctx.sourceRoot ?? resolveSourceRoot(env));
-  const commands = resolveNpxHookCommands({ ...ctx, home, env, sourceRoot }, resolvedChannel);
   const items: MigrationPhaseItem[] = [];
 
-  planCodexItems(items, home, project, commands);
-  planCursorItems(items, home, project, commands);
-  planOpencodeItems(items, home, env, commands);
+  planCodexItems(items, home, project);
+  planCursorItems(items, home, project);
   planStaleCommandCleanupItems(ctx, items);
   planStaleSkillCleanupItems(ctx, items);
-  planCopilotItems(items, project, commands);
+  planCopilotItems(items, project);
   return items;
 }
 
 export type RuntimeMigrationAction =
-  | "rewire-runtime"
   | "retire-hooks"
   | "remove-stale-command"
   | "remove-stale-skill";
@@ -516,7 +366,6 @@ export type RuntimeMigrationItem = Omit<MigrationPhaseItem, "action"> & {
 };
 
 const RUNTIME_MIGRATION_ACTIONS: ReadonlySet<string> = new Set<RuntimeMigrationAction>([
-  "rewire-runtime",
   "retire-hooks",
   "remove-stale-command",
   "remove-stale-skill",
@@ -526,45 +375,22 @@ function isRuntimeMigrationAction(action: string): action is RuntimeMigrationAct
   return RUNTIME_MIGRATION_ACTIONS.has(action);
 }
 
-export function applyRuntimeMigrationItem(item: RuntimeMigrationItem, _commands: NpxHookCommands): void {
+export function applyRuntimeMigrationItem(item: RuntimeMigrationItem): void {
   if (item.status !== "pending") {
     return;
   }
   try {
     switch (item.action) {
-      case "rewire-runtime": {
-        if (!item.target || item.newText === undefined) {
-          item.status = "failed";
-          item.message = "rewire-runtime missing target or newText";
-          return;
-        }
-        updateBoundMigrationFile(item, "target", item.newText);
-        item.status = "applied";
-        item.message = "runtime config rewired to npm self-contained entrypoint";
-        break;
-      }
       case "retire-hooks": {
         if (!item.source) {
           item.status = "failed";
           item.message = "retire-hooks missing source";
           return;
         }
-        if (!item.target) {
-          item.status = "failed";
-          item.message = "retire-hooks missing target";
-          return;
-        }
         verifyBoundMigrationResource(item, "source");
-        verifyBoundMigrationResource(item, "target");
-        if (item.newText === undefined) {
-          item.status = "failed";
-          item.message = "retire-hooks missing newText";
-          return;
-        }
-        updateBoundMigrationFile(item, "target", item.newText);
         removeBoundMigrationResource(item, "source");
         item.status = "applied";
-        item.message = "retired Agentera-owned copied Codex hooks";
+        item.message = "retired whole-resource-proven Agentera hook";
         break;
       }
       case "remove-stale-command": {
@@ -642,15 +468,14 @@ export function applyRuntimeMigrationItem(item: RuntimeMigrationItem, _commands:
 
 export function applyRuntimeMigrationItems(
   items: MigrationPhaseItem[],
-  ctx: MigrationContext,
+  _ctx: MigrationContext,
 ): void {
-  const commands = resolveNpxHookCommands(ctx);
   for (const item of items) {
     if (item.status !== "pending") {
       continue;
     }
     if (isRuntimeMigrationAction(item.action)) {
-      applyRuntimeMigrationItem(item as RuntimeMigrationItem, commands);
+      applyRuntimeMigrationItem(item as RuntimeMigrationItem);
     } else {
       item.status = "failed";
       item.message = `unsupported runtime migration action: ${item.action}`;

@@ -171,7 +171,22 @@ describe("repository-native retirement inventory", () => {
     expect(cleanup).toMatchObject({
       status: "resource_retirement_contract",
       policy: { selection: "native_agentera_resource_only" },
+      cutover_deletion_inventory: {
+        schema_version: "agentera.v2CutoverDeletionInventory.v1",
+        approval_gate: "approved_stable_cutover",
+        policy: "delete_only_after_approved_stable_cutover",
+      },
     });
+    const deletionEntries = cleanup.cutover_deletion_inventory.entries as Array<{ path: string }>;
+    expect(deletionEntries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: "packages/cli/src/upgrade/runtimeMigration.ts" }),
+      expect.objectContaining({ path: "packages/cli/shim/lib/exec.mjs" }),
+      expect.objectContaining({ path: "packages/cli/test/upgrade/fixtures/v2-*" }),
+    ]));
+    for (const entry of deletionEntries) {
+      if (entry.path.endsWith("*")) continue;
+      expect(fs.existsSync(path.join(ROOT, entry.path)), entry.path).toBe(true);
+    }
   });
 
   it("closes normal entrypoints to exact migration, cleanup, and ownership edges", () => {
@@ -188,7 +203,6 @@ describe("repository-native retirement inventory", () => {
         .map((target) => `${importer} -> ${target}`);
     }).sort();
     expect(edges).toEqual([
-      "packages/cli/src/cli/commands/schema.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/cli/dispatch/lifecycle.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/migrate/v2HandoffManifest.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
       "packages/cli/src/upgrade/appContentRefresh.ts -> packages/cli/src/runtime/lifecyclePublication.ts",

@@ -84,6 +84,19 @@ const REQUIRED_RESOURCE_VOCABULARY: Record<string, string> = {
   "agentera.registration": "registration",
 };
 
+const CUTOVER_DELETION_INVENTORY = [
+  ["packages/cli/src/migrate/v2HandoffManifest.ts", "tracked_v2_handoff_preflight"],
+  ["packages/cli/src/upgrade/appContentRefresh.ts", "v2_managed_app_content_refresh"],
+  ["packages/cli/src/upgrade/compatibility.ts", "v2_install_classification"],
+  ["packages/cli/src/upgrade/installedHooksRetirement.ts", "installed_v2_hook_retirement"],
+  ["packages/cli/src/upgrade/legacyAgentCleanup.ts", "v2_native_agent_retirement"],
+  ["packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts", "v2_project_artifact_migration"],
+  ["packages/cli/src/upgrade/runtimeMigration.ts", "v2_native_hook_retirement"],
+  ["packages/cli/src/upgrade/versionResolution.ts", "cross_major_v2_upgrade_resolution"],
+  ["packages/cli/shim/lib/exec.mjs", "v2_shim_handoff"],
+  ["packages/cli/test/upgrade/fixtures/v2-*", "v2_migration_fixtures"],
+] as const;
+
 export interface NativeResourceCleanupPreview {
   schemaVersion: "agentera.nativeResourceCleanupPreview.v1";
   mode: "preview";
@@ -244,6 +257,27 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
       || unit.ownership_available !== false || unit.result_without_proof !== "action_required") {
       errors.push(`configuration_inventory must preserve ${key} without key-level ownership`);
     }
+  }
+  const deletionInventory = isMapping(value.cutover_deletion_inventory)
+    ? value.cutover_deletion_inventory
+    : null;
+  if (
+    deletionInventory?.schema_version !== "agentera.v2CutoverDeletionInventory.v1"
+    || deletionInventory.approval_gate !== "approved_stable_cutover"
+    || deletionInventory.policy !== "delete_only_after_approved_stable_cutover"
+  ) {
+    errors.push("cutover_deletion_inventory must be approval-gated v2 deletion inventory");
+  }
+  const deletionEntries = Array.isArray(deletionInventory?.entries)
+    ? deletionInventory.entries
+    : [];
+  const actualDeletionEntries = deletionEntries.flatMap((entry) =>
+    isMapping(entry) && typeof entry.path === "string" && typeof entry.responsibility === "string"
+      ? [[entry.path, entry.responsibility] as const]
+      : [],
+  );
+  if (JSON.stringify(actualDeletionEntries) !== JSON.stringify(CUTOVER_DELETION_INVENTORY)) {
+    errors.push("cutover_deletion_inventory must identify every quarantined v2 source, shim, and fixture path");
   }
   return errors;
 }

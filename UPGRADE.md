@@ -90,6 +90,14 @@ agent collision remains manual-review work but does not stop independently
 proven legacy-agent removals. The collision still leaves the cleanup non-success
 until it is resolved outside Agentera.
 
+V2 hook retirement never rewrites a native hook to another Agentera command.
+Upgrade removes a whole hook resource only when its complete content proves
+Agentera v2 ownership and its path identity and fingerprint still match the
+preview. Mixed or otherwise unproven resources remain unchanged with manual
+review guidance. The complete v2-only deletion set is machine-readable in
+`references/adapters/runtime-retired-resources.yaml` under
+`cutover_deletion_inventory`; it remains until an approved stable cutover.
+
 Historical transcript import is independent of cleanup. Default extraction and
 analytics do not read Claude history. Import requires explicit local consent:
 
@@ -169,9 +177,9 @@ create dual authority, or add a repair or import command.
 
 Pending v1 Markdown state and unknown marker-absent state are not automatic
 mutation inputs. `state migrate`, `state backfill`, projection repair, v1
-conversion, restore, and downgrade are unsupported. The read-only
-`state migrate entities --dry-run` diagnostic may inventory cutover input but
-cannot publish it.
+conversion, restore, and downgrade are unsupported. Only
+`npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run`
+may inventory cutover input; it cannot publish it.
 
 ## Verification and recovery
 

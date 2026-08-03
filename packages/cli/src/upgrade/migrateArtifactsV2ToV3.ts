@@ -29,8 +29,6 @@ import {
 import {
   applyRuntimeMigrationItems,
   planRuntimeMigrationItems,
-  resolveNpxHookCommands,
-  rewireRuntimeText,
 } from "./runtimeMigration.js";
 import { writeFileAtomic } from "./atomicWriter.js";
 import { bindMigrationTree, cloneMigrationItem, removeBoundMigrationTree } from "./migrationPublication.js";
@@ -55,15 +53,6 @@ export const V1_ARTIFACT_PAIRS: ReadonlyArray<readonly [string, string]> = [
   [".agentera/DOCS.md", ".agentera/docs.yaml"],
   ["VISION.md", ".agentera/vision.yaml"],
 ];
-
-/** Default development-channel npm entrypoint for tests and legacy imports. */
-export const NPX_CLI_ENTRYPOINT = "npx -y agentera@next";
-export const NPX_HOOK_VALIDATE = `${NPX_CLI_ENTRYPOINT} hook validate-artifact`;
-export const NPX_HOOK_CURSOR_SESSION_START = `${NPX_CLI_ENTRYPOINT} hook cursor-session-start`;
-export const NPX_HOOK_CURSOR_SESSION_STOP = `${NPX_CLI_ENTRYPOINT} hook session-stop`;
-export const NPX_HOOK_CURSOR_PRE_TOOL = `${NPX_CLI_ENTRYPOINT} hook cursor-pre-tool-use`;
-
-export { rewireRuntimeText, resolveNpxHookCommands };
 
 export interface MigrationPhaseItem {
   status: MigrationStatus;
@@ -392,11 +381,11 @@ export function delegatePlanLifecycleToEntityCutover(phase: MigrationPhase): voi
   phase.summary = updated.summary;
 }
 
-export function planRuntimeRewirePhase(
+export function planRuntimeRetirementPhase(
   ctx: MigrationContext,
-  resolvedChannel?: ResolvedUpdateChannel,
+  _resolvedChannel?: ResolvedUpdateChannel,
 ): MigrationPhase {
-  const items = planRuntimeMigrationItems(ctx, resolvedChannel);
+  const items = planRuntimeMigrationItems(ctx);
   const blockedPaths = new Set(items
     .filter((item) => item.status === "blocked")
     .flatMap((item) => [item.source, item.target])
@@ -409,11 +398,11 @@ export function planRuntimeRewirePhase(
   return summarizePhase(
     "runtime",
     items,
-    items.length === 0 ? "no runtime configs with Python managed app-home references found" : "",
+    items.length === 0 ? "no retired native Agentera hooks found" : "",
   );
 }
 
-export function applyRuntimeRewirePhase(phase: MigrationPhase, ctx?: MigrationContext): void {
+export function applyRuntimeRetirementPhase(phase: MigrationPhase, ctx?: MigrationContext): void {
   if (ctx) {
     applyRuntimeMigrationItems(phase.items, ctx);
   } else {
@@ -651,7 +640,7 @@ export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext)
 export function dryRunMigration(ctx: MigrationContext): DryRunMigrationResult {
   return {
     artifacts: planArtifactsPhase(ctx.project),
-    runtime: planRuntimeRewirePhase(ctx),
+    runtime: planRuntimeRetirementPhase(ctx),
     cleanup: planCleanupPhase(ctx),
   };
 }
@@ -672,7 +661,7 @@ export function applyMigrationPhases(
     applyArtifactsPhase(result.artifacts, ctx.project, ctx.force);
   }
   if (only.includes("runtime")) {
-    applyRuntimeRewirePhase(result.runtime, ctx);
+    applyRuntimeRetirementPhase(result.runtime, ctx);
   }
   if (only.includes("cleanup")) {
     applyCleanupPhase(result.cleanup, ctx);

@@ -1,4 +1,3 @@
-import { runEntityMigrate } from "../commands/entityMigrate.js";
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
 import { runRouteEvaluation, runRouteReceipt, runRouteRequest } from "../commands/route.js";
 import {
@@ -24,8 +23,6 @@ import {
   runAppHome,
   runDoctor,
   runGate,
-  runHook,
-  readStdin,
   runReport,
   runUpgrade,
   runUsage,
@@ -42,7 +39,6 @@ import {
   requestedMigrationFailureFormat,
   requiresCompletedEntityCutover,
 } from "../migrationRequired.js";
-import { isProjectBoundHook, parseProjectHookInput, type ParsedProjectHookInput } from "../../hooks/projectHookInput.js";
 
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -92,20 +88,13 @@ export function main(argv: string[], io: Io = {}): number {
     });
   }
 
-  let projectHookInput: ParsedProjectHookInput | undefined;
-  const hookName = rest[0] ?? "";
-  if (command === "hook" && isProjectBoundHook(hookName)) {
-    const raw = io.stdin ? io.stdin() : readStdin();
-    projectHookInput = parseProjectHookInput(hookName, raw);
-  }
-
   // Retained-reference validation audits package source, not project state. It
   // must report its source-checkout boundary before project migration checks.
   const sourceOnlyReferenceValidation =
     args[0] === "check" && args[1] === "validate" && args[2] === "retained-references";
   if (!sourceOnlyReferenceValidation && requiresCompletedEntityCutover(args)) {
     const failure = enforceCompletedEntityCutover(
-      projectHookInput?.projectRoot ?? migrationProject(args),
+        migrationProject(args),
       requestedMigrationFailureFormat(args),
       io,
     );
@@ -134,26 +123,6 @@ export function main(argv: string[], io: Io = {}): number {
     case "stats":
       emitDeprecationAlias("stats", "report", err);
       return runReport(rest, io, "agentera stats");
-    case "hook": {
-      const name = rest[0];
-      if (!name) {
-        return emitInvalidInput(io, {
-          format: "text",
-          body: {
-            class: "missing_argument",
-            message: "the following arguments are required: hook_name",
-            valid_values: [
-              "session-start",
-              "session-stop",
-              "cursor-session-start",
-              "cursor-pre-tool-use",
-              "validate-artifact",
-            ],
-          },
-        });
-      }
-      return runHook(name, rest.slice(1), io, projectHookInput);
-    }
     case "schema":
       return runSchema(rest, io, "agentera schema");
     case "lint":
@@ -211,7 +180,6 @@ export function main(argv: string[], io: Io = {}): number {
         });
       }
       if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
-      if (sub === "migrate" && rest[1] === "entities") return runEntityMigrate(rest.slice(2), io);
       if (runtimeEntityFamiliesForCommand(sub).length > 0 || verbsForArtifact(sub).some((verb) => verb === rest[1]))
         return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
       return emitInvalidInput(io, {

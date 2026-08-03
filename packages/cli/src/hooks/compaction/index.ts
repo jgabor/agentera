@@ -1,5 +1,5 @@
 /**
- * Public surface for the compaction hook.
+ * Public surface for the compaction engine.
  *
  * Re-exports the API consumed by `cli/commands/compact.ts` and the
  * test suite. The actual implementation lives in the per-

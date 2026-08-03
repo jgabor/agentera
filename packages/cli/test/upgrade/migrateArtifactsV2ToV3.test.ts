@@ -6,16 +6,14 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
-  NPX_CLI_ENTRYPOINT,
-  NPX_HOOK_VALIDATE,
   applyCleanupPhase,
   applyMigrationPhases,
-  applyRuntimeRewirePhase,
+  applyRuntimeRetirementPhase,
   detectV1ArtifactPairs,
   dryRunMigration,
   planArtifactsPhase,
   planCleanupPhase,
-  planRuntimeRewirePhase,
+  planRuntimeRetirementPhase,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { APP_CONTENT_REFRESH_ACTION } from "../../src/upgrade/appContentRefresh.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
@@ -66,10 +64,10 @@ describe("planArtifactsPhase", () => {
   });
 });
 
-describe("planRuntimeRewirePhase", () => {
-  it("dry-run reports pending rewire for Python managed runtime configs", () => {
+describe("planRuntimeRetirementPhase", () => {
+  it("dry-run reports pending retirement for whole-resource v2 hooks", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "home"));
-    const phase = planRuntimeRewirePhase(
+    const phase = planRuntimeRetirementPhase(
       migrationCtx(path.join(home, "agentera"), path.join(home, "project"), home, REPO_ROOT),
     );
     expect(phase.status).toBe("pending");
@@ -77,23 +75,18 @@ describe("planRuntimeRewirePhase", () => {
     expect(phase.items.some((item) => item.runtime === "cursor" && item.status === "pending")).toBe(true);
   });
 
-  it("apply rewires runtime config to npm self-contained entrypoint", () => {
+  it("apply removes whole-resource hooks and preserves configuration", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "home-apply"));
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(home, "project"), home, REPO_ROOT);
-    const preview = planRuntimeRewirePhase(ctx);
-    applyRuntimeRewirePhase(preview, ctx);
+    const config = path.join(home, ".codex/config.toml");
+    const configBefore = fs.readFileSync(config, "utf8");
+    const preview = planRuntimeRetirementPhase(ctx);
+    applyRuntimeRetirementPhase(preview, ctx);
     expect(preview.status).toBe("applied");
 
-    const codexHooks = fs.readFileSync(path.join(home, ".codex/hooks/codex-hooks.json"), "utf8");
-    expect(codexHooks).toContain(NPX_HOOK_VALIDATE);
-    expect(codexHooks).not.toContain("validate_artifact.py");
-
-    const cursorHooks = fs.readFileSync(path.join(home, ".cursor/hooks.json"), "utf8");
-    expect(cursorHooks).toContain(NPX_CLI_ENTRYPOINT);
-    expect(cursorHooks).not.toContain("cursor_session_start.py");
-
-    const codexConfig = fs.readFileSync(path.join(home, ".codex/config.toml"), "utf8");
-    expect(codexConfig).not.toContain("AGENTERA_HOME");
+    expect(fs.existsSync(path.join(home, ".codex/hooks/codex-hooks.json"))).toBe(false);
+    expect(fs.existsSync(path.join(home, ".cursor/hooks.json"))).toBe(false);
+    expect(fs.readFileSync(config, "utf8")).toBe(configBefore);
   });
 });
 

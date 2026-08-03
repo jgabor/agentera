@@ -1,5 +1,4 @@
 import { projectIntegrationAttention } from "../../upgrade/projectIntegration.js";
-import { isV2ManagedInstallAtAppHome } from "../../upgrade/coexistenceProbe.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 import { corpusCoverageAttention } from "./corpusCoverage.js";
 import { firstPresent } from "../stateQuery.js";
@@ -20,11 +19,6 @@ export function buildOrientationAttention(state: OrientationState): string[] {
   } = state;
 
   const attention: string[] = [];
-  if (isV2ManagedInstallAtAppHome(state.app.appHome)) {
-    attention.push(
-      `normal: v2/v3 coexistence at ${state.app.appHome}; pick one line: complete v3 migration, uninstall v3, or stay on v2`,
-    );
-  }
   const skillDivergenceSignals = (state.app.signals ?? []).filter(
     (s) => s.kind === "skill_root_divergence",
   );

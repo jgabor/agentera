@@ -166,3 +166,28 @@ configuration_inventory:
     durable_proof: key-level ownership ledger identity and fingerprint
     ownership_available: false
     result_without_proof: action_required
+cutover_deletion_inventory:
+  schema_version: agentera.v2CutoverDeletionInventory.v1
+  approval_gate: approved_stable_cutover
+  policy: delete_only_after_approved_stable_cutover
+  entries:
+    - path: packages/cli/src/migrate/v2HandoffManifest.ts
+      responsibility: tracked_v2_handoff_preflight
+    - path: packages/cli/src/upgrade/appContentRefresh.ts
+      responsibility: v2_managed_app_content_refresh
+    - path: packages/cli/src/upgrade/compatibility.ts
+      responsibility: v2_install_classification
+    - path: packages/cli/src/upgrade/installedHooksRetirement.ts
+      responsibility: installed_v2_hook_retirement
+    - path: packages/cli/src/upgrade/legacyAgentCleanup.ts
+      responsibility: v2_native_agent_retirement
+    - path: packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts
+      responsibility: v2_project_artifact_migration
+    - path: packages/cli/src/upgrade/runtimeMigration.ts
+      responsibility: v2_native_hook_retirement
+    - path: packages/cli/src/upgrade/versionResolution.ts
+      responsibility: cross_major_v2_upgrade_resolution
+    - path: packages/cli/shim/lib/exec.mjs
+      responsibility: v2_shim_handoff
+    - path: packages/cli/test/upgrade/fixtures/v2-*
+      responsibility: v2_migration_fixtures

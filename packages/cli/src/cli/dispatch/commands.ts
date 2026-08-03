@@ -13,7 +13,6 @@ export const DISPATCHER_TOP_LEVEL_COMMANDS = [
   "verify",
   "report",
   "stats",
-  "hook",
   "schema",
   "lint",
   "check",

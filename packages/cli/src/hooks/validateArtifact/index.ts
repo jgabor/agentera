@@ -1,9 +1,6 @@
 /**
- * Public surface for the validate-artifact hook. The CLI command
- * (`packages/cli/src/cli/commands/validate.ts`), the smoke checks, and
- * the dispatch entry all import the public classes from this barrel
- * to keep import paths stable as the file is split across the
- * per-responsibility submodules.
+ * Artifact validation used by the explicit `agentera check validate artifact`
+ * command and state publication.
  */
 
 import fs from "node:fs";
@@ -13,14 +10,10 @@ import { loadYamlMapping } from "../../core/yaml.js";
 import { resolvePath } from "../../core/paths.js";
 import { normalizeArtifactProtocolId } from "../../registries/artifactProtocolIds.js";
 import { DEFAULT_ARTIFACT_PATHS } from "../common.js";
-import { ArtifactWrite, RuntimeEventParser } from "./runtime.js";
-import { isMapping } from "./schema.js";
 import { validateMd } from "./markdown.js";
 import {
-  artifactForWrite,
   defaultArtifactPath,
   readIfNeeded,
-  compactAfterValidWrite,
 } from "./traversal.js";
 import { schemasDirDefault, validateYamlContent } from "./violations.js";
 import { AGENT_FACING_ARTIFACT_IDS, HUMAN_FACING_ARTIFACT_IDS } from "./agentFacing.js";
@@ -57,35 +50,6 @@ export class ArtifactSchemaValidator {
     return validateMd(content, name, schema);
   }
 
-  validateWrite(write: ArtifactWrite, cwd: string): string[] {
-    const absPath = path.isAbsolute(write.file_path) ? write.file_path : path.join(cwd, write.file_path);
-    const rel = path.relative(cwd, absPath).replace(/\\/g, "/");
-    const basename = path.basename(absPath);
-    const artifact = artifactForWrite(absPath, rel, basename, cwd);
-
-    if (artifact && AGENT_FACING_ARTIFACT_IDS.has(artifact)) {
-      const schema = this.loadSchema(artifact);
-      if (schema === null) return [];
-      if (Object.keys(schema).length === 0) return [`${artifact}: schema file is empty or contains no valid definitions`];
-      const content = readIfNeeded(write.content, absPath);
-      if (content === null) return [];
-      let violations = this.validateYaml(content, schema, artifact);
-      if (violations.length > 0) return violations;
-      return compactAfterValidWrite(artifact, absPath, cwd);
-    }
-
-    if (artifact && HUMAN_FACING_ARTIFACT_IDS.has(artifact)) {
-      const content = readIfNeeded(write.content, absPath);
-      if (content === null) return [];
-      const schema = this.loadSchema(artifact);
-      const violations = this.validateMarkdown(content, artifact, schema);
-      if (violations.length > 0) return violations;
-      return compactAfterValidWrite(artifact, absPath, cwd);
-    }
-
-    return [];
-  }
-
   validateExplicit(artifact: string, filePath: string, cwd: string): string[] {
     const content = readIfNeeded(null, filePath);
     if (content === null) return [`${artifact}: cannot read artifact file '${filePath}'`];
@@ -115,30 +79,11 @@ export function loadSchema(name: string): JsonObject | null {
   return new ArtifactSchemaValidator().loadSchema(name);
 }
 
-export class HookCliAdapter {
-  parser: RuntimeEventParser;
+export class ArtifactValidationAdapter {
   validator: ArtifactSchemaValidator;
 
-  constructor(parser?: RuntimeEventParser, validator?: ArtifactSchemaValidator) {
-    this.parser = parser ?? new RuntimeEventParser();
+  constructor(validator?: ArtifactSchemaValidator) {
     this.validator = validator ?? new ArtifactSchemaValidator();
-  }
-
-  run(raw: string, defaultCwd: string | null = null): [number, string[]] {
-    let data: unknown;
-    try {
-      if (!raw.trim()) return [0, []];
-      data = JSON.parse(raw);
-    } catch {
-      return [0, []];
-    }
-    if (!isMapping(data)) return [0, []];
-    const write = this.parser.parse(data);
-    if (write === null) return [0, []];
-    // cast: cwd read from the runtime hook's JSON stdin payload
-    const cwd = ((data as JsonObject).cwd ?? defaultCwd ?? process.cwd()) as string;
-    const violations = this.validator.validateWrite(write, cwd);
-    return violations.length > 0 ? [2, violations] : [0, []];
   }
 
   runExplicit(artifact: string, filePath: string | null, cwd: string): [number, JsonObject] {
@@ -159,4 +104,4 @@ export class HookCliAdapter {
   }
 }
 
-export { ArtifactWrite, RuntimeEventParser, resolvePath };
+export { resolvePath };

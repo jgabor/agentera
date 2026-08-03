@@ -48,8 +48,8 @@ describe("v2-to-v3 one-command guidance", () => {
       apply_command: APPLY,
     });
     expect(authority.entity_migration.internal_migration_diagnostic).toBe(true);
-    expect(schema).toMatch(/recognized[^}]*v2/i);
-    expect(schema).not.toMatch(/state_migration|state_backfill|state migrate entities.*apply/);
+    expect(buildSchemaPayload()).not.toHaveProperty("entity_migration");
+    expect(schema).not.toMatch(/state_migration|state_backfill|entity_migration|state migrate entities/);
   });
 
   it("ships no restore workflow in source upgrade guidance", () => {

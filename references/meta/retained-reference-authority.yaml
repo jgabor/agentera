@@ -95,11 +95,6 @@ inventory:
     production_owner: { module: packages/cli/src/runtime/nativeResourceCleanup.ts, symbol: loadNativeResourceCleanupContract }
     consumers:
       - { kind: runtime, module: packages/cli/src/runtime/nativeResourceCleanup.ts, symbol: loadNativeResourceCleanupContract, consumption: loads }
-  - path: references/cli/coexistence-probe.yaml
-    classification: migration-only
-    production_owner: { module: packages/cli/src/upgrade/coexistenceProbe.ts, symbol: loadCoexistenceProbeAuthority }
-    consumers:
-      - { kind: runtime, module: packages/cli/src/upgrade/coexistenceProbe.ts, symbol: loadCoexistenceProbeAuthority, consumption: loads }
   - path: references/cli/v3-handoff-manifest.schema.yaml
     classification: delete
   - path: references/adapters/package-surface-characterization.md

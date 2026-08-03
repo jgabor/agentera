@@ -8,7 +8,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { main } from "../../src/cli/dispatch/index.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../../src/cli/commands/schema.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
-import { runSessionStart } from "../../src/hooks/sessionStart.js";
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { commandText } from "../../src/upgrade/upgradeCommands.js";
 import { semanticFindings } from "./retiredVocabulary.js";
@@ -208,9 +207,6 @@ describe("final lifecycle protocol", () => {
         expect(contextPlan.tasks[0]).not.toHaveProperty("number");
       }
     }
-    let hookOut = "", hookErr = "";
-    expect(runSessionStart(JSON.stringify({ cwd: root }), { out: (text) => hookOut += text, err: (text) => hookErr += text })).toBe(0);
-    expect(hookErr).toBe(""); expect(hookOut).toContain("aaaaaaaaaa"); expect(hookOut).not.toContain("HOSTILE_AGGREGATE");
     const compact = capture(root, ["check", "compact", "--project", root, "--mode", "fix", "--format", "json"]);
     expect(compact.rc, compact.err).toBe(0); expect(compact.out).toContain("canonical entity state");
     expect(compact.out).not.toContain("HOSTILE_AGGREGATE"); expect(treeDigest(root)).toBe(before);

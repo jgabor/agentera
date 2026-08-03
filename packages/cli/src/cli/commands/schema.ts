@@ -14,13 +14,7 @@ import { artifactLocationContract } from "./query.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterArtifactContract, stateWriterContract } from "../../state/write/operations.js";
 import { CANONICAL_SHARED_SKILL_PATH } from "../../setup/sharedSkill.js";
-import {
-  loadNativeResourceCleanupContract,
-  nativeResourceCleanupHistoricalIds,
-  nativeResourceCleanupIds,
-} from "../../runtime/nativeResourceCleanup.js";
 import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
-import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
 import { advertisedValidateFamilyNames } from "./validate.js";
@@ -142,7 +136,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   stats: "Deprecated alias for report. Read or refresh privacy-gated usage analytics.",
   validate: "Deprecated alias for check validate. Validate capabilities and repository contracts.",
   upgrade:
-    "Preview or apply app and project-state migration, including recognized v2 rewiring, or explicit native Agentera resource cleanup.",
+    "Preview or apply one-way app and project-state migration.",
   doctor: "Check Agentera CLI, app, shared-skill, and project-integration status.",
 };
 function availableStructuredFields(command: string): string[] {
@@ -171,7 +165,6 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
     "project",
     "install_root",
     "home",
-    "legacy_cleanup",
     "only",
     "dry_run",
     "yes",
@@ -365,7 +358,6 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     artifactLocations,
   );
   gaps.push(...schemaGaps);
-  const nativeResourceCleanup = loadNativeResourceCleanupContract();
   const retrievalAuthority = loadStateRetrievalAuthority();
   const profileGlossary = personalGlossaryOutputContract();
 
@@ -390,7 +382,6 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     },
     state_writer: stateWriterContract(),
     state_retrieval: { authority: retrievalAuthority.authority, ...retrievalAuthority.retrieval },
-    entity_migration: entityMigrationAuthorityProjection(),
     integration: {
       authority: "skills/agentera/SKILL.md",
       active_contract: "one shared skill plus the Agentera CLI",
@@ -401,33 +392,11 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       cli: {
         command: "agentera",
       },
-      supported_routes: {
-        v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",
-        native_resource_cleanup: "agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes",
-        personal_glossary: `${profileGlossary.command} --input <file|-> [--dry-run] --format json`,
-      },
       personal_glossary: {
         command: profileGlossary.command,
         request_schema_version: profileGlossary.requestSchemaVersion,
         output_statuses: profileGlossary.outputStatuses,
         project_checkout: "not_required",
-      },
-      native_resource_cleanup: {
-        contract: nativeResourceCleanup.sourcePath,
-        selection: "native_agentera_resource_only",
-        resource_ids: nativeResourceCleanupIds(nativeResourceCleanup),
-        historical_resource_ids: nativeResourceCleanupHistoricalIds(nativeResourceCleanup),
-        retired_resource_vocabulary: nativeResourceCleanup.resourceVocabulary.map((entry): JsonObject => ({
-          id: entry.id,
-          resource_class: entry.resourceClass,
-          migration_scope: entry.migrationScope,
-          resource_ids: entry.resourceIds,
-          historical_ids: entry.historicalIds,
-        })),
-        preview: "strictly_read_only",
-        apply_requires: "explicit_approval",
-        ownership: "matching whole-resource ledger identity and fingerprint",
-        shared_configuration_without_key_ledger: "action_required",
       },
       historical_import: {
         source: "claude",

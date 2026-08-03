@@ -8,6 +8,7 @@ import YAML from "yaml";
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 import { truncateCodePoints } from "../core/text.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
 import {
   canonicalRecordJson,
   discoverNumberedArchives,
@@ -547,7 +548,7 @@ export function startupHistorySummary(
   const entries = sourceRows(scan.entries, discovery.entries, rejected, artifactId);
   const counts = countsFor(artifactId, scan.entries, discovery.entries, rejected, entries.length);
   const retrieval: JsonObject = {
-    migrate: `agentera state migrate entities --project ${JSON.stringify(path.resolve(projectRoot))} --dry-run --format json`,
+    upgrade_preview: fullEntityUpgradePreviewCommand(path.resolve(projectRoot)),
   };
   const status = !scan.exists && discovery.entries.length === 0 && rejected.length === 0
     ? "absent"

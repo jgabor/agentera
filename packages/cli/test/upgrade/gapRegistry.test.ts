@@ -14,7 +14,6 @@ import {
   isGapClosed,
   isParityFamilyClosed,
 } from "./gapRegistry.js";
-import { planRuntimeRewirePhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");

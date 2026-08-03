@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { planRuntimeRewirePhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { planRuntimeRetirementPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,7 +55,7 @@ describe("runtime migration home leak guard", () => {
     const home = path.join(tmp, "home");
     fs.mkdirSync(home, { recursive: true });
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(home, "project"), home, REPO_ROOT);
-    const phase = planRuntimeRewirePhase(ctx);
+    const phase = planRuntimeRetirementPhase(ctx);
     assertMigrationPathsStaySandboxed(home, phase.items);
   });
 });

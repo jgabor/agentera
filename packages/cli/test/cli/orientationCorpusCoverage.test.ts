@@ -21,7 +21,6 @@ import type {
 } from "../../src/runtime/lifecycleSnapshot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const V2_APP_HOME_FIXTURE = path.join(__dirname, "../upgrade/fixtures/v2-app-home");
 
 let tmp: string;
 
@@ -244,36 +243,6 @@ describe("corpus coverage attention", () => {
       }),
     );
     expect(attention.some((item) => item.includes("corpus coverage loss (EX2)"))).toBe(true);
-  });
-});
-
-describe("coexistence attention", () => {
-  it("includes a coexistence warning when a v2 managed app is staged at the app home", () => {
-    const appHome = path.join(tmp, "v2-app-home");
-    fs.cpSync(V2_APP_HOME_FIXTURE, appHome, { recursive: true });
-    const state = minimalOrientationState({
-      path: "",
-      status: "missing",
-      available_runtimes: [],
-      selected_runtimes: [],
-      available_but_not_selected: [],
-    });
-    state.app.appHome = appHome;
-    const attention = buildOrientationAttention(state);
-    expect(attention.some((item) => item.includes("v2/v3 coexistence") && item.includes("pick one line"))).toBe(true);
-  });
-
-  it("does not include a coexistence warning when no v2 install is present", () => {
-    const state = minimalOrientationState({
-      path: "",
-      status: "missing",
-      available_runtimes: [],
-      selected_runtimes: [],
-      available_but_not_selected: [],
-    });
-    state.app.appHome = path.join(tmp, "clean-app-home");
-    const attention = buildOrientationAttention(state);
-    expect(attention.some((item) => item.includes("v2/v3 coexistence"))).toBe(false);
   });
 });
 

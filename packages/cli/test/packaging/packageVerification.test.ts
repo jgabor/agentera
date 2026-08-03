@@ -1309,25 +1309,6 @@ describe("npm distribution boundary", () => {
     const failure = JSON.parse(blocked.stdout) as { error: { recovery: string } };
     expect(failure.error.recovery).toMatch(/^npx -y agentera@next upgrade /);
 
-    const migrationPreview = run(process.execPath, [
-      bin, "state", "migrate", "entities", "--project", project, "--dry-run", "--limit", "100", "--format", "json",
-    ], fixture.root, env);
-    expect(migrationPreview.status, `package boundary entity preview failed:\n${migrationPreview.stdout}\n${migrationPreview.stderr}`).toBe(0);
-    const migration = JSON.parse(migrationPreview.stdout) as any;
-    const planEntries = migration.entries.filter((entry: any) => entry.artifact === "plan");
-    expect(planEntries).toHaveLength(3);
-    expect(migration.counts).toMatchObject({ publishable_entities: 3, relationships: 3, unresolved_relationships: 0 });
-    for (const entry of planEntries) {
-      expect(entry.source_paths).toEqual([".agentera/plan.yaml"]);
-      expect(entry.provenance).toContain("current_canonical");
-      expect(entry.migration_provenance).toContainEqual(expect.objectContaining({
-        kind: "legacy_plan_normalization",
-        source_path: ".agentera/plan.yaml",
-      }));
-    }
-    const previewPlanEntity = planEntries.find((entry: any) => entry.boundary === "plan");
-    const previewEntityIds = planEntries.map((entry: any) => entry.proposed_target.id).sort();
-
     const baseUpgradeArgs = [
       bin, "upgrade", "--channel", "development", "--project", project,
       "--install-root", appHome, "--force", "--format", "json",
@@ -1338,11 +1319,13 @@ describe("npm distribution boundary", () => {
     expect(previewPlan.phases.map((phase: any) => phase.name)).toEqual([
       "detect", "artifacts", "entities", "runtime", "cleanup",
     ]);
+    expect(previewPlan.phases.find((phase: any) => phase.name === "entities")?.items).toEqual([
+      expect.objectContaining({ status: "pending", action: "entity-cutover" }),
+    ]);
     const runtimePhase = previewPlan.phases.find((phase: any) => phase.name === "runtime");
-    const legacyRewires = runtimePhase.items.filter((item: any) =>
-      item.status === "pending" && ["rewire-runtime", "retire-hooks"].includes(item.action));
-    expect(legacyRewires.map((item: any) => item.source).sort()).toEqual([
-      path.join(home, ".codex/config.toml"),
+    const legacyHooks = runtimePhase.items.filter((item: any) =>
+      item.status === "pending" && item.action === "retire-hooks");
+    expect(legacyHooks.map((item: any) => item.source).sort()).toEqual([
       path.join(home, ".codex/hooks/codex-hooks.json"),
       path.join(home, ".cursor/hooks.json"),
     ].sort());
@@ -1364,8 +1347,7 @@ describe("npm distribution boundary", () => {
 
     const entities = entityEnvelopes(project);
     expect(entities).toHaveLength(3);
-    expect(entities.map(({ id }) => id)).toEqual(previewEntityIds);
-    const planEntity = entities.find((entity) => entity.id === previewPlanEntity.proposed_target.id)!;
+    const planEntity = entities.find((entity) => (entity.record.header as { title?: string } | undefined)?.title === "Supported legacy plan")!;
     const tasks = entities.filter((entity) => entity.record.plan === planEntity.id)
       .sort((a, b) => String(a.record.name).localeCompare(String(b.record.name)));
     expect(planEntity.record).toMatchObject({ header: { title: "Supported legacy plan", status: "open" } });
@@ -1375,11 +1357,9 @@ describe("npm distribution boundary", () => {
 
     expect(fs.readFileSync(path.join(appHome, ".agentera/progress.yaml"))).toEqual(preservedAppState);
     expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
-    expect(fs.readFileSync(path.join(home, ".codex/config.toml"), "utf8")).not.toContain("AGENTERA_HOME");
-    for (const rewired of [path.join(home, ".codex/hooks/codex-hooks.json"), path.join(home, ".cursor/hooks.json")]) {
-      const text = fs.readFileSync(rewired, "utf8");
-      expect(text).toContain("npx -y agentera");
-      expect(text).not.toMatch(/validate_artifact\.py|cursor_session_start\.py/);
+    expect(fs.readFileSync(path.join(home, ".codex/config.toml"), "utf8")).toContain("AGENTERA_HOME");
+    for (const retired of [path.join(home, ".codex/hooks/codex-hooks.json"), path.join(home, ".cursor/hooks.json")]) {
+      expect(fs.existsSync(retired), retired).toBe(false);
     }
     expect(fs.existsSync(path.join(home, ".agents/skills/agentera"))).toBe(false);
 

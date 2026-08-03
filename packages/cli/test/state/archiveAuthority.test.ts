@@ -172,9 +172,9 @@ describe("state storage authority", () => {
       writes_independent: true,
     });
     expect(api).toMatchObject({
-      entity_migration_discovery: {
-        command: "agentera state migrate entities --project PATH --dry-run --format json",
-        implementation: "implemented",
+      entity_migration_upgrade: {
+        command: "npx -y agentera@next upgrade --channel development --project PATH --dry-run",
+        implementation: "upgrade_only",
         read_only: true,
         writes: "forbidden",
         authority: "entity_migration.read_only_preview",

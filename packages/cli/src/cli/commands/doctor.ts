@@ -23,10 +23,6 @@ import {
 import { classifyInstall } from "../../upgrade/compatibility.js";
 import type { UpdateChannelName } from "../../upgrade/channels.js";
 import {
-  prependCoexistenceDoctorSection,
-  resolveCoexistenceDoctorLines,
-} from "../../upgrade/coexistenceProbe.js";
-import {
   prependNextMajorDoctorSection,
   resolveNextMajorDoctorLines,
 } from "../../upgrade/nextMajorDoctor.js";
@@ -164,11 +160,6 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     out(pyJsonIndentSorted(payload) + "\n");
   } else {
     const install = classifyInstall({ appHome: installRoot, sourceRoot });
-    const coexistenceLines = resolveCoexistenceDoctorLines({
-      home,
-      sourceRoot,
-      env: { ...process.env, HOME: home },
-    });
     const nextMajorLines = resolveNextMajorDoctorLines({
       sourceRoot,
       home,
@@ -177,10 +168,9 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
       env: process.env,
     });
     const body =
-      prependCoexistenceDoctorSection(
-        prependNextMajorDoctorSection(renderDoctorStatus(status), nextMajorLines),
-        coexistenceLines,
-      ) + `\nShared skill\n  ${String(sharedSkill.status)}: ${String(sharedSkill.message)}\n  path: ${String(sharedSkill.path)}\n` + (smokeReport ? renderDoctorSmoke(smokeReport) : "");
+      prependNextMajorDoctorSection(renderDoctorStatus(status), nextMajorLines) +
+      `\nShared skill\n  ${String(sharedSkill.status)}: ${String(sharedSkill.message)}\n  path: ${String(sharedSkill.path)}\n` +
+      (smokeReport ? renderDoctorSmoke(smokeReport) : "");
     out(body + "\n");
   }
   if (args.smoke) {

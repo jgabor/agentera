@@ -1,9 +1,7 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 import { resolvePath } from "../core/paths.js";
-import { HookCliAdapter } from "../hooks/validateArtifact/index.js";
 import { validateCapability } from "../validate/capability.js";
 import type { JsonObject } from "../core/jsonValue.js";
 
@@ -47,47 +45,13 @@ function runCapabilitySmoke(sourceRoot: string): JsonObject {
   });
 }
 
-function runHookSmoke(): JsonObject {
-  const command = ["node", "agentera", "hook", "validate-artifact"];
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-doctor-smoke-"));
-  try {
-    const todoPath = path.join(tmp, "TODO.md");
-    fs.writeFileSync(todoPath, "# TODO\n\n## Missing required severity sections\n");
-    const payload = JSON.stringify({
-      runtime: "opencode",
-      hook_event_name: "tool.execute.before",
-      cwd: tmp,
-      tool_input: {
-        file_path: todoPath,
-        content: fs.readFileSync(todoPath, "utf8"),
-      },
-    });
-    const [rc, violations] = new HookCliAdapter().run(payload, tmp);
-    if (rc === 2 && violations.length > 0) {
-      return smokeCheck(
-        "npm.hook.validate_artifact",
-        "pass",
-        "validate-artifact hook denied an invalid TODO.md candidate as expected",
-        { command, path: todoPath, details: violations.slice(0, 3) },
-      );
-    }
-    return smokeCheck("npm.hook.validate_artifact", "fail", `validate-artifact hook exited ${rc}`, {
-      command,
-      path: todoPath,
-      details: violations,
-    });
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
-}
-
 export function runNpmSmokeChecks(
   sourceRoot: string,
   _env: Env,
   opts: { liveModelAllowed?: boolean } = {},
 ): JsonObject {
   const root = resolvePath(sourceRoot);
-  const checks = [runCapabilitySmoke(root), runHookSmoke()];
+  const checks = [runCapabilitySmoke(root)];
   return {
     enabled: true,
     liveModelAllowed: Boolean(opts.liveModelAllowed),

@@ -1,6 +1,5 @@
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.js";
-import { entityMigrateHelp } from "./commands/entityMigrate.js";
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
 import { advertisedValidateFamilyNames } from "./commands/validate.js";
 import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
@@ -149,7 +148,6 @@ function recordFamilyReadSection(command: string): string[] {
 
 export function printStateHelp(sub?: string): string {
   const stateCommands = stateCommandNames();
-  if (sub === "migrate") return entityMigrateHelp();
   if (sub === "plan") {
     return [
       ...recordFamilyReadSection("plan"),
@@ -352,7 +350,6 @@ export function stateCommandNames(): string[] {
   return [...new Set([
     ...entityListFamilies().map(({ commandTokens }) => commandTokens[0]),
     ...WRITABLE_ARTIFACTS,
-    "migrate",
     "query",
   ])];
 }
@@ -512,7 +509,6 @@ export function printRouteHelp(): string {
 
 export function printCommandHelp(command: string, rest: string[] = []): string | null {
   const sub = rest.find((a) => !a.startsWith("-") && a !== "--help" && a !== "-h");
-  if (command === "state" && rest.filter((item) => !item.startsWith("-")).slice(0, 2).join(" ") === "migrate entities") return entityMigrateHelp();
   switch (command) {
     case "prime":
       return printPrimeHelp();
@@ -528,7 +524,9 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
       return printDoctorHelp();
     case "state": {
       const retrieval = entityRetrievalFamilyForHelpArgs(rest);
-      return retrieval ? retrieval.verb === "list" ? printStateListHelp(retrieval.family) : printStateGetHelp(retrieval.family) : printStateHelp(sub);
+      return retrieval
+        ? retrieval.verb === "list" ? printStateListHelp(retrieval.family) : printStateGetHelp(retrieval.family)
+        : sub && stateCommandNames().includes(sub) ? printStateHelp(sub) : printStateHelp();
     }
     case "check":
       return printCheckHelp(sub);

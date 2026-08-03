@@ -25,9 +25,8 @@ export interface CausalBlockers {
  * corrupt. A deterministic member roots an otherwise-valid cycle because the
  * cycle itself is malformed source state and has no recovery interpretation.
  */
-export function applyCausalBlockers(entries: CausalMigrationEntry[], project: string, recoveryFor: (sourcePath: string) => string, rootReasons = new Map<string, string>()): CausalBlockers {
+export function applyCausalBlockers(entries: CausalMigrationEntry[], recoveryFor: (sourcePath: string) => string, rootReasons = new Map<string, string>()): CausalBlockers {
   const byIdentity = new Map(entries.map((entry) => [entry.source_identity, entry]));
-  const quote = project.replaceAll("'", "'\\''");
   for (const entry of entries) {
     const unresolved = entry.relationships.find((relationship) => relationship.status === "unresolved");
     if (unresolved) {
@@ -36,7 +35,7 @@ export function applyCausalBlockers(entries: CausalMigrationEntry[], project: st
       entry.classification = "corrupt";
       entry.proposed_target = null;
       entry.target_sha256 = null;
-      entry.recovery = `Repair relationship '${unresolved.field}' on '${entry.source_identity}' to reference an inventoried source identity instead of '${target}', then run agentera state migrate entities --project '${quote}' --dry-run --format json.`;
+      entry.recovery = `Repair relationship '${unresolved.field}' on '${entry.source_identity}' to reference an inventoried source identity instead of '${target}', then run ${recoveryFor(entry.source_paths[0] ?? "migration source")}`;
     }
     if (["duplicate", "conflict", "corrupt", "unsupported"].includes(entry.classification) && !rootReasons.has(entry.source_identity)) rootReasons.set(entry.source_identity, `${entry.classification} source requires explicit recovery`);
   }
@@ -77,7 +76,7 @@ export function applyCausalBlockers(entries: CausalMigrationEntry[], project: st
       entry.classification = "corrupt";
       entry.proposed_target = null;
       entry.target_sha256 = null;
-      entry.recovery = `Break the relationship cycle containing '${root}', then run agentera state migrate entities --project '${quote}' --dry-run --format json.`;
+      entry.recovery = `Break the relationship cycle containing '${root}', then run ${recoveryFor(entry.source_paths[0] ?? "migration source")}`;
     }
   };
   for (const sourceIdentity of [...byIdentity.keys()].sort()) if (!index.has(sourceIdentity)) visit(sourceIdentity);

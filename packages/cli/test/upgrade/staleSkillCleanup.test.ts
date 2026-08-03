@@ -12,7 +12,6 @@ import {
   applyRuntimeMigrationItems,
   planRuntimeMigrationItems,
   planStaleSkillCleanupItems,
-  resolveNpxHookCommands,
 } from "../../src/upgrade/runtimeMigration.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 
@@ -181,9 +180,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
     const items = planRuntimeMigrationItems(ctx);
     const stale = items.find((item) => item.action === "remove-stale-skill")!;
-    const commands = resolveNpxHookCommands(ctx);
-
-    applyRuntimeMigrationItem(stale, commands);
+    applyRuntimeMigrationItem(stale);
 
     expect(stale.status).toBe("applied");
     expect(stale.message).toContain("hej");
@@ -210,8 +207,6 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
   });
 
   it("is a noop when the stale skill is already absent", () => {
-    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const commands = resolveNpxHookCommands(ctx);
     const item: MigrationPhaseItem = {
       status: "pending",
       action: "remove-stale-skill",
@@ -220,15 +215,13 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
       message: "will remove stale skill symlink missing",
     };
 
-    applyRuntimeMigrationItem(item, commands);
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("noop");
     expect(item.message).toContain("already absent");
   });
 
   it("fails when source is missing", () => {
-    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const commands = resolveNpxHookCommands(ctx);
     const item: MigrationPhaseItem = {
       status: "pending",
       action: "remove-stale-skill",
@@ -236,7 +229,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
       message: "will remove stale skill symlink",
     };
 
-    applyRuntimeMigrationItem(item, commands);
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("failed");
     expect(item.message).toContain("missing source");
@@ -248,8 +241,6 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
     const realDir = path.join(skillsDir, "real-dir");
     fs.mkdirSync(realDir, { recursive: true });
 
-    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const commands = resolveNpxHookCommands(ctx);
     const item: MigrationPhaseItem = {
       status: "pending",
       action: "remove-stale-skill",
@@ -258,7 +249,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
       message: "will remove stale skill symlink real-dir",
     };
 
-    applyRuntimeMigrationItem(item, commands);
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("blocked");
     expect(item.message).toContain("only a fingerprinted");
@@ -272,8 +263,6 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
     fs.mkdirSync(realDir, { recursive: true });
     fs.writeFileSync(path.join(realDir, "user-file.md"), "# user content");
 
-    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const commands = resolveNpxHookCommands(ctx);
     const item: MigrationPhaseItem = {
       status: "pending",
       action: "remove-stale-skill",
@@ -282,7 +271,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
       message: "will remove stale skill symlink real-dir",
     };
 
-    applyRuntimeMigrationItem(item, commands);
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("blocked");
     expect(item.message).toContain("only a fingerprinted");
@@ -291,8 +280,6 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
   });
 
   it("skips non-pending items", () => {
-    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const commands = resolveNpxHookCommands(ctx);
     const item: MigrationPhaseItem = {
       status: "noop",
       action: "remove-stale-skill",
@@ -301,7 +288,7 @@ describe("applyRuntimeMigrationItem remove-stale-skill", () => {
       message: "should not change",
     };
 
-    applyRuntimeMigrationItem(item, commands);
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("noop");
     expect(item.message).toBe("should not change");
@@ -339,7 +326,7 @@ describe("applyRuntimeMigrationItems integration", () => {
     fs.unlinkSync(link);
     fs.symlinkSync(path.join(tmp, "user-agentera-copy"), link);
 
-    applyRuntimeMigrationItem(item, resolveNpxHookCommands(ctx));
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("blocked");
     expect(item.message).toContain("ownership changed");

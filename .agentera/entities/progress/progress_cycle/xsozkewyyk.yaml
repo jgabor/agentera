@@ -1,0 +1,13 @@
+id: xsozkewyyk
+artifact: progress
+record:
+  timestamp: 2026-08-03 16:11
+  type: fix
+  phase: build
+  what: Retired the public hook command and made packages/cli/src/upgrade/runtimeMigration.ts remove only whole-resource-proven v2 hooks.
+  context:
+    intent: Quarantine v2 compatibility beneath upgrade and retire native hooks without rewriting user resources.
+    constraints: No commit, task completion, TODO resolution, Audit PASS record, push, publish, tag, version bump, profile refresh, app refresh, or vision edit.
+    scope: Task jmxzwlqfhw only; preserved the four pre-existing staged plan-task files.
+  verified: Targeted regressions passed; pnpm -C packages/cli run test:source passed (3030 passed, 1 skipped); pnpm -C packages/cli run verify:package passed (25 passed); typecheck, build, and local check compact passed. Rebuilt local CLI preview removed proven Codex/Cursor hooks without newText or target and preserved a mixed hook with manual guidance.
+  publication_order: 58

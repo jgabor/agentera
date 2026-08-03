@@ -146,42 +146,6 @@ describe("buildUpgradePlan", () => {
     expect(snapshotTree(externalConfig)).toEqual(externalBefore);
   });
 
-  it("honors OpenCode config overrides at or below an explicitly selected home", () => {
-    for (const [label, configDir] of [
-      ["home", home],
-      ["descendant", path.join(home, "custom-opencode")],
-    ] as const) {
-      const project = copyFixture("v2-yaml-project", path.join(tmp, `inside-opencode-${label}`));
-      initializeGit(project);
-      applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(project, REPO_ROOT));
-      const command = path.join(configDir, "commands", "agentera.md");
-      fs.mkdirSync(path.dirname(command), { recursive: true });
-      fs.writeFileSync(command, MANAGED_OPENCODE_COMMAND);
-      process.env.OPENCODE_CONFIG_DIR = configDir;
-
-      const preview = buildUpgradePlan({
-        installRoot: REPO_ROOT,
-        home,
-        project,
-        channel: "development",
-        dryRun: true,
-        only: ["runtime"],
-      });
-      expect(preview.phases.find((phase) => phase.name === "runtime")?.items).toContainEqual(
-        expect.objectContaining({ action: "rewire-runtime", source: command, status: "pending" }),
-      );
-      expect(preview.lifecycleStatus).toBe(STATUS_READY_TO_APPLY);
-      expect(preview.dryRunCommand).not.toBeNull();
-      expect(preview.applyCommand).not.toBeNull();
-
-      const applied = buildUpgradePlan({ installRoot: REPO_ROOT, home, project, channel: "development", yes: true });
-      expect(applied.phases.find((phase) => phase.name === "runtime")?.items).toContainEqual(
-        expect.objectContaining({ action: "rewire-runtime", source: command, status: "applied" }),
-      );
-      expect(fs.readFileSync(command, "utf8")).toContain("npx -y agentera@next hook validate-artifact");
-    }
-  });
-
   it("includes blocker-free entity readiness in full and artifacts-only v2 plans without writes", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);

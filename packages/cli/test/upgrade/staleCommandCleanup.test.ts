@@ -12,7 +12,6 @@ import {
   applyRuntimeMigrationItems,
   planRuntimeMigrationItems,
   planStaleCommandCleanupItems,
-  resolveNpxHookCommands,
 } from "../../src/upgrade/runtimeMigration.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 
@@ -199,7 +198,7 @@ describe("applyRuntimeMigrationItem remove-stale-command", () => {
     fs.unlinkSync(command);
     fs.writeFileSync(command, UNMANAGED_HEJ);
 
-    applyRuntimeMigrationItem(item, resolveNpxHookCommands(ctx));
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("blocked");
     expect(fs.readFileSync(command, "utf8")).toBe(UNMANAGED_HEJ);
@@ -213,9 +212,7 @@ describe("applyRuntimeMigrationItem remove-stale-command", () => {
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
     const items = planRuntimeMigrationItems(ctx);
     const stale = items.find((item) => item.action === "remove-stale-command")!;
-    const commands = resolveNpxHookCommands(ctx);
-
-    applyRuntimeMigrationItem(stale, commands);
+    applyRuntimeMigrationItem(stale);
 
     expect(stale.status).toBe("applied");
     expect(stale.message).toContain("hej.md");
@@ -224,8 +221,6 @@ describe("applyRuntimeMigrationItem remove-stale-command", () => {
   });
 
   it("is a noop when the stale command is already absent", () => {
-    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const commands = resolveNpxHookCommands(ctx);
     const item: MigrationPhaseItem = {
       status: "pending",
       action: "remove-stale-command",
@@ -234,15 +229,13 @@ describe("applyRuntimeMigrationItem remove-stale-command", () => {
       message: "will remove stale managed command missing.md",
     };
 
-    applyRuntimeMigrationItem(item, commands);
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("noop");
     expect(item.message).toContain("already absent");
   });
 
   it("fails when source is missing", () => {
-    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const commands = resolveNpxHookCommands(ctx);
     const item: MigrationPhaseItem = {
       status: "pending",
       action: "remove-stale-command",
@@ -250,15 +243,13 @@ describe("applyRuntimeMigrationItem remove-stale-command", () => {
       message: "will remove stale managed command",
     };
 
-    applyRuntimeMigrationItem(item, commands);
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("failed");
     expect(item.message).toContain("missing source");
   });
 
   it("skips non-pending items", () => {
-    const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const commands = resolveNpxHookCommands(ctx);
     const item: MigrationPhaseItem = {
       status: "noop",
       action: "remove-stale-command",
@@ -267,7 +258,7 @@ describe("applyRuntimeMigrationItem remove-stale-command", () => {
       message: "should not change",
     };
 
-    applyRuntimeMigrationItem(item, commands);
+    applyRuntimeMigrationItem(item);
 
     expect(item.status).toBe("noop");
     expect(item.message).toBe("should not change");

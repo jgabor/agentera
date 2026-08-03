@@ -1,4 +1,3 @@
-import fsForHooks from "node:fs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,11 +10,6 @@ import { cmdReport, ReportArgs } from "../commands/report.js";
 import { runGlossaryAdviceCommand } from "../commands/glossaryAdvice.js";
 import { runPersonalGlossaryCommand } from "../commands/personalGlossary.js";
 import { runProfileGroundingCommand } from "../commands/profileGrounding.js";
-import { runSessionStart } from "../../hooks/sessionStart.js";
-import { runSessionStop } from "../../hooks/sessionStop.js";
-import { runCursorSessionStart } from "../../hooks/cursorSessionStart.js";
-import { runCursorPreToolUse } from "../../hooks/cursorPreToolUse.js";
-import { HookCliAdapter } from "../../hooks/validateArtifact/index.js";
 import { usageMain } from "../../analytics/usageStats.js";
 import { validatePathValue } from "../argvalidate.js";
 import { printAppHomeHelp, printDoctorHelp, printUpgradeHelp, wantsHelp } from "../help.js";
@@ -26,7 +20,6 @@ import { emitInvalidInput } from "../errors.js";
 import { migrationProject } from "../migrationRequired.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
 import { nativeResourceCleanupIds, resolveNativeResourceCleanupId } from "../../runtime/nativeResourceCleanup.js";
-import type { ParsedProjectHookInput } from "../../hooks/projectHookInput.js";
 
 function rejectUnsupportedUpgradeFlag(
   io: Io,
@@ -170,55 +163,6 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
       format: asEnvelopeFormat(args.format),
       body: { class: "unsupported_target", message: (exc as Error).message },
     });
-  }
-}
-
-export function readStdin(): string {
-  try {
-    return fsForHooks.readFileSync(0, "utf8");
-  } catch {
-    return "";
-  }
-}
-
-export function runHook(
-  name: string,
-  argv: string[],
-  io: Io,
-  projectInput?: ParsedProjectHookInput,
-): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
-  const raw = projectInput?.raw ?? (io.stdin ? io.stdin() : readStdin());
-  // Each hook owns its own stdout newline convention; do not wrap stdout here.
-  switch (name) {
-    case "session-start":
-      return runSessionStart(projectInput ?? raw, { out: io.out, err: io.err });
-    case "session-stop":
-      return runSessionStop(projectInput ?? raw);
-    case "cursor-session-start":
-      return runCursorSessionStart(projectInput ?? raw, { out: io.out, err: io.err });
-    case "cursor-pre-tool-use":
-      return runCursorPreToolUse(raw);
-    case "validate-artifact": {
-      const [rc, violations] = new HookCliAdapter().run(raw, null);
-      for (const v of violations) err(`${v}\n`);
-      return rc;
-    }
-    default:
-      return emitInvalidInput(io, {
-        format: "text",
-        body: {
-          class: "unsupported_target",
-          message: `unknown hook '${name}'`,
-          valid_values: [
-            "session-start",
-            "session-stop",
-            "cursor-session-start",
-            "cursor-pre-tool-use",
-            "validate-artifact",
-          ],
-        },
-      });
   }
 }
 

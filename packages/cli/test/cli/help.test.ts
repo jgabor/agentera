@@ -113,15 +113,14 @@ describe("cli help", () => {
     expect(docs).not.toContain("usage: agentera state docs [-h]");
   });
 
-  it("documents only the read-only entity migration diagnostic", () => {
+  it("keeps entity migration outside routine state help", () => {
     const backfill = printStateHelp("backfill");
     expect(stateCommandNames()).not.toContain("backfill");
     expect(backfill).not.toMatch(/--apply|--force/);
     const migrate = printStateHelp("migrate");
-    expect(migrate).toContain("state migrate entities");
-    expect(migrate).toContain("--dry-run");
-    expect(migrate).toContain("Entity publication is available only through one full development-channel upgrade --yes.");
-    expect(migrate).not.toMatch(/--apply|--force|--restore/);
+    expect(stateCommandNames()).not.toContain("migrate");
+    expect(migrate).not.toContain("state migrate entities");
+    expect(migrate).not.toMatch(/--apply|--force|--restore|--dry-run/);
     expect(backfill).not.toContain("preview-token");
     expect(backfill).not.toContain("receipt");
   });

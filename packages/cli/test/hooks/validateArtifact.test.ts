@@ -1,18 +1,13 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   ArtifactSchemaValidator,
-  ArtifactWrite,
-  HookCliAdapter,
   loadSchema,
 } from "../../src/hooks/validateArtifact/index.js";
-import { runCursorPreToolUse } from "../../src/hooks/cursorPreToolUse.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
-import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 
 let tmp: string;
 const fixtureRoots: string[] = [];
@@ -270,91 +265,5 @@ describe("ArtifactSchemaValidator", () => {
     fs.writeFileSync(f, "content\n");
     const violations = new ArtifactSchemaValidator().validateExplicit("BOGUS.md", f, tmp);
     expect(violations[0]).toContain("unsupported artifact");
-  });
-});
-
-describe("HookCliAdapter.run", () => {
-  it("publishes automatic progress projection repair through the mutation transaction", () => {
-    const cycles = Array.from({ length: 55 }, (_, index) => ({
-      number: 55 - index,
-      timestamp: "2026-07-13 12:00",
-      type: "feat",
-      phase: "build",
-      what: `Cycle ${index + 1}`,
-      context: { intent: "test automatic projection" },
-    }));
-    fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
-    const target = path.join(tmp, ".agentera", "progress.yaml");
-    fs.writeFileSync(target, YAML.stringify({ cycles, archive: [{ summary: "Cycle 0" }] }));
-    for (const cycle of cycles) publishNumberedArchive(tmp, "progress", cycle.number, cycle);
-
-    const violations = new ArtifactSchemaValidator().validateWrite(
-      new ArtifactWrite(".agentera/progress.yaml"),
-      tmp,
-    );
-
-    expect(violations).toEqual([]);
-    const projected = YAML.parse(fs.readFileSync(target, "utf8")) as {
-      cycles: unknown[];
-      archive: unknown[];
-    };
-    expect(projected.cycles).toHaveLength(10);
-    expect(projected.archive).toHaveLength(40);
-  });
-
-  it("returns 0 for non-artifact writes and empty input", () => {
-    const adapter = new HookCliAdapter();
-    expect(adapter.run("")).toEqual([0, []]);
-    expect(
-      adapter.run(
-        JSON.stringify({ tool_name: "Write", tool_input: { file_path: "src/x.ts" }, cwd: tmp }),
-      ),
-    ).toEqual([0, []]);
-  });
-
-  it("returns 2 with violations for an invalid artifact write", () => {
-    fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
-    fs.writeFileSync(
-      path.join(tmp, ".agentera", "progress.yaml"),
-      "cycles:\n- number: 1\n  timestamp: x\n",
-    );
-    const [rc, violations] = new HookCliAdapter().run(
-      JSON.stringify({
-        tool_name: "Write",
-        tool_input: { file_path: ".agentera/progress.yaml" },
-        cwd: tmp,
-      }),
-    );
-    expect(rc).toBe(2);
-    expect(violations.length).toBeGreaterThan(0);
-  });
-});
-
-describe("runCursorPreToolUse", () => {
-  it("denies an invalid artifact write and allows valid/non-artifact writes", () => {
-    fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
-    fs.writeFileSync(
-      path.join(tmp, ".agentera", "progress.yaml"),
-      "cycles:\n- number: 1\n  timestamp: x\n",
-    );
-    let denyOut = "";
-    runCursorPreToolUse(
-      JSON.stringify({
-        tool_name: "Write",
-        tool_input: { file_path: ".agentera/progress.yaml" },
-        cwd: tmp,
-      }),
-      { out: (t) => (denyOut = t) },
-    );
-    expect(JSON.parse(denyOut).permission).toBe("deny");
-
-    let allowOut = "";
-    runCursorPreToolUse(
-      JSON.stringify({ tool_name: "Write", tool_input: { file_path: "src/x.ts" }, cwd: tmp }),
-      {
-        out: (t) => (allowOut = t),
-      },
-    );
-    expect(JSON.parse(allowOut).permission).toBe("allow");
   });
 });

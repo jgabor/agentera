@@ -58,6 +58,10 @@
 
 ### Fixed
 
+- Fixed v2 hook retirement to remove only whole-resource-proven hooks and to
+  preserve ambiguous resources for manual review. Upgrade no longer rewrites
+  legacy hooks to a retired `agentera hook` command, which is no longer a
+  public CLI surface.
 - Fixed explicit native-resource cleanup previews to omit unrelated app and
   project migration work. v2 cleanup now removes independently proven legacy
   agents beside preserved user-owned agent collisions, which remain manual
@@ -308,7 +312,7 @@
 - Removed v1 legacy migration paths, standalone skill bundle wording, and obsolete v1 fixture assumptions from the 3.x tree after the 3.0 boundary (`packages/cli/test/cli/v1LegacyCruft.test.ts` guards against reintroduction).
 - Removed `hej`, `describe`, and `gate` from top-level `agentera --help` and dispatch; unsupported structured requests return runnable corrections to `agentera prime`, `agentera schema`, and `agentera check compact`.
 - Removed the requirement for `uv` or a git checkout on the development channel; `uvx --from git+https://github.com/jgabor/agentera@main agentera` remains the stable 2.x Python line only.
-- Removed `agentera state migrate`, `agentera state backfill`, projection repair, and automatic v1 conversion. Recognized v2 aggregate projects now have one forward mutation path: full `agentera upgrade --yes`; `state migrate entities --dry-run` remains read-only.
+- Removed `agentera state migrate`, `agentera state backfill`, projection repair, and automatic v1 conversion. Recognized v2 aggregate projects now use `agentera upgrade --dry-run` for preview and full `agentera upgrade --yes` for the one forward mutation path.
 - Removed host-native runtime selectors, repair actions, package manifests, plugins, hooks, agents, and Bun single-binary delivery from the v3 distribution. Migration fixtures, ownership evidence, and explicit native Agentera resource cleanup remain internal migration surfaces.
 
 ### Migration notes

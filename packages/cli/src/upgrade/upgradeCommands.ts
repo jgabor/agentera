@@ -30,6 +30,12 @@ export function fullEntityUpgradeCommand(project: string): string {
   ]);
 }
 
+export function fullEntityUpgradePreviewCommand(project: string): string {
+  return commandText([
+    "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", project, "--dry-run",
+  ]);
+}
+
 /** Channel-aware upgrade preview/apply commands (doctor, prime, orchestrator). */
 export function buildUpgradeCommands(args: BuildUpgradeCommandsArgs): {
   dryRunCommand: string;

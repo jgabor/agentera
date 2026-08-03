@@ -5,11 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  NPX_HOOK_VALIDATE,
-  applyMigrationPhases,
-  dryRunMigration,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 import { scanDirectoryForPythonLeftovers } from "./helpers/preservation.js";
 
@@ -28,7 +24,7 @@ afterEach(() => {
 });
 
 describe("leftoverScan", () => {
-  it("reports no python managed references after runtime rewire", () => {
+  it("reports no python managed references after runtime retirement", () => {
     const home = path.join(tmp, "home");
     fs.mkdirSync(home, { recursive: true });
     const appHome = path.join(home, ".local/share/agentera");
@@ -44,7 +40,6 @@ describe("leftoverScan", () => {
     expect(scanDirectoryForPythonLeftovers(path.join(home, ".codex"))).toEqual([]);
     expect(scanDirectoryForPythonLeftovers(path.join(home, ".cursor"))).toEqual([]);
     expect(scanDirectoryForPythonLeftovers(path.join(project, ".cursor"))).toEqual([]);
-    const codexHooks = fs.readFileSync(path.join(home, ".codex/hooks/codex-hooks.json"), "utf8");
-    expect(codexHooks).toContain(NPX_HOOK_VALIDATE);
+    expect(fs.existsSync(path.join(home, ".codex/hooks/codex-hooks.json"))).toBe(false);
   });
 });

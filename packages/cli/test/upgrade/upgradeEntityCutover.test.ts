@@ -467,7 +467,7 @@ describe("one-way Git entity cutover", () => {
     expect(failed.err).toContain(".codex/hooks/codex-hooks.json");
   }, 30_000);
 
-  it("rewires proven Codex, Cursor, and Copilot v2 hooks without installing native integrations", () => {
+  it("retires proven Codex, Cursor, and Copilot v2 hooks without installing native integrations", () => {
     const root = project();
     const codexHooks = path.join(root, ".codex/hooks/codex-hooks.json");
     const cursorHooks = path.join(root, ".cursor/hooks.json");
@@ -488,9 +488,7 @@ describe("one-way Git entity cutover", () => {
     const applied = applyUpgrade(root, appHome, home);
 
     expect(applied.code, applied.err).toBe(0);
-    for (const hooks of [codexHooks, cursorHooks, copilotHooks]) {
-      expect(fs.readFileSync(hooks, "utf8")).toContain("npx -y agentera@next hook validate-artifact");
-    }
+    for (const hooks of [codexHooks, cursorHooks, copilotHooks]) expect(fs.existsSync(hooks)).toBe(false);
     expect(treeBytes(home, ".agents/skills/agentera")).toEqual(skillBefore);
     expect(fs.existsSync(path.join(root, ".cursor-plugin/plugin.json"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".cursor/agents/agentera.md"))).toBe(false);
@@ -590,12 +588,12 @@ describe("one-way Git entity cutover", () => {
     expect(JSON.parse(failed.out)).toMatchObject({ phase: "apply", status: "failed" });
   }, 30_000);
 
-  it("exposes preview only and has no entity recovery or cross-major restore commands", () => {
+  it("keeps entity migration on upgrade and has no cross-major restore command", () => {
     const root = project();
     const entityHelp = capture(root, ["state", "migrate", "entities", "--help"]);
     expect(entityHelp.code).toBe(0);
-    expect(entityHelp.out).toContain("--dry-run");
-    expect(entityHelp.out).not.toMatch(/--(?:apply|resume|rollback)/);
+    expect(entityHelp.out).not.toContain("state migrate entities");
+    expect(entityHelp.out).not.toContain("--dry-run");
     for (const args of [["--apply"], ["--resume", "deadbeef"], ["--rollback", "deadbeef"]]) {
       const rejected = capture(root, ["state", "migrate", "entities", ...args]);
       expect(rejected.code).toBe(1);

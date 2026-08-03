@@ -6,6 +6,7 @@ import YAML from "yaml";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.js";
 import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMarkdown.js";
@@ -102,7 +103,7 @@ export interface DurableEntityMigrationPlan {
 
 export interface EntityMigrationPreview {
   schemaVersion: "agentera.entityMigrationPreview.v1";
-  command: "state migrate entities";
+  command: "upgrade";
   status: "ready" | "blocked";
   mode: "preview";
   project: string;
@@ -294,13 +295,6 @@ function authorityBinding(sourceRoot: string): { authority_schema_version: strin
   return { authority_schema_version: authority.schema_version, authority_sha256: hash(bytes) };
 }
 
-export function entityMigrationAuthorityProjection(sourceRoot = resolveSourceRoot()): JsonObject {
-  const authorityPath = path.join(sourceRoot, AUTHORITY_PATH);
-  const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
-  if (!mapping(authority.entity_migration)) throw new Error(`state storage authority '${authorityPath}' has no entity migration contract`);
-  return { authority: AUTHORITY_PATH, ...(authority.entity_migration as JsonObject) } as JsonObject;
-}
-
 function sourceFingerprint(files: SourceFile[]): string {
   return hash(canonicalRecordJson(files.map((file) => ({
     path: file.relative,
@@ -320,7 +314,7 @@ function parseYaml(source: SourceFile): JsonObject {
 }
 
 function recovery(project: string, pathName: string): string {
-  return `Repair '${pathName}', then run agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --dry-run --format json.`;
+  return `Repair '${pathName}', then run ${fullEntityUpgradePreviewCommand(project)}.`;
 }
 
 function unsafeSourceMessage(pathName: string): string {
@@ -841,7 +835,7 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   for (const entry of completeEntries) {
     if (entry.proposed_target && entry.artifact) entry.target_sha256 = hash(canonicalEntityEnvelopeBytes({ id: entry.proposed_target.id, artifact: entry.artifact, record: entry.record, migrationProvenance: entry.canonical_migration_provenance }));
   }
-  let causal = applyCausalBlockers(completeEntries, project, (sourcePath) => recovery(project, sourcePath));
+  let causal = applyCausalBlockers(completeEntries, (sourcePath) => recovery(project, sourcePath));
   const targetDiagnostics = validateEntityMigrationTargets(project, completeEntries, sourceRoot);
   for (const diagnostic of targetDiagnostics) {
     const entry = completeEntries.find((candidate) => candidate.source_identity === diagnostic.sourceIdentity);
@@ -852,7 +846,7 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
     if (entry.recovery === "none") entry.recovery = recovery(project, entry.source_paths[0]);
     causal.rootReasons.set(entry.source_identity, `target_invalid: ${diagnostic.message}`);
   }
-  causal = applyCausalBlockers(completeEntries, project, (sourcePath) => recovery(project, sourcePath), causal.rootReasons);
+  causal = applyCausalBlockers(completeEntries, (sourcePath) => recovery(project, sourcePath), causal.rootReasons);
   const classes: EntityMigrationClassification[] = ["verified_full", "recoverable_degraded_full_projection", "valid_compacted_summary", "duplicate", "conflict", "corrupt", "unsupported", "historical_projection_residue"];
   const counts = Object.fromEntries(classes.map((classification) => [classification, completeInventory.filter((entry) => entry.classification === classification).length])) as EntityMigrationPreview["counts"];
   counts.total = completeInventory.length;
@@ -927,7 +921,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   const completeEntries: EntityMigrationEntry[] = inventory.entries.map(({ record: _record, ...entry }) => entry);
   const preservedResidues: EntityMigrationEntry[] = inventory.preserved_residues.map(({ record: _record, ...entry }) => entry);
   const requestedLimit = Math.max(1, Math.min(options.limit ?? DEFAULT_LIMIT, MAX_LIMIT));
-  const restartCommand = `agentera state migrate entities --project '${project.replaceAll("'", "'\\''")}' --limit ${requestedLimit} --dry-run --format json`;
+  const restartCommand = fullEntityUpgradePreviewCommand(project);
   if (options.after !== undefined && (options.sourceFingerprint !== fingerprint || options.previewDigest !== previewDigest)) {
     throw new EntityMigrationContinuationError(restartCommand);
   }
@@ -939,12 +933,11 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
     return diagnostics.filter((diagnostic) => identities.has(diagnostic.source_identity));
   };
   let omissionReason: EntityMigrationPreview["omission_reason"] = start > 0 || start + entries.length < completeEntries.length ? "result_limit" : null;
-  const quotedProject = project.replaceAll("'", "'\\''");
-  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "state migrate entities", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, preserved_residues: preservedResidues, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_owner: "full development-channel upgrade --yes" } } as const;
+  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "upgrade", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, preserved_residues: preservedResidues, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_owner: "full development-channel upgrade --yes" } } as const;
   const serializedBytes = (): number => {
     const pageDiagnostics = diagnosticsForEntries();
     const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
-    const command = nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --source-fingerprint ${fingerprint} --preview-digest ${previewDigest} --limit ${requestedLimit} --dry-run --format json` : restartCommand;
+    const command = restartCommand;
     const body = { ...base, entries, diagnostics: pageDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - pageDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval: { command } };
     return Math.max(Buffer.byteLength(JSON.stringify(body, null, 2), "utf8"), Buffer.byteLength(YAML.stringify(body), "utf8"));
   };
@@ -955,7 +948,7 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   if (entries.length === 0 && start < completeEntries.length) throw new Error(`the next whole migration entry exceeds the ${ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES}-byte output budget; repair that source before retrying`);
   const outputDiagnostics = diagnosticsForEntries();
   const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
-  const retrieval = { command: nextAfter ? `agentera state migrate entities --project '${quotedProject}' --after '${nextAfter.replaceAll("'", "'\\''")}' --source-fingerprint ${fingerprint} --preview-digest ${previewDigest} --limit ${requestedLimit} --dry-run --format json` : restartCommand };
+  const retrieval = { command: restartCommand };
   return { ...base, status: base.status as "ready" | "blocked", mode: "preview", entries, diagnostics: outputDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - outputDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval };
 }
 
@@ -971,7 +964,7 @@ export class EntityMigrationBindingError extends Error {
   readonly classification = "source_changed";
   readonly restartCommand: string;
   constructor(readonly current: EntityMigrationPreview) {
-    const restartCommand = `agentera state migrate entities --project '${current.project.replaceAll("'", "'\\''")}' --dry-run --format json`;
+    const restartCommand = fullEntityUpgradePreviewCommand(current.project);
     super(`entity migration source or migration authority changed after preview; rerun ${restartCommand}`);
     this.restartCommand = restartCommand;
     this.name = "EntityMigrationBindingError";

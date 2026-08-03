@@ -5,9 +5,19 @@ record:
   depends_on:
     - cspavuhaus
     - pfredurfew
-  status: pending
+  status: complete
   acceptance:
     - GIVEN routine v3 surfaces WHEN inspected THEN no v2 or native-hook public shape escapes upgrade.
     - GIVEN a legacy hook WHEN upgrade runs THEN remove proven ownership or preserve it with guidance, never rewrite it.
     - GIVEN compatibility classes WHEN tested THEN each has pass and rejection cases plus a cutover deletion inventory.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Routine schema and public state migrate entities still expose v2 migration outside upgrade; quarantine the preview/recovery under upgrade only.
+    provenance:
+      attempt_id: jmxzwlqfhw-audit-2
+      source: Independent Audit ses_03807c5c1ffeIcZpn3dAf2IH7D bounded re-review PASS
+      recorded_at: 2026-08-03 16:54
+      writer_command: agentera state plan record-evaluation

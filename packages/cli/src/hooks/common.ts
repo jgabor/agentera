@@ -1,20 +1,14 @@
-import crypto from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
-import { expanduser, resolvePath } from "../core/paths.js";
 import {
   ARTIFACT_PROTOCOL_PATHS,
   normalizeArtifactMappingKeys,
   normalizeArtifactProtocolId,
 } from "../registries/artifactProtocolIds.js";
-import { resolveCandidate } from "../state/installRoot.js";
 
 /**
- * Shared utilities for agentera hooks. Faithful TS port of hooks/common.py:
- * compaction retention caps, runtime-local session bookmark paths, and artifact
- * path resolution.
+ * Shared utilities for compaction retention caps and artifact path resolution.
  */
 
 export {
@@ -22,7 +16,6 @@ export {
   loadYamlMappingFile,
 } from "../core/yaml.js";
 
-type Env = Record<string, string | undefined>;
 type Entry = Record<string, unknown>;
 
 export const MAX_FULL_ENTRIES = 10;
@@ -39,67 +32,6 @@ export function applyRetentionCaps<T extends Entry>(
   const maxTotal = opts.maxTotal ?? MAX_TOTAL_ENTRIES;
   const cappedArchive = archiveEntries.slice(0, maxOneline);
   return [...fullEntries.slice(0, maxFull), ...cappedArchive].slice(0, maxTotal);
-}
-
-export function resolveAgenteraDataHome(env: Env = process.env, home: string = os.homedir()): string {
-  const configured = env.AGENTERA_HOME;
-  if (configured) {
-    return expanduser(configured);
-  }
-  const [root] = resolveCandidate(null, { env, home });
-  return root;
-}
-
-export function resolveSessionPath(
-  projectRoot: string,
-  env: Env = process.env,
-  home: string = os.homedir(),
-): string {
-  const dataHome = resolveAgenteraDataHome(env, home);
-  const resolved = resolvePath(projectRoot);
-  const digest = crypto.createHash("sha256").update(resolved, "utf8").digest("hex").slice(0, 16);
-  const name = path.basename(projectRoot);
-  const slug = name.replace(/[^A-Za-z0-9_.-]+/g, "-").replace(/^[.-]+|[.-]+$/g, "") || "project";
-  return path.join(dataHome, "sessions", `${slug}-${digest}`, "session.yaml");
-}
-
-export function sessionBookmarkToOneline(entry: Entry): Entry {
-  return {
-    timestamp: String(entry.timestamp ?? ""),
-    artifacts: [],
-    summary: String(entry.summary ?? ""),
-    kind: "oneline",
-  };
-}
-
-export function compactSessionBookmarkEntries(
-  entries: Entry[],
-  opts: {
-    maxFull?: number;
-    maxOneline?: number;
-    maxTotal?: number;
-    toOneline?: (entry: Entry) => Entry;
-  } = {},
-): Entry[] {
-  const maxFull = opts.maxFull ?? MAX_FULL_ENTRIES;
-  const maxOneline = opts.maxOneline ?? MAX_ONELINE_ENTRIES;
-  const maxTotal = opts.maxTotal ?? MAX_TOTAL_ENTRIES;
-  const convert = opts.toOneline ?? sessionBookmarkToOneline;
-  const ordered = [...entries].sort((a, b) => {
-    const ta = String(a.timestamp ?? "");
-    const tb = String(b.timestamp ?? "");
-    return ta < tb ? 1 : ta > tb ? -1 : 0;
-  });
-  const full: Entry[] = [];
-  const archive: Entry[] = [];
-  for (const entry of ordered) {
-    if (entry.kind === "full" && full.length < maxFull) {
-      full.push(entry);
-    } else {
-      archive.push(convert(entry));
-    }
-  }
-  return applyRetentionCaps(full, archive, { maxFull, maxOneline, maxTotal });
 }
 
 export const DEFAULT_ARTIFACT_PATHS: Record<string, string> = { ...ARTIFACT_PROTOCOL_PATHS };

@@ -20,8 +20,6 @@ import {
   textReferencesV2InstalledHooks,
 } from "../../src/upgrade/installedHooksRetirement.js";
 import {
-  NPX_CLI_ENTRYPOINT,
-  NPX_HOOK_VALIDATE,
   applyMigrationPhases,
   dryRunMigration,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
@@ -133,9 +131,7 @@ describe("upgrade apply retires v2 installed hooks", () => {
     const refreshItems = preview.cleanup.items.filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
     expect(refreshItems.some((item) => item.status === "pending")).toBe(true);
     expect(hookItems.some((item) => item.status === "pending")).toBe(true);
-    expect(preview.runtime.items.some((item) => item.action === "rewire-runtime" && item.status === "pending")).toBe(
-      true,
-    );
+    expect(preview.runtime.items.some((item) => item.action === "retire-hooks" && item.status === "pending")).toBe(true);
 
     const applied = applyMigrationPhases(ctx, preview);
     expect(applied.cleanup.items.find((item) => item.action === "remove-managed-app-home")?.status).toBe("applied");
@@ -143,13 +139,8 @@ describe("upgrade apply retires v2 installed hooks", () => {
     expect(installedHookPathsAfterMigration(appHome)).toEqual([]);
     expect(installedBundleHasV2HookInvocationText(appHome)).toBe(false);
 
-    const codexHooks = fs.readFileSync(path.join(home, ".codex", "hooks", "codex-hooks.json"), "utf8");
-    expect(codexHooks).toContain(NPX_HOOK_VALIDATE);
-    expect(codexHooks).not.toContain("validate_artifact.py");
-
-    const cursorHooks = fs.readFileSync(path.join(project, ".cursor", "hooks.json"), "utf8");
-    expect(cursorHooks).toContain(NPX_CLI_ENTRYPOINT);
-    expect(cursorHooks).not.toContain("cursor_pre_tool_use.py");
+    expect(fs.existsSync(path.join(home, ".codex", "hooks", "codex-hooks.json"))).toBe(false);
+    expect(fs.existsSync(path.join(project, ".cursor", "hooks.json"))).toBe(false);
 
     expect(scanDirectoryForPythonLeftovers(path.join(home, ".codex"))).toEqual([]);
     expect(scanDirectoryForPythonLeftovers(path.join(project, ".cursor"))).toEqual([]);

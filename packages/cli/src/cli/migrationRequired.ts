@@ -28,7 +28,6 @@ export function requiresCompletedEntityCutover(argv: string[]): boolean {
   if (command === "prime" && argv.includes("--guidance")) return false;
   if (command === "query") return !argv.includes("--list-artifacts");
   if (command === "state" && subcommand === "query" && argv.includes("--list-artifacts")) return false;
-  if (command === "state" && subcommand === "migrate" && verb === "entities" && argv.includes("--dry-run")) return false;
   if (command === "state" && verb === "explain") return false;
   return true;
 }

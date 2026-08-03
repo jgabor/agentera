@@ -1,0 +1,16 @@
+id: hhcbuqaxpq
+artifact: progress
+record:
+  timestamp: 2026-08-03 16:48
+  type: fix
+  phase: build
+  what: Quarantined v2 entity-migration preview and recovery behind the upgrade workflow.
+  context:
+    intent: Remove routine v2 migration entry points while retaining one-command upgrade cutover.
+    constraints: Preserve existing unrelated M4B changes and use the typed state writer.
+    scope: CLI schema/help/dispatch, entity migration recovery, authority guidance, and regression tests.
+  inspiration: Independent audit jmxzwlqfhw-audit-1 found routine schema and state migration exposure.
+  discovered: Routine schema, state help, dispatch, startup recovery, and package-boundary tests still exposed state migrate entities.
+  verified: Targeted and full source tests passed; package verification, typecheck, build, compact, and local rebuilt CLI checks passed.
+  next: Await independent retry evaluation; do not complete the pending plan task until its verdict is recorded.
+  publication_order: 59

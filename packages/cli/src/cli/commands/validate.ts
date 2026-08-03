@@ -4,7 +4,7 @@ import { readdirSync as fsReaddirSync, readFileSync as fsReadFileSync, statSync 
 import { resolvePath } from "../../core/paths.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { validateAgentString, validatePathValue } from "../argvalidate.js";
-import { HookCliAdapter } from "../../hooks/validateArtifact/index.js";
+import { ArtifactValidationAdapter } from "../../hooks/validateArtifact/index.js";
 import { validateCapability, validateContractSelf, validateProtocolSelf } from "../../validate/capability.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { validateGraph } from "../../validate/crossCapability.js";
@@ -473,7 +473,7 @@ export function cmdValidateArtifact(
   const artifact = String(args.artifact);
   validateArtifactLabel(artifact);
   const cwd = resolvePath(args.cwd ?? process.cwd());
-  const adapter = new HookCliAdapter();
+  const adapter = new ArtifactValidationAdapter();
   const [rc, payload] = adapter.runExplicit(artifact, args.file ?? null, cwd);
   if ((args.format ?? "text") === "json") {
     const wrapped: JsonObject = {
@@ -493,7 +493,7 @@ export function cmdValidateArtifact(
       `file=${payload.file} | docs_mapped_default=${payload.docs_mapped_default} | ` +
       `path_source=${payload.path_source}\n`,
   );
-  // cast: payload.violations come from the artifact-validation hook (subprocess IO boundary)
+  // cast: payload.violations come from the artifact-validation engine IO boundary
   for (const violation of payload.violations as string[]) err(`${violation}\n`);
   return rc;
 }

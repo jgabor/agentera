@@ -1,4 +1,3 @@
-import os from "node:os";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -7,11 +6,9 @@ import {
   MAX_FULL_ENTRIES,
   MAX_TOTAL_ENTRIES,
   applyRetentionCaps,
-  compactSessionBookmarkEntries,
   parseArtifactMapping,
   parseDocsYamlMapping,
   resolveArtifactPath,
-  resolveSessionPath,
 } from "../../src/hooks/common.js";
 
 describe("applyRetentionCaps", () => {
@@ -21,38 +18,6 @@ describe("applyRetentionCaps", () => {
     const result = applyRetentionCaps(full, archive);
     expect(result.filter((e) => e.kind === "full").length).toBe(MAX_FULL_ENTRIES);
     expect(result.length).toBeLessThanOrEqual(MAX_TOTAL_ENTRIES);
-  });
-});
-
-describe("compactSessionBookmarkEntries", () => {
-  it("keeps newest full entries and compacts the rest under caps", () => {
-    const entries = Array.from({ length: 25 }, (_, i) => ({
-      timestamp: `2026-04-${String(i + 1).padStart(2, "0")} 10:00`,
-      artifacts: ["plan"],
-      summary: `Entry ${i + 1}`,
-      kind: "full",
-    }));
-    const result = compactSessionBookmarkEntries(entries);
-    expect(result.length).toBe(25);
-    expect(result.filter((e) => e.kind === "full").length).toBe(MAX_FULL_ENTRIES);
-    // Newest (highest timestamp) kept as full.
-    expect(result[0].summary).toBe("Entry 25");
-    // Overflow converted to oneline with empty artifacts.
-    const oneline = result.find((e) => e.kind === "oneline") as any;
-    expect(oneline.artifacts).toEqual([]);
-  });
-});
-
-describe("resolveSessionPath", () => {
-  it("derives a deterministic per-project session bookmark path", () => {
-    const env = { AGENTERA_HOME: "/tmp/agentera-home" };
-    const home = os.homedir();
-    const a = resolveSessionPath("/work/my project!", env, home);
-    const b = resolveSessionPath("/work/my project!", env, home);
-    expect(a).toBe(b);
-    expect(a.startsWith(path.join("/tmp/agentera-home", "sessions"))).toBe(true);
-    expect(a.endsWith("session.yaml")).toBe(true);
-    expect(a).toMatch(/my-project-[0-9a-f]{16}\/session\.yaml$/);
   });
 });
 

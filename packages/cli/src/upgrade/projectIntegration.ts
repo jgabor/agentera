@@ -10,17 +10,14 @@ import {
 import { resolveNpxPlatformStatus } from "./npxPlatformStatus.js";
 import { classifyInstall, crossMajorBoundaryApplies, type InstallClassification } from "./compatibility.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
-import fs from "node:fs";
-
 import {
   detectV1ArtifactPairs,
-  planRuntimeRewirePhase,
+  planRuntimeRetirementPhase,
   type MigrationContext,
   type MigrationPhaseItem,
 } from "./migrateArtifactsV2ToV3.js";
 import {
   projectHasProjectLevelRuntimeHooks,
-  textUsesPythonManagedEntrypoint,
 } from "./runtimeMigration.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands } from "./upgradeCommands.js";
@@ -93,16 +90,6 @@ function isPendingRuntimeMigrationItem(item: MigrationPhaseItem): boolean {
   if (item.status !== "pending" || item.action === "configure") {
     return false;
   }
-  if (item.action === "rewire-runtime") {
-    if (!item.source) {
-      return false;
-    }
-    try {
-      return textUsesPythonManagedEntrypoint(fs.readFileSync(item.source, "utf8"));
-    } catch {
-      return false;
-    }
-  }
   return true;
 }
 
@@ -111,7 +98,7 @@ function isGlobalStaleRuntimeItem(item: MigrationPhaseItem, ctx: MigrationContex
   if (!item.source?.startsWith(homeRoot)) {
     return false;
   }
-  if (item.action === "rewire-runtime" || item.action === "retire-hooks") {
+  if (item.action === "retire-hooks") {
     return true;
   }
   return false;
@@ -121,7 +108,7 @@ export function pendingRuntimeMigrationItems(
   ctx: MigrationContext,
   resolvedChannel?: ResolvedUpdateChannel,
 ): MigrationPhaseItem[] {
-  const phase = planRuntimeRewirePhase(ctx, resolvedChannel);
+  const phase = planRuntimeRetirementPhase(ctx, resolvedChannel);
   const projectRoot = resolvePath(ctx.project);
   const hasProjectHooks = projectHasProjectLevelRuntimeHooks(ctx.project);
   return phase.items.filter((item) => {

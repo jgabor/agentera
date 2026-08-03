@@ -63,9 +63,7 @@ describe("cli schema", () => {
     expect(payload).not.toHaveProperty("state_backfill");
     expect(payload).not.toHaveProperty("state_migration");
     expect((payload.commands as Array<{ name: string }>).some((command) => command.name === "backfill")).toBe(false);
-    expect(payload.entity_migration).toMatchObject({
-      invocation: expect.objectContaining({ explicit_apply: "full_upgrade_yes_only" }),
-    });
+    expect(payload).not.toHaveProperty("entity_migration");
     const upgrade = (payload.commands as Array<{
       name: string;
       description: string;
@@ -76,9 +74,9 @@ describe("cli schema", () => {
     );
     expect(upgrade?.structured_fields).toEqual(expect.arrayContaining(["phase", "phases"]));
     expect(upgrade?.description).toContain("app and project-state migration");
-    expect(upgrade?.description).toContain("native Agentera resource cleanup");
+    expect(upgrade?.description).not.toMatch(/v2|native|hook/i);
     expect(upgrade?.description).not.toContain("runtime lifecycle repair");
-    expect(upgrade?.filters).toContain("legacy_cleanup");
+    expect(upgrade?.filters).not.toContain("legacy_cleanup");
     expect(upgrade?.filters).toContain("only");
     expect(upgrade?.filters).not.toContain("runtime");
     const doctor = (payload.commands as Array<{
@@ -111,10 +109,6 @@ describe("cli schema", () => {
       },
       cli: {
         command: "agentera",
-      },
-      supported_routes: {
-        v2_migration: "agentera upgrade --channel development --project PROJECT --dry-run|--yes",
-        native_resource_cleanup: "agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes",
       },
     });
     expect(payload.integration.authority).not.toContain("runtime-lifecycle-authority");
@@ -166,24 +160,9 @@ describe("cli schema", () => {
       active_contract: "one shared skill plus the Agentera CLI",
       shared_skill: { path: "~/.agents/skills/agentera", state_field: "shared_skill" },
       cli: { command: "agentera" },
-      supported_routes: {
-        v2_migration: expect.stringContaining("--channel development"),
-        native_resource_cleanup: expect.stringContaining("--legacy-cleanup RESOURCE_ID"),
-      },
     });
-    expect(payload.integration.native_resource_cleanup).toMatchObject({
-      selection: "native_agentera_resource_only",
-      resource_ids: expect.arrayContaining(["claude.agentera-skill-link", "codex.agent-descriptor.build"]),
-      historical_resource_ids: expect.arrayContaining(["codex.agents.build"]),
-      retired_resource_vocabulary: expect.arrayContaining([
-        expect.objectContaining({
-          id: "agentera.registration",
-          resource_class: "registration",
-          migration_scope: "v2_upgrade_only",
-        }),
-      ]),
-      shared_configuration_without_key_ledger: "action_required",
-    });
+    expect(payload.integration).not.toHaveProperty("supported_routes");
+    expect(payload.integration).not.toHaveProperty("native_resource_cleanup");
     expect(payload.integration.historical_import).toMatchObject({
       import_flag: "--import-source claude",
       source_class: "historical_import",

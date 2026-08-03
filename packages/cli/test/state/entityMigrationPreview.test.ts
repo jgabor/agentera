@@ -400,12 +400,7 @@ describe("entity migration read-only preview", () => {
     const root = project();
     write(root, ".agentera/docs.yaml", `mapping:\n  - artifact: TODO.md\n    path: ${mappedPath}\n`);
     const before = tree(root);
-    let out = "";
-
-    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined }, process.cwd(), REPO_ROOT);
-
-    expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "inventory_failed", message: expect.stringMatching(/artifact 'todo' path (contains traversal segments|escapes the project boundary)/) } });
+    expect(() => previewEntityMigration(root, REPO_ROOT)).toThrow(/artifact 'todo' path (contains traversal segments|escapes the project boundary)/);
     expect(tree(root)).toEqual(before);
   });
 
@@ -417,13 +412,7 @@ describe("entity migration read-only preview", () => {
     fs.symlinkSync(external, path.join(root, "linked"), "dir");
     const beforeRoot = tree(root);
     const beforeExternal = tree(external);
-    let out = "";
-
-    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined }, process.cwd(), REPO_ROOT);
-
-    expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "inventory_failed", message: "artifact 'todo' path escapes the project boundary" } });
-    expect(out).not.toContain("External item must not be read");
+    expect(() => previewEntityMigration(root, REPO_ROOT)).toThrow("artifact 'todo' path escapes the project boundary");
     expect(tree(root)).toEqual(beforeRoot);
     expect(tree(external)).toEqual(beforeExternal);
   });
@@ -889,13 +878,7 @@ describe("entity migration read-only preview", () => {
     fs.symlinkSync(external, path.join(root, relativeRoot), "dir");
     const beforeProject = tree(root);
     const beforeExternal = tree(external);
-    let out = "";
-    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined });
-    expect(rc).toBe(1);
-    const failure = JSON.parse(out);
-    expect(failure).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "inventory_failed" } });
-    expect(failure.error.message).toContain(`inventory root '${path.join(root, relativeRoot)}' is a symbolic link`);
-    expect(out).not.toContain("external-marker");
+    expect(() => previewEntityMigration(root, REPO_ROOT)).toThrow(`inventory root '${path.join(root, relativeRoot)}' is a symbolic link`);
     expect(tree(root)).toEqual(beforeProject);
     expect(tree(external)).toEqual(beforeExternal);
   });
@@ -1002,13 +985,7 @@ describe("entity migration read-only preview", () => {
       }
       return originalReadDirectory(candidate, options);
     });
-    let out = "";
-
-    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined });
-
-    expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ status: "fail", error: { class: "inventory_failed", message: expect.stringContaining("cannot be read inside project") } });
-    expect(out).not.toContain("raw directory failure");
+    expect(() => previewEntityMigration(root, REPO_ROOT)).toThrow("cannot be read inside project");
   });
 
   it.each(["missing", "file", "symlink"])("rejects a %s project root without writes", (kind) => {
@@ -1017,11 +994,7 @@ describe("entity migration read-only preview", () => {
     if (kind === "file") fs.writeFileSync(root, "not a directory");
     if (kind === "symlink") fs.symlinkSync(parent, root, "dir");
     const before = tree(parent);
-    let out = "";
-    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined });
-    expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "inventory_failed" } });
-    expect(JSON.parse(out).error.recovery).toContain("existing, real directory");
+    expect(() => previewEntityMigration(root, REPO_ROOT)).toThrow();
     expect(tree(parent)).toEqual(before);
   });
 
@@ -1170,9 +1143,7 @@ describe("entity migration read-only preview", () => {
     for (const page of pages) {
       expect(Buffer.byteLength(JSON.stringify(page, null, 2), "utf8")).toBeLessThanOrEqual(ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES);
       if (page.next_after) {
-        expect(page.retrieval.command).toContain(`--after '${page.next_after.replaceAll("'", "'\\''")}'`);
-        expect(page.retrieval.command).toContain(`--source-fingerprint ${page.source_fingerprint}`);
-        expect(page.retrieval.command).toContain(`--preview-digest ${page.preview_digest}`);
+        expect(page.retrieval.command).toBe(`npx -y agentera@next upgrade --channel development --project ${root} --dry-run`);
       }
     }
     expect(new Set(recovered).size).toBe(40);
@@ -1202,12 +1173,7 @@ describe("entity migration read-only preview", () => {
         fs.writeFileSync(authority, bytes.replace("ordering: artifact_then_boundary_then_source_identity_then_source_path", "ordering: changed_inventory_order"));
       } else fs.appendFileSync(authority, "\n# authority binding mutation\n");
     }
-    expect(() => previewEntityMigration(selectedRoot, sourceRoot, continuation)).toThrow(/continuation no longer matches.*restart with agentera state migrate entities --project/s);
-    if (mutation === "source") {
-      let out = "";
-      expect(main(["node", "agentera", "state", "migrate", "entities", "--project", selectedRoot, "--after", continuation.after, "--source-fingerprint", continuation.sourceFingerprint, "--preview-digest", continuation.previewDigest, "--limit", "1", "--dry-run", "--format", "json"], { out: (value) => (out += value), err: () => undefined }, process.cwd(), sourceRoot)).toBe(1);
-      expect(JSON.parse(out)).toMatchObject({ status: "fail", mutation_performed: false, error: { class: "continuation_changed", recovery: expect.not.stringContaining("--after") } });
-    }
+    expect(() => previewEntityMigration(selectedRoot, sourceRoot, continuation)).toThrow(/continuation no longer matches.*restart with npx -y agentera@next upgrade --channel development/);
   });
 
   it("reports unresolved relationship sources as root blockers and recovers omitted diagnostics through continuation", () => {
@@ -1231,18 +1197,7 @@ describe("entity migration read-only preview", () => {
     expect(unresolved[0].recovery).toContain("task:20");
     expect(new Set(unresolved.map((diagnostic) => diagnostic.source_identity)).size).toBe(8);
 
-    for (const format of ["json", "yaml"] as const) {
-      let structured = "";
-      expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run", "--format", format], { out: (value) => (structured += value), err: () => undefined })).toBe(1);
-      const body = format === "json" ? JSON.parse(structured) : YAML.parse(structured);
-      expect(body.counts).toMatchObject({ root_blockers: 8, dependent_blockers: 0, blockers: 8, corrupt: 8 });
-      expect(body.diagnostics.find((diagnostic: EntityMigrationPreview["diagnostics"][number]) => diagnostic.classification === "corrupt")?.recovery).toContain("Repair relationship 'depends_on'");
-    }
-    let text = "";
-    expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run"], { out: (value) => (text += value), err: () => undefined })).toBe(1);
-    expect(text).toContain("blocker corrupt plan:123e4567-e89b-42d3-a456-426614174000/task:1");
-    expect(text).toContain("Repair relationship 'depends_on'");
-    expect(text).toContain("task:20");
+    expect(unresolved[0].recovery).toContain("npx -y agentera@next upgrade --channel development");
   });
 
   it("separates corrupt source roots from valid relationship dependents", () => {
@@ -1263,10 +1218,6 @@ describe("entity migration read-only preview", () => {
       expect.objectContaining({ classification: "corrupt", source_identity: "decisions:7" }),
       expect.objectContaining({ classification: "dependent_blocker", source_identity: "decision_satisfaction:decisions:7", root_source_identity: "decisions:7", relationship_field: "decision" }),
     ]));
-    let text = "";
-    expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run"], { out: (value) => (text += value), err: () => undefined })).toBe(1);
-    expect(text).toContain("blocker dependent_blocker decision_satisfaction:decisions:7 root_source_identity=decisions:7");
-    expect(text).toContain("relationship 'decision' is blocked by root source 'decisions:7'");
   });
 
   it("attributes multiple valid dependents to each of multiple corrupt roots", () => {
@@ -1301,47 +1252,19 @@ describe("entity migration read-only preview", () => {
       expect.objectContaining({ classification: "corrupt", source_identity: rootIdentity, message: expect.stringContaining("cycle") }),
       expect.objectContaining({ classification: "dependent_blocker", source_identity: dependentIdentity, root_source_identity: rootIdentity }),
     ]));
-    let text = "";
-    expect(main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--limit", "1000", "--dry-run"], { out: (value) => (text += value), err: () => undefined })).toBe(1);
-    expect(text).toContain(`blocker dependent_blocker ${dependentIdentity} root_source_identity=${rootIdentity}`);
-    expect(text).toContain(`relationship 'depends_on' is blocked by root source '${rootIdentity}'`);
   });
 
-  it("renders a complete text summary and dedicated entity help", () => {
+  it("rejects the retired entity migration route with one-command upgrade recovery", () => {
     const root = project();
-    write(root, ".agentera/progress.yaml", "cycles:\n  - number: 1\n    summary: unavailable detail\n");
-    let out = "";
-    const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run"], { out: (text) => (out += text), err: () => undefined });
-    expect(rc).toBe(0);
-    expect(out).toContain("status: ready");
-    expect(out).toContain("classes:");
-    expect(out).toContain("physical_records:");
-    expect(out).toContain("blockers:");
-    expect(out).toContain("omission:");
-    expect(out).toContain("recovery:");
-    out = "";
-    expect(main(["node", "agentera", "state", "migrate", "entities", "--help"], { out: (text) => (out += text), err: () => undefined })).toBe(0);
-    expect(out).toContain("usage: agentera state migrate entities");
-    expect(out).toContain("--after SOURCE_IDENTITY --source-fingerprint SHA256 --preview-digest SHA256");
-    expect(out).not.toContain("--artifact");
-    expect(printStateHelp("migrate")).not.toContain("[--project PATH] [--limit 1..1000]");
-  });
-
-  it("exposes the explicit CLI namespace and never performs apply", () => {
-    const root = project();
+    const before = tree(root);
     let out = "";
     const rc = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--dry-run", "--format", "json"], { out: (text) => (out += text), err: () => undefined });
-    expect(rc).toBe(0);
-    const preview = JSON.parse(out);
-    expect(preview).toMatchObject({ command: "state migrate entities", read_only: true, mutation_performed: false });
-    write(root, "TODO.md", "# TODO\n- [ ] changed after preview\n");
-    const before = tree(root);
-    let rejected = "";
-    const apply = main(["node", "agentera", "state", "migrate", "entities", "--project", root, "--apply", "--force", "--source-fingerprint", preview.source_fingerprint, "--preview-digest", preview.preview_digest, "--format", "json"], { out: (text) => (rejected += text), err: (text) => (rejected += text) });
-    expect(apply).toBe(1);
-    expect(rejected).toContain("upgrade --channel development");
-    expect(rejected).toContain("--yes");
+    expect(rc).toBe(1);
+    expect(JSON.parse(out).error).toMatchObject({
+      class: "migration_required",
+      recovery: expect.stringMatching(/npx -y agentera@next upgrade --channel development .* --yes/),
+    });
     expect(tree(root)).toEqual(before);
-    expect(printStateHelp("migrate")).toContain("agentera state migrate entities");
+    expect(printStateHelp("migrate")).not.toContain("state migrate entities");
   });
 });

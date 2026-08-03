@@ -23,9 +23,6 @@ const CURRENT_STATE_CONSUMERS = [
   "packages/cli/src/cli/commands/state/progress.ts",
   "packages/cli/src/cli/commands/state/todo.ts",
   "packages/cli/src/cli/commands/state/write.ts",
-  "packages/cli/src/hooks/sessionStart.ts",
-  "packages/cli/src/hooks/sessionStop.ts",
-  "packages/cli/src/hooks/cursorSessionStart.ts",
   "packages/cli/src/state/durability.ts",
   "packages/cli/src/state/write/transaction.ts",
 ] as const;

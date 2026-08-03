@@ -11,7 +11,6 @@ import {
 } from "../../src/upgrade/bundleEvidence.js";
 import { classifyInstall } from "../../src/upgrade/compatibility.js";
 import { doctorRoots } from "../../src/upgrade/appModel.js";
-import { isV2ManagedInstallAtAppHome } from "../../src/upgrade/coexistenceProbe.js";
 import { buildDoctorStatus } from "../../src/upgrade/doctor.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
@@ -113,8 +112,8 @@ describe("hasBundleRootEvidence (shared module)", () => {
   });
 });
 
-describe("hasBundleRootEvidence — uniform application across the 4 call sites", () => {
-  it("treats a healthy managed install as bundle evidence in doctor, compatibility, appModel, and coexistenceProbe", () => {
+describe("hasBundleRootEvidence — uniform application across current call sites", () => {
+  it("treats a healthy managed install as bundle evidence in doctor, compatibility, and appModel", () => {
     const bundleRoot = path.join(tmp, "healthy-all-sites");
     writeBundle(bundleRoot, {
       script: "#!/usr/bin/env node\n",
@@ -149,8 +148,6 @@ describe("hasBundleRootEvidence — uniform application across the 4 call sites"
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
     expect(install.kind).toBe("v2_managed_app_home");
 
-    expect(isV2ManagedInstallAtAppHome(appHome)).toBe(true);
-
     const doctorStatus = buildDoctorStatus(appHome, {
       rootSource: "explicit --install-root",
       sourceRoot: REPO_ROOT,
@@ -161,7 +158,7 @@ describe("hasBundleRootEvidence — uniform application across the 4 call sites"
     expect(doctorStatus.signals.some((s: { kind?: string }) => s.kind === "missing_bundle")).toBe(false);
   });
 
-  it("treats an unreadable managed script as no bundle evidence in all 4 call sites (post-Task-4 stricter check, applied uniformly)", () => {
+  it("treats an unreadable managed script as no bundle evidence in all current call sites", () => {
     const appHome = path.join(tmp, "unreadable-app-home");
     writeBundle(path.join(appHome, "app"), {
       script: "#!/usr/bin/env node\n",
@@ -179,8 +176,6 @@ describe("hasBundleRootEvidence — uniform application across the 4 call sites"
 
       const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
       expect(install.kind).not.toBe("v2_managed_app_home");
-
-      expect(isV2ManagedInstallAtAppHome(appHome)).toBe(false);
 
       const doctorStatus = buildDoctorStatus(appHome, {
         rootSource: "explicit --install-root",
@@ -225,7 +220,6 @@ describe("hasBundleRootEvidence refactor surface (acceptance criterion 4)", () =
       "packages/cli/src/upgrade/doctor.ts",
       "packages/cli/src/upgrade/compatibility.ts",
       "packages/cli/src/upgrade/appModel.ts",
-      "packages/cli/src/upgrade/coexistenceProbe.ts",
     ]) {
       const source = readSource(relativePath);
       expect(source).toMatch(
