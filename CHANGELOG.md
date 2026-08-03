@@ -63,6 +63,9 @@
   path-only evidence, and a `doctor --retired-resource ID` preview command;
   user-owned collisions and unreadable paths remain action-required without
   leaking contents or mutating runtime state.
+- Fixed retired installed-hook preview commands to retain the resolved
+  `--install-root`, so an exact diagnostic cannot replay against the default
+  app root.
 - Fixed v2 hook retirement to remove only whole-resource-proven hooks and to
   preserve ambiguous resources for manual review. Upgrade no longer rewrites
   legacy hooks to a retired `agentera hook` command, which is no longer a

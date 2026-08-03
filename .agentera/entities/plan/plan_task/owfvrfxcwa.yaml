@@ -1,0 +1,25 @@
+id: owfvrfxcwa
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M4B replacement · Preserve explicit install roots in retired-resource previews (umrohrtsit)
+  status: complete
+  depends_on:
+    - cspavuhaus
+    - pfredurfew
+    - jmxzwlqfhw
+  acceptance:
+    - GIVEN doctor diagnoses a retired installed hook beneath an explicit non-default install root WHEN its targeted preview runs THEN the preview carries the same resolved install root and resource ID and reports the same candidate read-only.
+    - GIVEN default or explicit install roots with clean, user-owned, colliding, or fail-closed resources WHEN diagnosis and previews run THEN status remains truthful, bytes remain unchanged, contents remain private, and cleanup eligibility does not expand.
+    - GIVEN every declared retired resource ID and supported root variant WHEN tested THEN exact mapping and preview replay have a pass case and omitted or mismatched root evidence fails closed.
+  evidence: Replaces blocked task zcprgswrju after audit attempt zcprgswrju-audit-2 identified missing explicit install-root propagation.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: owfvrfxcwa-audit-1
+      source: Independent Audit ses_0377096ebffeF5Dx20S1kqvez4 PASS
+      recorded_at: 2026-08-03 19:04
+      writer_command: agentera state plan record-evaluation

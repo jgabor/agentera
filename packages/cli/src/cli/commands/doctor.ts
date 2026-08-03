@@ -60,7 +60,7 @@ function plainStatus(value: string): string {
 
 function previewCommand(
   resource: RetiredResourceDiagnosis["resources"][number],
-  context: { home: string; project: string },
+  context: { home: string; project: string; installRoot: string },
 ): string {
   return commandText([
     "npx",
@@ -71,6 +71,8 @@ function previewCommand(
     context.home,
     "--project",
     context.project,
+    "--install-root",
+    context.installRoot,
     "--retired-resource",
     resource.id,
     "--format",
@@ -80,7 +82,7 @@ function previewCommand(
 
 function doctorRetiredResources(
   diagnosis: RetiredResourceDiagnosis,
-  context: { home: string; project: string },
+  context: { home: string; project: string; installRoot: string },
 ): Record<string, unknown> {
   return {
     ...diagnosis,
@@ -202,7 +204,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     installRoot,
     resourceId: args.retiredResource ?? null,
   });
-  const retiredResources = doctorRetiredResources(retiredDiagnosis, { home, project });
+  const retiredResources = doctorRetiredResources(retiredDiagnosis, { home, project, installRoot });
   if (retiredDiagnosis.status === "action_required") {
     status.signals.push({
       status: APP_MANUAL_REVIEW_NEEDED,

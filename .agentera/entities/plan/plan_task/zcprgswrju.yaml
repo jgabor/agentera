@@ -6,7 +6,7 @@ record:
     - cspavuhaus
     - pfredurfew
     - jmxzwlqfhw
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN stale resources in an isolated home WHEN doctor runs THEN bounded evidence names every ID and preview.
     - GIVEN user-owned or clean state WHEN doctor runs THEN no contents leak or mutate and status is truthful.
@@ -22,3 +22,6 @@ record:
       source: Independent Audit ses_037b3f9afffeZhw0u2MK2sfcCT bounded re-review FAIL
       recorded_at: 2026-08-03 18:15
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - owfvrfxcwa
+  superseded_reason: Replacement preserves explicit install roots in exact retired-resource previews and earned independent PASS after the predecessor exhausted retries.

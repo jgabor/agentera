@@ -1,0 +1,15 @@
+id: vtpqrwwxbe
+artifact: progress
+record:
+  timestamp: 2026-08-03 18:56
+  type: fix
+  phase: build
+  what: Retired-resource previews now carry the resolved install root, so installed-hook diagnostics replay against the same root.
+  context:
+    intent: Preserve explicit install roots in retired-resource diagnostic previews.
+    constraints: No cleanup eligibility expansion, no real-installation mutation, and preserve prior blocked-task evidence.
+    scope: M4B replacement owfvrfxcwa only.
+  discovered: Every declared resource remains mapped independently; the seven installed-hook IDs now cover default and explicit non-default root replay plus omitted or mismatched root evidence rejection.
+  verified: 3,055 source tests passed (1 skipped); verify:package, typecheck, build, and check compact passed. Rebuilt isolated CLI checks reported the same hook candidate under default and explicit roots without leaking sentinels or changing bytes.
+  next: Await independent Audit before completing owfvrfxcwa, resolving TODO umrohrtsit, or committing replacement-task state.
+  publication_order: 62

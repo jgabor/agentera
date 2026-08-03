@@ -81,9 +81,36 @@ function expand(template: string, name = ""): string {
     .replace("{name}", name);
 }
 
-function captureDoctor(retiredResource?: string): { rc: number; payload: Record<string, any> } {
+function captureDoctor(opts: { retiredResource?: string; installRoot?: string } = {}): { rc: number; payload: Record<string, any> } {
   let output = "";
-  const rc = cmdDoctor({ home, project, retiredResource, format: "json" }, { out: (text) => (output += text) });
+  const rc = cmdDoctor({
+    home,
+    project,
+    retiredResource: opts.retiredResource,
+    installRoot: opts.installRoot,
+    format: "json",
+  }, { out: (text) => (output += text) });
+  return { rc, payload: JSON.parse(output) as Record<string, any> };
+}
+
+function previewInstallRoot(preview: string, expectedRoot: string): string {
+  const match = /--install-root ([^ ]+)/.exec(preview);
+  if (!match || match[1] !== expectedRoot) {
+    throw new Error(`retired-resource preview must carry install root ${expectedRoot}`);
+  }
+  return match[1];
+}
+
+function replayPreview(preview: string, expectedRoot: string, resourceId: string): { rc: number; payload: Record<string, any> } {
+  const root = previewInstallRoot(preview, expectedRoot);
+  if (!preview.includes(`--retired-resource ${resourceId}`)) {
+    throw new Error(`retired-resource preview must carry ${resourceId}`);
+  }
+  let output = "";
+  const rc = main([
+    "node", "agentera", "doctor", "--home", home, "--project", project,
+    "--install-root", root, "--retired-resource", resourceId, "--format", "json",
+  ], { out: (text) => (output += text) });
   return { rc, payload: JSON.parse(output) as Record<string, any> };
 }
 
@@ -125,6 +152,7 @@ describe("retired native resource doctor diagnostics", () => {
     for (const resource of resources) {
       expect(resource.preview_command).toContain("npx -y agentera@next doctor");
       expect(resource.preview_command).toContain(" doctor ");
+      expect(resource.preview_command).toContain(`--install-root ${installRoot}`);
       expect(resource.preview_command).toContain(`--retired-resource ${resource.id}`);
       expect(resource.preview_command).toContain("--format json");
       expect(resource.preview_command).not.toContain("--legacy-cleanup");
@@ -161,6 +189,49 @@ describe("retired native resource doctor diagnostics", () => {
     expect(payload.retired_resources.selectedResourceId).toBe("opencode.plugin.agentera");
     expect(payload.retired_resources.resources.map((resource: { id: string }) => resource.id)).toEqual(["opencode.plugin.agentera"]);
     expect(JSON.stringify(payload)).not.toContain("USER_SECRET_MUST_NOT_LEAK");
+  });
+
+  it.each(INSTALLED_HOOKS)("replays %s under its explicit non-default install root", (name) => {
+    const explicitInstallRoot = path.join(root, "explicit-agentera");
+    const resourceId = `agentera.installed-hook.${name}`;
+    const hook = path.join(explicitInstallRoot, "hooks", name);
+    const secret = "USER_SECRET_MUST_NOT_LEAK";
+    fs.mkdirSync(path.dirname(hook), { recursive: true });
+    fs.writeFileSync(hook, secret);
+
+    const diagnosed = captureDoctor({ installRoot: explicitInstallRoot });
+    const candidate = (diagnosed.payload.retired_resources.resources as Array<Record<string, any>>)
+      .find((resource) => resource.id === resourceId);
+    expect(candidate).toBeDefined();
+    const replayed = replayPreview(candidate.preview_command, explicitInstallRoot, resourceId);
+
+    expect(replayed.rc).toBe(1);
+    expect(replayed.payload.retired_resources.selectedResourceId).toBe(resourceId);
+    expect(replayed.payload.retired_resources.resources).toEqual([expect.objectContaining({
+      id: resourceId,
+      evidence: expect.objectContaining({ paths: [hook] }),
+    })]);
+    expect(fs.readFileSync(hook, "utf8")).toBe(secret);
+  });
+
+  it("fails closed when installed-hook root evidence is omitted or mismatched", () => {
+    const explicitInstallRoot = path.join(root, "explicit-agentera");
+    const resourceId = "agentera.installed-hook.validate_artifact.py";
+    const hook = path.join(explicitInstallRoot, "hooks", "validate_artifact.py");
+    fs.mkdirSync(path.dirname(hook), { recursive: true });
+    fs.writeFileSync(hook, "USER_SECRET_MUST_NOT_LEAK");
+    const candidate = (captureDoctor({ installRoot: explicitInstallRoot }).payload.retired_resources.resources as Array<Record<string, any>>)
+      .find((resource) => resource.id === resourceId)!;
+    const omittedRoot = candidate.preview_command.replace(` --install-root ${explicitInstallRoot}`, "");
+    const mismatchedRoot = candidate.preview_command.replace(explicitInstallRoot, installRoot);
+
+    expect(() => replayPreview(omittedRoot, explicitInstallRoot, resourceId)).toThrow(
+      `retired-resource preview must carry install root ${explicitInstallRoot}`,
+    );
+    expect(() => replayPreview(mismatchedRoot, explicitInstallRoot, resourceId)).toThrow(
+      `retired-resource preview must carry install root ${explicitInstallRoot}`,
+    );
+    expect(fs.readFileSync(hook, "utf8")).toBe("USER_SECRET_MUST_NOT_LEAK");
   });
 
   it("preserves user-owned collisions, fails closed on unsafe candidates, and leaks no contents", () => {
