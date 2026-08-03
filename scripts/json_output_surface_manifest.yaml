@@ -53,12 +53,12 @@ surfaces:
   - --format
   - json
   inventory_classification: change
-  budget_classification: unbudgeted
+  budget_classification: deprecated_status_alias
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 35000
-  token_budget: 8000
+  byte_budget: 22500
+  token_budget: 6000
 - id: prime-status-context
   command: agentera prime --context status
   selector: --context status --format json
@@ -73,8 +73,8 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 25000
-  token_budget: 6500
+  byte_budget: 22500
+  token_budget: 6000
 - id: prime-briefing
   command: agentera prime
   selector: --format json (default briefing)

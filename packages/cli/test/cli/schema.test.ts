@@ -59,7 +59,7 @@ describe("cli schema", () => {
       (command) => command.name === "prime",
     );
     expect(prime?.description).toContain("12000 UTF-8 bytes");
-    expect(prime?.description).toContain("status startup at most 25000");
+    expect(prime?.description).toContain("status startup at most 22500");
     expect(payload).not.toHaveProperty("state_backfill");
     expect(payload).not.toHaveProperty("state_migration");
     expect((payload.commands as Array<{ name: string }>).some((command) => command.name === "backfill")).toBe(false);

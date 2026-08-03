@@ -72,7 +72,6 @@ const OMITTED_RICH_STATE: readonly OmittedRichStateEntry[] = [
   { field: "history.decisions.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.decisions },
   { field: "history.health.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.health },
   { field: "project_integration.phases", reason: "phase_blockers", recovery: "agentera doctor --format json" },
-  { field: "source_contract.artifact_writes.artifacts", reason: "writer_contract_detail", recovery: "agentera schema --format json" },
   { field: "docs.source_contract", reason: "docs_state_families", recovery: STATE_FAMILY_FALLBACK_COMMANDS.docs },
   { field: "profile.bounded_signals", reason: "profile_signal_detail", recovery: "agentera profile --format json" },
 ];
@@ -482,41 +481,6 @@ function briefCapabilityContext(value: unknown, maxChars: number): Record<string
   return out;
 }
 
-function briefCapabilityStartup(startup: unknown, maxChars: number): Record<string, unknown> {
-  if (!isObject(startup)) return {};
-  const out: Record<string, unknown> = {};
-  if (typeof startup.complete_for_capability_startup === "boolean") {
-    out.complete_for_capability_startup = startup.complete_for_capability_startup;
-  }
-  if (typeof startup.raw_artifact_reads_required === "boolean") {
-    out.raw_artifact_reads_required = startup.raw_artifact_reads_required;
-  }
-  const policy = boundedString(startup.raw_artifact_read_policy, maxChars);
-  if (policy !== undefined) out.raw_artifact_read_policy = policy;
-  for (const [key, maxItems] of [
-    ["available_state", 64],
-    ["missing_state", 16],
-    ["confidence_caveats", 8],
-    ["cli_fallback", 8],
-  ] as const) {
-    const bounded = boundedStringList(startup[key], maxItems, maxChars);
-    if (bounded !== undefined) out[key] = bounded;
-  }
-  return out;
-}
-
-function briefArtifactWrites(writes: unknown, maxChars: number): Record<string, unknown> {
-  // Keep the discovery pointer (required by the compatibility boundary test)
-  // and schema identity; the full writer-operation matrix recovers via schema.
-  if (!isObject(writes)) return {};
-  const out: Record<string, unknown> = {};
-  for (const key of ["schemaVersion", "discovery_command"] as const) {
-    const bounded = boundedString(writes[key], maxChars);
-    if (bounded !== undefined) out[key] = bounded;
-  }
-  return out;
-}
-
 function briefSourceContract(
   sourceContract: unknown,
   projection: SourceContractProjection = "normal",
@@ -545,26 +509,6 @@ function briefSourceContract(
     const capabilityContext = briefCapabilityContext(sourceContract.capability_context, maxChars);
     if ("fetch_command" in capabilityContext) {
       out.capability_context = { fetch_command: capabilityContext.fetch_command };
-    }
-  }
-  if (isObject(sourceContract.capability_startup)) {
-    if (projection === "irreducible") {
-      const startup = sourceContract.capability_startup;
-      const minimalStartup: Record<string, unknown> = {};
-      if (typeof startup.complete_for_capability_startup === "boolean") {
-        minimalStartup.complete_for_capability_startup = startup.complete_for_capability_startup;
-      }
-      if (typeof startup.raw_artifact_reads_required === "boolean") {
-        minimalStartup.raw_artifact_reads_required = startup.raw_artifact_reads_required;
-      }
-      out.capability_startup = minimalStartup;
-    } else {
-      out.capability_startup = briefCapabilityStartup(sourceContract.capability_startup, maxChars);
-    }
-  }
-  if (isObject(sourceContract.artifact_writes)) {
-    if (projection !== "irreducible") {
-      out.artifact_writes = briefArtifactWrites(sourceContract.artifact_writes, maxChars);
     }
   }
   return out;
@@ -605,13 +549,13 @@ export function briefOrientationPayload(
  *  `utf8_bytes` itself would change the measurement). */
 function withBriefMeta(
   body: Record<string, unknown>,
-  status: "ok" | "degraded",
+  projection: "ok" | "degraded",
   budget: number,
   error: JsonObject | null,
 ): Record<string, unknown> {
   const meta: JsonObject = {
     budget_utf8_bytes: budget,
-    status,
+    projection,
     path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     omitted_rich_state: OMITTED_RICH_STATE.map((entry) => ({ ...entry })),
   };
@@ -672,7 +616,7 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
         out[key] = briefSource(value);
         break;
       default:
-        // Command/status/mode, bounded ordinary state, shared-skill diagnosis,
+        // Command/outcome/mode, bounded ordinary state, shared-skill diagnosis,
         // bespoke context pointers, and active conditional fields pass through
         // at full fidelity.
         out[key] = value;
@@ -689,7 +633,7 @@ function boundedEnvelopeScalar(value: unknown, fallback: string): string {
 function degradedBody(payload: Record<string, unknown>, projection: SourceContractProjection): Record<string, unknown> {
   const out: Record<string, unknown> = {
     command: boundedEnvelopeScalar(payload.command, "prime"),
-    status: boundedEnvelopeScalar(payload.status, "ok"),
+    outcome: boundedEnvelopeScalar(payload.outcome, "ok"),
     mode: boundedEnvelopeScalar(payload.mode, "unknown"),
     state_presence: briefStatePresence(payload.state_presence),
     source_contract: briefSourceContract(payload.source_contract, projection),
@@ -699,6 +643,7 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   if ("profile" in payload) out.profile = briefProfile(payload.profile);
   if ("shared_skill" in payload) out.shared_skill = briefSharedSkill(payload.shared_skill);
   if ("project_integration" in payload) out.project_integration = briefProjectIntegration(payload.project_integration);
+  if ("startup" in payload) out.startup = payload.startup;
   if ("health" in payload) out.health = briefHealth(payload.health);
   if ("todo" in payload) out.todo = payload.todo;
   if ("issues" in payload) out.issues = payload.issues;
@@ -748,7 +693,7 @@ export class BriefBudgetError extends Error {
 
   constructor(budgetBytes: number, minimumBytes: number) {
     super(
-      `brief budget ${budgetBytes} bytes cannot contain the minimum routing envelope (${minimumBytes} bytes); increase the budget or use --dashboard`,
+      `brief budget ${budgetBytes} bytes cannot contain the minimum routing envelope (${minimumBytes} bytes); increase the budget or use prime --context status`,
     );
     this.name = "BriefBudgetError";
     this.budgetBytes = budgetBytes;
@@ -764,7 +709,7 @@ function degradedBriefEnvelope(
 ): Record<string, unknown> {
   const detailedMeta: JsonObject = {
     budget_utf8_bytes: budget,
-    status: "degraded",
+    projection: "degraded",
     attempted_utf8_bytes: attemptedBytes,
     path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     omitted_rich_state: OMITTED_RICH_STATE.map((entry) => ({ ...entry })),
@@ -773,7 +718,7 @@ function degradedBriefEnvelope(
       message:
         "the projected decision brief exceeded the authority byte budget; a bounded degraded envelope was emitted instead of the over-budget payload",
       recovery:
-        "Run `agentera prime --dashboard --format json` for the full orientation payload, or `agentera state <artifact> list --format json` for a specific record family.",
+        "Run `agentera prime --context status --format json` for status startup, or `agentera state <artifact> list --format json` for a specific record family.",
     },
   };
   const body = (projection: SourceContractProjection): Record<string, unknown> =>
@@ -789,13 +734,13 @@ function degradedBriefEnvelope(
   // when caller data would make the detailed degraded envelope too large.
   const compactMeta: JsonObject = {
     budget_utf8_bytes: budget,
-    status: "degraded",
+    projection: "degraded",
     attempted_utf8_bytes: attemptedBytes,
     path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     error: {
       class: "brief_output_budget",
       message: "the projected decision brief exceeded the authority byte budget; compact recovery metadata was emitted",
-      recovery: "Run `agentera prime --dashboard --format json` for full orientation detail.",
+      recovery: "Run `agentera prime --context status --format json` for status startup.",
     },
   };
   const compact = settledBriefEnvelope(body("compact"), compactMeta);
@@ -813,13 +758,13 @@ function degradedBriefEnvelope(
   // over-budget JSON document would violate the public output contract.
   const minimumMeta: JsonObject = {
     budget_utf8_bytes: budget,
-    status: "degraded",
+    projection: "degraded",
     attempted_utf8_bytes: attemptedBytes,
     path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     error: {
       class: "brief_output_budget",
       message: "the configured budget cannot contain the detailed recovery envelope",
-      recovery: "Increase the budget or run `agentera prime --dashboard --format json`.",
+      recovery: "Increase the budget or run `agentera prime --context status --format json`.",
     },
   };
   const minimum = settledBriefEnvelope(body("irreducible"), minimumMeta);

@@ -31,13 +31,11 @@ interface PrimeCommandSpec {
   accessValueType: "string";
   accessSubstring: string;
   emptyStateValueType: "string";
-  capabilityStartupValueType: "object";
+  startupValueType: "object";
   capabilityContextRequiredKeys: string[];
   capabilityContextFieldTypes: FieldTypeMap;
-  capabilityStartupRequiredKeys: string[];
-  capabilityStartupFieldTypes: FieldTypeMap;
-  rawArtifactReadsRequiredDefault: false;
-  completeForCapabilityStartupPinned: false;
+  startupRequiredKeys: string[];
+  startupFieldTypes: FieldTypeMap;
 }
 
 interface PrimeContextCommandSpec {
@@ -270,34 +268,11 @@ describe("source_contract oracle (parity)", () => {
     );
   });
 
-  it("reconciles the TODO.md field names against the live prime keys (AC1)", () => {
-    // The TODO enumeration said `complete_for_capability_startup`, `missing`,
-    // `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`.
-    // The live prime keys are `complete_for_capability_startup`, `missing_state`,
-    // `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`.
-    // The oracle pins the LIVE keys per AC1 and AC2.
+  it("pins the single availability projection fields", () => {
     const reconciled = SOURCE_CONTRACT_ORACLE.fieldNameReconciliation;
-    expect(reconciled.todoEnumeration).toEqual([
-      "complete_for_capability_startup",
-      "missing",
-      "cli_fallback",
-      "raw_artifact_reads_required",
-      "confidence_caveats",
-    ]);
-    expect(reconciled.liveKeys).toEqual([
-      "complete_for_capability_startup",
-      "missing_state",
-      "cli_fallback",
-      "raw_artifact_reads_required",
-      "confidence_caveats",
-    ]);
-    expect(reconciled.reconciledKeys).toEqual([
-      "complete_for_capability_startup",
-      "missing_state",
-      "cli_fallback",
-      "raw_artifact_reads_required",
-      "confidence_caveats",
-    ]);
+    expect(reconciled.todoEnumeration).toEqual(["availability", "outcome", "detail_command"]);
+    expect(reconciled.liveKeys).toEqual(["availability", "outcome", "detail_discovery"]);
+    expect(reconciled.reconciledKeys).toEqual(["availability", "outcome", "detail_discovery"]);
   });
 });
 
@@ -336,23 +311,16 @@ describe("prime source_contract (oracle parity)", () => {
     assertValueTypes(cc, spec.capabilityContextFieldTypes, "prime.capability_context", "source-contract.json");
   });
 
-  it("prime capability_startup sub-object matches the TODO-reconciled field set (AC1/AC2)", () => {
+  it("prime startup aggregate has one availability projection and no writer payload", () => {
     const spec = SOURCE_CONTRACT_ORACLE.commands.prime;
     const { payload } = capturePrime();
-    const sc = payload.source_contract as Record<string, unknown>;
-    const cs = sc.capability_startup as Record<string, unknown>;
-    expect(typeof cs, "capability_startup is an object").toBe("object");
-    assertRequiredKeys(cs, spec.capabilityStartupRequiredKeys, "prime.capability_startup", "source-contract.json");
-    assertExactKeys(cs, spec.capabilityStartupRequiredKeys, "prime.capability_startup", "source-contract.json");
-    assertValueTypes(cs, spec.capabilityStartupFieldTypes, "prime.capability_startup", "source-contract.json");
-    // The TODO enumerated `complete_for_capability_startup` and `missing_state`; assert they are present
-    // and have the correct types (per AC4: value CONTENT is not pinned, only type and shape).
-    expect(typeof cs.complete_for_capability_startup, "complete_for_capability_startup is boolean").toBe("boolean");
-    expect(Array.isArray(cs.missing_state), "missing_state is an array").toBe(true);
-    expect(Array.isArray(cs.cli_fallback), "cli_fallback is an array").toBe(true);
-    expect(Array.isArray(cs.confidence_caveats), "confidence_caveats is an array").toBe(true);
-    expect(typeof cs.raw_artifact_reads_required, "raw_artifact_reads_required is boolean").toBe("boolean");
-    expect(cs.raw_artifact_reads_required, "raw_artifact_reads_required default").toBe(false);
+    const startup = payload.startup as Record<string, unknown>;
+    expect(typeof startup, "startup is an object").toBe("object");
+    assertRequiredKeys(startup, spec.startupRequiredKeys, "prime.startup", "source-contract.json");
+    assertExactKeys(startup, spec.startupRequiredKeys, "prime.startup", "source-contract.json");
+    assertValueTypes(startup, spec.startupFieldTypes, "prime.startup", "source-contract.json");
+    expect(["ok", "degraded", "blocked"]).toContain(startup.outcome);
+    expect(startup).not.toHaveProperty("write_contract");
   });
 });
 
@@ -435,10 +403,8 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
     const { rc, payload } = capturePrimeContext(capability);
     expect(rc, `prime --context ${capability} rc`).toBe(0);
     if (capability === "status") {
-      // Status is self-contained: its canonical bounded dashboard projection
-      // carries the source/recovery contract consumed by the renderer.
       const statusContext = (payload.capability_context as Record<string, any>).context.status_context;
-      expect(statusContext.source_contract).toBeTypeOf("object");
+      expect(statusContext.outcome).toBe((payload.capability_context as Record<string, any>).startup.outcome);
       return;
     }
     // Non-bespoke capabilities (hej, planera, resonera, inspirera, visionera, visualisera, profilera)
@@ -485,9 +451,8 @@ describe("shared source_contract pattern (cross-cutting structural contract)", (
     // of caveats/fallbacks. Content is NOT pinned (per AC4).
     const samples: Array<{ label: string; payload: Record<string, unknown>; readsRequiredKey: string }> = [
       {
-        label: "prime.capability_startup",
-        payload: (runDispatch(["prime", "--format", "json"]).payload.source_contract as Record<string, unknown>)
-          .capability_startup as Record<string, unknown>,
+        label: "prime.startup",
+        payload: runDispatch(["prime", "--format", "json"]).payload.startup as Record<string, unknown>,
         readsRequiredKey: "raw_artifact_reads_required",
       },
       {
@@ -516,9 +481,8 @@ describe("shared source_contract pattern (cross-cutting structural contract)", (
   it("every source_contract emission has a string policy field that is NOT empty", () => {
     const samples: Array<{ label: string; payload: Record<string, unknown>; policyKey: string }> = [
       {
-        label: "prime.capability_startup",
-        payload: (runDispatch(["prime", "--format", "json"]).payload.source_contract as Record<string, unknown>)
-          .capability_startup as Record<string, unknown>,
+        label: "prime.startup",
+        payload: runDispatch(["prime", "--format", "json"]).payload.startup as Record<string, unknown>,
         policyKey: "raw_artifact_read_policy",
       },
       {
@@ -562,7 +526,6 @@ describe("source_contract drift detector (AC3)", () => {
       "render",
       "access",
       "empty_state",
-      "capability_startup",
       "capability_context",
     ];
     const matching = {
@@ -570,7 +533,6 @@ describe("source_contract drift detector (AC3)", () => {
       render: "x",
       access: "x",
       empty_state: "x",
-      capability_startup: {},
       capability_context: { capability: "x", fetch_command: "x", required_before_rendering: true, note: "x" },
     };
     expect(() => assertExactKeys(matching, baseRequired, "prime", "source-contract.json")).not.toThrow();
@@ -583,7 +545,6 @@ describe("source_contract drift detector (AC3)", () => {
       render: "x",
       access: "x",
       empty_state: "x",
-      capability_startup: {},
     };
     expect(() => assertExactKeys(missing, baseRequired, "prime", "source-contract.json")).toThrow(
       /capability_context/,

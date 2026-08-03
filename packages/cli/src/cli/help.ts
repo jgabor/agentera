@@ -462,7 +462,7 @@ export function printPrimeHelp(): string {
     "  --orientation         Emit orientation briefing sections",
     "  --fields FIELDS       Comma-separated field filter for JSON/YAML output",
     "",
-    "JSON output uses bounded surfaces: bare prime is at most 12000 UTF-8 bytes and status context at most 25000; source_contract includes artifact_writes discovery metadata and omitted detail has named recovery commands.",
+    "JSON output uses bounded surfaces: bare prime is at most 12000 UTF-8 bytes and status context at most 22500; startup contains one availability projection and aggregate outcome, while schema discovery owns writer detail.",
   ].join("\n");
 }
 

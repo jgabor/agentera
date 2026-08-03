@@ -103,7 +103,6 @@ describe("prime runtime compatibility boundary", () => {
       const { payload } = primePayload(field);
       expect(payload).toHaveProperty(field);
       expect(payload).toHaveProperty("command");
-      expect(payload).toHaveProperty("status");
     }
   });
 
@@ -118,8 +117,8 @@ describe("prime runtime compatibility boundary", () => {
     const { payload } = primePayload();
     const source = payload.source_contract as Record<string, unknown>;
     const capabilityContext = source.capability_context as Record<string, unknown>;
-    const artifactWrites = source.artifact_writes as Record<string, unknown>;
+    const startup = payload.startup as Record<string, unknown>;
     expect(capabilityContext.fetch_command).toContain("agentera prime --context");
-    expect(artifactWrites.discovery_command).toContain("agentera schema");
+    expect((startup.detail_discovery as Record<string, unknown>).schema).toContain("agentera schema");
   });
 });

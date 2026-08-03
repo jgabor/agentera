@@ -56,6 +56,40 @@ function terminal(status: unknown): boolean {
   return ["complete", "completed", "closed", "done", "resolved", "retired", "superseded"].includes(String(status ?? "").toLowerCase());
 }
 
+function healthSummary(latest: JsonObject | undefined, history: JsonObject | undefined): HealthSummary {
+  if (!latest) {
+    return history
+      ? { exists: true, status: "degraded", startup_outcome: "degraded", degraded_history: history }
+      : { exists: false, status: "absent", startup_outcome: "ok" };
+  }
+  const healthRecord = record(latest);
+  const grades = healthRecord.grades && typeof healthRecord.grades === "object" && !Array.isArray(healthRecord.grades)
+    ? healthRecord.grades as JsonObject
+    : {};
+  const ranks: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, F: 4 };
+  let worst: [string, string, number] | null = null;
+  for (const [dimension, grade] of Object.entries(grades)) {
+    const text = String(grade);
+    const rank = ranks[text.toUpperCase().slice(0, 1)] ?? -1;
+    if (worst === null || rank > worst[2]) worst = [dimension, text, rank];
+  }
+  const trajectory = String(healthRecord.trajectory ?? "");
+  const degrading = ["degrading", "declining", "worse"].includes(trajectory.toLowerCase()) || (worst !== null && worst[2] >= ranks.D);
+  return {
+    exists: true,
+    status: degrading ? "degraded" : "available",
+    startup_outcome: degrading ? "degraded" : "ok",
+    id: latest.id,
+    artifact: latest.artifact,
+    date: String(healthRecord.date ?? ""),
+    trajectory,
+    grade: worst?.[1] ?? "",
+    worst,
+    degrading,
+    ...(history ? { degraded_history: history } : {}),
+  };
+}
+
 function degradedHistory(
   artifact: "progress" | "decisions" | "health",
   totalSummaryCount: number,
@@ -249,23 +283,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     degraded_history: progressHistory!,
   } : { exists: false, status: "missing", cycle_count: 0 };
 
-  const latestHealth = fullHealthEntries[0];
-  const healthRecord = record(latestHealth);
-  const grades = healthRecord.grades && typeof healthRecord.grades === "object" && !Array.isArray(healthRecord.grades)
-    ? healthRecord.grades as JsonObject
-    : {};
-  const health: HealthSummary = latestHealth ? {
-    exists: true,
-    id: latestHealth.id,
-    artifact: latestHealth.artifact,
-    date: String(healthRecord.date ?? ""),
-    trajectory: String(healthRecord.trajectory ?? ""),
-    grade: Object.values(grades).map(String).sort()[0] ?? "",
-    ...(healthHistory ? { degraded_history: healthHistory } : {}),
-  } : healthEntries.length ? {
-    exists: true,
-    degraded_history: healthHistory!,
-  } : { exists: false };
+  const health = healthSummary(fullHealthEntries[0], healthEntries.length ? healthHistory : undefined);
 
   const activeObjective = selected(objectiveEntries, "objective");
   const closedObjectiveCount = Number((closedObjectiveList.counts as JsonObject | undefined)?.total ?? 0);

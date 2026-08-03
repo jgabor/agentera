@@ -111,7 +111,8 @@ the prose module directly.
 Status startup is the one-call exception to the general compact-data wording
 above: `agentera prime --context status --format json` returns
 `capability_context.instructions` and bounded
-`capability_context.context.status_context` together. Consumers do not make a
+`capability_context.context.status_context` together with the one
+`capability_context.startup` availability projection. Consumers do not make a
 second bare-prime call or read raw artifacts; omitted detail names its
 authoritative recovery command.
 

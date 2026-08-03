@@ -5,7 +5,7 @@
 // and dist-mode (npm install) resolve the same path.
 import statusInstructions from "./status/instructions.js";
 import { statusStartupInstructions } from "./status/startupInstructions.js";
-import { instructions as visionInstructions } from "./vision/instructions.js";
+import visionInstructions from "./vision/instructions.js";
 import discussInstructions from "./discuss/instructions.js";
 import { instructions as researchInstructions } from "./research/instructions.js";
 import planInstructions from "./plan/instructions.js";

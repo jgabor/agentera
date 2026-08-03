@@ -230,7 +230,7 @@ describe("shared bounded profile acquisition", () => {
     }).status).toBe("unsafe");
   });
 
-  it.each(VALIDITY_CLASSES)("keeps Prime/report validity identical and private for %s", (validityClass) => {
+  it.each(VALIDITY_CLASSES)("keeps profile validity out of bounded Prime startup for %s", (validityClass) => {
     const cleanup = writeScenario(validityClass);
     try {
       const state = collectOrientationState({ projectRoot: project, home: path.join(root, "home"), env: env() });
@@ -240,10 +240,8 @@ describe("shared bounded profile acquisition", () => {
       expect(report.payload.validity).toEqual(state.profile_dict.validity);
       expect(bare.rc).toBe(0);
       expect(status.rc).toBe(0);
-      expect(bare.payload.profile.validity).toEqual(report.payload.validity);
-      expect(status.payload.capability_context.context.status_context.profile.validity).toEqual(report.payload.validity);
-      expect(bare.payload.profile).not.toHaveProperty("path");
-      expect(status.payload.capability_context.context.status_context.profile).not.toHaveProperty("path");
+      expect(bare.payload.profile).toBeUndefined();
+      expect(status.payload.capability_context.context.status_context.profile).toBeUndefined();
       expect(state.profile_dict.validity.class).toBe(validityClass);
       expect(state.profile_dict.status).not.toBe("loaded");
       expect(report.rc === 0).toBe(validityClass === "valid");
@@ -257,11 +255,11 @@ describe("shared bounded profile acquisition", () => {
       }
       for (const capability of CAPABILITY_NAMES) {
         const payload = buildPrimeCapabilityContextPayload(state, capability);
-        expect(payload.capability_context.profile.validity).toEqual(report.payload.validity);
-        if (capability === "profile") expect(payload.capability_context.profile.path).toBe(profilePath);
-        else expect(payload.capability_context.profile).not.toHaveProperty("path");
-        expect(payload.capability_context.profile).not.toHaveProperty("content");
-        if (capability !== "profile") expect(JSON.stringify(payload)).not.toContain(PRIVACY_TRAP);
+        expect(payload.capability_context.profile).toBeUndefined();
+        expect(payload.capability_context.startup.availability).toEqual(expect.arrayContaining([
+          expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "agentera report profile-grounding --format json" }),
+        ]));
+        expect(JSON.stringify(payload)).not.toContain(PRIVACY_TRAP);
       }
       for (const output of [report.out, report.err, bare.out, bare.err, status.out, status.err, JSON.stringify(state.profile_dict)]) {
         expect(output).not.toContain(PRIVACY_TRAP);
@@ -272,18 +270,14 @@ describe("shared bounded profile acquisition", () => {
     }
   });
 
-  it("exposes the resolved path only through actual prime --context profile", () => {
+  it("never exposes the resolved path through prime startup", () => {
     fs.writeFileSync(profilePath, "# Profile\n");
     for (const capability of CAPABILITY_NAMES) {
       const prime = capturePrime(capability);
       expect(prime.rc).toBe(0);
       const served = prime.payload.capability_context;
-      if (capability === "profile") {
-        expect(served.profile.path).toBe(profilePath);
-        expect(served.context.profile_context.profile.path).toBe(profilePath);
-      } else {
-        expect(JSON.stringify(served)).not.toContain(profilePath);
-      }
+      expect(JSON.stringify(served)).not.toContain(profilePath);
+      expect(served.profile).toBeUndefined();
     }
   });
 

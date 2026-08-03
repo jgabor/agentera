@@ -60,8 +60,10 @@ function servedContract(executable: string, root: string): { actions: Action[]; 
   assert(markers.length > 0, "served Profile instructions contain no Profile Full action markers");
   assert.equal(new Set(markers).size, markers.length, "served Profile instructions contain duplicate action markers");
   for (const marker of markers) assert(ACTIONS.has(marker), `served Profile instructions contain unknown action '${marker}'`);
-  const profilePath = context?.context?.profile_context?.profile?.path;
-  assert.equal(typeof profilePath, "string", "prime omitted profile_context.profile.path");
+  const profilePath = path.join(root, "profile-data", "PROFILE.md");
+  assert.equal(context?.profile, undefined, "prime exposed profile state at startup");
+  assert.equal(context?.context?.profile_context?.profile, undefined, "prime exposed profile-derived state at startup");
+  assert.equal(context?.startup?.detail_discovery?.schema, "agentera schema --format json", "prime omitted startup detail discovery");
   return { actions: markers as Action[], profilePath };
 }
 

@@ -15,6 +15,7 @@ import { planLifecycleState } from "../planLifecycleState.js";
 import { planTaskIndex } from "../planTaskIndex.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { entityListFamily } from "../../state/entityRetrievalHelp.js";
+import { deferredStartupFamilies } from "./startupAggregation.js";
 
 export function orchestrationContext(
   capability: string | null,
@@ -66,10 +67,9 @@ export function orchestrationContext(
   const stateCaveats: string[] = [];
   let fallbackCommands: string[] = [];
   const capabilityContract = capabilityContext(capability) ?? {};
-  for (const family of (capabilityContract.missing_state_families ?? []) as string[]) {
-    stateCaveats.push(`${family} state is not included in prime --context startup context.`);
+  for (const family of deferredStartupFamilies(capabilityContract)) {
+    stateCaveats.push(`${family} detail is deferred from prime --context startup.`);
   }
-  fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
   if (!plan.exists) {
     stateCaveats.push("plan state is unavailable; task queue cannot be complete.");
     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.plan);
@@ -122,8 +122,6 @@ export function orchestrationContext(
       raw_artifact_read_policy:
         "Use this orchestration_context and included status state first. Run listed routine CLI fallback commands " +
         "for missing or incomplete state families; raw artifact reads are last-resort diagnostics, not normal startup behavior.",
-      included_state_families: capabilityContract.included_state_families ?? [],
-      missing_state_families: capabilityContract.missing_state_families ?? [],
       fallback_commands: fallbackCommands,
       caveats: stateCaveats,
       owns: [

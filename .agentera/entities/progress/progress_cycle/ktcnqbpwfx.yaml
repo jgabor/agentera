@@ -1,0 +1,15 @@
+id: ktcnqbpwfx
+artifact: progress
+record:
+  timestamp: 2026-08-03 20:31
+  type: fix
+  phase: build
+  what: Collapsed prime capability startup to one bounded availability aggregation and a shared outcome.
+  context:
+    intent: Complete M5 task wucudfywvo / TODO rsplcfvosn without changing lifecycle state.
+    constraints: Preserve the shared skill and CLI seam, canonical reads, typed writers, bounded startup, and protected staged plan records.
+    scope: Prime startup, status health projection, contracts, documentation, and regression coverage only.
+  discovered: Status previously duplicated state availability, recovery, and writer discovery across capability state and source contracts; entity health startup also omitted the canonical worst-grade and degrading calculation.
+  verified: "Focused startup coverage passed 188 tests. Full source verification passed 3,061 tests with 1 skipped. Typecheck and package build passed. Rebuilt local 3.0.0-dev.42 CLI matrix returned aligned outcomes within 22,500 bytes: fresh ok (18,401 bytes), healthy ok (18,482), and degrading health degraded (18,766); no writer payload leaked."
+  next: Await independent Audit before task completion, TODO resolution, PASS, or any commit.
+  publication_order: 64

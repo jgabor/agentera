@@ -20,6 +20,7 @@ import { planLifecycleState } from "../planLifecycleState.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { discoverProjectVerification } from "./projectVerification.js";
 import type { BuildExecutionRequest } from "../commands/prime/buildExecutionRequest.js";
+import { deferredStartupFamilies } from "./startupAggregation.js";
 
 const TRANSIENT_BUILD_INPUT_COMMAND = "agentera prime --context build --input <file|-> --format json";
 const TRANSIENT_BUILD_STDIN_COMMAND = "agentera prime --context build --input - --format json";
@@ -74,10 +75,9 @@ export function buildExecutionContext(
 
   let stateCaveats: string[] = [];
   let fallbackCommands: string[] = [];
-  for (const family of (capabilityContract.missing_state_families ?? []) as string[]) {
-    stateCaveats.push(`${family} state is not included in prime --context startup context.`);
+  for (const family of deferredStartupFamilies(capabilityContract)) {
+    stateCaveats.push(`${family} detail is deferred from prime --context startup.`);
   }
-  fallbackCommands.push(...((capabilityContract.cli_fallback ?? []) as string[]));
   if (lifecycle.status === "degraded") {
     stateCaveats.push(...((lifecycle.caveats ?? []) as string[]));
     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.plan);
@@ -244,8 +244,6 @@ export function buildExecutionContext(
       raw_artifact_read_policy:
         "Use this execution_context and included status state first. Run listed routine/query CLI fallback commands " +
         "for missing or incomplete execution state; raw artifact reads are last-resort diagnostics, not normal Build startup behavior.",
-      included_state_families: capabilityContract.included_state_families ?? [],
-      missing_state_families: capabilityContract.missing_state_families ?? [],
       required_execution_state: requiredState,
       missing_required_execution_state: missingRequired,
       fallback_commands: fallbackCommands,

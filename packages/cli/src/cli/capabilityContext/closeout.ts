@@ -10,6 +10,7 @@ import { progressVerificationSummary } from "./progress.js";
 import { decisionReviewPressure } from "./evidence.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { deferredStartupFamilies } from "./startupAggregation.js";
 
 export function closeoutArtifactMappings(docs: JsonObject): JsonObject {
   const mapping = asList(docs.mapping);
@@ -186,8 +187,8 @@ export function documentCloseoutContext(
   };
   const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([k]) => k);
   let stateCaveats: string[] = [];
-  for (const family of (capabilityContract.missing_state_families ?? []) as string[]) {
-    stateCaveats.push(`${family} state is not included in prime --context startup context.`);
+  for (const family of deferredStartupFamilies(capabilityContract)) {
+    stateCaveats.push(`${family} detail is deferred from prime --context startup.`);
   }
   for (const component of [artifactMappings, versionPolicy, todoBlockers, changelogBoundary, releaseBoundary, progressEvidence, benchmarkEvidence, reviewPressure]) {
     stateCaveats.push(...((component.caveats ?? []) as string[]));
@@ -202,7 +203,6 @@ export function documentCloseoutContext(
     STATE_FAMILY_FALLBACK_COMMANDS.progress,
     "agentera state query changelog --format json",
     "agentera state query --list-artifacts --format json",
-    ...((capabilityContract.cli_fallback ?? []) as string[]),
   ]);
   return {
     capability: "document",
@@ -223,8 +223,6 @@ export function documentCloseoutContext(
       raw_artifact_read_policy:
         "Use this closeout_context and included status state first. Run listed routine/query CLI fallback commands " +
         "for missing or incomplete closeout state; raw artifact reads are last-resort diagnostics, not normal closeout behavior.",
-      included_state_families: capabilityContract.included_state_families ?? [],
-      missing_state_families: capabilityContract.missing_state_families ?? [],
       closeout_state_families: ["docs", "todo", "changelog", "progress", "benchmark_evidence", "decisions"],
       required_closeout_state: requiredState,
       missing_required_closeout_state: missingRequired,

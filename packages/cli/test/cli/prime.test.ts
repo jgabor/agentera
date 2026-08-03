@@ -96,8 +96,8 @@ describe("cli prime", () => {
     expect(out).toContain("| phase=");
     expect(out).toContain("- alt: ");
     expect(out).toContain("source_contract:");
-    expect(out).toMatch(/capability_startup_complete=(true|false)/);
-    expect(out).toContain("artifact_writes: discover via");
+    expect(out).toMatch(/startup_outcome=(ok|degraded|blocked)/);
+    expect(out).toContain("detail_discovery=agentera schema --format json");
   });
 
   it("rejects mutually-exclusive prime modes", () => {
@@ -111,7 +111,7 @@ describe("cli prime", () => {
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("prime");
-    expect(payload.status).toBe("ok");
+    expect(payload.outcome).toBe("ok");
     expect(payload.orchestration_context).toBeNull();
     expect(payload.closeout_context).toBeNull();
     expect(payload.execution_context).toBeNull();
@@ -120,17 +120,13 @@ describe("cli prime", () => {
     expect(payload.source_contract.capability_context.capability).toBe("status");
     expect(payload.source_contract.capability_context.fetch_command).toBe("agentera prime --context status --format json");
     expect(payload.source_contract.capability_context.required_before_rendering).toBe(true);
-    // The bare default is a bounded decision brief (Plan Task 3): the writer
-    // contract detail (artifact_writes.artifacts) is omitted and recovered via
-    // `agentera schema` or the full --dashboard payload. The discovery pointer
-    // and schema identity stay so consumers can recover without raw access.
-    expect(payload.source_contract.artifact_writes).toMatchObject({
-      schemaVersion: "agentera.stateWriterDiscovery.v1",
-      discovery_command: "agentera schema --format json",
+    expect(payload.startup).toMatchObject({
+      outcome: "ok",
+      detail_discovery: { schema: "agentera schema --format json" },
+      availability: expect.any(Array),
     });
-    expect(payload.source_contract.artifact_writes.artifacts).toBeUndefined();
-    expect(payload.brief.status).toBe("ok");
-    expect(payload.brief.omitted_rich_state.some((e: { field: string }) => e.field === "source_contract.artifact_writes.artifacts")).toBe(true);
+    expect(payload.startup).not.toHaveProperty("write_contract");
+    expect(payload.brief.projection).toBe("ok");
     expect(payload.source_contract.fields).toContain("todo");
     expect(payload.source_contract.fields).not.toContain("issues");
     expect(payload.source_contract.fields).toContain("next_action");
@@ -165,19 +161,14 @@ describe("cli prime", () => {
     expect(typeof payload.app.status).toBe("string");
   });
 
-  it("keeps full-fidelity payload on --dashboard (brief omission is default-only)", () => {
-    const { rc, out } = capture((io) => cmdPrime({ command: "prime", dashboard: true, format: "json" }, io));
+  it("keeps --dashboard as a deprecated status-startup alias", () => {
+    const { rc, out, err } = capture((io) => cmdPrime({ command: "prime", dashboard: true, format: "json" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    // --dashboard is NOT projected: the full writer contract, plan tasks, and
-    // runtime detail remain available without a brief meta block.
-    expect(payload.source_contract.artifact_writes.artifacts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ artifact: "decisions", mutations: ["append", "update", "amend"] }),
-      ]),
-    );
-    expect(Array.isArray(payload.plan?.tasks)).toBe(true);
-    expect(payload.brief).toBeUndefined();
+    expect(err).toContain("Deprecation: prime --dashboard");
+    expect(payload.capability_context.capability).toBe("status");
+    expect(payload.capability_context.context.status_context.outcome).toBe(payload.capability_context.startup.outcome);
+    expect(JSON.stringify(payload)).not.toContain('"write_contract"');
   });
 
   it("surfaces ranked next_action with alternatives and phase in JSON", () => {
@@ -212,7 +203,7 @@ describe("cli prime", () => {
     const { rc, out } = capture((io) => cmdPrime({ command: "prime", format: "json", fields: "plan" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(Object.keys(payload).sort()).toEqual(["command", "plan", "status"]);
+    expect(Object.keys(payload).sort()).toEqual(["command", "outcome", "plan"]);
   });
 
   it("selects todo via --fields without emitting a deprecation warning", () => {
@@ -221,7 +212,7 @@ describe("cli prime", () => {
     );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(Object.keys(payload).sort()).toEqual(["command", "status", "todo"]);
+    expect(Object.keys(payload).sort()).toEqual(["command", "outcome", "todo"]);
     expect(payload.todo).toEqual(
       expect.objectContaining({
         critical: expect.any(Number),
@@ -239,7 +230,7 @@ describe("cli prime", () => {
     );
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(Object.keys(payload).sort()).toEqual(["command", "issues", "status"]);
+    expect(Object.keys(payload).sort()).toEqual(["command", "issues", "outcome"]);
     expect(payload.issues).toEqual(
       expect.objectContaining({
         critical: expect.any(Number),
@@ -270,16 +261,11 @@ describe("cli prime", () => {
     expect(payload.capability_context.context.planning_context.startup_contract.schemaVersion).toBe(
       "agentera.planeraStartup.v1",
     );
-    expect(payload.capability_context.state.write_contract).toMatchObject({
-      schemaVersion: "agentera.stateWriterDiscovery.v1",
-      artifacts: [
-        expect.objectContaining({
-          artifact: "plan",
-          mutations: ["append", "update", "set-status", "supersede", "set-plan-status", "record-evaluation", "archive", "create"],
-        }),
-      ],
-      unsupported_targets: ["plan_archive"],
-    });
+    expect(payload.capability_context.startup.availability).toEqual(expect.arrayContaining([
+      expect.objectContaining({ family: "plan", availability: "included", detail_command: "agentera state plan list --format json" }),
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" }),
+    ]));
+    expect(payload.capability_context).not.toHaveProperty("state");
     const planning = payload.capability_context.context.planning_context.startup_contract.planning;
     expect(planning.task_coherence_rule).toBe(
       "Keep full-plan tasks within a coherent lifecycle boundary; split only at real lifecycle or coherence boundaries.",
@@ -647,7 +633,9 @@ describe("orkestrera orchestration_context task_queue", () => {
       complete_plan: true,
     });
     expect(terminal.capability_context.context.orchestration_context.selected_next_task).toBeNull();
-    expect(terminal.capability_context.state.declared_write_targets).toContain("health");
+    expect(terminal.capability_context.startup.availability).toEqual(expect.arrayContaining([
+      expect.objectContaining({ family: "health", availability: "included" }),
+    ]));
 
     fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
     const missing = buildPrimeCapabilityContextPayload(collectOrientationState({ env: process.env }), "orchestrate") as any;
@@ -751,7 +739,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect(emitted.rc, emitted.err || emitted.out).toBe(0);
     expect(Buffer.byteLength(emitted.out, "utf8")).toBeLessThanOrEqual(12_000);
     const payload = JSON.parse(emitted.out);
-    expect(payload.brief.status).toMatch(/^(ok|degraded)$/);
+    expect(payload.brief.projection).toMatch(/^(ok|degraded)$/);
     expect(payload.plan).toMatchObject({
       id: fixture.planId,
       total: 21,

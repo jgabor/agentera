@@ -210,23 +210,21 @@ describe("summary entity ordinary reads", () => {
     try {
       let out = ""; let err = "";
       expect(cmdPrime({ format: "json", dashboard: true }, { out: (value) => { out += value; }, err: (value) => { err += value; } })).toBe(0);
-      const payload = JSON.parse(out);
+      const payload = JSON.parse(out).capability_context.context.status_context;
       expect(err).toContain("Deprecation");
-      expect(payload.progress).toMatchObject({ exists: true, status: "degraded_history", degraded_history: { summary_count: 1 } });
-      expect(payload.progress.latest).toBeUndefined();
-      expect(payload.health).toMatchObject({ exists: true, degraded_history: { summary_count: 1 } });
-      expect(payload.health.date).toBeUndefined();
-      expect(payload.decision).toBeUndefined();
+      expect(payload.progress).toMatchObject({ exists: true, status: "degraded_history" });
+      expect(payload.progress.latest).toBeNull();
+      expect(payload.health).toMatchObject({ exists: true, status: "degraded" });
+      expect(payload.health.id).toBeNull();
     } finally { process.chdir(previous); }
 
     const mixedRoot = project(); mixed(mixedRoot); process.chdir(mixedRoot);
     try {
       let out = "";
       expect(cmdPrime({ format: "json", dashboard: true }, { out: (value) => { out += value; }, err: () => undefined })).toBe(0);
-      const payload = JSON.parse(out);
+      const payload = JSON.parse(out).capability_context.context.status_context;
       expect(payload.progress.latest).toMatchObject({ id: "aaaaaaaaaa", what: "full progress" });
-      expect(payload.health).toMatchObject({ id: "cccccccccc", date: "2026-07-17" });
-      expect(payload.decision).toBeUndefined();
+      expect(payload.health).toMatchObject({ id: "cccccccccc" });
     } finally { process.chdir(previous); }
   });
 
@@ -347,28 +345,10 @@ describe("summary entity ordinary reads", () => {
     const dashboard = cli(root, ["prime", "--dashboard", "--format", "json"]);
     expect(dashboard.rc, dashboard.err).toBe(0);
     expect(Buffer.byteLength(dashboard.out, "utf8")).toBeLessThanOrEqual(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes);
-    const projected = JSON.parse(dashboard.out);
+    const projected = JSON.parse(dashboard.out).capability_context.context.status_context;
     expect(projected.progress.latest).toMatchObject({ id: "aaaaaaaaaa", what: "full progress" });
-    expect(projected.health).toMatchObject({ id: "cccccccccc", date: "2026-07-17" });
-    expect(projected.decision).toBeUndefined();
-    for (const artifact of ["progress", "decisions", "health"]) {
-      expect(projected.history[artifact]).toMatchObject({
-        status: "degraded",
-        compatibility: "mixed",
-        detail_availability: "omitted",
-        counts: { total: 13, returned: 0, remaining: 13, full: 1, summary: 12 },
-        omitted: true,
-        omitted_count: 13,
-        omission_reason: "startup_history_detail",
-        degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
-        retrieval: {
-          list: `agentera state ${artifact} list --limit 20 --format json`,
-          get: `agentera state ${artifact} get --id ID --format json`,
-        },
-        caveats: [expect.stringContaining("incomplete historical evidence")],
-      });
-      expect(projected.history[artifact]).not.toHaveProperty("entries");
-    }
+    expect(projected.health).toMatchObject({ id: "cccccccccc" });
+    expect(projected).not.toHaveProperty("history");
     const bare = cli(root, ["prime", "--format", "json"]);
     expect(bare.rc, bare.err).toBe(0);
     expect(Buffer.byteLength(bare.out, "utf8")).toBeLessThanOrEqual(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes);
@@ -389,19 +369,10 @@ describe("summary entity ordinary reads", () => {
     expect(dashboard.rc, dashboard.err).toBe(0);
     const authority = YAML.parse(fs.readFileSync(path.join(SOURCE_ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
     expect(Buffer.byteLength(dashboard.out, "utf8")).toBeLessThanOrEqual(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes);
-    const payload = JSON.parse(dashboard.out);
-    expect(payload.progress).not.toHaveProperty("latest");
-    expect(payload.health).not.toHaveProperty("id");
-    expect(payload.decision).toBeUndefined();
-    for (const artifact of ["progress", "decisions", "health"]) {
-      expect(payload.history[artifact]).toMatchObject({
-        compatibility: "degraded",
-        counts: { total: 12, returned: 0, remaining: 12, full: 0, summary: 12 },
-        omitted_count: 12,
-        degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
-      });
-      expect(payload.history[artifact]).not.toHaveProperty("entries");
-    }
+    const payload = JSON.parse(dashboard.out).capability_context.context.status_context;
+    expect(payload.progress.latest).toBeNull();
+    expect(payload.health.id).toBeNull();
+    expect(payload).not.toHaveProperty("history");
   });
 
   it("emits structured, actionable summary-decision mutation failures before effects", () => {

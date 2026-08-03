@@ -111,19 +111,15 @@ describe("prime projection contract", () => {
     const startup = capture((out, err) => main(["node", "agentera", "prime", "--dashboard", "--format", "json"], { out, err }));
     expect(startup.rc, startup.out || startup.err).toBe(0);
     const payload = JSON.parse(startup.out) as Record<string, any>;
-    const latest = payload.progress.latest;
+    const capsule = payload.capability_context;
+    const status = capsule.context.status_context;
+    const latest = status.progress.latest;
     expect(latest).toMatchObject({ id: expect.any(String), artifact: "progress", what: expect.any(String) });
-    expect(payload.history.progress).toMatchObject({
-      counts: { total: fixture.progressCount, returned: 0, remaining: fixture.progressCount, summary: 1 },
-      omitted: true,
-      omitted_count: fixture.progressCount,
-      omission_reason: "startup_history_detail",
-      retrieval: {
-        list: "agentera state progress list --limit 20 --format json",
-        get: "agentera state progress get --id ID --format json",
-      },
-    });
-    expect(payload.history.progress).not.toHaveProperty("entries");
+    expect(capsule.startup.availability).toEqual(expect.arrayContaining([
+      expect.objectContaining({ family: "progress", availability: "included", detail_command: "agentera state progress list --format json" }),
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" }),
+    ]));
+    expect(status).not.toHaveProperty("history");
 
     const list = capture((out, err) => main(["node", "agentera", "state", "progress", "list", "--limit", "5", "--format", "json"], { out, err }));
     expect(list.rc, list.out || list.err).toBe(0);

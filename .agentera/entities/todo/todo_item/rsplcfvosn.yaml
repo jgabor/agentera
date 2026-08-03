@@ -10,7 +10,9 @@ record:
     dependencies:
       - artifact: todo
         id: htmgqhyasy
-    blocked: null
+    blocked:
+      reason: Plan capability startup guidance still names nonexistent fallback_commands; retirement guard misses that location.
+      recovery: Replace it with startup availability/detail_command and guard complete served instructions.
     gate: null
     queue_rank: 90
     order_reason: Remove embedded writer contracts after the canonical mutation grammar can supply exact discovery pointers.

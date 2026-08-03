@@ -1,0 +1,15 @@
+id: xwziadwkje
+artifact: progress
+record:
+  timestamp: 2026-08-03 21:15
+  type: fix
+  phase: build
+  what: Replaced stale startup guidance with the capability_context.startup availability contract and added a data-driven retirement guard.
+  context:
+    intent: Correct stale startup guidance without changing runtime aggregation.
+    constraints: Preserve health agreement, output budgets, issues alias, capability-specific behavior, prior evaluation evidence, and protected staged blobs.
+    scope: Shared bootstrap, research, discuss, profile, design, and startup-guidance regression coverage.
+  discovered: The shared bootstrap and four capability modules still directed callers to retired startup fields.
+  verified: Focused startup-policy coverage, the source suite, typecheck, build, and package verification passed.
+  next: Run rebuilt capsule, compact, and capability-contract checks before independent audit.
+  publication_order: 65

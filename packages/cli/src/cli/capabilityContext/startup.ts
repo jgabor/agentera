@@ -3,38 +3,11 @@ import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
 import { bespokeCapabilityContexts, slimBespokeContext } from "./bespoke.js";
-import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
-import {
-  capabilityContextAppSummary,
-  capabilityContextProfileSummary,
-  docsConventions,
-  entryStatus,
-  fallbackStatePointer,
-  hasRecordedValue,
-  sourceProvenance,
-  taskRef,
-} from "./shared.js";
+import { capabilityContextAppSummary, docsConventions, hasRecordedValue, taskRef } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { boundStartupValue } from "../../state/startupProjection.js";
 import type { OrientationState } from "../contracts/orientationState.js";
-import { personalProfileGroundingContract } from "../../registries/glossaryEntryContract.js";
-
-const SANITIZED_PROFILE_CONSUMERS = new Set(["discuss", "plan", "build"]);
-
-function startupProfileSummary(capability: string, profile: JsonObject): JsonObject {
-  const summary = capabilityContextProfileSummary(profile);
-  if (!SANITIZED_PROFILE_CONSUMERS.has(capability)) return summary;
-  const { path: _path, ...withoutPath } = summary;
-  return {
-    ...withoutPath,
-    grounding: {
-      command: personalProfileGroundingContract().command,
-      content_field: "content",
-      policy: "sanitized_non_glossary_only",
-      raw_profile_read: "forbidden",
-    },
-  };
-}
+import { startupAggregation } from "./startupAggregation.js";
 
 export function slimPlanState(plan: JsonObject): JsonObject {
   const firstPending = plan.first_pending;
@@ -58,7 +31,6 @@ export function slimPlanState(plan: JsonObject): JsonObject {
     first_pending: firstPending && typeof firstPending === "object" && !Array.isArray(firstPending) ? taskRef(firstPending) : null,
     diagnostics: asList(plan.diagnostics),
     invalid_path: plan.invalid_path ?? null,
-    source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan),
   };
 }
 
@@ -72,7 +44,6 @@ export function slimDocsState(docs: JsonObject): JsonObject {
       version_files: asList(conventions.version_files),
       semver_policy: conventions.semver_policy && typeof conventions.semver_policy === "object" && !Array.isArray(conventions.semver_policy) ? conventions.semver_policy : {},
     },
-    source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary"),
   };
 }
 
@@ -88,7 +59,6 @@ export function slimProgressState(progress: JsonObject): JsonObject {
     status: progress.status ?? null,
     latest_cycle: latestCycle,
     verified_present: hasRecordedValue(latestRecord.verified),
-    source_provenance: sourceProvenance("progress", STATE_FAMILY_LIST_COMMANDS.progress),
   };
 }
 
@@ -101,29 +71,7 @@ export function slimHealthState(health: JsonObject): JsonObject {
     trajectory: health.trajectory ?? null,
     worst: health.worst ?? null,
     degrading: Boolean(health.degrading),
-    source_provenance: sourceProvenance("health", STATE_FAMILY_LIST_COMMANDS.health),
   };
-}
-
-function slimHistoryState(history: JsonObject): JsonObject {
-  const result: JsonObject = {};
-  for (const [artifact, value] of Object.entries(history)) {
-    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
-    const item = value as JsonObject;
-    result[artifact] = {
-      status: item.status ?? "degraded",
-      counts: item.counts ?? {},
-      entries: asList(item.entries),
-      retrieval: item.retrieval ?? {
-        list: STATE_FAMILY_LIST_COMMANDS[artifact] ?? `agentera state ${artifact} list --limit 20 --format json`,
-        get: STATE_FAMILY_GET_COMMANDS[artifact] ?? `agentera state ${artifact} get --id ID --format json`,
-      },
-      omission: item.omission && typeof item.omission === "object" && !Array.isArray(item.omission)
-        ? Object.fromEntries(Object.entries(item.omission as JsonObject).filter(([key]) => ["omitted", "omitted_count", "omission_reason"].includes(key)))
-        : null,
-    };
-  }
-  return result;
 }
 
 export function slimTodoState(todoItems: JsonObject[]): JsonObject {
@@ -132,12 +80,7 @@ export function slimTodoState(todoItems: JsonObject[]): JsonObject {
     const severity = String(item.severity ?? "normal");
     severityCounts[severity] = (severityCounts[severity] ?? 0) + 1;
   }
-  return {
-    open_count: todoItems.length,
-    severity_counts: severityCounts,
-    entries: todoItems,
-    source_provenance: sourceProvenance("todo", STATE_FAMILY_FALLBACK_COMMANDS.todo),
-  };
+  return { open_count: todoItems.length, severity_counts: severityCounts, entries: todoItems };
 }
 
 export function genericSlimStartupContext(
@@ -148,78 +91,20 @@ export function genericSlimStartupContext(
   progress: JsonObject,
   health: JsonObject,
   todoItems: JsonObject[],
-  profile: JsonObject,
 ): JsonObject {
-  const decisionsPointer = fallbackStatePointer("decisions", STATE_FAMILY_LIST_COMMANDS.decisions);
   const docsState = slimDocsState(docs);
-  const profileState = startupProfileSummary(capability, profile);
   if (capability === "vision") {
-    return {
-      vision_startup_context: {
-        vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
-        docs_mapping: docsState,
-        progress: slimProgressState(progress),
-        health: slimHealthState(health),
-        todo: slimTodoState(todoItems),
-        decisions: decisionsPointer,
-        design: fallbackStatePointer("design", "agentera state query design --format json"),
-        profile: profileState,
-      },
-    };
+    return { vision_startup_context: { docs_mapping: docsState, progress: slimProgressState(progress), health: slimHealthState(health), todo: slimTodoState(todoItems) } };
   }
   if (capability === "discuss") {
-    return {
-      deliberation_context: {
-        decisions: decisionsPointer,
-        vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
-        objective: fallbackStatePointer("objective", STATE_FAMILY_FALLBACK_COMMANDS.objective),
-        todo: slimTodoState(todoItems),
-        docs_mapping: docsState,
-        profile: profileState,
-        protected_write_boundaries: ["vision", "todo", "objective"],
-      },
-    };
+    return { deliberation_context: { todo: slimTodoState(todoItems), docs_mapping: docsState, protected_write_boundaries: ["vision", "todo", "objective"] } };
   }
-  if (capability === "research") {
-    return {
-      research_context: {
-        profile: profileState,
-        vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
-        write_boundaries: ["todo", "vision"],
-      },
-    };
-  }
+  if (capability === "research") return { research_context: { write_boundaries: ["todo", "vision"] } };
   if (capability === "plan") {
-    return {
-      planning_context: {
-        startup_contract: context.startup_contract ?? null,
-        plan: slimPlanState(plan),
-        docs: docsState,
-        health: slimHealthState(health),
-        todo: slimTodoState(todoItems),
-        progress: slimProgressState(progress),
-        decisions: decisionsPointer,
-        profile: profileState,
-      },
-    };
+    return { planning_context: { startup_contract: context.startup_contract ?? null, plan: slimPlanState(plan), docs: docsState, health: slimHealthState(health), todo: slimTodoState(todoItems), progress: slimProgressState(progress) } };
   }
-  if (capability === "profile") {
-    return {
-      profile_context: { profile: profileState, decisions: decisionsPointer, raw_profile_body_emitted: false },
-    };
-  }
-  if (capability === "design") {
-    return {
-      design_context: {
-        design: fallbackStatePointer("design", "agentera state query design --format json"),
-        vision: fallbackStatePointer("vision", "agentera state query vision --format json"),
-        progress: slimProgressState(progress),
-        todo: slimTodoState(todoItems),
-        docs_mapping: docsState,
-        profile: profileState,
-      },
-    };
-  }
+  if (capability === "profile") return { profile_context: { raw_profile_body_emitted: false } };
+  if (capability === "design") return { design_context: { progress: slimProgressState(progress), todo: slimTodoState(todoItems), docs_mapping: docsState } };
   return {};
 }
 
@@ -228,61 +113,36 @@ export function slimCapabilityContext(
   mode: string,
   appHome: JsonObject,
   bundle: JsonObject,
-  profile: JsonObject,
   plan: JsonObject,
   docs: JsonObject,
   progress: JsonObject,
   health: JsonObject,
   todoItems: JsonObject[],
-  history: JsonObject,
   bespokeContexts: JsonObject | null,
 ): JsonObject {
   const context: JsonObject = capabilityContext(capability) ?? {
-      capability,
-      declared_state_needs: [],
-      declared_write_targets: [],
-      artifact_inventory: { read_needs: [], write_targets: [] },
-      included_state_families: [],
-      missing_state_families: [],
-      cli_fallback: [],
-      raw_artifact_read_policy:
-        "Use the included state families from this prime --context response first. " +
-        "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access.",
-      schema_error: `No capability context found for ${capability}.`,
-    };
+    capability,
+    availability: [],
+    schema_error: `No capability context found for ${capability}.`,
+  };
   const contextPayload: JsonObject = { capability, schema_error: context.schema_error ?? null };
-  Object.assign(contextPayload, genericSlimStartupContext(capability, context, plan, docs, progress, health, todoItems, profile));
+  Object.assign(contextPayload, genericSlimStartupContext(capability, context, plan, docs, progress, health, todoItems));
   contextPayload.plan = slimPlanState(plan);
-  contextPayload.history = slimHistoryState(history);
   const firstRead = context.first_invocation_read;
   if (firstRead !== null && firstRead !== undefined) contextPayload.first_invocation_read = firstRead;
-  // bespoke contexts are all null for the six non-bespoke capabilities.
   if (bespokeContexts) {
     for (const [name, value] of Object.entries(bespokeContexts)) {
       if (value !== null && value !== undefined) contextPayload[name] = slimBespokeContext(name, value as JsonObject);
     }
   }
-  const instructions = CAPABILITY_INSTRUCTIONS[capability] ?? null;
   return {
     schemaVersion: "agentera.capabilityContext.v1",
     capability,
     mode,
     app: capabilityContextAppSummary(appHome, bundle),
-    profile: startupProfileSummary(capability, profile),
-    state: {
-      declared_read_needs: context.declared_state_needs ?? [],
-      declared_write_targets: context.declared_write_targets ?? [],
-      write_contract: context.write_contract ?? null,
-      retrieval_contract: context.retrieval_contract ?? null,
-      artifact_inventory: context.artifact_inventory ?? { read_needs: [], write_targets: [] },
-      included: context.included_state_families ?? [],
-      missing: context.missing_state_families ?? [],
-      fallback_commands: context.cli_fallback ?? [],
-      schema_error: context.schema_error ?? null,
-    },
+    startup: startupAggregation(context, health),
     context: boundStartupValue(contextPayload) as JsonObject,
-    instructions: instructions ?? "",
-    raw_artifact_read_policy: context.raw_artifact_read_policy ?? null,
+    instructions: CAPABILITY_INSTRUCTIONS[capability] ?? "",
   };
 }
 
@@ -302,33 +162,26 @@ export function buildPrimeCapabilityContextPayload(
   command = "prime",
   buildRequest: import("../commands/prime/buildExecutionRequest.js").BuildExecutionRequest | null = null,
 ): JsonObject {
-  // cast: orientation state is assembled from parsed .agentera artifacts; slim/bespoke
-  // builders consume JsonObject shapes for these state families.
   const stateDict = state as unknown as JsonObject;
   const bundlePublic = publicDoctorStatus(state.app);
   const appHome = orientationAppHome(stateDict.app as JsonObject);
   const bespoke = bespokeCapabilityContexts(capabilityName, stateDict, buildRequest);
-  const profileSummary = {
-    ...(stateDict.profile_dict as JsonObject),
-    ...(capabilityName === "profile" && state.profile ? { path: state.profile } : {}),
-  };
+  const contract = capabilityContext(capabilityName) ?? {};
+  const startup = startupAggregation(contract, stateDict.health as JsonObject);
   return {
     command,
-    status: "ok",
+    outcome: startup.outcome,
     shared_skill: stateDict.shared_skill,
     capability_context: slimCapabilityContext(
       capabilityName,
       state.mode,
       appHome,
-      // cast: bundlePublic is a distilled app-bundle status (interface) consumed as JsonObject by slim context
       bundlePublic as unknown as JsonObject,
-      profileSummary,
       stateDict.plan as JsonObject,
       stateDict.docs as JsonObject,
       stateDict.progress as JsonObject,
       stateDict.health as JsonObject,
       state.todo_items,
-      stateDict.history as JsonObject,
       bespoke,
     ),
   };

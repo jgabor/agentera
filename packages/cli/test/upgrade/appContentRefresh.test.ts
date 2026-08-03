@@ -218,8 +218,8 @@ describe("upgrade planner integration", () => {
     };
     const payload = capturePrime("audit", appEnv);
     const capabilityContext = payload.capability_context as Record<string, unknown>;
-    const state = capabilityContext.state as Record<string, unknown>;
-    expect(state.schema_error).toBeNull();
+    const startup = capabilityContext.startup as Record<string, unknown>;
+    expect(startup.outcome).toBe("ok");
     expect(startupCompletenessContract({ schemaError: null }).complete_for_capability_startup).toBe(
       true,
     );

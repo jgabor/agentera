@@ -9,10 +9,8 @@ import {
   PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES,
   printOrientationTextBriefing,
 } from "./prime/orientationOutput.js";
-import { briefUtf8Bytes } from "./prime/briefOrientation.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 import type { OrientationState } from "../contracts/orientationState.js";
-import { startupSurfaceBudget } from "../../state/retrievalAuthority.js";
 import { emitInvalidInput } from "../errors.js";
 import {
   BuildExecutionRequestError,
@@ -36,41 +34,22 @@ export function finalizeStatusCapabilityContextPayload(
 ): Record<string, unknown> {
   const capabilityContext = payload.capability_context as Record<string, unknown>;
   const context = capabilityContext.context as Record<string, unknown>;
-  // status_context carries the dashboard state, so only remove generic rich
-  // copies already projected there. Contract-owned startup metadata remains.
+  // status_context carries the dashboard state. Startup availability remains
+  // singular on capability_context.startup.
   delete capabilityContext.app;
-  delete capabilityContext.profile;
-  const startupState = capabilityContext.state as Record<string, unknown>;
-  delete startupState.write_contract;
-  delete startupState.retrieval_contract;
-  delete context.history;
   // status_context already carries the canonical bounded plan projection.
   delete context.plan;
-  let statusBudget = PRIME_BRIEF_MAX_UTF8_BYTES;
-  let previousStatusBytes = Number.POSITIVE_INFINITY;
-  while (true) {
-    context.status_context = buildStatusContextState(state, command, {
-      budgetBytes: statusBudget,
-      degradedMode: "status_routing",
-    });
-    if (briefUtf8Bytes(payload) <= PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES) break;
-    const statusBytes = briefUtf8Bytes(context.status_context);
-    if (statusBytes >= previousStatusBytes) {
-      throw new Error("status context budget projection did not decrease toward the complete capsule budget");
-    }
-    previousStatusBytes = statusBytes;
-    // One byte below the actual serialized projection forces the next bounded
-    // form. Unlike subtracting the outer overage, this transition is monotonic
-    // even when the current projection still sits below its prior allowance.
-    statusBudget = statusBytes - 1;
-  }
+  context.status_context = buildStatusContextState(state, command, {
+    budgetBytes: PRIME_BRIEF_MAX_UTF8_BYTES,
+    degradedMode: "status_routing",
+  });
   return payload;
 }
 
 /**
  * prime orientation command. Port of scripts/agentera cmd_prime / cmd_status.
- * The text briefing (default), --guidance, --dashboard, --context, and
- * --format json paths are all wired.
+ * The text briefing (default), --guidance, deprecated --dashboard, --context,
+ * and --format json paths are all wired.
  */
 
 export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
@@ -155,10 +134,11 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
       err("Error: prime --dashboard requires --format json\n");
       return 2;
     }
+    err("Deprecation: prime --dashboard is retained as an alias for `prime --context status --format json`; use the status startup capsule directly.\n");
     const state = collectOrientationState(collectOpts);
-    const payload = buildOrientationJsonPayload(state, command);
+    const payload = buildStatusCapabilityContextPayload(state, command);
     return emitPrime(command, payload, format, args.fields, out, err, {
-      maxUtf8Bytes: startupSurfaceBudget("prime_dashboard"),
+      maxUtf8Bytes: PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES,
     });
   }
   const state = collectOrientationState(collectOpts);

@@ -52,6 +52,12 @@ const forbiddenCurrentSupportPatterns = [
   ["runtime setup doctor", /Diagnostic command surface for install\/runtime health/i],
 ] as const;
 
+const retiredStartupFieldNames = [
+  "fallback_commands",
+  "included state families",
+  "included/missing state",
+] as const;
+
 const publicInstallSurfaceRoots = [
   "AGENTS.md",
   "README.md",
@@ -96,6 +102,10 @@ function decodeRawCapabilityModule(relativePath: string): string {
   return JSON.parse(literal![1]) as string;
 }
 
+function startupGuidance(content: string): string {
+  return content.match(/\*\*Startup contract\*\*:[\s\S]*?(?=\n\n(?:---|#{1,3}\s)|$)/)?.[0] ?? "";
+}
+
 function currentSupportViolations(content: string): string[] {
   return forbiddenCurrentSupportPatterns
     .filter(([, pattern]) => pattern.test(content))
@@ -132,6 +142,29 @@ function collectTextSurfaces(relativePath: string, surfaces: Set<string>): void 
 }
 
 describe("retired runtime current-surface policy", () => {
+  it("keeps startup guidance free of retired fields across the shared bootstrap and every capability", async () => {
+    const skill = read("skills/agentera/SKILL.md");
+    const bootstrap = skill.slice(skill.indexOf("## Bootstrap"), skill.indexOf("## Routing"));
+    const surfaces: Array<[string, string]> = [["skills/agentera/SKILL.md bootstrap", bootstrap]];
+
+    for (const [capability, served] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
+      const modulePath = capabilityInstructionModulePath(capability);
+      const raw = decodeRawCapabilityModule(modulePath);
+      const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
+      const canonical = typeof module.default === "string" ? module.default : raw;
+      const expected = capability === "status" ? statusStartupInstructions(canonical) : canonical;
+      surfaces.push([`${modulePath} raw startup guidance`, startupGuidance(raw)]);
+      surfaces.push([`${modulePath} served startup guidance`, startupGuidance(expected)]);
+      expect(expected, `${capability} served instructions`).toBe(served);
+    }
+
+    for (const [surface, guidance] of surfaces) {
+      for (const retiredField of retiredStartupFieldNames) {
+        expect(guidance, `${surface} must not require ${retiredField}`).not.toContain(retiredField);
+      }
+    }
+  });
+
   it("serves each capability module's canonical instruction export", async () => {
     for (const [capability, served] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
       const modulePath = capabilityInstructionModulePath(capability);

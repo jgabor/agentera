@@ -6,8 +6,6 @@ import { TODO_SEVERITY_ORDER } from "../todoSeverity.js";
 
 export function buildOrientationAttention(state: OrientationState): string[] {
   const {
-    profile_status: profileStatus,
-    profile_dict: profileDict,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
     health,
@@ -40,18 +38,6 @@ export function buildOrientationAttention(state: OrientationState): string[] {
   if (v1Migration.detected && projectIntegration.recommendation !== "upgrade") {
     attention.push(
       `degraded: v1 artifacts detected; preview \`${v1Migration.dry_run_command}\`; files=${v1Migration.affected_files.join(", ")}`,
-    );
-  }
-  if (profileStatus === "absent") {
-    attention.push(`degraded: PROFILE.md absent; ${profileDict.validity.recovery ?? "generate the profile before retrying"}`);
-  } else if (profileStatus === "repair_needed") {
-    attention.push(`degraded: PROFILE.md repair needed; ${profileDict.validity.recovery ?? "repair the profile before retrying"}`);
-  } else if (profileDict.stale) {
-    const daysSince = profileDict.days_since_generated ?? "?";
-    const staleDays = profileDict.stale_threshold_days ?? "?";
-    attention.push(
-      `normal: profile stale (${daysSince} days since last refresh; ` +
-        `threshold=${staleDays}); suggest running profile to refresh PROFILE.md`,
     );
   }
   if (health.stale) {

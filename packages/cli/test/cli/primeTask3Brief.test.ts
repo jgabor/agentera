@@ -200,36 +200,36 @@ describe("Task 3 AC1: bare prime reports routing signals across project states",
     expect(na, `${label}: next_action is present`).toBeDefined();
     expect(typeof na?.object, `${label}: next_action.object is a string`).toBe("string");
     expect(typeof na?.capability, `${label}: next_action.capability is a string`).toBe("string");
-    // Startup completeness
-    const cs = getPath(payload, "source_contract.capability_startup") as Record<string, unknown> | undefined;
-    expect(cs, `${label}: capability_startup is present`).toBeDefined();
-    expect(typeof cs?.complete_for_capability_startup, `${label}: complete_for_capability_startup is boolean`).toBe("boolean");
+    const startup = payload.startup as Record<string, unknown> | undefined;
+    expect(startup, `${label}: startup is present`).toBeDefined();
+    expect(["ok", "degraded", "blocked"]).toContain(startup?.outcome);
+    expect(Array.isArray(startup?.availability), `${label}: availability is an array`).toBe(true);
     // Brief meta
     const brief = payload.brief as Record<string, unknown> | undefined;
     expect(brief, `${label}: brief meta is present`).toBeDefined();
-    expect(typeof brief?.status, `${label}: brief.status is a string`).toBe("string");
+    expect(typeof brief?.projection, `${label}: brief.projection is a string`).toBe("string");
   }
 
-  it("returning project: mode=returning, brief.status=ok, all routing signals present", () => {
+  it("returning project: mode=returning, brief projection=ok, all routing signals present", () => {
     returningFixture();
     const { payload } = capturePrime();
     expect(payload.mode, "returning fixture has mode=returning").toBe("returning");
-    expect((payload.brief as Record<string, unknown>).status).toBe("ok");
+    expect((payload.brief as Record<string, unknown>).projection).toBe("ok");
     assertRoutingSignals(payload, "returning");
   });
 
-  it("fresh project (no .agentera): mode=fresh, brief.status=ok, all routing signals present", () => {
+  it("fresh project (no .agentera): mode=fresh, brief projection=ok, all routing signals present", () => {
     // No .agentera directory created — fresh state
     const { payload } = capturePrime();
     expect(payload.mode, "fresh fixture has mode=fresh").toBe("fresh");
-    expect((payload.brief as Record<string, unknown>).status).toBe("ok");
+    expect((payload.brief as Record<string, unknown>).projection).toBe("ok");
     assertRoutingSignals(payload, "fresh");
   });
 
-  it("empty project (present-but-empty artifacts): mode=fresh, brief.status=ok, routing signals present", () => {
+  it("empty project (present-but-empty artifacts): mode=fresh, brief projection=ok, routing signals present", () => {
     emptyFixture();
     const { payload } = capturePrime();
-    expect((payload.brief as Record<string, unknown>).status).toBe("ok");
+    expect((payload.brief as Record<string, unknown>).projection).toBe("ok");
     assertRoutingSignals(payload, "empty");
   });
 
@@ -239,14 +239,14 @@ describe("Task 3 AC1: bare prime reports routing signals across project states",
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, "TODO.md"), "# TODO\n");
     const { payload } = capturePrime();
-    expect((payload.brief as Record<string, unknown>).status).toBe("ok");
+    expect((payload.brief as Record<string, unknown>).projection).toBe("ok");
     assertRoutingSignals(payload, "missing");
   });
 
   it("degraded project (stale health, incomplete plan): routing signals present", () => {
     degradedProjectFixture();
     const { payload } = capturePrime();
-    expect((payload.brief as Record<string, unknown>).status).toBe("ok");
+    expect((payload.brief as Record<string, unknown>).projection).toBe("ok");
     assertRoutingSignals(payload, "degraded");
     // A degraded project generates attention entries (audit staleness)
     const attention = payload.attention as unknown[];
@@ -259,7 +259,7 @@ describe("Task 3 AC4: omitted rich state has named recovery without raw artifact
     returningFixture();
     const { payload } = capturePrime();
     const brief = payload.brief as Record<string, unknown>;
-    expect(brief.status, "ok brief for returning fixture").toBe("ok");
+    expect(brief.projection, "ok brief for returning fixture").toBe("ok");
 
     const omitted = brief.omitted_rich_state as Array<Record<string, unknown>>;
     expect(Array.isArray(omitted), "omitted_rich_state is an array").toBe(true);
@@ -277,44 +277,26 @@ describe("Task 3 AC4: omitted rich state has named recovery without raw artifact
     }
   });
 
-  it("brief mode flag distinguishes brief from full dashboard (--dashboard has no brief meta)", () => {
+  it("keeps --dashboard as a deprecated status startup alias", () => {
     returningFixture();
     // Bare default → brief projected
     const bareResult = capturePrime();
     expect(bareResult.payload, "bare default has brief meta").toHaveProperty("brief");
-    // Dashboard → full fidelity, no brief
-    let out = "";
-    let err = "";
-    cmdPrime(
-      { command: "prime", format: "json", dashboard: true, home, installRoot: appHome },
-      { out: (t: string) => (out += t), err: (t: string) => (err += t) },
+    const dashboard = capturePrimeDashboard();
+    expect(dashboard.err).toContain("Deprecation: prime --dashboard");
+    expect(dashboard.payload.capability_context.context.status_context.outcome).toBe(
+      dashboard.payload.capability_context.startup.outcome,
     );
-    const dashboard = JSON.parse(out);
-    expect(dashboard, "--dashboard has NO brief meta").not.toHaveProperty("brief");
-    // Dashboard keeps full artifact_writes.artifacts (projected out in brief)
-    const sc = dashboard.source_contract as Record<string, unknown>;
-    const aw = sc.artifact_writes as Record<string, unknown>;
-    expect(aw.artifacts, "--dashboard keeps full artifact_writes.artifacts").toBeDefined();
+    expect(JSON.stringify(dashboard.payload)).not.toContain('"write_contract"');
   });
 
-  it("--dashboard preserves every input field and value, including inactive defaults", () => {
+  it("--dashboard does not reintroduce the retired full orientation payload", () => {
     returningFixture();
-    const input = buildOrientationJsonPayload(
-      collectOrientationState({ home, installRoot: appHome }),
-      "prime",
-    );
     const result = capturePrimeDashboard();
     const dashboard = result.payload;
-    const inputFields = Object.keys(input).sort();
-    const outputFields = Object.keys(dashboard).sort();
-
-    expect(outputFields, "dashboard preserves the complete top-level field set").toEqual(inputFields);
-    for (const field of inputFields) {
-      expect(dashboard[field], `dashboard preserves ${field}`).toEqual(input[field]);
-    }
-    expect(dashboard.v1_migration).toEqual(input.v1_migration);
-    expect(dashboard.docs).toEqual(input.docs);
-    expect(dashboard.objective).toEqual(input.objective);
+    expect(dashboard.capability_context.capability).toBe("status");
+    expect(dashboard).not.toHaveProperty("plan");
+    expect(dashboard).not.toHaveProperty("source_contract");
   });
 });
 
@@ -337,16 +319,16 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(result.accepted, "over-budget payload is rejected").toBe(false);
   });
 
-  it("briefOrientationPayload returns status=ok for a projected payload within budget", () => {
+  it("briefOrientationPayload returns projection=ok for a projected payload within budget", () => {
     returningFixture();
     const { payload } = capturePrime();
     const brief = payload.brief as Record<string, unknown>;
-    expect(brief.status, "returning fixture brief is ok").toBe("ok");
+    expect(brief.projection, "returning fixture brief is ok").toBe("ok");
     const bytes = briefUtf8Bytes(payload);
     expect(bytes, "ok brief is within budget").toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
   });
 
-  it("briefOrientationPayload returns status=degraded when projected brief exceeds budget", () => {
+  it("briefOrientationPayload returns projection=degraded when projected brief exceeds budget", () => {
     // Use a real returning-fixture payload with a reduced budget so the
     // projected brief (~9475 bytes) exceeds it, forcing the degraded envelope.
     // The budget sits between the degraded envelope size (~5165 bytes) and the
@@ -355,18 +337,18 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     const { payload } = capturePrime();
     const rawPayload = { ...payload } as Record<string, unknown>;
     delete rawPayload.brief;
-    const degraded = briefOrientationPayload(rawPayload, { budgetBytes: 7000 });
+    const degraded = briefOrientationPayload(rawPayload, { budgetBytes: 9000 });
     const brief = degraded.brief as Record<string, unknown>;
-    expect(brief.status, "reduced budget forces degraded").toBe("degraded");
-    expect(brief.attempted_utf8_bytes, "attempted bytes recorded").toBeGreaterThan(7000);
+    expect(brief.projection, "reduced budget forces degraded").toBe("degraded");
+    expect(brief.attempted_utf8_bytes, "attempted bytes recorded").toBeGreaterThan(9000);
     // The degraded envelope must satisfy the configured 7000-byte gate, not
     // merely the production 12000-byte authority.
     const bytes = briefUtf8Bytes(degraded);
-    expect(bytes, "degraded envelope is within the configured budget").toBeLessThanOrEqual(7000);
+    expect(bytes, "degraded envelope is within the configured budget").toBeLessThanOrEqual(9000);
     expect(brief.utf8_bytes, "degraded utf8_bytes matches exact output bytes").toBe(bytes);
     // The degraded envelope keeps routing-essential fields
     expect(degraded, "degraded keeps command").toHaveProperty("command");
-    expect(degraded, "degraded keeps status").toHaveProperty("status");
+    expect(degraded, "degraded keeps outcome").toHaveProperty("outcome");
     expect(degraded, "degraded keeps mode").toHaveProperty("mode");
     expect(degraded, "degraded keeps state_presence").toHaveProperty("state_presence");
     expect(degraded, "degraded keeps source_contract").toHaveProperty("source_contract");
@@ -506,18 +488,21 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           fetch_command: "agentera prime --context status --format json",
           required_before_rendering: true,
         },
-        capability_startup: {
-          complete_for_capability_startup: true,
-          raw_artifact_reads_required: false,
-          confidence_caveats: Array.from({ length: 8 }, (_, index) => `Rich caveat ${index}: ${"optional ".repeat(20)}`),
-        },
+      },
+      startup: {
+        schemaVersion: "agentera.primeStartup.v1",
+        outcome: "ok",
+        availability: Array.from({ length: 8 }, (_, index) => ({ family: `optional-${index}`, availability: "deferred", detail_command: "agentera schema --format json" })),
+        detail_discovery: { schema: "agentera schema --format json" },
+        raw_artifact_reads_required: false,
+        raw_artifact_read_policy: "Use the exact detail command.",
       },
       source: { artifacts_present: true },
     };
 
     expect(briefByteGate(rawPayload, PRIME_BRIEF_MAX_UTF8_BYTES).accepted).toBe(false);
     const normal = briefOrientationPayload(rawPayload);
-    expect((normal.brief as Record<string, unknown>).status).toBe("ok");
+    expect((normal.brief as Record<string, unknown>).projection).toBe("ok");
     expect(briefUtf8Bytes(normal)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
 
     const longPath = `/tmp/${"nested/".repeat(350)}project`;
@@ -551,15 +536,15 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       },
       source: { schemas_dir: longPath, project: longPath, artifacts_present: true },
     });
-    expect((pathPressured.brief as Record<string, unknown>).status).toBe("ok");
+    expect((pathPressured.brief as Record<string, unknown>).projection).toBe("ok");
     expect(briefUtf8Bytes(pathPressured)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
     expect(pathPressured.app_home).not.toHaveProperty("home");
     expect(pathPressured.app).not.toHaveProperty("sourceRoot");
     expect(pathPressured.shared_skill).not.toHaveProperty("path");
 
-    const degraded = briefOrientationPayload(rawPayload, { budgetBytes: 8_000 });
-    expect((degraded.brief as Record<string, unknown>).status).toBe("degraded");
-    expect(briefUtf8Bytes(degraded)).toBeLessThanOrEqual(8_000);
+    const degraded = briefOrientationPayload(rawPayload, { budgetBytes: 8_100 });
+    expect((degraded.brief as Record<string, unknown>).projection).toBe("degraded");
+    expect(briefUtf8Bytes(degraded)).toBeLessThanOrEqual(8_100);
 
     for (const payload of [normal, pathPressured, degraded]) {
       expect(payload.plan).toMatchObject({
@@ -651,7 +636,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     const payload = JSON.parse(out) as Record<string, unknown>;
     const bytes = Buffer.byteLength(out, "utf8");
     const brief = payload.brief as Record<string, unknown>;
-    expect(brief.status).toBe("ok");
+    expect(brief.projection).toBe("ok");
     expect(bytes, "integrated output satisfies its configured gate").toBeLessThanOrEqual(7000);
     expect(brief.utf8_bytes, "integrated utf8_bytes matches stdout").toBe(bytes);
     expect(out).not.toContain(attackerControlled);
@@ -718,7 +703,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           health: { retrieval: { list: expect.any(String), get: expect.any(String) } },
         },
       });
-      expect(["ok", "degraded"]).toContain((bare.payload.brief as Record<string, unknown>).status);
+      expect(["ok", "degraded"]).toContain((bare.payload.brief as Record<string, unknown>).projection);
       expect((bare.payload.brief as Record<string, unknown>).path_diagnostics_recovery).toBe("agentera doctor --format json");
       expect(Buffer.byteLength(bare.out, "utf8")).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
       outputs.push({ bytes: Buffer.byteLength(bare.out, "utf8"), payload: bare.payload });

@@ -274,7 +274,7 @@ describe("state storage authority", () => {
       large: { max_current_entries: 1000, max_archive_files: 1000, max_latency_ms: 15000 },
       serialized_output: {
         prime_capability_context_max_utf8_bytes: 55000,
-        prime_status_context_max_utf8_bytes: 25000,
+        prime_status_context_max_utf8_bytes: 22500,
       },
     });
   });

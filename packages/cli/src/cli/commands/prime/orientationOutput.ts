@@ -4,17 +4,17 @@ import { formatNextAction, startupPlanSummary } from "../../orientation.js";
 import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS, PRIME_STRUCTURED_FIELDS, availablePrimeFields } from "../../stateQuery.js";
 import { emitStructured } from "../../structured.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
+import { truncateCodePoints } from "../../../core/text.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
-import { startupCompletenessContract } from "../../startupCompletenessContract.js";
-import { stateWriterContract } from "../../../state/write/operations.js";
 import { briefOrientationPayload, briefUtf8Bytes, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrientation.js";
+import { capabilityContext } from "../../capabilityContext/contract.js";
+import { startupAggregation } from "../../capabilityContext/startupAggregation.js";
 
-export { startupCompletenessContract } from "../../startupCompletenessContract.js";
 export { briefOrientationPayload, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrientation.js";
 
 /** Authority for the complete status startup capsule, including instructions. */
-export const PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES = 25000;
+export const PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES = 22500;
 
 /** Project a single {@link NextAction} to its JSON record shape. */
 function nextActionEntry(action: NextAction): Record<string, unknown> {
@@ -161,6 +161,7 @@ export function buildOrientationJsonPayload(
   const schemasDir = state.schemas_dir;
   const bundlePublic = publicDoctorStatus(bundle);
   const appHome = orientationAppHome(bundle);
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject);
   const bespoke: JsonObject = {
     orchestration_context: null,
     closeout_context: null,
@@ -178,11 +179,10 @@ export function buildOrientationJsonPayload(
       : "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime";
   return {
     command,
-    status: "ok",
+    outcome: startup.outcome,
     app_home: appHome,
     app: bundlePublic,
     mode: state.mode,
-    profile: state.profile_dict,
     v1_migration: state.v1_migration,
     shared_skill: state.shared_skill,
     project_integration: state.project_integration,
@@ -194,10 +194,11 @@ export function buildOrientationJsonPayload(
     progress: state.progress,
     objective: state.objective,
     state_presence: state.state_presence,
-    attention: projectPublicOrientationAttention(state),
+    attention: projectPublicOrientationAttention(state).map((item) => truncateCodePoints(item, 200, "…")),
     decision_attention: state.decision_attention,
     history: state.history,
     next_action: nextActionPayload(state),
+    startup,
     orchestration_context: bespoke.orchestration_context,
     closeout_context: bespoke.closeout_context,
     evidence_context: bespoke.evidence_context,
@@ -213,59 +214,62 @@ export function buildOrientationJsonPayload(
       render,
       access,
       empty_state: "fresh: summaries absent; zero issues",
-      capability_startup: startupCompletenessContract({ profileStatus: state.profile_status }),
        capability_context: capabilityContextPointer(options.capabilityContextRequiredBeforeRendering ?? true),
-       artifact_writes: stateWriterContract(undefined, "compact"),
     },
   };
 }
 
-/**
- * The status capability consumes the same bounded decision-brief projection as
- * bare prime. Keeping the projection here prevents a second status summary
- * implementation from drifting from the public prime contract.
- */
+/** The status dashboard consumes a compact view of the one startup aggregation. */
 export function buildStatusContextState(
   state: OrientationState,
-  command = "prime",
-  options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {},
+  _command = "prime",
+  _options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {},
 ): Record<string, unknown> {
-  const projected = briefOrientationPayload(
-    omitInactiveConditionalDefaults(
-      buildOrientationJsonPayload(state, command, { capabilityContextRequiredBeforeRendering: false }),
-    ),
-    {
-      budgetBytes: options.budgetBytes ?? PRIME_BRIEF_MAX_UTF8_BYTES,
-      degradedMode: options.degradedMode ?? "status_routing",
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject);
+  const plan = state.plan;
+  const firstPending = plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
+    ? plan.first_pending as JsonObject
+    : null;
+  return {
+    outcome: startup.outcome,
+    mode: state.mode,
+    project_integration: {
+      recommendation: state.project_integration.recommendation,
+      ...(state.project_integration.message ? { message: state.project_integration.message } : {}),
+      ...(state.project_integration.dry_run_command ? { dry_run_command: state.project_integration.dry_run_command } : {}),
+      ...(state.project_integration.apply_command ? { apply_command: state.project_integration.apply_command } : {}),
     },
-  );
-  // The canonical brief contains compatibility and source metadata useful to
-  // bare-prime consumers. Keep only the startup-completeness source contract
-  // consumed by status; the outer capability capsule already declares how it
-  // was fetched, while the brief block retains omitted-detail recovery.
-  const sourceContract = projected.source_contract;
-  if (sourceContract && typeof sourceContract === "object" && !Array.isArray(sourceContract)) {
-    projected.source_contract = {
-      capability_startup: (sourceContract as Record<string, unknown>).capability_startup,
-      empty_state: (sourceContract as Record<string, unknown>).empty_state,
-    };
-  }
-  // History/source and null bespoke pointers are not dashboard or routing
-  // inputs. Omit those redundant leaves after applying the shared projection.
-  for (const field of [
-    "app_home",
-    "history",
-    "issues",
-    "source",
-    "orchestration_context",
-    "closeout_context",
-    "evidence_context",
-    "benchmark_context",
-    "execution_context",
-  ]) {
-    delete projected[field];
-  }
-  return projected;
+    health: {
+      exists: state.health.exists,
+      status: state.health.status ?? null,
+      id: state.health.id ?? null,
+      grade: state.health.grade ?? null,
+      worst: state.health.worst ?? null,
+      trajectory: state.health.trajectory ?? null,
+      degrading: Boolean(state.health.degrading),
+    },
+    todo: { ...state.counts, detail: state.todo_detail },
+    plan: {
+      exists: plan.exists,
+      active: plan.active ?? false,
+      status: plan.status,
+      title: plan.title ?? null,
+      complete: plan.complete ?? 0,
+      total: plan.total ?? 0,
+      complete_plan: plan.complete_plan ?? false,
+      first_pending: firstPending ? {
+        id: firstPending.id ?? null,
+        artifact: firstPending.artifact ?? "plan",
+        name: firstPending.name ?? firstPending.title ?? null,
+        status: firstPending.status ?? null,
+      } : null,
+    },
+    progress: { exists: state.progress.exists, status: state.progress.status ?? null, latest: state.progress.latest ?? null },
+    objective: { exists: state.objective.exists, active: state.objective.active ?? false, title: state.objective.title ?? null },
+    state_presence: state.state_presence,
+    attention: projectPublicOrientationAttention(state).map((item) => truncateCodePoints(item, 200, "…")),
+    next_action: nextActionPayload(state),
+  };
 }
 
 export function emitPrime(
@@ -326,7 +330,6 @@ export function emitPrime(
 export function printOrientationTextBriefing(state: OrientationState, command: string, out: (t: string) => void): void {
   const bundle = state.app;
   const mode = state.mode;
-  const profileStatus = state.profile_status;
   const health = state.health;
   const counts = state.counts;
   const plan = state.plan;
@@ -352,7 +355,8 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     out(`project_integration_message: ${projectIntegration.message}\n`);
   }
   out(`shared_skill: status=${String(state.shared_skill.status)} | path=${String(state.shared_skill.path)}\n`);
-  out(`profile: ${profileStatus} | class=${state.profile_dict.validity.class}\n`);
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject);
+  out(`outcome: ${String(startup.outcome)}\n`);
   if (health.exists && health.id) {
     const worst = health.worst;
     const worstText = worst ? `${worst[0]}:${worst[1]}` : "none";
@@ -418,15 +422,14 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   out(`- fields=${PRIME_STRUCTURED_FIELDS.join(", ")}\n`);
   out(`- render=caller-owned README-style ${dashboardLabel}\n`);
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");
-  const startup = startupCompletenessContract({ profileStatus: state.profile_status });
-  out(`- capability_startup_complete=${String(startup.complete_for_capability_startup).toLowerCase()}\n`);
+  out(`- startup_outcome=${String(startup.outcome)}\n`);
   out(`- capability_context: fetch rendering instructions via \`agentera prime --context status --format json\`\n`);
-  out("- artifact_writes: discover via `agentera schema --format json` or `agentera state <artifact> explain --format json`\n");
+  out(`- detail_discovery=${String((startup.detail_discovery as JsonObject).schema)}\n`);
   out(
     `- raw_artifact_reads_required=${String(startup.raw_artifact_reads_required).toLowerCase()}; policy=${startup.raw_artifact_read_policy}\n`,
   );
-  const missingState = (startup.missing_state as string[]).join("; ") || "none";
-  out(`- missing_state=${missingState}\n`);
-  out(`- confidence_caveats=${(startup.confidence_caveats as string[]).join("; ")}\n`);
-  out(`- cli_fallback=${(startup.cli_fallback as string[]).join("; ")}\n`);
+  const deferred = (startup.availability as JsonObject[])
+    .filter((entry) => entry.availability === "deferred")
+    .map((entry) => String(entry.family));
+  out(`- deferred_detail=${deferred.join(", ") || "none"}\n`);
 }

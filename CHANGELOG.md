@@ -4,6 +4,11 @@
 
 ### Changed
 
+- `agentera prime --context <capability> --format json` now returns one bounded
+  startup availability projection with an `ok`, `degraded`, or `blocked`
+  outcome. Deferred detail names its exact read command; writer payloads are
+  available only through `agentera schema`. Status uses the same outcome in one
+  call, and `prime --dashboard` is a deprecated status-startup alias.
 - Semantic route abstentions now return a self-describing nullable receipt guide.
   `agentera route request --input - --format json` and `agentera route receipt
   --help` expose the exact `agentera.route_receipt.v1` schema, valid outcomes,

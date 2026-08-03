@@ -857,7 +857,7 @@ describe("npm distribution boundary", () => {
       expect(result.status, result.stderr || result.stdout).toBe(0);
       expect(Buffer.byteLength(result.stdout, "utf8")).toBeLessThanOrEqual(12_000);
       const payload = JSON.parse(result.stdout);
-      expect(payload.brief.status).toMatch(/^(ok|degraded)$/);
+      expect(payload.brief.projection).toMatch(/^(ok|degraded)$/);
       expect(payload.plan).toMatchObject({
         id: seeded.planId,
         total: 21,
@@ -1387,13 +1387,13 @@ describe("npm distribution boundary", () => {
     expect(primed.status, `package boundary prime failed:\n${primed.stderr}`).toBe(0);
     const payload = JSON.parse(primed.stdout) as {
       command: string;
-      status: string;
+       outcome: string;
       app_home: { source: string };
       app: { status: string };
     };
     expect(payload).toMatchObject({
       command: "prime",
-      status: "ok",
+      outcome: "ok",
       app_home: { source: "bundled app" },
       app: { status: expect.any(String) },
     });

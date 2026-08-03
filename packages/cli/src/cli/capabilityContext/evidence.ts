@@ -8,6 +8,7 @@ import { selectEvidenceTarget, taskByRef } from "./planState.js";
 import { progressVerificationSummary, retryState } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import { deferredStartupFamilies } from "./startupAggregation.js";
 
 export function dateFromIsoUtc(s: string): number | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s.trim());
@@ -361,10 +362,10 @@ export function auditEvidenceContext(
 
   let stateCaveats: string[] = [];
   const attributedRisks: JsonObject[] = [];
-  for (const family of (capabilityContract.missing_state_families ?? []) as string[]) {
-    const message = `${family} state is not included in prime --context startup context.`;
+  for (const family of deferredStartupFamilies(capabilityContract)) {
+    const message = `${family} detail is deferred from prime --context startup.`;
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("missing_state_family", "caveated", message, sourceProvenance("prime", "agentera prime --context audit --format json", "source_contract.capability_context.missing_state_families")));
+    attributedRisks.push(residualRiskEntry("deferred_state_detail", "caveated", message, sourceProvenance("prime", "agentera prime --context audit --format json", "capability_context.startup.availability")));
   }
   if (bundle.status !== "up_to_date") {
     const message = "Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.";
@@ -428,7 +429,6 @@ export function auditEvidenceContext(
     STATE_FAMILY_FALLBACK_COMMANDS.health,
     STATE_FAMILY_FALLBACK_COMMANDS.todo,
     "agentera state query --list-artifacts --format json",
-    ...((capabilityContract.cli_fallback ?? []) as string[]),
   ]);
   return {
     capability: "audit",
@@ -457,8 +457,6 @@ export function auditEvidenceContext(
       raw_artifact_read_policy:
         "Use this evidence_context and included status state first. Run listed routine/query CLI fallback commands " +
         "for missing or incomplete evidence state; raw artifact reads are last-resort diagnostics, not normal evaluation startup behavior.",
-      included_state_families: capabilityContract.included_state_families ?? [],
-      missing_state_families: capabilityContract.missing_state_families ?? [],
       required_evidence_state: requiredState,
       missing_required_evidence_state: missingRequired,
       fallback_commands: fallbackCommands,

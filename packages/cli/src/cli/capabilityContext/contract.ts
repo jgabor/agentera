@@ -17,30 +17,7 @@ import {
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../capabilities/index.js";
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
-import { stateWriterContract } from "../../state/write/operations.js";
-import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
-
-function stateRetrievalContract(needs: string[]): JsonObject | null {
-  const surfaces = [
-    ...(needs.includes("plan") ? ["plan_tasks", "plans"] : []),
-    ...(needs.includes("experiments") ? ["experiments"] : []),
-  ];
-  if (surfaces.length === 0) return null;
-  const loaded = loadStateRetrievalAuthority();
-  const retrieval = loaded.retrieval as Record<string, any>;
-  const boundaries = [
-    ...(needs.includes("plan") ? ["plan", "plan_task"] : []),
-    ...(needs.includes("experiments") ? ["experiment"] : []),
-  ];
-  return {
-    authority: loaded.authority,
-    schema_version: retrieval.schema_version,
-    status: retrieval.status,
-    commands: Object.fromEntries(surfaces.map((surface) => [surface, retrieval.commands[surface]])),
-    collections: retrieval.collections
-      .filter((entry: Record<string, unknown>) => boundaries.includes(String(entry.boundary ?? entry.artifact))),
-  };
-}
+import { startupAvailabilityProjection } from "./startupAggregation.js";
 
 export function capabilityInstructionContractPath(): string {
   const model = activeAppModel();
@@ -203,23 +180,10 @@ export function capabilityContext(capability: string | null): JsonObject | null 
   if (!capability) return null;
   const [inventory, error] = capabilityArtifactInventory(capability);
   const needs = inventory.read_needs as string[];
-  const writeTargets = inventory.write_targets as string[];
-  const missing = needs.filter((name) => !STARTUP_ENVELOPE_STATE_FAMILIES.has(name));
-  const cliFallback = missing.filter((name) => name in STATE_FAMILY_FALLBACK_COMMANDS).map((name) => STATE_FAMILY_FALLBACK_COMMANDS[name]);
   const context: JsonObject = {
     capability,
     first_invocation_read: firstInvocationReadMetadata(capability),
-    declared_state_needs: needs,
-    declared_write_targets: writeTargets,
-    write_contract: stateWriterContract(writeTargets, "compact"),
-    retrieval_contract: stateRetrievalContract(needs),
-    artifact_inventory: inventory,
-    included_state_families: needs.filter((name) => STARTUP_ENVELOPE_STATE_FAMILIES.has(name)),
-    missing_state_families: missing,
-    cli_fallback: cliFallback,
-    raw_artifact_read_policy:
-      "Use the included state families from this prime --context response first. " +
-      "If needed families are missing or CLI state is incomplete, run the CLI fallback commands before raw file access.",
+    availability: startupAvailabilityProjection(needs),
     schema_error: error,
   };
   if (capability === "plan") context.startup_contract = planStartupContract();

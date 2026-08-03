@@ -68,10 +68,6 @@ export function hasRecordedValue(value: unknown): boolean {
   return true;
 }
 
-export function fallbackStatePointer(artifactId: string, command: string): JsonObject {
-  return { status: "fallback_only", artifact: artifactId, fallback_command: command, raw_artifact_reads_required: false };
-}
-
 export function capabilityContextAppSummary(appHome: JsonObject, bundle: JsonObject): JsonObject {
   const caveats: string[] = [];
   if (appHome.status !== "up_to_date") {
@@ -86,18 +82,6 @@ export function capabilityContextAppSummary(appHome: JsonObject, bundle: JsonObj
     expected_version: bundle.expectedVersion,
     caveats,
   };
-}
-
-export function capabilityContextProfileSummary(profile: JsonObject): JsonObject {
-  const caveats: string[] = [];
-  if (profile.status !== "valid") caveats.push("profile-derived state is unavailable in prime --context response.");
-  else if (profile.stale === true) caveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");
-  const summary: JsonObject = {};
-  for (const key of ["status", "validity", "freshness", "path", "stale", "days_since_generated", "stale_threshold_days", "suggested_action", "bounded_signals"]) {
-    if (key in profile) summary[key] = profile[key];
-  }
-  summary.caveats = caveats;
-  return summary;
 }
 
 export function uniqueList(items: string[]): string[] {

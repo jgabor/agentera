@@ -49,8 +49,10 @@ npx -y agentera@next prime --context <capability> --format json
 ```
 
 This returns the capability's instructions, declared read/write needs, artifact
-inventory, included/missing state, and fallback commands. Use it before
-reading the instructions module directly.
+inventory, and `capability_context.startup`. Check its `outcome` (`ok`,
+`degraded`, or `blocked`). The `availability` rows identify bounded included
+families and deferred families; use a deferred row's `detail_command` for
+detail. Use this response before reading the instructions module directly.
 
 For static routing guidance (agentera vs native tools):
 
@@ -146,9 +148,11 @@ The prime dashboard rendering contract — template, field-by-field rules, outpu
 budget, attention-item ordering, exit marker — is owned by the status capability
 instructions. `npx -y agentera@next prime --context status --format json` returns the full
 `capability_context.instructions` body and the bounded
-`capability_context.context.status_context` state in one response. Render from
-that capsule without a separate bare-prime call or raw artifact read; use the
-named recovery command when the capsule marks detail as omitted.
+`capability_context.context.status_context` state and one
+`capability_context.startup` availability projection in one response. Render
+from that capsule without a separate bare-prime call or raw artifact read. An
+`ok` outcome needs no second call; for deferred detail, use only that family's
+exact `detail_command`.
 Ask for confirmation before invoking a state-changing downstream capability.
 
 The first response in a fresh interaction delivers the brief and a free-form

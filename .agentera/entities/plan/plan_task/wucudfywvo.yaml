@@ -12,9 +12,19 @@ record:
     - srdmkolwqc
     - zcprgswrju
     - vlxwhwqxqf
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN capability startup WHEN prime runs THEN one bounded availability projection and outcome provide detail discovery without writer payloads.
     - GIVEN any health state WHEN status layers run THEN they agree and healthy startup needs no second call.
     - GIVEN startup states WHEN tested THEN each has pass and fail-safe cases within budget.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Plan capability startup guidance still requires nonexistent fallback_commands, and the all-capability retirement guard does not inspect that instruction location.
+    provenance:
+      attempt_id: wucudfywvo-audit-2
+      source: Independent Audit ses_0370bb232ffeirWkLh9Gy56aJi bounded re-review FAIL
+      recorded_at: 2026-08-03 21:29
+      writer_command: agentera state plan record-evaluation

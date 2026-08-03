@@ -2456,10 +2456,21 @@ budgets:
         max_heap_delta_bytes: 268435456
       serialized_output:
         # Generic prime capability capsules retain the full instructions body.
-        # The status capability is a separate one-call surface with a stricter
-        # bound declared below and in the JSON surface manifest.
+        # The status capability is the one bounded aggregation surface.
         prime_capability_context_max_utf8_bytes: 55000
-        prime_status_context_max_utf8_bytes: 25000
+        prime_status_context_max_utf8_bytes: 22500
+      aggregation:
+        schema_version: agentera.primeStartup.v1
+        outcome_values: [ok, degraded, blocked]
+        availability_row_fields: [family, availability, detail_command]
+        availability_values: [included, deferred]
+        detail_discovery: agentera schema --format json
+        single_projection_rule: >-
+          Prime emits one per-family availability projection at startup. Status
+          renders the same aggregate outcome without copying that projection.
+          A deferred row names its exact read command; it is not a second-call
+          requirement for an ok status startup.
+        writer_payloads: forbidden
     surfaces:
       prime_briefing:
         manifest_id: prime-briefing
@@ -2469,16 +2480,17 @@ budgets:
         # rich state. Pretty UTF-8 JSON + trailing newline is measured and an
         # over-budget brief is rejected in favor of a bounded degraded envelope;
         # diagnostics stay on stderr. prime_dashboard keeps full current state
-        # while omitting duplicated ordinary history entries with recovery.
+        # while omitting duplicated ordinary history entries with recovery. The
+        # deprecated prime_dashboard alias emits the same status capsule.
         max_utf8_bytes: 12000
       prime_dashboard:
         manifest_id: prime-dashboard
-        max_utf8_bytes: 35000
+        max_utf8_bytes: 22500
       prime_status_context:
         manifest_id: prime-status-context
-        # Status startup includes the full instructions capsule as well as the
-        # bounded Task 3 decision brief. Diagnostics remain on stderr.
-        max_utf8_bytes: 25000
+        # Status startup includes its instructions and one bounded availability
+        # aggregation. Diagnostics remain on stderr.
+        max_utf8_bytes: 22500
       prime_sparse:
         manifest_id: prime-fields-sparse
         max_utf8_bytes: 28000

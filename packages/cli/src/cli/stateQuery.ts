@@ -12,7 +12,7 @@ import { boundStructuredProjection } from "../state/projectionPolicy.js";
 
 /** Shared state-query infrastructure ported from scripts/agentera. */
 
-export const REQUIRED_SPARSE_CONTEXT_FIELDS = ["command", "status"];
+export const REQUIRED_SPARSE_CONTEXT_FIELDS = ["command", "outcome"];
 export const ROUTINE_STRUCTURED_FIELDS = [
   "command",
   "status",
@@ -33,11 +33,11 @@ export const ROUTINE_STRUCTURED_FIELDS = [
  *  `state_presence` (missing-vs-empty) and named recovery commands, not by
  *  trimming this set. */
 export const PRIME_STRUCTURED_FIELDS = [
-  "command", "status", "app_home", "app", "mode", "profile", "v1_migration", "health",
+  "command", "outcome", "app_home", "app", "mode", "v1_migration", "health",
   "todo", "plan", "docs", "progress", "objective", "state_presence", "shared_skill", "project_integration", "attention",
   "history",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",
-  "evidence_context", "benchmark_context", "execution_context", "source", "source_contract",
+  "evidence_context", "benchmark_context", "execution_context", "startup", "source", "source_contract",
 ];
 
 /** Deprecated JSON field selectors kept for pre-3.0.0 consumers; selectable

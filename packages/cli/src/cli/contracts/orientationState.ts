@@ -93,8 +93,10 @@ export interface HealthSummary {
   exists: boolean;
   date?: string | null;
   timestamp?: string | null;
+  status?: string;
   trajectory?: string;
   grade?: string;
+  startup_outcome?: "ok" | "degraded";
   worst?: [string, JsonValue, number] | null;
   degrading?: boolean;
   stale?: boolean;

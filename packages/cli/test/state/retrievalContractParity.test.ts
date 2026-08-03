@@ -414,12 +414,17 @@ describe("final entity retrieval public-contract parity", () => {
     }
   });
 
-  it("projects only final entity retrieval commands into capability startup context", () => {
-    const plan = capabilityContext("plan")?.retrieval_contract as Record<string, any>;
-    const optimize = capabilityContext("optimize")?.retrieval_contract as Record<string, any>;
-    expect(plan).toMatchObject({ status: "final", commands: { plans: { get: expect.stringContaining("--id ID") }, plan_tasks: { get: expect.stringContaining("--id ID") } } });
-    expect(optimize).toMatchObject({ status: "final", commands: { experiments: { get: expect.stringContaining("--id ID") } } });
-    expect(JSON.stringify({ plan, optimize })).not.toMatch(/--(?:number|task|plan)\b/);
+  it("projects one exact detail command per deferred startup family", () => {
+    const plan = capabilityContext("plan")?.availability as Record<string, any>[];
+    const optimize = capabilityContext("optimize")?.availability as Record<string, any>[];
+    expect(plan).toEqual(expect.arrayContaining([
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" }),
+      expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "agentera report profile-grounding --format json" }),
+    ]));
+    expect(optimize).toEqual(expect.arrayContaining([
+      expect.objectContaining({ family: "experiments", availability: "deferred", detail_command: expect.stringContaining("--objective OBJECTIVE_ID") }),
+    ]));
+    expect(JSON.stringify({ plan, optimize })).not.toMatch(/write_contract|input_schema|examples/);
   });
 
   it("returns bounded structured corrections after the cutover gate", () => {

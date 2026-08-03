@@ -127,7 +127,7 @@ const DOCTOR_EXCLUDES = [
 const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
   prime:
-    "Composite orientation briefing and capability startup context; bare JSON is at most 12000 UTF-8 bytes and status startup at most 25000.",
+    "Composite orientation briefing and capability startup context; bare JSON is at most 12000 UTF-8 bytes and status startup at most 22500.",
   schema: "Runtime CLI/schema introspection.",
   query: "Deprecated alias for state query. Advanced custom artifact query.",
   lint: "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",

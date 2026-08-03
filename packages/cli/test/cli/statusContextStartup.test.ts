@@ -16,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
 import { runState } from "../../src/cli/dispatch/state.js";
-import { STATE_FAMILY_LIST_COMMANDS } from "../../src/cli/capabilityContext/types.js";
+import { startupAggregation } from "../../src/cli/capabilityContext/startupAggregation.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const BUDGET_MANIFEST_PATH = path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml");
@@ -143,7 +143,7 @@ describe("status capability self-contained startup", () => {
     };
     const surface = manifest.surfaces.find((entry) => entry.id === "prime-status-context");
     expect(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES).toBe(surface?.byte_budget);
-    expect(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES).toBe(25000);
+    expect(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES).toBe(22500);
   });
 
   it.each([
@@ -219,44 +219,36 @@ describe("status capability self-contained startup", () => {
     expect(capsule.instructions).toContain("⌂ status · <status>");
     expect(capsule.instructions).toContain("NEVER execute implementation work");
     expect(capsule.instructions).toContain("NEVER modify any state artifact");
-    expect(capsule.instructions).toContain("authoritative recovery command");
+    expect(capsule.instructions).toContain("detail_command");
     expect(capsule.instructions).not.toContain("Status MUST source state from `agentera prime --format json`");
 
     expect(state.health).toBeDefined();
     expect(state.todo).toBeDefined();
     expect(state.plan).toBeDefined();
-    expect(state.profile).toBeDefined();
+    expect(state.profile).toBeUndefined();
     expect(state.next_action).toBeDefined();
     expect(state.attention).toBeDefined();
     expect(state.state_presence).toBeDefined();
-    expect(state.source_contract).toBeDefined();
-    expect(state.brief.omitted_rich_state).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ field: "plan.tasks", recovery: "agentera state plan tasks list --format json" }),
-      ]),
-    );
+    expect(state.outcome).toBe(capsule.startup.outcome);
     expect(result.payload.runtime_lifecycle).toBeUndefined();
     expect(result.payload.shared_skill).toBeDefined();
-    expect(state.shared_skill).toBeDefined();
-    expect(capsule.state).toEqual(expect.objectContaining({
-      declared_read_needs: expect.any(Array),
-      declared_write_targets: expect.any(Array),
-      artifact_inventory: expect.any(Object),
-      included: expect.any(Array),
+    expect(state.shared_skill).toBeUndefined();
+    expect(capsule.startup).toEqual(expect.objectContaining({
+      schemaVersion: "agentera.primeStartup.v1",
+      outcome: expect.any(String),
+      availability: expect.any(Array),
+      detail_discovery: { schema: "agentera schema --format json" },
     }));
-    expect(capsule.state).toHaveProperty("schema_error");
+    expect(capsule.startup.availability).toEqual(expect.arrayContaining([
+      { family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" },
+      { family: "vision", availability: "deferred", detail_command: "agentera state query vision --format json" },
+      { family: "profile", availability: "deferred", detail_command: "agentera report profile-grounding --format json" },
+    ]));
     expect(capsule.context).toHaveProperty("first_invocation_read");
     expect(capsule.context).toHaveProperty("schema_error");
     expect(state.project_integration).not.toHaveProperty("phases");
     expect(state.project_integration).not.toHaveProperty("guidance");
     expect(state.project_integration).not.toHaveProperty("retry");
-    expect(state.source_contract).toEqual({
-      capability_startup: expect.objectContaining({
-        complete_for_capability_startup: expect.any(Boolean),
-        raw_artifact_reads_required: expect.any(Boolean),
-      }),
-      empty_state: "fresh: summaries absent; zero issues",
-    });
     if (name === "flagged") expect(state.attention.length).toBeGreaterThan(0);
     if (name === "waiting") expect(state.next_action.object).toBeTruthy();
     if (name === "upgrade") {
@@ -269,25 +261,44 @@ describe("status capability self-contained startup", () => {
       expect(state.project_integration).not.toHaveProperty("dry_run_command");
       expect(state.project_integration).not.toHaveProperty("apply_command");
     }
-    if (name === "incomplete-state") {
-      expect(state.source_contract.capability_startup.complete_for_capability_startup).toBe(false);
-      expect(state.source_contract.capability_startup.raw_artifact_reads_required).toBe(false);
-      expect(capsule.state.missing).toContain("decisions");
-      const decisionsFallback = STATE_FAMILY_LIST_COMMANDS.decisions;
-      expect(capsule.state.fallback_commands).toContain(decisionsFallback);
+    if (name === "incomplete-state") expect(capsule.startup.outcome).toBe("ok");
+  });
 
-      let fallbackOut = "";
-      let fallbackErr = "";
-      const fallbackRc = runState(
-        "decisions",
-        ["list", "--format", "json"],
-        { out: (text) => (fallbackOut += text), err: (text) => (fallbackErr += text) },
-        "agentera",
-      );
-      expect(fallbackRc).toBe(0);
-      expect(fallbackErr).toBe("");
-      expect(JSON.parse(fallbackOut)).toMatchObject({ command: "state decisions list" });
+  it.each([
+    ["no audit", undefined, "ok"],
+    ["healthy audit", { trajectory: "stable", grades: { test_health: "A" } }, "ok"],
+    ["degrading audit", { trajectory: "degrading", grades: { test_health: "D" } }, "degraded"],
+  ] as const)("keeps aggregate and dashboard outcomes aligned for %s", (_name, health, outcome) => {
+    if (health) {
+      writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      writeProjectFile(".agentera/entities/health/health_audit/aaaaaaaaaa.yaml", YAML.stringify({
+        id: "aaaaaaaaaa",
+        artifact: "health",
+        record: {
+          date: "2026-08-03",
+          dimensions: ["test_health"],
+          findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
+          ...health,
+        },
+      }));
     }
+    const result = runStatus();
+    const capsule = result.payload.capability_context;
+    const state = statusState(result.payload);
+
+    expect(result.rc).toBe(0);
+    expect(result.payload.outcome).toBe(outcome);
+    expect(capsule.startup.outcome).toBe(outcome);
+    expect(state.outcome).toBe(outcome);
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+  });
+
+  it("fails safe with blocked discovery without exposing writer payloads", () => {
+    const blocked = startupAggregation({ availability: [], schema_error: "invalid capability artifact schema" }, { startup_outcome: "ok" });
+
+    expect(blocked).toMatchObject({ outcome: "blocked", detail_discovery: { schema: "agentera schema --format json" } });
+    expect(blocked).not.toHaveProperty("write_contract");
+    expect(blocked).not.toHaveProperty("operation");
   });
 
   it("projects only open entity TODOs before applying the 20-item bound", () => {
@@ -434,8 +445,8 @@ describe("status capability self-contained startup", () => {
     const returningDashboard = renderStatusDashboard(statusState(returning.payload));
     expect(returningDashboard.mode).toBe("returning");
     expect(statusState(returning.payload).state_presence.available.progress).toBe(true);
-    expect(returning.payload.capability_context.raw_artifact_read_policy).toContain("included state families");
-    expect(returning.payload.capability_context.state.fallback_commands).toEqual(expect.any(Array));
+    expect(returning.payload.capability_context.startup.raw_artifact_read_policy).toContain("included bounded state");
+    expect(returning.payload.capability_context.startup.availability).toEqual(expect.any(Array));
   });
 
   it("renders an upgrade recommendation and executable commands strictly from status_context", () => {

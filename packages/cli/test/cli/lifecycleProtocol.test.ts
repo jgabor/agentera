@@ -198,7 +198,8 @@ describe("final lifecycle protocol", () => {
       expect(semanticFindings(`runtime://capability-context/${capability}`, capabilityContext)).toEqual([]);
       const context = capabilityContext.context;
       const contextPlan = capability === "status" ? context.status_context.plan : context.plan;
-      expect(contextPlan).toMatchObject({ id: "dddddddddd", artifact: "plan" });
+      if (capability === "status") expect(contextPlan).toMatchObject({ exists: true, active: true, status: "open" });
+      else expect(contextPlan).toMatchObject({ id: "dddddddddd", artifact: "plan" });
       expect(contextPlan.first_pending).toEqual(expect.objectContaining({ id: "eeeeeeeeee", artifact: "plan" }));
       if (capability === "status") {
         expect(contextPlan).not.toHaveProperty("tasks");

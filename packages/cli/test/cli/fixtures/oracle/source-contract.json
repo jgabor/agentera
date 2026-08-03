@@ -10,7 +10,7 @@
         "type": "boolean",
         "description": "Whether the caller must read the raw artifact; false means the structured CLI output is sufficient.",
         "namesByCommand": {
-          "prime": "capability_startup.raw_artifact_reads_required",
+          "prime": "startup.raw_artifact_reads_required",
           "state_plan": "raw_artifact_reads_required",
           "state_query": "raw_artifact_reads_required_for_discovery",
           "prime_context_per_capability": "raw_artifact_reads_required"
@@ -20,7 +20,7 @@
         "type": "string",
         "description": "A human-readable policy line that names the conditions under which raw artifact access is allowed.",
         "namesByCommand": {
-          "prime": "capability_startup.raw_artifact_read_policy",
+          "prime": "startup.raw_artifact_read_policy",
           "state_plan": "raw_artifact_read_policy",
           "state_query": "raw_artifact_read_policy",
           "prime_context_per_capability": "raw_artifact_read_policy"
@@ -30,7 +30,7 @@
         "type": "array<string>",
         "description": "An array of strings describing caveats (per-call), missing state, fallback commands, or owned state. The exact name varies; the value is always an array of strings whose content legitimately varies by caller (per AC4).",
         "namesByCommand": {
-          "prime": "capability_startup.confidence_caveats OR capability_startup.missing_state OR capability_startup.cli_fallback",
+          "prime": "startup.availability",
           "state_plan": "missing_state OR fallback OR summary_fields OR entry_fields",
           "state_query": "allowed_raw_artifact_uses",
           "prime_context_per_capability": "caveats OR fallback_commands OR owns OR deferred"
@@ -43,24 +43,14 @@
       "argv": ["prime", "--format", "json"],
       "exitCode": 0,
       "sourceContractLocation": "payload.source_contract",
-      "description": "Top-level `source_contract` for `agentera prime` (no `--context`). Holds the dashboard-level orientation field set plus a `capability_startup` sub-object that pins the boolean/string/array contract from the TODO enumeration. The `capability_context` key carries a pointer to the status capability rendering instructions on the bare `prime` path; this eliminates the two-call gap where an agent running bare `prime` would never know it needed to fetch `prime --context status` separately. The `artifact_writes` key exposes the runtime-derived typed writer discovery contract. The full capability context capsule (with state families, first_invocation_read metadata, etc.) is available on the `prime --context` path.",
-      "requiredTopLevelKeys": [
-        "fields",
-        "render",
-        "access",
-        "empty_state",
-        "capability_startup",
-        "capability_context",
-        "artifact_writes"
-      ],
+      "description": "Top-level `source_contract` for `agentera prime` (no `--context`) holds orientation metadata and the status capability pointer. The separate `startup` aggregate owns the only bounded availability projection, aggregate outcome, read policy, and schema discovery pointer. Writer payloads are never emitted by prime.",
+      "requiredTopLevelKeys": ["fields", "render", "access", "empty_state", "capability_context"],
       "fieldTypes": {
         "fields": "array<string>",
         "render": "string",
         "access": "string",
         "empty_state": "string",
-        "capability_startup": "object",
-        "capability_context": "object",
-        "artifact_writes": "object"
+        "capability_context": "object"
       },
       "fieldsValueType": "array<string>",
       "renderValueType": "string",
@@ -68,7 +58,7 @@
       "accessValueType": "string",
       "accessSubstring": "single installed CLI call",
       "emptyStateValueType": "string",
-      "capabilityStartupValueType": "object",
+      "startupValueType": "object",
       "capabilityContextRequiredKeys": [
         "capability",
         "fetch_command",
@@ -81,23 +71,21 @@
         "required_before_rendering": "boolean",
         "note": "string"
       },
-      "capabilityStartupRequiredKeys": [
-        "complete_for_capability_startup",
+      "startupRequiredKeys": [
+        "schemaVersion",
+        "outcome",
+        "availability",
+        "detail_discovery",
         "raw_artifact_reads_required",
-        "raw_artifact_read_policy",
-        "available_state",
-        "missing_state",
-        "confidence_caveats",
-        "cli_fallback"
+        "raw_artifact_read_policy"
       ],
-      "capabilityStartupFieldTypes": {
-        "complete_for_capability_startup": "boolean",
+      "startupFieldTypes": {
+        "schemaVersion": "string",
+        "outcome": "string",
+        "availability": "array<object>",
+        "detail_discovery": "object",
         "raw_artifact_reads_required": "boolean",
-        "raw_artifact_read_policy": "string",
-        "available_state": "array<string>",
-        "missing_state": "array<string>",
-        "confidence_caveats": "array<string>",
-        "cli_fallback": "array<string>"
+        "raw_artifact_read_policy": "string"
       },
       "rawArtifactReadsRequiredDefault": false,
       "completeForCapabilityStartupPinned": false
@@ -144,21 +132,13 @@
         "caveatedKeyType": "boolean",
         "rawArtifactReadsRequiredDefault": false,
         "contextSpecificListFieldsByCapability": {
-          "orchestrate": {
-            "included_state_families": "array<string>",
-            "missing_state_families": "array<string>",
-            "deferred": "array<string>"
-          },
+          "orchestrate": { "deferred": "array<string>" },
           "build": {
-            "included_state_families": "array<string>",
-            "missing_state_families": "array<string>",
             "required_execution_state": "object",
             "missing_required_execution_state": "array<string>",
             "deferred": "array<string>"
           },
           "audit": {
-            "included_state_families": "array<string>",
-            "missing_state_families": "array<string>",
             "required_evidence_state": "object",
             "missing_required_evidence_state": "array<string>",
             "deferred": "array<string>"
@@ -173,8 +153,6 @@
             "deferred": "array<string>"
           },
           "document": {
-            "included_state_families": "array<string>",
-            "missing_state_families": "array<string>",
             "closeout_state_families": "array<string>",
             "required_closeout_state": "object",
             "missing_required_closeout_state": "array<string>"
@@ -302,27 +280,9 @@
     "npmCliSurface": "packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json"
   },
   "fieldNameReconciliation": {
-    "description": "TODO.md's now-Resolved freeze-fixtures entry (originally on line 17 when task 4 was implemented, moved to Resolved when the plan was archived) enumerated source_contract fields as `complete_for_capability_startup`, `missing`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`. The LIVE prime output keys are `capability_startup_complete` in the docs-summary sub-shape, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`. The TODO enumerated `complete_for_capability_startup` (a key inside `capability_startup`) and `missing` (a truncation of `missing_state`); both were reconciled in TODO.md in the same commit per plan AC1. This oracle pins the LIVE keys: `complete_for_capability_startup`, `missing_state`, `cli_fallback`, `raw_artifact_reads_required`, `confidence_caveats`.",
-    "todoEnumeration": [
-      "complete_for_capability_startup",
-      "missing",
-      "cli_fallback",
-      "raw_artifact_reads_required",
-      "confidence_caveats"
-    ],
-    "liveKeys": [
-      "complete_for_capability_startup",
-      "missing_state",
-      "cli_fallback",
-      "raw_artifact_reads_required",
-      "confidence_caveats"
-    ],
-    "reconciledKeys": [
-      "complete_for_capability_startup",
-      "missing_state",
-      "cli_fallback",
-      "raw_artifact_reads_required",
-      "confidence_caveats"
-    ]
+    "description": "Prime startup has one aggregate outcome and one bounded availability projection. Each deferred family carries its exact read command, while writer grammar remains discoverable through the single schema pointer.",
+    "todoEnumeration": ["availability", "outcome", "detail_command"],
+    "liveKeys": ["availability", "outcome", "detail_discovery"],
+    "reconciledKeys": ["availability", "outcome", "detail_discovery"]
   }
 }
