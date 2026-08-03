@@ -11,6 +11,7 @@ import {
   checkSourceReceipt,
   formatPhaseResult,
   issueCandidateApproval,
+  issueCandidateReceipt,
   issueCiAttestation,
   issueSourceReceipt,
   RELEASE_CONTRACT,
@@ -162,6 +163,28 @@ async function sourceReceipt(repo: string, candidateDirectory: string) {
       execution: { strategy: "stub", elapsedMs: 1 },
     }),
   }).then(({ receipt }: { receipt: any }) => receipt);
+}
+
+function candidateExecution(candidateDirectory: string, version = "3.0.0-dev.41") {
+  const artifact = path.join(candidateDirectory, `agentera-${version}.tgz`);
+  const bytes = Buffer.from("candidate timing fixture");
+  const observation = {
+    name: "agentera",
+    version,
+    files: [{ path: "package.json", size: 1 }],
+    size: bytes.length,
+    unpackedSize: bytes.length,
+    shasum: "timing-fixture-shasum",
+    integrity: sha512Integrity(bytes),
+    warnings: [],
+  };
+  return {
+    run: (_command: string, args: string[]) => {
+      if (!args.includes("--dry-run")) fs.writeFileSync(artifact, bytes);
+      return JSON.stringify(args.includes("--dry-run") ? observation : { ...observation, artifact });
+    },
+    smokeRun: (command: string) => command === process.execPath ? `agentera ${version}` : "installed",
+  };
 }
 
 afterEach(() => {
@@ -417,6 +440,59 @@ describe("release qualification receipts", () => {
       semanticTamper.receiptSha256 = sha256(canonicalJson(content));
       expect(() => validateSourceReceipt({ repo, receipt: semanticTamper })).toThrow();
     }
+  });
+
+  it("records non-overlapping monotonic candidate gate intervals with explicit overhead", async () => {
+    const { repo, candidateDirectory } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const ticks = [0, 10, 20, 25, 55, 60, 90, 100];
+    const issued = issueCandidateReceipt({
+      repo,
+      candidateDirectory,
+      adapterName: "development",
+      clock: () => ticks.shift()!,
+      metadataRun: () => "{}",
+      ...candidateExecution(candidateDirectory),
+    });
+
+    expect(ticks).toEqual([]);
+    expect(issued.receipt.gates.map(({ name, elapsedMs }: any) => [name, elapsedMs])).toEqual([
+      ["release-metadata", 10],
+      ["dry-pack-observation-equivalence", 30],
+      ["local-exact-artifact-smoke", 30],
+    ]);
+    expect(issued.receipt.execution).toEqual({
+      strategy: "ordered-non-overlapping",
+      elapsedMs: 100,
+      ownerElapsedMs: 70,
+      unattributedElapsedMs: 30,
+      reconciled: true,
+    });
+    expect(issued.receipt.gates.reduce((total: number, gate: any) => total + gate.elapsedMs, 0))
+      .toBeLessThanOrEqual(issued.receipt.execution.elapsedMs);
+    expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "utf8")))
+      .toEqual(issued.receipt);
+  });
+
+  it("preserves the local smoke owner and writes no candidate receipt on failure", async () => {
+    const { repo, candidateDirectory } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const execution = candidateExecution(candidateDirectory);
+    let failure: unknown;
+    try {
+      issueCandidateReceipt({
+        repo,
+        candidateDirectory,
+        adapterName: "development",
+        metadataRun: () => "{}",
+        run: execution.run,
+        smokeRun: () => { throw new Error("isolated smoke failed first"); },
+      });
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toMatchObject({ owner: "local-exact-artifact-smoke", message: "isolated smoke failed first" });
+    expect(fs.existsSync(path.join(candidateDirectory, "candidate-receipt.json"))).toBe(false);
   });
 
   it("probes tool versions in a fresh isolated npm state even when the caller has a token", () => {

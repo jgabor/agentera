@@ -127,6 +127,12 @@ The candidate directory must be outside the checkout. It is retained input, not
 cleanup residue: later stages fail if the receipt, path containment, bytes,
 integrity, permissions, or approval differ.
 
+Candidate receipts measure release metadata, construction/equivalence, and
+exact-artifact smoke as ordered, non-overlapping monotonic intervals. The
+construction interval ends before smoke starts. Gate durations plus explicit
+unattributed coordinator overhead exactly reconcile to candidate elapsed time;
+smoke time is never counted again as construction time.
+
 For the stable shim, `agentera.gitRef` must identify a commit with the same
 `bin/`, `lib/`, `README.md`, and `LICENSE` inputs as the candidate. Its
 `package.json` may differ only in `version` and `agentera.gitRef`, which are

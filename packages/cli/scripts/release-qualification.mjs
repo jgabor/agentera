@@ -1115,12 +1115,19 @@ export function smokePublishedCandidate(options = {}) {
   }
 }
 
-function releaseMetadataGate(repo, adapterName) {
-  run(process.execPath, ["packages/cli/dist/bin/agentera.js", "check", "validate", "release-metadata", "--format", "json"], {
+function releaseMetadataGate(repo, adapterName, execute = run) {
+  execute(process.execPath, ["packages/cli/dist/bin/agentera.js", "check", "validate", "release-metadata", "--format", "json"], {
     cwd: repo,
     env: { ...npmChildEnvironment(process.env), AGENTERA_RELEASE_ADAPTER: adapterName },
     timeout: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
   });
+}
+
+function monotonicDuration(started, ended, label) {
+  if (!Number.isFinite(started) || !Number.isFinite(ended) || ended < started) {
+    throw new Error(`${label} returned invalid monotonic timing`);
+  }
+  return Math.floor(ended - started);
 }
 
 function firstPackEntry(value) {
@@ -1165,6 +1172,8 @@ function constructCandidatePackage({ repo, adapter, manifest, candidateDirectory
 }
 
 export function issueCandidateReceipt(options = {}) {
+  const clock = options.clock ?? (() => performance.now());
+  const candidateStarted = clock();
   const repo = options.repo ?? REPO_ROOT;
   assertCleanCommittedTree(repo);
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo);
@@ -1183,21 +1192,22 @@ export function issueCandidateReceipt(options = {}) {
   }
 
   const execute = options.run ?? run;
-  const metadataStarted = performance.now();
+  const metadataStarted = clock();
   try {
-    releaseMetadataGate(repo, options.adapterName);
+    releaseMetadataGate(repo, options.adapterName, options.metadataRun);
   } catch (error) {
     if (error && typeof error === "object") error.owner ??= "release-metadata";
     throw error;
   }
+  const metadataEnded = clock();
   const metadataGate = {
     name: "release-metadata",
     outcome: "passed",
-    elapsedMs: Math.max(0, Math.round(performance.now() - metadataStarted)),
+    elapsedMs: monotonicDuration(metadataStarted, metadataEnded, "release-metadata"),
     executed: "ordered",
     reused: false,
   };
-  const constructionStarted = performance.now();
+  const constructionStarted = clock();
   let constructed;
   try {
     constructed = constructCandidatePackage({ repo, adapter, manifest, candidateDirectory, execute });
@@ -1230,7 +1240,15 @@ export function issueCandidateReceipt(options = {}) {
   if ((retainedArtifact.stat.mode & 0o777) !== ARTIFACT_MODE) {
     throw new Error("candidate artifact did not retain the required immutable mode");
   }
-  const smokeStarted = performance.now();
+  const constructionEnded = clock();
+  const constructionGate = {
+    name: "dry-pack-observation-equivalence",
+    outcome: "passed",
+    elapsedMs: monotonicDuration(constructionStarted, constructionEnded, "dry-pack-observation-equivalence"),
+    executed: "ordered",
+    reused: false,
+  };
+  const smokeStarted = clock();
   let smokeOutput;
   try {
     smokeOutput = smokeExactArtifact({ artifact: retainedArtifact.artifact, manifest, adapter, run: options.smokeRun });
@@ -1238,6 +1256,20 @@ export function issueCandidateReceipt(options = {}) {
     if (error && typeof error === "object") error.owner ??= "local-exact-artifact-smoke";
     throw error;
   }
+  const smokeEnded = clock();
+  const smokeGate = {
+    name: "local-exact-artifact-smoke",
+    outcome: "passed",
+    elapsedMs: monotonicDuration(smokeStarted, smokeEnded, "local-exact-artifact-smoke"),
+    executed: "ordered",
+    reused: false,
+    output: smokeOutput.trim(),
+  };
+  const candidateEnded = clock();
+  const candidateElapsedMs = monotonicDuration(candidateStarted, candidateEnded, "candidate-qualification");
+  const ownerElapsedMs = metadataGate.elapsedMs + constructionGate.elapsedMs + smokeGate.elapsedMs;
+  const unattributedElapsedMs = candidateElapsedMs - ownerElapsedMs;
+  if (unattributedElapsedMs < 0) throw new Error("candidate qualification timing intervals overlap");
   const receipt = {
     schemaVersion: RECEIPT_SCHEMA,
     kind: "candidate",
@@ -1266,24 +1298,14 @@ export function issueCandidateReceipt(options = {}) {
       },
       dryPackEquivalent: true,
     },
-    gates: [
-      metadataGate,
-      {
-        name: "dry-pack-observation-equivalence",
-        outcome: "passed",
-        elapsedMs: Math.max(0, Math.round(performance.now() - constructionStarted)),
-        executed: "ordered",
-        reused: false,
-      },
-      {
-        name: "local-exact-artifact-smoke",
-        outcome: "passed",
-        elapsedMs: Math.max(0, Math.round(performance.now() - smokeStarted)),
-        executed: "ordered",
-        reused: false,
-        output: smokeOutput.trim(),
-      },
-    ],
+    gates: [metadataGate, constructionGate, smokeGate],
+    execution: {
+      strategy: "ordered-non-overlapping",
+      elapsedMs: candidateElapsedMs,
+      ownerElapsedMs,
+      unattributedElapsedMs,
+      reconciled: ownerElapsedMs + unattributedElapsedMs === candidateElapsedMs,
+    },
   };
   receipt.receiptSha256 = receiptDigest(receipt);
   writeImmutableJson(candidateFile, receipt, "candidate receipt");

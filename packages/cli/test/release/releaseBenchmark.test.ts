@@ -45,6 +45,27 @@ describe("release qualification benchmark coordinator", () => {
     expect(report.medianElapsedMs).toEqual({ preflight: 8, fullQualification: 150 });
   });
 
+  it("reconciles non-overlapping candidate gates with explicit unattributed overhead", async () => {
+    const report = await runQualificationBenchmark({
+      runPreflight: () => ({ elapsedMs: 1, owners: [{ name: "preflight", elapsedMs: 1 }] }),
+      runSource: () => ({ elapsedMs: 20, owners: [{ name: "source", elapsedMs: 20 }] }),
+      runCandidate: () => ({
+        elapsedMs: 100,
+        owners: [
+          { name: "release-metadata", elapsedMs: 10 },
+          { name: "dry-pack-observation-equivalence", elapsedMs: 30 },
+          { name: "local-exact-artifact-smoke", elapsedMs: 30 },
+        ],
+      }),
+    });
+    expect(report.repetitions.every(({ candidate }) => (
+      candidate.ownerDurationTotalMs === 70
+      && candidate.ownerElapsedMs === 70
+      && candidate.unattributedElapsedMs === 30
+      && candidate.reconciled
+    ))).toBe(true);
+  });
+
   it("emits a solo performance failure immediately and does not run candidate work", async () => {
     const events: unknown[] = [];
     let candidates = 0;
@@ -76,6 +97,30 @@ describe("release qualification benchmark coordinator", () => {
         phase: "source-qualification",
         detail: "performance fixture exceeded its remaining deadline",
       },
+    });
+  });
+
+  it("preserves the first candidate owner when candidate qualification fails", async () => {
+    const events: any[] = [];
+    await expect(runQualificationBenchmark({
+      ...phases({ preflight: 1, source: 20, candidate: 10 }),
+      runCandidate: () => {
+        const error = new Error("retained artifact smoke failed");
+        (error as Error & { owner?: string }).owner = "local-exact-artifact-smoke";
+        throw error;
+      },
+      emit: (event: any) => events.push(event),
+    })).rejects.toMatchObject({
+      firstFailure: {
+        owner: "local-exact-artifact-smoke",
+        phase: "candidate-qualification",
+        detail: "retained artifact smoke failed",
+      },
+    });
+    expect(events.at(-1)).toMatchObject({
+      event: "failed",
+      repetition: 1,
+      firstFailure: { owner: "local-exact-artifact-smoke", phase: "candidate-qualification" },
     });
   });
 

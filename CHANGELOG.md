@@ -76,6 +76,8 @@
   The read-only `source-check` command now lets explicitly configured
   version/gitRef-only pre-commits reuse matching source evidence without
   skipping build, compact, parity, or later release qualification.
+  Candidate qualification timing now closes construction before exact-artifact
+  smoke and reconciles non-overlapping gate intervals with explicit overhead.
 
 - Fixed bare `agentera prime` briefs to compact absolute path diagnostics before
   routing and history evidence, preserving executable plan selection, next-action

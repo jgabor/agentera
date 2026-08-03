@@ -148,6 +148,7 @@
         "artifact_mode"
       ],
       "retainedArtifactMode": "0444",
+      "timing": "Candidate qualification records monotonic, non-overlapping release-metadata, construction/equivalence, and exact-artifact-smoke intervals at their true boundaries. Their sum cannot exceed measured candidate elapsed time; explicit unattributed overhead completes an exact reconciliation.",
       "gates": [
         "release-metadata",
         "dry-pack-observation-equivalence",
