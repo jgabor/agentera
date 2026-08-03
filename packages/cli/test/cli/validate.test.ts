@@ -87,6 +87,7 @@ describe("cli validate (delegated families)", () => {
     expect(isDelegatedValidateFamily("lifecycle-adapters")).toBe(false);
     expect(isDelegatedValidateFamily("app-home-contract")).toBe(true);
     expect(isDelegatedValidateFamily("vocabularyAuthority")).toBe(true);
+    expect(isDelegatedValidateFamily("retained-references")).toBe(true);
     expect(isDelegatedValidateFamily("selfAudit")).toBe(true);
     expect(isDelegatedValidateFamily("capability")).toBe(false);
   });
@@ -95,6 +96,64 @@ describe("cli validate (delegated families)", () => {
     const { rc, out } = capture((io) => cmdValidate("cross-capability", {}, io));
     expect(rc).toBe(0);
     expect(out.trim()).toBe("cross-capability artifact graph ok");
+  });
+
+  it("validates the retained-reference inventory through the delegated CLI family", () => {
+    const { rc, out } = capture((io) => cmdValidate("retained-references", { format: "json" }, io));
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.target_family).toBe("retained-references");
+    expect(payload.engine.command).toBe("packages/cli/src/validate/retainedReferenceAuthority.ts");
+    expect(payload.engine.stdout).toContain("retained reference authority ok");
+  });
+
+  it("advertises retained-references in validate help and schema discovery", () => {
+    const help = capture((io) => main(["node", "agentera", "check", "validate", "--help"], io));
+    expect(help.rc).toBe(0);
+    expect(help.out).toContain("retained-references");
+    const schema = capture((io) => main(["node", "agentera", "schema", "--format", "json"], io));
+    expect(schema.rc).toBe(0);
+    expect(JSON.parse(schema.out).validation.families).toContain("retained-references");
+  });
+
+  it("hides the source-only target in a standalone bundle and returns a structured recovery failure", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "retained-reference-bundle-"));
+    const repoRoot = path.resolve(import.meta.dirname, "../../../..");
+    const previousRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+    const previousCwd = process.cwd();
+    try {
+      fs.writeFileSync(path.join(root, ".agentera-npx-bundle.json"), "{}\n");
+      fs.symlinkSync(path.join(repoRoot, "skills"), path.join(root, "skills"), "dir");
+      fs.symlinkSync(path.join(repoRoot, "references"), path.join(root, "references"), "dir");
+      fs.symlinkSync(path.join(repoRoot, "registry.json"), path.join(root, "registry.json"), "file");
+      process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = root;
+      process.chdir(root);
+
+      const help = capture((io) => main(["node", "agentera", "check", "validate", "--help"], io));
+      const schema = capture((io) => main(["node", "agentera", "schema", "--format", "json"], io));
+      const validation = capture((io) =>
+        main(["node", "agentera", "check", "validate", "retained-references", "--format", "json"], io),
+      );
+
+      expect(help.rc).toBe(0);
+      expect(help.out).not.toContain("retained-references");
+      expect(schema.rc).toBe(0);
+      expect(JSON.parse(schema.out).validation.families).not.toContain("retained-references");
+      expect(validation.rc).toBe(1);
+      const payload = JSON.parse(validation.out);
+      expect(payload.status).toBe("fail");
+      expect(payload.failure_class).toBe("unsupported_source_checkout");
+      expect(payload.violations).toEqual([
+        "retained-reference validation is unavailable outside a source checkout",
+      ]);
+      expect(payload.recovery).toContain("source-checkout-only");
+      expect(payload.engine.command).toBe("packages/cli/src/validate/retainedReferenceAuthority.ts");
+    } finally {
+      process.chdir(previousCwd);
+      if (previousRoot === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
+      else process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = previousRoot;
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("emits a structured envelope for cross-capability (json)", () => {
@@ -391,10 +450,11 @@ describe("retired cli validate descriptors", () => {
         "unsupported validate family 'descriptors'; valid families are listed in valid_values.",
     });
     expect(payload.error.valid_values).toEqual([
-      "cross-capability",
-      "app-home-contract",
-      "vocabularyAuthority",
-      "selfAudit",
+        "cross-capability",
+        "app-home-contract",
+        "vocabularyAuthority",
+        "retained-references",
+        "selfAudit",
       "release-metadata",
       "capability",
       "capability-contract",

@@ -62,7 +62,6 @@ describe("public runtime vocabulary", () => {
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
     const routingModel = fs.readFileSync(path.join(REPO_ROOT, "references/cli/routing-model.md"), "utf8");
     const hybridRouteContract = fs.readFileSync(path.join(REPO_ROOT, "references/cli/hybrid-route-contract.yaml"), "utf8");
-    const primeCompatibility = fs.readFileSync(path.join(REPO_ROOT, "references/cli/prime-consumer-compatibility.yaml"), "utf8");
     const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
     const enrichment = fs.readFileSync(path.join(REPO_ROOT, "references/cli/trigger-schema-enrichment.md"), "utf8");
     const triggerContract = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capability_schema_contract.yaml"), "utf8");
@@ -95,8 +94,6 @@ describe("public runtime vocabulary", () => {
     expect(routingModel).toContain("route to status for orientation only after no capability matches");
     expect(routingModel).toContain("not semantic generalization or an end-to-end latency commitment");
     expect(routingModel).not.toContain("ambiguous inputs");
-    expect(primeCompatibility).toContain("Bare `/agentera` and status orientation run one status-context call.");
-    expect(primeCompatibility).toContain("every other request requires a validated semantic receipt before the\n       selected capability context starts.");
     expect(routingVocabulary).toContain("only after deterministic routing returns `semantic_required`");
     expect(routingVocabulary).toContain("receipt the CLI validates before startup");
     expect(enrichment).toContain("Current boundary and obsolete layer numbering");

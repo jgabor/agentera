@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: Startup analysis report generator
   path: scripts/startup_analysis_contract.py
-  last_updated: 2026-05-15
-  status: current
+  last_updated: 2026-08-03
+  status: missing

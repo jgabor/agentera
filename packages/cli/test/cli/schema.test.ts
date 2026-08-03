@@ -103,7 +103,7 @@ describe("cli schema", () => {
       ]),
     );
     expect(payload.integration).toMatchObject({
-      authority: "references/cli/agent-ready-state-contract.yaml",
+      authority: "skills/agentera/SKILL.md",
       active_contract: "one shared skill plus the Agentera CLI",
       shared_skill: {
         path: "~/.agents/skills/agentera",

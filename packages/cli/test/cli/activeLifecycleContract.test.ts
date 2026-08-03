@@ -84,7 +84,7 @@ describe("active shared-skill lifecycle contract", () => {
       expect(schemaPayload).toHaveProperty("integration.shared_skill.path", "~/.agents/skills/agentera");
       expect(schemaPayload).toHaveProperty(
         "integration.authority",
-        "references/cli/agent-ready-state-contract.yaml",
+        "skills/agentera/SKILL.md",
       );
       expect(schemaPayload).not.toHaveProperty("runtime_lifecycle");
       expect(JSON.stringify(schemaPayload)).not.toMatch(/current_runtime_selectors|current_native_resource_operations/);

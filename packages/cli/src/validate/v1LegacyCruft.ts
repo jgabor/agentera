@@ -57,14 +57,6 @@ function fixedLegacyViolations(root: string): string[] {
       violations.push("package-registry docs_targets still lists skills/hej/SKILL.md");
     }
   }
-  const bundleVocabularyPath = path.join(root, "references/cli/bundle-skill-vocabulary.yaml");
-  if (fs.existsSync(bundleVocabularyPath)) {
-    const vocabulary = YAML.parse(fs.readFileSync(bundleVocabularyPath, "utf8"));
-    const concepts: string[] = vocabulary.canonical_concept_order ?? [];
-    for (const retired of ["legacy_hej_bridge", "v1_skill_entry_file"]) {
-      if (concepts.includes(retired)) violations.push(`bundle-skill-vocabulary still lists retired concept ${retired}`);
-    }
-  }
   return violations;
 }
 

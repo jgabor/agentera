@@ -22,7 +22,10 @@ import {
 import {
   LIFECYCLE_AUTHORITY_RELATIVE_PATH,
   NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH,
+  loadLifecycleAuthority,
 } from "./lifecycleAuthority.js";
+import { loadRuntimeLifecycleAdapterContract } from "./lifecycleAdapterContract.js";
+import { loadLifecycleOperationContract } from "./lifecycleOperationContract.js";
 
 type NativeResourceKind = "file" | "directory" | "symlink";
 type HostSupportStatus = "supported" | "supported_disabled" | "retired_historical";
@@ -230,6 +233,12 @@ export function loadNativeResourceCleanupContract(
   const data = loadYamlMapping(fs.readFileSync(contractPath, "utf8"));
   const errors = validateNativeResourceCleanupContractData(data);
   if (errors.length > 0) throw new Error(`Native resource cleanup contract validation failed: ${errors.join("; ")}`);
+  // The cleanup contract declares the authority and operation-contract paths.
+  // Load their adapter chain before using cleanup definitions so migration data
+  // cannot look valid while its declared compatibility contracts have drifted.
+  const authority = loadLifecycleAuthority();
+  loadRuntimeLifecycleAdapterContract(undefined, authority);
+  loadLifecycleOperationContract();
   const statuses = new Map((data.hosts as Record<string, unknown>[]).map((host) => [
     host.id as string,
     host.support_status as HostSupportStatus,

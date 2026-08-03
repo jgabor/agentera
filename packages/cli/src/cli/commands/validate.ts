@@ -11,6 +11,10 @@ import { validateGraph } from "../../validate/crossCapability.js";
 import { validate as validateAppHome } from "../../validate/appHomeContract.js";
 import { selfAuditMain } from "../../validate/selfAudit.js";
 import { vocabularyAuthorityMain } from "../../validate/vocabularyAuthority.js";
+import {
+  isRetainedReferenceSourceCheckout,
+  retainedReferenceAuthorityMain,
+} from "../../validate/retainedReferenceAuthority.js";
 import { releaseMetadataMain } from "../../release/releaseMetadata.js";
 import {
   VALIDATE_ARTIFACT_PROTOCOL_IDS,
@@ -33,16 +37,40 @@ import {
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
+export const VALIDATE_FAMILY_NAMES = [
+  "cross-capability",
+  "app-home-contract",
+  "vocabularyAuthority",
+  "retained-references",
+  "selfAudit",
+  "release-metadata",
+  "capability",
+  "capability-contract",
+  "artifact",
+  "state",
+] as const;
+
+/** Source-only validation must not appear as a packaged CLI capability. */
+export function advertisedValidateFamilyNames(): readonly string[] {
+  return isRetainedReferenceSourceCheckout()
+    ? VALIDATE_FAMILY_NAMES
+    : VALIDATE_FAMILY_NAMES.filter((family) => family !== "retained-references");
+}
+
 interface ProcResult {
   stdout: string;
   stderr: string;
   returncode: number;
+  violations?: string[];
+  failureClass?: string;
+  recovery?: string;
 }
 
 const VALIDATE_DELEGATED_SCRIPTS: Record<string, string> = {
   "cross-capability": "validate_cross_capability.py",
   "app-home-contract": "validate_app_home_contract.py",
   vocabularyAuthority: "validate_vocabulary_authority.py",
+  "retained-references": "packages/cli/src/validate/retainedReferenceAuthority.ts",
   selfAudit: "self_audit.py",
   "release-metadata": "validate_release_metadata.py",
 };
@@ -80,6 +108,31 @@ function runVocabularyAuthority(): ProcResult {
   return { stdout: lines.map((l) => l + "\n").join(""), stderr: "", returncode: rc };
 }
 
+function runRetainedReferenceAuthority(): ProcResult {
+  const lines: string[] = [];
+  const rc = retainedReferenceAuthorityMain({ out: (line) => lines.push(line) });
+  return {
+    stdout: lines.map((line) => line + "\n").join(""),
+    stderr: "",
+    returncode: rc,
+    violations: rc === 0
+      ? []
+      : lines.filter((line) => line.startsWith("- ")).map((line) => line.slice(2)),
+  };
+}
+
+function unsupportedRetainedReferenceValidation(): ProcResult {
+  const recovery = "Run this source-checkout-only target from the repository root after pnpm -C packages/cli build.";
+  return {
+    stdout: "",
+    stderr: `retained-reference validation is unavailable outside a source checkout. ${recovery}\n`,
+    returncode: 1,
+    violations: ["retained-reference validation is unavailable outside a source checkout"],
+    failureClass: "unsupported_source_checkout",
+    recovery,
+  };
+}
+
 function runSelfAudit(): ProcResult {
   const lines: string[] = [];
   const rc = selfAuditMain({ out: (line) => lines.push(line) });
@@ -109,6 +162,7 @@ const DELEGATED_RUNNERS: Record<string, (args: DelegatedValidateArgs) => ProcRes
   "cross-capability": () => runCrossCapability(),
   "app-home-contract": () => runAppHomeContract(),
   vocabularyAuthority: () => runVocabularyAuthority(),
+  "retained-references": () => runRetainedReferenceAuthority(),
   selfAudit: () => runSelfAudit(),
   "release-metadata": () => runReleaseMetadata(),
 };
@@ -120,7 +174,7 @@ function validationProcessPayload(
   result: ProcResult,
 ): JsonObject {
   const lines = pySplitlines(result.stderr).map((l) => l.trim());
-  const violations = lines.filter((l) => l.trim()).map((l) => (l.startsWith("  ") ? l.slice(2) : l));
+  const violations = result.violations ?? lines.filter((l) => l.trim()).map((l) => (l.startsWith("  ") ? l.slice(2) : l));
   const payload: JsonObject = {
     command: "validate",
     status: result.returncode === 0 ? "pass" : "fail",
@@ -133,6 +187,8 @@ function validationProcessPayload(
       stderr: pySplitlines(result.stderr),
     },
   };
+  if (result.failureClass) payload.failure_class = result.failureClass;
+  if (result.recovery) payload.recovery = result.recovery;
   if (p !== null) payload.path = resolvePath(p);
   return payload;
 }
@@ -149,11 +205,12 @@ export function cmdValidate(family: string, args: DelegatedValidateArgs, io: Io)
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   if (!(family in DELEGATED_RUNNERS)) {
     throw new Error(
-      "unsupported validate target family; valid families: capability, artifact, " +
-        "cross-capability, app-home-contract, vocabularyAuthority, selfAudit, release-metadata, capability-contract.",
+      `unsupported validate target family; valid families: ${VALIDATE_FAMILY_NAMES.join(", ")}.`,
     );
   }
-  const result = DELEGATED_RUNNERS[family](args);
+  const result = family === "retained-references" && !isRetainedReferenceSourceCheckout()
+    ? unsupportedRetainedReferenceValidation()
+    : DELEGATED_RUNNERS[family](args);
   if ((args.format ?? "text") === "json") {
     emitStructured(
       delegatedValidationPayload(family, result, VALIDATE_DELEGATED_SCRIPTS[family]),

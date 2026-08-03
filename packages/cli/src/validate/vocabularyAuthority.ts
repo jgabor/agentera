@@ -298,11 +298,10 @@ function validateVocabularyIndex(root: string): string[] {
 
   const lifecycleIdx = order.indexOf("references/cli/app-lifecycle-vocabulary.yaml");
   const channelsIdx = order.indexOf("references/cli/update-channels.yaml");
-  const bundleIdx = order.indexOf("references/cli/bundle-skill-vocabulary.yaml");
-  if (lifecycleIdx < 0 || channelsIdx < 0 || bundleIdx < 0) {
+  if (lifecycleIdx < 0 || channelsIdx < 0) {
     errors.push("vocabulary-index.yaml: authority_order missing required vocabulary authorities");
-  } else if (!(lifecycleIdx < channelsIdx && channelsIdx < bundleIdx)) {
-    errors.push("vocabulary-index.yaml: authority_order must place lifecycle before channels before bundle");
+  } else if (!(lifecycleIdx < channelsIdx)) {
+    errors.push("vocabulary-index.yaml: authority_order must place lifecycle before channels");
   }
 
   const vocabularyMd = authorityPath(root, "references/cli/vocabulary.md");
@@ -322,7 +321,7 @@ function validateVocabularyIndex(root: string): string[] {
   }
 
   const channelsSection =
-    vocabulary.split("### Update channels")[1]?.split("### Bundle and SKILL.md vocabulary", 1)[0] ?? "";
+    vocabulary.split("### Update channels")[1]?.split("## Evaluation and evidence grammar", 1)[0] ?? "";
   if (
     !channelsSection.includes("references/cli/update-channels.yaml") ||
     !channelsSection.includes("machine-readable authority")

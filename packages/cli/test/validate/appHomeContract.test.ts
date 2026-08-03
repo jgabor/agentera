@@ -43,12 +43,4 @@ describe("app-home contract validator (text surfaces)", () => {
     expect(errors.some((e) => e.includes("jargon in recovery wording"))).toBe(true);
   });
 
-  it("inspects the authoritative contract reference", () => {
-    const contract = path.join(tmp, "skills", "agentera", "references", "contract.md");
-    fs.mkdirSync(path.dirname(contract), { recursive: true });
-    fs.writeFileSync(contract, "AGENTERA_HOME names the agentera install root where helper scripts live\n");
-    const errors = validate(tmp);
-    expect(errors.some((e) => e.includes("skills/agentera/references/contract.md:1"))).toBe(true);
-    expect(errors.some((e) => e.includes("AGENTERA_HOME named as install root"))).toBe(true);
-  });
 });

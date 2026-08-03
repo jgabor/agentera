@@ -249,15 +249,13 @@ describe("vocabulary index and docs sync", () => {
     const order = loadYamlMappingFile(VOCABULARY_INDEX).authority_order as string[];
     const lifecycleIdx = order.indexOf("references/cli/app-lifecycle-vocabulary.yaml");
     const channelsIdx = order.indexOf("references/cli/update-channels.yaml");
-    const bundleIdx = order.indexOf("references/cli/bundle-skill-vocabulary.yaml");
     expect(lifecycleIdx).toBeGreaterThanOrEqual(0);
     expect(channelsIdx).toBeGreaterThan(lifecycleIdx);
-    expect(bundleIdx).toBeGreaterThan(channelsIdx);
   });
 
   it("delegates update channels prose to the YAML authority", () => {
     const vocabulary = fs.readFileSync(VOCABULARY_MD, "utf8");
-    const section = vocabulary.split("### Update channels")[1]?.split("### Bundle and SKILL.md vocabulary", 1)[0] ?? "";
+    const section = vocabulary.split("### Update channels")[1]?.split("## Evaluation and evidence grammar", 1)[0] ?? "";
     expect(section).toContain("references/cli/update-channels.yaml");
     expect(section).toContain("machine-readable authority");
     expect(section).not.toMatch(/\| Channel \| Dist tag \|/);

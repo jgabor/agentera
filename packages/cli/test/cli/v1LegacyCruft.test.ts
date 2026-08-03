@@ -310,12 +310,6 @@ describe("v1 legacy cruft removal (post-3.0 boundary)", () => {
     }
   });
 
-  it("pass: documentation inventory has no Tier C bridge cleanup items", () => {
-    const inventory = fs.readFileSync(repoPath("references/meta/documentation-inventory.md"), "utf8");
-    expect(inventory).not.toContain("skills/hej/");
-    expect(inventory).not.toContain("v1-section-mapping.md");
-  });
-
   it("fail: scan flags codex hej skillMetadata reintroduction", () => {
     const tmp = fs.mkdtempSync(path.join(repoPath("packages/cli/test/cli"), "v1-cruft-"));
     try {

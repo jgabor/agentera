@@ -8,6 +8,7 @@ import {
   cmdValidateArtifact,
   cmdValidateState,
   isDelegatedValidateFamily,
+  VALIDATE_FAMILY_NAMES,
 } from "../commands/validate.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, type Io } from "./shared.js";
@@ -264,17 +265,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
       body: {
         class: "missing_argument",
         message: "the following arguments are required: validate_family",
-        valid_values: [
-          "cross-capability",
-          "app-home-contract",
-          "vocabularyAuthority",
-          "selfAudit",
-          "release-metadata",
-          "capability",
-          "capability-contract",
-          "artifact",
-          "state",
-        ],
+        valid_values: [...VALIDATE_FAMILY_NAMES],
         example: "agentera check validate cross-capability",
       },
     });
@@ -320,17 +311,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
       body: {
         class: "unsupported_target",
         message: `unsupported validate family '${family}'; valid families are listed in valid_values.`,
-        valid_values: [
-          "cross-capability",
-          "app-home-contract",
-          "vocabularyAuthority",
-          "selfAudit",
-          "release-metadata",
-          "capability",
-          "capability-contract",
-          "artifact",
-          "state",
-        ],
+        valid_values: [...VALIDATE_FAMILY_NAMES],
       },
     });
   } catch (exc) {

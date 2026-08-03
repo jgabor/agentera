@@ -2,6 +2,7 @@ import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.js";
 import { entityMigrateHelp } from "./commands/entityMigrate.js";
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
+import { advertisedValidateFamilyNames } from "./commands/validate.js";
 import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
 
 const TOP_LEVEL = [
@@ -363,6 +364,18 @@ export function printCheckHelp(sub?: string): string {
       "",
       "Evaluation verify gates. Smoke verify is retired on the npm self-contained CLI;",
       "use the stable Python line for smoke maintainer harnesses.",
+    ].join("\n");
+  }
+  if (sub === "validate") {
+    return [
+      "usage: agentera check validate [-h] VALIDATE_FAMILY [options]",
+      "",
+      "Validate capabilities, state, and retained repository contracts.",
+      "",
+      "validate families:",
+      ...advertisedValidateFamilyNames().map((family) =>
+        family === "retained-references" ? "  retained-references (source checkout only)" : `  ${family}`,
+      ),
     ].join("\n");
   }
   if (sub === "durability") {

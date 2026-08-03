@@ -137,3 +137,10 @@ model calls.
 - `packages/cli/src/eval/hybridRouteEvaluation.ts` evaluates the frozen offline
   conformance corpus; its tests verify the evaluator and protocol structure.
 - `skills/agentera/SKILL.md` remains the thin portable host integration surface.
+
+## Maintenance
+
+- Maintainer: Agentera CLI maintainers
+- Source checkout root: `.`
+- Working directory: `.`
+- Command: `node packages/cli/dist/bin/agentera.js route evaluate --format json`

@@ -6,9 +6,10 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  PROFILE_FILE_MEMBERS,
   READER_PREFLIGHT_BUDGET_MS,
+  USER_DATA_CATALOG_DIRS,
   V2_HANDOFF_MANIFEST_FILENAME,
-  V2_HANDOFF_MANIFEST_SCHEMA_REL,
   V2_HANDOFF_SCHEMA_VERSION,
   parseV2HandoffManifest,
   readV2HandoffManifestFile,
@@ -17,10 +18,8 @@ import {
 import { planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const FIXTURES = path.join(__dirname, "fixtures");
 const UPGRADE_FIXTURES = path.join(__dirname, "../upgrade/fixtures");
-const SCHEMA_PATH = path.join(REPO_ROOT, V2_HANDOFF_MANIFEST_SCHEMA_REL);
 const V2_MANIFEST_FIXTURE = path.join(FIXTURES, "v2-handoff-manifest.json");
 
 let tmp: string;
@@ -38,12 +37,18 @@ function loadFixtureManifest(): unknown {
 }
 
 describe("v2 handoff manifest contract", () => {
-  it("references the shared schema document by path", () => {
-    expect(fs.existsSync(SCHEMA_PATH)).toBe(true);
-    const schema = fs.readFileSync(SCHEMA_PATH, "utf8");
-    expect(schema).toContain(V2_HANDOFF_SCHEMA_VERSION);
-    expect(schema).toContain("user_data_inventory_catalog");
-    expect(schema).toContain(String(READER_PREFLIGHT_BUDGET_MS));
+  it("owns the reader contract in runtime constants", () => {
+    expect(V2_HANDOFF_MANIFEST_FILENAME).toBe("v3-handoff.json");
+    expect(V2_HANDOFF_SCHEMA_VERSION).toBe("agentera.v3_handoff_manifest.v1");
+    expect(READER_PREFLIGHT_BUDGET_MS).toBe(100);
+    expect(USER_DATA_CATALOG_DIRS).toEqual([
+      "benchmarks",
+      "intermediate",
+      "sessions",
+      "history",
+      "corpus",
+    ]);
+    expect(PROFILE_FILE_MEMBERS).toEqual(["PROFILE.md", "USAGE.md"]);
   });
 
   it("parses a v2-shaped fixture with every required field typed", () => {

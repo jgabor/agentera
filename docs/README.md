@@ -9,9 +9,6 @@ Authoritative Agentera documentation lives elsewhere:
 | --- | --- |
 | Terminology index | [`references/cli/vocabulary.md`](../references/cli/vocabulary.md) |
 | CLI vocabulary authorities | [`references/cli/`](../references/cli/) |
-| Benchmark runbook | [`references/analysis/benchmark.md`](../references/analysis/benchmark.md) |
-| Benchmark contract | [`references/analysis/startup-measurement-contract.yaml`](../references/analysis/startup-measurement-contract.yaml) |
-| Doc inventory / cleanup tiers | [`references/meta/documentation-inventory.md`](../references/meta/documentation-inventory.md) |
 | User guides | [`README.md`](../README.md), [`UPGRADE.md`](../UPGRADE.md), [`AGENTS.md`](../AGENTS.md) |
 
 Authoritative exception: `docs/packaging/` is the design-doc home for the

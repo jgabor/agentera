@@ -60,17 +60,13 @@ const publicInstallSurfaceRoots = [
   "packages/cli/src/cli/help.ts",
   "UPGRADE.md",
   "references/adapters/package-surface-characterization.md",
-  "references/adapters/package-manifest-interface-model.yaml",
   "references/cli/app-lifecycle-vocabulary.yaml",
-  "references/cli/bundle-skill-vocabulary.yaml",
-  "references/cli/routing-execution-vocabulary.yaml",
   "references/cli/vocabulary.md",
 ] as const;
 
 const retiredInstallerSurfaces = [
   "packages/cli/shim/lib/exec.mjs",
   "references/adapters/package-registry.yaml",
-  "references/adapters/package-manifest-interface-model.yaml",
   "references/adapters/package-surface-characterization.md",
 ] as const;
 
@@ -227,8 +223,7 @@ describe("retired runtime current-surface policy", () => {
     const surfaces = [
       "README.md",
       "packages/cli/src/cli/help.ts",
-      "references/cli/agent-ready-state-contract.yaml",
-      "references/cli/prime-consumer-compatibility.yaml",
+      "skills/agentera/SKILL.md",
     ];
     const retiredClaims = [
       /detailed install and runtime evidence/i,
@@ -249,12 +244,7 @@ describe("retired runtime current-surface policy", () => {
     expect(read("packages/cli/src/cli/help.ts")).toContain(
       "Home directory for shared-skill diagnosis",
     );
-    expect(read("references/cli/agent-ready-state-contract.yaml")).toContain(
-      "canonical shared-skill diagnosis",
-    );
-    expect(read("references/cli/prime-consumer-compatibility.yaml")).toContain(
-      "app and project-state recommendation",
-    );
+    expect(read("skills/agentera/SKILL.md")).toContain("One agent, one CLI");
   });
 
   it("keeps active upgrade guidance free of current runtime selectors", () => {

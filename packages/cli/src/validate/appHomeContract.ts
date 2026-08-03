@@ -15,7 +15,6 @@ export const TEXT_SURFACES = [
   "references/cli/vocabulary.md",
   "skills/agentera/SKILL.md",
   "packages/cli/src/capabilities/status/instructions.ts",
-  "skills/agentera/references/contract.md",
 ] as const;
 
 export const CLI_HELP_COMMANDS: string[][] = [

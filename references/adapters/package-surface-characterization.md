@@ -57,3 +57,10 @@ The package registry defines no host-native manifest parity, package-manager
 command, runtime source tree, or native install command. Historical migration
 readers and fixtures remain source-only compatibility data; they do not create a
 current integration surface in the npm inventory.
+
+## Maintenance
+
+- Maintainer: Agentera CLI maintainers
+- Source checkout root: `.`
+- Working directory: `.`
+- Command: `pnpm -C packages/cli run pack:dry-run`

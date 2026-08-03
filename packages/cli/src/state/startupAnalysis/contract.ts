@@ -1,9 +1,5 @@
 import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
 
-import { loadYamlMapping } from "../../core/yaml.js";
-import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export const TRANSCRIPT_KEYS = new Set([
@@ -19,13 +15,53 @@ export const TRANSCRIPT_KEYS = new Set([
 export const SESSION_KEYS = new Set(["session_id", "sessionID", "sessionId", "conversation_id"]);
 export const PATH_KEYS = new Set(["path", "project_path", "store_path", "file_path", "cwd", "report_path"]);
 
-export function contractPath(root: string = resolveSourceRoot()): string {
-  return path.join(root, "references", "analysis", "startup-measurement-contract.yaml");
+const DEFAULT_CONTRACT: JsonObject = {
+  version: "startup-state-analysis-v1",
+  boundary: {
+    source: "git tag evidence",
+    commit: "b18e3dc7d768d4ad2726880916e7cfe6bd8617d3",
+    committed_at: "2026-05-12T17:50:13+02:00",
+  },
+  degradation_reasons: [
+    "pre_boundary_record",
+    "missing_timestamp",
+    "malformed_record",
+    "missing_conversation_key",
+    "no_agentera_state_sequence",
+    "privacy_redaction_required",
+  ],
+  privacy_boundary: {
+    canonical_artifact_labels: {
+      ".agentera/plan.yaml": "plan",
+      ".agentera/progress.yaml": "progress",
+      ".agentera/docs.yaml": "docs",
+      ".agentera/decisions.yaml": "decisions",
+      ".agentera/health.yaml": "health",
+      ".agentera/vision.yaml": "vision",
+      ".agentera/objective.yaml": "objective",
+      ".agentera/experiments.yaml": "experiments",
+      plan: "plan",
+      progress: "progress",
+      docs: "docs",
+      decisions: "decisions",
+      health: "health",
+      vision: "vision",
+      objective: "objective",
+      experiments: "experiments",
+      "AGENTS.md": "AGENTS.md",
+      "SKILL.md": "SKILL.md",
+    },
+  },
+};
+
+/** Legacy diagnostic label; startup analysis no longer loads a reference file. */
+export function contractPath(): string {
+  return "built-in:startup-state-analysis-v1";
 }
 
-export function loadContract(p: string = contractPath()): JsonObject {
-  // cast: YAML parse returns Record<string,unknown>; privacy-boundary contract is JSON-native
-  return loadYamlMapping(fs.readFileSync(p, "utf8")) as unknown as JsonObject;
+/** Startup analysis is source-only compatibility code with fixed redaction defaults. */
+export function loadContract(): JsonObject {
+  return DEFAULT_CONTRACT;
 }
 
 export function hashLabel(kind: string, value: unknown, salt: string): string {

@@ -68,9 +68,7 @@ const ISSUES_FIELD_DEPRECATION_MESSAGE =
  *  through `state_presence` (missing-vs-empty semantics) plus a named
  *  authoritative command. The full payload kept by `buildOrientationJsonPayload`
  *  still populates them, so explicit `--fields <name>` selection, the text
- *  briefing, and downstream state consumers are unaffected. See
- *  references/cli/prime-consumer-compatibility.yaml
- *  default_emission_omission_contract for the published contract. */
+ *  briefing, and downstream state consumers are unaffected. */
 const OMITTABLE_DEFAULT_CONDITIONAL_TOP_FIELDS: readonly string[] = [
   "v1_migration",
   "docs",

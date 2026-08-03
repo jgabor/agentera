@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { parseYaml } from "../../core/yaml.js";
 import { activeAppModel, discoverSchemasDir, loadSchemas, SchemaInfo } from "../appContext.js";
 import { emitStructured } from "../structured.js";
 import {
@@ -23,6 +22,7 @@ import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityMigrationAuthorityProjection } from "../../state/entityMigrationPreview.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
+import { advertisedValidateFamilyNames } from "./validate.js";
 
 export interface TransitionalTopLevelAlias {
   legacy: string;
@@ -117,6 +117,18 @@ const DOCTOR_SIGNAL_KINDS = [
   "version_mismatch",
   "corrupt_bundle_marker",
 ];
+const DOCTOR_SELF_CHECK_CATEGORIES = [
+  "Agentera CLI self-check status",
+  "installed app and install-root status",
+  "canonical shared-skill diagnosis",
+  "project integration and project-state migration diagnostics",
+  "bounded offline smoke checks when requested",
+] as string[];
+const DOCTOR_EXCLUDES = [
+  "project artifact health",
+  "codebase quality audit findings",
+  "capability architecture, test, dependency, or documentation audit output",
+] as string[];
 const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
   prime:
@@ -168,26 +180,9 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
   schema: ["format"],
 };
 
-function contractPath(): string {
+function integrationAuthorityPath(): string {
   const sourceRoot = path.resolve(discoverSchemasDir(), "..", "..", "..", "..");
-  return path.join(sourceRoot, "references", "cli", "agent-ready-state-contract.yaml");
-}
-
-function loadDecision45Contract(): [JsonObject | null, string | null] {
-  const p = contractPath();
-  let isFile = false;
-  try {
-    isFile = fs.statSync(p).isFile();
-  } catch {
-    isFile = false;
-  }
-  if (!isFile) return [null, "Decision 45 CLI contract is missing"];
-  try {
-    // cast: parseYaml result of the Decision 45 contract file (YAML IO boundary)
-    return [parseYaml(fs.readFileSync(p, "utf8")) as JsonObject, null];
-  } catch (exc) {
-    return [null, `Decision 45 CLI contract could not be read: ${(exc as Error).message}`];
-  }
+  return path.join(sourceRoot, "skills", "agentera", "SKILL.md");
 }
 
 function commandDescription(
@@ -280,18 +275,6 @@ function describeCommands(): JsonObject[] {
   return commands;
 }
 
-function contractSection(contract: JsonObject | null, key: string, gaps: JsonObject[]): any {
-  if (contract && typeof contract === "object" && !Array.isArray(contract) && key in contract) {
-    return contract[key];
-  }
-  gaps.push({
-    scope: key,
-    status: "unknown",
-    message: `Decision 45 contract section '${key}' is unavailable`,
-  });
-  return null;
-}
-
 function describeArtifactSchemas(
   schemasDir: string,
   schemas: Record<string, SchemaInfo>,
@@ -365,12 +348,10 @@ function dirExists(p: string): boolean {
 }
 
 export function buildSchemaPayload(command = "schema"): JsonObject {
-  const [contract, contractError] = loadDecision45Contract();
   const appModel = activeAppModel();
   const schemasDir = discoverSchemasDir(appModel);
   const schemas = loadSchemas(schemasDir);
   const gaps: JsonObject[] = [];
-  if (contractError) gaps.push({ scope: "contract", status: "missing", message: contractError });
   const artifactLocationsPayload = artifactLocationContract(schemasDir, schemas);
   const artifactLocations: Record<string, JsonObject> = {};
   // cast: artifacts payload is built by query.ts over on-disk schemas/registry (IO boundary)
@@ -387,32 +368,30 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   const retrievalAuthority = loadStateRetrievalAuthority();
   const profileGlossary = personalGlossaryOutputContract();
 
-  const slashAliases = contractSection(contract, "slash_route_aliases", gaps);
-  const doctorContract = contractSection(contract, "doctor", gaps);
-  const structuredOutput = contractSection(contract, "structured_output", gaps);
-  const fieldSelection = contractSection(contract, "field_selection", gaps);
-
-  const isDict = (v: any) => v && typeof v === "object" && !Array.isArray(v);
-  const cp = contractPath();
+  const authorityPath = integrationAuthorityPath();
 
   return {
     schemaVersion: "agentera.schema.v1",
     command,
     status: gaps.length > 0 ? "incomplete" : "ok",
     source: {
-      contract: cp,
-      contract_exists: fileExists(cp),
+      integration_authority: authorityPath,
+      integration_authority_exists: fileExists(authorityPath),
       schemas_dir: schemasDir,
       schemas_dir_exists: dirExists(schemasDir),
       schema_count: artifactSchemas.length,
       app_model: appModelPayload(appModel),
     },
     commands: describeCommands(),
+    validation: {
+      command: "agentera check validate",
+       families: [...advertisedValidateFamilyNames()],
+    },
     state_writer: stateWriterContract(),
     state_retrieval: { authority: retrievalAuthority.authority, ...retrievalAuthority.retrieval },
     entity_migration: entityMigrationAuthorityProjection(),
     integration: {
-      authority: "references/cli/agent-ready-state-contract.yaml",
+      authority: "skills/agentera/SKILL.md",
       active_contract: "one shared skill plus the Agentera CLI",
       shared_skill: {
         path: CANONICAL_SHARED_SKILL_PATH,
@@ -453,26 +432,20 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     },
     routine_state_commands: ROUTINE_STATE_COMMANDS,
     structured_output: {
-      formats: isDict(structuredOutput)
-        ? (structuredOutput.formats ?? ["json", "yaml"])
-        : "unknown",
+      formats: ["json", "yaml"],
       fields_by_command: {
         routine_state_commands: ROUTINE_STRUCTURED_FIELDS,
         status: STATUS_STRUCTURED_FIELDS,
       },
     },
     field_selection: {
-      syntax: isDict(fieldSelection)
-        ? (fieldSelection.syntax ?? "--fields FIELD[,FIELD...]")
-        : "unknown",
+      syntax: "--fields FIELD[,FIELD...]",
       retained_context: REQUIRED_SPARSE_CONTEXT_FIELDS,
-      applies_to: isDict(fieldSelection)
-        ? (fieldSelection.applies_to ?? ROUTINE_STATE_COMMANDS)
-        : "unknown",
+      applies_to: ROUTINE_STATE_COMMANDS,
     },
     slash_route_aliases: {
-      status: isDict(slashAliases) ? (slashAliases.status ?? "unknown") : "unknown",
-      aliases: isDict(slashAliases) ? (slashAliases.aliases ?? {}) : {},
+      status: "excluded_from_cli_commands",
+      aliases: {},
       cli_commands_added: true,
       note: "Decision 43 slash-route aliases map to direct capability-name routing guidance commands in Agentera 3.0.",
     },
@@ -480,19 +453,11 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     artifact_locations: artifactLocationsPayload,
     doctor: {
       command: "doctor",
-      removed_command: isDict(doctorContract)
-        ? (doctorContract.removed_command ?? "unknown")
-        : "unknown",
-      compatibility_alias: isDict(doctorContract)
-        ? (doctorContract.compatibility_alias ?? "unknown")
-        : "unknown",
-      self_check_categories: isDict(doctorContract)
-        ? (doctorContract.owns ?? "unknown")
-        : "unknown",
-      excludes: isDict(doctorContract) ? (doctorContract.excludes ?? "unknown") : "unknown",
-      adjacent_surfaces: isDict(doctorContract)
-        ? (doctorContract.adjacent_surfaces ?? "unknown")
-        : "unknown",
+      removed_command: "bundle-status",
+      compatibility_alias: "forbidden",
+      self_check_categories: DOCTOR_SELF_CHECK_CATEGORIES,
+      excludes: DOCTOR_EXCLUDES,
+      adjacent_surfaces: { codebase_audit: "/agentera audit" },
       signal_kinds: DOCTOR_SIGNAL_KINDS,
       shared_skill_field: "shared_skill",
       integration_mode: "shared_skill_and_cli_only",

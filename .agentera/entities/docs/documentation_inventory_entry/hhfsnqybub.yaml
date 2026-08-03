@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: PackageManifest interface model
   path: references/adapters/package-manifest-interface-model.yaml
-  last_updated: 2026-07-20
-  status: current
+  last_updated: 2026-08-03
+  status: stale

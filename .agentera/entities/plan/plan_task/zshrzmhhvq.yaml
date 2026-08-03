@@ -4,9 +4,19 @@ record:
   name: M4A · Establish retained-reference authority (ezkdeggmgm)
   depends_on:
     - srdmkolwqc
-  status: pending
+  status: complete
   acceptance:
     - GIVEN each retained reference WHEN validated THEN every current or migration reference names a production owner and runtime or validator consumer, and every runbook names a maintainer and a tracked noninteractive command that passes from its documented location.
     - GIVEN unowned, stale, or misplaced material WHEN validated THEN remove or reject it without test-created authority.
     - GIVEN inventory classes WHEN tested THEN each has one pass and one rejection.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: zshrzmhhvq-audit-final
+      source: Independent Audit ses_03a9a83a4ffeyH093fSJgrfDPR final targeted PASS after Resolve
+      recorded_at: 2026-08-03 11:59
+      writer_command: agentera state plan record-evaluation

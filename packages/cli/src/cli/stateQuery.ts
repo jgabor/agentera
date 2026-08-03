@@ -26,11 +26,9 @@ export const ROUTINE_STRUCTURED_FIELDS = [
 ];
 
 /** Canonical structured field set for the bare prime orientation briefing.
- *  Single consumer-facing authority: `agentera schema` discovery, the emitted
- *  prime JSON `source_contract.fields`, the text-mode source_contract line, and
- *  the agent-ready-state contract all derive from this list so the four-way drift
- *  documented in references/cli/prime-consumer-compatibility.yaml cannot recur.
- *  See public_output_policy.canonical_field_set. The published bare-prime shape
+ *  `agentera schema` discovery, the emitted prime JSON `source_contract.fields`,
+ *  and the text-mode source-contract line derive from this list. The shared skill
+ *  is the permanent host integration authority. The published bare-prime shape
  *  stays stable: omission of default-only conditional payload is governed by
  *  `state_presence` (missing-vs-empty) and named recovery commands, not by
  *  trimming this set. */

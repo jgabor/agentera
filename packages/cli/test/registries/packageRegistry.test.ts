@@ -16,10 +16,6 @@ import { repoStateFixturePath } from "../helpers/useFixtureProject.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const REGISTRY_PATH = path.join(REPO_ROOT, "references/adapters/package-registry.yaml");
-const INTERFACE_MODEL_PATH = path.join(
-  REPO_ROOT,
-  "references/adapters/package-manifest-interface-model.yaml",
-);
 const PACKAGE_MANIFEST_PATH = path.join(REPO_ROOT, "registry.json");
 const CLI_PACKAGE_PATH = path.join(REPO_ROOT, "packages/cli/package.json");
 const FIXTURE_DOCS_PATH = path.join(repoStateFixturePath("ok"), ".agentera/docs.yaml");
@@ -32,15 +28,6 @@ function registryFixture(): any {
 
 function manifestSuiteVersion(): string {
   return JSON.parse(fs.readFileSync(PACKAGE_MANIFEST_PATH, "utf8")).skills[0].version;
-}
-
-function scalarStrings(value: unknown): string[] {
-  if (typeof value === "string") return [value];
-  if (Array.isArray(value)) return value.flatMap(scalarStrings);
-  if (value && typeof value === "object") {
-    return Object.values(value).flatMap(scalarStrings);
-  }
-  return [];
 }
 
 describe("package registry", () => {
@@ -117,49 +104,6 @@ describe("package registry", () => {
     const errors = validateRegistryData(fixture, REPO_ROOT);
     expect(errors).toContain("records[0]: unknown group runtime_package_manifests");
     expect(errors).toContain("records[0]: unknown group package_commands");
-  });
-
-  it("keeps bundle values solely in the registry and models directory/file entries structurally", () => {
-    const fixture = registryFixture();
-    const model = YAML.parse(fs.readFileSync(INTERFACE_MODEL_PATH, "utf8"));
-    const bundleModel = model.record.groups.bundle_surfaces;
-    const entryContract = bundleModel.entry_contracts.directory_and_file;
-
-    expect(model).not.toHaveProperty("sample_manifest");
-    expect(bundleModel.required_fields).toMatchObject({
-      directories: "list[object]",
-      files: "list[object]",
-    });
-    expect(entryContract).toEqual({
-      applies_to: ["directories", "files"],
-      required_fields: ["id", "path"],
-      allowed_fields: ["id", "path"],
-      field_types: { id: "string", path: "repo_relative_path" },
-      uniqueness: {
-        id: "global_across_directories_and_files",
-        path: "global_across_directories_and_files",
-      },
-      path_format: "normalized_relative_posix",
-      forbidden_path_forms: [
-        "posix_absolute",
-        "windows_absolute_or_drive_prefixed",
-        "backslash",
-        "dot_or_dot_dot_segment",
-        "leading_dot_slash",
-        "trailing_separator",
-        "noncanonical_posix_normalization",
-      ],
-    });
-    expect(bundleModel.value_authority).toBe(
-      "references/adapters/package-registry.yaml records[*].bundle_surfaces",
-    );
-
-    const registryBundle = fixture.records[0].bundle_surfaces;
-    const canonicalValues = new Set(
-      [...registryBundle.directories, ...registryBundle.files]
-        .flatMap((entry: { id: string; path: string }) => [entry.id, entry.path]),
-    );
-    expect(scalarStrings(bundleModel).filter((value) => canonicalValues.has(value))).toEqual([]);
   });
 
   it("rejects string-list bundle entries and undeclared entry fields", () => {

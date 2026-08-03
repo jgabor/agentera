@@ -1,0 +1,155 @@
+schema_version: agentera.retainedReferenceAuthority.v1
+live_roots:
+  - references
+  - skills/agentera/references
+inventory:
+  - path: references/adapters/package-publication.json
+    classification: current
+    production_owner: { module: packages/cli/scripts/publication-transaction.mjs, symbol: PUBLICATION_CONTRACT }
+    consumers:
+      - { kind: runtime, module: packages/cli/scripts/publication-transaction.mjs, symbol: PUBLICATION_CONTRACT, consumption: loads }
+  - path: references/adapters/package-registry.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/registries/packageRegistry.ts, symbol: loadRegistry }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/registries/packageRegistry.ts, symbol: loadRegistry, consumption: loads }
+  - path: references/analysis/evidence-tier-authority.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/registries/evidenceTierContract.ts, symbol: loadEvidenceTierContract }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/registries/evidenceTierContract.ts, symbol: loadEvidenceTierContract, consumption: loads }
+  - path: references/analysis/verification-policy.yaml
+    classification: current
+    production_owner: { module: packages/cli/scripts/verify-lane.mjs, symbol: loadContract }
+    consumers:
+      - { kind: runtime, module: packages/cli/scripts/verify-lane.mjs, symbol: loadContract, consumption: loads }
+  - path: references/artifacts/artifact-registry-interface-model.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/registries/artifactRegistry.ts, symbol: loadArtifactRegistry }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/registries/artifactRegistry.ts, symbol: loadArtifactRegistry, consumption: loads }
+  - path: references/artifacts/glossary-entry-contract.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/registries/glossaryEntryContract.ts, symbol: glossaryEntryAuthorityPath }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/registries/glossaryEntryContract.ts, symbol: personalGlossaryOutputContract, consumption: loads }
+  - path: references/artifacts/state-storage-authority.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/state/stateStorageAuthority.ts, symbol: loadStateStorageAuthority }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/state/stateStorageAuthority.ts, symbol: loadStateStorageAuthority, consumption: loads }
+  - path: references/artifacts/verbosity-budget-authority.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/registries/verbosityBudgetContract.ts, symbol: inspectArtifactVerbosityBudget }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/registries/verbosityBudgetContract.ts, symbol: inspectArtifactVerbosityBudget, consumption: loads }
+  - path: references/cli/app-lifecycle-vocabulary.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/validate/vocabularyAuthority.ts, symbol: validateVocabularyAuthority }
+    consumers:
+      - { kind: validator, module: packages/cli/src/validate/vocabularyAuthority.ts, symbol: validateVocabularyAuthority, consumption: loads }
+  - path: references/cli/bundle-skill-vocabulary.yaml
+    classification: delete
+  - path: references/cli/capability-instruction-contract.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/cli/capabilityContext/progress.ts, symbol: evaluatorHandoffOutputRequirementsFromContract }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/cli/capabilityContext/progress.ts, symbol: evaluatorHandoffOutputRequirementsFromContract, consumption: loads }
+  - path: references/cli/hybrid-route-contract.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/registries/hybridRoute.ts, symbol: resolveRouteRequest }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/registries/hybridRoute.ts, symbol: resolveRouteRequest, consumption: loads }
+  - path: references/cli/update-channels.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/release/releaseMetadata.ts, symbol: readReleaseMetadata }
+    consumers:
+      - { kind: validator, module: packages/cli/src/release/releaseMetadata.ts, symbol: readReleaseMetadata, consumption: loads }
+  - path: references/cli/vocabulary-index.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/validate/vocabularyAuthority.ts, symbol: validateVocabularyAuthority }
+    consumers:
+      - { kind: validator, module: packages/cli/src/validate/vocabularyAuthority.ts, symbol: validateVocabularyAuthority, consumption: loads }
+  - path: references/cli/vocabulary.md
+    classification: current
+    production_owner: { module: packages/cli/src/validate/vocabularyAuthority.ts, symbol: validateVocabularyAuthority }
+    consumers:
+      - { kind: validator, module: packages/cli/src/validate/vocabularyAuthority.ts, symbol: validateVocabularyAuthority, consumption: loads }
+  - path: references/adapters/runtime-lifecycle-adapters.yaml
+    classification: migration-only
+    production_owner: { module: packages/cli/src/runtime/lifecycleAdapterContract.ts, symbol: loadRuntimeLifecycleAdapterContract }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/runtime/lifecycleAdapterContract.ts, symbol: loadRuntimeLifecycleAdapterContract, consumption: loads }
+  - path: references/adapters/runtime-lifecycle-authority.yaml
+    classification: migration-only
+    production_owner: { module: packages/cli/src/runtime/lifecycleAuthority.ts, symbol: loadLifecycleAuthority }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/runtime/lifecycleAuthority.ts, symbol: loadLifecycleAuthority, consumption: loads }
+  - path: references/adapters/runtime-lifecycle-operation-contract.yaml
+    classification: migration-only
+    production_owner: { module: packages/cli/src/runtime/lifecycleOperationContract.ts, symbol: loadLifecycleOperationContract }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/runtime/lifecycleOperationContract.ts, symbol: loadLifecycleOperationContract, consumption: loads }
+  - path: references/adapters/runtime-retired-resources.yaml
+    classification: migration-only
+    production_owner: { module: packages/cli/src/runtime/nativeResourceCleanup.ts, symbol: loadNativeResourceCleanupContract }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/runtime/nativeResourceCleanup.ts, symbol: loadNativeResourceCleanupContract, consumption: loads }
+  - path: references/cli/coexistence-probe.yaml
+    classification: migration-only
+    production_owner: { module: packages/cli/src/upgrade/coexistenceProbe.ts, symbol: loadCoexistenceProbeAuthority }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/upgrade/coexistenceProbe.ts, symbol: loadCoexistenceProbeAuthority, consumption: loads }
+  - path: references/cli/v3-handoff-manifest.schema.yaml
+    classification: delete
+  - path: references/adapters/package-surface-characterization.md
+    classification: runbook
+    maintainer: Agentera CLI maintainers
+    source_checkout_root: .
+    working_directory: .
+    command: pnpm -C packages/cli run pack:dry-run
+  - path: references/cli/routing-model.md
+    classification: runbook
+    maintainer: Agentera CLI maintainers
+    source_checkout_root: .
+    working_directory: .
+    command: node packages/cli/dist/bin/agentera.js route evaluate --format json
+  - path: references/cli/trigger-schema-enrichment.md
+    classification: runbook
+    maintainer: Agentera CLI maintainers
+    source_checkout_root: .
+    working_directory: .
+    command: node packages/cli/dist/bin/agentera.js check validate capability-contract --format json
+  - path: references/meta/retained-reference-authority.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/validate/retainedReferenceAuthority.ts, symbol: validateRetainedReferenceAuthority }
+    consumers:
+      - { kind: validator, module: packages/cli/src/validate/retainedReferenceAuthority.ts, symbol: validateRetainedReferenceAuthority, consumption: loads }
+  - path: references/cli/upgrade-repair-wording.md
+    classification: historical
+  - path: references/adapters/package-manifest-interface-model.yaml
+    classification: delete
+  - path: references/analysis/benchmark.md
+    classification: delete
+  - path: references/analysis/startup-measurement-contract.yaml
+    classification: delete
+  - path: references/cli/agent-ready-state-contract.yaml
+    classification: delete
+  - path: references/cli/audience-namespace-cli-migration.yaml
+    classification: delete
+  - path: references/cli/capability-instruction-structure.md
+    classification: delete
+  - path: references/cli/capability-tool-classification.yaml
+    classification: delete
+  - path: references/cli/parity-expected-actual-template.md
+    classification: delete
+  - path: references/cli/prime-consumer-compatibility.yaml
+    classification: delete
+  - path: references/cli/routing-execution-vocabulary.yaml
+    classification: delete
+  - path: references/cli/single-name-protocol.yaml
+    classification: delete
+  - path: references/meta/documentation-inventory.md
+    classification: delete
+  - path: skills/agentera/references/contract.md
+    classification: delete

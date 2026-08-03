@@ -1,0 +1,17 @@
+id: jrxvtmposk
+artifact: progress
+record:
+  timestamp: 2026-08-03 11:59
+  type: fix
+  phase: build
+  what: Added references/meta/retained-reference-authority.yaml and the source-checkout check validate retained-references gate. Removed 16 live reference files without production responsibility and preserved active migration behavior.
+  context:
+    intent: Give every retained reference one machine-checked production responsibility or executable source-checkout runbook.
+    constraints: Preserve migration behavior, suite version 3.0.0, user state, and the four pre-existing staged plan-task changes; do not publish, tag, push, or mutate installed resources.
+    unknowns: The plan unknowns concern TODO merge behavior and stable-cutover approval; neither affects M4A.
+    scope: Reference inventory and consumers under references/, skills/agentera/references/, the source-checkout validator, affected runtime loaders, tests, docs inventory, TODOs ezkdeggmgm and jwnvbdcadl, and plan tasks zshrzmhhvq and vcxavjxafz.
+  inspiration: Decision imumkmffwh requires the shared skill and CLI to remain the sole permanent integration surface and rejects test-created reference authority.
+  discovered: Existing reference checks accepted test-only schemas, comments, emitted paths, unrelated reads, dead exports, and runbooks with missing implementations. Independent Audit exposed two forgeable consumer-evidence cases before final PASS.
+  verified: Independent Audit PASS. Typecheck passed; 228 source test files passed with 3,094 tests and 1 skipped; 25 package tests passed; build, retained-reference validation, 51-case route evaluation, package dry-run, capability-contract validation, and compact passed.
+  next: Continue with M4B retired-resource authority and identity migration.
+  publication_order: 54

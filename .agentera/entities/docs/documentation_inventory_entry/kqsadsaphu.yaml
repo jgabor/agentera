@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: Benchmark guide
   path: references/analysis/benchmark.md
-  last_updated: 2026-05-23
-  status: current
+  last_updated: 2026-08-03
+  status: stale

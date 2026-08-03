@@ -51,6 +51,10 @@
 - Changed `agentera check lint` verbosity checks to consume schema-owned full-file and per-entry word limits, skip no-limit and token-only dimensions, and report authority failures without fallback budgets.
 - Corrected packaged experiment-publication authority to declare validated objective-scoped archive-before-projection ownership and reject contradictory structured scope metadata.
 - Synchronized bounded plan, plan-task, and experiment retrieval across help, schema introspection, capability guidance, operator docs, packaged contracts, output bounds, archive ownership, and structured recovery errors.
+- Retained references now have one machine-validated inventory. Current and
+  migration-only contracts require exact reachable production consumers,
+  maintainer runbooks require working source-checkout commands, and unowned,
+  historical, test-only, or comment-only files no longer ship as live authority.
 
 ### Fixed
 

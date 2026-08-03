@@ -71,7 +71,6 @@ records:
         - registry.json
       index_targets:
         - references/adapters/package-surface-characterization.md
-        - references/adapters/package-manifest-interface-model.yaml
         - references/adapters/package-registry.yaml
     release_policy:
       semver_policy_source: .agentera/docs.yaml conventions.semver_policy

@@ -14,9 +14,7 @@ authority_order:
   - references/artifacts/artifact-registry-interface-model.yaml
   - references/cli/app-lifecycle-vocabulary.yaml
   - references/cli/update-channels.yaml
-  - references/cli/bundle-skill-vocabulary.yaml
   - references/cli/capability-instruction-contract.yaml
-  - references/cli/routing-execution-vocabulary.yaml
   - skills/agentera/SKILL.md
   - packages/cli/src/capabilities/*/instructions.ts
   - the agentera CLI

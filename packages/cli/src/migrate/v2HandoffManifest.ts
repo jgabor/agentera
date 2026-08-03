@@ -17,8 +17,6 @@ import {
   ROOT_USER_STATE_FILE_NAMES,
 } from "../upgrade/doctor.js";
 
-/** Contract authority: references/cli/v3-handoff-manifest.schema.yaml */
-export const V2_HANDOFF_MANIFEST_SCHEMA_REL = "references/cli/v3-handoff-manifest.schema.yaml";
 export const V2_HANDOFF_MANIFEST_FILENAME = "v3-handoff.json";
 export const V2_HANDOFF_SCHEMA_VERSION = "agentera.v3_handoff_manifest.v1";
 export const READER_PREFLIGHT_BUDGET_MS = 100;

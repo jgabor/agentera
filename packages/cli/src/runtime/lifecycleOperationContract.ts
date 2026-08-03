@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import {
   LIFECYCLE_APPLY_STATUSES,
@@ -119,18 +120,28 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   return errors;
 }
 
+export function loadLifecycleOperationContract(
+  contractPath = path.join(resolveSourceRoot(), LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH),
+): Record<string, unknown> {
+  const data = loadYamlMapping(fs.readFileSync(contractPath, "utf8"));
+  const errors = validateLifecycleOperationContractData(data);
+  if (errors.length > 0) {
+    throw new Error(`Lifecycle operation contract validation failed: ${errors.join("; ")}`);
+  }
+  return data;
+}
+
 export function validateLifecycleOperationContractRoot(root: string): string[] {
   const contractPath = path.join(root, LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH);
   if (!fs.existsSync(contractPath)) {
     return [`${LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH}:1: missing lifecycle operation contract`];
   }
   try {
-    return validateLifecycleOperationContractData(
-      loadYamlMapping(fs.readFileSync(contractPath, "utf8")),
-    ).map((error) => `${LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH}: ${error}`);
+    loadLifecycleOperationContract(contractPath);
+    return [];
   } catch (error) {
     return [
-      `${LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH}: could not parse contract: ${(error as Error).message}`,
+      `${LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH}: could not load contract: ${(error as Error).message}`,
     ];
   }
 }

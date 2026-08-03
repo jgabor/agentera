@@ -20,9 +20,7 @@ import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../capabilityContext/types.js
  * (Buffer.byteLength(JSON.stringify(brief, null, 2) + "\n", "utf8")); an
  * over-budget brief is rejected in favor of a bounded degraded envelope.
  * Diagnostics (the `issues` deprecation warning) stay on stderr and are
- * measured separately. See references/cli/prime-consumer-compatibility.yaml
- * brief_omission_contract and references/artifacts/state-storage-authority.yaml
- * budgets.startup.surfaces.prime_briefing.
+ * measured separately. The state-storage authority owns the briefing budget.
  */
 
 /** Authoritative byte budget for the default bare prime decision brief.
@@ -61,8 +59,7 @@ interface OmittedRichStateEntry {
 }
 
 /** Rich-state sub-detail projected out of the default brief, each with a named
- *  authoritative recovery command (AC4). Mirrors brief_omission_contract in
- *  references/cli/prime-consumer-compatibility.yaml. */
+ *  authoritative recovery command. */
 const planTaskFamily = entityListFamily("plan_tasks");
 const planTaskListRecovery = `agentera state ${planTaskFamily.commandTokens.join(" ")} list --format json`;
 

@@ -1,18 +1,17 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
+import {
+  buildSchemaPayload,
+  REMOVED_TOP_LEVEL_CORRECTIONS,
+  TRANSITIONAL_TOP_LEVEL_ALIASES,
+} from "../../src/cli/commands/schema.js";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { main } from "../../src/cli/dispatch.js";
 import { printTopLevelHelp } from "../../src/cli/help.js";
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const AUTHORITY_PATH = path.join(REPO_ROOT, "references/cli/audience-namespace-cli-migration.yaml");
 const temporaryProjects: string[] = [];
 
 type AliasEntry = {
@@ -32,10 +31,6 @@ function capture(argv: string[]): { rc: number; out: string; err: string } {
     err: (text) => { err += text; },
   });
   return { rc, out, err };
-}
-
-function authority(): Record<string, unknown> {
-  return YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8"));
 }
 
 function advertisedAliases(): AdvertisedAlias[] {
@@ -66,7 +61,7 @@ afterEach(() => {
 
 describe("schema-advertised alias/runtime parity", () => {
   it("advertises exactly the authority-owned transitional aliases", () => {
-    const expected = (authority().transitional_stderr_aliases as AliasEntry[])
+    const expected = TRANSITIONAL_TOP_LEVEL_ALIASES
       .map(({ legacy, canonical }) => ({ legacy, canonical }));
     const actual = advertisedAliases().map(({ legacy, canonical }) => ({ legacy, canonical }));
     expect(actual).toEqual(expected);
@@ -108,10 +103,8 @@ describe("schema-advertised alias/runtime parity", () => {
   });
 
   it("does not advertise retired names and returns an executable structured correction for each", () => {
-    const contract = authority();
-    const removed = contract.removed_top_level_commands as string[];
-    const corrections = contract.removed_top_level_corrections as AliasEntry[];
-    expect(corrections.map(({ legacy }) => legacy)).toEqual(removed);
+    const corrections = Object.entries(REMOVED_TOP_LEVEL_CORRECTIONS)
+      .map(([legacy, canonical]) => ({ legacy, canonical }));
 
     const advertised = advertisedAliases();
     for (const { legacy, canonical } of corrections) {

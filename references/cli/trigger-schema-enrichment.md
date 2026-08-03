@@ -138,3 +138,10 @@ validator validates their compatibility shapes; specifically, it validates the
 numeric fields' integer 0..100 range, while the loader accepts and discards
 their values. Do not add them to new active trigger entries. Their presence
 cannot change a natural-language classification.
+
+## Maintenance
+
+- Maintainer: Agentera CLI maintainers
+- Source checkout root: `.`
+- Working directory: `.`
+- Command: `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json`
