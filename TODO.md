@@ -192,3 +192,6 @@ Exit only after explicit approval, publication verification, final synchronizati
 - [ ] [id:azsvrmuhch] [fix:3.0.0] Make Doctor report project operability separately from installation health.
 - [ ] [id:zeyfnbqdov] [fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup.
 - [ ] [id:yqyodsuqfb] [fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests.
+- [ ] [id:rrflufktbc] [fix:3.0.0] Activate TODO reconciliation during explicit entity cutover.
+- [ ] [id:ibomhottkk] [fix:3.0.0] Add an explicit TODO reconciliation activation command.
+- [ ] [id:rnhnurigbf] [fix:3.0.0] Report inactive TODO reconciliation as action-required.

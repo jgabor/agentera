@@ -1,0 +1,33 @@
+id: ibomhottkk
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Add an explicit TODO reconciliation activation command.
+  requirements:
+    - Add `agentera state todo activate` with read-only `--dry-run` and explicit confirmed apply for marker-active inactive projects.
+    - Reuse `.agentera/.todo-reconciliation/` transaction journals; do not require a synthetic TODO field update.
+  acceptance:
+    - Dry-run reports targets and validation without writes.
+    - Apply publishes activation metadata, visible IDs, and entity baselines for subsequent clean projection reads.
+    - Conflicts fail before effects; interruption and repeated apply recover idempotently.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: Already-cut-over projects need a discoverable supported recovery instead of an unrelated no-op TODO update.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 38
+    order_reason: Provide explicit recovery after automatic upgrade activation is defined.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Add an explicit TODO reconciliation activation command."
+      severity: critical
+      status: open
+      order: 9

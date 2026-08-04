@@ -1,0 +1,33 @@
+id: rrflufktbc
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Activate TODO reconciliation during explicit entity cutover.
+  requirements:
+    - During `agentera upgrade --yes`, publish `.agentera/todo-reconciliation-activation.json`, visible row IDs, and public baselines before success when exact matching validates.
+    - Keep previews read-only; reject ambiguous or conflicting rows before effects; make retries converge without reallocating IDs.
+  acceptance:
+    - A recognized v2 project with exact ID-less TODO matches upgrades to a clean active projection before `agentera prime` runs.
+    - Ambiguous input fails without partial activation, and interrupted or repeated upgrade preserves canonical IDs and converges.
+    - Ordinary reads remain mutation-free.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: The explicit v3 cutover must leave TODO public and operational state fully connected before reporting success.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 37
+    order_reason: Complete automatic migration before relying on manual recovery or downstream status reporting.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Activate TODO reconciliation during explicit entity cutover."
+      severity: critical
+      status: open
+      order: 8
