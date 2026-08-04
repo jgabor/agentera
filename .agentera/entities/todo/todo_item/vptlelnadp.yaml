@@ -14,12 +14,12 @@ record:
       order: 1
   readiness:
     capability: build
-    reason: Retry budget is exhausted after aibyumkzxr-audit-1 and aibyumkzxr-audit-2 both failed bundled-authority scanner acceptance.
+    reason: Task A vzazfyoobl exhausted both independent Audit attempts; dependent Task B iezyzgirjb remains pending and blocked.
     dependencies:
       []
     blocked:
-      reason: The stable-v2 exemption lacks exact ordered command equality; the scanner also misses shell prompts, numbered or prose commands, and YAML list mappings.
-      recovery: Enforce exact [dry-run, yes] sequence and fail-closed command detection for common Markdown/YAML forms with adversarial coverage.
+      reason: The scanner must recognize every Agentera subcommand and every command in a scalar, including nested quoted commands; @latest outside the exact stable pair must reject independently of subcommand or wrapper; producer closure must conservatively cover all constructor import and re-export consumers; generated parity must compare id, path, format, classification, and reason; unused exemptions must reject.
+      recovery: Implement all five exact closures, then rerun the audit-2 adversarial probes from ses_032261e52ffekfdnDxqjSnGeE4 for non-whitelisted subcommands, multiple and nested quoted scalar commands, wrapped or split @latest, constructor import/re-export consumers, generated metadata mismatches, and unused exemptions before any Task B execution.
     gate: null
     queue_rank: 1
-    order_reason: Keep this critical bootstrap authority gap visible but ineligible until both scanner defects are corrected under a replacement task.
+    order_reason: Keep this critical bootstrap blocker first; Task B cannot run because its sole dependency exhausted evaluation without PASS.

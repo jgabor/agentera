@@ -47,8 +47,9 @@ skill at `~/.agents/skills/agentera` plus the Agentera CLI. Normal `upgrade`
 previews and applies only app/project migration; it has no current-runtime
 selector and creates no native plugin, hook, agent, command, descriptor, or
 marketplace file. See [UPGRADE.md](./UPGRADE.md) for the distinct one-way v2
-migration and explicit native-resource cleanup route:
-`agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes`.
+migration and explicit native-resource cleanup route. The guide shows separate
+`@next` preview and apply commands for each cleanup resource.
+The cleanup option pair is `--legacy-cleanup RESOURCE_ID --dry-run|--yes`.
 
 `doctor` reports read-only app, project-state, shared-skill, and CLI evidence.
 `prime`, status, and project-integration output use the app/project recommendation

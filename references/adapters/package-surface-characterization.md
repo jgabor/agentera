@@ -39,6 +39,19 @@ bundle data disappears, or if a current host-native descriptor/runtime path
 enters the package. Contributors use `pnpm -C packages/cli run pack:dry-run`;
 direct checkout packing remains rejected by the canonical packaging authority.
 
+`bootstrap_command_authority` closes the command-guidance inventory. Markdown,
+YAML, and JSON bundle surfaces are parsed and scanned in source and extracted
+package layouts. Other files need a path-specific reason. Generated files need
+a source-side producer reason and are parsed after construction. Every source
+module that emits a command through the pre-cutover constructor, an imported
+alias, local wrapper, or re-export must appear in the emitted-producer list with
+an inspectable reason. Bounded TypeScript AST discovery closes that set.
+Normalized source and extracted-package records must match in path, kind,
+classification, and reason; aggregate outputs are scanned separately. New,
+missing, malformed, stale, mismatched, or unclassified surfaces and producers
+fail package policy. This avoids a blind scan of compiled JavaScript while
+still checking generated behavior.
+
 ## Publication adapters
 
 [`package-publication.json`](./package-publication.json) owns the shared

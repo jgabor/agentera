@@ -15,6 +15,7 @@ export const REQUIRED_GROUPS = [
   "version_authority",
   "version_surfaces",
   "bundle_surfaces",
+  "bootstrap_command_authority",
   "docs_targets",
   "release_policy",
 ] as const;
@@ -29,6 +30,7 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
   ],
   version_surfaces: ["surfaces"],
   bundle_surfaces: ["directories", "files", "generated_files", "skip_parts", "skip_suffixes"],
+  bootstrap_command_authority: ["scanned_formats", "exemptions", "emitted_producers"],
   docs_targets: ["version_files_source", "version_files", "index_targets"],
   release_policy: [
     "semver_policy_source",
@@ -39,7 +41,7 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
 
 const CONSUMER_GROUPS: Record<string, readonly string[]> = {
   validator: ["identity", "version_authority", "version_surfaces"],
-  upgrade: ["identity", "version_authority", "bundle_surfaces"],
+  upgrade: ["identity", "version_authority", "bundle_surfaces", "bootstrap_command_authority"],
   docs: ["identity", "version_authority", "docs_targets", "release_policy"],
   tests: REQUIRED_GROUPS,
 };
@@ -315,6 +317,9 @@ function validateGroup(prefix: string, group: string, value: JsonObject, root: s
     case "bundle_surfaces":
       errors.push(...validateBundleSurfaces(prefix, value));
       break;
+    case "bootstrap_command_authority":
+      errors.push(...validateBootstrapCommandAuthority(prefix, value, root));
+      break;
     case "docs_targets":
       errors.push(...validateDocsTargets(prefix, value, root));
       break;
@@ -421,6 +426,56 @@ function validateBundleSurfaces(prefix: string, value: JsonObject): string[] {
     if (!isStringList(value[field])) {
       errors.push(`${prefix}.${field} must be a list of strings`);
     }
+  }
+  const generated = value.generated_files;
+  if (!Array.isArray(generated)) {
+    errors.push(`${prefix}.generated_files must be a list`);
+  } else {
+    generated.forEach((entry, index) => {
+      const entryPrefix = `${prefix}.generated_files[${index}]`;
+      if (!isMapping(entry)) {
+        errors.push(`${entryPrefix} must be an object`);
+        return;
+      }
+      errors.push(...validateRequiredObjectFields(entryPrefix, entry, ["id", "path", "format", "classification", "command_authority_reason"]));
+      errors.push(...validateBundlePath(entryPrefix, entry.id, entry.path));
+      if (entry.format !== "json") errors.push(`${entryPrefix}.format must be json`);
+      if (entry.classification !== "active") errors.push(`${entryPrefix}.classification must be active`);
+      if (typeof entry.command_authority_reason !== "string" || !entry.command_authority_reason) {
+        errors.push(`${entryPrefix}.command_authority_reason must be a non-empty string`);
+      }
+    });
+  }
+  return errors;
+}
+
+function validateBootstrapCommandAuthority(prefix: string, value: JsonObject, root: string): string[] {
+  const errors: string[] = [];
+  const formats = value.scanned_formats;
+  if (!Array.isArray(formats) || !formats.every((item) => typeof item === "string") || new Set(formats).size !== 3 || !["markdown", "yaml", "json"].every((format) => formats.includes(format))) {
+    errors.push(`${prefix}.scanned_formats must contain exactly markdown, yaml, and json`);
+  }
+  for (const field of ["exemptions", "emitted_producers"]) {
+    const entries = value[field];
+    if (!Array.isArray(entries)) {
+      errors.push(`${prefix}.${field} must be a list`);
+      continue;
+    }
+    const paths = new Set<string>();
+    entries.forEach((entry, index) => {
+      const entryPrefix = `${prefix}.${field}[${index}]`;
+      if (!isMapping(entry)) {
+        errors.push(`${entryPrefix} must be an object`);
+        return;
+      }
+      errors.push(...validateRequiredObjectFields(entryPrefix, entry, ["path", "reason"]));
+      errors.push(...validateRepoPath(`${entryPrefix}.path`, entry.path, root));
+      if (typeof entry.reason !== "string" || !entry.reason) errors.push(`${entryPrefix}.reason must be a non-empty string`);
+      if (typeof entry.path === "string") {
+        if (paths.has(entry.path)) errors.push(`${entryPrefix}.path duplicates ${JSON.stringify(entry.path)}`);
+        paths.add(entry.path);
+      }
+    });
   }
   return errors;
 }

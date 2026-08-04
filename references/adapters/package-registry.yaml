@@ -52,10 +52,12 @@ records:
           path: .agentera-npx-bundle.json
           format: json
           classification: active
+          command_authority_reason: Build-generated JSON marker is parsed and scanned in the extracted package; source inventory classifies its declared producer because no source copy exists.
         - id: extract-corpus-parity
           path: extract-corpus-parity.json
           format: json
           classification: active
+          command_authority_reason: Build-generated JSON parity receipt is parsed and scanned in the extracted package; source inventory classifies its declared producer because no source copy exists.
       skip_parts:
         - __pycache__
         - .pytest_cache
@@ -63,6 +65,119 @@ records:
       skip_suffixes:
         - .pyc
         - .pyo
+    bootstrap_command_authority:
+      scanned_formats:
+        - markdown
+        - yaml
+        - json
+      exemptions:
+        - path: CHANGELOG.md
+          reason: Release history records past command spellings and is descriptive history, not current executable guidance.
+        - path: DESIGN.md
+          reason: Visual design history and token declarations are descriptive and do not authorize CLI execution.
+        - path: LICENSE
+          reason: Apache-2.0 legal text is not instructional content and has no executable guidance fields.
+        - path: fixtures/routing/hybrid-corpus.yaml
+          reason: Routing evaluation inputs are untrusted request fixtures, not commands emitted or recommended to an agent.
+      emitted_producers:
+        - path: packages/cli/src/capabilities/index.ts
+          reason: Complete capability bodies and startup commands pass through the shared pre-cutover constructors and source/package output scans.
+        - path: packages/cli/src/cli/prime-blob.ts
+          reason: Complete static prime guidance passes through the shared instruction-body constructor and source/package output scans.
+        - path: packages/cli/src/cli/help.ts
+          reason: Help examples pass through the shared command constructor and complete help outputs are source/package scanned.
+        - path: packages/cli/src/cli/migrationRequired.ts
+          reason: Machine recovery fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/orientation.ts
+          reason: Machine orientation fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/planLifecycleState.ts
+          reason: Machine lifecycle fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/stateQuery.ts
+          reason: Machine query recovery prose constructs executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/todoReadinessSelection.ts
+          reason: Machine TODO retrieval fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/registries/hybridRouteReceipt.ts
+          reason: Route receipt startup authority constructs executable guidance only through preCutoverCommand and has behavioral output checks.
+        - path: packages/cli/src/cli/capabilityContext/benchmark.ts
+          reason: Capability benchmark fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/capabilityContext/build.ts
+          reason: Build context fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/capabilityContext/closeout.ts
+          reason: Closeout context fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/capabilityContext/contract.ts
+          reason: Capability contract fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/capabilityContext/evidence.ts
+          reason: Evidence context fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/capabilityContext/orchestration.ts
+          reason: Orchestration context fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/capabilityContext/shared.ts
+          reason: Shared capability fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/capabilityContext/types.ts
+          reason: Typed fallback defaults construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/capabilityContext/startupAggregation.ts
+          reason: Startup availability and discovery fields construct executable guidance only through preCutoverCommand and have aggregate output checks.
+        - path: packages/cli/src/cli/commands/capability.ts
+          reason: Capability command recovery fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/commands/prime.ts
+          reason: Prime command diagnostics construct executable guidance only through preCutoverCommand and have source/package output checks.
+        - path: packages/cli/src/cli/commands/query.ts
+          reason: Query command fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/commands/route.ts
+          reason: Route command diagnostics construct executable guidance only through preCutoverCommand and have behavioral output checks.
+        - path: packages/cli/src/cli/dispatch/index.ts
+          reason: Dispatcher recovery output constructs executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/dispatch/lifecycle.ts
+          reason: Lifecycle recovery output constructs executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/commands/prime/orientationOutput.ts
+          reason: Orientation output fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/commands/prime/collectEntityOrientation.ts
+          reason: Entity orientation output fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/commands/prime/buildExecutionRequest.ts
+          reason: Build request diagnostics construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/commands/prime/briefOrientation.ts
+          reason: Brief orientation fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/bin/agentera.ts
+          reason: The executable entry point publishes dispatcher output that transitively contains guarded command guidance.
+        - path: packages/cli/src/cli/capabilityContext.ts
+          reason: The capability-context facade re-exports guarded context producers.
+        - path: packages/cli/src/cli/capabilityContext/bespoke.ts
+          reason: Bespoke capability contexts transitively publish guarded command fields.
+        - path: packages/cli/src/cli/capabilityContext/index.ts
+          reason: The capability-context index re-exports guarded context producers.
+        - path: packages/cli/src/cli/capabilityContext/startup.ts
+          reason: Startup context assembly transitively publishes guarded command fields.
+        - path: packages/cli/src/cli/commands/prime/collectOrientationState.ts
+          reason: Orientation state assembly transitively publishes guarded command fields.
+        - path: packages/cli/src/cli/commands/schema.ts
+          reason: Schema output transitively publishes guarded writer command guidance.
+        - path: packages/cli/src/cli/commands/state/docs.ts
+          reason: Docs-state output transitively publishes guarded command guidance.
+        - path: packages/cli/src/cli/commands/state/get.ts
+          reason: Exact-get output transitively publishes guarded retrieval guidance.
+        - path: packages/cli/src/cli/commands/state/index.ts
+          reason: The state command index re-exports guarded state producers.
+        - path: packages/cli/src/cli/commands/state/list.ts
+          reason: List output transitively publishes guarded retrieval guidance.
+        - path: packages/cli/src/cli/commands/state/todo.ts
+          reason: TODO output transitively publishes guarded retrieval guidance.
+        - path: packages/cli/src/cli/commands/upgrade.ts
+          reason: Upgrade output transitively publishes guarded recovery guidance.
+        - path: packages/cli/src/cli/commands/upgradeVerify.ts
+          reason: Upgrade verification output transitively publishes guarded recovery guidance.
+        - path: packages/cli/src/cli/commands/verify.ts
+          reason: Verification output transitively publishes guarded command guidance.
+        - path: packages/cli/src/cli/dispatch.ts
+          reason: The dispatcher facade re-exports guarded output producers.
+        - path: packages/cli/src/cli/dispatch/check.ts
+          reason: Check dispatch publishes guarded validation and recovery output.
+        - path: packages/cli/src/cli/dispatch/prime.ts
+          reason: Prime dispatch publishes guarded startup output.
+        - path: packages/cli/src/cli/dispatch/state.ts
+          reason: State dispatch publishes guarded state output.
+        - path: packages/cli/src/eval/hybridRouteEvaluation.ts
+          reason: Routing evaluation transitively publishes guarded startup provenance.
+        - path: packages/cli/src/state/todoDocsEntities.ts
+          reason: TODO reconciliation output transitively publishes guarded retrieval guidance.
     docs_targets:
       version_files_source: .agentera/docs.yaml conventions.version_files
       version_files:

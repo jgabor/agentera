@@ -6,8 +6,14 @@
   can call `npx -y agentera@next prime --context status --format json` once;
   marker-absent state now blocks with exact full-cutover recovery, while active
   help, metadata, route, detail, recovery, every served capability body, and
-  active bundled bootstrap authorities stay on `@next` with behavioral source
-  and package wrong-channel rejection coverage.
+  active bundled bootstrap authorities stay on `@next`. Parse-aware Markdown,
+  YAML, and duplicate-key-safe JSON checks now parse the complete shell context
+  and reject prompt, list, prose, table, wrapper, operator, substitution,
+  split-token, multiline, nested, malformed, alias-cycle, or wrong-channel
+  evasions with exact source and correction diagnostics. Exact normalized
+  source/package record parity and TypeScript-AST producer discovery close
+  bundle, generated, and machine-emitted inventories, including the sole
+  ordered stable-v2 exception.
 
 ### Changed
 

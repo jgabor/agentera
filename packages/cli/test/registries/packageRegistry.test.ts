@@ -96,6 +96,18 @@ describe("package registry", () => {
     expect(errors).toContain("records[0].identity: forbidden RuntimeAdapter field lifecycle_events");
   });
 
+  it("fails closed on malformed command-authority classifications", () => {
+    const malformed = registryFixture();
+    malformed.records[0].bootstrap_command_authority.exemptions[0].reason = "";
+    malformed.records[0].bootstrap_command_authority.emitted_producers[0].extra = true;
+    delete malformed.records[0].bundle_surfaces.generated_files[0].command_authority_reason;
+
+    const errors = validateRegistryData(malformed, REPO_ROOT);
+    expect(errors).toContain("records[0].bootstrap_command_authority.exemptions[0].reason must be a non-empty string");
+    expect(errors).toContain("records[0].bootstrap_command_authority.emitted_producers[0]: unknown field extra");
+    expect(errors).toContain("records[0].bundle_surfaces.generated_files[0]: missing required field command_authority_reason");
+  });
+
   it("rejects native manifest and package-command compatibility groups", () => {
     const fixture = registryFixture();
     fixture.records[0].runtime_package_manifests = { manifests: [] };

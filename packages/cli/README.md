@@ -20,8 +20,14 @@ entity-upgrade command in `state_cutover.recovery_command`; v3 returns `ok`
 unless health state makes it `degraded`. Every recovery command remains on
 `@next`, and an `ok` outcome needs no fallback or second dashboard call. Served
 capability instructions and bundled startup schemas use that same exact
-development-channel executable. The second command is an independent read-only
-evidence probe on the same channel.
+development-channel executable. Package verification parses every registry-owned
+instructional Markdown, YAML, and JSON surface, rejects duplicate keys and
+unsafe aliases, reason-classifies non-guidance and generated declarations, and
+closes constructor aliases, wrappers, and re-exports through TypeScript AST
+discovery. Source and extracted-package records must match exactly. Only the
+adjacent ordered stable-v2 preview/apply pair in `UPGRADE.md` may execute
+`@latest`. The second command is an independent read-only evidence probe on the
+same channel.
 
 `prime --format json` returns a bounded decision brief (at most 12000 UTF-8
 bytes). Status startup returns

@@ -1,0 +1,16 @@
+id: nydlpzeiep
+artifact: progress
+record:
+  timestamp: 2026-08-04 19:35
+  type: fix
+  phase: build
+  what: Implemented the Task A candidate for complete bootstrap command authority.
+  context:
+    intent: Replace the narrow line heuristic and weak stable-v2 exemption for task vzazfyoobl without starting dependent Task B.
+    constraints: No commit, task completion, TODO vptlelnadp resolution, predecessor supersession, persisted evaluation PASS, activation, cutover, network, registry, publication, tag, push, version, profile, vision, or external mutation before independent Audit; preserve four staged plan blobs and unrelated state.
+    unknowns: Decision, vision, and profile detail remain deferred; profile-derived state remains unavailable.
+    scope: Parse-aware Markdown/YAML/JSON command policy, exact stable-v2 sequence, registry source/bundle/generated/emitted inventory, package registry validation, package parity, docs, changelog, and regression tests.
+  discovered: The prior policy inspected one candidate per line, recognized only narrow prefixes, skipped JSON and generated outputs, did not close machine producer membership, and removed any matching stable-v2 line without proving the exact adjacent ordered pair.
+  verified: packages/cli/test/helpers/retiredStartupGuidance.ts now reports path plus line/column or structured path, raw and normalized candidate, violation class, and correction. Evasion tests cover prompts, lists, prose, tables, wrappers, quoting, composition, Unicode whitespace, multiline continuations, nested structured values, malformed input, multiple candidates, and descriptive-vocabulary negatives. Source inventory closes 93 registry-owned bundle inputs plus 2 generated declarations and 28 emitted producers; extracted-package inventory parses the corresponding bundle and both generated JSON outputs while reason-classifying emitted producers. Focused tests passed 89/89, full source passed 3,117 with 1 skipped, full package passed 27/27, and typecheck, build, compact, capability-contract 3/3, diff check, and source/package policy parity passed.
+  next: Independent Audit must evaluate vzazfyoobl before any commit, completion, TODO resolution, predecessor supersession, or persisted PASS.
+  publication_order: 74

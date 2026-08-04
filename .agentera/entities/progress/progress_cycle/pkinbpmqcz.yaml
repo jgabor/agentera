@@ -1,0 +1,16 @@
+id: pkinbpmqcz
+artifact: progress
+record:
+  timestamp: 2026-08-04 20:10
+  type: fix
+  phase: build
+  what: Corrected vzazfyoobl-audit-1 complete-context, stable escape, parity, and producer-discovery blockers.
+  context:
+    intent: Repair retry 1 for Task A only and return the same task to independent Audit.
+    constraints: No commit, completion, evaluation write, Task B, TODO vptlelnadp resolution, predecessor supersession, activation, cutover, network, registry mutation, publication, tag, push, version, profile, vision, or external mutation; preserve four staged plan blobs and unrelated state.
+    unknowns: Decision, vision, and profile detail remain deferred; profile-derived state remains unavailable.
+    scope: Anchored shell command objects, fail-closed YAML/JSON materialization, exact stable-v2 confinement, normalized source/package record parity, bounded TypeScript AST producer discovery, direct regressions, docs, contracts, and changelog.
+  discovered: Audit probes showed substring acceptance inside env wrappers, operators, substitutions, split dist-tags, and continuations; standalone structured commands were skipped, duplicate JSON keys hid violations, recursive YAML aliases crashed, package child omissions did not affect inventory, and regex discovery missed constructor aliases and wrappers.
+  verified: Direct adversarial tests reject env-wrapped canonical commands, &&, pipelines, substitution, split @next, Unicode whitespace, continuations, standalone structured bare commands, duplicate JSON keys, recursive and excessive YAML aliases, outside inline no-arg @latest, split @latest, and continued @latest. Every command diagnostic asserts path, line/column or structured path, raw and safely normalized complete object, violation class, and correction. Stable-v2 omission, duplication, reversal, insertion, mutation, malformed boundaries, and outside execution reject while the sole exact adjacent ordered pair passes. Exact parity compares 144 normalized source/package records across 93 bundled inputs, 2 generated declarations, and 49 emitted producers; deleted child, extra child, classification mismatch, and generated-declaration mismatch reject. Bounded TypeScript AST regressions discover import aliases, local wrappers, namespace value aliases, re-exports, re-export consumers, preCutoverCommandFromBare, and transitive producers. Descriptive vocabulary negatives still pass. Focused tests passed 110/110; full source passed 3,138 with 1 skipped; full package passed 27/27; typecheck, local 3.0.0-dev.42 build, compact, capability-contract 3/3, source/package parity, and diff check passed.
+  next: Independent Audit must run retry 2 for vzazfyoobl before any commit, completion, TODO resolution, predecessor supersession, or persisted PASS.
+  publication_order: 75

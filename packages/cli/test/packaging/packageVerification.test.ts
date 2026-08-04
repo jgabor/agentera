@@ -18,6 +18,8 @@ import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.j
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
 import {
   preCutoverBootstrapGuidanceViolations,
+  registryBootstrapAuthorityInventory,
+  registryBootstrapAuthorityParity,
   registryBundledAuthorityPaths,
   registryBundledAuthorityViolations,
   retiredStartupGuidanceViolations,
@@ -1108,7 +1110,14 @@ describe("npm distribution boundary", () => {
     expect(registryBundledAuthorityViolations(
       bundleRoot,
       new Map([["references/cli/routing-model.md", markdownTail]]),
-    )).toContain("references/cli/routing-model.md: stable bootstrap");
+    )).toContain("references/cli/routing-model.md: stable_channel_outside_exemption");
+    const packageInventory = registryBootstrapAuthorityInventory(fixture.packageRoot, true);
+    expect(packageInventory.diagnostics, "closed extracted-package bootstrap inventory").toEqual([]);
+    expect(new Set(packageInventory.records.map(({ surface }) => surface))).toEqual(new Set(["bundle", "generated", "emitted"]));
+    expect(packageInventory.records.every(({ reason }) => reason.length > 0)).toBe(true);
+    const parity = registryBootstrapAuthorityParity(CHECKOUT_ROOT, fixture.packageRoot);
+    expect(parity.diagnostics, "exact normalized source/package command-authority parity").toEqual([]);
+    expect(parity.package).toEqual(parity.source);
     for (const capability of ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]) {
       const result = run(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], project, isolatedPackageEnv());
       expect(result.status, `${capability}\n${result.stderr || result.stdout}`).toBe(0);

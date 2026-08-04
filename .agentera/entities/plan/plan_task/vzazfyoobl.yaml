@@ -1,0 +1,26 @@
+id: vzazfyoobl
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement A · Enforce complete bootstrap command authority
+  status: blocked
+  depends_on:
+    - owfvrfxcwa
+    - ouahnpflvx
+    - wfbpsymlxi
+    - vlxwhwqxqf
+  acceptance:
+    - GIVEN shipped instructional Markdown, YAML, JSON, or emitted guidance WHEN validated THEN only exact development-channel commands or an inspectable exemption pass; wrong or ambiguous executable forms reject with source location, candidate, violation, and correction.
+    - GIVEN the stable-v2 section WHEN validated THEN exactly one adjacent ordered dry-run then yes pair passes; omission, duplication, reversal, insertion, mutation, malformed boundaries, or stable-channel execution elsewhere rejects.
+    - GIVEN registry-owned source, bundle, generated, and machine-emitted surfaces WHEN inventoried on source and package THEN each is parsed and scanned or reason-classified; malformed, new, omitted, and unclassified surfaces or producers fail closed with matching diagnostics.
+  evidence: Independent PASS is required before replacement B; evasion coverage includes prompts, lists, prose, tables, wrappers, quoting, multiline and nested structured values.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Policy still omits non-whitelisted Agentera subcommands and multiple scalar commands, @latest confinement depends on recognition, and producer/generated/exemption closure is incomplete.
+    provenance:
+      attempt_id: vzazfyoobl-audit-2
+      source: Independent Audit ses_032261e52ffekfdnDxqjSnGeE4 bounded re-review FAIL
+      recorded_at: 2026-08-04 20:17
+      writer_command: agentera state plan record-evaluation

@@ -368,7 +368,7 @@ words. `agentera upgrade` is the only repair command. When app files are
 version-behind, the operation inside that command is an **update**; when files
 are missing or broken, it is a **repair**; when v1 artifacts exist, it is a
 **migrate**. Hej attention text should name both the operation and the command
-(for example, app files outdated; run `agentera upgrade`).
+(for example, app files outdated; run `npx -y agentera@next upgrade`).
 Compatibility aliases are transitional classifications in the YAML authority,
 not second source-of-truth status values.
 

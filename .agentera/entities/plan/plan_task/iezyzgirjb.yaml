@@ -1,0 +1,13 @@
+id: iezyzgirjb
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement B · Prove argv-safe @next bootstrap across source and package
+  status: pending
+  depends_on:
+    - vzazfyoobl
+  acceptance:
+    - GIVEN source and canonically extracted-package runtimes with clean, v2, partial, or v3 projects WHEN exact development-channel Prime, recommended startup, Doctor, and read-only recovery run THEN exits, bounded outcomes, classifications, and recovery are truthful and channel-consistent; healthy v3 needs no second call.
+    - GIVEN paths with spaces or shell metacharacters and accepted or wrong-channel specifications WHEN they cross the POSIX Node subprocess boundary THEN argv remains intact, no shell interpretation occurs, and every bare, stable, malformed, wrapped, split, aliased, or nested form rejects before the CLI child starts.
+    - GIVEN every accepted and rejected matrix row WHEN execution ends THEN project, home, shared skill, install root, package, cache, and temporary roots preserve bytes, types, symlinks, entries, and absence; canonical tarball manifest, integrity, scrubbed environment, source parity, and missing-file fail-closed behavior are proven.
+  evidence: After latest independent PASS, this task supersedes ghoargedhq and aibyumkzxr and resolves vptlelnadp; proof is offline POSIX/Node only, with no upgrade apply or registry action.

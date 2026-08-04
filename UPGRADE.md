@@ -79,8 +79,9 @@ CLI. Accepted smoke evidence records that Codex and Cursor loaded Agentera's
 skill instructions, OpenCode listed the canonical skill, and Copilot's listed
 canonical skill is intentionally disabled.
 
-Use `agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes` with one
-declared native Agentera resource ID.
+Use the separate `@next` preview and apply commands below with one declared
+native Agentera resource ID.
+The cleanup option pair is `--legacy-cleanup RESOURCE_ID --dry-run|--yes`.
 
 ```bash
 npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --dry-run
