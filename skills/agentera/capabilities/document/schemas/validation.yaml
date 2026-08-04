@@ -85,7 +85,7 @@ VALIDATION:
     id: V9
     rule: closeout_context_first
     description: >-
-       During final synchronization, Document MUST use `agentera prime
+       During final synchronization, Document MUST use `npx -y agentera@next prime
        --context document --format json` and its `closeout_context`
        before using bounded state list/get contracts for TODO, docs, changelog,
        or progress. Raw artifact access is diagnostic-only or a write target.

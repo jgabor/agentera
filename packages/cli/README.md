@@ -18,8 +18,10 @@ The first command is the one-call pre-cutover bootstrap. Clean, v2, and
 partially migrated projects return bounded `blocked` output with the exact full
 entity-upgrade command in `state_cutover.recovery_command`; v3 returns `ok`
 unless health state makes it `degraded`. Every recovery command remains on
-`@next`, and an `ok` outcome needs no fallback or second dashboard call. The
-second command is an independent read-only evidence probe on the same channel.
+`@next`, and an `ok` outcome needs no fallback or second dashboard call. Served
+capability instructions and bundled startup schemas use that same exact
+development-channel executable. The second command is an independent read-only
+evidence probe on the same channel.
 
 `prime --format json` returns a bounded decision brief (at most 12000 UTF-8
 bytes). Status startup returns

@@ -152,7 +152,7 @@ describe("cli help", () => {
   it("routes top-level -h through main", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "-h"], io));
     expect(rc).toBe(0);
-    expect(out).toContain("agentera prime");
+    expect(out).toContain("npx -y agentera@next prime --context status --format json");
   });
 
   it("routes upgrade --help through main", () => {

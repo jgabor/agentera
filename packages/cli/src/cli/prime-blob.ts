@@ -1,4 +1,6 @@
-export const PRIME_BLOB =
+import { preCutoverInstructionBody } from "./preCutoverCommand.js";
+
+export const PRIME_BLOB = preCutoverInstructionBody(
   [
     "# agentera priming guide",
     "",
@@ -68,4 +70,5 @@ export const PRIME_BLOB =
     "  1. Run `agentera schema --format json`.",
     "  2. Make sure Agentera's app files exist at the reported `managedAppRoot` path.",
     "  3. Run `agentera doctor` for a plain-language repair preview.",
-  ].join("\n") + "\n";
+  ].join("\n") + "\n",
+);

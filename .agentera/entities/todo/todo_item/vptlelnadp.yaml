@@ -14,12 +14,12 @@ record:
       order: 1
   readiness:
     capability: build
-    reason: The channel-correct bootstrap remains open after task ghoargedhq exhausted both independent Audit attempts.
+    reason: Retry budget is exhausted after aibyumkzxr-audit-1 and aibyumkzxr-audit-2 both failed bundled-authority scanner acceptance.
     dependencies:
       []
     blocked:
-      reason: Served capability instructions and active bundled schemas still emit bare prime startup commands, and policy does not scan those authorities.
-      recovery: Convert them to @next and scan every served instruction/schema authority.
+      reason: The stable-v2 exemption lacks exact ordered command equality; the scanner also misses shell prompts, numbered or prose commands, and YAML list mappings.
+      recovery: Enforce exact [dry-run, yes] sequence and fail-closed command detection for common Markdown/YAML forms with adversarial coverage.
     gate: null
     queue_rank: 1
-    order_reason: Retain as the first critical bootstrap blocker until every served instruction and bundled schema authority is channel-correct.
+    order_reason: Keep this critical bootstrap authority gap visible but ineligible until both scanner defects are corrected under a replacement task.

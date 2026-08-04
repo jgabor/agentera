@@ -57,7 +57,9 @@ describe("state consumer matrix", () => {
       expect(bundleSource, bundlePath).not.toMatch(staleCommandPattern);
       expect(instruction, entry.name).not.toMatch(rawReadPattern);
       expect(bundleSource, bundlePath).not.toMatch(rawReadPattern);
-      expect(instruction, entry.name).toContain("agentera prime");
+      expect(instruction, entry.name).toContain(
+        `npx -y agentera@next prime --context ${entry.name} --format json`,
+      );
     }
   });
 

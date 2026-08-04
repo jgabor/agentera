@@ -66,7 +66,7 @@ VALIDATION:
     id: V7
     rule: evidence_context_first
     description: >-
-      Audit evaluation startup MUST begin with `agentera prime --context
+      Audit evaluation startup MUST begin with `npx -y agentera@next prime --context
       audit --format json` and use complete CLI `evidence_context` before
       bounded state list/get contracts for plan, progress, docs, health, TODO,
       or decisions. Raw artifact access is diagnostic-only.

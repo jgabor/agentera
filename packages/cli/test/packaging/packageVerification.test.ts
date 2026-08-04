@@ -16,7 +16,12 @@ import { ENTITY_LIST_RUNTIME_FAMILIES } from "../../src/state/entityListRuntimeR
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
-import { retiredStartupGuidanceViolations } from "../helpers/retiredStartupGuidance.js";
+import {
+  preCutoverBootstrapGuidanceViolations,
+  registryBundledAuthorityPaths,
+  registryBundledAuthorityViolations,
+  retiredStartupGuidanceViolations,
+} from "../helpers/retiredStartupGuidance.js";
 
 const fixture = inject("packageFixture");
 const V2_PROJECT = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
@@ -1088,17 +1093,29 @@ describe("npm distribution boundary", () => {
     for (const command of recoveries) executeBoth(command);
   });
 
-  it("keeps the packaged shared skill and every served capability body free of retired startup fields", () => {
+  it("keeps packaged bootstrap authorities and complete served bodies channel-correct", () => {
     const project = fs.mkdtempSync(path.join(fixture.root, "retired-startup-guidance-"));
     fs.mkdirSync(path.join(project, ".agentera"));
     fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const packageSkill = fs.readFileSync(path.join(fixture.packageRoot, "bundle/skills/agentera/SKILL.md"), "utf8");
     expect(retiredStartupGuidanceViolations(packageSkill), "packaged shared skill").toEqual([]);
+    const bundleRoot = path.join(fixture.packageRoot, "bundle");
+    const authorities = registryBundledAuthorityPaths(bundleRoot);
+    expect(authorities).toContain("references/cli/routing-model.md");
+    expect(registryBundledAuthorityViolations(bundleRoot), `${authorities.length} registry-owned package authorities`).toEqual([]);
+    const markdownTail = `${fs.readFileSync(path.join(bundleRoot, "references/cli/routing-model.md"), "utf8")}\n## Recovery regression\nRun \`npx -y agentera@latest doctor --format json\`.\n`;
+    expect(registryBundledAuthorityViolations(
+      bundleRoot,
+      new Map([["references/cli/routing-model.md", markdownTail]]),
+    )).toContain("references/cli/routing-model.md: stable bootstrap");
     for (const capability of ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]) {
       const result = run(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], project, isolatedPackageEnv());
       expect(result.status, `${capability}\n${result.stderr || result.stdout}`).toBe(0);
-      expect(retiredStartupGuidanceViolations(String(JSON.parse(result.stdout).capability_context?.instructions ?? "")), `${capability} packaged instructions`).toEqual([]);
+      const instructions = String(JSON.parse(result.stdout).capability_context?.instructions ?? "");
+      expect(retiredStartupGuidanceViolations(instructions), `${capability} packaged instructions`).toEqual([]);
+      expect(preCutoverBootstrapGuidanceViolations(instructions), `${capability} complete packaged instructions`).toEqual([]);
+      expect(instructions).toContain(`npx -y agentera@next prime --context ${capability} --format json`);
     }
   });
 
@@ -1145,11 +1162,31 @@ describe("npm distribution boundary", () => {
         AGENTERA_BOOTSTRAP_SOURCE_ROOT: runtimeRoot,
         AGENTERA_UPDATE_CHANNEL: "development",
       });
+      const dispatch = (project: string, spec: string) => run(process.execPath, [dispatcher, spec, bin, project], project, env);
+      const healthyProject = path.join(projects, "v3");
+      const healthyBefore = projectByteSnapshot(healthyProject);
+      for (const capability of ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]) {
+        const accepted = dispatch(healthyProject, `npx -y agentera@next prime --context ${capability} --format json`);
+        expect(accepted.status, `${surface}/${capability} @next\n${accepted.stderr || accepted.stdout}`).toBe(0);
+        const payload = JSON.parse(accepted.stdout);
+        expect(payload.capability_context.startup.outcome, `${surface}/${capability} outcome`).toBe("ok");
+        expect(preCutoverBootstrapGuidanceViolations(String(payload.capability_context.instructions)), `${surface}/${capability} body`).toEqual([]);
+        for (const wrong of [
+          `agentera prime --context ${capability} --format json`,
+          `npx -y agentera@latest prime --context ${capability} --format json`,
+        ]) {
+          const rejected = dispatch(healthyProject, wrong);
+          expect(rejected.status, `${surface}/${capability} ${wrong}`).toBe(64);
+          expect(rejected.stderr).toContain("wrong_channel");
+          expect(rejected.stdout).toBe("");
+        }
+      }
+      expect(projectByteSnapshot(healthyProject), `${surface}/capability matrix read-only`).toEqual(healthyBefore);
       for (const state of ["clean", "v2", "partial", "v3"] as const) {
         const project = path.join(projects, state);
         const before = projectByteSnapshot(project);
-        const dispatch = (spec: string) => run(process.execPath, [dispatcher, spec, bin, project], project, env);
-        const prime = dispatch(bootstrapCommand);
+        const dispatchState = (spec: string) => dispatch(project, spec);
+        const prime = dispatchState(bootstrapCommand);
         expect(prime.status, `${surface}/${state} prime\n${prime.stderr || prime.stdout}`).toBe(0);
         expect(Buffer.byteLength(prime.stdout, "utf8"), `${surface}/${state} bounded prime`).toBeLessThanOrEqual(25_000);
         const primePayload = JSON.parse(prime.stdout);
@@ -1165,11 +1202,11 @@ describe("npm distribution boundary", () => {
           expect(primePayload.capability_context.context.status_context.fallback_commands ?? []).toEqual([]);
         }
         const recommended = primePayload.capability_context.context.status_context.next_action.capability;
-        const startup = dispatch(`npx -y agentera@next prime --context ${recommended} --format json`);
+        const startup = dispatchState(`npx -y agentera@next prime --context ${recommended} --format json`);
         expect(startup.status, `${surface}/${state} recommended startup\n${startup.stderr || startup.stdout}`).toBe(0);
         expect(JSON.parse(startup.stdout).capability_context.startup.outcome).toBe(expectedOutcomes[state]);
 
-        const doctor = dispatch(`npx -y agentera@next doctor --format json --home ${home} --project ${project} --install-root ${runtimeRoot}`);
+        const doctor = dispatchState(`npx -y agentera@next doctor --format json --home ${home} --project ${project} --install-root ${runtimeRoot}`);
         expect(doctor.status, `${surface}/${state} doctor\n${doctor.stderr || doctor.stdout}`).toBe(0);
         const doctorPayload = JSON.parse(doctor.stdout);
         expect(doctorPayload).toMatchObject({ status: "up_to_date", shared_skill: { status: "pass" } });
@@ -1183,7 +1220,7 @@ describe("npm distribution boundary", () => {
           "agentera prime --context status --format json",
           "npx -y agentera@latest prime --context status --format json",
         ]) {
-          const rejected = dispatch(wrong);
+          const rejected = dispatchState(wrong);
           expect(rejected.status, `${surface}/${state} ${wrong}`).toBe(64);
           expect(rejected.stderr).toContain("wrong_channel");
           expect(rejected.stdout).toBe("");

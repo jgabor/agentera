@@ -19,7 +19,7 @@ describe("served profile runtime policy", () => {
   it("serves active personal glossary output without claiming consumer lookup", () => {
     const profile = CAPABILITY_INSTRUCTIONS.profile;
     expect(profile).toContain("### Personal Glossary section");
-    expect(profile).toContain("agentera report profile-glossary --input - --format json");
+    expect(profile).toContain("npx -y agentera@next report profile-glossary --input - --format json");
     expect(profile).toContain("agentera.personalGlossaryUpdateRequest.v1");
     expect(profile).not.toContain("Invoke `updatePersonalGlossaryProfile`");
     expect(profile).toContain("agentera.personalGlossarySection.v1");

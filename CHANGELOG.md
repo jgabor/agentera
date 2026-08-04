@@ -5,8 +5,9 @@
 - Fixed pre-cutover bootstrap so clean, v2, partially migrated, and v3 projects
   can call `npx -y agentera@next prime --context status --format json` once;
   marker-absent state now blocks with exact full-cutover recovery, while active
-  help, metadata, route, detail, and recovery commands stay on `@next` with
-  behavioral source and package wrong-channel rejection coverage.
+  help, metadata, route, detail, recovery, every served capability body, and
+  active bundled bootstrap authorities stay on `@next` with behavioral source
+  and package wrong-channel rejection coverage.
 
 ### Changed
 

@@ -1,0 +1,16 @@
+id: orddxclfpv
+artifact: progress
+record:
+  timestamp: 2026-08-04 17:31
+  type: test
+  phase: build
+  what: Closed aibyumkzxr-audit-1 bundled-Markdown coverage gap with registry-derived complete-body policy.
+  context:
+    intent: Repair retry 1 Audit blocker without changing task, TODO, or evaluation lifecycle state.
+    constraints: No registry or network authority, activation, cutover, publication, tag, version, app, profile, vision, external mutation, commit, completion, TODO resolution, supersession, or evaluation write; preserve the persisted FAIL and four unrelated staged plan task blobs.
+    unknowns: Decision, vision, and profile detail remain deferred; profile-derived state remains unavailable.
+    scope: Registry-derived source/package Markdown and YAML inventory, executable-command classification, strict stable-v2 UPGRADE exemption, tail-injection regressions, and full verification.
+  discovered: The package registry bundles complete skills and references directories plus root Markdown files, but the first policy enumerated those roots manually and filtered out most Markdown and UPGRADE.md. Blanket lexical matching would also misclassify vocabulary labels and historical prose as executable commands.
+  verified: Both source and extracted-package policy now derive 90 Markdown/YAML authorities from references/adapters/package-registry.yaml. Realistic references/cli/routing-model.md tail injections reject bare source and @latest package commands; vocabulary labels remain accepted; missing, duplicate, reordered, or interrupted UPGRADE.md section boundaries fail closed, and only its two exact stable-v2 upgrade commands are exempt. Focused policy passed 44/44. Isolated packageVerification passed 23/23 with the existing 12-capability source/package dispatcher and clean/v2/partial/v3 status, recovery, doctor, bounds, and byte-snapshot matrix unchanged. Full source passed 223 files with 3,091 passed and 1 skipped; full package passed 27/27. Typecheck, build, compact, capability-contract 3/3, and diff check passed.
+  next: Independent Audit must evaluate retry 1 for aibyumkzxr; do not commit, complete the task, resolve TODO vptlelnadp, supersede, or persist PASS before its verdict.
+  publication_order: 73

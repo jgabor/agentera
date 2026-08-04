@@ -9,7 +9,20 @@ import {
   capabilityInstructionModulePath,
 } from "../../src/capabilities/index.js";
 import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
-import { retiredStartupGuidanceViolations } from "../helpers/retiredStartupGuidance.js";
+import { preCutoverInstructionBody } from "../../src/cli/preCutoverCommand.js";
+import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
+import {
+  printCapabilityHelp,
+  printRouteHelp,
+  printTopLevelHelp,
+  printUpgradeHelp,
+} from "../../src/cli/help.js";
+import {
+  preCutoverBootstrapGuidanceViolations,
+  registryBundledAuthorityPaths,
+  registryBundledAuthorityViolations,
+  retiredStartupGuidanceViolations,
+} from "../helpers/retiredStartupGuidance.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const packageRegistryPath = "references/adapters/package-registry.yaml";
@@ -142,7 +155,7 @@ describe("retired runtime current-surface policy", () => {
       const raw = decodeRawCapabilityModule(modulePath);
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const canonical = typeof module.default === "string" ? module.default : raw;
-      const expected = capability === "status" ? statusStartupInstructions(canonical) : canonical;
+      const expected = preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical);
       surfaces.push([`${modulePath} raw instructions`, raw]);
       surfaces.push([`${modulePath} served instructions`, expected]);
       expect(expected, `${capability} served instructions`).toBe(served);
@@ -151,6 +164,88 @@ describe("retired runtime current-surface policy", () => {
     for (const [surface, guidance] of surfaces) {
       expect(retiredStartupGuidanceViolations(guidance), `${surface} retired startup fields`).toEqual([]);
     }
+  });
+
+  it("keeps every complete served body and active bundled bootstrap authority on @next", () => {
+    for (const [capability, body] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
+      expect(preCutoverBootstrapGuidanceViolations(body), `${capability} complete served body`).toEqual([]);
+      expect(body, `${capability} development bootstrap`).toContain(
+        `npx -y agentera@next prime --context ${capability} --format json`,
+      );
+    }
+    const authorities = registryBundledAuthorityPaths(repoRoot);
+    expect(authorities).toEqual(expect.arrayContaining([
+      "README.md",
+      "UPGRADE.md",
+      "references/cli/routing-model.md",
+      "references/cli/vocabulary.md",
+      "skills/agentera/SKILL.md",
+    ]));
+    expect(registryBundledAuthorityViolations(repoRoot), `${authorities.length} registry-owned source authorities`).toEqual([]);
+  });
+
+  it("rejects a wrong-channel executable injected into a formerly omitted Markdown tail", () => {
+    const target = "references/cli/routing-model.md";
+    const injected = `${read(target)}\n## Recovery regression\nRun \`agentera prime --context status --format json\`.\n`;
+    const violations = registryBundledAuthorityViolations(repoRoot, new Map([[target, injected]]));
+    expect(violations).toContain(`${target}: bare prime`);
+  });
+
+  it.each([
+    ["missing stable heading", read("UPGRADE.md").replace("## Stable v2 line", "## Stable line")],
+    ["missing development heading", read("UPGRADE.md").replace("## Upgrading v2 to v3 development channel", "## Development migration")],
+    ["duplicate stable heading", read("UPGRADE.md").replace("## Stable v2 line", "## Stable v2 line\n## Stable v2 line")],
+    ["intervening section", read("UPGRADE.md").replace("## Upgrading v2 to v3 development channel", "## Unexpected section\n\n## Upgrading v2 to v3 development channel")],
+  ])("fails closed when the UPGRADE.md stable-v2 boundary is invalid: %s", (_label, content) => {
+    const violations = registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]]));
+    expect(violations).toContain("UPGRADE.md: stable-v2 section boundary");
+  });
+
+  it("exempts only the two exact stable-v2 upgrade commands", () => {
+    const content = read("UPGRADE.md").replace(
+      "npx -y agentera@latest upgrade --dry-run",
+      "npx -y agentera@latest prime --context status --format json",
+    );
+    expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]])))
+      .toContain("UPGRADE.md: stable bootstrap");
+  });
+
+  it("distinguishes executable startup guidance from vocabulary labels", () => {
+    expect(preCutoverBootstrapGuidanceViolations(
+      "CLI-visible `agentera prime` labels are source labels; `agentera doctor` is a diagnostic name.",
+    )).toEqual([]);
+    expect(preCutoverBootstrapGuidanceViolations(
+      "Recovery: Run `agentera doctor --format json`.",
+    )).toEqual(["bare doctor"]);
+    expect(preCutoverBootstrapGuidanceViolations(
+      "```bash\nagentera prime --context status --format json\n```",
+    )).toEqual(["bare prime"]);
+  });
+
+  it("keeps complete machine help and recovery guidance on @next", () => {
+    const surfaces: Array<[string, string]> = [
+      ["prime guidance", PRIME_BLOB],
+      ["top-level help", printTopLevelHelp()],
+      ["route help", printRouteHelp()],
+      ["upgrade help", printUpgradeHelp()],
+      ...Object.keys(CAPABILITY_INSTRUCTIONS).map((capability): [string, string] => [
+        `${capability} help`,
+        printCapabilityHelp(capability),
+      ]),
+    ];
+    for (const [surface, body] of surfaces) {
+      expect(preCutoverBootstrapGuidanceViolations(body), surface).toEqual([]);
+      expect(body, `${surface} stable channel`).not.toContain("agentera@latest");
+    }
+    expect(printTopLevelHelp()).toContain("Examples: npx -y agentera@next prime --context status --format json");
+    expect(PRIME_BLOB).toContain("npx -y agentera@next doctor");
+  });
+
+  it.each([
+    ["omitted tail", `${CAPABILITY_INSTRUCTIONS.build}\n### Tail\nRun \`agentera prime --context build --format json\`.`],
+    ["stable tail", `${CAPABILITY_INSTRUCTIONS.build}\n### Tail\nRun \`npx -y agentera@latest prime --context build --format json\`.`],
+  ])("rejects bootstrap authority outside sampled sections: %s", (_label, body) => {
+    expect(preCutoverBootstrapGuidanceViolations(body)).not.toEqual([]);
   });
 
   it("rejects a retired field reintroduced outside a startup-contract section", () => {
@@ -168,7 +263,7 @@ describe("retired runtime current-surface policy", () => {
       // by the runtime. Other capabilities remain raw and unchanged.
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const canonical = typeof module.default === "string" ? module.default : raw;
-      const expected = capability === "status" ? statusStartupInstructions(canonical) : canonical;
+      const expected = preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical);
       expect(expected, `${capability} expected instructions`).toBe(served);
       expect(currentSupportViolations(raw), `${modulePath} raw instructions`).toEqual([]);
       expect(currentSupportViolations(served), `${capability} served instructions`).toEqual([]);

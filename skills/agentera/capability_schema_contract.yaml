@@ -80,7 +80,7 @@ DIRECTORY_REQUIREMENTS:
       TypeScript module that exports the capability's behavioral instructions
       as a default-exported string constant. The runtime loads it via the
       compiled .js path and surfaces the prose through
-      `agentera prime --context <name> --format json`.
+      `npx -y agentera@next prime --context <name> --format json`.
   schemas_directory:
     path: schemas
     type: directory
@@ -409,7 +409,7 @@ ARTIFACTS:
       Behavioral instructions the agent reads. TypeScript module that exports
       a default-exported string constant. The runtime loads it via the
       compiled .js path and serves the prose through
-      `agentera prime --context <name> --format json`.
+      `npx -y agentera@next prime --context <name> --format json`.
     produces: false
     consumes: true
   4:

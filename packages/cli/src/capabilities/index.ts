@@ -16,9 +16,9 @@ import documentInstructions from "./document/instructions.js";
 import profileInstructions from "./profile/instructions.js";
 import { instructions as designInstructions } from "./design/instructions.js";
 import orchestrateInstructions from "./orchestrate/instructions.js";
-import { preCutoverCommand } from "../cli/preCutoverCommand.js";
+import { preCutoverCommand, preCutoverInstructionBody } from "../cli/preCutoverCommand.js";
 
-export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
+const canonicalInstructions: Record<string, string> = {
   status: statusStartupInstructions(statusInstructions),
   vision: visionInstructions,
   discuss: discussInstructions,
@@ -32,6 +32,10 @@ export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
   design: designInstructions,
   orchestrate: orchestrateInstructions,
 };
+
+export const CAPABILITY_INSTRUCTIONS: Record<string, string> = Object.fromEntries(
+  Object.entries(canonicalInstructions).map(([capability, body]) => [capability, preCutoverInstructionBody(body)]),
+);
 
 export function capabilityInstructionModulePath(capability: string): string {
   return `packages/cli/src/capabilities/${capability}/instructions.ts`;

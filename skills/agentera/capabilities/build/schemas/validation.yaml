@@ -64,7 +64,7 @@ VALIDATION:
     id: V7
     rule: execution_context_first
     description: >-
-      Build startup SHOULD begin from `agentera prime --context build
+      Build startup SHOULD begin from `npx -y agentera@next prime --context build
       --format json` and consume complete execution_context
       state before direct reads of plan, progress, TODO, docs, health,
       decisions, changelog, vision, profile, or design artifacts.

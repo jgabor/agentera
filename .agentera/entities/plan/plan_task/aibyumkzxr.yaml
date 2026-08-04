@@ -1,0 +1,26 @@
+id: aibyumkzxr
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement · Complete @next bootstrap command authority (vptlelnadp)
+  status: blocked
+  depends_on:
+    - zcprgswrju
+    - wucudfywvo
+    - wfbpsymlxi
+    - vlxwhwqxqf
+  acceptance:
+    - GIVEN any documented or machine-returned startup instruction, help field, recovery command, or active bundled schema before cutover WHEN inspected or followed THEN it uses the exact development-channel bootstrap and bare or stable-channel alternatives fail closed.
+    - GIVEN clean, v2, partial, or v3 projects on source and packaged surfaces WHEN one bootstrap is executed THEN status, recommended startup, recovery, and doctor remain channel-consistent, bounded, truthful, and read-only except for explicitly approved upgrade apply.
+    - GIVEN every served capability instruction and active bundled bootstrap authority WHEN policy and runtime matrices run THEN each has a development-channel pass and behavioral bare and stable-channel rejection, with omissions rejected by complete-body coverage.
+  evidence: Replaces blocked task ghoargedhq after audit attempt ghoargedhq-audit-2 found bare commands in served capability instructions and active bundled schemas.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Bundled authority scanner does not enforce exact ordered stable-v2 commands and misses shell prompts, numbered/prose commands, and YAML list mappings.
+    provenance:
+      attempt_id: aibyumkzxr-audit-2
+      source: Independent Audit ses_032afb47ffferZDySzpdg7RF70 bounded re-review FAIL
+      recorded_at: 2026-08-04 17:36
+      writer_command: agentera state plan record-evaluation

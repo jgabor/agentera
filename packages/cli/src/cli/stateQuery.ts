@@ -9,6 +9,7 @@ import { emitStructured } from "./structured.js";
 import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 import { truncateCodePoints } from "../core/text.js";
 import { boundStructuredProjection } from "../state/projectionPolicy.js";
+import { preCutoverCommand } from "./preCutoverCommand.js";
 
 /** Shared state-query infrastructure ported from scripts/agentera. */
 
@@ -86,8 +87,8 @@ export function surfaceMissingMessage(surface: string, p: string, model: ReturnT
     `${surface} is missing. Agentera cannot find it at ${p}. ` +
     `Agentera directory: ${payload.appHome}. ` +
     `App files directory: ${payload.managedAppRoot}. ` +
-    "Run `agentera doctor` to preview the repair; run " +
-    "`agentera doctor --format json` for structured details. " +
+    `Run \`${preCutoverCommand("doctor")}\` to preview the repair; run ` +
+    `\`${preCutoverCommand("doctor --format json")}\` for structured details. ` +
     `Technical details: appHome=${payload.appHome} managedAppRoot=${payload.managedAppRoot} ` +
     `skillRoot=${payload.skillRoot} runtimeRoot=${payload.runtimeRoot}.`
   );

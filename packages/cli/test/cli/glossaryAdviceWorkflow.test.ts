@@ -401,7 +401,7 @@ describe("packaged Build glossary advice seam", () => {
       instructions.indexOf("before meaning-sensitive execution"),
     );
     expect(instructions).toContain("do not use the disputed meaning");
-    expect(instructions).toContain("never call `agentera state glossary publish`");
+    expect(instructions).toContain("never call `npx -y agentera@next state glossary publish`");
     expect(instructions).toContain(
       "Explicit project publication remains the separate Build-owned digest-confirmed operation",
     );
@@ -411,7 +411,7 @@ describe("packaged Build glossary advice seam", () => {
     const root = project();
     const profileRoot = profile("Ship Shape", "Project meaning");
     const instructions = discussInstructions(root, profileRoot);
-    const command = "agentera report glossary-advice --input <file|-> --format json";
+    const command = "npx -y agentera@next report glossary-advice --input <file|-> --format json";
 
     expect(instructions).toContain("initial meaning-sensitive user input");
     expect(instructions).toContain(command);
@@ -426,13 +426,13 @@ describe("packaged Build glossary advice seam", () => {
     expect(instructions).toContain("apply the project meaning");
     expect(instructions).toContain("scratchpad tension or Crux");
     expect(instructions).toContain("continue without glossary grounding");
-    expect(instructions).toContain("never call `agentera state glossary publish`");
+    expect(instructions).toContain("never call `npx -y agentera@next state glossary publish`");
     expect(instructions).toContain("publishes no consumer caveat");
   });
 
   it("serves Plan review-before-fixing and autonomous Build handoff semantics", () => {
     const instructions = planInstructions(project(), temporary("missing-profile"));
-    const command = "agentera report glossary-advice --input <file|-> --format json";
+    const command = "npx -y agentera@next report glossary-advice --input <file|-> --format json";
 
     expect(instructions).toContain("initial meaning-sensitive planning input");
     expect(instructions).toContain(command);
@@ -465,7 +465,7 @@ describe("packaged Build glossary advice seam", () => {
     expect(instructions).toContain("apply the project meaning");
     expect(instructions).toContain("without exposing the personal definition");
     expect(instructions).toContain("ordinary focused clarification only in interactive mode");
-    expect(instructions).toContain("never call `agentera state glossary publish`");
+    expect(instructions).toContain("never call `npx -y agentera@next state glossary publish`");
     expect(instructions).not.toContain("PRIVATE_");
   });
 

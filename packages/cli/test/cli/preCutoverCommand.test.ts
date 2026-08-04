@@ -8,6 +8,7 @@ import {
   assertPreCutoverCommand,
   preCutoverCommand,
   preCutoverCommandFromBare,
+  preCutoverInstructionBody,
 } from "../../src/cli/preCutoverCommand.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -18,6 +19,24 @@ describe("pre-cutover v3 command authority", () => {
       .toBe("npx -y agentera@next prime --context status --format json");
     expect(preCutoverCommandFromBare("agentera doctor --format json"))
       .toBe("npx -y agentera@next doctor --format json");
+  });
+
+  it("binds every executable in a complete served instruction body", () => {
+    const body = [
+      "Start with `agentera prime --context build --format json`.",
+      "Recover with `agentera doctor --format json`.",
+      "Then run `agentera state progress list --format json`.",
+    ].join("\n");
+    const bound = preCutoverInstructionBody(body);
+    expect(bound.match(/npx -y agentera@next/g)).toHaveLength(3);
+    expect(bound).not.toMatch(/(?<![\w@-])agentera (?:prime|doctor|state)\b/);
+  });
+
+  it.each([
+    "Run npx -y agentera@latest prime --context build --format json.",
+    "Run npx agentera prime --context build --format json.",
+  ])("rejects a complete instruction body that selects a wrong channel: %s", (body) => {
+    expect(() => preCutoverInstructionBody(body)).toThrow(/bare or stable/);
   });
 
   it.each([

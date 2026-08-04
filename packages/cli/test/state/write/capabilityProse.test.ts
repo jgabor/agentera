@@ -13,6 +13,7 @@ import discussInstructions from "../../../src/capabilities/discuss/instructions.
 import orchestrateInstructions from "../../../src/capabilities/orchestrate/instructions.js";
 import planInstructions from "../../../src/capabilities/plan/instructions.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../../src/capabilities/index.js";
+import { preCutoverInstructionBody } from "../../../src/cli/preCutoverCommand.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
 
@@ -101,6 +102,7 @@ const BUILD_TERMINAL_ORDER_POLICIES = [
 ] as const;
 
 function buildCycleOrderViolations(text: string): string[] {
+  text = text.replaceAll("npx -y agentera@next ", "agentera ");
   const violations: string[] = [];
   const log = text.search(/### Step \d+: Log/);
   const commit = text.search(/### Step \d+: Commit/);
@@ -295,7 +297,7 @@ describe("producer capability writer integration", () => {
   });
 
   it("keeps the source capability index aligned with plan instructions", () => {
-    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(planInstructions);
+    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(preCutoverInstructionBody(planInstructions));
   });
 
   it("publishes the documented full plan YAML through the typed writer", () => {

@@ -1740,7 +1740,7 @@ consumer_matrix:
     - design
     - orchestrate
   access_contract:
-    startup: agentera prime --context <capability> --format json
+    startup: npx -y agentera@next prime --context <capability> --format json
     list: agentera state <artifact-id> list --limit 20 --format json
     get: agentera state <artifact> get --id ID --format json
     policy: >-
@@ -2475,7 +2475,7 @@ budgets:
       prime_briefing:
         manifest_id: prime-briefing
         # Bounded default decision brief (Plan Task 3): the bare default
-        # `agentera prime --format json` projects the full orientation payload
+        # `npx -y agentera@next prime --format json` projects the full orientation payload
         # to routing-essential leaves plus named recovery pointers for omitted
         # rich state. Pretty UTF-8 JSON + trailing newline is measured and an
         # over-budget brief is rejected in favor of a bounded degraded envelope;

@@ -20,3 +20,17 @@ export function preCutoverCommandFromBare(command: string): string {
   }
   return preCutoverCommand(command.slice("agentera ".length));
 }
+
+const BARE_V3_COMMAND = /(?<![\w@-])agentera (?=(?:prime|doctor|upgrade|route|state|schema|check|report)\b)/g;
+
+/** Bind every executable Agentera command in a pre-cutover instruction body. */
+export function preCutoverInstructionBody(body: string): string {
+  if (/\bagentera@latest\b/.test(body) || /\bnpx\s+(?:-y\s+)?agentera\s/.test(body)) {
+    throw new Error(`pre-cutover instruction body selects a bare or stable Agentera executable`);
+  }
+  const bound = body.replace(BARE_V3_COMMAND, `${PRE_CUTOVER_CLI} `);
+  if (BARE_V3_COMMAND.test(bound)) {
+    throw new Error(`pre-cutover instruction body retains a bare Agentera command`);
+  }
+  return bound;
+}

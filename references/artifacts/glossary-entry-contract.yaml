@@ -169,7 +169,7 @@ ownership_contracts:
           additional_fields: forbidden
           profile_path_rule: >-
             Pass exactly profile_context.profile.path returned by
-            agentera prime --context profile --format json. The command never
+            npx -y agentera@next prime --context profile --format json. The command never
             discovers a profile, project root, or project glossary.
           retained_history_shape: >-
             A list of source_id, evidence_anchor, source_kind, and signal_type

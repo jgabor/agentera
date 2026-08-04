@@ -394,8 +394,8 @@ export async function runProducerReadinessWorkflow(
     assert.equal(grounding?.availability, "deferred");
     assert.equal(served.profile, undefined);
     assert(
-      served.instructions.includes("agentera report profile-grounding --format json"),
-      `${capability} post-cutover instructions omit grounding command`,
+      served.instructions.includes("npx -y agentera@next report profile-grounding --format json"),
+      `${capability} pre-cutover instructions omit channel-bound grounding command`,
     );
     for (const forbidden of [
       "profile path for high-confidence entries",

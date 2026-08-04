@@ -55,7 +55,7 @@ export function printTopLevelHelp(): string {
     "  -h, --help          show this help message and exit",
     "  --version           print the installed Agentera CLI version and exit",
     "",
-    `Examples: agentera prime; ${planListExample}; agentera check verify eval skills --dry-run; agentera report refresh --dry-run`,
+    `Examples: ${preCutoverCommand("prime --context status --format json")}; ${preCutoverCommand(planListExample.slice("agentera ".length))}; ${preCutoverCommand("check verify eval skills --dry-run")}; ${preCutoverCommand("report refresh --dry-run")}`,
   ].join("\n");
 }
 
@@ -90,7 +90,7 @@ export function printUpgradeHelp(): string {
     "active integration:",
     "  Agentera uses the shared skill at ~/.agents/skills/agentera plus the CLI.",
     "  Current runtime selectors and native plugin, hook, agent, command, descriptor, and marketplace writes are retired.",
-    "  Native resource cleanup remains explicit: agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes",
+    `  Native resource cleanup remains explicit: ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes")}`,
   ].join("\n");
 }
 

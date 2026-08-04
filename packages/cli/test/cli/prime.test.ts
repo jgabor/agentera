@@ -78,7 +78,7 @@ describe("cli prime", () => {
     const { rc, out } = capture((io) => cmdPrime({ guidance: true }, io));
     expect(rc).toBe(0);
     expect(out).toBe(PRIME_BLOB);
-    expect(out).toContain("agentera state <artifact> explain --format json");
+    expect(out).toContain("npx -y agentera@next state <artifact> explain --format json");
     expect(out).toContain("Supported typed writes:");
     expect(out).toContain("--dry-run");
   });
