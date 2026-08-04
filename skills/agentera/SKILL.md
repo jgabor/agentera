@@ -34,9 +34,8 @@ documentation after deterministic abstention; it learns that contract from the C
 
 ## Bootstrap
 
-Run `npx -y agentera@next prime` for orientation. The JSON it returns is the complete
-contract — app status, state slices, attention items, next action, and the
-source contract that declares what's complete and what requires fallback.
+Run `npx -y agentera@next prime` for orientation. The JSON returns bounded app
+status, state slices, attention items, next action, and startup availability.
 
 ```bash
 npx -y agentera@next prime
@@ -264,5 +263,5 @@ default singleton layout:
 
 Do not silently bypass the CLI and read raw entity files first. If
 CLI state declares complete coverage, do not perform defensive raw artifact
-reads. Use raw artifact reads only as a last-resort fallback after CLI
-fallback commands fail or declare incomplete state.
+reads. Use raw artifact reads only as a last-resort after the applicable
+availability row's exact detail command fails or state declares corruption.

@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests."
       severity: critical
       status: open
-      order: 9
+      order: 8

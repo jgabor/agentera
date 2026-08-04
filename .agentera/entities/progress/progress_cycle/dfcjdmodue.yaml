@@ -1,0 +1,15 @@
+id: dfcjdmodue
+artifact: progress
+record:
+  timestamp: 2026-08-04 10:58
+  type: fix
+  phase: build
+  what: Replaced legacy startup authorities with capability_context.startup guidance and shared complete-body guards.
+  context:
+    intent: Correct replacement task ouahnpflvx without changing runtime aggregation semantics.
+    constraints: Preserve task and TODO lifecycle state, health and byte budgets, issues alias, caveats, and protected staged plan blobs.
+    scope: Startup authority prose and shared source/package regression guards only.
+  discovered: Raw and served Plan, Orchestrate, Audit, Document, and shared-skill bodies still presented source or startup contracts as startup authority.
+  verified: All 12 raw and served bodies plus packaged shared skill reject fallback, source, startup, and complete-for authority names; focused coverage passed 123 tests, source passed 3,064 with 1 skipped, and package verification passed 26 tests.
+  next: Run rebuilt all-capability capsule checks and await independent Audit before any lifecycle transition.
+  publication_order: 67

@@ -1,0 +1,15 @@
+id: ycdhwbutwb
+artifact: progress
+record:
+  timestamp: 2026-08-04 10:27
+  type: fix
+  phase: build
+  what: Retired stale startup fields from every capability instruction body and added complete-body source and package guards.
+  context:
+    intent: Complete replacement task ouahnpflvx without altering aggregation runtime behavior.
+    constraints: Preserve outcome agreement, byte budgets, issues alias, uncommitted replacement task and TODO readiness, and protected staged plan blobs.
+    scope: All capability instruction bodies, shared-skill package body, and startup-state regression coverage.
+  discovered: Plan guidance retained fallback_commands outside the section-scoped guard, and other raw instruction bodies retained obsolete field names.
+  verified: Focused guards passed 46 tests; the source suite passed 3,064 tests with 1 skipped; typecheck, build, and package verification passed.
+  next: Run rebuilt capsule and state checks, then await independent Audit before any lifecycle transition.
+  publication_order: 66

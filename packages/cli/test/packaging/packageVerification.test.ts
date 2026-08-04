@@ -16,6 +16,7 @@ import { ENTITY_LIST_RUNTIME_FAMILIES } from "../../src/state/entityListRuntimeR
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
+import { retiredStartupGuidanceViolations } from "../helpers/retiredStartupGuidance.js";
 
 const fixture = inject("packageFixture");
 const V2_PROJECT = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-yaml-project");
@@ -23,7 +24,6 @@ const V2_APP_HOME = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-ap
 const V2_RUNTIME = path.resolve(import.meta.dirname, "../upgrade/fixtures/v2-runtime-python");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const PLAN_ID = "plan:123e4567-e89b-42d3-a456-426614174000";
-
 function run(command: string, args: string[], cwd: string, env = process.env, input?: string) {
   return spawnSync(command, args, { cwd, env, encoding: "utf8", ...(input === undefined ? {} : { input }) });
 }
@@ -1086,6 +1086,20 @@ describe("npm distribution boundary", () => {
       "agentera state todo list --format json",
     ]));
     for (const command of recoveries) executeBoth(command);
+  });
+
+  it("keeps the packaged shared skill and every served capability body free of retired startup fields", () => {
+    const project = fs.mkdtempSync(path.join(fixture.root, "retired-startup-guidance-"));
+    fs.mkdirSync(path.join(project, ".agentera"));
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const packageSkill = fs.readFileSync(path.join(fixture.packageRoot, "bundle/skills/agentera/SKILL.md"), "utf8");
+    expect(retiredStartupGuidanceViolations(packageSkill), "packaged shared skill").toEqual([]);
+    for (const capability of ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]) {
+      const result = run(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], project, isolatedPackageEnv());
+      expect(result.status, `${capability}\n${result.stderr || result.stdout}`).toBe(0);
+      expect(retiredStartupGuidanceViolations(String(JSON.parse(result.stdout).capability_context?.instructions ?? "")), `${capability} packaged instructions`).toEqual([]);
+    }
   });
 
   it("fails closed when the isolated package authority loses required bare-read recovery", () => {

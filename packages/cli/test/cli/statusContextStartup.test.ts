@@ -293,10 +293,23 @@ describe("status capability self-contained startup", () => {
     expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
   });
 
-  it("fails safe with blocked discovery without exposing writer payloads", () => {
-    const blocked = startupAggregation({ availability: [], schema_error: "invalid capability artifact schema" }, { startup_outcome: "ok" });
+  it.each([
+    ["blocked discovery", { availability: [], schema_error: "invalid capability artifact schema" }],
+    [
+      "corrupt artifact schema",
+      {
+        availability: [{ family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" }],
+        schema_error: "Capability artifact schema for status could not be read: malformed YAML",
+      },
+    ],
+  ] as const)("fails safe for %s without exposing writer payloads", (_name, contract) => {
+    const blocked = startupAggregation(contract, { startup_outcome: "ok" });
 
-    expect(blocked).toMatchObject({ outcome: "blocked", detail_discovery: { schema: "agentera schema --format json" } });
+    expect(blocked).toMatchObject({
+      outcome: "blocked",
+      availability: contract.availability,
+      detail_discovery: { schema: "agentera schema --format json" },
+    });
     expect(blocked).not.toHaveProperty("write_contract");
     expect(blocked).not.toHaveProperty("operation");
   });

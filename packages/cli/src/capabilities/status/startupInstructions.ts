@@ -11,10 +11,6 @@ export function statusStartupInstructions(canonical: string): string {
       "Glyph: **⌂** (SG1). Status reads its startup capsule through `agentera prime --context status --format json` and writes nothing.",
     ],
     [
-      "Status MUST source state from `agentera prime --format json` and write nothing. The `source_contract.capability_startup` field declares whether prime is complete for capability startup; when complete, status MUST NOT run separate artifact queries or raw `.agentera/*.yaml` reads. If prime fails or reports incomplete state, fall back to commands listed in `source_contract.cli_fallback` as a last resort.",
-      "Status MUST source both instructions and bounded state from `agentera prime --context status --format json` and write nothing. Read `capability_context.instructions` in full, render from `capability_context.context.status_context`, and use the one `capability_context.startup` aggregation. Its outcome is `ok`, `degraded`, or `blocked`; `status_context.outcome` is the same value. For deferred detail, run only that availability row's exact `detail_command`. An `ok` startup needs no second prime or fallback call. Status MUST NOT raw-read `.agentera/*.yaml`.",
-    ],
-    [
       "Build the dashboard from `agentera prime --format json` output.",
       "Build the dashboard from `capability_context.context.status_context` in the status startup response.",
     ],

@@ -47,4 +47,4 @@ record:
       description: "[fix:3.0.0] Add one executable activation-conjunction release gate for every retained CLI, capability, runtime, reference, and state surface. Derive checks from owning authorities and require public discovery and help, runtime acceptance, bounded privacy-safe diagnostics, package projection, served instructions, and adversarial behavior tests to agree before a surface is active. TypeScript runtime code owns behavior; schemas declare structure and bounds; tests prove behavior but never create authority. A test import, bundle inclusion, fixture, comment, or archived decision cannot retain or activate a surface. Report the exact owner and runnable correction for every mismatch. Partial for Decision `imumkmffwh`: this verifies conformance after its dependency lanes complete; it does not implement those lanes or authorize stable cutover."
       severity: critical
       status: open
-      order: 4
+      order: 3

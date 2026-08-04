@@ -1,0 +1,31 @@
+id: ouahnpflvx
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement · Retire stale startup field guidance (rsplcfvosn)
+  status: complete
+  depends_on:
+    - acazhcocpm
+    - rngcxaezhb
+    - ohkbezkixj
+    - nrpvauxexj
+    - qxdcaimwoe
+    - mascmjrpug
+    - srdmkolwqc
+    - zcprgswrju
+    - vlxwhwqxqf
+  acceptance:
+    - GIVEN any capability or shared-skill startup guidance WHEN raw and served instructions are inspected THEN they use only the bounded startup outcome, availability rows, and exact detail commands, with no retired fallback, included, missing, or writer-payload fields.
+    - GIVEN fresh, healthy, degrading, blocked, or corrupt startup state WHEN a host follows the guidance THEN one prime call returns aligned status outcomes and sufficient detail discovery without a healthy second call and within the owned byte budget.
+    - GIVEN every capability instruction location and packaged shared skill WHEN startup guidance changes THEN complete-body regression coverage has a pass case and rejects any reintroduced retired field regardless of section placement.
+  evidence: Replaces blocked task wucudfywvo after audit attempt wucudfywvo-audit-2 found stale Plan guidance outside the retirement guard.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Complete capability and shared-skill bodies still serve source_contract, startup_contract, and complete_for_* startup authorities, while guards omit those real legacy names.
+    provenance:
+      attempt_id: ouahnpflvx-audit-2
+      source: Independent Audit ses_0341abb4affexztjlKriE3h96l bounded re-review PASS
+      recorded_at: 2026-08-04 11:03
+      writer_command: agentera state plan record-evaluation

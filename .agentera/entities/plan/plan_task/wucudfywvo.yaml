@@ -12,7 +12,7 @@ record:
     - srdmkolwqc
     - zcprgswrju
     - vlxwhwqxqf
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN capability startup WHEN prime runs THEN one bounded availability projection and outcome provide detail discovery without writer payloads.
     - GIVEN any health state WHEN status layers run THEN they agree and healthy startup needs no second call.
@@ -28,3 +28,6 @@ record:
       source: Independent Audit ses_0370bb232ffeirWkLh9Gy56aJi bounded re-review FAIL
       recorded_at: 2026-08-03 21:29
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - ouahnpflvx
+  superseded_reason: Replacement removed every competing startup authority from complete served bodies and earned independent PASS after the predecessor exhausted retries.
