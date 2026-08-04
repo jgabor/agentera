@@ -5,6 +5,7 @@ import type { Io } from "./dispatch/shared.js";
 import { emitStructured } from "./structured.js";
 import { detectStateMode } from "../state/stateMode.js";
 import { fullEntityUpgradeCommand } from "../upgrade/upgradeCommands.js";
+import { preCutoverCommand } from "./preCutoverCommand.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -25,7 +26,7 @@ export function requiresCompletedEntityCutover(argv: string[]): boolean {
   const [command, subcommand, verb] = argv;
   if (["--version", "version", "app-home", "doctor", "schema", "route", "upgrade"].includes(command)) return false;
   if (command === "report" && ["profile-glossary", "profile-grounding"].includes(subcommand)) return false;
-  if (command === "prime" && argv.includes("--guidance")) return false;
+  if (command === "prime" && (argv.includes("--guidance") || !argv.includes("--context") || value(argv, "--context") === "status")) return false;
   if (command === "query") return !argv.includes("--list-artifacts");
   if (command === "state" && subcommand === "query" && argv.includes("--list-artifacts")) return false;
   if (command === "state" && verb === "explain") return false;
@@ -55,7 +56,7 @@ export function enforceCompletedEntityCutover(
   try {
     mode = detectStateMode(project);
   } catch (error) {
-    const recovery = "Restore the exact durable migration marker, then run agentera check validate state --format json.";
+    const recovery = `Restore the exact durable migration marker, then run ${preCutoverCommand("check validate state --format json")}.`;
     const envelope = {
       schemaVersion: "agentera.stateFailure.v1",
       status: "fail",

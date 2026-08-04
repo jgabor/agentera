@@ -257,7 +257,7 @@ describe("shared bounded profile acquisition", () => {
         const payload = buildPrimeCapabilityContextPayload(state, capability);
         expect(payload.capability_context.profile).toBeUndefined();
         expect(payload.capability_context.startup.availability).toEqual(expect.arrayContaining([
-          expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "agentera report profile-grounding --format json" }),
+          expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding --format json" }),
         ]));
         expect(JSON.stringify(payload)).not.toContain(PRIVACY_TRAP);
       }

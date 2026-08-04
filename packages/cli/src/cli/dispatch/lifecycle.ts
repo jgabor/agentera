@@ -10,6 +10,7 @@ import { cmdReport, ReportArgs } from "../commands/report.js";
 import { runGlossaryAdviceCommand } from "../commands/glossaryAdvice.js";
 import { runPersonalGlossaryCommand } from "../commands/personalGlossary.js";
 import { runProfileGroundingCommand } from "../commands/profileGrounding.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 import { usageMain } from "../../analytics/usageStats.js";
 import { validatePathValue } from "../argvalidate.js";
 import { printAppHomeHelp, printDoctorHelp, printUpgradeHelp, wantsHelp } from "../help.js";
@@ -432,7 +433,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "glossary-advice has no stats alias",
           valid_values: ["report glossary-advice"],
-          recovery: "Run agentera report glossary-advice --input - --format json; no state was changed.",
+          recovery: `Run ${preCutoverCommand("report glossary-advice --input - --format json")}; no state was changed.`,
         },
       });
     }
@@ -446,7 +447,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "profile-grounding has no stats alias",
           valid_values: ["report profile-grounding"],
-          recovery: "Run agentera report profile-grounding --format json; no profile bytes were changed.",
+          recovery: `Run ${preCutoverCommand("report profile-grounding --format json")}; no profile bytes were changed.`,
         },
       });
     }
@@ -460,7 +461,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "profile-glossary has no stats alias",
           valid_values: ["report profile-glossary"],
-          recovery: "Run agentera report profile-glossary with the same --input; no profile bytes were changed.",
+          recovery: `Run ${preCutoverCommand("report profile-glossary --input PATH --format json")} with the same input; no profile bytes were changed.`,
         },
       });
     }

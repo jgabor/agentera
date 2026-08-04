@@ -418,8 +418,8 @@ describe("final entity retrieval public-contract parity", () => {
     const plan = capabilityContext("plan")?.availability as Record<string, any>[];
     const optimize = capabilityContext("optimize")?.availability as Record<string, any>[];
     expect(plan).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" }),
-      expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "agentera report profile-grounding --format json" }),
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }),
+      expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding --format json" }),
     ]));
     expect(optimize).toEqual(expect.arrayContaining([
       expect.objectContaining({ family: "experiments", availability: "deferred", detail_command: expect.stringContaining("--objective OBJECTIVE_ID") }),

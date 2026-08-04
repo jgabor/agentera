@@ -11,6 +11,7 @@ import {
 import { emitStructured } from "../../structured.js";
 import { emitInvalidInput } from "../../errors.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
+import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { truncateCodePoints } from "../../../core/text.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
@@ -132,7 +133,7 @@ function orientationAppHome(bundle: BundleStatus): JsonObject {
 function capabilityContextPointer(requiredBeforeRendering = true): JsonObject {
   return {
     capability: "status",
-    fetch_command: "agentera prime --context status --format json",
+    fetch_command: preCutoverCommand("prime --context status --format json"),
     required_before_rendering: requiredBeforeRendering,
     note: requiredBeforeRendering
       ? "Dashboard rendering instructions (template, field rules, exit marker) are owned by the status capability. Run the fetch_command before rendering."
@@ -149,7 +150,7 @@ export function buildOrientationJsonPayload(
   const schemasDir = state.schemas_dir;
   const bundlePublic = publicDoctorStatus(bundle);
   const appHome = orientationAppHome(bundle);
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject);
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject);
   const bespoke: JsonObject = {
     orchestration_context: null,
     closeout_context: null,
@@ -212,7 +213,7 @@ export function buildStatusContextState(
   _command = "prime",
   _options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {},
 ): Record<string, unknown> {
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject);
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject);
   const plan = state.plan;
   const firstPending = plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
     ? plan.first_pending as JsonObject
@@ -335,8 +336,8 @@ export function rejectRetiredPrimeFields(
       class: "invalid_choice",
       message: `prime field '${retired}' is retired; use '${replacement}'`,
       valid_values: [replacement],
-      syntax: `agentera ${command} --fields ${replacement} --format json`,
-      example: `agentera ${command} --fields ${replacement} --format json`,
+      syntax: preCutoverCommand(`${command} --fields ${replacement} --format json`),
+      example: preCutoverCommand(`${command} --fields ${replacement} --format json`),
       recovery: `Replace '${retired}' with '${replacement}' and retry; no state was changed.`,
     },
   });
@@ -354,7 +355,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   const nextAction = state.next_action;
   const dashboardLabel = command === "prime" ? "prime orientation dashboard" : "prime orientation dashboard";
 
-  out(`agentera ${command}\n`);
+  out(`${preCutoverCommand(command)}\n`);
   out(
     `app_home: install_track=${projectInstallTrack(bundle.installKind)} | status=${bundle.status} | home=${bundle.appHome} | ` +
       `source=${bundle.appHomeSource} | managed_app=${bundle.managedAppRoot} | user_data=${bundle.userDataRoot} | expected=${bundle.expectedVersion} | ` +
@@ -370,7 +371,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     out(`project_integration_message: ${projectIntegration.message}\n`);
   }
   out(`shared_skill: status=${String(state.shared_skill.status)} | path=${String(state.shared_skill.path)}\n`);
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject);
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject);
   out(`outcome: ${String(startup.outcome)}\n`);
   if (health.exists && health.id) {
     const worst = health.worst;
@@ -384,7 +385,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     const degraded = health.degraded_history as Record<string, unknown>;
     out(
       `health: degraded_history | summaries=${String(degraded.summary_count ?? 0)} | returned=${String(degraded.returned_count ?? 0)} | omitted=${String(degraded.omitted_count ?? 0)} | ` +
-        `detail=summary-only | recovery=agentera state health list --limit 20 --format json\n`,
+        `detail=summary-only | recovery=${preCutoverCommand("state health list --limit 20 --format json")}\n`,
     );
   }
   const latestProgress = state.progress.latest as Record<string, unknown> | undefined;
@@ -398,14 +399,14 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     const degraded = state.progress.degraded_history as Record<string, unknown>;
     out(
       `progress: degraded_history | summaries=${String(degraded.summary_count ?? 0)} | returned=${String(degraded.returned_count ?? 0)} | omitted=${String(degraded.omitted_count ?? 0)} | ` +
-        `detail=summary-only | recovery=agentera state progress list --limit 20 --format json\n`,
+        `detail=summary-only | recovery=${preCutoverCommand("state progress list --limit 20 --format json")}\n`,
     );
   }
   const decisionHistory = (state.history.decisions as Record<string, unknown> | undefined)?.degraded_history as Record<string, unknown> | undefined;
   if (decisionHistory) {
     out(
       `decisions: degraded_history | summaries=${String(decisionHistory.summary_count ?? 0)} | returned=${String(decisionHistory.returned_count ?? 0)} | omitted=${String(decisionHistory.omitted_count ?? 0)} | ` +
-      `detail=summary-only | recovery=agentera state decisions list --limit 20 --format json\n`,
+      `detail=summary-only | recovery=${preCutoverCommand("state decisions list --limit 20 --format json")}\n`,
     );
   }
   out(`todo: critical=${counts.critical} | degraded=${counts.degraded} | normal=${counts.normal} | annoying=${counts.annoying}\n`);
@@ -438,7 +439,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   out(`- render=caller-owned README-style ${dashboardLabel}\n`);
   out("- access=single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls\n");
   out(`- startup_outcome=${String(startup.outcome)}\n`);
-  out(`- capability_context: fetch rendering instructions via \`agentera prime --context status --format json\`\n`);
+  out(`- capability_context: fetch rendering instructions via \`${preCutoverCommand("prime --context status --format json")}\`\n`);
   out(`- detail_discovery=${String((startup.detail_discovery as JsonObject).schema)}\n`);
   out(
     `- raw_artifact_reads_required=${String(startup.raw_artifact_reads_required).toLowerCase()}; policy=${startup.raw_artifact_read_policy}\n`,

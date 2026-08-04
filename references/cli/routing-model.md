@@ -48,7 +48,7 @@ host did not see.
 ## Phase two: semantic receipt
 
 For `semantic_required`, the host sends the same transient original request and
-the complete nullable host receipt to `agentera route receipt --input - --format
+the complete nullable host receipt to `npx -y agentera@next route receipt --input - --format
 json`. The receipt binds to the SHA-256 of the request's UTF-8 bytes and the
 `semantic_capsule_sha256` returned in phase one. The CLI first validates the
 unmodified host shape, removes only contract-listed nulls, then reruns
@@ -60,7 +60,7 @@ rules:
 Every `semantic_required` response includes a `receipt_contract` with the exact
 `agentera.route_receipt.v1` nullable schema, legal outcomes, outcome nullability,
 compound and `remainder_span` rules, and a current runnable stdin example. The
-same guide appears in `agentera route receipt --help`; a host does not need to
+same guide appears in `npx -y agentera@next route receipt --help`; a host does not need to
 inspect implementation or contract files to construct its receipt. The example
 uses a fixed public request, never the transient request being classified.
 
@@ -72,7 +72,7 @@ uses a fixed public request, never the transient request being classified.
 | invalid | bounded field-level correction, exit 64 | none |
 
 The resulting `selected` or `status_fallback` authorization contains bounded
-route provenance and the existing `agentera prime --context <capability>
+route provenance and the existing `npx -y agentera@next prime --context <capability>
 --format json` startup path. A `clarification` contains exactly one bounded
 question and no startup. This is intentionally a shared CLI contract, not a
 runtime-specific adapter. The portable shared skill is the sole host integration

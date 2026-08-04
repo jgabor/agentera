@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { preCutoverCommand } from "./preCutoverCommand.js";
 
 import {
   ArtifactRecord,
@@ -56,21 +57,21 @@ import type {
 const PLAN_FAMILY = entityListFamily("plans");
 const PLAN_TASK_FAMILY = entityListFamily("plan_tasks");
 const OBJECTIVE_FAMILY = entityListFamily("objective");
-const PLAN_LIST_COMMAND = `agentera state ${PLAN_FAMILY.commandTokens.join(" ")} list --format json`;
+const PLAN_LIST_COMMAND = preCutoverCommand(`state ${PLAN_FAMILY.commandTokens.join(" ")} list --format json`);
 
 function planTaskListCommand(planId?: unknown): string {
   const selector = typeof planId === "string" && planId ? ` ${planId}` : "";
-  return `agentera state ${PLAN_TASK_FAMILY.commandTokens.join(" ")} list${selector} --limit 100 --format json`;
+  return preCutoverCommand(`state ${PLAN_TASK_FAMILY.commandTokens.join(" ")} list${selector} --limit 100 --format json`);
 }
 
 function planTaskGetCommand(taskId?: unknown): string {
   const selector = typeof taskId === "string" && taskId ? taskId : "ID";
-  return `agentera state ${PLAN_TASK_FAMILY.commandTokens.join(" ")} get --id ${selector} --format json`;
+  return preCutoverCommand(`state ${PLAN_TASK_FAMILY.commandTokens.join(" ")} get --id ${selector} --format json`);
 }
 
 function objectiveGetCommand(objectiveId?: unknown): string {
   const selector = typeof objectiveId === "string" && objectiveId ? objectiveId : "ID";
-  return `agentera state ${OBJECTIVE_FAMILY.commandTokens.join(" ")} get --id ${selector} --format json`;
+  return preCutoverCommand(`state ${OBJECTIVE_FAMILY.commandTokens.join(" ")} get --id ${selector} --format json`);
 }
 
 export type {

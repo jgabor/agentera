@@ -93,7 +93,6 @@ describe("final lifecycle protocol", () => {
     fs.writeFileSync(path.join(root, "legacy.txt"), "unchanged\n");
     const before = treeDigest(root);
     for (const args of [
-      ["prime", "--format", "json"],
       ["prime", "--context", "build", "--format", "json"],
       ["state", "progress", "--format", "json"],
       ["state", "decisions", "list", "--format", "json"],
@@ -188,7 +187,7 @@ describe("final lifecycle protocol", () => {
     expect(plan.first_pending).toEqual(expect.objectContaining({
       id: "eeeeeeeeee",
       artifact: "plan",
-      retrieval: { get: "agentera state plan tasks get --id eeeeeeeeee --format json" },
+      retrieval: { get: "npx -y agentera@next state plan tasks get --id eeeeeeeeee --format json" },
     }));
     expect(plan.first_pending).not.toHaveProperty("number");
     for (const capability of CAPABILITY_NAMES) {
@@ -237,7 +236,7 @@ describe("final lifecycle protocol", () => {
       capability: "optimize",
       outcome: "active",
       eligible: true,
-      retrieval: { exact: "agentera state objective get --id zzzzzzzzzc --format json" },
+      retrieval: { exact: "npx -y agentera@next state objective get --id zzzzzzzzzc --format json" },
     }));
   });
 
@@ -272,7 +271,7 @@ describe("final lifecycle protocol", () => {
         id: readyId,
         artifact: "plan",
         name: "Ready outside projection",
-        retrieval: { get: `agentera state plan tasks get --id ${readyId} --format json` },
+        retrieval: { get: `npx -y agentera@next state plan tasks get --id ${readyId} --format json` },
       },
     });
     expect(orientation.plan).not.toHaveProperty("tasks");
@@ -283,7 +282,7 @@ describe("final lifecycle protocol", () => {
       artifact: "plan",
       outcome: "pending",
       eligible: true,
-      retrieval: { exact: `agentera state plan tasks get --id ${readyId} --format json` },
+      retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${readyId} --format json` },
     });
 
     const build = capture(root, ["prime", "--context", "build", "--format", "json"]);

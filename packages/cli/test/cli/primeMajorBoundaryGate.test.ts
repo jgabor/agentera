@@ -108,9 +108,9 @@ describe("prime major-boundary gate", () => {
       const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
 
       const nextAction = state.next_action.recommended;
-      expect(nextAction.object).toBe("Await v3 successor announcement");
+      expect(nextAction.object).toBe("Complete Agentera entity-state cutover");
       expect(nextAction.capability).toBe("status");
-      expect(nextAction.reason).toContain("v3 successor line is not announced yet");
+      expect(nextAction.reason).toContain("npx -y agentera@next upgrade --channel development");
       expect(nextAction.object).not.toBe("Upgrade Agentera");
     });
   });
@@ -143,7 +143,7 @@ describe("prime major-boundary gate", () => {
       const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
 
       const nextAction = state.next_action.recommended;
-      expect(nextAction.object).toContain("Upgrade");
+      expect(nextAction.object).toBe("Complete Agentera entity-state cutover");
       expect(nextAction.capability).toBe("status");
     });
   });

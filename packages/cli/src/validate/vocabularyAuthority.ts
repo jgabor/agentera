@@ -255,8 +255,8 @@ function validateInstructionContract(root: string): string[] {
     errors.push("capability-instruction-contract.yaml: first_invocation_read.allowed_values.prime_context is required");
   } else {
     const meaning = String((allowed.prime_context as JsonObject).meaning ?? "");
-    if (!meaning.includes("agentera prime --context")) {
-      errors.push("capability-instruction-contract.yaml: prime_context obligation must reference agentera prime --context");
+    if (!meaning.includes("npx -y agentera@next prime --context")) {
+      errors.push("capability-instruction-contract.yaml: prime_context obligation must reference npx -y agentera@next prime --context");
     }
   }
 

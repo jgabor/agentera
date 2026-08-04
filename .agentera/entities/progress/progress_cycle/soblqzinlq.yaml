@@ -1,0 +1,16 @@
+id: soblqzinlq
+artifact: progress
+record:
+  timestamp: 2026-08-04 15:11
+  type: fix
+  phase: build
+  what: Bound the pre-cutover one-call bootstrap and every machine-returned startup path to the v3 development channel.
+  context:
+    intent: Prove one channel-correct pre-cutover bootstrap for task ghoargedhq.
+    constraints: No activation, cutover, registry mutation, publication, tag, version, profile, app, vision, or external mutation; preserve four protected staged plan blobs.
+    unknowns: Decisions, vision, and profile detail remained deferred; profile-derived state was unavailable.
+    scope: Bootstrap command authority, pre-cutover status gate, source/package matrix, docs, changelog, and regression tests.
+  discovered: The entity-cutover dispatcher blocked clean and legacy projects before prime could return its bounded status outcome, while route, detail, and fallback metadata still authorized bare Agentera commands that could resolve stable v2.
+  verified: Focused bootstrap tests passed 76/76 and policy tests passed 91/91. Full source verification passed 223 files with 3,076 passed and 1 skipped; isolated package verification passed 27/27. The package matrix exercised clean, v2, partial, and v3 projects against freshly constructed source and extracted package runtimes, rejected bare and @latest commands on both surfaces, and the representative v2 upgrade preserved source data before prime and isolated doctor passed. Typecheck, build, compact, and diff check passed.
+  next: Independent Audit must evaluate task ghoargedhq before any task completion, TODO vptlelnadp resolution, PASS verdict, or commit.
+  publication_order: 70

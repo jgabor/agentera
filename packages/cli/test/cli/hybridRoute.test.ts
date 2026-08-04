@@ -202,7 +202,7 @@ describe("route receipt CLI", () => {
     }));
     expect(selected.rc).toBe(0);
     expect(selected.err).toBe("");
-    expect(JSON.parse(selected.out)).toMatchObject({ outcome: "selected", capability: "plan", route_provenance: { startup_command: "agentera prime --context plan --format json" } });
+    expect(JSON.parse(selected.out)).toMatchObject({ outcome: "selected", capability: "plan", route_provenance: { startup_command: "npx -y agentera@next prime --context plan --format json" } });
     expect(selected.out).not.toContain(request);
 
     const malformed = invokeReceipt(JSON.stringify({ request, receipt: { outcome: "select", instructions: request } }));

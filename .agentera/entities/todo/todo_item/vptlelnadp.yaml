@@ -12,3 +12,14 @@ record:
       severity: critical
       status: open
       order: 1
+  readiness:
+    capability: build
+    reason: The channel-correct bootstrap remains open after task ghoargedhq exhausted both independent Audit attempts.
+    dependencies:
+      []
+    blocked:
+      reason: Served capability instructions and active bundled schemas still emit bare prime startup commands, and policy does not scan those authorities.
+      recovery: Convert them to @next and scan every served instruction/schema authority.
+    gate: null
+    queue_rank: 1
+    order_reason: Retain as the first critical bootstrap blocker until every served instruction and bundled schema authority is channel-correct.

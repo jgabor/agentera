@@ -116,8 +116,8 @@ describe("prime projection contract", () => {
     const latest = status.progress.latest;
     expect(latest).toMatchObject({ id: expect.any(String), artifact: "progress", what: expect.any(String) });
     expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "progress", availability: "included", detail_command: "agentera state progress list --format json" }),
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" }),
+      expect.objectContaining({ family: "progress", availability: "included", detail_command: "npx -y agentera@next state progress list --format json" }),
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }),
     ]));
     expect(status).not.toHaveProperty("history");
 

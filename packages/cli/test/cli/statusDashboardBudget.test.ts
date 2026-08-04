@@ -39,7 +39,7 @@ describe("status startup budget", () => {
       expect(payload.outcome).toBe(capsule.startup.outcome);
       expect(dashboard.outcome).toBe(capsule.startup.outcome);
       expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-        expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" }),
+        expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }),
       ]));
       expect(dashboard).not.toHaveProperty("profile");
       expect(JSON.stringify(payload)).not.toContain('"write_contract"');

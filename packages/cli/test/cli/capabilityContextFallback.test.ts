@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 
 describe("fallback commands use non-deprecated state forms", () => {
-  it("every STATE_FAMILY_FALLBACK_COMMANDS value starts with agentera state", () => {
+  it("every STATE_FAMILY_FALLBACK_COMMANDS value uses the pre-cutover development channel", () => {
     for (const [family, command] of Object.entries(STATE_FAMILY_FALLBACK_COMMANDS)) {
-      expect(command, `family=${family}`).toMatch(/^agentera state /);
+      expect(command, `family=${family}`).toMatch(/^npx -y agentera@next state /);
     }
   });
 

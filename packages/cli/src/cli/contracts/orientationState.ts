@@ -214,6 +214,11 @@ export interface OrientationState {
   profile: string;
   v1_migration: V1MigrationSummary;
   project_integration: ProjectIntegrationSummary;
+  state_cutover: {
+    status: "complete" | "required";
+    project_state: "v3" | "clean" | "v2" | "partial";
+    recovery_command: string | null;
+  };
   shared_skill: JsonObject;
   plan: PlanSummary;
   docs: DocsSummary;

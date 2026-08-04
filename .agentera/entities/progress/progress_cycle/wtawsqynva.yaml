@@ -1,0 +1,16 @@
+id: wtawsqynva
+artifact: progress
+record:
+  timestamp: 2026-08-04 16:05
+  type: fix
+  phase: build
+  what: Corrected retry 1 audit blockers for truthful marker-absent bootstrap, complete active @next command authority, and behavioral wrong-channel rejection.
+  context:
+    intent: Repair all three ghoargedhq-audit-1 blockers without changing lifecycle state.
+    constraints: No activation, cutover, registry mutation, network authority, publication, tag, version, app, profile, vision, or external mutation; preserve four protected staged plan blobs.
+    unknowns: Decisions, vision, and profile detail remain deferred; profile-derived state remains unavailable.
+    scope: Cutover-aware startup outcome and recovery, active command authorities/help/metadata, behavioral source/package dispatch matrix, docs, changelog, and tests.
+  discovered: Audit ghoargedhq-audit-1 showed marker-absent status reported ok while every non-status capability remained cutover-gated; active route/help/contract/prime metadata still exposed bare commands; the first matrix rejected wrong channels only through an in-process string assertion.
+  verified: State outcomes on both freshly constructed source and extracted package runtimes are clean=blocked, v2=blocked, partial=blocked, and v3=ok. Every recommended capability startup was executed and returned the same state outcome. Doctor returned exit 0 with status up_to_date and shared-skill pass in all eight cases. The exact @next bootstrap executed through one local dispatcher; bare and @latest each exited 64 at that boundary for every state and surface, with byte-identical project snapshots. Active authority scans found no bare prime-context or route request/receipt command; prime and doctor command metadata scans rejected bare and @latest output. Focused policy checks passed 73/73; full source passed 223 files with 3,077 passed and 1 skipped; isolated package passed 27/27; typecheck, build, compact, capability-contract 3/3, and diff check passed.
+  next: Independent Audit must re-evaluate ghoargedhq retry 1; preserve ghoargedhq-audit-1 FAIL and do not complete the task, resolve TODO vptlelnadp, record PASS, or commit before the verdict.
+  publication_order: 71

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { preCutoverCommand } from "./preCutoverCommand.js";
 
 import { loadTodoReadinessContract } from "../registries/todoReadinessContract.js";
 import { TODO_SEVERITY_ORDER } from "./todoSeverity.js";
@@ -161,7 +162,7 @@ export function evaluateTodoReadinessQueue(
       eligible: authority.eligible === true,
       attention: String(authority.attention),
       recovery: declaredRecovery ?? (typeof authority.recovery === "string" ? authority.recovery : null),
-      retrieval: { exact: `agentera state todo get --id ${entity.id} --format json` },
+      retrieval: { exact: preCutoverCommand(`state todo get --id ${entity.id} --format json`) },
       ...(capability ? {
         capability,
         phase: contract.phaseByCapability.get(capability),

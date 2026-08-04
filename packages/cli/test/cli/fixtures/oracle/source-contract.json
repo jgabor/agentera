@@ -74,6 +74,7 @@
       "startupRequiredKeys": [
         "schemaVersion",
         "outcome",
+        "state_cutover",
         "availability",
         "detail_discovery",
         "raw_artifact_reads_required",
@@ -82,6 +83,7 @@
       "startupFieldTypes": {
         "schemaVersion": "string",
         "outcome": "string",
+        "state_cutover": "object",
         "availability": "array<object>",
         "detail_discovery": "object",
         "raw_artifact_reads_required": "boolean",

@@ -154,7 +154,7 @@ describe("status TODO readiness integration", () => {
       artifact: "todo",
       outcome: "actionable",
       eligible: true,
-      retrieval: { exact: "agentera state todo get --id aaaaaaaaaa --format json" },
+      retrieval: { exact: "npx -y agentera@next state todo get --id aaaaaaaaaa --format json" },
     });
 
     const conflicting = todo("bbbbbbbbbb", `${capability} conflict`, readiness(capability));
@@ -190,12 +190,12 @@ describe("status TODO readiness integration", () => {
       artifact: "todo",
       outcome: "actionable",
       eligible: true,
-      retrieval: { exact: "agentera state todo get --id aaaaaaaaaa --format json" },
+      retrieval: { exact: "npx -y agentera@next state todo get --id aaaaaaaaaa --format json" },
     };
     expect(json.payload!.next_action).toMatchObject(expected);
     expect(host.payload!.capability_context.context.status_context.next_action).toEqual(json.payload!.next_action);
     expect(terminal.out).toContain(
-      "- object=TODO aaaaaaaaaa: Resolve the glossary boundary | capability=discuss | reason=Resolve the declared glossary boundary. | phase=deliberate | id=aaaaaaaaaa | artifact=todo | outcome=actionable | eligible=true | retrieval=agentera state todo get --id aaaaaaaaaa --format json\n",
+      "- object=TODO aaaaaaaaaa: Resolve the glossary boundary | capability=discuss | reason=Resolve the declared glossary boundary. | phase=deliberate | id=aaaaaaaaaa | artifact=todo | outcome=actionable | eligible=true | retrieval=npx -y agentera@next state todo get --id aaaaaaaaaa --format json\n",
     );
   });
 

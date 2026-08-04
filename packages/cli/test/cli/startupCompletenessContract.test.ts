@@ -22,7 +22,8 @@ function capture(root: string, command: string): { rc: number; out: string; err:
   let err = "";
   process.chdir(root);
   try {
-    const rc = main(["node", "agentera", ...command.split(" ").slice(1)], {
+    const localCommand = command.replace(/^npx -y agentera@next /, "agentera ");
+    const rc = main(["node", "agentera", ...localCommand.split(" ").slice(1)], {
       out: (text) => (out += text),
       err: (text) => (err += text),
     });
@@ -52,7 +53,7 @@ describe("startup completeness recovery", () => {
       expect(result.rc, command).toBe(0);
       expect(result.err, command).toBe("");
       const payload = JSON.parse(result.out) as Record<string, unknown>;
-      expect(payload.command, command).toEqual(expect.stringContaining(command.split(" ")[2]));
+      expect(payload.command, command).toEqual(expect.stringContaining(command.replace(/^npx -y agentera@next /, "").split(" ")[1]));
       expect(payload.status, command).toBeDefined();
     }
   });

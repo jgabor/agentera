@@ -4,6 +4,7 @@ import { loadYamlMapping } from "../../core/yaml.js";
 import { activeAppModel, discoverSchemasDir } from "../appContext.js";
 import { asList, firstPresent } from "../stateQuery.js";
 import { CAPABILITY_NAMES } from "./types.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 
 export { CAPABILITY_NAMES };
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -30,7 +31,7 @@ export function validatePrimeCapability(capability: string): void {
     const valid = CAPABILITY_NAMES.join(", ");
     throw new Error(
       `unsupported capability ${pyRepr(capability)}; valid capabilities: ${valid}. ` +
-        "Example: agentera prime --context plan --format json",
+        `Example: ${preCutoverCommand("prime --context plan --format json")}`,
     );
   }
 }

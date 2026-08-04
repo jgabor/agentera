@@ -271,7 +271,7 @@ describe("Task 3 AC4: omitted rich state has named recovery without raw artifact
       const recovery = entry.recovery as string;
       expect(typeof recovery, "entry.recovery is a string").toBe("string");
       // Recovery must be a named agentera command, not a raw file path read
-      expect(recovery.startsWith("agentera "), "recovery starts with 'agentera '").toBe(true);
+      expect(recovery.startsWith("npx -y agentera@next "), "recovery starts with the pre-cutover development channel").toBe(true);
       expect(recovery, "recovery is NOT a raw artifact read (no .agentera/ path)").not.toMatch(/\.agentera\//);
       expect(recovery, "recovery is NOT a raw file read (no cat/head/tail)").not.toMatch(/\b(cat|head|tail|vi|nano)\b/);
     }
@@ -738,7 +738,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           id: fixture.selectedTaskId,
           object: expect.any(String),
           capability: expect.any(String),
-          retrieval: { exact: `agentera state plan tasks get --id ${fixture.selectedTaskId} --format json` },
+          retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId} --format json` },
         },
         history: {
           progress: {
@@ -750,7 +750,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         },
       });
       expect(["ok", "degraded"]).toContain((bare.payload.brief as Record<string, unknown>).projection);
-      expect((bare.payload.brief as Record<string, unknown>).path_diagnostics_recovery).toBe("agentera doctor --format json");
+      expect((bare.payload.brief as Record<string, unknown>).path_diagnostics_recovery).toBe("npx -y agentera@next doctor --format json");
       expect(Buffer.byteLength(bare.out, "utf8")).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
       outputs.push({ bytes: Buffer.byteLength(bare.out, "utf8"), payload: bare.payload });
     }

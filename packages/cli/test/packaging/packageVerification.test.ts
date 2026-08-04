@@ -866,7 +866,7 @@ describe("npm distribution boundary", () => {
           depends_on: [seeded.selectedDependencyId],
           acceptance: expect.arrayContaining([expect.stringContaining("bounded plan names this task")]),
           retrieval: {
-            get: `agentera state plan tasks get --id ${seeded.selectedTaskId} --format json`,
+            get: `npx -y agentera@next state plan tasks get --id ${seeded.selectedTaskId} --format json`,
           },
         },
       });
@@ -876,7 +876,7 @@ describe("npm distribution boundary", () => {
         capability: "orchestrate",
         eligible: true,
         retrieval: {
-          exact: `agentera state plan tasks get --id ${seeded.selectedTaskId} --format json`,
+          exact: `npx -y agentera@next state plan tasks get --id ${seeded.selectedTaskId} --format json`,
         },
       });
       for (const artifact of ["progress", "decisions", "health"]) {
@@ -885,15 +885,15 @@ describe("npm distribution boundary", () => {
           caveats: [expect.stringContaining("incomplete historical evidence")],
           degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 },
           retrieval: {
-            list: `agentera state ${artifact} list --limit 20 --format json`,
-            get: `agentera state ${artifact} get --id ID --format json`,
+            list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
+            get: `npx -y agentera@next state ${artifact} get --id ID --format json`,
           },
           source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "mixed" },
         });
       }
       expect(payload.decision_attention).toBeNull();
 
-      const selected = invoke(bin, shellCommandArgs(payload.next_action.retrieval.exact));
+      const selected = invoke(bin, shellCommandArgs(payload.next_action.retrieval.exact.replace(/^npx -y agentera@next /, "agentera ")));
       expect(selected.status, selected.stderr || selected.stdout).toBe(0);
       expect(JSON.parse(selected.stdout).entry).toMatchObject({ id: seeded.selectedTaskId, artifact: "plan" });
       const decision = invoke(bin, ["state", "decisions", "get", "--id", seeded.fullDecisionId, "--format", "json"]);
@@ -1024,7 +1024,7 @@ describe("npm distribution boundary", () => {
         .replaceAll("PLAN_ID", "abcdefghij")
         .replaceAll("OBJECTIVE_ID", "qjtrmnpvka")
         .replaceAll("EXPERIMENT_ID", "zzzzzzzzzz");
-      const args = shellCommandArgs(concrete);
+      const args = shellCommandArgs(concrete.replace(/^npx -y agentera@next /, "agentera "));
       const source = invoke(sourceBin, args);
       const packaged = invoke(packagedBin, args);
       expect(source.status, `${concrete}\n${source.stdout}\n${source.stderr}`).toBe(0);
@@ -1046,7 +1046,7 @@ describe("npm distribution boundary", () => {
 
     const recoveries = new Set<string>();
     const isConcreteStateRead = (command: string): boolean => (
-      /^agentera state /.test(command)
+      /^(?:npx -y agentera@next |agentera )state /.test(command)
       && !/[<>\[\]]/.test(command)
       && !/\b(?:ID|TOKEN|N|TEXT|STATUS|DIMENSION|FIELDS|SEVERITY|OBJECTIVE_ID|PLAN_ID)\b/.test(command)
     );
@@ -1081,9 +1081,9 @@ describe("npm distribution boundary", () => {
       }
     }
     expect([...recoveries]).toEqual(expect.arrayContaining([
-      "agentera state plan list --format json",
-      "agentera state docs list --format json",
-      "agentera state todo list --format json",
+      "npx -y agentera@next state plan list --format json",
+      "npx -y agentera@next state docs list --format json",
+      "npx -y agentera@next state todo list --format json",
     ]));
     for (const command of recoveries) executeBoth(command);
   });
@@ -1099,6 +1099,97 @@ describe("npm distribution boundary", () => {
       const result = run(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], project, isolatedPackageEnv());
       expect(result.status, `${capability}\n${result.stderr || result.stdout}`).toBe(0);
       expect(retiredStartupGuidanceViolations(String(JSON.parse(result.stdout).capability_context?.instructions ?? "")), `${capability} packaged instructions`).toEqual([]);
+    }
+  });
+
+  it("keeps source and package bootstrap channel-correct across clean, v2, partial, and v3 projects", { timeout: 120_000 }, async () => {
+    const bootstrapCommand = "npx -y agentera@next prime --context status --format json";
+    const dispatcher = path.join(CHECKOUT_ROOT, "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs");
+    const expectedOutcomes = { clean: "blocked", v2: "blocked", partial: "blocked", v3: "ok" } as const;
+    const runtimes = {
+      source: fixture.constructionRoot,
+      package: fixture.packageRoot,
+    };
+    const projects = path.join(fixture.root, "bootstrap-matrix");
+    fs.mkdirSync(projects);
+    for (const state of ["clean", "v2", "partial", "v3"] as const) {
+      const project = path.join(projects, state);
+      fs.mkdirSync(project);
+      if (state === "v2") fs.cpSync(V2_PROJECT, project, { recursive: true });
+      if (state === "partial") {
+        fs.mkdirSync(path.join(project, ".agentera"));
+        fs.copyFileSync(path.join(V2_PROJECT, ".agentera/plan.yaml"), path.join(project, ".agentera/plan.yaml"));
+      }
+      if (state === "v3") {
+        fs.mkdirSync(path.join(project, ".agentera"));
+        fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      }
+    }
+
+    const commandStrings = (value: unknown, key = ""): string[] => {
+      if (typeof value === "string") return /command|recovery|retrieval/i.test(key) ? [value] : [];
+      if (Array.isArray(value)) return value.flatMap((entry) => commandStrings(entry, key));
+      if (!value || typeof value !== "object") return [];
+      return Object.entries(value).flatMap(([childKey, child]) => commandStrings(child, childKey));
+    };
+
+    for (const [surface, runtimeRoot] of Object.entries(runtimes)) {
+      const bin = path.join(runtimeRoot, "dist/bin/agentera.js");
+      const home = path.join(fixture.root, `bootstrap-home-${surface}`);
+      const skill = path.join(home, ".agents/skills/agentera");
+      fs.mkdirSync(path.dirname(skill), { recursive: true });
+      fs.cpSync(path.join(runtimeRoot, "bundle/skills/agentera"), skill, { recursive: true });
+      const env = isolatedPackageEnv({
+        HOME: home,
+        AGENTERA_HOME: runtimeRoot,
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: runtimeRoot,
+        AGENTERA_UPDATE_CHANNEL: "development",
+      });
+      for (const state of ["clean", "v2", "partial", "v3"] as const) {
+        const project = path.join(projects, state);
+        const before = projectByteSnapshot(project);
+        const dispatch = (spec: string) => run(process.execPath, [dispatcher, spec, bin, project], project, env);
+        const prime = dispatch(bootstrapCommand);
+        expect(prime.status, `${surface}/${state} prime\n${prime.stderr || prime.stdout}`).toBe(0);
+        expect(Buffer.byteLength(prime.stdout, "utf8"), `${surface}/${state} bounded prime`).toBeLessThanOrEqual(25_000);
+        const primePayload = JSON.parse(prime.stdout);
+        expect(primePayload.capability_context.startup).toMatchObject({
+          outcome: expectedOutcomes[state],
+          state_cutover: {
+            status: state === "v3" ? "complete" : "required",
+            project_state: state,
+            recovery_command: state === "v3" ? null : expect.stringMatching(/^npx -y agentera@next upgrade --channel development /),
+          },
+        });
+        if (state === "v3") {
+          expect(primePayload.capability_context.context.status_context.fallback_commands ?? []).toEqual([]);
+        }
+        const recommended = primePayload.capability_context.context.status_context.next_action.capability;
+        const startup = dispatch(`npx -y agentera@next prime --context ${recommended} --format json`);
+        expect(startup.status, `${surface}/${state} recommended startup\n${startup.stderr || startup.stdout}`).toBe(0);
+        expect(JSON.parse(startup.stdout).capability_context.startup.outcome).toBe(expectedOutcomes[state]);
+
+        const doctor = dispatch(`npx -y agentera@next doctor --format json --home ${home} --project ${project} --install-root ${runtimeRoot}`);
+        expect(doctor.status, `${surface}/${state} doctor\n${doctor.stderr || doctor.stdout}`).toBe(0);
+        const doctorPayload = JSON.parse(doctor.stdout);
+        expect(doctorPayload).toMatchObject({ status: "up_to_date", shared_skill: { status: "pass" } });
+        for (const command of [...commandStrings(primePayload), ...commandStrings(doctorPayload)]) {
+          if (!/(?:^|\s)(?:agentera|npx\s+-y\s+agentera)/.test(command)) continue;
+          expect(command, `${surface}/${state} channel`).toContain("npx -y agentera@next");
+          expect(command, `${surface}/${state} wrong channel`).not.toContain("agentera@latest");
+          expect(command, `${surface}/${state} bare command`).not.toMatch(/^agentera\s/);
+        }
+        for (const wrong of [
+          "agentera prime --context status --format json",
+          "npx -y agentera@latest prime --context status --format json",
+        ]) {
+          const rejected = dispatch(wrong);
+          expect(rejected.status, `${surface}/${state} ${wrong}`).toBe(64);
+          expect(rejected.stderr).toContain("wrong_channel");
+          expect(rejected.stdout).toBe("");
+        }
+        expect(projectByteSnapshot(project), `${surface}/${state} read-only`).toEqual(before);
+      }
     }
   });
 
@@ -1260,7 +1351,7 @@ describe("npm distribution boundary", () => {
     expect(result.status, `package boundary receipt failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
     expect(result.stderr).not.toContain(request);
     expect(result.stdout).not.toContain(request);
-    expect(JSON.parse(result.stdout)).toMatchObject({ outcome: "selected", capability: "plan", route_provenance: { startup_command: "agentera prime --context plan --format json" } });
+    expect(JSON.parse(result.stdout)).toMatchObject({ outcome: "selected", capability: "plan", route_provenance: { startup_command: "npx -y agentera@next prime --context plan --format json" } });
   });
 
   it("evaluates the frozen routing corpus from byte-identical packed authorities", () => {
@@ -1318,10 +1409,12 @@ describe("npm distribution boundary", () => {
     });
     expect(env.AGENTERA_BOOTSTRAP_SOURCE_ROOT).toBeUndefined();
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-    const blocked = run(process.execPath, [bin, "prime", "--format", "json"], project, env);
-    expect(blocked.status).toBe(1);
-    const failure = JSON.parse(blocked.stdout) as { error: { recovery: string } };
-    expect(failure.error.recovery).toMatch(/^npx -y agentera@next upgrade /);
+    const bootstrap = run(process.execPath, [bin, "prime", "--context", "status", "--format", "json"], project, env);
+    expect(bootstrap.status, bootstrap.stderr || bootstrap.stdout).toBe(0);
+    const bootstrapPayload = JSON.parse(bootstrap.stdout) as { capability_context: { startup: { outcome: string } } };
+    expect(["ok", "degraded", "blocked"]).toContain(bootstrapPayload.capability_context.startup.outcome);
+    expect(bootstrap.stdout).toContain("npx -y agentera@next upgrade");
+    expect(bootstrap.stdout).not.toContain("agentera@latest");
 
     const baseUpgradeArgs = [
       bin, "upgrade", "--channel", "development", "--project", project,
@@ -1422,6 +1515,19 @@ describe("npm distribution boundary", () => {
     }));
     expect(payload).not.toHaveProperty("issues");
     expect(primed.stderr).toBe("");
+
+    const doctorHome = path.join(fixture.root, "post-migration-doctor-home");
+    const doctorSkill = path.join(doctorHome, ".agents/skills/agentera");
+    fs.mkdirSync(path.dirname(doctorSkill), { recursive: true });
+    fs.cpSync(path.join(fixture.packageRoot, "bundle/skills/agentera"), doctorSkill, { recursive: true });
+    const doctor = run(
+      process.execPath,
+      [bin, "doctor", "--format", "json", "--home", doctorHome, "--project", project, "--install-root", fixture.packageRoot],
+      project,
+      isolatedPackageEnv({ HOME: doctorHome, AGENTERA_BOOTSTRAP_SOURCE_ROOT: fixture.packageRoot, AGENTERA_UPDATE_CHANNEL: "development" }),
+    );
+    expect(doctor.status, `package boundary doctor failed:\n${doctor.stdout}\n${doctor.stderr}`).toBe(0);
+    expect(JSON.parse(doctor.stdout)).toMatchObject({ command: "doctor", status: "up_to_date", shared_skill: { status: "pass" } });
 
     const retiredPrimeField = run(
       process.execPath,

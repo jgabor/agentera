@@ -7,9 +7,19 @@ record:
     - wucudfywvo
     - wfbpsymlxi
     - vlxwhwqxqf
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN pre-cutover bootstrap WHEN invoked THEN one @next call reaches truthful prime and doctor without @latest or fallback.
     - GIVEN clean, v2, partial, or v3 projects WHEN tested THEN each reaches one bounded outcome with safe recovery.
     - GIVEN source and package surfaces WHEN tested THEN each has pass and wrong-channel rejection cases.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Served capability instructions and active bundled schemas still emit bare prime startup commands, and policy scans omit those machine authorities.
+    provenance:
+      attempt_id: ghoargedhq-audit-2
+      source: Independent Audit ses_0331569a1ffeczYJBMHwRFB2f9 bounded re-review FAIL
+      recorded_at: 2026-08-04 16:11
+      writer_command: agentera state plan record-evaluation

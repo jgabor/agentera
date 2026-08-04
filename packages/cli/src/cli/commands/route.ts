@@ -7,6 +7,7 @@ import { evaluateHybridRoute } from "../../eval/hybridRouteEvaluation.js";
 import { emitStructured } from "../structured.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import type { Io } from "../dispatch/shared.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 
 type RouteInput = { version?: unknown; request?: unknown };
 type RouteIo = Omit<Io, "stdin"> & { stdin?: () => string | Buffer };
@@ -60,7 +61,7 @@ function parse(argv: string[]): { input: string; format: "json" } | InvalidInput
     }
     return { class: "unrecognized_argument", message: "unrecognized route argument; request text must be supplied through --input" };
   }
-  if (!input) return { class: "missing_argument", message: "--input is required so request text is not placed in argv", syntax: "--input PATH", example: "agentera route request --input - --format json" };
+  if (!input) return { class: "missing_argument", message: "--input is required so request text is not placed in argv", syntax: "--input PATH", example: preCutoverCommand("route request --input - --format json") };
   return { input, format };
 }
 
@@ -128,7 +129,7 @@ export function runRouteEvaluation(argv: string[], io: RouteIo): number {
     return invalidRouteInput(io, {
       class: "unrecognized_argument",
       message: "route evaluation accepts only --format json and never accepts request text or corpus overrides",
-      syntax: "agentera route evaluate --format json",
+      syntax: preCutoverCommand("route evaluate --format json"),
     });
   }
   try {

@@ -180,6 +180,6 @@ describe("prime project_integration", () => {
     expect(integration.dry_run_command).toContain("@next");
 
     const nextAction = state.next_action.recommended;
-    expect(nextAction.object).toBe("Upgrade Agentera artifacts");
+    expect(nextAction.object).toBe("Complete Agentera entity-state cutover");
   });
 });

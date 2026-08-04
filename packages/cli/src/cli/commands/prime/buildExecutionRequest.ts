@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { hasControlChars } from "../../argvalidate.js";
 import type { InvalidInputErrorBody } from "../../errors.js";
 import { loadYamlMapping } from "../../../core/yaml.js";
+import { preCutoverCommand } from "../../preCutoverCommand.js";
 
 export const BUILD_EXECUTION_REQUEST_SCHEMA = "agentera.buildExecutionRequest.v1";
 export const BUILD_EXECUTION_REQUEST_MAX_UTF8_BYTES = 32 * 1024;
@@ -52,7 +53,7 @@ function unreadableInput(): never {
   return fail({
     class: "invalid_format",
     message: "Build execution request input must be one readable regular file or bounded stdin stream",
-    syntax: "agentera prime --context build --input <file|-> --format json",
+    syntax: preCutoverCommand("prime --context build --input <file|-> --format json"),
   });
 }
 

@@ -16,6 +16,7 @@ import documentInstructions from "./document/instructions.js";
 import profileInstructions from "./profile/instructions.js";
 import { instructions as designInstructions } from "./design/instructions.js";
 import orchestrateInstructions from "./orchestrate/instructions.js";
+import { preCutoverCommand } from "../cli/preCutoverCommand.js";
 
 export const CAPABILITY_INSTRUCTIONS: Record<string, string> = {
   status: statusStartupInstructions(statusInstructions),
@@ -37,5 +38,5 @@ export function capabilityInstructionModulePath(capability: string): string {
 }
 
 export function capabilityStartupCommand(capability: string): string {
-  return `agentera prime --context ${capability} --format json`;
+  return preCutoverCommand(`prime --context ${capability} --format json`);
 }

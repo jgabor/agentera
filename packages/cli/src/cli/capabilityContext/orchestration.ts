@@ -16,6 +16,7 @@ import { planTaskIndex } from "../planTaskIndex.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { entityListFamily } from "../../state/entityRetrievalHelp.js";
 import { deferredStartupFamilies } from "./startupAggregation.js";
+import { preCutoverCommand, preCutoverCommandFromBare } from "../preCutoverCommand.js";
 
 export function orchestrationContext(
   capability: string | null,
@@ -59,10 +60,10 @@ export function orchestrationContext(
   const selected = dependencyReady.length > 0 ? dependencyReady[0] : null;
   const planTasks = entityListFamily("plan_tasks");
   const queueCommand = plan.id
-    ? `agentera state ${planTasks.commandTokens.join(" ")} list ${String(plan.id)} --limit 100 --format json`
+    ? preCutoverCommand(`state ${planTasks.commandTokens.join(" ")} list ${String(plan.id)} --limit 100 --format json`)
     : null;
   const queueRetrieval = queueCommand
-    ? { list: queueCommand, restart: queueCommand, get: planTasks.get }
+    ? { list: queueCommand, restart: queueCommand, get: preCutoverCommandFromBare(planTasks.get) }
     : null;
   const stateCaveats: string[] = [];
   let fallbackCommands: string[] = [];

@@ -164,7 +164,7 @@ describe("prime runtime compatibility boundary", () => {
     const source = payload.source_contract as Record<string, unknown>;
     const capabilityContext = source.capability_context as Record<string, unknown>;
     const startup = payload.startup as Record<string, unknown>;
-    expect(capabilityContext.fetch_command).toContain("agentera prime --context");
-    expect((startup.detail_discovery as Record<string, unknown>).schema).toContain("agentera schema");
+    expect(capabilityContext.fetch_command).toContain("npx -y agentera@next prime --context");
+    expect((startup.detail_discovery as Record<string, unknown>).schema).toContain("npx -y agentera@next schema");
   });
 });

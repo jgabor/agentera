@@ -10,13 +10,19 @@ surface.
 Until the stable dist-tag is promoted, run 3.0 through `@next`:
 
 ```bash
-npx -y agentera@next prime --format json
+npx -y agentera@next prime --context status --format json
 npx -y agentera@next doctor --format json
 ```
 
+The first command is the one-call pre-cutover bootstrap. Clean, v2, and
+partially migrated projects return bounded `blocked` output with the exact full
+entity-upgrade command in `state_cutover.recovery_command`; v3 returns `ok`
+unless health state makes it `degraded`. Every recovery command remains on
+`@next`, and an `ok` outcome needs no fallback or second dashboard call. The
+second command is an independent read-only evidence probe on the same channel.
+
 `prime --format json` returns a bounded decision brief (at most 12000 UTF-8
-bytes); use `prime --dashboard --format json` for the full orientation payload.
-Status startup is one call: `prime --context status --format json` returns
+bytes). Status startup returns
 `capability_context.instructions` and bounded
 `capability_context.context.status_context` together (at most 25000 UTF-8
 bytes). Omitted detail names its authoritative recovery command. `doctor`

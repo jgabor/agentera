@@ -19,8 +19,18 @@ import { v1MigrationSummary } from "./v1Migration.js";
 import { diagnoseCanonicalSkill } from "../../../setup/sharedSkill.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
 import { acquireProfile } from "../../profileAcquisition.js";
+import { fullEntityUpgradeCommand } from "../../../upgrade/upgradeCommands.js";
+import { classifyEntityCutoverProject } from "../../../state/entityMigrationPreview.js";
 
 const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
+
+function stateCutover(project: string, sourceRoot: string): OrientationState["state_cutover"] {
+  const projectState = classifyEntityCutoverProject(project, sourceRoot);
+  if (projectState === "v3") {
+    return { status: "complete", project_state: "v3", recovery_command: null };
+  }
+  return { status: "required", project_state: projectState, recovery_command: fullEntityUpgradeCommand(project) };
+}
 
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const env = opts.env ?? process.env;
@@ -58,6 +68,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const v1Artifacts = detectV1ArtifactPairs(project);
   const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
   const entity = collectEntityOrientation(project, sourceRoot);
+  const cutover = stateCutover(project, sourceRoot);
   const plan = entity.plan;
   const docs = entity.docs;
   const progress = entity.progress;
@@ -87,7 +98,14 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     precomputedV1Artifacts: v1Artifacts,
   });
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, entity.todoReadiness);
-  const nextAction = selectProjectIntegrationNextAction(readiness, projectIntegration);
+  const nextAction = cutover.status === "required"
+    ? withRecommended(readiness, {
+      object: "Complete Agentera entity-state cutover",
+      capability: "status",
+      reason: `Status startup is blocked until entity-state cutover completes. Exact recovery: ${cutover.recovery_command}`,
+      phase: "build",
+    })
+    : selectProjectIntegrationNextAction(readiness, projectIntegration);
 
   const attention = buildOrientationAttention({
     project_root: project,
@@ -100,6 +118,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
+    state_cutover: cutover,
     shared_skill: sharedSkill,
     plan,
     docs,
@@ -130,6 +149,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile,
     v1_migration: v1Migration,
     project_integration: projectIntegration,
+    state_cutover: cutover,
     shared_skill: sharedSkill,
     plan,
     docs,

@@ -4,6 +4,7 @@ import { personalGlossaryOutputContract } from "../registries/glossaryEntryContr
 import { describeRouteReceipt } from "../registries/hybridRoute.js";
 import { advertisedValidateFamilyNames } from "./commands/validate.js";
 import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
+import { preCutoverCommand } from "./preCutoverCommand.js";
 
 const TOP_LEVEL = [
   "prime",
@@ -489,7 +490,7 @@ export function printCapabilityHelp(capability: string): string {
     "  -h, --help            show this help message and exit",
     "  --format FORMAT       Output format: text, json, or yaml",
     "",
-    `Startup context: agentera prime --context ${capability} --format json`,
+    `Startup context: ${preCutoverCommand(`prime --context ${capability} --format json`)}`,
   ].join("\n");
 }
 
@@ -498,8 +499,8 @@ export function printRouteHelp(): string {
   const example = JSON.stringify(receipt.stdin_example.input);
   const inspect = (value: unknown): string[] => JSON.stringify(value, null, 2).split("\n").map((line) => `  ${line}`);
   return [
-    "usage: agentera route <request|receipt> --input PATH [--format json]",
-    "       agentera route evaluate --format json",
+    `usage: ${preCutoverCommand("route <request|receipt> --input PATH [--format json]")}`,
+    `       ${preCutoverCommand("route evaluate --format json")}`,
     "",
     "Route one transient request or validate one semantic host receipt through the shared hybrid contract.",
     "Request text is accepted only from the structured YAML or JSON input document, never argv.",

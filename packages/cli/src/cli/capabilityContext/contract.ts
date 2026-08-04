@@ -18,6 +18,7 @@ import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { startupAvailabilityProjection } from "./startupAggregation.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 
 export function capabilityInstructionContractPath(): string {
   const model = activeAppModel();
@@ -82,13 +83,13 @@ export function planStartupContract(): JsonObject {
   return {
     schemaVersion: PLAN_STARTUP_CONTRACT_VERSION,
     status: "implemented_compact_normal_startup_contract",
-    canonical_surface: "agentera prime --context plan --format json",
+    canonical_surface: capabilityStartupCommand("plan"),
     bounded: true,
     instructions_runtime_read_required: false,
     instructions_authority: {
       normal_startup:
         "Use this compact context for normal Plan execution startup; " +
-        "shell out to `agentera prime --context plan --format json` for the full Plan instructions.",
+        `shell out to \`${capabilityStartupCommand("plan")}\` for the full Plan instructions.`,
       read_plan_instructions_when: PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
     },
     planning: {
@@ -130,7 +131,7 @@ export function planStartupContract(): JsonObject {
     seam_decision: {
       selected: "prime --context",
       not_changed: [
-        { surface: "agentera schema --format json", reason: "runtime/schema command discovery, not capability workflow startup context" },
+        { surface: preCutoverCommand("schema --format json"), reason: "runtime/schema command discovery, not capability workflow startup context" },
         { surface: "dispatcher guidance", reason: "route and CLI-state separation guidance, not a bounded Plan workflow payload" },
       ],
     },

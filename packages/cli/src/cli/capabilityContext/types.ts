@@ -1,6 +1,7 @@
 import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
 import { entityListFamily } from "../../state/entityRetrievalHelp.js";
 import type { EntityListRuntimeFamilyKey } from "../../state/entityListRuntimeRegistry.js";
+import { preCutoverCommand, preCutoverCommandFromBare } from "../preCutoverCommand.js";
 
 export type Env = Record<string, string | undefined>;
 
@@ -8,7 +9,7 @@ export const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);
 
 function canonicalListCommand(key: EntityListRuntimeFamilyKey): string {
   const family = entityListFamily(key);
-  return `agentera state ${family.commandTokens.join(" ")} list --format json`;
+  return preCutoverCommand(`state ${family.commandTokens.join(" ")} list --format json`);
 }
 
 export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
@@ -18,9 +19,9 @@ export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
   health: canonicalListCommand("health"),
   todo: canonicalListCommand("todo"),
   decisions: canonicalListCommand("decisions"),
-  changelog: "agentera state query changelog --format json",
+  changelog: preCutoverCommand("state query changelog --format json"),
   objective: canonicalListCommand("objective"),
-  experiments: entityListFamily("experiments").syntax,
+  experiments: preCutoverCommandFromBare(entityListFamily("experiments").syntax),
 };
 
 export const STATE_FAMILY_LIST_COMMANDS: Record<string, string> = {

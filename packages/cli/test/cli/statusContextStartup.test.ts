@@ -237,12 +237,12 @@ describe("status capability self-contained startup", () => {
       schemaVersion: "agentera.primeStartup.v1",
       outcome: expect.any(String),
       availability: expect.any(Array),
-      detail_discovery: { schema: "agentera schema --format json" },
+      detail_discovery: { schema: "npx -y agentera@next schema --format json" },
     }));
     expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-      { family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" },
-      { family: "vision", availability: "deferred", detail_command: "agentera state query vision --format json" },
-      { family: "profile", availability: "deferred", detail_command: "agentera report profile-grounding --format json" },
+      { family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" },
+      { family: "vision", availability: "deferred", detail_command: "npx -y agentera@next state query vision --format json" },
+      { family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding --format json" },
     ]));
     expect(capsule.context).toHaveProperty("first_invocation_read");
     expect(capsule.context).toHaveProperty("schema_error");
@@ -261,11 +261,11 @@ describe("status capability self-contained startup", () => {
       expect(state.project_integration).not.toHaveProperty("dry_run_command");
       expect(state.project_integration).not.toHaveProperty("apply_command");
     }
-    if (name === "incomplete-state") expect(capsule.startup.outcome).toBe("ok");
+    if (name === "incomplete-state") expect(capsule.startup.outcome).toBe("blocked");
   });
 
   it.each([
-    ["no audit", undefined, "ok"],
+    ["no audit", undefined, "blocked"],
     ["healthy audit", { trajectory: "stable", grades: { test_health: "A" } }, "ok"],
     ["degrading audit", { trajectory: "degrading", grades: { test_health: "D" } }, "degraded"],
   ] as const)("keeps aggregate and dashboard outcomes aligned for %s", (_name, health, outcome) => {
@@ -298,7 +298,7 @@ describe("status capability self-contained startup", () => {
     [
       "corrupt artifact schema",
       {
-        availability: [{ family: "decisions", availability: "deferred", detail_command: "agentera state decisions list --format json" }],
+        availability: [{ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }],
         schema_error: "Capability artifact schema for status could not be read: malformed YAML",
       },
     ],
@@ -308,7 +308,7 @@ describe("status capability self-contained startup", () => {
     expect(blocked).toMatchObject({
       outcome: "blocked",
       availability: contract.availability,
-      detail_discovery: { schema: "agentera schema --format json" },
+      detail_discovery: { schema: "npx -y agentera@next schema --format json" },
     });
     expect(blocked).not.toHaveProperty("write_contract");
     expect(blocked).not.toHaveProperty("operation");
@@ -403,7 +403,7 @@ describe("status capability self-contained startup", () => {
       reason: "Resolve the declared product boundary.",
       phase: "deliberate",
       outcome: "actionable",
-      retrieval: { exact: "agentera state todo get --id zzzzzzzzzz --format json" },
+      retrieval: { exact: "npx -y agentera@next state todo get --id zzzzzzzzzz --format json" },
     });
     expect(state.next_action.alternatives).toContainEqual(expect.objectContaining({
       capability: "status",

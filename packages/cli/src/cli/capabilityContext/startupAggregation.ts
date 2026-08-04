@@ -1,4 +1,5 @@
 import type { JsonObject } from "../../core/jsonValue.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 
 export type StartupAvailability = "included" | "deferred";
 export type StartupOutcome = "ok" | "degraded" | "blocked";
@@ -13,22 +14,22 @@ export const STARTUP_INCLUDED_FAMILIES = new Set([
 ]);
 
 const DETAIL_COMMANDS: Record<string, string> = {
-  plan: "agentera state plan list --format json",
-  docs: "agentera state docs list --format json",
-  progress: "agentera state progress list --format json",
-  health: "agentera state health list --format json",
-  todo: "agentera state todo list --format json",
-  decisions: "agentera state decisions list --format json",
-  changelog: "agentera state query changelog --format json",
-  objective: "agentera state objective list --format json",
-  experiments: "agentera state experiments list --objective OBJECTIVE_ID --format json",
-  vision: "agentera state query vision --format json",
-  design: "agentera state query design --format json",
-  profile: "agentera report profile-grounding --format json",
+  plan: preCutoverCommand("state plan list --format json"),
+  docs: preCutoverCommand("state docs list --format json"),
+  progress: preCutoverCommand("state progress list --format json"),
+  health: preCutoverCommand("state health list --format json"),
+  todo: preCutoverCommand("state todo list --format json"),
+  decisions: preCutoverCommand("state decisions list --format json"),
+  changelog: preCutoverCommand("state query changelog --format json"),
+  objective: preCutoverCommand("state objective list --format json"),
+  experiments: preCutoverCommand("state experiments list --objective OBJECTIVE_ID --format json"),
+  vision: preCutoverCommand("state query vision --format json"),
+  design: preCutoverCommand("state query design --format json"),
+  profile: preCutoverCommand("report profile-grounding --format json"),
 };
 
 function detailCommand(family: string): string {
-  return DETAIL_COMMANDS[family] ?? "agentera schema --format json";
+  return DETAIL_COMMANDS[family] ?? preCutoverCommand("schema --format json");
 }
 
 /**
@@ -57,15 +58,17 @@ export function deferredStartupFamilies(contract: JsonObject): string[] {
  * Prime aggregates read availability. Mutation grammar remains discoverable
  * only through `agentera schema`, never through a startup payload.
  */
-export function startupAggregation(contract: JsonObject, health: JsonObject): JsonObject {
-  const blocked = typeof contract.schema_error === "string" && contract.schema_error.length > 0;
+export function startupAggregation(contract: JsonObject, health: JsonObject, cutover: JsonObject | null = null): JsonObject {
+  const cutoverRequired = cutover?.status === "required";
+  const blocked = cutoverRequired || (typeof contract.schema_error === "string" && contract.schema_error.length > 0);
   const degraded = health.startup_outcome === "degraded";
   const outcome: StartupOutcome = blocked ? "blocked" : degraded ? "degraded" : "ok";
   return {
     schemaVersion: "agentera.primeStartup.v1",
     outcome,
+    state_cutover: cutover ?? { status: "complete", project_state: "v3", recovery_command: null },
     availability: Array.isArray(contract.availability) ? contract.availability : [],
-    detail_discovery: { schema: "agentera schema --format json" },
+    detail_discovery: { schema: preCutoverCommand("schema --format json") },
     raw_artifact_reads_required: false,
     raw_artifact_read_policy:
       "Use included bounded state first. For deferred detail, run that family's detail_command; raw reads are only for a named corruption or CLI-defect diagnostic.",

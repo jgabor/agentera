@@ -67,7 +67,7 @@ describe("cli help", () => {
   it("makes the offline routing evaluation discoverable from canonical route help", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "route", "--help"], io));
     expect(rc).toBe(0);
-    expect(out).toContain("agentera route evaluate --format json");
+    expect(out).toContain("npx -y agentera@next route evaluate --format json");
     expect(out).toContain("frozen offline conformance corpus");
     expect(out).toContain("exits 1 when its report status is fail");
   });
@@ -78,6 +78,8 @@ describe("cli help", () => {
     const rendered = (value: unknown) => JSON.stringify(value, null, 2).split("\n").map((line) => `  ${line}`).join("\n");
 
     expect(rc).toBe(0);
+    expect(receipt.stdin_command).toBe("npx -y agentera@next route receipt --input - --format json");
+    expect(out).not.toMatch(/(^|\n)(?:usage:\s*)?agentera route/m);
     expect(out).toContain("agentera.route_receipt_contract.v1");
     expect(out).toContain(rendered(receipt.nullable_schema));
     expect(out).toContain(rendered(receipt.outcome_rules));

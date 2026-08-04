@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 
 import {
   loadDocsPathOverrides,
@@ -49,7 +50,7 @@ const ALLOWED_RAW_ARTIFACT_USES = [
   "unavailable or incomplete CLI state after CLI fallbacks",
   "benchmark analysis",
 ];
-const BENCHMARK_CONTEXT_COMMAND = "agentera prime --context optimize --format json";
+const BENCHMARK_CONTEXT_COMMAND = preCutoverCommand("prime --context optimize --format json");
 const STATE_COMMAND_NAMES = new Set([
   "decisions",
   "docs",

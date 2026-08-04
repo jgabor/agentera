@@ -19,18 +19,24 @@ dist-tag promotion, use `@next`; after promotion, the same commands work with
 `agentera@latest` or an installed `agentera` binary.
 
 ```bash
-npx -y agentera@next prime
+npx -y agentera@next prime --context status --format json
 ```
 
 Run that from a git project. In an editor runtime, invoke `/agentera`
 (`$agentera` in Codex) for the rendered status dashboard.
 
-`prime` is deliberately bounded: it summarizes current project state and the
-next useful action. Use `doctor` when you need app, project-state, shared-skill,
-and CLI evidence.
+This is the pre-cutover bootstrap. One `@next` call returns the status
+instructions, a bounded startup outcome, and any exact recovery command. Clean,
+v2, and partially migrated projects return `blocked` with
+`state_cutover.recovery_command` set to the full development-channel entity
+upgrade. A v3 project returns `ok` when no independent health degradation
+applies and needs no fallback or second dashboard call. Do not substitute bare
+`agentera` or `agentera@latest`; those can resolve stable v2 until promotion.
+
+Use the same channel for a separate read-only doctor probe when you need full
+app, project-state, shared-skill, and CLI evidence:
 
 ```bash
-npx -y agentera@next prime --format json
 npx -y agentera@next doctor --format json
 ```
 

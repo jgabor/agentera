@@ -34,12 +34,22 @@ documentation after deterministic abstention; it learns that contract from the C
 
 ## Bootstrap
 
-Run `npx -y agentera@next prime` for orientation. The JSON returns bounded app
-status, state slices, attention items, next action, and startup availability.
+Run one pre-cutover `@next` call for orientation. It is read-only in clean, v2,
+partially migrated, and v3 projects. Clean, v2, and partial state returns
+`blocked` with the exact full entity-upgrade command in
+`state_cutover.recovery_command`; v3 returns `ok` unless health is degraded.
+The JSON also returns bounded app status, state slices, attention, and startup
+availability.
 
 ```bash
-npx -y agentera@next prime
+npx -y agentera@next prime --context status --format json
 ```
+
+An `ok` outcome needs no fallback or second dashboard call. Follow an exact
+recovery command for other outcomes; every returned v3 command stays on
+`npx -y agentera@next`. Do not use bare `agentera` or `agentera@latest` before
+stable promotion. For deeper read-only evidence, run
+`npx -y agentera@next doctor --format json`.
 
 For capability-specific startup context:
 

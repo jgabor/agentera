@@ -390,12 +390,12 @@ export async function runProducerReadinessWorkflow(
     startupOutput.push(result.stdout);
     const served = JSON.parse(result.stdout).capability_context;
     const grounding = served.startup?.availability?.find((row: Record<string, unknown>) => row.family === "profile");
-    assert.equal(grounding?.detail_command, "agentera report profile-grounding --format json");
+    assert.equal(grounding?.detail_command, "npx -y agentera@next report profile-grounding --format json");
     assert.equal(grounding?.availability, "deferred");
     assert.equal(served.profile, undefined);
     assert(
-       served.instructions.includes(grounding.detail_command),
-      `${capability} instructions omit grounding command`,
+      served.instructions.includes("agentera report profile-grounding --format json"),
+      `${capability} post-cutover instructions omit grounding command`,
     );
     for (const forbidden of [
       "profile path for high-confidence entries",
@@ -407,7 +407,7 @@ export async function runProducerReadinessWorkflow(
         `${capability} instructions retain raw profile grounding: ${forbidden}`,
       );
     }
-    const command = grounding.detail_command.split(" ").slice(1);
+    const command = grounding.detail_command.replace(/^npx -y agentera@next /, "agentera ").split(" ").slice(1);
     const grounded = invoke(executable, command, project, env);
     assert.equal(grounded.status, 0, grounded.stderr || grounded.stdout);
     const payload = JSON.parse(grounded.stdout);

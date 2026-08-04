@@ -1,5 +1,6 @@
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
 import { runRouteEvaluation, runRouteReceipt, runRouteRequest } from "../commands/route.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 import {
   printCommandHelp,
   printStateHelp,
@@ -206,8 +207,8 @@ export function main(argv: string[], io: Io = {}): number {
           class: "unsupported_target",
           message: "route requires the request subcommand",
             valid_values: ["request", "receipt", "evaluate"],
-            syntax: "agentera route <request|receipt> --input PATH --format json | agentera route evaluate --format json",
-          example: "agentera route receipt --input - --format json",
+            syntax: `${preCutoverCommand("route <request|receipt> --input PATH --format json")} | ${preCutoverCommand("route evaluate --format json")}`,
+          example: preCutoverCommand("route receipt --input - --format json"),
         },
       });
     case "compact":

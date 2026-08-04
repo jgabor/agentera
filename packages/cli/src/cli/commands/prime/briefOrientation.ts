@@ -1,6 +1,7 @@
 import type { JsonObject, JsonValue } from "../../../core/jsonValue.js";
 import { truncateCodePoints } from "../../../core/text.js";
 import { entityListFamily } from "../../../state/entityRetrievalHelp.js";
+import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../capabilityContext/types.js";
 
 /**
@@ -61,26 +62,26 @@ interface OmittedRichStateEntry {
 /** Rich-state sub-detail projected out of the default brief, each with a named
  *  authoritative recovery command. */
 const planTaskFamily = entityListFamily("plan_tasks");
-const planTaskListRecovery = `agentera state ${planTaskFamily.commandTokens.join(" ")} list --format json`;
+const planTaskListRecovery = preCutoverCommand(`state ${planTaskFamily.commandTokens.join(" ")} list --format json`);
 
 const OMITTED_RICH_STATE: readonly OmittedRichStateEntry[] = [
-  { field: "startup.path_diagnostics", reason: "startup_path_diagnostics", recovery: "agentera doctor --format json" },
+  { field: "startup.path_diagnostics", reason: "startup_path_diagnostics", recovery: preCutoverCommand("doctor --format json") },
   { field: "plan.tasks", reason: "plan_task_detail", recovery: planTaskListRecovery },
   { field: "plan.archived_plans", reason: "archive_catalog", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
   { field: "plan.diagnostics", reason: "plan_diagnostics", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
   { field: "history.progress.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.progress },
   { field: "history.decisions.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.decisions },
   { field: "history.health.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.health },
-  { field: "project_integration.phases", reason: "phase_blockers", recovery: "agentera doctor --format json" },
+  { field: "project_integration.phases", reason: "phase_blockers", recovery: preCutoverCommand("doctor --format json") },
   { field: "docs.source_contract", reason: "docs_state_families", recovery: STATE_FAMILY_FALLBACK_COMMANDS.docs },
-  { field: "profile.bounded_signals", reason: "profile_signal_detail", recovery: "agentera profile --format json" },
+  { field: "profile.bounded_signals", reason: "profile_signal_detail", recovery: preCutoverCommand("report profile-grounding --format json") },
 ];
 
 /** Maximum number of ranked next_action alternatives retained in the brief.
  *  The recommended entry is always kept; overflow alternatives recover via the
  *  state-derived readiness cascade rather than raw artifact access. */
 const BRIEF_NEXT_ACTION_ALTERNATIVES = 3;
-const PATH_DIAGNOSTICS_RECOVERY = "agentera doctor --format json";
+const PATH_DIAGNOSTICS_RECOVERY = preCutoverCommand("doctor --format json");
 
 /** Code-point cap for routing-essential free-text scalars retained in the brief
  *  (e.g. progress.latest.what/next). Matches the boundStartupValue 200-cp
@@ -717,7 +718,7 @@ function degradedBriefEnvelope(
       message:
         "the projected decision brief exceeded the authority byte budget; a bounded degraded envelope was emitted instead of the over-budget payload",
       recovery:
-        "Run `agentera prime --context status --format json` for status startup, or `agentera state <artifact> list --format json` for a specific record family.",
+        `Run \`${preCutoverCommand("prime --context status --format json")}\` for status startup, or \`${preCutoverCommand("state <artifact> list --format json")}\` for a specific record family.`,
     },
   };
   const body = (projection: SourceContractProjection): Record<string, unknown> =>
@@ -739,7 +740,7 @@ function degradedBriefEnvelope(
     error: {
       class: "brief_output_budget",
       message: "the projected decision brief exceeded the authority byte budget; compact recovery metadata was emitted",
-      recovery: "Run `agentera prime --context status --format json` for status startup.",
+      recovery: `Run \`${preCutoverCommand("prime --context status --format json")}\` for status startup.`,
     },
   };
   const compact = settledBriefEnvelope(body("compact"), compactMeta);
@@ -763,7 +764,7 @@ function degradedBriefEnvelope(
     error: {
       class: "brief_output_budget",
       message: "the configured budget cannot contain the detailed recovery envelope",
-      recovery: "Increase the budget or run `agentera prime --context status --format json`.",
+      recovery: `Increase the budget or run \`${preCutoverCommand("prime --context status --format json")}\`.`,
     },
   };
   const minimum = settledBriefEnvelope(body("irreducible"), minimumMeta);

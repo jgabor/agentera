@@ -21,9 +21,10 @@ import type { JsonObject } from "../../core/jsonValue.js";
 import { discoverProjectVerification } from "./projectVerification.js";
 import type { BuildExecutionRequest } from "../commands/prime/buildExecutionRequest.js";
 import { deferredStartupFamilies } from "./startupAggregation.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 
-const TRANSIENT_BUILD_INPUT_COMMAND = "agentera prime --context build --input <file|-> --format json";
-const TRANSIENT_BUILD_STDIN_COMMAND = "agentera prime --context build --input - --format json";
+const TRANSIENT_BUILD_INPUT_COMMAND = preCutoverCommand("prime --context build --input <file|-> --format json");
+const TRANSIENT_BUILD_STDIN_COMMAND = preCutoverCommand("prime --context build --input - --format json");
 
 function transientSourceProvenance(request: BuildExecutionRequest, field: string): JsonObject {
   return {
@@ -108,7 +109,7 @@ export function buildExecutionContext(
   }
   if (changelogBoundary.status !== "available") {
     stateCaveats.push(...((changelogBoundary.caveats ?? []) as string[]));
-    fallbackCommands.push("agentera state query changelog --format json");
+    fallbackCommands.push(preCutoverCommand("state query changelog --format json"));
   }
   if (profile.status !== "valid") {
     stateCaveats.push("profile-derived state is unavailable in prime --context response.");
@@ -231,7 +232,7 @@ export function buildExecutionContext(
       remote_push_allowed: false,
       commit_allowed_only_with_explicit_user_request: true,
       tag_or_publication_allowed: false,
-      source_provenance: sourceProvenance("execution_context", "agentera prime --context build --format json", "git_boundary"),
+      source_provenance: sourceProvenance("execution_context", preCutoverCommand("prime --context build --format json"), "git_boundary"),
     },
     plan_completion_sweep: sweep,
     plan_lifecycle_state: lifecycle,

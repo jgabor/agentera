@@ -63,7 +63,7 @@ function servedContract(executable: string, root: string): { actions: Action[]; 
   const profilePath = path.join(root, "profile-data", "PROFILE.md");
   assert.equal(context?.profile, undefined, "prime exposed profile state at startup");
   assert.equal(context?.context?.profile_context?.profile, undefined, "prime exposed profile-derived state at startup");
-  assert.equal(context?.startup?.detail_discovery?.schema, "agentera schema --format json", "prime omitted startup detail discovery");
+  assert.equal(context?.startup?.detail_discovery?.schema, "npx -y agentera@next schema --format json", "prime omitted startup detail discovery");
   return { actions: markers as Action[], profilePath };
 }
 

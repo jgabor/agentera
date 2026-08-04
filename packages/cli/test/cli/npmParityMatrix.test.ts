@@ -265,7 +265,7 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
       let appHomeTmp: string | null = null;
       let projectTmp: string | null = null;
       const argv = [...spec.argv];
-      if (["prime", "state_plan", "state_todo"].includes(name)) {
+      if (["state_plan", "state_todo"].includes(name)) {
         projectTmp = fs.mkdtempSync(path.join(os.tmpdir(), "npm-parity-marker-absent-"));
         argv.push("--project", projectTmp);
       }
@@ -296,7 +296,7 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
         if (appHomeTmp) fs.rmSync(appHomeTmp, { recursive: true, force: true });
         if (projectTmp) fs.rmSync(projectTmp, { recursive: true, force: true });
       }
-      if (["prime", "state_plan", "state_todo"].includes(name)) {
+      if (["state_plan", "state_todo"].includes(name)) {
         expect(rc).toBe(1);
         expect(JSON.parse(out).error).toMatchObject({
           class: "migration_required",

@@ -51,6 +51,12 @@ npx -y agentera@next prime --format json
 npx -y agentera@next doctor --format json
 ```
 
+Before stable promotion, `prime --context status --format json` is the one-call
+bootstrap for clean, v2, partially migrated, and v3 projects. Marker-absent
+clean, v2, and partial projects return bounded `blocked` output with the exact
+full entity-upgrade recovery; v3 returns `ok` unless health is degraded. No
+recovery resolves `@latest`, and healthy v3 needs no second dashboard call.
+
 `doctor --format json` also reports bounded `retired_resources` candidates. Each
 entry has an exact retired resource ID, a path-only or fingerprint-safe
 observation, and a read-only, ID-scoped preview command. The command repeats

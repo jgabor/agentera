@@ -239,8 +239,8 @@ describe("summary entity ordinary reads", () => {
         compatibility: "current",
         counts: { total: 1, returned: 0, remaining: 1, full: 1, summary: 0 },
         retrieval: {
-          list: `agentera state ${artifact} list --limit 20 --format json`,
-          get: `agentera state ${artifact} get --id ID --format json`,
+          list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
+          get: `npx -y agentera@next state ${artifact} get --id ID --format json`,
         },
         source_contract: {
           authority: "references/artifacts/state-storage-authority.yaml",
@@ -279,13 +279,13 @@ describe("summary entity ordinary reads", () => {
           returned_count: 0,
           omitted_count: 1,
           retrieval: {
-            list: `agentera state ${artifact} list --limit 20 --format json`,
-            get: `agentera state ${artifact} get --id ID --format json`,
+            list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
+            get: `npx -y agentera@next state ${artifact} get --id ID --format json`,
           },
         },
         retrieval: {
-          list: `agentera state ${artifact} list --limit 20 --format json`,
-          get: `agentera state ${artifact} get --id ID --format json`,
+          list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
+          get: `npx -y agentera@next state ${artifact} get --id ID --format json`,
         },
         source_contract: {
           authority: "references/artifacts/state-storage-authority.yaml",
@@ -293,7 +293,7 @@ describe("summary entity ordinary reads", () => {
         },
       });
       expect(history).not.toHaveProperty("entries");
-      const recovery = cli(compactedRoot, String(history.retrieval.list).split(" ").slice(1));
+      const recovery = cli(compactedRoot, String(history.retrieval.list).replace(/^npx -y agentera@next /, "").split(" "));
       expect(recovery.rc, recovery.err || recovery.out).toBe(0);
     }
     expect((getDecisionEntity(compactedRoot, "eeeeeeeeee", SOURCE_ROOT) as any).entry.record.satisfaction).toEqual({

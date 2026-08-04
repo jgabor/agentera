@@ -26,6 +26,7 @@ import type {
   TodoDetailSummary,
 } from "../../contracts/orientationState.js";
 import { issueCounts } from "../../orientation.js";
+import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { evaluateTodoReadinessQueue, type TodoReadinessQueueSelection } from "../../todoReadinessSelection.js";
 import { projectCurrentGlossaryCaveats } from "../../../state/progressGlossaryCaveat.js";
 import { glossaryCaveatContract } from "../../../registries/glossaryCaveatContract.js";
@@ -100,8 +101,8 @@ function degradedHistory(
     returned_count: 0,
     omitted_count: totalSummaryCount,
     retrieval: {
-      list: `agentera state ${artifact} list --limit 20 --format json`,
-      get: `agentera state ${artifact} get --id ID --format json`,
+      list: preCutoverCommand(`state ${artifact} list --limit 20 --format json`),
+      get: preCutoverCommand(`state ${artifact} get --id ID --format json`),
     },
   };
 }
@@ -114,8 +115,8 @@ function projectedHistory(
   degraded: JsonObject | undefined,
 ): JsonObject {
   const total = fullCount + summaryCount;
-  const listCommand = `agentera state ${artifact} list --limit 20 --format json`;
-  const getCommand = `agentera state ${artifact} get --id ID --format json`;
+  const listCommand = preCutoverCommand(`state ${artifact} list --limit 20 --format json`);
+  const getCommand = preCutoverCommand(`state ${artifact} get --id ID --format json`);
   return {
     schemaVersion: list.schemaVersion,
     command: list.command,
@@ -137,7 +138,7 @@ function selected(entries: JsonObject[], artifact: "plan" | "objective"): JsonOb
   if (entries.length < 2) return entries[0];
   const ids = entries.map((entry) => String(entry.id)).sort().join(", ");
   const noun = artifact === "plan" ? "open plans" : "active objectives";
-  const list = `agentera state ${artifact} list --format json`;
+  const list = preCutoverCommand(`state ${artifact} list --format json`);
   throw new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
@@ -145,8 +146,8 @@ function selected(entries: JsonObject[], artifact: "plan" | "objective"): JsonOb
       class: "ambiguous",
       artifact,
       message: `multiple ${noun} require explicit selection: ${ids}`,
-      syntax: `agentera state ${artifact} get --id ID --format json`,
-      example: `agentera state ${artifact} get --id ${String(entries[0]?.id)} --format json`,
+      syntax: preCutoverCommand(`state ${artifact} get --id ID --format json`),
+      example: preCutoverCommand(`state ${artifact} get --id ${String(entries[0]?.id)} --format json`),
       recovery: `Run ${list}, resolve the competing ${noun}, and retry prime.`,
     },
   }, 1);
@@ -239,7 +240,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const publicTaskEntries = taskEntries.slice(0, STARTUP_ARRAY_LIMIT);
   const taskDetailOmitted = allTaskEntries.length > publicTaskEntries.length;
   const taskRetrieval: JsonObject = selectedPlan
-    ? { list: `agentera state plan tasks list ${String(selectedPlan.id)} --limit 100 --format json`, restart: `agentera state plan tasks list ${String(selectedPlan.id)} --limit 100 --format json`, get: "agentera state plan tasks get --id ID --format json" }
+    ? { list: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100 --format json`), restart: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100 --format json`), get: preCutoverCommand("state plan tasks get --id ID --format json") }
     : {};
   const plan: PlanSummary = selectedPlan ? {
     exists: true,

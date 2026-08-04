@@ -18,6 +18,7 @@ import {
   loadBuildExecutionRequest,
   type BuildExecutionRequest,
 } from "./prime/buildExecutionRequest.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
 export type { PrimeArgs } from "./prime/types.js";
@@ -69,7 +70,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     return rejectInput({
       class: "unsupported_target",
       message: "--input is valid only with prime --context build",
-      syntax: "agentera prime --context build --input <file|-> --format json",
+      syntax: preCutoverCommand("prime --context build --input <file|-> --format json"),
     });
   }
   if (capability !== null && dashboard) {

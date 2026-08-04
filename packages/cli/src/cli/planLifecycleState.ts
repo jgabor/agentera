@@ -2,8 +2,9 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { entityListFamily } from "../state/entityRetrievalHelp.js";
 import { sourceProvenance } from "./capabilityContext/shared.js";
 import { asList } from "./stateQuery.js";
+import { preCutoverCommand } from "./preCutoverCommand.js";
 
-const PLAN_LIST_COMMAND = `agentera state ${entityListFamily("plans").commandTokens.join(" ")} list --format json`;
+const PLAN_LIST_COMMAND = preCutoverCommand(`state ${entityListFamily("plans").commandTokens.join(" ")} list --format json`);
 
 function diagnosticEntries(value: unknown): JsonObject[] {
   return asList(value).filter(

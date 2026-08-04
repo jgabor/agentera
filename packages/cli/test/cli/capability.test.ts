@@ -29,7 +29,7 @@ describe("cli capability routing", () => {
     expect(rc).toBe(0);
     expect(out).toContain("agentera plan");
     expect(out).toContain("invoke: /agentera plan via Agentera skill routing");
-    expect(out).toContain("startup context: agentera prime --context plan --format json");
+    expect(out).toContain("startup context: npx -y agentera@next prime --context plan --format json");
   });
 
   it("emits a JSON routing payload", () => {
