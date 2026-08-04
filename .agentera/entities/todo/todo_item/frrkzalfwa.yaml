@@ -1,0 +1,34 @@
+id: frrkzalfwa
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Keep each self-contained npm CLI bound to its version-matched bundled app data.
+  requirements:
+    - After an explicit AGENTERA_BOOTSTRAP_SOURCE_ROOT override, make a self-contained npm package resolve its own sentinel-marked bundle before walking up from the working directory.
+    - Prevent npx agentera@next from loading schemas, skills, references, or registry data from an unrelated or differently versioned Agentera checkout merely because that checkout is the current working directory.
+    - Preserve intentional checkout-local development resolution for a CLI executed from repository build output, and preserve explicit source-root overrides.
+  acceptance:
+    - A published-package fixture run from an Agentera checkout with newer or older source data uses the fixture package bundle and returns the same valid typed prime contract as a neutral working directory.
+    - Explicit AGENTERA_BOOTSTRAP_SOURCE_ROOT and direct repository-build executions continue to select their intended source roots.
+    - Regression coverage proves bundle/version skew cannot become a cwd-dependent invalid-input or unsupported-contract failure.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: The published self-contained CLI can currently load incompatible source data from the project cwd and fail before prime returns its supported contract.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 11
+    order_reason: Fix the isolated package-boundary defect before activation gating and stable promotion.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data."
+      severity: critical
+      status: open
+      order: 11

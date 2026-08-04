@@ -195,3 +195,4 @@ Exit only after explicit approval, publication verification, final synchronizati
 - [ ] [id:rrflufktbc] [fix:3.0.0] Activate TODO reconciliation during explicit entity cutover.
 - [ ] [id:ibomhottkk] [fix:3.0.0] Add an explicit TODO reconciliation activation command.
 - [ ] [id:rnhnurigbf] [fix:3.0.0] Report inactive TODO reconciliation as action-required.
+- [ ] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
