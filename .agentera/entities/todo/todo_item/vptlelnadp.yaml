@@ -11,4 +11,4 @@ record:
       description: "[fix:3.0.0] Make every documented and machine-returned v3 bootstrap one safe, channel-correct call. Until stable promotion, `agentera route receipt` provenance, `prime` startup and fallback commands, shared-skill examples, and package smokes must use `npx -y agentera@next`, not authorize bare `agentera`. Verify clean, v2, partial, and v3 projects end with `prime` and `doctor` passing without redirecting `@latest`. The matrix must assert the unified startup outcome owned by TODO `rsplcfvosn` and prove healthy projects require no second dashboard or fallback call."
       severity: critical
       status: open
-      order: 2
+      order: 1

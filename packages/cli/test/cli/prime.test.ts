@@ -100,6 +100,25 @@ describe("cli prime", () => {
     expect(out).toContain("detail_discovery=agentera schema --format json");
   });
 
+  it.each([
+    ["explicit", "issues"],
+    ["comma-form", "todo,issues"],
+  ])("rejects a default-text %s retired-field request before rendering", (_label, fields) => {
+    const { rc, out, err } = capture((io) => cmdPrime({ command: "prime", fields }, io));
+    expect(rc).toBe(2);
+    expect(err).toBe("");
+    expect(out).not.toContain("agentera prime\n");
+    expect(JSON.parse(out)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: {
+        class: "invalid_choice",
+        valid_values: ["todo"],
+        recovery: expect.stringContaining("'todo'"),
+      },
+    });
+  });
+
   it("rejects mutually-exclusive prime modes", () => {
     expect(capture((io) => cmdPrime({ context: "plan", dashboard: true }, io)).rc).toBe(2);
     expect(capture((io) => cmdPrime({ context: "plan", guidance: true }, io)).rc).toBe(2);
@@ -138,21 +157,13 @@ describe("cli prime", () => {
         annoying: expect.any(Number),
       }),
     );
-    expect(payload.issues).toEqual({
-      critical: payload.todo.critical,
-      degraded: payload.todo.degraded,
-      normal: payload.todo.normal,
-      annoying: payload.todo.annoying,
-    });
-    expect(payload.issues).not.toHaveProperty("detail");
+    expect(payload).not.toHaveProperty("issues");
     expect(payload.todo.detail).toMatchObject({
       total: expect.any(Number),
       returned: expect.any(Number),
       omitted: expect.any(Number),
     });
-    expect(err).toContain("Deprecation: prime JSON field 'issues' is deprecated; use 'todo'");
-    expect(err).toContain("3.0.0 stable cut");
-    expect(out).not.toContain("Deprecation:");
+    expect(err).toBe("");
     expect(payload.app).toBeTruthy();
     expect(payload.app_home.install_track).toBeTruthy();
     expect(payload.shared_skill).toMatchObject({ name: "canonical_skill", status: expect.any(String) });
@@ -224,24 +235,23 @@ describe("cli prime", () => {
     expect(err).toBe("");
   });
 
-  it("selects issues via --fields with a deprecation warning", () => {
+  it("rejects the retired issues field with one structured TODO correction", () => {
     const { rc, out, err } = capture((io) =>
       cmdPrime({ command: "prime", format: "json", fields: "issues" }, io),
     );
-    expect(rc).toBe(0);
+    expect(rc).toBe(2);
     const payload = JSON.parse(out);
-    expect(Object.keys(payload).sort()).toEqual(["command", "issues", "outcome"]);
-    expect(payload.issues).toEqual(
-      expect.objectContaining({
-        critical: expect.any(Number),
-        degraded: expect.any(Number),
-        normal: expect.any(Number),
-        annoying: expect.any(Number),
-      }),
-    );
-    expect(payload.issues).not.toHaveProperty("detail");
-    expect(err).toContain("Deprecation: prime JSON field 'issues' is deprecated; use 'todo'");
-    expect(err).toContain("3.0.0 stable cut");
+    expect(payload).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: {
+        class: "invalid_choice",
+        valid_values: ["todo"],
+        example: "agentera prime --fields todo --format json",
+      },
+    });
+    expect(payload.error.recovery).toContain("'todo'");
+    expect(err).toBe("");
   });
 
   it("rejects an unsupported --fields value for prime", () => {

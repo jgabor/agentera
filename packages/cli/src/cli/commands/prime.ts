@@ -5,6 +5,7 @@ import {
   buildOrientationJsonPayload,
   buildStatusContextState,
   emitPrime,
+  rejectRetiredPrimeFields,
   PRIME_BRIEF_MAX_UTF8_BYTES,
   PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES,
   printOrientationTextBriefing,
@@ -60,6 +61,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const dashboard = Boolean(args.dashboard || args.orientation);
   const guidance = Boolean(args.guidance);
   const input = args.input ?? null;
+  const format = args.format ?? "text";
   const inputErrorFormat = args.format === "json" || args.format === "yaml" ? args.format : "text";
   const rejectInput = (body: Parameters<typeof emitInvalidInput>[1]["body"]): number =>
     emitInvalidInput(io, { format: inputErrorFormat, body });
@@ -82,11 +84,12 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     err("Error: prime --dashboard/--orientation and prime --guidance are mutually exclusive\n");
     return 2;
   }
+  const retiredFieldRejection = rejectRetiredPrimeFields(command, format, args.fields, out, err);
+  if (retiredFieldRejection !== null) return retiredFieldRejection;
   if (guidance) {
     out(PRIME_BLOB);
     return 0;
   }
-  const format = args.format ?? "text";
   const collectOpts = {
     projectRoot: args.projectRoot,
     home: args.home,

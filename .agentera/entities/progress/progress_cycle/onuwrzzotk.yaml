@@ -1,0 +1,15 @@
+id: onuwrzzotk
+artifact: progress
+record:
+  timestamp: 2026-08-04 14:27
+  type: fix
+  phase: build
+  what: Corrected the retry by validating retired prime fields before text, JSON, or YAML projection and adding comma-form plus degraded-envelope regression coverage.
+  context:
+    intent: Close the persisted Audit gaps for projection-independent retired-field rejection.
+    constraints: Preserve prior FAIL evidence and protected plan blobs; no lifecycle or external mutation.
+    scope: Prime validation order and focused projection regression coverage.
+  discovered: Audit wfbpsymlxi-audit-1 observed that default text bypassed emitPrime validation and the degraded path lacked a direct canonical-versus-alias pair; the live checkout briefing budget caveat is unchanged.
+  verified: "Focused prime tests: 70 passed. Full source suite: 222 files, 3,073 passed and 1 skipped. Package lane: 2 files, 26 passed. Typecheck, rebuild, compact, schema check, and rebuilt bare/sparse/status/capability plus default-text explicit/comma matrix passed."
+  next: Re-audit wfbpsymlxi without task completion, TODO resolution, evaluation, or commit.
+  publication_order: 69

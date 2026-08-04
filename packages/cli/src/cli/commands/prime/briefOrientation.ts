@@ -19,8 +19,8 @@ import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../capabilityContext/types.js
  * The byte gate is deterministic pretty-JSON UTF-8 measurement
  * (Buffer.byteLength(JSON.stringify(brief, null, 2) + "\n", "utf8")); an
  * over-budget brief is rejected in favor of a bounded degraded envelope.
- * Diagnostics (the `issues` deprecation warning) stay on stderr and are
- * measured separately. The state-storage authority owns the briefing budget.
+ * Diagnostics stay on stderr and are measured separately. The state-storage
+ * authority owns the briefing budget.
  */
 
 /** Authoritative byte budget for the default bare prime decision brief.
@@ -646,7 +646,6 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   if ("startup" in payload) out.startup = payload.startup;
   if ("health" in payload) out.health = briefHealth(payload.health);
   if ("todo" in payload) out.todo = payload.todo;
-  if ("issues" in payload) out.issues = payload.issues;
   if ("progress" in payload) out.progress = briefProgress(payload.progress);
   if ("attention" in payload) out.attention = briefAttention(payload.attention);
   if ("source" in payload) out.source = briefSource(payload.source);

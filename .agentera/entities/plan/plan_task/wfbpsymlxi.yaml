@@ -4,9 +4,19 @@ record:
   name: M5 · Remove the duplicate issues alias (otmknmduwi)
   depends_on:
     - wucudfywvo
-  status: pending
+  status: complete
   acceptance:
     - GIVEN prime JSON WHEN returned THEN only canonical TODO output appears without the issues alias or warning.
     - GIVEN a retired-field request WHEN rejected THEN one structured correction points to TODO.
     - GIVEN projections WHEN tested THEN each has one pass and one alias rejection.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Default text prime silently accepts --fields issues, and degraded output lacks direct canonical pass plus alias/comma rejection coverage.
+    provenance:
+      attempt_id: wfbpsymlxi-audit-2
+      source: Independent Audit ses_033520c68ffeAgNJFRzhfVNL56 bounded re-review PASS
+      recorded_at: 2026-08-04 14:31
+      writer_command: agentera state plan record-evaluation

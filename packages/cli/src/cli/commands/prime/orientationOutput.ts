@@ -1,8 +1,15 @@
 import { publicDoctorStatus } from "../../../upgrade/doctor.js";
 import { projectInstallTrack } from "../../../upgrade/compatibility.js";
 import { formatNextAction, startupPlanSummary } from "../../orientation.js";
-import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS, PRIME_STRUCTURED_FIELDS, availablePrimeFields } from "../../stateQuery.js";
+import {
+  requestedFields,
+  REQUIRED_SPARSE_CONTEXT_FIELDS,
+  PRIME_STRUCTURED_FIELDS,
+  RETIRED_PRIME_FIELD_CORRECTIONS,
+  availablePrimeFields,
+} from "../../stateQuery.js";
 import { emitStructured } from "../../structured.js";
+import { emitInvalidInput } from "../../errors.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import { truncateCodePoints } from "../../../core/text.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
@@ -58,9 +65,6 @@ export function projectPublicOrientationAttention(state: OrientationState): stri
   return [...unrelated.slice(0, unrelatedLimit), glossary].slice(0, policy.public_limit);
 }
 
-const ISSUES_FIELD_DEPRECATION_MESSAGE =
-  "Deprecation: prime JSON field 'issues' is deprecated; use 'todo'. The 'issues' field will be removed at the 3.0.0 stable cut.\n";
-
 /** Top-level conditional fields whose default/inactive payload is omitted from
  *  the default bare briefing so startup does not carry default-only adjective
  *  noise. They remain declared in PRIME_STRUCTURED_FIELDS (selectable via
@@ -112,22 +116,6 @@ function omitInactiveConditionalDefaults(payload: Record<string, unknown>): Reco
     out[key] = value;
   }
   return out;
-}
-
-function shouldEmitIssuesDeprecation(requested: string[], payload: Record<string, unknown>): boolean {
-  if (!("issues" in payload)) return false;
-  if (requested.length === 0) return true;
-  return requested.includes("issues");
-}
-
-function emitIssuesFieldDeprecationWarning(
-  requested: string[],
-  payload: Record<string, unknown>,
-  err: (t: string) => void,
-): void {
-  if (shouldEmitIssuesDeprecation(requested, payload)) {
-    err(ISSUES_FIELD_DEPRECATION_MESSAGE);
-  }
 }
 
 function orientationAppHome(bundle: BundleStatus): JsonObject {
@@ -188,7 +176,6 @@ export function buildOrientationJsonPayload(
     project_integration: state.project_integration,
     health: state.health,
     todo: { ...state.counts, detail: state.todo_detail },
-    issues: state.counts,
     plan: startupPlanSummary(state.plan),
     docs: state.docs,
     progress: state.progress,
@@ -213,7 +200,7 @@ export function buildOrientationJsonPayload(
       fields: STATUS_STRUCTURED_FIELDS,
       render,
       access,
-      empty_state: "fresh: summaries absent; zero issues",
+      empty_state: "fresh: summaries absent; zero TODO items",
        capability_context: capabilityContextPointer(options.capabilityContextRequiredBeforeRendering ?? true),
     },
   };
@@ -281,6 +268,8 @@ export function emitPrime(
   err: (t: string) => void,
   options: { bareBrief?: boolean; briefBudgetBytes?: number; maxUtf8Bytes?: number } = {},
 ): number {
+  const retiredRejection = rejectRetiredPrimeFields(command, format, fieldsArg, out, err);
+  if (retiredRejection !== null) return retiredRejection;
   const requested = requestedFields(fieldsArg);
   // The default bare briefing first omits inactive conditional top-level fields
   // (v1_migration/docs/objective when default) so startup does not carry
@@ -294,7 +283,6 @@ export function emitPrime(
     requested.length === 0 && options.bareBrief
       ? briefOrientationPayload(conditional, { budgetBytes: options.briefBudgetBytes })
       : conditional;
-  emitIssuesFieldDeprecationWarning(requested, effectivePayload, err);
   if (requested.length === 0) {
     if (format === "json" && options.maxUtf8Bytes !== undefined) {
       const bytes = briefUtf8Bytes(effectivePayload);
@@ -325,6 +313,33 @@ export function emitPrime(
   }
   emitStructured(selected, format, out);
   return 0;
+}
+
+/** Reject a retired selector before state collection or output projection. Text
+ *  mode uses JSON because a retired-field request is an automation-shaped
+ *  selector and must return one machine-readable correction, not a briefing. */
+export function rejectRetiredPrimeFields(
+  command: string,
+  format: string,
+  fieldsArg: string | null | undefined,
+  out: (t: string) => void,
+  err: (t: string) => void,
+): number | null {
+  const requested = requestedFields(fieldsArg);
+  const retired = requested.find((field) => field in RETIRED_PRIME_FIELD_CORRECTIONS);
+  if (retired === undefined) return null;
+  const replacement = RETIRED_PRIME_FIELD_CORRECTIONS[retired as keyof typeof RETIRED_PRIME_FIELD_CORRECTIONS];
+  return emitInvalidInput({ out, err }, {
+    format: format === "yaml" ? "yaml" : "json",
+    body: {
+      class: "invalid_choice",
+      message: `prime field '${retired}' is retired; use '${replacement}'`,
+      valid_values: [replacement],
+      syntax: `agentera ${command} --fields ${replacement} --format json`,
+      example: `agentera ${command} --fields ${replacement} --format json`,
+      recovery: `Replace '${retired}' with '${replacement}' and retry; no state was changed.`,
+    },
+  });
 }
 
 export function printOrientationTextBriefing(state: OrientationState, command: string, out: (t: string) => void): void {

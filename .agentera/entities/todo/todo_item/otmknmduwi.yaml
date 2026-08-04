@@ -2,7 +2,7 @@ id: otmknmduwi
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Remove the deprecated `issues` alias from every prime JSON projection as part of the aggregation-only startup contract. The resolved 2026-06-27 compatibility item retained the alias with a stderr warning, but a public beta must expose one canonical TODO field and no duplicate output shape. Remove the alias, warning, schema/help references, package projection, fixtures, and compatibility tests; return a structured correction only where an explicit retired field request can occur."
   readiness:
     capability: build
@@ -19,6 +19,10 @@ record:
     public:
       present: true
       description: "[fix:3.0.0] Remove the deprecated `issues` alias from every prime JSON projection as part of the aggregation-only startup contract. The resolved 2026-06-27 compatibility item retained the alias with a stderr warning, but a public beta must expose one canonical TODO field and no duplicate output shape. Remove the alias, warning, schema/help references, package projection, fixtures, and compatibility tests; return a structured correction only where an explicit retired field request can occur."
+      status: resolved
+      order: 92
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: Prime now emits canonical TODO output only and rejects retired issues selectors before every projection with one structured correction to todo.
+    date: 2026-08-04

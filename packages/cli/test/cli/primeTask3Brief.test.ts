@@ -357,6 +357,52 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(degraded, "degraded keeps history").toHaveProperty("history");
   });
 
+  it("keeps canonical TODO in a degraded emission and rejects its comma-form retired alias before projection", () => {
+    returningFixture();
+    const { payload } = capturePrime();
+    const rawPayload = { ...payload } as Record<string, unknown>;
+    delete rawPayload.brief;
+
+    let canonicalOut = "";
+    let canonicalErr = "";
+    const canonicalRc = emitPrime(
+      "prime",
+      rawPayload,
+      "json",
+      undefined,
+      (text) => (canonicalOut += text),
+      (text) => (canonicalErr += text),
+      { bareBrief: true, briefBudgetBytes: 9000 },
+    );
+    expect(canonicalRc).toBe(0);
+    expect(canonicalErr).toBe("");
+    const canonical = JSON.parse(canonicalOut) as Record<string, any>;
+    expect(canonical.brief.projection).toBe("degraded");
+    expect(canonical.todo).toBeTruthy();
+    expect(canonical).not.toHaveProperty("issues");
+
+    let rejectedOut = "";
+    let rejectedErr = "";
+    const rejectedRc = emitPrime(
+      "prime",
+      rawPayload,
+      "json",
+      "todo,issues",
+      (text) => (rejectedOut += text),
+      (text) => (rejectedErr += text),
+      { bareBrief: true, briefBudgetBytes: 9000 },
+    );
+    expect(rejectedRc).toBe(2);
+    expect(rejectedErr).toBe("");
+    const rejected = JSON.parse(rejectedOut) as Record<string, any>;
+    expect(rejected).not.toHaveProperty("brief");
+    expect(rejected).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: { valid_values: ["todo"] },
+    });
+  });
+
   it("trims optional 21-task and path diagnostics before selected routing and canonical history evidence", () => {
     const selectedTask = {
       id: "vvvvvvvvvv",

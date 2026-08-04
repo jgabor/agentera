@@ -4,6 +4,9 @@
 
 ### Changed
 
+- `agentera prime` now returns TODO state only through the canonical `todo`
+  field. Requests for the retired `issues` field fail with one structured
+  correction to `todo` instead of emitting a duplicate alias and warning.
 - `agentera prime --context <capability> --format json` now returns one bounded
   startup availability projection with an `ok`, `degraded`, or `blocked`
   outcome. Deferred detail names its exact read command; writer payloads are

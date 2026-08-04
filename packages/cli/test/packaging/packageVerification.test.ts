@@ -1401,9 +1401,10 @@ describe("npm distribution boundary", () => {
     expect(primed.status, `package boundary prime failed:\n${primed.stderr}`).toBe(0);
     const payload = JSON.parse(primed.stdout) as {
       command: string;
-       outcome: string;
+      outcome: string;
       app_home: { source: string };
       app: { status: string };
+      todo: Record<string, unknown>;
     };
     expect(payload).toMatchObject({
       command: "prime",
@@ -1413,6 +1414,32 @@ describe("npm distribution boundary", () => {
     });
     expect(payload.app_home).not.toHaveProperty("home");
     expect(payload.app).not.toHaveProperty("sourceRoot");
+    expect(payload.todo).toEqual(expect.objectContaining({
+      critical: expect.any(Number),
+      degraded: expect.any(Number),
+      normal: expect.any(Number),
+      annoying: expect.any(Number),
+    }));
+    expect(payload).not.toHaveProperty("issues");
+    expect(primed.stderr).toBe("");
+
+    const retiredPrimeField = run(
+      process.execPath,
+      [bin, "prime", "--fields", "issues", "--format", "json"],
+      project,
+      env,
+    );
+    expect(retiredPrimeField.status).toBe(2);
+    expect(retiredPrimeField.stderr).toBe("");
+    expect(JSON.parse(retiredPrimeField.stdout)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: {
+        class: "invalid_choice",
+        valid_values: ["todo"],
+        recovery: expect.stringContaining("'todo'"),
+      },
+    });
 
     const sourced = run(process.execPath, [bin, "prime", "--fields", "app_home,app", "--format", "json"], project, env);
     expect(sourced.status, `package boundary sparse prime failed:\n${sourced.stderr}`).toBe(0);

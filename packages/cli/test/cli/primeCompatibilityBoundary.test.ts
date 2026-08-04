@@ -58,6 +58,26 @@ function primePayload(fields?: string): { payload: Record<string, unknown>; err:
   return { payload: JSON.parse(result.out) as Record<string, unknown>, err: result.err };
 }
 
+const projectionCases = [
+  {
+    name: "sparse",
+    args: { command: "prime", format: "json", fields: "todo" } as const,
+    todo: (payload: Record<string, any>) => payload.todo,
+  },
+  {
+    name: "status",
+    args: { command: "prime", context: "status", format: "json" } as const,
+    todo: (payload: Record<string, any>) => payload.capability_context.context.status_context.todo,
+  },
+  {
+    name: "capability",
+    args: { command: "prime", context: "build", format: "json" } as const,
+    todo: (payload: Record<string, any>) => payload.capability_context.startup.availability.find(
+      (entry: Record<string, unknown>) => entry.family === "todo",
+    ),
+  },
+] as const;
+
 describe("prime runtime compatibility boundary", () => {
   it("accepts every declared prime field and rejects unknown fields", () => {
     const result = capture({ command: "prime", format: "json", fields: PRIME_STRUCTURED_FIELDS.join(",") });
@@ -88,14 +108,40 @@ describe("prime runtime compatibility boundary", () => {
     expect(structuredOutput.fields_by_command.status).toEqual(PRIME_STRUCTURED_FIELDS);
   });
 
-  it("retains the deprecated issues count alias without duplicating todo detail", () => {
+  it("emits only the canonical TODO field without an alias warning", () => {
     const { payload, err } = primePayload();
-    const todo = payload.todo as Record<string, unknown>;
-    const issues = payload.issues as Record<string, unknown>;
-    expect(Object.keys(issues)).toEqual(["critical", "degraded", "normal", "annoying"]);
-    for (const field of Object.keys(issues)) expect(issues[field]).toBe(todo[field]);
-    expect(issues).not.toHaveProperty("detail");
-    expect(err).toContain("deprecated");
+    expect(payload.todo).toEqual(expect.objectContaining({
+      critical: expect.any(Number),
+      degraded: expect.any(Number),
+      normal: expect.any(Number),
+      annoying: expect.any(Number),
+    }));
+    expect(payload).not.toHaveProperty("issues");
+    expect(err).toBe("");
+  });
+
+  describe.each(projectionCases)("$name projection", ({ args, todo }) => {
+    it("passes with canonical TODO output", () => {
+      const result = capture(args);
+      expect(result.rc).toBe(0);
+      expect(todo(JSON.parse(result.out) as Record<string, any>)).toBeTruthy();
+      expect(result.err).toBe("");
+    });
+
+    it("rejects the retired alias with one structured TODO correction", () => {
+      const result = capture({ ...args, fields: "issues" });
+      expect(result.rc).toBe(2);
+      expect(result.err).toBe("");
+      expect(JSON.parse(result.out)).toMatchObject({
+        schemaVersion: "agentera.invalidInputEnvelope.v2",
+        status: "fail",
+        error: {
+          class: "invalid_choice",
+          valid_values: ["todo"],
+          recovery: expect.stringContaining("'todo'"),
+        },
+      });
+    });
   });
 
   it("returns each omitted conditional field when explicitly selected", () => {

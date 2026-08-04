@@ -40,11 +40,11 @@ export const PRIME_STRUCTURED_FIELDS = [
   "evidence_context", "benchmark_context", "execution_context", "startup", "source", "source_contract",
 ];
 
-/** Deprecated JSON field selectors kept for pre-3.0.0 consumers; selectable
- *  through `--fields` and emitted as aliases, but not part of the published
- *  `source_contract.fields` set. `issues` aliases `todo` with a stderr
- *  deprecation warning. Removable at the 3.0.0 stable cut (TODO [fix:3.0.0]). */
-export const DEPRECATED_PRIME_FIELD_ALIASES = ["issues"] as const;
+/** Retired prime fields that receive one structured correction instead of
+ *  falling through to the generic unsupported-field error. */
+export const RETIRED_PRIME_FIELD_CORRECTIONS = {
+  issues: "todo",
+} as const;
 
 /** Field declared available on the prime selector but emitted only by the
  *  `prime --context <capability>` surface, not by the bare default briefing.
@@ -53,14 +53,12 @@ export const DEPRECATED_PRIME_FIELD_ALIASES = ["issues"] as const;
 export const PRIME_CONTEXT_ONLY_FIELDS = ["capability_context"] as const;
 
 /** Fields selectable via `prime [--context <cap>] --fields`. Derives the
- *  canonical structured set, the context-only `capability_context` pointer, and
- *  the deprecated transition aliases from one authority, so schema discovery and
- *  the prime selector cannot drift. */
+ *  canonical structured set and the context-only `capability_context` pointer
+ *  from one authority, so schema discovery and the prime selector cannot drift. */
 export function availablePrimeFields(command: string): string[] {
-  const base = command === "prime"
+  return command === "prime"
     ? [...PRIME_STRUCTURED_FIELDS, ...PRIME_CONTEXT_ONLY_FIELDS]
     : [...PRIME_STRUCTURED_FIELDS];
-  return [...base, ...DEPRECATED_PRIME_FIELD_ALIASES];
 }
 
 export const COMMAND_FILTERS: Record<string, string[]> = {

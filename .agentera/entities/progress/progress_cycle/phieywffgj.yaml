@@ -1,0 +1,15 @@
+id: phieywffgj
+artifact: progress
+record:
+  timestamp: 2026-08-04 14:08
+  type: fix
+  phase: build
+  what: Removed the duplicate prime issues alias and replaced explicit retired-field requests with one structured correction to todo across source and packaged projections.
+  context:
+    intent: Expose only canonical TODO startup output and reject the retired alias.
+    constraints: No bootstrap tail, lifecycle completion, commit, release, profile, app, or vision mutation.
+    scope: Prime field contract, projections, tests, package boundary, and changelog.
+  discovered: The live checkout bare-prime briefing exceeds its pre-existing 12,000-byte state budget; isolated entity-mode runtime projections are green.
+  verified: "Focused prime tests: 51 passed. Full source suite: 222 files, 3,070 passed and 1 skipped. Package lane: 2 files, 26 passed. Typecheck, rebuild, compact, and rebuilt local bare/sparse/status/capability pass-plus-rejection matrix passed."
+  next: Audit task wfbpsymlxi before any task completion, TODO resolution, PASS, or commit.
+  publication_order: 68
