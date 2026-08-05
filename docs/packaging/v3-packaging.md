@@ -31,7 +31,11 @@ tree, and `packages/cli/scripts/copy-bundle.mjs` stages the registry-declared
 shared skill and reference inputs into that tree. It then runs `npm pack` with
 lifecycle scripts disabled. Checkout `prepack` is a guard that rejects direct
 `npm pack`; it does not compile or stage publication output. Construction never
-publishes directly and refuses to overwrite a prior package artifact.
+publishes directly and refuses to overwrite a prior package artifact. The
+constructed `dist/bin/agentera.js` is a regular executable file with mode
+`0755`; package verification rejects a missing or non-executable bin. Published
+`dist/` omits source maps so package bytes do not disclose or depend on the
+checkout or isolated construction path.
 
 ## Preparation, qualification, and publication
 

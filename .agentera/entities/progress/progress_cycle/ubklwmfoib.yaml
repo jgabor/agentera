@@ -1,0 +1,15 @@
+id: ubklwmfoib
+artifact: progress
+record:
+  timestamp: 2026-08-05 18:36
+  type: fix
+  phase: build
+  what: "Repaired Task B after iezyzgirjb-audit-1: publication now omits path-bearing source maps, the child receives code-owned PATH /usr/bin:/bin instead of caller PATH, and the binder preserves LF or CR only inside one quoted argv element."
+  context:
+    intent: Correct the three accepted Task B audit blockers and bounded hardening without changing evaluator-owned lifecycle state.
+    constraints: Every command, test, build, source/package process, and writer used HOME, all XDG homes, TMPDIR, and AGENTERA_HOME beneath fresh /tmp/opencode/iezyzgirjb-repair-home with offline npm and tracking disabled. No registry, network, publication, upgrade apply, user Agentera state, commit, task completion, TODO resolution, vision/profile/objective change, or protected intermediate-tier access.
+    scope: Package construction and verification, exact development invocation binding/environment, POSIX source/package bootstrap matrix, packaging documentation, and this typed Build progress record only.
+  discovered: The prior compressed-tarball byte check could not inspect extracted content, inherited PATH reached the actual child, and command parsing rejected quoted line separators before quote handling.
+  verified: Focused binder 40/40 and runtime package matrix 3/3 passed. Full source passed 3315 with one skip; full package passed 33/33, including A6 source/package authority parity 196/196. Two offline roots with spaces and metacharacters produced identical 413-file manifests, content SHA-256 c34e3a41aeaececd19883cef8591df7a0a6deda64a97158d2658b66b772d6403, npm integrity and shasum, zero maps, zero checkout/construction path matches, and bin mode 0755. The 190-row matrix retained 160 wrong-form pre-child rejects; 16 missing-surface cases keep the total at 176. All rows preserved nine unique roots. Duplicate-root, duplicate-row, and omitted-row mutations failed. Recovery output and classification now participate in normalized source/package parity. Typecheck, build, compact, capability contract, Build validation, and diff checks passed.
+  next: Request fresh independent Audit of iezyzgirjb. Keep Task B pending with iezyzgirjb-audit-1 FAIL unchanged until an evaluator records a new verdict.
+  publication_order: 87

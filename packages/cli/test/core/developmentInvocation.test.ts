@@ -1,11 +1,22 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
   developmentProjectionOwners,
+  assertDevelopmentRuntimeSurface,
+  bindDevelopmentInvocation,
+  DEVELOPMENT_CHILD_ENV_ALLOWLIST,
+  DEVELOPMENT_CHILD_PATH,
+  DEVELOPMENT_RUNTIME_REQUIRED_FILES,
+  DevelopmentInvocationError,
   projectEntityDevelopmentValue,
   projectGlossaryDevelopmentValue,
   projectRuntimeOperationExamples,
   projectRuntimeOperationRecovery,
+  scrubDevelopmentChildEnvironment,
   type EntityProjectionField,
   type GlossaryProjectionOwner,
 } from "../../src/core/developmentInvocation.js";
@@ -14,12 +25,109 @@ import {
   type EntityListRuntimeFamilyKey,
 } from "../../src/state/entityListRuntimeRegistry.js";
 import { runtimeOperationSpec, runtimeOperationSpecs } from "../../src/state/write/runtimeOperations.js";
+import { commandText } from "../../src/upgrade/upgradeCommands.js";
 
 function rejects(action: () => unknown): void {
   expect(action).toThrow(/invalid development command projection/);
 }
 
 describe("exact code-owned development invocation projection", () => {
+  it("binds shell-quoted path characters to one local argv element", () => {
+    const source = String.raw`npx -y agentera@next doctor --project '/tmp/a ; $() & '"'"'quote'"'"' [雪]' --format json`;
+    const bound = bindDevelopmentInvocation({ owner: "doctor.runtime-proof", source }, source);
+    expect(bound.argv).toEqual([
+      "doctor",
+      "--project",
+      "/tmp/a ; $() & 'quote' [雪]",
+      "--format",
+      "json",
+    ]);
+    expect(Object.isFrozen(bound)).toBe(true);
+    expect(Object.isFrozen(bound.argv)).toBe(true);
+  });
+
+  it.each([["LF", "\n"], ["CR", "\r"]])(
+    "binds a quoted %s path to one exact argv element",
+    (_label, separator) => {
+      const project = `/tmp/project${separator}one ; $() & 'quote'`;
+      const source = commandText([
+        "npx", "-y", "agentera@next", "doctor", "--project", project, "--format", "json",
+      ]);
+      const bound = bindDevelopmentInvocation({ owner: "doctor.quoted-path", source }, source);
+      expect(bound.argv).toEqual(["doctor", "--project", project, "--format", "json"]);
+    },
+  );
+
+  it.each([
+    ["bare", "agentera prime --context status --format json", "wrong_channel"],
+    ["stable", "npx -y agentera@latest prime --context status --format json", "wrong_channel"],
+    ["missing exact flag", "npx -y agentera@next prime --context status", "not_exact"],
+    ["reordered", "npx -y agentera@next prime --format json --context status", "not_exact"],
+    ["wrapped", "env npx -y agentera@next prime --context status --format json", "wrong_channel"],
+    ["split selector", "npx -y agentera @next prime --context status --format json", "wrong_channel"],
+    ["nested", "npx -y agentera@next prime --context 'bash -c whoami' --format json", "not_exact"],
+    ["composition", "npx -y agentera@next prime --context status --format json; whoami", "malformed"],
+    ["substitution", "npx -y agentera@next prime --context $(whoami) --format json", "malformed"],
+    ["unquoted newline", "npx -y agentera@next prime\n--context status --format json", "malformed"],
+    ["unquoted carriage return", "npx -y agentera@next prime\r--context status --format json", "malformed"],
+    ["continued newline", "npx -y agentera@next prime \\\n--context status --format json", "malformed"],
+    ["malformed quote", "npx -y agentera@next prime --context 'status --format json", "malformed"],
+  ])("rejects %s before a caller receives argv", (_id, candidate, classification) => {
+    const source = "npx -y agentera@next prime --context status --format json";
+    try {
+      bindDevelopmentInvocation({ owner: "prime.status", source }, candidate);
+      throw new Error("expected rejection");
+    } catch (error) {
+      expect(error).toBeInstanceOf(DevelopmentInvocationError);
+      expect((error as DevelopmentInvocationError).classification).toBe(classification);
+    }
+  });
+
+  it("scrubs credentials, npm configuration, Node injection, and unreviewed Agentera variables", () => {
+    const inherited = {
+      HOME: "/unsafe/home",
+      PATH: "/home/user/SHOULD_NOT_REACH_CHILD:/usr/bin:/bin",
+      NPM_TOKEN: "secret",
+      npm_config_registry: "https://example.invalid",
+      NODE_OPTIONS: "--import=/tmp/inject.mjs",
+      AGENTERA_HOME: "/unsafe/agentera",
+      AGENTERA_UNSAFE_MARKER: "secret",
+    };
+    const env = scrubDevelopmentChildEnvironment(inherited, {
+      HOME: "/isolated/home",
+      AGENTERA_HOME: "/isolated/agentera",
+    });
+    expect(env).toEqual({ HOME: "/isolated/home", PATH: DEVELOPMENT_CHILD_PATH, AGENTERA_HOME: "/isolated/agentera" });
+    expect(DEVELOPMENT_CHILD_ENV_ALLOWLIST).not.toContain("NODE_OPTIONS");
+  });
+
+  it("fails closed for every omitted constructed-runtime surface", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "development-runtime-surface-"));
+    try {
+      for (const relative of DEVELOPMENT_RUNTIME_REQUIRED_FILES) {
+        const target = path.join(root, relative);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, relative === "package.json"
+          ? JSON.stringify({ bin: { agentera: "dist/bin/agentera.js" }, files: ["dist", "bundle"] })
+          : "fixture\n");
+      }
+      fs.chmodSync(path.join(root, "dist/bin/agentera.js"), 0o755);
+      expect(assertDevelopmentRuntimeSurface(root)).toBe(path.join(root, "dist/bin/agentera.js"));
+      for (const relative of DEVELOPMENT_RUNTIME_REQUIRED_FILES) {
+        const target = path.join(root, relative);
+        const bytes = fs.readFileSync(target);
+        fs.rmSync(target);
+        expect(() => assertDevelopmentRuntimeSurface(root), relative).toThrow(/invalid_authority/);
+        fs.writeFileSync(target, bytes);
+        if (relative === "dist/bin/agentera.js") fs.chmodSync(target, 0o755);
+      }
+      expect(DEVELOPMENT_RUNTIME_REQUIRED_FILES).toHaveLength(8);
+      expect(Object.isFrozen(DEVELOPMENT_RUNTIME_REQUIRED_FILES)).toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("preserves approved arguments, quoting, prose, and inline delimiters while changing only the prefix", () => {
     const decisions = runtimeOperationSpec("decisions", "update")!;
     expect(projectRuntimeOperationExamples(

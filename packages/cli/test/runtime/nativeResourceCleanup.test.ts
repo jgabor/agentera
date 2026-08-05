@@ -119,7 +119,7 @@ describe("native resource cleanup contract", () => {
     expect(nativeResourceCleanupIds(contract)).toContain("claude.agentera-skill-link");
     expect(source).toContain("Codex loaded Agentera's specific canonical skill instructions and bootstrap command.");
     expect(source).toContain("Cursor loaded Agentera's specific canonical skill instructions and bootstrap command.");
-    expect(source).toContain("OpenCode's native CLI listed /home/jgabor/.agents/skills/agentera/SKILL.md.");
+    expect(source).toContain("OpenCode's native CLI listed ~/.agents/skills/agentera/SKILL.md.");
     expect(source).toContain("Copilot's native CLI listed the canonical personal-agents skill; its disabled state is intentional.");
     expect(source).toContain("those former template labels are not resource identities");
     expect(validateNativeResourceCleanupContractRoot()).toEqual([]);

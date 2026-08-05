@@ -1,0 +1,23 @@
+id: kyjonukcok
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement B2 · Close independent matrix and portable package proof
+  status: complete
+  depends_on:
+    - nuesozywif
+  acceptance:
+    - GIVEN the nine protected preservation roots WHEN the runtime matrix is declared and executed THEN an independent fixed authority requires every exact root ID and a unique normalized physical path; duplicate IDs, duplicate paths, omitted, renamed, or substituted roots fail before results can pass.
+    - GIVEN source/package runtimes, four project states, accepted operations, and rejection specifications WHEN completeness is checked THEN expected composite row identities derive from independent immutable Cartesian authorities rather than dispatch execution; origin-level omission, replacement, duplication, or axis drift fails while the full argv, truthful outcome, early-rejection, recovery-parity, and preservation matrix remains green.
+    - GIVEN two canonical package constructions in distinct roots WHEN extracted and scanned THEN manifests, modes, content digests, npm integrity, and required surfaces match; no checkout, construction, real-HOME, prohibited-tier, or developer-specific path bytes remain, and A6 196/196 plus all Task B source/package runtime evidence stays exact.
+  evidence: Replaces iezyzgirjb after audit-2. Current runtime behavior passes, but root paths and expected rows are self-derived, and bundled runtime-retired-resources evidence contains `/home/jgabor/.agents/skills/agentera/SKILL.md` instead of a portable path.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Physical-root identity lexically collapses symlink/.. before realpath and misses alias collisions, while changes to critical runtime-matrix helpers route only to local source tests instead of the owning package matrix.
+    provenance:
+      attempt_id: kyjonukcok-audit-2
+      source: Independent Audit ses_02d06bd99ffea3fOEbDXZtKuiO bounded re-review PASS
+      recorded_at: 2026-08-05 20:21
+      writer_command: agentera state plan record-evaluation

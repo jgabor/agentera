@@ -1,0 +1,15 @@
+id: quhlarghii
+artifact: progress
+record:
+  timestamp: 2026-08-05 20:18
+  type: fix
+  phase: build
+  what: Repaired kyjonukcok audit-1 physical-root identity and package-matrix route ownership without changing task lifecycle.
+  context:
+    intent: Close symlink-plus-parent alias detection and ensure every critical matrix helper triggers its package-owning verification route.
+    constraints: No task evaluation/completion, predecessor supersession, TODO resolution, M6, commit, publication, version, registry, vision, profile, objective, external-state, protected-blob, or 128 MiB authority mutation; all execution remained isolated and offline.
+    scope: Runtime matrix physical identity, exact alias regressions, verification policy, lane/precommit ownership tests, and package re-verification.
+  discovered: Lexical path.resolve collapsed parent segments before native symlink semantics, so symlink/.. aliases could appear distinct. The three critical runtime-matrix helpers selected local/source verification rather than the release route that owns the package matrix.
+  verified: Physical identity now preserves original absolute spelling, native-realpaths existing paths, walks unresolved components only on ENOENT, rejects broken or ambiguous paths, then normalizes unresolved suffixes in physical space. Existing and absent symlink/.. collisions, nested symlinks, lexical aliases, broken symlinks, invalid descendants, and distinct absent roots passed exact regressions. runtimeBootstrapMatrix.ts, preCutoverBootstrapDispatcher.mjs, and runtimeProofCliBoundary.mjs route individually and together to release; an unrelated helper remains local/precommit. Focused source passed 207/207; package and matrix 30/30; matrix 4/4; full source 3324 with one skip; full package 34/34; A6 parity 196/196; typecheck, build, compact, capability contract 3/3, Build validation, Python/TypeScript parity, and diff checks passed. Retained 9 roots, 190 rows, 16 origin mutations, 176 pre-child rejects, 1710 comparisons, and PATH/LF/CR/recovery evidence. Two offline packages matched at 413 files, content SHA-256 5e62ce99d78e7d01997bfe9ed0a00d549ac0b3b94b05db4e71857d47f6711062, tarball SHA-256 5bd5808cdc705ab6ffa60aaa54d31f76f0cd13b058c1a9a99dab247ea897d3fe, SHA-1 cc88914c498466754957bec9db883c8be746f280, integrity sha512-Vs0ZHzIyGhxBLGIiklpRcmwNh3di9fXZInW2UU51VC3egNsivFQl/pv1Fqc0toGC5jF2TpF/NufSmi8kiYfwiA==, zero matches across 19 needle classes, zero maps, and bin 0755.
+  next: Keep kyjonukcok pending with kyjonukcok-audit-1 as its only FAIL for one bounded independent re-review; leave Task B blocked and do not start M6.
+  publication_order: 89

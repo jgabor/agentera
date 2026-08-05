@@ -31,4 +31,4 @@ record:
       description: "[fix:3.0.0] Report inactive TODO reconciliation as action-required."
       severity: critical
       status: open
-      order: 10
+      order: 9

@@ -206,13 +206,31 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     "packages/cli/scripts/build-package.mjs",
     "packages/cli/scripts/verify-generated-overlap.mjs",
     "packages/cli/test/sourceSetup.ts",
+    "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
+    "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
+    "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
     "packages/cli/test/packaging/packageSetup.ts",
     "packages/cli/test/packaging/packageVerification.test.ts",
     "packages/cli/test/packaging/copyBundleSafety.test.ts",
+    "packages/cli/test/packaging/runtimeBootstrapMatrix.test.ts",
     "scripts/precommit-vitest.sh",
   ])("routes lane-defining surface %s conservatively", (surface) => {
     expect(runPrecommitVitest(surface)).toEqual({
       mode: "policy", policy: "release", targets: [],
+    });
+  });
+
+  it("keeps all runtime-matrix helper changes on the release route together", () => {
+    expect(runPrecommitVitest(
+      "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
+      "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
+      "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
+    )).toEqual({ mode: "policy", policy: "release", targets: [] });
+  });
+
+  it("does not broaden unrelated test helpers to the release route", () => {
+    expect(runPrecommitVitest("packages/cli/test/helpers/entityAuthorityFixture.ts")).toEqual({
+      mode: "policy", policy: "local", targets: [],
     });
   });
 

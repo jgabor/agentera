@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: frkpjqmpnj
   name: M5 replacement B · Prove argv-safe @next bootstrap across source and package
-  status: pending
+  status: superseded
   depends_on:
     - nuesozywif
   acceptance:
@@ -11,3 +11,17 @@ record:
     - GIVEN paths with spaces or shell metacharacters and accepted or wrong-channel specifications WHEN they cross the POSIX Node subprocess boundary THEN argv remains intact, no shell interpretation occurs, and every bare, stable, malformed, wrapped, split, aliased, or nested form rejects before the CLI child starts.
     - GIVEN every accepted and rejected matrix row WHEN execution ends THEN project, home, shared skill, install root, package, cache, and temporary roots preserve bytes, types, symlinks, entries, and absence; canonical tarball manifest, integrity, scrubbed environment, source parity, and missing-file fail-closed behavior are proven.
   evidence: After A6 nuesozywif earns latest independent PASS, this task proves offline POSIX/Node source/package bootstrap behavior, supersedes ghoargedhq and aibyumkzxr after its own PASS, and resolves vptlelnadp; no upgrade apply or registry action.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Protected-root and matrix completeness expectations are derived from the executed rows instead of independent authorities, and the extracted package still contains a literal /home/jgabor path in bundled retired-resource evidence.
+    provenance:
+      attempt_id: iezyzgirjb-audit-2
+      source: Independent Audit ses_02d5889eeffeyf3Ajn25KhEn1E bounded re-review FAIL
+      recorded_at: 2026-08-05 18:55
+      writer_command: agentera state plan record-evaluation
+  blocked_reason: "Two evaluations exhausted: independent root/row omission authority and portable real-HOME package evidence remain unproven."
+  superseded_by:
+    - kyjonukcok
+  superseded_reason: B2 completes the argv-safe source/package runtime matrix with independent completeness and portable package authority.

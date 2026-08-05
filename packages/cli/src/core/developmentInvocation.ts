@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { CANONICAL_DEVELOPMENT_CLI } from "./developmentChannel.js";
 import {
   ENTITY_LIST_RUNTIME_FAMILIES,
@@ -17,6 +20,64 @@ const LOCAL_RUNTIME_INVOCATION = "agentera";
 interface CommandWord {
   value: string;
 }
+
+export type DevelopmentInvocationRejection =
+  | "invalid_authority"
+  | "malformed"
+  | "not_exact"
+  | "wrong_channel";
+
+export class DevelopmentInvocationError extends Error {
+  readonly classification: DevelopmentInvocationRejection;
+
+  constructor(classification: DevelopmentInvocationRejection, reason: string) {
+    super(`development invocation rejected [${classification}]: ${reason}`);
+    this.name = "DevelopmentInvocationError";
+    this.classification = classification;
+  }
+}
+
+export interface DevelopmentInvocationIdentity {
+  owner: string;
+  source: string;
+}
+
+export interface BoundDevelopmentInvocation {
+  owner: string;
+  source: string;
+  argv: readonly string[];
+}
+
+export const DEVELOPMENT_RUNTIME_REQUIRED_FILES = Object.freeze([
+  "package.json",
+  "README.md",
+  "LICENSE",
+  "dist/bin/agentera.js",
+  "bundle/.agentera-npx-bundle.json",
+  "bundle/registry.json",
+  "bundle/skills/agentera/SKILL.md",
+  "bundle/references/adapters/package-registry.yaml",
+] as const);
+
+export const DEVELOPMENT_CHILD_ENV_ALLOWLIST = Object.freeze([
+  "AGENTERA_BOOTSTRAP_SOURCE_ROOT",
+  "AGENTERA_HOME",
+  "AGENTERA_UPDATE_CHANNEL",
+  "DO_NOT_TRACK",
+  "HOME",
+  "LANG",
+  "LC_ALL",
+  "PATH",
+  "TMPDIR",
+  "XDG_CACHE_HOME",
+  "XDG_CONFIG_HOME",
+  "XDG_DATA_HOME",
+  "XDG_STATE_HOME",
+] as const);
+
+export const DEVELOPMENT_CHILD_PATH = process.platform === "win32"
+  ? path.dirname(process.execPath)
+  : "/usr/bin:/bin";
 
 export type EntityProjectionField = "list" | "get" | "example" | "bareRecovery";
 
@@ -64,7 +125,6 @@ function commandWords(command: string): CommandWord[] {
   let quote: "'" | '"' | null = null;
   for (let index = 0; index < command.length; index += 1) {
     const character = command[index];
-    if (character === "\n" || character === "\r") invalid("command must occupy one shell line");
     if (quote) {
       if (character === quote) {
         quote = null;
@@ -85,6 +145,8 @@ function commandWords(command: string): CommandWord[] {
       started = true;
       continue;
     }
+    if (character === "\n" || character === "\r")
+      invalid("line separators are allowed only inside one quoted argument");
     if (/\s/u.test(character)) {
       if (started) {
         words.push({ value });
@@ -114,6 +176,106 @@ function commandWords(command: string): CommandWord[] {
   if (quote) invalid("unclosed quote");
   if (started) words.push({ value });
   return words;
+}
+
+function parsedDevelopmentWords(command: string, classification: DevelopmentInvocationRejection): string[] {
+  try {
+    return commandWords(command).map(({ value }) => value);
+  } catch (error) {
+    throw new DevelopmentInvocationError(
+      classification,
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+function hasDevelopmentPrefix(words: readonly string[]): boolean {
+  return words[0] === "npx" && words[1] === "-y" && words[2] === "agentera@next";
+}
+
+/**
+ * Bind an untrusted command specification to one exact code-owned development
+ * command before a caller crosses a process boundary. The returned argv omits
+ * npx and the package selector because callers execute a verified local bin.
+ */
+export function bindDevelopmentInvocation(
+  identity: DevelopmentInvocationIdentity,
+  candidate: string,
+): BoundDevelopmentInvocation {
+  if (!/^[a-z0-9][a-z0-9_.:-]*$/u.test(identity.owner)) {
+    throw new DevelopmentInvocationError("invalid_authority", "owner is not a canonical identity");
+  }
+  const authorityWords = parsedDevelopmentWords(identity.source, "invalid_authority");
+  if (!hasDevelopmentPrefix(authorityWords) || authorityWords.length === 3) {
+    throw new DevelopmentInvocationError(
+      "invalid_authority",
+      `authority must be one complete ${CANONICAL_DEVELOPMENT_INVOCATION} command`,
+    );
+  }
+  const candidateWords = parsedDevelopmentWords(candidate, "malformed");
+  if (!hasDevelopmentPrefix(candidateWords)) {
+    throw new DevelopmentInvocationError(
+      "wrong_channel",
+      `command must begin with the exact ${CANONICAL_DEVELOPMENT_INVOCATION} argv`,
+    );
+  }
+  if (candidate !== identity.source) {
+    throw new DevelopmentInvocationError("not_exact", `command does not match code-owned identity '${identity.owner}'`);
+  }
+  return Object.freeze({
+    owner: identity.owner,
+    source: identity.source,
+    argv: Object.freeze(candidateWords.slice(3)),
+  });
+}
+
+/** Fail closed before process start when a constructed runtime is incomplete. */
+export function assertDevelopmentRuntimeSurface(root: string): string {
+  for (const relative of DEVELOPMENT_RUNTIME_REQUIRED_FILES) {
+    const target = path.join(root, relative);
+    let stat: fs.Stats;
+    try {
+      stat = fs.lstatSync(target);
+    } catch {
+      throw new DevelopmentInvocationError("invalid_authority", `runtime is missing required file '${relative}'`);
+    }
+    if (!stat.isFile()) {
+      throw new DevelopmentInvocationError("invalid_authority", `runtime required file '${relative}' is not a regular file`);
+    }
+  }
+  let manifest: { bin?: { agentera?: unknown }; files?: unknown };
+  try {
+    manifest = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")) as typeof manifest;
+  } catch {
+    throw new DevelopmentInvocationError("invalid_authority", "package manifest is not valid JSON");
+  }
+  if (manifest.bin?.agentera !== "dist/bin/agentera.js") {
+    throw new DevelopmentInvocationError("invalid_authority", "package bin declaration is not canonical");
+  }
+  const files = manifest.files;
+  if (!Array.isArray(files) || !["dist", "bundle"].every((entry) => files.includes(entry))) {
+    throw new DevelopmentInvocationError("invalid_authority", "package files declaration omits dist or bundle");
+  }
+  const bin = path.join(root, "dist/bin/agentera.js");
+  if ((fs.statSync(bin).mode & 0o111) === 0) {
+    throw new DevelopmentInvocationError("invalid_authority", "package bin is not executable");
+  }
+  return bin;
+}
+
+/** Keep only reviewed process inputs; PATH is always code-owned. */
+export function scrubDevelopmentChildEnvironment(
+  inherited: NodeJS.ProcessEnv,
+  explicit: Partial<Record<(typeof DEVELOPMENT_CHILD_ENV_ALLOWLIST)[number], string>>,
+): NodeJS.ProcessEnv {
+  const result: NodeJS.ProcessEnv = {};
+  for (const key of DEVELOPMENT_CHILD_ENV_ALLOWLIST) {
+    if (key === "PATH") continue;
+    const value = explicit[key] ?? inherited[key];
+    if (value !== undefined) result[key] = value;
+  }
+  result.PATH = DEVELOPMENT_CHILD_PATH;
+  return result;
 }
 
 function fieldValueIssue(field: RuntimeOperationField, value: string): string | undefined {

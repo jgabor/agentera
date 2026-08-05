@@ -7,7 +7,7 @@ record:
     - wucudfywvo
     - wfbpsymlxi
     - vlxwhwqxqf
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN pre-cutover bootstrap WHEN invoked THEN one @next call reaches truthful prime and doctor without @latest or fallback.
     - GIVEN clean, v2, partial, or v3 projects WHEN tested THEN each reaches one bounded outcome with safe recovery.
@@ -23,3 +23,6 @@ record:
       source: Independent Audit ses_0331569a1ffeczYJBMHwRFB2f9 bounded re-review FAIL
       recorded_at: 2026-08-04 16:11
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - kyjonukcok
+  superseded_reason: B2 replaces the exhausted bootstrap runtime predecessors with independently audited source/package proof.

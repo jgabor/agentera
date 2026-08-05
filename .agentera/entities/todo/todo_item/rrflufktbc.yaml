@@ -30,4 +30,4 @@ record:
       description: "[fix:3.0.0] Activate TODO reconciliation during explicit entity cutover."
       severity: critical
       status: open
-      order: 8
+      order: 7

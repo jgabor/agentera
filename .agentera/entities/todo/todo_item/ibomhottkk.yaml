@@ -30,4 +30,4 @@ record:
       description: "[fix:3.0.0] Add an explicit TODO reconciliation activation command."
       severity: critical
       status: open
-      order: 9
+      order: 8

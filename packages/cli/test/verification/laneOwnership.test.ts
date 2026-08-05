@@ -116,7 +116,33 @@ function run(args: string[], setup = fixture(), extraEnv: Record<string, string>
   return { result, runs, setup };
 }
 
+function productionRoute(...paths: string[]): string {
+  const result = spawnSync(process.execPath, [RUNNER, "route", "--policy-only", ...paths], {
+    cwd: PACKAGE_ROOT,
+    encoding: "utf8",
+  });
+  expect(result.status, result.stderr).toBe(0);
+  return result.stdout.trim();
+}
+
 describe("verification lane ownership", () => {
+  it.each([
+    "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
+    "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
+    "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
+  ])("routes critical runtime-matrix helper %s through every release owner", (helper) => {
+    expect(productionRoute(helper)).toBe("release");
+  });
+
+  it("keeps the combined runtime-matrix helper change on release without broadening other helpers", () => {
+    expect(productionRoute(
+      "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
+      "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
+      "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
+    )).toBe("release");
+    expect(productionRoute("packages/cli/test/helpers/entityAuthorityFixture.ts")).toBe("precommit");
+  });
+
   it.each(OWNER_NAMES)("runs the independently owned %s files headlessly", (owner) => {
     const { result, runs } = run([owner]);
     expect(result.status, result.stderr).toBe(0);
@@ -322,6 +348,7 @@ describe("verification lane ownership", () => {
     expect(inventory.files.package).toEqual([
       "packages/cli/test/packaging/copyBundleSafety.test.ts",
       "packages/cli/test/packaging/packageVerification.test.ts",
+      "packages/cli/test/packaging/runtimeBootstrapMatrix.test.ts",
     ]);
     expect(inventory.integrations).toEqual({
       performance: "packages/cli/test/integration/performanceOwner.integration.mjs",

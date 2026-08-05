@@ -25,7 +25,7 @@ accepted_host_evidence:
     proof: Cursor loaded Agentera's specific canonical skill instructions and bootstrap command.
   - host: opencode
     state: supported
-    proof: OpenCode's native CLI listed /home/jgabor/.agents/skills/agentera/SKILL.md.
+    proof: OpenCode's native CLI listed ~/.agents/skills/agentera/SKILL.md.
   - host: copilot
     state: supported_disabled
     proof: Copilot's native CLI listed the canonical personal-agents skill; its disabled state is intentional.

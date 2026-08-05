@@ -2,22 +2,26 @@ id: vptlelnadp
 artifact: todo
 record:
   severity: critical
-  status: open
+  status: resolved
   description: "[fix:3.0.0] Make every documented and machine-returned v3 bootstrap one safe, channel-correct call. Until stable promotion, `agentera route receipt` provenance, `prime` startup and fallback commands, shared-skill examples, and package smokes must use `npx -y agentera@next`, not authorize bare `agentera`. Verify clean, v2, partial, and v3 projects end with `prime` and `doctor` passing without redirecting `@latest`. The matrix must assert the unified startup outcome owned by TODO `rsplcfvosn` and prove healthy projects require no second dashboard or fallback call."
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make every documented and machine-returned v3 bootstrap one safe, channel-correct call. Until stable promotion, `agentera route receipt` provenance, `prime` startup and fallback commands, shared-skill examples, and package smokes must use `npx -y agentera@next`, not authorize bare `agentera`. Verify clean, v2, partial, and v3 projects end with `prime` and `doctor` passing without redirecting `@latest`. The matrix must assert the unified startup outcome owned by TODO `rsplcfvosn` and prove healthy projects require no second dashboard or fallback call."
+      status: resolved
+      order: 93
       severity: critical
-      status: open
-      order: 1
   readiness:
     capability: build
-    reason: A6 binds canonical-to-runtime projection to complete code-owned command contracts before Task B executes the offline runtime matrix.
+    reason: B2 closes independent runtime-matrix completeness and portable package path proof before M5 bootstrap authority resolves.
     dependencies:
       []
     blocked: null
     gate: null
     queue_rank: 1
-    order_reason: Task nuesozywif must earn independent PASS before dependent Task B iezyzgirjb.
+    order_reason: Task kyjonukcok must earn independent PASS before predecessor supersession and TODO resolution.
+  lifecycle:
+    operation: resolve
+    reason: Exact @next command authority and argv-safe source/package bootstrap matrix passed independent audit.
+    date: 2026-08-05

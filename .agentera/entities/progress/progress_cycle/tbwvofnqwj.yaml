@@ -1,0 +1,16 @@
+id: tbwvofnqwj
+artifact: progress
+record:
+  timestamp: 2026-08-05 17:57
+  type: fix
+  phase: build
+  what: Implemented Task B iezyzgirjb runtime proof without changing its pending lifecycle state.
+  context:
+    intent: Prove the final M5 offline runtime/subprocess boundary after A6 PASS.
+    constraints: All commands and writers used /tmp/opencode/iezyzgirjb-home HOME, XDG, TMPDIR, and AGENTERA_HOME isolation; registry/network, publication, upgrade apply, cleanup, profile, vision, objective, and external mutation were excluded.
+    scope: Structured invocation binding, fail-closed runtime surface validation, environment scrubbing, executable package mode, source/package matrix and preservation evidence.
+  inspiration: A6 exact command authority now feeds one structured argv binder; the launcher validates current constructed runtime surfaces, scrubs the child environment, and uses Node spawnSync with shell:false before the instrumented CLI boundary.
+  discovered: "Canonical construction emitted dist/bin/agentera.js as 0644. Setting 0755 in build-package fixes the package-root cause. The matrix covers source and extracted package across clean, v2, partial, and healthy-v3 projects: 190 rows total; each runtime has 15 accepted and 80 rejected rows; accepted counts by state across both runtimes are 8/8/8/6 and rejected counts are 40 each. Six read-only upgrade previews return truthful manual-review exits for marker-absent states; healthy v3 is one-call ok with no fallback."
+  verified: Every row preserved 9 roots before/after (1,710 protected-root comparisons; 3,420 snapshots) including bytes, modes, types, symlink targets, sorted entries, and absence. All 160 wrong-spec rows and 16 missing-surface mutations left the CLI child sentinel absent. Child environment evidence found zero token, credential, npm-config, NODE_OPTIONS, or unsafe AGENTERA names. Tarball agentera-3.0.0-dev.42.tgz has 728 files, bin mode 0755, matching sha512 integrity sha512-98LNK+uUGvRGE9S+yjwRTXsDvWkmtBI0kXdZjfgMVhse3q9++RUOFXbgURmoh2ophOlzda550XXLkT5YI0jwNg== and sha1 59a7ea4b1a5afbb16f0d22fba93ca1407396c1f5, and no checkout-path bytes. Source/package normalized envelopes match. Focused binder 35/35 and matrix 3/3 passed; full source 3310 passed with 1 authorized skip; package 33/33 passed, including A6 196/196 parity; typecheck, local build, compact, capability contract, Build validation, realistic source/package Prime, and git diff --check passed.
+  next: Leave iezyzgirjb pending and unevaluated for independent Audit; do not supersede predecessors or resolve vptlelnadp.
+  publication_order: 86

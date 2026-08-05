@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: frkpjqmpnj
   name: M5 replacement · Complete @next bootstrap command authority (vptlelnadp)
-  status: blocked
+  status: superseded
   depends_on:
     - zcprgswrju
     - wucudfywvo
@@ -24,3 +24,6 @@ record:
       source: Independent Audit ses_032afb47ffferZDySzpdg7RF70 bounded re-review FAIL
       recorded_at: 2026-08-04 17:36
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - kyjonukcok
+  superseded_reason: B2 replaces the exhausted bootstrap runtime predecessors with independently audited source/package proof.
