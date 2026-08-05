@@ -30,7 +30,7 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
   ],
   version_surfaces: ["surfaces"],
   bundle_surfaces: ["directories", "files", "generated_files", "skip_parts", "skip_suffixes"],
-  bootstrap_command_authority: ["scanned_formats", "exemptions", "emitted_producers"],
+  bootstrap_command_authority: ["scanned_formats", "scalar_classifications", "emitted_producers", "constructor_non_producers"],
   docs_targets: ["version_files_source", "version_files", "index_targets"],
   release_policy: [
     "semver_policy_source",
@@ -439,6 +439,16 @@ function validateBundleSurfaces(prefix: string, value: JsonObject): string[] {
       }
       errors.push(...validateRequiredObjectFields(entryPrefix, entry, ["id", "path", "format", "classification", "command_authority_reason"]));
       errors.push(...validateBundlePath(entryPrefix, entry.id, entry.path));
+      if (typeof entry.id === "string" && entry.id) {
+        const previous = ids.get(entry.id);
+        if (previous) errors.push(`${entryPrefix}.id ${JSON.stringify(entry.id)} duplicates ${previous}.id; correction: use a unique id across all bundle surfaces`);
+        else ids.set(entry.id, entryPrefix);
+      }
+      if (typeof entry.path === "string" && entry.path) {
+        const previous = paths.get(entry.path);
+        if (previous) errors.push(`${entryPrefix}.path ${JSON.stringify(entry.path)} for id ${JSON.stringify(entry.id)} duplicates ${previous}.path; correction: use a unique path across all bundle surfaces`);
+        else paths.set(entry.path, entryPrefix);
+      }
       if (entry.format !== "json") errors.push(`${entryPrefix}.format must be json`);
       if (entry.classification !== "active") errors.push(`${entryPrefix}.classification must be active`);
       if (typeof entry.command_authority_reason !== "string" || !entry.command_authority_reason) {
@@ -455,7 +465,7 @@ function validateBootstrapCommandAuthority(prefix: string, value: JsonObject, ro
   if (!Array.isArray(formats) || !formats.every((item) => typeof item === "string") || new Set(formats).size !== 3 || !["markdown", "yaml", "json"].every((format) => formats.includes(format))) {
     errors.push(`${prefix}.scanned_formats must contain exactly markdown, yaml, and json`);
   }
-  for (const field of ["exemptions", "emitted_producers"]) {
+  for (const field of ["emitted_producers", "constructor_non_producers"]) {
     const entries = value[field];
     if (!Array.isArray(entries)) {
       errors.push(`${prefix}.${field} must be a list`);
@@ -474,6 +484,41 @@ function validateBootstrapCommandAuthority(prefix: string, value: JsonObject, ro
       if (typeof entry.path === "string") {
         if (paths.has(entry.path)) errors.push(`${entryPrefix}.path duplicates ${JSON.stringify(entry.path)}`);
         paths.add(entry.path);
+      }
+    });
+  }
+  const classifications = value.scalar_classifications;
+  if (!Array.isArray(classifications)) {
+    errors.push(`${prefix}.scalar_classifications must be a list`);
+  } else {
+    const identities = new Set<string>();
+    const reasons = new Set<string>();
+    classifications.forEach((entry, index) => {
+      const entryPrefix = `${prefix}.scalar_classifications[${index}]`;
+      if (!isMapping(entry)) {
+        errors.push(`${entryPrefix} must be an object`);
+        return;
+      }
+      errors.push(...validateRequiredObjectFields(entryPrefix, entry, [
+        "path",
+        "region",
+        "category",
+        "classification",
+        "normalized_sha256",
+        "reason",
+      ]));
+      errors.push(...validateRepoPath(`${entryPrefix}.path`, entry.path, root));
+      if (typeof entry.region !== "string" || !entry.region) errors.push(`${entryPrefix}.region must be a non-empty string`);
+      if (!["identity_only", "argument_bearing", "other_vocabulary"].includes(String(entry.category))) errors.push(`${entryPrefix}.category is invalid`);
+      if (!["bounded_descriptive", "exact_exemption"].includes(String(entry.classification))) errors.push(`${entryPrefix}.classification is invalid`);
+      if (typeof entry.normalized_sha256 !== "string" || !/^[a-f0-9]{64}$/u.test(entry.normalized_sha256)) errors.push(`${entryPrefix}.normalized_sha256 must be lowercase SHA-256`);
+      if (typeof entry.reason !== "string" || !entry.reason) errors.push(`${entryPrefix}.reason must be a non-empty string`);
+      else if (reasons.has(entry.reason)) errors.push(`${entryPrefix}.reason duplicates another scalar-specific reason`);
+      else reasons.add(entry.reason);
+      if (typeof entry.path === "string" && typeof entry.region === "string") {
+        const identity = `${entry.path}\u0000${entry.region}`;
+        if (identities.has(identity)) errors.push(`${entryPrefix} duplicates path and region ${JSON.stringify(entry.path)} ${JSON.stringify(entry.region)}`);
+        identities.add(identity);
       }
     });
   }

@@ -562,7 +562,7 @@ export async function runProducerReadinessWorkflow(
   assert.deepEqual(unavailablePayload.validity, {
     status: "absent",
     class: "absent",
-    recovery: "Run agentera profile to generate PROFILE.md, then retry agentera report profile-grounding --format json.",
+    recovery: "Use the Profile capability to generate PROFILE.md, then retry agentera report profile-grounding --format json.",
   });
   assertTrapsAbsent(unavailable, pathTraps, "path");
 

@@ -156,7 +156,7 @@ decision_44:
         Preserve the Decision 43 English alias set as the binding canonical names for v3 and onward under the single-agent identity (Decision 74): status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate. Future capability additions follow the same transfer-friendly English-verb pattern (Decision 70). Per Decisions 70 and 74, the D43 alias set is the binding name set under one agent, one CLI, many capabilities; future renames require a new decision.
     - surface: Legacy Swedish capability names (v2 stable only)
       boundary: >-
-        Preserve hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, and orkestrera for the v2 stable distribution (`npx -y agentera@latest`, ships from `main`) and as historical references in archived plans, decisions, and changelogs. Out of scope for v3 surface per Decisions 70 and 74; the single-agent identity uses English capability names exclusively. Coexistence probe surfaces per-distribution naming divergence.
+        Preserve hej, visionera, resonera, inspirera, planera, realisera, optimera, inspektera, dokumentera, profilera, visualisera, and orkestrera for the v2 stable distribution from main and as historical references in archived plans, decisions, and changelogs. Out of scope for v3 surface per Decisions 70 and 74; the single-agent identity uses English capability names exclusively. Coexistence probe surfaces per-distribution naming divergence.
     - surface: Historical artifacts
       boundary: Do not rewrite old progress, changelog, archived plans, or decisions solely for vocabulary cleanup.
     - surface: Release version

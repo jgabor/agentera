@@ -55,7 +55,12 @@ export function printTopLevelHelp(): string {
     "  -h, --help          show this help message and exit",
     "  --version           print the installed Agentera CLI version and exit",
     "",
-    `Examples: ${preCutoverCommand("prime --context status --format json")}; ${preCutoverCommand(planListExample.slice("agentera ".length))}; ${preCutoverCommand("check verify eval skills --dry-run")}; ${preCutoverCommand("report refresh --dry-run")}`,
+    [
+      `Examples: ${preCutoverCommand("prime --context status --format json")}`,
+      `  ${preCutoverCommand(planListExample.slice("agentera ".length))}`,
+      `  ${preCutoverCommand("check verify eval skills --dry-run")}`,
+      `  ${preCutoverCommand("report refresh --dry-run")}`,
+    ].join("\n"),
   ].join("\n");
 }
 
@@ -90,7 +95,8 @@ export function printUpgradeHelp(): string {
     "active integration:",
     "  Agentera uses the shared skill at ~/.agents/skills/agentera plus the CLI.",
     "  Current runtime selectors and native plugin, hook, agent, command, descriptor, and marketplace writes are retired.",
-    `  Native resource cleanup remains explicit: ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes")}`,
+    `  Native resource cleanup preview: ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --dry-run")}`,
+    `  Native resource cleanup apply:   ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --yes")}`,
   ].join("\n");
 }
 
@@ -519,8 +525,9 @@ export function printRouteHelp(): string {
     ...inspect(receipt.compound),
     "  remainder_span rule:",
     ...inspect(receipt.remainder_span),
-    "  Runnable stdin round trip:",
-    `  printf '%s\\n' '${example}' | ${receipt.stdin_command}`,
+    "  Runnable stdin round trip (run the command, write the JSON to stdin, then close stdin):",
+    `  ${receipt.stdin_command}`,
+    `  ${example}`,
     "A receipt result authorizes only its reported startup command; clarify starts none.",
   ].join("\n");
 }

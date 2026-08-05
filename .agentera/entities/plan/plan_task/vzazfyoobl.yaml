@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: frkpjqmpnj
   name: M5 replacement A · Enforce complete bootstrap command authority
-  status: blocked
+  status: superseded
   depends_on:
     - owfvrfxcwa
     - ouahnpflvx
@@ -24,3 +24,6 @@ record:
       source: Independent Audit ses_032261e52ffekfdnDxqjSnGeE4 bounded re-review FAIL
       recorded_at: 2026-08-04 20:17
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - nuesozywif
+  superseded_reason: A6 replaces the failed command-authority lineage with exact fail-closed span and projection contracts.

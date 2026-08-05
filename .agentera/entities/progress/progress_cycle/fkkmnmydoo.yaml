@@ -1,0 +1,16 @@
+id: fkkmnmydoo
+artifact: progress
+record:
+  timestamp: 2026-08-05 14:31
+  type: fix
+  phase: build
+  what: Repaired boiabfwvpb audit-1 projection and malformed suffix-quote blockers without changing task lifecycle or its single FAIL.
+  context:
+    intent: Apply A5's one bounded correction for unsafe runtime projection and unclosed suffix containers.
+    constraints: No Task B, task lifecycle or evaluation mutation, TODO resolution, commit, push, publish, tag, version, registry, vision, profile, external state, protected staged blob, or unrelated-state change.
+    unknowns: Machine-sensitive heap verification was not invoked separately because the authoritative source and package lanes passed without a heap failure.
+    scope: Projection authority, mutation grammar, retrieval/glossary/schema call sites, invocation-span IR, helper/source/package regressions, and isolated verification only. The package lane constructed and extracted a fresh package from current source outside checkout outputs. Every command and writer set HOME, XDG_DATA_HOME, XDG_CONFIG_HOME, XDG_CACHE_HOME, TMPDIR, and AGENTERA_HOME below /tmp/opencode/boiabfwvpb-repair-home; /home/jgabor/.local/share/agentera/intermediate/tiers was not inspected, changed, or cleaned.
+  discovered: Projection previously rewrote unvalidated strings before mutation-grammar parity, while the invocation IR marked only enclosing malformed containers and retained an unclosed suffix quote in its correction boundary.
+  verified: "Fail-closed helper and real mutation-grammar tests reject unknown command, && composition, numeric 2> redirect, $() substitution, @latest channel, unclosed quote, and extra executable sibling in both recovery and example fields. The fresh constructed/extracted package ran 14 recovery/example mutations; every schema process exited nonzero and emitted no projected bad command. Approved quoted arguments retain exact source spelling while only the canonical prefix becomes bare. Unclosed suffix single and double quotes now set malformed=true and correct to npx -y agentera@next prime --context from closed words; closed, escaped, structured-source, and sibling cases pass, the correction differs from the invalid boundary, passes the authority scan, and leaves the sibling intact. Focused source checks passed 336/336; full source passed 224 files, 3266 tests with one skip; full package passed 2 files and 28 tests; the installed-package suite passed 24/24. Typecheck, local build, compact, capability contract 3/3, Build capability validation, built-local schema/help, and git diff --check passed. Schema reports 25 mutation operations and nine retrieval command families. The declaration census remains 193: 10 identity-only, 164 argument-bearing, 19 other-vocabulary; 15 bounded-descriptive and 178 exact exemptions, all used, digest-bound, uniquely reasoned, and mutation-sensitive. Source/package inventory remains 196/196 (93 source, 2 generated, 101 emitted), with 49 producers and 52 non-producers."
+  next: Independent re-review of boiabfwvpb; keep the task pending with boiabfwvpb-audit-1 as its only FAIL.
+  publication_order: 83

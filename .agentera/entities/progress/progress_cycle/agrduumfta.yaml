@@ -1,0 +1,16 @@
+id: agrduumfta
+artifact: progress
+record:
+  timestamp: 2026-08-05 00:42
+  type: fix
+  phase: build
+  what: Replaced the overlapping command-policy core with one fail-closed, offset-preserving invocation-span IR for eceeshtgxq.
+  context:
+    intent: Replace heuristic command authorities coherently while preserving verified inventory and producer closure.
+    constraints: Keep eceeshtgxq pending and unevaluated; preserve blocked A2/A3 with two FAILs, cancelled M7, unrelated TODOs, four protected staged plan blobs, and the Task B gate.
+    unknowns: Independent Audit remains authoritative for evaluation; this Build cycle records implementation and verification only.
+    scope: packages/cli command-authority scanner and tests, exact scalar classifications, registry validation, and canonical emitted guidance.
+  discovered: "packages/cli/test/helpers/invocationSpanPolicy.ts now owns discovery, decoded/raw offsets, line/column, token/channel normalization, boundary/candidate construction, nesting/container metadata, offset maps, classification, deterministic diagnostics, and sibling-preserving correction. retiredStartupGuidance.ts retains inventory and producer closure only. Deleted imperative-context, parallel stable-channel, decorated recursion, depth fallback, slicing/rescan, and detached candidate authorities. Reviewed 63 noncanonical scalars in references/adapters/package-registry.yaml: 8 identity-only, 48 argument-bearing exact exemptions, and 7 other vocabulary; every path+region+digest+reason classification is used."
+  verified: "Census: 8,242 final scalars, 193 invocations, 115 canonical development, 2 stable-pair, 76 noncanonical, 39 non-negated backticked argument contexts; all 15 bounded classifications and 48 exemptions used. Focused passed 189/189; policy file has 145 cases and an 18-boundary direct matrix with unique identities. Full source passed 3,201 with 1 skipped after one initial 120-second no-verdict timeout. Fresh rebuilt/extracted package passed 27/27 with exact 196/196 parity. Typecheck, local build, compact, capability contract 3/3, Build validation, and git diff --check passed."
+  next: Leave eceeshtgxq pending and unevaluated for independent Audit. Do not alter A2/A3 or start Task B.
+  publication_order: 80

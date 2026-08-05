@@ -14,12 +14,10 @@ record:
       order: 1
   readiness:
     capability: build
-    reason: Task A vzazfyoobl exhausted both independent Audit attempts; dependent Task B iezyzgirjb remains pending and blocked.
+    reason: A6 binds canonical-to-runtime projection to complete code-owned command contracts before Task B executes the offline runtime matrix.
     dependencies:
       []
-    blocked:
-      reason: The scanner must recognize every Agentera subcommand and every command in a scalar, including nested quoted commands; @latest outside the exact stable pair must reject independently of subcommand or wrapper; producer closure must conservatively cover all constructor import and re-export consumers; generated parity must compare id, path, format, classification, and reason; unused exemptions must reject.
-      recovery: Implement all five exact closures, then rerun the audit-2 adversarial probes from ses_032261e52ffekfdnDxqjSnGeE4 for non-whitelisted subcommands, multiple and nested quoted scalar commands, wrapped or split @latest, constructor import/re-export consumers, generated metadata mismatches, and unused exemptions before any Task B execution.
+    blocked: null
     gate: null
     queue_rank: 1
-    order_reason: Keep this critical bootstrap blocker first; Task B cannot run because its sole dependency exhausted evaluation without PASS.
+    order_reason: Task nuesozywif must earn independent PASS before dependent Task B iezyzgirjb.

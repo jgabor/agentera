@@ -222,7 +222,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     ]) ||
     handoffIntent?.durable_writer !== "build" ||
     handoffIntent?.writer_interface !==
-      "agentera state progress explain --verb append --format json" ||
+      "npx -y agentera@next state progress explain --verb append --format json" ||
     handoffIntent?.writer_result !== "authoritative_identity_and_six_field_envelope" ||
     handoffIntent?.allowed_reason_state_pairs !==
       "consumer_boundary.autonomous_caveat.allowed_current_pairs" ||
@@ -302,7 +302,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     advice?.runtime !==
       "packages/cli/src/analytics/glossaryAdviceResolution.ts#resolveGlossaryAdvice" ||
     advice?.mutation !== "forbidden" ||
-    invocation?.command !== "agentera report glossary-advice --input REQUEST --format json" ||
+    invocation?.command !== "npx -y agentera@next report glossary-advice --input REQUEST --format json" ||
     invocation?.request_schema_version !== "agentera.glossaryAdviceRequest.v1" ||
     !sameStrings(invocation?.request_fields, ["schema_version", "requested_term", "host_review"]) ||
     invocation?.max_request_utf8_bytes !== 131072 ||
@@ -693,11 +693,11 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     caveat?.durable_owner !== "build" ||
     caveat?.durable_channel !== "progress" ||
     caveat?.authority !== "skills/agentera/schemas/artifacts/progress.yaml#ENTITY_AUTHORITY" ||
-    caveat?.publication_command !== "agentera state progress append" ||
+    caveat?.publication_command !== "npx -y agentera@next state progress append" ||
     caveat?.publication_boundary !== "progress_cycle.glossary_caveat" ||
     caveat?.publication_status !== "active_build" ||
     caveat?.writer_runtime !== "packages/cli/src/state/progressEntities.ts#appendProgressEntity" ||
-    caveat?.writer_interface !== "agentera state progress explain --verb append --format json" ||
+    caveat?.writer_interface !== "npx -y agentera@next state progress explain --verb append --format json" ||
     caveat?.envelope_validator !==
       "packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat" ||
     caveat?.lifecycle_validator !==
@@ -818,7 +818,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     gate?.status !== "blocked_until_contract_valid" ||
     gate?.validator !==
       "packages/cli/src/registries/glossaryEntryContract.ts#validateGlossaryEntryContract" ||
-    gate?.command !== "agentera check validate vocabularyAuthority --format json" ||
+    gate?.command !== "npx -y agentera@next check validate vocabularyAuthority --format json" ||
     !sameStrings(gate?.required_sections, [
       "consumer_boundary.acquisition",
       "consumer_boundary.advice_resolution",

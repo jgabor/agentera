@@ -8,11 +8,13 @@ import { describe, expect, it } from "vitest";
 
 import auditInstructions from "../../src/capabilities/audit/instructions.js";
 import { glossaryCaveatContract } from "../../src/registries/glossaryCaveatContract.js";
+import { glossaryAdviceContract } from "../../src/registries/glossaryAdviceContract.js";
 import {
   confirmedVariantGuardContract,
   glossaryConsumerContract,
   glossaryEntryAuthorityPath,
   personalGlossaryOutputContract,
+  personalProfileGroundingContract,
   validateGlossaryEntry,
   validateGlossaryEntryContract,
   validateGlossaryCapabilityImplementationClaim,
@@ -82,6 +84,53 @@ function malformedAuthority(mutate: (authority: Record<string, any>) => void): s
 }
 
 describe("shared glossary entry authority", () => {
+  it("projects every glossary owner only from its exact code-owned source value", () => {
+    expect(personalGlossaryOutputContract().command).toBe("agentera report profile-glossary");
+    expect(personalProfileGroundingContract()).toMatchObject({
+      command: "agentera report profile-grounding --format json",
+      repairRecovery: "Use the Profile capability to repair or regenerate PROFILE.md, then retry `agentera report profile-grounding --format json`; no profile bytes were changed.",
+      absentRecovery: "Use the Profile capability to generate PROFILE.md, then retry agentera report profile-grounding --format json.",
+    });
+    expect(glossaryAdviceContract().command).toBe("agentera report glossary-advice --input REQUEST --format json");
+
+    const mutations: Array<{
+      name: string;
+      mutate: (authority: Record<string, any>) => void;
+      load: (pathname: string) => unknown;
+    }> = [
+      {
+        name: "profile output command",
+        mutate: (authority) => { authority.ownership_contracts.personal.profile_output.command.canonical += " --force"; },
+        load: (pathname) => personalGlossaryOutputContract(pathname),
+      },
+      {
+        name: "profile grounding command",
+        mutate: (authority) => { authority.consumer_boundary.profile_grounding.command += " garbage"; },
+        load: (pathname) => personalProfileGroundingContract(pathname),
+      },
+      {
+        name: "profile grounding repair",
+        mutate: (authority) => { authority.consumer_boundary.profile_grounding.recovery.repair = authority.consumer_boundary.profile_grounding.recovery.repair.replace("--format json", "--format invalid"); },
+        load: (pathname) => personalProfileGroundingContract(pathname),
+      },
+      {
+        name: "profile grounding absent",
+        mutate: (authority) => { authority.consumer_boundary.profile_grounding.recovery.absent = `x${authority.consumer_boundary.profile_grounding.recovery.absent}`; },
+        load: (pathname) => personalProfileGroundingContract(pathname),
+      },
+      {
+        name: "advice command",
+        mutate: (authority) => { authority.consumer_boundary.advice_resolution.invocation.command = "npx -y agentera@latest report glossary-advice --input REQUEST --format json"; },
+        load: (pathname) => glossaryAdviceContract(pathname),
+      },
+    ];
+    for (const mutation of mutations) {
+      const pathname = malformedAuthority(mutation.mutate);
+      expect(() => mutation.load(pathname), mutation.name).toThrow(/invalid development command projection/);
+      fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+    }
+  });
+
   it("derives shared shape, active personal output, bounded ownership, confidence, and decay rules from existing authorities", () => {
     expect(validateGlossaryEntryContract(glossaryEntryAuthorityPath())).toEqual([]);
     const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8"));

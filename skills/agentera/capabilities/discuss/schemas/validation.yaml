@@ -80,7 +80,7 @@ VALIDATION:
     id: V8
     rule: sanitized_profile_grounding
     description: >-
-      Discuss MUST ground only from the `content` returned by `agentera report
+      Discuss MUST ground only from the `content` returned by `npx -y agentera@next report
       profile-grounding --format json` when shared validity is valid; it MUST
       preserve absent/repair-needed recovery and MUST NOT direct-read PROFILE.md.
     severity: critical
@@ -92,7 +92,7 @@ VALIDATION:
     id: V9
     rule: governed_glossary_advice_events
     description: >-
-      Discuss MUST invoke `agentera report glossary-advice --input <file|->
+      Discuss MUST invoke `npx -y agentera@next report glossary-advice --input <file|->
       --format json` for initial meaning-sensitive user input and later
       user-authored premise changes or affected clarification answers that can
       change meaning. It MUST NOT invoke advice for unchanged replay, rendering,

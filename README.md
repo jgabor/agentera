@@ -16,7 +16,7 @@ in the repository so work can continue across sessions and runtimes.
 
 Agentera 3.0 is the self-contained TypeScript package on npm. Before the stable
 dist-tag promotion, use `@next`; after promotion, the same commands work with
-`agentera@latest` or an installed `agentera` binary.
+the stable npm channel or an installed CLI binary.
 
 ```bash
 npx -y agentera@next prime --context status --format json
@@ -31,7 +31,7 @@ v2, and partially migrated projects return `blocked` with
 `state_cutover.recovery_command` set to the full development-channel entity
 upgrade. A v3 project returns `ok` when no independent health degradation
 applies and needs no fallback or second dashboard call. Do not substitute bare
-`agentera` or `agentera@latest`; those can resolve stable v2 until promotion.
+or stable-channel CLI forms; those can resolve stable v2 until promotion.
 
 Use the same channel for a separate read-only doctor probe when you need full
 app, project-state, shared-skill, and CLI evidence:
@@ -71,13 +71,13 @@ does not create an active runtime identity.
 ## Project state
 
 Agentera resolves artifact paths through the CLI and `.agentera/docs.yaml`.
-Normal reads use `agentera state`; supported writes use the typed writer.
+Normal reads use the state namespace; supported writes use the typed writer.
 
 ```bash
-agentera state todo list --format json
-agentera state plan list --status open --format json
-agentera state query --list-artifacts
-agentera state progress explain --verb append --format json
+npx -y agentera@next state todo list --format json
+npx -y agentera@next state plan list --status open --format json
+npx -y agentera@next state query --list-artifacts
+npx -y agentera@next state progress explain --verb append --format json
 ```
 
 Bounded collection retrieval uses stable identities, opaque snapshot cursors,
@@ -85,11 +85,11 @@ explicit omissions, and exact detail commands. The runtime contract is
 [`references/artifacts/state-storage-authority.yaml`](./references/artifacts/state-storage-authority.yaml).
 
 ```bash
-agentera state plan list --format json
-agentera state plan get --id PLAN_ID --format json
-agentera state plan tasks list --limit 20 --format json
-agentera state experiments list --objective OBJECTIVE_ID --format json
-agentera state experiments get --id EXPERIMENT_ID --format json
+npx -y agentera@next state plan list --format json
+npx -y agentera@next state plan get --id PLAN_ID --format json
+npx -y agentera@next state plan tasks list --limit 20 --format json
+npx -y agentera@next state experiments list --objective OBJECTIVE_ID --format json
+npx -y agentera@next state experiments get --id EXPERIMENT_ID --format json
 ```
 
 Plan list/get spans the active plan and immutable plan archives. Plan task
@@ -99,7 +99,7 @@ or unavailable.
 
 Ordinary mutable state uses one canonical file per entity. Every public record
 has only `id` and `artifact` identity, and is accessed through bounded `list`,
-exact `get --id`, and typed `agentera state <artifact> explain` write contracts.
+exact `get --id`, and typed `npx -y agentera@next state <artifact> explain` write contracts.
 Do not edit files under `.agentera/entities/` directly.
 
 The intentional singleton project state is:

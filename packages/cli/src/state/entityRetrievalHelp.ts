@@ -1,8 +1,14 @@
 import type { JsonObject } from "../core/jsonValue.js";
+import {
+  projectEntityDevelopmentValue,
+} from "../core/developmentInvocation.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
   ENTITY_LIST_RUNTIME_FAMILIES,
+  ENTITY_LIST_RUNTIME_BOUNDS,
+  ENTITY_LIST_RUNTIME_FORMATS,
   ENTITY_LIST_RUNTIME_REGISTRY,
+  ENTITY_LIST_RUNTIME_SELECTORS,
   runtimeEntityFamilyForHelpArgs,
   runtimeEntityListFamilyForHelpArgs,
   type EntityListRuntimeFamilyKey,
@@ -10,7 +16,6 @@ import {
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
 export const ENTITY_LIST_HELP_SCHEMA_VERSION = "agentera.entityListHelp.v1";
-const RUNTIME_FORMATS = ["text", "json", "yaml"] as const;
 
 export interface EntityListFilterHelp {
   flag: string;
@@ -89,15 +94,6 @@ function exactKeys(value: Record<string, unknown>, required: readonly string[], 
   for (const field of Object.keys(value)) if (!allowed.has(field)) errors.push(`${prefix}.unknown.${field}`);
 }
 
-function expectedListSyntax(family: EntityListFamilyHelp): string {
-  const base = `agentera state ${family.commandTokens.join(" ")} list`;
-  const identifier = family.familyIdentifier
-    ? ` ${family.familyIdentifier.required ? family.familyIdentifier.syntax : `[${family.familyIdentifier.syntax}]`}`
-    : "";
-  const filters = family.filters.map(({ flag }) => ` [${flag}]`).join("");
-  return `${base}${identifier}${filters} [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json`;
-}
-
 interface ValueFlag {
   flag: string;
   valueSyntax: string;
@@ -142,11 +138,11 @@ function exampleGrammarIssue(
   const tokens = example.split(" ");
   if (
     example.trim() !== example
-    || tokens.some((token) => token.length === 0 || !/^[A-Za-z0-9_.,:/|=+\-]+$/.test(token))
+    || tokens.some((token) => token.length === 0 || !/^[A-Za-z0-9_@.,:/|=+\-]+$/.test(token))
     || tokens.join(" ") !== example
   ) return "lexical_form";
 
-  const prefix = ["agentera", "state", ...family.commandTokens, "list"];
+  const prefix = ["npx", "-y", "agentera@next", "state", ...family.commandTokens, "list"];
   if (tokens.length < prefix.length || !prefix.every((token, index) => tokens[index] === token)) return "command";
 
   const identifierSyntax = family.familyIdentifier?.syntax;
@@ -275,8 +271,8 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
 
   if (help.schema_version !== ENTITY_LIST_HELP_SCHEMA_VERSION) errors.push("entity_target.public_retrieval.list_help.schema_version");
   if (!sameStrings(defaults.summary_fields, ["id", "artifact", "retrieval.get"])) errors.push("entity_target.public_retrieval.list_help.defaults.summary_fields");
-  if (!sameStrings(defaults.formats, RUNTIME_FORMATS)) errors.push("entity_target.public_retrieval.list_help.defaults.formats");
-  for (const [field, flag] of [["ids_only", "--ids-only"], ["fields", "--fields FIELDS"]] as const) {
+  if (!sameStrings(defaults.formats, ENTITY_LIST_RUNTIME_FORMATS)) errors.push("entity_target.public_retrieval.list_help.defaults.formats");
+  for (const [field, flag] of [["ids_only", ENTITY_LIST_RUNTIME_SELECTORS.idsOnly], ["fields", ENTITY_LIST_RUNTIME_SELECTORS.fields]] as const) {
     const selector = requireMapping(selectors, field, "entity_target.public_retrieval.list_help.defaults.selectors", errors);
     exactKeys(selector, ["flag", "description"], [], `entity_target.public_retrieval.list_help.defaults.selectors.${field}`, errors);
     if (selector.flag !== flag || typeof selector.description !== "string" || selector.description.trim() === "") errors.push(`entity_target.public_retrieval.list_help.defaults.selectors.${field}.value`);
@@ -284,6 +280,12 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
   if (selectors.mutual_exclusion !== true) errors.push("entity_target.public_retrieval.list_help.defaults.selectors.mutual_exclusion");
   for (const field of ["minimum", "default", "maximum", "max_utf8_bytes"]) if (positiveInteger(bounds[field]) === undefined) errors.push(`entity_target.public_retrieval.list_help.defaults.bounds.${field}.value`);
   if (Number(bounds.minimum) > Number(bounds.default) || Number(bounds.default) > Number(bounds.maximum)) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.order");
+  if (
+    bounds.minimum !== ENTITY_LIST_RUNTIME_BOUNDS.minimum
+    || bounds.default !== ENTITY_LIST_RUNTIME_BOUNDS.default
+    || bounds.maximum !== ENTITY_LIST_RUNTIME_BOUNDS.maximum
+    || bounds.max_utf8_bytes !== ENTITY_LIST_RUNTIME_BOUNDS.maxUtf8Bytes
+  ) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.runtime_parity");
 
   const runtimeKeys = Object.keys(ENTITY_LIST_RUNTIME_REGISTRY).sort();
   for (const [surface, record] of [["commands", commands], ["list_help.families", families]] as const) {
@@ -295,7 +297,7 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
   const api = mapping(value.api);
   const apiList = mapping(api.list);
   const outputBounds = mapping(policy.output_bounds);
-  if (!sameStrings(api.formats, RUNTIME_FORMATS)) errors.push("api.formats");
+  if (!sameStrings(api.formats, ENTITY_LIST_RUNTIME_FORMATS)) errors.push("api.formats");
   if (bounds.minimum !== apiList.minimum_limit) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.minimum_authority_parity");
   if (bounds.default !== apiList.default_limit) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.default_authority_parity");
   if (bounds.maximum !== apiList.maximum_limit) errors.push("entity_target.public_retrieval.list_help.defaults.bounds.maximum_authority_parity");
@@ -312,13 +314,14 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
     exactKeys(command, ["list", "get"], [], `entity_target.public_retrieval.commands.${key}`, errors);
     exactKeys(family, ["command_tokens", "bare_read", "filters", "example"], ["bare_recovery", "family_identifier", "summary_fields", "summary_field_notes"], prefix, errors);
     if (family.bare_read !== "alias" && family.bare_read !== "correction") errors.push(`${prefix}.bare_read`);
-    if (family.bare_read === "correction" && (typeof family.bare_recovery !== "string" || !family.bare_recovery.startsWith("agentera state "))) errors.push(`${prefix}.bare_recovery`);
+    if (family.bare_read !== runtime.bareRead) errors.push(`${prefix}.bare_read.runtime_parity`);
+    if (family.bare_read === "correction" && family.bare_recovery !== runtime.projection.bareRecovery) errors.push(`${prefix}.bare_recovery`);
     if (family.bare_read === "alias" && family.bare_recovery !== undefined) errors.push(`${prefix}.bare_recovery.unexpected`);
     if (!sameStrings(family.command_tokens, runtime.commandTokens)) errors.push(`${prefix}.command_tokens`);
     if (!Array.isArray(family.filters)) errors.push(`${prefix}.filters`);
     const rawFilters = Array.isArray(family.filters) ? family.filters : [];
     const filterNames = rawFilters.map((raw) => mapping(raw).name);
-    if (!sameStrings(filterNames, runtime.filters)) errors.push(`${prefix}.filters.runtime_parity`);
+    if (!sameStrings(filterNames, runtime.filters.map(({ name }) => name))) errors.push(`${prefix}.filters.runtime_parity`);
     const parsedFilters: EntityListFilterHelp[] = [];
     rawFilters.forEach((raw, index) => {
       const filter = mapping(raw);
@@ -333,6 +336,13 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
         if (declaredValues.length === 0 || declaredValues.length !== new Set(declaredValues).size || declaredValues.some((value) => value.length === 0 || value.includes(" "))) errors.push(`${prefix}.filters[${index}].values`);
         if (!parsedFlag || parsedFlag.valueSyntax !== declaredValues.join("|")) errors.push(`${prefix}.filters[${index}].flag_value_syntax`);
       }
+      const codeFilter = runtime.filters[index];
+      if (
+        !codeFilter
+        || codeFilter.name !== name
+        || codeFilter.flag !== filter.flag
+        || JSON.stringify(codeFilter.values) !== JSON.stringify(filter.values)
+      ) errors.push(`${prefix}.filters[${index}].runtime_parity`);
       parsedFilters.push({ flag: String(filter.flag), name, values: Array.isArray(filter.values) ? strings(filter.values) : String(filter.values) });
     });
 
@@ -393,8 +403,9 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
       formats: strings(defaults.formats),
       example: String(family.example),
     };
-    if (command.list !== expectedListSyntax(projected)) errors.push(`${prefix}.list_command`);
-    if (command.get !== `agentera state ${runtime.commandTokens.join(" ")} get --id ID --format json`) errors.push(`${prefix}.get_command`);
+    if (command.list !== runtime.projection.list) errors.push(`${prefix}.list_command`);
+    if (command.get !== runtime.projection.get) errors.push(`${prefix}.get_command`);
+    if (family.example !== runtime.projection.example) errors.push(`${prefix}.example.runtime_parity`);
     const exampleIssue = exampleGrammarIssue(family.example, projected, acceptedIdentity);
     if (exampleIssue) errors.push(`${prefix}.example.${exampleIssue}`);
 
@@ -431,9 +442,12 @@ export function entityListFamilies(sourceRoot = resolveSourceRoot()): EntityList
       const note = mapping(raw);
       return [name, { description: String(note.description), ownership: String(note.ownership), persisted: note.persisted === true, filter: note.filter === true }];
     }));
-    return {
+    const sourceHelp = {
       key,
-      commandTokens: strings(family.command_tokens), syntax: String(command.list), get: String(command.get), bareRead: family.bare_read === "alias" ? "alias" : "correction", ...(typeof family.bare_recovery === "string" ? { bareRecovery: family.bare_recovery } : {}),
+      commandTokens: strings(family.command_tokens),
+      syntax: String(command.list),
+      get: String(command.get),
+      bareRead: family.bare_read === "alias" ? "alias" as const : "correction" as const,
       filters: (family.filters as unknown[]).map((raw) => { const filter = mapping(raw); return { flag: String(filter.flag), name: String(filter.name), values: Array.isArray(filter.values) ? strings(filter.values) : String(filter.values) }; }),
       ...(identifier ? { familyIdentifier: { syntax: String(identifier.syntax), required: identifier.required === true, description: String(identifier.description) } } : {}),
       summaryFields: family.summary_fields === undefined ? strings(defaults.summary_fields) : strings(family.summary_fields),
@@ -445,7 +459,28 @@ export function entityListFamilies(sourceRoot = resolveSourceRoot()): EntityList
         mutualExclusion: defaultSelectors.mutual_exclusion === true,
       },
       bounds: { minimum: Number(defaultBounds.minimum), default: Number(defaultBounds.default), maximum: Number(defaultBounds.maximum), maxUtf8Bytes: Number(defaultBounds.max_utf8_bytes) },
-      formats: strings(defaults.formats), example: String(family.example),
+      formats: strings(defaults.formats),
+      example: String(family.example),
+    } satisfies EntityListFamilyHelp;
+    return {
+      key,
+      commandTokens: sourceHelp.commandTokens,
+      syntax: projectEntityDevelopmentValue(command.list, key, "list"),
+      get: projectEntityDevelopmentValue(command.get, key, "get"),
+      bareRead: sourceHelp.bareRead,
+      ...(typeof family.bare_recovery === "string" ? { bareRecovery: projectEntityDevelopmentValue(family.bare_recovery, key, "bareRecovery") } : {}),
+      filters: sourceHelp.filters,
+      ...(identifier ? { familyIdentifier: { syntax: String(identifier.syntax), required: identifier.required === true, description: String(identifier.description) } } : {}),
+      summaryFields: family.summary_fields === undefined ? strings(defaults.summary_fields) : strings(family.summary_fields),
+      minimumFields: [...strings(projection.minimum_fields), ...strings(familyMinimumFields[key])],
+      summaryFieldNotes: notes,
+      selectors: {
+        idsOnly: { flag: String(mapping(defaultSelectors.ids_only).flag), description: String(mapping(defaultSelectors.ids_only).description) },
+        fields: { flag: String(mapping(defaultSelectors.fields).flag), description: String(mapping(defaultSelectors.fields).description) },
+        mutualExclusion: defaultSelectors.mutual_exclusion === true,
+      },
+      bounds: { minimum: Number(defaultBounds.minimum), default: Number(defaultBounds.default), maximum: Number(defaultBounds.maximum), maxUtf8Bytes: Number(defaultBounds.max_utf8_bytes) },
+      formats: strings(defaults.formats), example: projectEntityDevelopmentValue(family.example, key, "example"),
     } satisfies EntityListFamilyHelp;
   });
   cache = { revision: authority.revision, families };

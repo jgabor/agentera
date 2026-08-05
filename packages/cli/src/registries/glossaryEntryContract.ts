@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { projectGlossaryDevelopmentValue } from "../core/developmentInvocation.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import {
@@ -133,7 +134,7 @@ export function personalGlossaryOutputContract(
   const request = mapping(command?.request);
   const section = mapping(output?.section);
   return {
-    command: typeof command?.canonical === "string" ? command.canonical : "",
+    command: projectGlossaryDevelopmentValue(command?.canonical, "profile_output.command"),
     requestSchemaVersion: typeof request?.schema_version === "string" ? request.schema_version : "",
     sectionSchemaVersion:
       typeof section?.document_schema_version === "string" ? section.document_schema_version : "",
@@ -146,15 +147,15 @@ export function personalProfileGroundingContract(
 ): PersonalProfileGroundingContract {
   const grounding = mapping(mapping(contract(pathname).consumer_boundary)?.profile_grounding);
   return {
-    command: typeof grounding?.command === "string" ? grounding.command : "",
+    command: projectGlossaryDevelopmentValue(grounding?.command, "profile_grounding.command"),
     schemaVersion: typeof grounding?.schema_version === "string" ? grounding.schema_version : "",
     maxProfileUtf8Bytes:
       typeof grounding?.max_profile_utf8_bytes === "number" ? grounding.max_profile_utf8_bytes : 0,
     validityStatuses: strings(mapping(grounding?.validity)?.statuses),
     validityClasses: strings(mapping(grounding?.validity)?.classes),
     freshnessStates: strings(mapping(grounding?.freshness)?.states),
-    repairRecovery: typeof mapping(grounding?.recovery)?.repair === "string" ? String(mapping(grounding?.recovery)?.repair) : "",
-    absentRecovery: typeof mapping(grounding?.recovery)?.absent === "string" ? String(mapping(grounding?.recovery)?.absent) : "",
+    repairRecovery: projectGlossaryDevelopmentValue(mapping(grounding?.recovery)?.repair, "profile_grounding.repair"),
+    absentRecovery: projectGlossaryDevelopmentValue(mapping(grounding?.recovery)?.absent, "profile_grounding.absent"),
   };
 }
 
@@ -474,7 +475,7 @@ export function validateGlossaryEntryContract(
     profileOutput?.owner !== "profile_full" ||
     profileOutput?.lifecycle_callable !==
       "packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile" ||
-    profileCommand?.canonical !== "agentera report profile-glossary" ||
+    profileCommand?.canonical !== "npx -y agentera@next report profile-glossary" ||
     profileCommand?.namespace !== "report" ||
     profileCommand?.input_flag !== "--input" ||
     profileCommand?.stdin_value !== "-" ||
@@ -627,7 +628,7 @@ export function validateGlossaryEntryContract(
   }
   if (
     publication?.owner !== "build" ||
-    publication?.command !== "agentera state glossary publish --input REQUEST --format json" ||
+    publication?.command !== "npx -y agentera@next state glossary publish --input REQUEST --format json" ||
     publicationRequest?.schema_version !== "agentera.glossaryPublicationRequest.v1" ||
     !sameStrings(publicationRequest?.required_fields, [
       "schema_version",
@@ -675,7 +676,7 @@ export function validateGlossaryEntryContract(
     ]) ||
     profileGrounding?.implementation !== "active_exclusion_only" ||
     !sameStrings(profileGrounding?.capabilities, ["discuss", "plan", "build"]) ||
-    profileGrounding?.command !== "agentera report profile-grounding --format json" ||
+    profileGrounding?.command !== "npx -y agentera@next report profile-grounding --format json" ||
     profileGrounding?.schema_version !== "agentera.profileGrounding.v1" ||
     profileGrounding?.parser !==
       "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||

@@ -8,12 +8,13 @@
   help, metadata, route, detail, recovery, every served capability body, and
   active bundled bootstrap authorities stay on `@next`. Parse-aware Markdown,
   YAML, and duplicate-key-safe JSON checks now parse the complete shell context
-  and reject prompt, list, prose, table, wrapper, operator, substitution,
-  split-token, multiline, nested, malformed, alias-cycle, or wrong-channel
-  evasions with exact source and correction diagnostics. Exact normalized
-  source/package record parity and TypeScript-AST producer discovery close
-  bundle, generated, and machine-emitted inventories, including the sole
-  ordered stable-v2 exception.
+  and reject every subcommand plus prompt, list, prose, table, wrapper,
+  operator, substitution, split-token, multiline, nested, malformed,
+  alias-cycle, or wrong-channel evasion with one diagnostic per invocation.
+  Stable-channel tokens are confined independently of command recognition.
+  Exact source/package parity now includes all generated declaration fields,
+  unused exemptions, and conservative import/re-export closure with explicit
+  producer or non-producer classification.
 
 ### Changed
 

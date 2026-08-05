@@ -1,0 +1,23 @@
+id: hdfvrokpys
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: Scope change · Cancel M7 stable-cutover milestone
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN the explicit user cancellation WHEN current plan scope is evaluated THEN rawyjlhhhv, yinngnhcup, and xciolahywn are invalid for this plan and may be terminally superseded without implementation or release work.
+    - GIVEN M7 leaves the current plan WHEN future stable cutover is considered THEN TODO huiepnrwav remains open, approval-gated, and outside current execution rather than resolved or discarded.
+    - GIVEN the cancellation is applied WHEN repository and external state are checked THEN no package, compatibility, channel, registry, publication, tag, or release metadata mutation occurred, and the active plan can end after non-M7 activation work.
+  evidence: Explicit user direction cancelled M7 for this plan; this record preserves cancellation provenance without erasing task history.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: M7 tasks remain pending, but the writer permits cancellation supersession only after each target is blocked.
+    provenance:
+      attempt_id: hdfvrokpys-audit-2
+      source: Independent Audit ses_031f0bcc8ffeVcmgzhrm1R3XBQ bounded retry PASS
+      recorded_at: 2026-08-04 20:42
+      writer_command: agentera state plan record-evaluation

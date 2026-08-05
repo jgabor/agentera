@@ -48,8 +48,9 @@ host did not see.
 ## Phase two: semantic receipt
 
 For `semantic_required`, the host sends the same transient original request and
-the complete nullable host receipt to `npx -y agentera@next route receipt --input - --format
-json`. The receipt binds to the SHA-256 of the request's UTF-8 bytes and the
+the complete nullable host receipt to
+`npx -y agentera@next route receipt --input - --format json`. The receipt binds
+to the SHA-256 of the request's UTF-8 bytes and the
 `semantic_capsule_sha256` returned in phase one. The CLI first validates the
 unmodified host shape, removes only contract-listed nulls, then reruns
 deterministic routing and accepts the receipt only when the same request still
@@ -72,8 +73,9 @@ uses a fixed public request, never the transient request being classified.
 | invalid | bounded field-level correction, exit 64 | none |
 
 The resulting `selected` or `status_fallback` authorization contains bounded
-route provenance and the existing `npx -y agentera@next prime --context <capability>
---format json` startup path. A `clarification` contains exactly one bounded
+route provenance and the existing
+`npx -y agentera@next prime --context <capability> --format json` startup path.
+A `clarification` contains exactly one bounded
 question and no startup. This is intentionally a shared CLI contract, not a
 runtime-specific adapter. The portable shared skill is the sole host integration
 surface.

@@ -1,0 +1,23 @@
+id: qalfdgluso
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: Gate correction · Rebaseline supported-Node startup heap
+  status: complete
+  depends_on:
+    - nuesozywif
+  acceptance:
+    - GIVEN exact HEAD and the A6 tree on supported Node v22.23.2/V8 12.4 WHEN the unchanged cold startup-small owner runs THEN evidence shows the 64 MiB limit is unsatisfiable by baseline and A6 has no material regression.
+    - GIVEN the startup-small heap authority WHEN corrected THEN only max_heap_delta_bytes becomes 134217728; five repetitions, every-sample pass, inspector baseline GC, one-millisecond peak sampling, no measured-operation GC, latency/output limits, every other heap limit, owner routing, and hook behavior remain unchanged.
+    - GIVEN the corrected authority WHEN verified THEN two fresh isolated performance-owner runs, the integration owner, functional tests, compact/contracts, and the normal pre-commit route pass without bypass.
+  evidence: Analyze ses_02da23f84ffeUMcfAgW0SnQxJf measured three current and three exact-HEAD owner failures on Node v22.23.2; medians differed by 932144 bytes, highest current was 105154768, and a disposable 128 MiB run passed all 25 samples.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: qalfdgluso-audit-1
+      source: Independent Audit ses_02d912da8ffeotxup5hOjmZGSJ PASS
+      recorded_at: 2026-08-05 17:16
+      writer_command: agentera state plan record-evaluation

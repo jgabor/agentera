@@ -1,9 +1,13 @@
 import crypto from "node:crypto";
 
+import {
+  projectRuntimeOperationExamples,
+  projectRuntimeOperationRecovery,
+} from "../../core/developmentInvocation.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { loadStateStorageAuthority } from "../stateStorageAuthority.js";
-import { runtimeOperationSpecs, type RuntimeOperationSpec } from "./runtimeOperations.js";
+import { runtimeOperationSpec, runtimeOperationSpecs, type RuntimeOperationSpec } from "./runtimeOperations.js";
 
 export const MUTATION_CLASSES = [
   "record_payload",
@@ -150,6 +154,8 @@ function parseOperation(raw: unknown, index: number): MutationOperationDeclarati
   if (!mapping(raw)) throw new Error(`invalid mutation grammar: ${p} must be a mapping`);
   const artifact = requiredString(raw.artifact, `${p}.artifact`);
   const verb = requiredString(raw.verb, `${p}.verb`);
+  const runtime = runtimeOperationSpec(artifact, verb);
+  if (!runtime) throw new Error(`invalid mutation grammar: ${p} operation '${artifact}.${verb}' is not code-owned`);
   const mutationClass = requiredString(raw.class, `${p}.class`) as MutationClass;
   if (!MUTATION_CLASSES.includes(mutationClass)) throw new Error(`invalid mutation grammar: ${p}.class '${mutationClass}' is unsupported`);
   if (!mapping(raw.input)) throw new Error(`invalid mutation grammar: ${p}.input must be a mapping`);
@@ -176,8 +182,8 @@ function parseOperation(raw: unknown, index: number): MutationOperationDeclarati
     preconditions: strings(raw.preconditions, `${p}.preconditions`),
     ownedFields: strings(raw.owned_fields, `${p}.owned_fields`),
     input,
-    recovery: requiredString(raw.recovery, `${p}.recovery`),
-    examples: strings(raw.examples, `${p}.examples`),
+    recovery: projectRuntimeOperationRecovery(raw.recovery, artifact, verb),
+    examples: projectRuntimeOperationExamples(raw.examples, artifact, verb),
     bounds: mapping(raw.bounds) ? clonePlain(raw.bounds) as Record<string, unknown> : (() => { throw new Error(`invalid mutation grammar: ${p}.bounds must be a mapping`); })(),
     fields: fields(raw.fields, `${p}.fields`),
     allowForce: raw.allow_force === true,
@@ -224,6 +230,9 @@ function operationParityProjection(operation: MutationOperationDeclaration): Rec
       cli_owned_fields: operation.input.cliOwnedFields,
     },
     fields: operation.fields.map(declaredFieldProjection),
+    recovery: operation.recovery,
+    examples: operation.examples,
+    projection: { format_values: runtimeOperationSpec(operation.artifact, operation.verb)?.projection.formatValues ?? [] },
     allow_force: operation.allowForce,
     compacts: operation.compacts,
     bounds: operation.input.mode === "structured"
@@ -246,6 +255,9 @@ function runtimeParityProjection(operation: RuntimeOperationSpec): Record<string
       cli_owned_fields: operation.cliOwnedFields,
     },
     fields: operation.fields.map(runtimeFieldProjection),
+    recovery: operation.projection.recovery.runtime,
+    examples: operation.projection.examples.map(({ runtime }) => runtime),
+    projection: { format_values: operation.projection.formatValues },
     allow_force: operation.allowForce,
     compacts: operation.compacts,
     bounds: { max_input_utf8_bytes: operation.inputMaxBytes },

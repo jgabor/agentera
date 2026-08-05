@@ -1,0 +1,16 @@
+id: avnmqndzgq
+artifact: progress
+record:
+  timestamp: 2026-08-04 22:32
+  type: fix
+  phase: build
+  what: Established one statement-level Agentera invocation-span inventory for cbkownfvho without evaluating or closing the task.
+  context:
+    intent: Find every invocation in a mixed executable statement before contextual filtering and retain one complete diagnostic per invalid boundary.
+    constraints: Preserve accepted A2 repairs, exact 196-record inventory parity, eptmmfykbk evaluation state, M7 cancellation, protected staged plan blobs, unrelated TODOs, and the Task B gate; no completion, evaluation, TODO resolution, commit, publish, tag, version, registry, vision, or profile mutation.
+    unknowns: Independent bounded evaluation remains; this Build cycle does not claim task completion.
+    scope: Statement-span discovery and mixed-order parser regressions in retiredStartupGuidance.ts and retiredRuntimeSurfacePolicy.test.ts.
+  discovered: Audit-2 failed because Markdown inline spans were diagnosed and blanked before residual unquoted scanning, which recomputed context from the blanked text. The replacement now inventories lexical and shell-token spans with source offsets, deterministically removes overlaps, classifies the intact statement once, and only then scans inline, quoted, unquoted, multiline, wrapped, composed, and nested forms. Authority and lifecycle checks found no stale-artifact or premature-terminal-state cause; all changed-code verification used rebuilt local source and package artifacts, and cbkownfvho remains pending.
+  verified: The exact audit-2 probe produced 2/2 bare_executable diagnostics. Reverse order produced bare_executable plus command_composition; quoted-to-unquoted produced command_wrapper plus command_composition; four alternating forms produced 4/4 complete diagnostics. Explicit YAML, JSON, imperative description, multiline, stable-channel, and nesting depths 7/8/10 each matched their full expected diagnostic inventory; descriptive and negated controls produced 0. Focused parser/registry tests passed 136/136 (+1 versus aejypflkbe 135); full source passed 3,171 with 1 skipped (+1 versus 3,170); package passed 27/27 unchanged; source/package inventory parity remained 196/196. Typecheck, local 3.0.0-dev.42 build, compact, capability contract 3/3, Build capability validation, and git diff --check passed.
+  next: Leave cbkownfvho pending and unevaluated for independent Audit; do not start dependent Task B.
+  publication_order: 78

@@ -47,7 +47,7 @@ npx -y agentera@next prime --context status --format json
 
 An `ok` outcome needs no fallback or second dashboard call. Follow an exact
 recovery command for other outcomes; every returned v3 command stays on
-`npx -y agentera@next`. Do not use bare `agentera` or `agentera@latest` before
+`npx -y agentera@next`. Do not use bare or stable-channel CLI forms before
 stable promotion. For deeper read-only evidence, run
 `npx -y agentera@next doctor --format json`.
 
@@ -63,7 +63,7 @@ inventory, and `capability_context.startup`. Check its `outcome` (`ok`,
 families and deferred families; use a deferred row's `detail_command` for
 detail. Use this response before reading the instructions module directly.
 
-For static routing guidance (agentera vs native tools):
+For static routing guidance (CLI vs native tools):
 
 ```bash
 npx -y agentera@next prime --guidance
@@ -238,7 +238,10 @@ Common mutations:
 - `npx -y agentera@next state health append --input audit.yaml --format json`
 - `npx -y agentera@next state todo create --input todo.yaml --format json`
 - `npx -y agentera@next state todo update --id ID --input todo-patch.yaml --format json`
-- `npx -y agentera@next state todo set-severity|supersede|resolve|reopen --id ID ... --format json`
+- `npx -y agentera@next state todo set-severity --id ID ... --format json`
+- `npx -y agentera@next state todo supersede --id ID ... --format json`
+- `npx -y agentera@next state todo resolve --id ID ... --format json`
+- `npx -y agentera@next state todo reopen --id ID ... --format json`
 
 TODO create input is a full YAML/JSON typed record. TODO update input is a
 patch: omitted fields remain unchanged and only `target_version`,
@@ -255,8 +258,8 @@ task append/update payloads use only mutable task content and bare task IDs.
 
 Add `--dry-run` to preview any mutation without publishing it. Artifacts not
 listed above are outside the typed writer contract and remain governed by their
-owning capability's instructions and safety rails. `npx -y agentera@next schema --format
-json` exposes the machine-readable writer operation matrix under
+owning capability's instructions and safety rails.
+`npx -y agentera@next schema --format json` exposes the machine-readable writer operation matrix under
 `state_writer` and on each writable `artifact_schemas[*].write_interface`.
 
 ---

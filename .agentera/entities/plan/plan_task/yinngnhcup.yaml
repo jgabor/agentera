@@ -4,9 +4,12 @@ record:
   name: M7 · Publish and verify the stable cutover (huiepnrwav)
   depends_on:
     - rawyjlhhhv
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN the approved 3.0.0 commit WHEN published THEN npm @latest converges without untracked metadata changes.
     - GIVEN clean, v2, partial, and v3 states WHEN bootstrapped THEN each passes prime and doctor; Python returns deprecation guidance.
     - GIVEN registry and matrix evidence WHEN release closes THEN huiepnrwav resolves before its final commit and replay is safe.
   plan: frkpjqmpnj
+  superseded_by:
+    - hdfvrokpys
+  superseded_reason: Explicit user cancellation removed M7 publication from this plan; no registry or release mutation occurred.

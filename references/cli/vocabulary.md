@@ -55,7 +55,7 @@ examples. Diagnostics should state object, state, cause, and fix.
 | Agentera skill             | Shared transport, not a product extension point. The source at `skills/agentera/` is installed once at `~/.agents/skills/agentera` and packages Agentera's routing entry and capability prose without host-native manifests. It is the same fixed workflow, not user extensibility. Per Decision 74, the product word is capabilities. | `skills/agentera/SKILL.md`, `README.md` Internals, `.agentera/decisions.yaml` (D74) |
 | Capability                 | A routed behavioral unit of the single Agentera agent, driven through the CLI. Eleven top-level capabilities (status, vision, discuss, research, plan, build, optimize, audit, document, design, orchestrate) plus profile, which surfaces through existing capabilities but appears as a peer row in user-facing docs. Each capability has a prose module at `packages/cli/src/capabilities/<name>/instructions.ts` plus `triggers.yaml`, `artifacts.yaml`, `validation.yaml`, and `exit.yaml`. English names are canonical per Decision 70; the Swedish `-era` names are legacy v2 stable only (see Legacy Swedish capability names). | `AGENTS.md`, `skills/agentera/capabilities/*`, `packages/cli/src/capabilities/*`, `.agentera/decisions.yaml` (D70, D74) |
 | Capability canonical name (v3) | The English name binding for v3+ capability invocation, per Decision 70, under the single-agent identity crystallized in Decision 74. Promoted from the Decision 43 alias set. Host runtimes and the CLI use the same English name; the v2 stable distribution uses the legacy Swedish `-era` IDs (see `Legacy Swedish capability names`). | `.agentera/decisions.yaml` (D43, D70, D74), `references/cli/vocabulary-index.yaml` (protected_surfaces) |
-| Legacy Swedish capability names (v2 stable) | The historical Swedish `-era` IDs (e.g. `hej`, `resonera`) used by the v2 stable distribution (`npx -y agentera@latest`) and preserved as historical references in archived plans, decisions, and changelogs. Out of scope for v3 surface per Decisions 70 and 74; the single-agent identity uses English capability names exclusively. Coexistence probe surfaces per-distribution naming divergence. | `.agentera/decisions.yaml` (D70, D74), `references/cli/vocabulary-index.yaml` (protected_surfaces) |
+| Legacy Swedish capability names (v2 stable) | The historical Swedish `-era` IDs (e.g. `hej`, `resonera`) used by the v2 stable npm distribution and preserved as historical references in archived plans, decisions, and changelogs. Out of scope for v3 surface per Decisions 70 and 74; the single-agent identity uses English capability names exclusively. Coexistence probe surfaces per-distribution naming divergence. | `.agentera/decisions.yaml` (D70, D74), `references/cli/vocabulary-index.yaml` (protected_surfaces) |
 | Shared protocol            | Internal primitive vocabulary in `protocol.yaml`: confidence, severity, decision labels, exits, visual tokens, glyphs, and phases.                                                                                                                                                  | `skills/agentera/protocol.yaml`                                                  |
 | Capability schema contract | The executable contract for capability schema groups, stable IDs, priorities, deprecations, and primitive references.                                                                                                                                                               | `skills/agentera/capability_schema_contract.yaml`                                |
 | Project state              | Structured files that preserve intent, decisions, plans, progress, health, docs, design, and session continuity.                                                                                                                                                                    | `README.md`, `.agentera/docs.yaml`                                               |
@@ -98,8 +98,9 @@ Use this prose as guidance only: the default is that the first capability
 invocation shells out to `npx -y agentera@next prime --context <name> --format json` and
 reads the returned `instructions` field. Today, capability directories carry
 the `schemas/` files only, the instructions module lives at
-`packages/cli/src/capabilities/<name>/instructions.ts`, and the `npx -y agentera@next prime --context <name> --format
-json` response emits `capability_context.instructions` plus
+`packages/cli/src/capabilities/<name>/instructions.ts`, and the
+`npx -y agentera@next prime --context <name> --format json` response emits
+`capability_context.instructions` plus
 `first_invocation_read` metadata.
 
 Do not replace this with a parallel Markdown table of read modes or migration
@@ -172,7 +173,7 @@ Primary route aliases are slash-route vocabulary, not CLI command vocabulary:
 
 Do not teach primary aliases as CLI state commands. v3 orientation is
 `agentera prime` (capability ID `status` via `prime --context status`); routine
-record reads use `agentera state plan list`, `state progress list`,
+record reads use `npx -y agentera@next state plan list`, `state progress list`,
 `state health list`, `state todo list`, `state decisions list`, `state docs list`,
 `state objective list`, objective-scoped `state experiments list`, exact
 `get --id ID`, and advanced `state query`. The v2 stable distribution
@@ -396,8 +397,8 @@ prime resolve. The machine-readable authority is
 npm dist-tag and git ref resolution, override precedence, and consumer ownership
 for upgrade, doctor, prime, docs, and tests.
 
-Use this prose as guidance only: **stable** tracks the supported 2.x line on
-`npx -y agentera@latest` and, for maintainers, `uvx --from git+...@main` (Python
+Use this prose as guidance only: **stable** tracks the supported 2.x npm line
+and, for maintainers, `uvx --from git+...@main` (Python
 CLI). **development** tracks 3.x alphas and release candidates on **npm only**
 (`npx -y agentera@next`); feat/v3 is TypeScript-only and has no uv/git install
 path. v2→v3 is a one-way upgrade through the development npm channel. Default
@@ -422,7 +423,7 @@ short human-facing boundary.
 | Validation passed           | Evidence that required checks completed successfully. Name the checks.                                                                                                                                                                                                                                                                                                      |
 | Focused tests               | Targeted tests for the changed surface.                                                                                                                                                                                                                                                                                                                                     |
 | Full pytest                 | Repository-wide pytest run. Use exact counts when recorded.                                                                                                                                                                                                                                                                                                                 |
-| Capability validator        | `uv run agentera check validate capability skills/agentera/capabilities/<name>`.                                                                                                                                                                                                                                                                                            |
+| Capability validator        | `npx -y agentera@next check validate capability skills/agentera/capabilities/<name>`.                                                                                                                                                                                                                                                                                       |
 | Cross-capability validation | Checks that capability schemas agree with registry, protocol, routing, and exit contracts.                                                                                                                                                                                                                                                                                  |
 | Smoke eval                  | Runtime/setup check for crashes, non-zero exits, or obvious host failures.                                                                                                                                                                                                                                                                                                  |
 | Live-host smoke             | Explicit opt-in model-host check against real runtime access.                                                                                                                                                                                                                                                                                                               |

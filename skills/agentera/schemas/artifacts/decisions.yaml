@@ -49,9 +49,9 @@ ENTITY_AUTHORITY:
   artifact: decisions
   boundaries: [decision, decision_revision, decision_satisfaction]
   retrieval:
-    list: agentera state decisions list --format json
-    get: agentera state decisions get --id ID --format json
-  mutation: agentera state decisions explain --format json
+    list: npx -y agentera@next state decisions list --format json
+    get: npx -y agentera@next state decisions get --id ID --format json
+  mutation: npx -y agentera@next state decisions explain --format json
   direct_file_edits: forbidden
   legacy_schema_below: migration_input_only
 

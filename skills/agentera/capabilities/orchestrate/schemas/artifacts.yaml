@@ -16,7 +16,7 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Orchestrate consumes progress verification state from the returned
-      orchestration context first, then bounded `agentera state progress list
+      orchestration context first, then bounded `npx -y agentera@next state progress list
       --limit 20 --format json` fallback output. Exact detail uses `state
       progress get --id ID`; raw reads are diagnostic-only for corruption or
       CLI-defect investigation.
@@ -28,9 +28,9 @@ ARTIFACTS:
       For an active plan whose tasks are all terminal, Orchestrate consumes
       returned health state and delegates a limited staleness closure check.
       On PASS it publishes one typed `artifact_freshness` health record through
-      `agentera state health append --input PATH --format json` before setting
+      `npx -y agentera@next state health append --input PATH --format json` before setting
       the still-open plan complete. WARN or FAIL leaves the plan open and
-      surfaces the finding. Bounded `agentera state health list --limit 20
+      surfaces the finding. Bounded `npx -y agentera@next state health list --limit 20
       --format json` and exact `state health get --id ID` are fallback
       contracts. Raw reads are diagnostic-only for corruption or CLI-defect
       investigation.
@@ -47,7 +47,7 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Orchestrate consumes included decision context or bounded
-      `agentera state decisions list --limit 20 --format json` discovery and
+      `npx -y agentera@next state decisions list --limit 20 --format json` discovery and
       exact `state decisions get --id ID` retrieval, preserving firm
       constraints, exploratory uncertainties, and compacted-entry caveats.
       Raw reads are diagnostic-only for corruption or CLI-defect investigation.

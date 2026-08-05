@@ -1,0 +1,16 @@
+id: mbuggbvruq
+artifact: progress
+record:
+  timestamp: 2026-08-05 17:00
+  type: fix
+  phase: build
+  what: Rebaselined only the supported-Node startup-small heap ceiling for task qalfdgluso after exact HEAD and A6 failed the prior authority.
+  context:
+    intent: Restore a satisfiable peak-heap gate without changing measurement semantics or masking an A6 regression.
+    constraints: Only entity_target.measurement_contract.targets.startup_small.max_heap_delta_bytes may change; preserve five repetitions, every-sample pass, inspector baseline GC, one-millisecond peak sampling, no measured-operation GC, all latency/output and other heap limits, owner routing, hooks, A6 state, protected blobs, and external isolation.
+    unknowns: Independent Audit remains required before task completion and commit.
+    scope: references/artifacts/state-storage-authority.yaml startup-small heap authority and evaluator state only.
+  discovered: Analyze ses_02da23f84ffeUMcfAgW0SnQxJf reproduced three exact-HEAD and three A6 failures on Node v22.23.2/V8 12.4. Current and HEAD failing medians differed by 932144 bytes, the A6 eager graph added 31137 bytes, and the highest observed current peak delta was 105154768 bytes, so the 64 MiB ceiling was a baseline/runtime incompatibility rather than an A6 regression.
+  verified: Changed only startup_small.max_heap_delta_bytes from 67108864 to 134217728 and added a rationale comment; all measurement semantics and other limits are unchanged. Two fresh isolated performance owners and the integration owner passed all 75 samples. Startup-small maxima were 87396400, 87470984, and 87594032 bytes, each at least 46623696 bytes below 128 MiB. Every command used isolated HOME, XDG, TMPDIR, and AGENTERA_HOME under /tmp/opencode/heap-rebaseline; no hook bypass or external mutation occurred.
+  next: Independent Audit qalfdgluso, then persist PASS and complete before retrying the normal pre-commit route.
+  publication_order: 85

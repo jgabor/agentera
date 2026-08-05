@@ -34,5 +34,4 @@ record:
   rejected:
     - issue: Split the retained-reference inventory solely because it covers many files.
       rationale: Classification, enforcement, and validation form one authority-setting lifecycle. File count creates no behavioral boundary; Task 8 isolates the large migration.
-  surprises:
-    []
+  surprises: User cancelled the M7 stable-cutover milestone on 2026-08-04. This plan now ends after non-M7 activation work; TODO huiepnrwav remains open and approval-gated outside current execution.

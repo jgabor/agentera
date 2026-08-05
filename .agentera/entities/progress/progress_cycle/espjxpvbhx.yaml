@@ -1,0 +1,16 @@
+id: espjxpvbhx
+artifact: progress
+record:
+  timestamp: 2026-08-04 23:22
+  type: fix
+  phase: build
+  what: Repaired cbkownfvho after cbkownfvho-audit-1 by making inventoried invocation boundaries authoritative through local context, diagnostics, and corrections.
+  context:
+    intent: Correct the single bounded audit failure without evaluating or closing cbkownfvho.
+    constraints: Preserve exact A2 behavior, stable-v2 exemption, descriptive and wholly negated allowances, 196-record parity, blocked A2 state, M7 cancellation, protected staged plan blobs, unrelated TODOs, and the Task B gate; do not commit or mutate lifecycle state.
+    unknowns: Independent re-review remains authoritative; cbkownfvho stays pending with exactly one recorded FAIL.
+    scope: Statement invocation context, boundary locations, per-boundary candidates and corrections, and exact parser regressions.
+  discovered: Downstream scanning still classified whole statements from the first invocation and reused statement-level candidates and locations. Per-invocation executable context now inherits an affirmative statement only across non-negated boundaries, keeps later affirmative spans after a negated span, and maps active Markdown statement spans back to their exact line and column. Structured and nested diagnostics carry offsets; stable-channel replacement consumes each complete split or quoted token.
+  verified: Grouped operators produced 4 diagnostics at columns 6, 23, 38, and 54 with four boundary-specific corrections. Negated-to-positive produced only the second diagnostic at column 46. Repeated commands and two @latest commands had distinct locations; nested depth had two distinct structured offsets and corrections; split quoted @latest corrected exactly to npx -y agentera@next doctor --format json. Focused parser/registry tests passed 137/137 versus avnmqndzgq 136; full source passed 3,172 with 1 skipped versus 3,171; package passed 27/27; exact package-file verification passed 23/23 and retained 196/196 parity. Typecheck, local 3.0.0-dev.42 build, compact, capability contract 3/3, Build capability validation, and git diff --check passed.
+  next: Leave cbkownfvho pending with exactly one FAIL for independent re-review; do not start Task B.
+  publication_order: 79

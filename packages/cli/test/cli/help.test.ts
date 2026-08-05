@@ -85,7 +85,7 @@ describe("cli help", () => {
     expect(out).toContain(rendered(receipt.outcome_rules));
     expect(out).toContain(rendered(receipt.compound));
     expect(out).toContain(rendered(receipt.remainder_span));
-    expect(out).toContain(`printf '%s\\n' '${JSON.stringify(receipt.stdin_example.input)}' | ${receipt.stdin_command}`);
+    expect(out).toContain(`Runnable stdin round trip (run the command, write the JSON to stdin, then close stdin):\n  ${receipt.stdin_command}\n  ${JSON.stringify(receipt.stdin_example.input)}`);
   });
 
   it("documents executable plan and plan-task retrieval grammar", () => {

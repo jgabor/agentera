@@ -82,6 +82,7 @@ describe("package registry", () => {
     malformed.records[0].runtime_package_manifests = { manifests: [] };
     malformed.records[0].version_authority.install_root = "~/.agents/agentera";
     malformed.records[0].identity.lifecycle_events = [];
+    malformed.records[0].bootstrap_command_authority.exemptions = [{ path: "README.md", reason: "Legacy whole-file bypass." }];
 
     const errors = validateRegistryData(malformed, REPO_ROOT);
 
@@ -94,17 +95,38 @@ describe("package registry", () => {
     expect(errors).toContain("records[0]: unknown group runtime_package_manifests");
     expect(errors).toContain("records[0].version_authority: forbidden install-root field install_root");
     expect(errors).toContain("records[0].identity: forbidden RuntimeAdapter field lifecycle_events");
+    expect(errors).toContain("records[0].bootstrap_command_authority: unknown field exemptions");
+  });
+
+  it("validates exact scalar classification fields and identity", () => {
+    const malformed = registryFixture();
+    const entries = malformed.records[0].bootstrap_command_authority.scalar_classifications;
+    entries[0].normalized_sha256 = "not-a-digest";
+    entries[1].category = "descriptive";
+    entries[2].classification = "allow";
+    entries[3].reason = "";
+    entries.push(structuredClone(entries[4]));
+
+    const errors = validateRegistryData(malformed, REPO_ROOT);
+    expect(errors).toContain("records[0].bootstrap_command_authority.scalar_classifications[0].normalized_sha256 must be lowercase SHA-256");
+    expect(errors).toContain("records[0].bootstrap_command_authority.scalar_classifications[1].category is invalid");
+    expect(errors).toContain("records[0].bootstrap_command_authority.scalar_classifications[2].classification is invalid");
+    expect(errors).toContain("records[0].bootstrap_command_authority.scalar_classifications[3].reason must be a non-empty string");
+    expect(errors.some((error) => error.includes("duplicates path and region"))).toBe(true);
+    expect(errors.some((error) => error.includes("reason duplicates another scalar-specific reason"))).toBe(true);
   });
 
   it("fails closed on malformed command-authority classifications", () => {
     const malformed = registryFixture();
-    malformed.records[0].bootstrap_command_authority.exemptions[0].reason = "";
+    malformed.records[0].bootstrap_command_authority.scalar_classifications[0].reason = "";
     malformed.records[0].bootstrap_command_authority.emitted_producers[0].extra = true;
+    delete malformed.records[0].bootstrap_command_authority.constructor_non_producers;
     delete malformed.records[0].bundle_surfaces.generated_files[0].command_authority_reason;
 
     const errors = validateRegistryData(malformed, REPO_ROOT);
-    expect(errors).toContain("records[0].bootstrap_command_authority.exemptions[0].reason must be a non-empty string");
+    expect(errors).toContain("records[0].bootstrap_command_authority.scalar_classifications[0].reason must be a non-empty string");
     expect(errors).toContain("records[0].bootstrap_command_authority.emitted_producers[0]: unknown field extra");
+    expect(errors).toContain("records[0].bootstrap_command_authority: missing required field constructor_non_producers");
     expect(errors).toContain("records[0].bundle_surfaces.generated_files[0]: missing required field command_authority_reason");
   });
 
@@ -144,6 +166,14 @@ describe("package registry", () => {
     expect(validateRegistryData(duplicatePath, REPO_ROOT)).toContain(
       'records[0].bundle_surfaces.files[0].path "skills" for id "readme" duplicates records[0].bundle_surfaces.directories[0].path; correction: use a unique path across bundle directories and files',
     );
+
+    const generatedDuplicate = registryFixture();
+    generatedDuplicate.records[0].bundle_surfaces.generated_files[0].id = "skills";
+    generatedDuplicate.records[0].bundle_surfaces.generated_files[1].path = "README.md";
+    expect(validateRegistryData(generatedDuplicate, REPO_ROOT)).toEqual(expect.arrayContaining([
+      'records[0].bundle_surfaces.generated_files[0].id "skills" duplicates records[0].bundle_surfaces.directories[0].id; correction: use a unique id across all bundle surfaces',
+      'records[0].bundle_surfaces.generated_files[1].path "README.md" for id "extract-corpus-parity" duplicates records[0].bundle_surfaces.files[0].path; correction: use a unique path across all bundle surfaces',
+    ]));
   });
 
   it.each([

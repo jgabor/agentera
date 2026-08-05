@@ -88,7 +88,7 @@ VALIDATION:
     rule: personal_glossary_output
     description: >-
       Profile Full MUST render and persist exactly one owned Glossary section
-      through `agentera report profile-glossary`. Entries use only the shared
+      through `npx -y agentera@next report profile-glossary`. Entries use only the shared
       primitive and personal provenance variants. Replacement preserves every
       non-glossary byte, malformed or ambiguous boundaries fail before effects,
       and personal production never reads a project glossary.

@@ -67,9 +67,9 @@ ENTITY_AUTHORITY:
   artifact: health
   boundary: health_audit
   retrieval:
-    list: agentera state health list --format json
-    get: agentera state health get --id ID --format json
-  mutation: agentera state health explain --verb append --format json
+    list: npx -y agentera@next state health list --format json
+    get: npx -y agentera@next state health get --id ID --format json
+  mutation: npx -y agentera@next state health explain --verb append --format json
   direct_file_edits: forbidden
   legacy_schema_below: migration_input_only
 

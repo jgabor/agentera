@@ -1,4 +1,5 @@
 import { loadTodoReadinessContract } from "../../registries/todoReadinessContract.js";
+import { CANONICAL_DEVELOPMENT_CLI } from "../../core/developmentChannel.js";
 
 export const RUNTIME_WRITABLE_ARTIFACTS = [
   "progress", "decisions", "plan", "health", "objective", "experiments", "todo", "docs", "glossary",
@@ -18,6 +19,17 @@ export interface RuntimeOperationField {
   description?: string;
 }
 
+export interface RuntimeOperationProjectionTemplate {
+  source: string;
+  runtime: string;
+}
+
+export interface RuntimeOperationProjectionContract {
+  recovery: RuntimeOperationProjectionTemplate;
+  examples: RuntimeOperationProjectionTemplate[];
+  formatValues: readonly ["text", "json"];
+}
+
 export interface RuntimeOperationSpec {
   artifact: RuntimeWritableArtifact;
   verb: Exclude<RuntimeWriteVerb, "explain">;
@@ -32,6 +44,8 @@ export interface RuntimeOperationSpec {
   inputMaxBytes: number;
   allowForce: boolean;
   compacts: boolean;
+  recoveryCommand?: readonly string[];
+  projection: RuntimeOperationProjectionContract;
 }
 
 export const RUNTIME_WRITE_VERBS = [
@@ -69,16 +83,18 @@ const planEvaluationFields: RuntimeOperationField[] = [
   f("--failure-evidence", "evaluation.failure_evidence", "string"), f("--provenance", "evaluation.provenance", "string", { required: true, description: "Stable source reference for the evaluator result." }),
 ];
 
+type RuntimeOperationCoreSpec = Omit<RuntimeOperationSpec, "projection">;
+
 const op = (
   artifact: RuntimeWritableArtifact,
   verb: Exclude<RuntimeWriteVerb, "explain">,
   fields: RuntimeOperationField[],
-  options: Partial<Omit<RuntimeOperationSpec, "artifact" | "verb" | "fields">> = {},
-): RuntimeOperationSpec => ({
+  options: Partial<Omit<RuntimeOperationCoreSpec, "artifact" | "verb" | "fields">> = {},
+): RuntimeOperationCoreSpec => ({
   artifact, verb, fields, selectors: [], ownedFields: [], inputMode: "none", inputSources: [], structuredInputSources: [], cliOwnedFields: [], inputMaxBytes: 0, allowForce: false, compacts: false, ...options,
 });
 
-const RUNTIME_OPERATIONS: RuntimeOperationSpec[] = [
+const RUNTIME_OPERATION_CORES: RuntimeOperationCoreSpec[] = [
   op("progress", "append", [], { ownedFields: ["id", "artifact", "publication_order"], inputMode: "structured", inputRoot: "one progress cycle record", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "publication_order"], inputMaxBytes: 32768, compacts: true }),
   op("decisions", "append", [], { ownedFields: ["id", "artifact"], inputMode: "structured", inputRoot: "one decision record", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact"], inputMaxBytes: 32768, compacts: true }),
   op("decisions", "update", [f("--id", "id", "string", { required: true }), f("--satisfaction-state", "satisfaction.state", "string", { required: true, validValues: ["open", "provisionally_satisfied", "user_confirmed_satisfied"] }), f("--satisfaction-evidence", "satisfaction.evidence", "string"), f("--confirmed-by", "satisfaction.user_confirmation.confirmed_by", "string"), f("--confirmed-at", "satisfaction.user_confirmation.confirmed_at", "string")], { selectors: ["--id"], ownedFields: ["id", "artifact", "satisfaction"] }),
@@ -91,7 +107,7 @@ const RUNTIME_OPERATIONS: RuntimeOperationSpec[] = [
   op("plan", "record-evaluation", planEvaluationFields, { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan", "evaluation"] }),
   op("plan", "archive", [f("--plan", "plan", "string")], { selectors: ["--plan"], ownedFields: ["id", "artifact", "plan", "header.status"], allowForce: true }),
   op("plan", "create", [], { ownedFields: ["id", "artifact", "header.id", "previous_plan_archived", "task_ids"], inputMode: "structured", inputRoot: "complete plan document", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id", "previous_plan_archived", "task_ids"], inputMaxBytes: 32768, allowForce: true }),
-  op("health", "append", [], { ownedFields: ["id", "artifact", "appended_at"], inputMode: "structured", inputRoot: "one audit entry", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "appended_at"], inputMaxBytes: 32768, compacts: true }),
+  op("health", "append", [], { ownedFields: ["id", "artifact", "appended_at"], inputMode: "structured", inputRoot: "one audit entry", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "appended_at"], inputMaxBytes: 32768, compacts: true, recoveryCommand: ["check", "validate", "state", "--format", "json"] }),
   op("objective", "create", [], { ownedFields: ["id", "artifact", "header.id"], inputMode: "structured", inputRoot: "one objective document", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id"], inputMaxBytes: 32768 }),
   op("objective", "update", [f("--id", "id", "string", { required: true })], { selectors: ["--id"], ownedFields: ["id", "artifact", "header.id"], inputMode: "structured", inputRoot: "one objective document", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id"], inputMaxBytes: 32768 }),
   op("experiments", "publish", [f("--objective", "objective", "string", { required: true }), f("--id", "id", "string")], { selectors: ["--objective", "--id"], ownedFields: ["id", "artifact", "objective", "archive_identity"], inputMode: "structured", inputRoot: "one experiment entry", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "objective"], inputMaxBytes: 32768, compacts: true }),
@@ -106,10 +122,169 @@ const RUNTIME_OPERATIONS: RuntimeOperationSpec[] = [
   op("glossary", "publish", [], { ownedFields: ["approval_id", "glossary_entry_id"], inputMode: "structured", inputRoot: "one glossary publication request", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], inputMaxBytes: 32768 }),
 ];
 
+const LOCAL_PREFIX = "agentera";
+
+function developmentCommand(argumentsText: string): string {
+  return `${CANONICAL_DEVELOPMENT_CLI} ${argumentsText}`;
+}
+
+function projectionTemplate(source: string): RuntimeOperationProjectionTemplate {
+  return {
+    source,
+    runtime: source.split(CANONICAL_DEVELOPMENT_CLI).join(LOCAL_PREFIX),
+  };
+}
+
+function projection(
+  recovery: string,
+  ...examples: string[]
+): RuntimeOperationProjectionContract {
+  return {
+    recovery: projectionTemplate(recovery),
+    examples: examples.map(projectionTemplate),
+    formatValues: ["text", "json"],
+  };
+}
+
+const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionContract> = {
+  "progress.append": projection(
+    `Run \`${developmentCommand("state progress explain --verb append --format json")}\` and correct the rejected field; no state was changed.`,
+    developmentCommand("state progress append --input progress.yaml --format json"),
+  ),
+  "decisions.append": projection(
+    `Run \`${developmentCommand("state decisions explain --verb append --format json")}\` and supply every required field; no state was changed.`,
+    developmentCommand("state decisions append --input decision.yaml --format json"),
+  ),
+  "decisions.update": projection(
+    `Run ${developmentCommand("state decisions explain --verb update --format json")}, use the returned bare decision ID, and provide a valid satisfaction transition.`,
+    developmentCommand('state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..." --format json'),
+  ),
+  "decisions.amend": projection(
+    "Reread the exact decision, copy its current effective SHA-256, and retry with at least one amendable field; no state was changed.",
+    developmentCommand("state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml --format json"),
+  ),
+  "plan.append": projection(
+    `Use ${developmentCommand("state plan explain --verb append --format json")}, select an open plan, and supply one complete task record with bare same-plan dependencies.`,
+    developmentCommand("state plan append --plan qjtrmnpvka --input task.yaml --format json"),
+  ),
+  "plan.update": projection(
+    "Reread the plan task by its bare ID, supply an omission-preserving patch through --input, and retry; no state was changed.",
+    developmentCommand("state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml --format json"),
+  ),
+  "plan.set-status": projection(
+    "Reread the task list, copy its bare task ID, and use one of complete, in_progress, pending, or blocked.",
+    developmentCommand("state plan set-status --id qjtrmnpvka --status complete --format json"),
+  ),
+  "plan.supersede": projection(
+    "Complete and evaluate each replacement task with latest PASS evidence, then retry with the returned bare IDs.",
+    developmentCommand('state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement task" --format json'),
+  ),
+  "plan.set-plan-status": projection(
+    "Keep the plan open or resolve every incomplete task and replacement evaluation before retrying completion.",
+    developmentCommand("state plan set-plan-status --status complete --format json"),
+  ),
+  "plan.record-evaluation": projection(
+    "Use the task's bare ID, a stable attempt ID, and evaluator provenance, then retry without changing published evidence.",
+    developmentCommand('state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report" --format json'),
+  ),
+  "plan.archive": projection(
+    "Complete or preserve the selected plan, then retry archive with no content flags; no state was changed.",
+    developmentCommand("state plan archive --dry-run --format json"),
+  ),
+  "plan.create": projection(
+    `Run ${developmentCommand("state plan explain --verb create --format json")}, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and correct the first schema or dependency violation.`,
+    developmentCommand("state plan create --input plan.yaml --format json"),
+  ),
+  "health.append": projection(
+    `Run ${developmentCommand("check validate state --format json")}, preserve audit evidence, and retry with one schema-valid audit entry.`,
+    developmentCommand("state health append --input audit.yaml --format json"),
+  ),
+  "objective.create": projection(
+    "Remove identity fields assigned by the CLI and retry with one schema-valid objective document.",
+    developmentCommand("state objective create --input objective.yaml --format json"),
+  ),
+  "objective.update": projection(
+    "Reread the objective, copy its bare ID to --id, remove CLI-owned fields, and retry.",
+    developmentCommand("state objective update --id qjtrmnpvka --input objective.yaml --format json"),
+  ),
+  "experiments.publish": projection(
+    "Use a bare objective ID, omit numeric legacy selectors, and retry the exact input; divergent immutable identities remain untouched.",
+    developmentCommand("state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json"),
+  ),
+  "todo.create": projection(
+    `Run ${developmentCommand("state todo explain --verb create --format json")}, remove CLI-owned fields, provide the full typed TODO record, and retry.`,
+    developmentCommand("state todo create --input todo.yaml --format json"),
+  ),
+  "todo.update": projection(
+    "Reread the TODO item, use its bare ID, supply only typed patch fields, and use null or an empty list only for declared clearable fields.",
+    developmentCommand("state todo update --id qjtrmnpvka --input todo-patch.yaml --format json"),
+  ),
+  "todo.set-severity": projection(
+    "Use the bare TODO ID, one immediate-impact severity, a reason, and a YYYY-MM-DD date; no record input is accepted.",
+    developmentCommand('state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31 --format json'),
+  ),
+  "todo.supersede": projection(
+    "Use the selected bare TODO ID, an existing distinct replacement ID, a reason, and a YYYY-MM-DD date; no record input is accepted.",
+    developmentCommand('state todo supersede --id qjtrmnpvka --replacement zqtrmnpvka --reason "Replaced by narrower work" --date 2026-07-31 --format json'),
+  ),
+  "todo.resolve": projection(
+    "Use the bare TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.",
+    developmentCommand('state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31 --format json'),
+  ),
+  "todo.reopen": projection(
+    "Use the bare resolved TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.",
+    developmentCommand('state todo reopen --id qjtrmnpvka --reason "Scope returned" --date 2026-07-31 --format json'),
+  ),
+  "docs.create": projection(
+    "Remove id and artifact from the input and retry with one schema-valid documentation inventory entry.",
+    developmentCommand("state docs create --input documentation.yaml --format json"),
+  ),
+  "docs.update": projection(
+    "Reread the documentation entry, copy its bare ID to --id, remove CLI-owned fields, and retry.",
+    developmentCommand("state docs update --id qjtrmnpvka --input documentation.yaml --format json"),
+  ),
+  "glossary.publish": projection(
+    `Run ${developmentCommand("state glossary explain --verb publish --format json")} and correct the bounded request or confirmation.`,
+    developmentCommand("state glossary publish --input glossary-publication.yaml --format json"),
+  ),
+};
+
+const operationKeys = RUNTIME_OPERATION_CORES.map(({ artifact, verb }) => `${artifact}.${verb}`);
+const projectionKeys = Object.keys(RUNTIME_OPERATION_PROJECTIONS);
+const missingProjection = operationKeys.find((key) => !(key in RUNTIME_OPERATION_PROJECTIONS));
+const unknownProjection = projectionKeys.find((key) => !operationKeys.includes(key));
+if (missingProjection || unknownProjection) {
+  throw new Error(`invalid runtime operation projection registry: ${missingProjection ? `missing ${missingProjection}` : `unknown ${unknownProjection}`}`);
+}
+
+const RUNTIME_OPERATIONS: RuntimeOperationSpec[] = RUNTIME_OPERATION_CORES.map((operation) => ({
+  ...operation,
+  projection: RUNTIME_OPERATION_PROJECTIONS[`${operation.artifact}.${operation.verb}`],
+}));
+
+function cloneOperation(spec: RuntimeOperationSpec): RuntimeOperationSpec {
+  return {
+    ...spec,
+    selectors: [...spec.selectors],
+    ownedFields: [...spec.ownedFields],
+    inputSources: [...spec.inputSources],
+    structuredInputSources: [...spec.structuredInputSources],
+    cliOwnedFields: [...spec.cliOwnedFields],
+    ...(spec.recoveryCommand ? { recoveryCommand: [...spec.recoveryCommand] } : {}),
+    fields: spec.fields.map((field) => ({ ...field, ...(field.validValues ? { validValues: [...field.validValues] } : {}) })),
+    projection: {
+      recovery: { ...spec.projection.recovery },
+      examples: spec.projection.examples.map((example) => ({ ...example })),
+      formatValues: [...spec.projection.formatValues] as ["text", "json"],
+    },
+  };
+}
+
 export function runtimeOperationSpecs(): RuntimeOperationSpec[] {
-  return RUNTIME_OPERATIONS.map((spec) => ({ ...spec, fields: spec.fields.map((field) => ({ ...field })) }));
+  return RUNTIME_OPERATIONS.map(cloneOperation);
 }
 
 export function runtimeOperationSpec(artifact: string, verb: string): RuntimeOperationSpec | null {
-  return RUNTIME_OPERATIONS.find((spec) => spec.artifact === artifact && spec.verb === verb) ?? null;
+  const spec = RUNTIME_OPERATIONS.find((candidate) => candidate.artifact === artifact && candidate.verb === verb);
+  return spec ? cloneOperation(spec) : null;
 }

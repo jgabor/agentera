@@ -65,11 +65,11 @@ ENTITY_AUTHORITY:
   boundaries: [plan, plan_task]
   relationship: plan_task.record.plan is a bare plan ID
   retrieval:
-    list: agentera state plan list --format json
-    get: agentera state plan get --id ID --format json
-    tasks_list: agentera state plan tasks list [PLAN_ID] --format json
-    task_get: agentera state plan tasks get --id ID --format json
-  mutation: agentera state plan explain --format json
+    list: npx -y agentera@next state plan list --format json
+    get: npx -y agentera@next state plan get --id ID --format json
+    tasks_list: npx -y agentera@next state plan tasks list [PLAN_ID] --format json
+    task_get: npx -y agentera@next state plan tasks get --id ID --format json
+  mutation: npx -y agentera@next state plan explain --format json
   direct_file_edits: forbidden
   aggregate_schema_below: atomic_create_input
   migration_compatibility: explicitly_labeled_fields_only
@@ -419,7 +419,7 @@ TASK:
     type: mapping
     required: false
     description: >-
-      CLI-owned evaluator state written only by `agentera state plan
+      CLI-owned evaluator state written only by `npx -y agentera@next state plan
       record-evaluation`. It records attempt and failure counts, the latest
       verdict, retained failure evidence, and stable attempt provenance. Normal
       workflow records evaluation before completion. As recovery for persisted
@@ -665,7 +665,7 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/cli/appContext.ts
       - packages/cli/src/cli/commands/state/plan*.ts
       - packages/cli/src/cli/commands/prime.ts
-      - packages/cli/src/state/plan*.ts
+      - packages/cli/src/state/{plan*,entityListRuntimeRegistry}.ts
       - packages/cli/src/state/durability.ts
       - packages/cli/src/cli/commands/prime/*.ts
       - packages/cli/src/cli/capabilityContext/*.ts

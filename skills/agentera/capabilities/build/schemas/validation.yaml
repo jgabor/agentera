@@ -54,7 +54,7 @@ VALIDATION:
     rule: artifact_path_resolution
     description: >-
       Entity state MUST use exact/list CLI reads and typed writers discovered by
-      `agentera state <artifact> explain`. Check .agentera/docs.yaml only for
+      `npx -y agentera@next state <artifact> explain`. Check .agentera/docs.yaml only for
       intentional singleton path overrides.
     severity: warning
     checks:
@@ -112,7 +112,7 @@ VALIDATION:
     id: V11
     rule: sanitized_profile_grounding
     description: >-
-      Build MUST ground only from the `content` returned by `agentera report
+      Build MUST ground only from the `content` returned by `npx -y agentera@next report
       profile-grounding --format json` when shared validity is valid; it MUST
       preserve absent/repair-needed recovery and MUST NOT direct-read PROFILE.md.
     severity: critical
@@ -126,7 +126,7 @@ VALIDATION:
     description: >-
       At initial meaning-sensitive cycle intent and later user-authored changes
       or clarification answers that can alter intent, Build MUST request bounded
-      advice through `agentera report glossary-advice --input REQUEST --format
+      advice through `npx -y agentera@next report glossary-advice --input REQUEST --format
       json`. Unchanged replay, unrelated turns, rendering, and tool output MUST
       NOT refresh advice.
     severity: critical
@@ -153,7 +153,7 @@ VALIDATION:
     rule: glossary_publication_isolation
     description: >-
       Advice, tension, clarification, and progress caveat lifecycle MUST NOT call
-      `agentera state glossary publish`, create or reuse approval, substitute for
+      `npx -y agentera@next state glossary publish`, create or reuse approval, substitute for
       digest-bound user confirmation, satisfy decisions or plan state, or grant
       Discuss or Audit publication authority.
     severity: critical

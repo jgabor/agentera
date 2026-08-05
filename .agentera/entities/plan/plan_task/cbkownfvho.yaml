@@ -1,0 +1,30 @@
+id: cbkownfvho
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement A3 · Unify mixed command-span recognition
+  status: superseded
+  depends_on:
+    - owfvrfxcwa
+    - ouahnpflvx
+    - wfbpsymlxi
+    - vlxwhwqxqf
+  acceptance:
+    - GIVEN any executable Markdown, YAML, JSON, or emitted-guidance scalar containing mixed inline, quoted, unquoted, multiline, nested, wrapped, composed, or repeated Agentera forms WHEN validated THEN one statement-level span inventory finds every invocation before contextual filtering and emits a distinct complete diagnostic for each invalid boundary.
+    - GIVEN descriptive vocabulary, negated guidance, stable-channel text, and the stable-v2 exemption WHEN validated THEN non-executable descriptions remain allowed, imperative guidance is inspected, and every @latest occurrence outside the sole exact adjacent ordered pair rejects independently of subcommand recognition.
+    - GIVEN source/package inventories, generated declarations, exemptions, and constructor import/re-export closure WHEN compared THEN all 196 records and every id, path, format, classification, and reason remain exact; missing, extra, stale exemption, dynamic consumer, or producer drift fails closed.
+  evidence: Replaces eptmmfykbk after audit-2. Required root probe is Run inline agentera first-future; and then unquoted agentera second-future, with two distinct diagnostics; mixed ordering, separators, wrappers, structured keys, and nesting bounds must prove the same invariant.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Command substitution prefixes still suppress all inventoried spans, and whole-command quoted @latest forms bypass the parallel channel-token path, so executable and stable-channel coverage remain incomplete.
+    provenance:
+      attempt_id: cbkownfvho-audit-2
+      source: Independent Audit ses_0317b66c7ffetJk36PI7H9Z6mQ bounded re-review FAIL
+      recorded_at: 2026-08-04 23:33
+      writer_command: agentera state plan record-evaluation
+  blocked_reason: "Two evaluations exhausted: incremental per-span context still misses command substitution, while the separate @latest token path misses whole-command quoted forms."
+  superseded_by:
+    - nuesozywif
+  superseded_reason: A6 replaces the failed command-authority lineage with exact fail-closed span and projection contracts.

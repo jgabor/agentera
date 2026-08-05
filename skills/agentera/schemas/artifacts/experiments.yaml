@@ -275,7 +275,7 @@ PUBLICATION:
     id: EP1
     operation: publish
     command: >-
-      agentera state experiments publish --objective ID [--id ID]
+      npx -y agentera@next state experiments publish --objective ID [--id ID]
       --input EXPERIMENT.yaml --format json
     description: >-
       The typed state writer is the mutation authority. It validates the
@@ -334,10 +334,10 @@ RETRIEVAL:
   1:
     id: ER1
     list: >-
-      agentera state experiments list --objective ID [--limit N]
+      npx -y agentera@next state experiments list --objective ID [--limit N]
       [--cursor TOKEN] --format json
     get: >-
-      agentera state experiments get --id ID --format json
+      npx -y agentera@next state experiments get --id ID --format json
     description: >-
       List returns newest-first objective-scoped canonical entities. Get returns
       one exact entity by bare ID.

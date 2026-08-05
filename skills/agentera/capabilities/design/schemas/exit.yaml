@@ -4,7 +4,7 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       DESIGN.md was written (Create/Replace mode), updated (Refine mode),
-      or audited with findings reported (Audit mode). agentera check lint
+      or audited with findings reported (Audit mode). npx -y agentera@next check lint
       --artifact design passed, and all changes had explicit user approval.
     exit_signal: complete
   2:
@@ -21,7 +21,7 @@ EXIT_CONDITIONS:
     condition: stuck
     description: >-
       Cannot write DESIGN.md because the user declined to approve the
-      draft, agentera check lint reports unresolvable errors, or the
+      draft, npx -y agentera@next check lint reports unresolvable errors, or the
       project's UI stack is inaccessible.
     exit_signal: stuck
   4:

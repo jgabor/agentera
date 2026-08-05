@@ -377,7 +377,107 @@ describe("declarative state mutation grammar", () => {
     const altered = fs.readFileSync(authority, "utf8").replace("      verb: append\n", "      verb: retired\n");
     fs.writeFileSync(path.join(authorityDir, "state-storage-authority.yaml"), altered);
 
-    expect(() => loadMutationGrammar(sourceRoot)).toThrow(/mutation grammar parity failure/);
+    expect(() => loadMutationGrammar(sourceRoot)).toThrow(/not code-owned|mutation grammar parity failure/);
+    loadMutationGrammar();
+  });
+
+  it.each([
+    ["unknown command", "npx -y agentera@next destroy --yes"],
+    ["composed command", "npx -y agentera@next state progress append --input progress.yaml --format json && printf x"],
+    ["numeric redirect", "npx -y agentera@next state progress append --input progress.yaml --format json 2>err"],
+    ["substitution", "npx -y agentera@next state progress append --input $(printf x) --format json"],
+    ["wrong channel", "npx -y agentera@latest state progress append --input progress.yaml --format json"],
+    ["malformed quote", 'npx -y agentera@next state progress append --input "progress.yaml --format json'],
+    ["extra sibling", "npx -y agentera@next state progress append --input progress.yaml --format json npx -y agentera@next prime"],
+    ["force", "npx -y agentera@next state progress append --input progress.yaml --format json --force"],
+    ["garbage", "npx -y agentera@next state progress append --input progress.yaml --format json garbage"],
+    ["quoted operator", 'npx -y agentera@next state progress append --input progress.yaml --format json "&&"'],
+    ["adjacent prefix", "xnpx -y agentera@next state progress append --input progress.yaml --format json"],
+    ["adjacent suffix", "npx -y agentera@next state progress append --input progress.yaml --format jsonoops"],
+    ["continuation", "npx -y agentera@next state progress append --input progress.yaml --format json " + "\\" + "\n--force"],
+    ["invalid format", "npx -y agentera@next state progress append --input progress.yaml --format invalid"],
+    ["wrong operation family", "npx -y agentera@next state decisions append --input progress.yaml --format json"],
+    ["duplicate flag", "npx -y agentera@next state progress append --input progress.yaml --input other.yaml --format json"],
+    ["omitted required value", "npx -y agentera@next state progress append --input --format json"],
+    ["extra positional", "npx -y agentera@next state progress append extra --input progress.yaml --format json"],
+    ["option-like value", "npx -y agentera@next state progress append --input -- --format json"],
+  ])("rejects an inexact recovery or example before projection: %s", (_label, badCommand) => {
+    for (const field of ["recovery", "examples"] as const) {
+      const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-mutation-guidance-"));
+      roots.push(sourceRoot);
+      const authorityDir = path.join(sourceRoot, "references", "artifacts");
+      fs.mkdirSync(authorityDir, { recursive: true });
+      const source = loadYamlMapping(fs.readFileSync(
+        path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"),
+        "utf8",
+      )) as any;
+      const operation = source.mutation_grammar.operations.find(
+        (candidate: any) => candidate.artifact === "progress" && candidate.verb === "append",
+      );
+      operation[field] = field === "examples" ? [badCommand] : badCommand;
+      fs.writeFileSync(
+        path.join(authorityDir, "state-storage-authority.yaml"),
+        dumpYamlMapping(source),
+      );
+      expect(() => loadMutationGrammar(sourceRoot), `${field}: ${badCommand}`)
+        .toThrow(/invalid development command projection/);
+    }
+    loadMutationGrammar();
+  });
+
+  it("binds recovery and example parity to every code-owned mutation operation", () => {
+    const authorityPath = path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml");
+    const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8")) as any;
+    expect(authority.mutation_grammar.operations).toHaveLength(25);
+    expect(runtimeOperationSpecs()).toHaveLength(25);
+    for (const operation of authority.mutation_grammar.operations) {
+      for (const field of ["recovery", "examples"] as const) {
+        const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-mutation-owner-"));
+        roots.push(sourceRoot);
+        const authorityDir = path.join(sourceRoot, "references", "artifacts");
+        fs.mkdirSync(authorityDir, { recursive: true });
+        const changed = structuredClone(authority);
+        const target = changed.mutation_grammar.operations.find(
+          (candidate: any) => candidate.artifact === operation.artifact && candidate.verb === operation.verb,
+        );
+        if (field === "recovery") target.recovery = `${target.recovery} oops`;
+        else target.examples[0] = `${target.examples[0]} oops`;
+        fs.writeFileSync(path.join(authorityDir, "state-storage-authority.yaml"), dumpYamlMapping(changed));
+        expect(() => loadMutationGrammar(sourceRoot), `${operation.artifact}.${operation.verb}.${field}`)
+          .toThrow(/invalid development command projection/);
+      }
+    }
+    const grammar = loadMutationGrammar();
+    for (const operation of grammar.operations) {
+      const runtime = runtimeOperationSpecs().find(
+        (candidate) => candidate.artifact === operation.artifact && candidate.verb === operation.verb,
+      )!;
+      expect(operation.recovery).toBe(runtime.projection.recovery.runtime);
+      expect(operation.examples).toEqual(runtime.projection.examples.map(({ runtime: value }) => value));
+    }
+  });
+
+  it("rejects invalid enum and format examples before schema or help can consume them", () => {
+    const authority = loadYamlMapping(fs.readFileSync(
+      path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"),
+      "utf8",
+    )) as any;
+    for (const [artifact, verb, mutate] of [
+      ["plan", "set-status", (value: string) => value.replace("--status complete", "--status retired")],
+      ["progress", "append", (value: string) => value.replace("--format json", "--format invalid")],
+    ] as const) {
+      const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-mutation-domain-"));
+      roots.push(sourceRoot);
+      const authorityDir = path.join(sourceRoot, "references", "artifacts");
+      fs.mkdirSync(authorityDir, { recursive: true });
+      const changed = structuredClone(authority);
+      const operation = changed.mutation_grammar.operations.find(
+        (candidate: any) => candidate.artifact === artifact && candidate.verb === verb,
+      );
+      operation.examples[0] = mutate(operation.examples[0]);
+      fs.writeFileSync(path.join(authorityDir, "state-storage-authority.yaml"), dumpYamlMapping(changed));
+      expect(() => loadMutationGrammar(sourceRoot)).toThrow(/invalid development command projection/);
+    }
     loadMutationGrammar();
   });
 });

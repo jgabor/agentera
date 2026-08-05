@@ -1,0 +1,16 @@
+id: gwxbitgrmc
+artifact: progress
+record:
+  timestamp: 2026-08-05 15:57
+  type: fix
+  phase: build
+  what: Replaced A5's freeform development-command projection with exact code-owned operation, retrieval, and glossary contracts for nuesozywif.
+  context:
+    intent: Close audit-2 by rejecting every non-exact recovery, example, glossary, retrieval, schema, or help projection before local runtime guidance is emitted.
+    constraints: Keep nuesozywif pending and unevaluated; preserve A2-A5 blocks, M7 cancellation, Task B, unrelated TODOs, protected staged blobs, release metadata, vision, profile, and external state.
+    unknowns: Independent Audit remains the evaluation authority. No heap failure occurred, so the conditional same-environment HEAD comparison was not required.
+    scope: Exact code-owned projection, parity and value domains, all projection consumers, adversarial source/package mutations, current-source package construction, and isolated verification.
+  discovered: A5 authorized a caller-built flag map and one command substring. It therefore omitted RuntimeOperationField.validValues, duplicate and complete-boundary checks, and recovery/example parity. The replacement deletes those generic projector exports and the glossary replace layer. Owner-keyed APIs now fetch immutable code registries internally; runtimeOperationSpecs owns exact full recovery prose, examples, local forms, format values, fields, and enum domains. Retrieval owns exact list/get/example/recovery forms, filters, selectors, formats, and bounds. Glossary owns five exact full values. Only the canonical prefix changes; arguments, quotes, delimiters, and prose remain byte-stable.
+  verified: "The complete census is 88 owners: 50 mutation values across all 25 operations, 33 values across all nine retrieval families, and five glossary values consumed by schema, help, explain, and runtime contracts. Direct tests reject 18 complete-command mutations, seven audit-2 recovery-boundary mutations, retired status, and invalid format; exact valid enum/json and quoted controls pass. Source construction rejects 38 representative recovery/example mutations, both fields for every operation, every retrieval family, and all glossary owners. The freshly constructed package rejects 89 operation, 33 retrieval, and five glossary mutations before bare output; its actual runtime accepts a valid json dry-run, reaches normal lookup for a valid enum, and rejects retired enum and invalid format. Focused tests passed 427/427. Full source passed 224 files and 3296 tests with one platform skip. Fresh package verification passed 31/31 after construction under the isolated TMPDIR, npm pack with scripts disabled, extraction, production install, and execution outside checkout outputs. Typecheck, local build, compact with zero changes, capability contract 3/3, Build validation, built-local schema/help, and git diff --check passed. Policy retained 193 exact declarations, 196/196 source/package inventory (93 source, two generated, 101 emitted), 49 producers, 52 non-producers, stable authority, malformed closure, offsets, composition corrections, and generated fields."
+  next: Leave nuesozywif pending for independent evaluation. Do not start Task B or change predecessor, TODO, or release lifecycle state.
+  publication_order: 84

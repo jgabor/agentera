@@ -24,8 +24,8 @@ function authorityErrors(value: Record<string, any>): string[] {
   if (JSON.stringify(artifactIds) !== JSON.stringify(["progress", "decisions", "health"])) errors.push("supported_artifacts");
   if (value.storage?.project_root?.archive_path_template !== ".agentera/archive/<artifact-id>/<entry-number>.yaml") errors.push("archive_path_template");
   if (value.envelope?.schema_version !== "agentera.stateArchiveEntry.v1") errors.push("envelope.schema_version");
-  if (value.api?.direct_get?.command !== "agentera state <artifact-id> get --id ID --format json") errors.push("direct_get.command");
-  if (value.api?.list?.command !== "agentera state <artifact-id> list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json") errors.push("list.command");
+  if (value.api?.direct_get?.command !== "npx -y agentera@next state <artifact-id> get --id ID --format json") errors.push("direct_get.command");
+  if (value.api?.list?.command !== "npx -y agentera@next state <artifact-id> list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json") errors.push("list.command");
   if (value.api?.list?.maximum_limit < value.api?.list?.minimum_limit) errors.push("list.limit_range");
   if (!String(value.api?.cursor?.append_behavior ?? "").includes("excluded")) errors.push("cursor.append_behavior");
   if (value.compatibility?.classifications?.join(",") !== "complete,degraded,blocked,unsupported") errors.push("compatibility.classifications");
@@ -159,7 +159,7 @@ describe("state storage authority", () => {
       expect.arrayContaining(["entries", "counts", "snapshot", "source_contract"]),
     );
     expect(api.durability).toMatchObject({
-      command: "agentera check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N] --format json",
+      command: "npx -y agentera@next check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N] --format json",
       default_limit: 100,
       maximum_limit: 100,
       status_values: ["complete", "degraded", "unavailable"],

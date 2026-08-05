@@ -1,0 +1,16 @@
+id: aejypflkbe
+artifact: progress
+record:
+  timestamp: 2026-08-04 22:05
+  type: fix
+  phase: build
+  what: Repaired executable inline-context and nesting-bound diagnostics for eptmmfykbk after audit-1.
+  context:
+    intent: Close the four accepted Audit probes without weakening stable-channel, inventory, generated parity, exemption, or constructor-closure behavior.
+    constraints: No Task B, evaluation recording, task completion, TODO resolution, commit, publish, tag, version, registry, vision, or profile mutation.
+    unknowns: One bounded independent re-review remains; glossary advice was unavailable and no disputed terminology was used.
+    scope: packages/cli/test/helpers/retiredStartupGuidance.ts, focused regression tests, and four newly exposed bare guidance commands.
+  discovered: Inline spans were classified before structured-key and whole-statement context, descriptive keys returned before imperative analysis, and the nesting guard emitted one generic diagnostic before counting payload invocations.
+  verified: Exact probes returned 1 bare_executable for YAML command inline context, 1 bare_executable for imperative YAML description, 2 bare_executable diagnostics for the Markdown statement, and 2 nested_command_limit diagnostics for ten bash -c wrappers with no stable_lexical_limit; descriptive vocabulary returned 0. Focused parser/registry tests passed 135/135, +5 from hsvimmqjal. Full source passed 3,170 with 1 skipped, +5; package passed 27/27, unchanged. Inventories remained source 93, generated 2, emitted 101 (49 producers, 52 non-producers), and source/package parity remained 196/196. Typecheck, local 3.0.0-dev.42 build, compact, capability contract 3/3, Build capability validation, and git diff --check passed.
+  next: Leave eptmmfykbk pending with its existing eptmmfykbk-audit-1 FAIL for the one remaining bounded independent re-review; do not start Task B.
+  publication_order: 77

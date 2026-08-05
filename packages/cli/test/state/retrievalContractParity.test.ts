@@ -23,6 +23,18 @@ function authorityDocument(): any {
   return YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
 }
 
+function runtimeCommandProjection(value: any): any {
+  const projected = JSON.parse(JSON.stringify(value));
+  for (const family of entityListFamilies()) {
+    projected.commands[family.key] = { list: family.syntax, get: family.get };
+    projected.list_help.families[family.key].example = family.example;
+    if (family.bareRecovery) {
+      projected.list_help.families[family.key].bare_recovery = family.bareRecovery;
+    }
+  }
+  return projected;
+}
+
 function setListLimit(authority: any, limit: number): void {
   authority.entity_target.public_retrieval.list_help.defaults.bounds.default = limit;
   authority.entity_target.public_retrieval.list_help.defaults.bounds.maximum = limit;
@@ -166,6 +178,49 @@ describe("final entity retrieval public-contract parity", () => {
     expect(families.map(({ key }) => key).sort()).toEqual(ENTITY_LIST_RUNTIME_FAMILIES.map(({ key }) => key).sort());
   });
 
+  it("binds every retrieval projection owner to the exact code registry before schema or help output", () => {
+    const authority = authorityDocument();
+    const retrieval = authority.entity_target.public_retrieval;
+    for (const runtime of ENTITY_LIST_RUNTIME_FAMILIES) {
+      const source = retrieval.list_help.families[runtime.key];
+      const command = retrieval.commands[runtime.key];
+      expect(command).toEqual({ list: runtime.projection.list, get: runtime.projection.get });
+      expect(source.example).toBe(runtime.projection.example);
+      expect(source.bare_recovery).toBe(runtime.projection.bareRecovery);
+
+      const changed = structuredClone(authority);
+      changed.entity_target.public_retrieval.list_help.families[runtime.key].example += " oops";
+      const sourceRoot = mutatedSourceRoot(changed);
+      expect(() => withSourceRoot(sourceRoot, () => entityListFamilies(sourceRoot)), runtime.key)
+        .toThrow(/invalid entity list help authority/);
+      expect(() => withSourceRoot(sourceRoot, () => buildSchemaPayload("schema")), runtime.key)
+        .toThrow(/invalid (?:entity list help|state retrieval) authority/);
+      expect(() => withSourceRoot(sourceRoot, () => printStateHelp(runtime.commandTokens[0])), runtime.key)
+        .toThrow(/invalid entity list help authority/);
+    }
+  });
+
+  it("rejects retrieval option-domain drift even when the source example is changed with it", () => {
+    const authority = authorityDocument();
+    authority.entity_target.public_retrieval.list_help.defaults.formats = ["text", "json", "invalid"];
+    authority.api.formats = ["text", "json", "invalid"];
+    authority.entity_target.public_retrieval.list_help.families.plans.filters[0] = {
+      flag: "--status open|complete|retired",
+      name: "status",
+      values: ["open", "complete", "retired"],
+    };
+    authority.entity_target.public_retrieval.commands.plans.list = authority.entity_target.public_retrieval.commands.plans.list.replace("archived", "retired");
+    authority.entity_target.public_retrieval.list_help.families.plans.example = authority.entity_target.public_retrieval.list_help.families.plans.example.replace("--status open", "--status retired");
+    const errors = validateEntityListHelp(authority);
+    expect(errors).toEqual(expect.arrayContaining([
+      "entity_target.public_retrieval.list_help.defaults.formats",
+      "api.formats",
+      "entity_target.public_retrieval.list_help.families.plans.filters[0].runtime_parity",
+      "entity_target.public_retrieval.list_help.families.plans.list_command",
+      "entity_target.public_retrieval.list_help.families.plans.example.runtime_parity",
+    ]));
+  });
+
   it.each([
     ["removed docs family", (value: any) => { delete value.entity_target.public_retrieval.commands.docs; delete value.entity_target.public_retrieval.list_help.families.docs; }, ".missing.docs"],
     ["unknown ghost family", (value: any) => { value.entity_target.public_retrieval.commands.ghost = { list: "agentera state ghost list --format json", get: "agentera state ghost get --id ID --format json" }; value.entity_target.public_retrieval.list_help.families.ghost = { command_tokens: ["ghost"], filters: [], example: "agentera state ghost list --format json" }; }, ".unknown.ghost"],
@@ -197,13 +252,13 @@ describe("final entity retrieval public-contract parity", () => {
   it.each([
     ["missing example", (value: any) => { delete value.entity_target.public_retrieval.list_help.families.progress.example; }, ".progress.example.type"],
     ["non-string example", (value: any) => { value.entity_target.public_retrieval.list_help.families.decisions.example = ["agentera"]; }, ".decisions.example.type"],
-    ["non-canonical spacing", (value: any) => { value.entity_target.public_retrieval.list_help.families.health.example = "agentera  state health list --limit 20 --format json"; }, ".health.example.lexical_form"],
-    ["unknown argument", (value: any) => { value.entity_target.public_retrieval.list_help.families.docs.example = "agentera state docs list --ghost value --limit 20 --format json"; }, ".docs.example.argument"],
-    ["invalid positional identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.plan_tasks.example = "agentera state plan tasks list not-an-id --limit 20 --format json"; }, ".plan_tasks.example.identifier"],
-    ["missing required identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.experiments.example = "agentera state experiments list --limit 20 --format json"; }, ".experiments.example.identifier_required"],
-    ["invalid filter value", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.example = "agentera state plan list --status ghost --limit 20 --format json"; }, ".plans.example.filter_value"],
-    ["mutually exclusive selectors", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.example = "agentera state todo list --ids-only --fields status --limit 20 --format json"; }, ".todo.example.selector"],
-    ["invalid format", (value: any) => { value.entity_target.public_retrieval.list_help.families.objective.example = "agentera state objective list --limit 20 --format toml"; }, ".objective.example.format"],
+    ["non-canonical spacing", (value: any) => { value.entity_target.public_retrieval.list_help.families.health.example = "npx  -y agentera@next state health list --limit 20 --format json"; }, ".health.example.lexical_form"],
+    ["unknown argument", (value: any) => { value.entity_target.public_retrieval.list_help.families.docs.example = "npx -y agentera@next state docs list --ghost value --limit 20 --format json"; }, ".docs.example.argument"],
+    ["invalid positional identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.plan_tasks.example = "npx -y agentera@next state plan tasks list not-an-id --limit 20 --format json"; }, ".plan_tasks.example.identifier"],
+    ["missing required identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.experiments.example = "npx -y agentera@next state experiments list --limit 20 --format json"; }, ".experiments.example.identifier_required"],
+    ["invalid filter value", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.example = "npx -y agentera@next state plan list --status ghost --limit 20 --format json"; }, ".plans.example.filter_value"],
+    ["mutually exclusive selectors", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.example = "npx -y agentera@next state todo list --ids-only --fields status --limit 20 --format json"; }, ".todo.example.selector"],
+    ["invalid format", (value: any) => { value.entity_target.public_retrieval.list_help.families.objective.example = "npx -y agentera@next state objective list --limit 20 --format toml"; }, ".objective.example.format"],
   ])("fails closed for example grammar: %s", (_name, mutate, expected) => {
     const authority = authorityDocument();
     mutate(authority);
@@ -221,59 +276,39 @@ describe("final entity retrieval public-contract parity", () => {
     });
   });
 
-  it("projects changed authority bare behavior directly into artifact help", () => {
+  it("rejects changed bare behavior before artifact help", () => {
     const authority = authorityDocument();
     authority.entity_target.public_retrieval.list_help.families.health.bare_read = "alias";
     delete authority.entity_target.public_retrieval.list_help.families.health.bare_recovery;
     const sourceRoot = mutatedSourceRoot(authority);
     withSourceRoot(sourceRoot, () => {
-      expect(validateEntityListHelp(authority)).toEqual([]);
-      expect(printStateHelp("health")).toContain("Bare: agentera state health is a strict alias of List.");
+      expect(validateEntityListHelp(authority)).toContain("entity_target.public_retrieval.list_help.families.health.bare_read.runtime_parity");
+      expect(() => printStateHelp("health")).toThrow(/invalid entity list help authority/);
     });
   });
 
-  it("consumes coherent limit metadata and examples through schema, help, runtime, and corrections", () => {
+  it("rejects coordinated limit and example drift from the code-owned retrieval contract", () => {
     const authority = authorityDocument();
     setListLimit(authority, 7);
     setExampleLimit(authority, 7);
-    expect(validateEntityListHelp(authority)).toEqual([]);
+    expect(validateEntityListHelp(authority)).toEqual(expect.arrayContaining([
+      "entity_target.public_retrieval.list_help.defaults.bounds.runtime_parity",
+      ...ENTITY_LIST_RUNTIME_FAMILIES.map(({ key }) => `entity_target.public_retrieval.list_help.families.${key}.example.runtime_parity`),
+    ]));
     const sourceRoot = mutatedSourceRoot(authority);
     withSourceRoot(sourceRoot, () => {
-      const schema = buildSchemaPayload("schema") as any;
-      expect(schema.state_retrieval.list_help.defaults.bounds).toMatchObject({ default: 7, maximum: 7 });
-      const root = cutoverProject();
-      seedExecutableExamples(root);
-      for (const family of entityListFamilies(sourceRoot)) {
-        const help = capture(root, ["state", ...family.commandTokens, "list", "--help"]);
-        expect(help).toMatchObject({ rc: 0, err: "" });
-        expect(help.out).toContain("limit: minimum 1, default 7, maximum 7");
-        expect(help.out).toContain(family.example);
-
-        const advertised = capture(root, exampleArgs(family.example));
-        expect(advertised.rc, `${family.key}: ${advertised.err || advertised.out}`).toBe(0);
-
-        const rejectedArgs = exampleArgs(family.example);
-        const limit = rejectedArgs.indexOf("--limit");
-        expect(limit).toBeGreaterThan(-1);
-        rejectedArgs[limit + 1] = "8";
-        const rejected = capture(root, rejectedArgs);
-        expect(rejected).toMatchObject({ rc: 2, err: "" });
-        const correction = JSON.parse(rejected.out).error;
-        expect(correction).toMatchObject({ example: family.example, recovery: `Run \`${family.example}\`; no state was changed.` });
-        expect(correction.valid_values).toContain("--limit 1..7");
-        const corrected = capture(root, exampleArgs(correction.example));
-        expect(corrected.rc, `${family.key}: ${corrected.err || corrected.out}`).toBe(0);
-      }
+      expect(() => buildSchemaPayload("schema")).toThrow(/invalid state retrieval authority/);
+      expect(() => printStateHelp("plan")).toThrow(/invalid entity list help authority/);
     });
   });
 
-  it("projects the authority-owned final ID grammar through schema", () => {
+  it("projects canonical source commands to the runtime schema grammar", () => {
     const authority = authorityDocument();
     const retrieval = entityPublicRetrieval(REPO_ROOT);
     expect(retrieval).toEqual(authority.entity_target.public_retrieval);
     expect(buildSchemaPayload("schema").state_retrieval).toEqual({
       authority: "references/artifacts/state-storage-authority.yaml",
-      ...retrieval,
+      ...runtimeCommandProjection(retrieval),
     });
     expect(JSON.stringify(retrieval.commands)).toContain("--id ID");
     expect(JSON.stringify(retrieval.commands)).not.toMatch(/--(?:number|task|plan)\b/);

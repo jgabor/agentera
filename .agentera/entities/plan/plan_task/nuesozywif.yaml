@@ -1,0 +1,26 @@
+id: nuesozywif
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement A6 · Bind runtime projection to exact contracts
+  status: complete
+  depends_on:
+    - owfvrfxcwa
+    - ouahnpflvx
+    - wfbpsymlxi
+    - vlxwhwqxqf
+  acceptance:
+    - GIVEN any source recovery, example, glossary, retrieval, schema, or help value that projects canonical development syntax to local runtime syntax WHEN loaded THEN the complete source value and every executable boundary must match an exact code-owned operation template, including token boundaries, option/argument cardinality, valid value domains, quoting, and allowed surrounding prose; no substring, caller-controlled, or freeform projection path exists.
+    - GIVEN an unknown command, wrong family/channel, adjacent prefix or suffix, unauthorized option or argument, invalid enum or format value, quote/continuation, composition, redirect, substitution, or executable sibling WHEN source or package contracts validate THEN projection rejects before any bare guidance is emitted; recovery and examples participate in authoritative parity and actual fresh-runtime mutation checks.
+    - GIVEN A5 span policy, declarations, stable authority, malformed closure, offsets, composition corrections, generated fields, and constructor inventory WHEN verified THEN all prior adversarial regressions remain green and current-source construction/extraction retains exact 196/196 parity with 49 producers and 52 non-producers.
+  evidence: Replaces boiabfwvpb after audit-2. Remaining probes append --force, garbage, quoted &&, prefix/suffix text, continuation, invalid --status retired, and invalid --format to otherwise approved recovery/example values; current substring projection emits unauthorized bare runtime guidance.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: nuesozywif-audit-1
+      source: Independent Audit ses_02dc70d5fffe8FxMnv4Tp42b8c PASS
+      recorded_at: 2026-08-05 16:33
+      writer_command: agentera state plan record-evaluation

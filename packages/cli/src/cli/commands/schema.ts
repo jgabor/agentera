@@ -15,6 +15,7 @@ import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterArtifactContract, stateWriterContract } from "../../state/write/operations.js";
 import { CANONICAL_SHARED_SKILL_PATH } from "../../setup/sharedSkill.js";
 import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
+import { entityListFamilies } from "../../state/entityRetrievalHelp.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
 import { advertisedValidateFamilyNames } from "./validate.js";
@@ -77,6 +78,19 @@ export const REMOVED_TOP_LEVEL_CORRECTIONS: Record<string, string> = {
 /** Port of scripts/agentera cmd_schema / _build_schema_payload. */
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
+
+function projectedStateRetrieval(retrieval: JsonObject): JsonObject {
+  const projected = JSON.parse(JSON.stringify(retrieval)) as JsonObject;
+  const commands = projected.commands as JsonObject;
+  const families = ((projected.list_help as JsonObject).families) as JsonObject;
+  for (const family of entityListFamilies()) {
+    commands[family.key] = { list: family.syntax, get: family.get };
+    const source = families[family.key] as JsonObject;
+    source.example = family.example;
+    if (family.bareRecovery) source.bare_recovery = family.bareRecovery;
+  }
+  return projected;
+}
 
 const CAPABILITY_NAMES = [
   "status",
@@ -381,7 +395,10 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
        families: [...advertisedValidateFamilyNames()],
     },
     state_writer: stateWriterContract(),
-    state_retrieval: { authority: retrievalAuthority.authority, ...retrievalAuthority.retrieval },
+    state_retrieval: {
+      authority: retrievalAuthority.authority,
+      ...projectedStateRetrieval(retrievalAuthority.retrieval as JsonObject),
+    },
     integration: {
       authority: "skills/agentera/SKILL.md",
       active_contract: "one shared skill plus the Agentera CLI",

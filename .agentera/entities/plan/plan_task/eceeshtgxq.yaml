@@ -1,0 +1,30 @@
+id: eceeshtgxq
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement A4 · Replace command heuristics with fail-closed span IR
+  status: superseded
+  depends_on:
+    - owfvrfxcwa
+    - ouahnpflvx
+    - wfbpsymlxi
+    - vlxwhwqxqf
+  acceptance:
+    - GIVEN any scanned Markdown, YAML, JSON, or emitted-guidance segment WHEN Agentera-shaped tokens are parsed THEN one offset-preserving invocation-span IR exclusively owns discovery, channel normalization, candidate boundaries, nesting, classification, diagnostics, and one-boundary correction; no parallel imperative, @latest, decorated-token, or depth-fallback authority remains.
+    - GIVEN any IR invocation WHEN policy is applied THEN it rejects by default unless it is one exact uncomposed npx -y agentera@next command, one member of the sole exact adjacent stable-v2 pair, exact wholly negated guidance, bounded descriptive vocabulary, or an exact reasoned used scalar exemption; mixed positive and negative spans classify independently and malformed or unclassified input fails closed.
+    - GIVEN repeated, nested, quoted, split-channel, substituted, composed, or multiline invocations and the shipped source/package corpus WHEN validated THEN every invalid boundary has unique offsets, path, raw and normalized candidate, violation, and sibling-preserving correction; all 63 currently noncanonical scalars are explicitly classified and source/package inventory remains exact at 196/196 with generated, exemption, and producer closure parity.
+  evidence: Architecture analysis ses_0314db021ffetT1H9FC1o0K7QL measured 15 overlapping authorities, 193 token-shaped occurrences across 8,235 surfaces, 115 canonical @next, 2 stable-pair, and 76 noncanonical occurrences in 63 scalars. Replace imperative and parallel latest recursion rather than patching A3 escapes.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Numeric file-descriptor redirects still pass as exact canonical commands and can yield unchanged or malformed corrections, while three hardcoded file/key clauses bypass exact scalar declarations and accept arbitrary imperative mutations.
+    provenance:
+      attempt_id: eceeshtgxq-audit-2
+      source: Independent Audit ses_0310afa4cffegqL5EtEmHjzu8j bounded re-review FAIL
+      recorded_at: 2026-08-05 11:59
+      writer_command: agentera state plan record-evaluation
+  blocked_reason: "Two evaluations exhausted: bounded numeric-FD composition and hardcoded path/key descriptive bypasses remain after the span-IR rewrite."
+  superseded_by:
+    - nuesozywif
+  superseded_reason: A6 replaces the failed command-authority lineage with exact fail-closed span and projection contracts.

@@ -4,8 +4,8 @@ Agentera 3.0 uses one upgrade command for app/project migration and explicit
 native Agentera resource cleanup. Preview and apply are separate operations.
 Current runtime installation and repair are not upgrade operations.
 
-Before the npm stable dist-tag promotion, use `agentera@next`. The stable 2.x
-channel remains `agentera@latest` until that promotion; upgrade does not publish
+Before the npm stable dist-tag promotion, select the development npm channel. The stable npm
+channel remains on 2.x until that promotion; upgrade does not publish
 or retag packages.
 
 ## Active integration

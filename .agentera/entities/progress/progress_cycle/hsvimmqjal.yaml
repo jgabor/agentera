@@ -1,0 +1,16 @@
+id: hsvimmqjal
+artifact: progress
+record:
+  timestamp: 2026-08-04 21:40
+  type: fix
+  phase: build
+  what: Closed universal command and inventory semantics for task eptmmfykbk without starting dependent Task B.
+  context:
+    intent: Close the exact audit-2 command parsing, stable-channel confinement, generated parity, exemption, and constructor-closure gaps.
+    constraints: No Task B, task evaluation, task completion, TODO resolution, commit, publish, tag, version, registry, or release mutation.
+    unknowns: Independent Audit is intentionally not recorded in this cycle.
+    scope: packages/cli command-authority policy and tests, package registry contract, bundled command declarations, docs, and changelog.
+  discovered: The prior parser treated a four-command allowlist and first-candidate success as authority, while producer discovery relied on partial local value flow and generated parity discarded declaration fields.
+  verified: Direct probes rejected state, schema, check, report, future subcommands, time and eval wrappers, nested bash payloads, Markdown lists, YAML literal and folded commands, JSON multiline commands, multiple invocations, and unknown or wrapped stable-channel forms with one diagnostic per invocation. Source inventory has 93 parsed or reason-classified records, 2 generated declarations, and 101 constructor-closure modules classified as 49 producers and 52 explicit non-producers. Generated id, path, format, classification, and reason match across 196 source/package records. Focused policy and registry tests passed 130/130; full source passed 3,165 with 1 skipped; full package passed 27/27; typecheck, local 3.0.0-dev.42 build, compact, capability contract 3/3, Build capability validation, source/package parity, and git diff --check passed.
+  next: Keep eptmmfykbk pending with no evaluation or commit; Task B and TODO vptlelnadp remain untouched pending later Audit direction.
+  publication_order: 76

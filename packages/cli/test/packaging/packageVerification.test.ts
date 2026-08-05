@@ -13,6 +13,8 @@ import {
   runProducerReadinessWorkflow,
 } from "../helpers/producerReadinessWorkflow.js";
 import { ENTITY_LIST_RUNTIME_FAMILIES } from "../../src/state/entityListRuntimeRegistry.js";
+import { projectEntityDevelopmentValue } from "../../src/core/developmentInvocation.js";
+import { runtimeOperationSpecs } from "../../src/state/write/runtimeOperations.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
@@ -41,7 +43,7 @@ function isolatedPackageEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEn
     if (/^AGENTERA_.*SOURCE.*ROOT$/.test(key)) delete env[key];
   }
   delete env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
-  delete env.AGENTERA_HOME;
+  env.AGENTERA_HOME = path.join(fixture.packageRoot, "bundle");
   return env;
 }
 
@@ -50,8 +52,28 @@ function publicListFamilies(): Array<{ key: string; commandTokens: readonly stri
   const retrieval = authority.entity_target.public_retrieval;
   return ENTITY_LIST_RUNTIME_FAMILIES.map((runtime) => {
     const family = retrieval.list_help.families[runtime.key] as { command_tokens: string[]; example: string; bare_read: "alias" | "correction" };
-    return { key: runtime.key, commandTokens: runtime.commandTokens, syntax: retrieval.commands[runtime.key].list, get: retrieval.commands[runtime.key].get, example: family.example, bareRead: family.bare_read };
+    return {
+      key: runtime.key,
+      commandTokens: runtime.commandTokens,
+      syntax: projectEntityDevelopmentValue(retrieval.commands[runtime.key].list, runtime.key, "list"),
+      get: projectEntityDevelopmentValue(retrieval.commands[runtime.key].get, runtime.key, "get"),
+      example: projectEntityDevelopmentValue(family.example, runtime.key, "example"),
+      bareRead: family.bare_read,
+    };
   });
+}
+
+function projectedListHelp(value: any): any {
+  const projected = structuredClone(value);
+  for (const runtime of ENTITY_LIST_RUNTIME_FAMILIES) {
+    const source = value.families[runtime.key];
+    const family = projected.families[runtime.key];
+    family.example = projectEntityDevelopmentValue(source.example, runtime.key, "example");
+    if (source.bare_recovery !== undefined) {
+      family.bare_recovery = projectEntityDevelopmentValue(source.bare_recovery, runtime.key, "bareRecovery");
+    }
+  }
+  return projected;
 }
 
 function seedPublicListExamples(project: string): void {
@@ -421,6 +443,186 @@ describe("npm distribution boundary", () => {
     expect(publication.FILE_REPLACEMENT_RECOVERY_VERSION).toBe("agentera.fileReplacementRecovery.v1");
   });
 
+  it("rejects mutated installed-package guidance before schema output", () => {
+    const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/state-storage-authority.yaml");
+    const original = fs.readFileSync(authorityPath, "utf8");
+    try {
+      const example = "npx -y agentera@next state progress append --input progress.yaml --format json";
+      const recoveryCommand = "npx -y agentera@next state progress explain --verb append --format json";
+      const cases: Array<[string, string, string]> = [
+        ["unknown command", "npx -y agentera@next destroy --yes", "npx -y agentera@next destroy --yes"],
+        ["composed command", `${example} && printf x`, `${recoveryCommand} && printf x`],
+        ["numeric redirect", `${example} 2>err`, `${recoveryCommand} 2>err`],
+        ["substitution", "npx -y agentera@next state progress append --input $(printf x) --format json", `${recoveryCommand} $(printf x)`],
+        ["wrong channel", example.replace("@next", "@latest"), recoveryCommand.replace("@next", "@latest")],
+        ["malformed quote", 'npx -y agentera@next state progress append --input "progress.yaml --format json', `${recoveryCommand} "status`],
+        ["extra sibling", `${example} npx -y agentera@next prime`, `${recoveryCommand} npx -y agentera@next prime`],
+        ["force", `${example} --force`, `${recoveryCommand} --force`],
+        ["garbage", `${example} garbage`, `${recoveryCommand} garbage`],
+        ["quoted operator", `${example} "&&"`, `${recoveryCommand} "&&"`],
+        ["adjacent prefix", `x${example}`, `x${recoveryCommand}`],
+        ["adjacent suffix", `${example}oops`, `${recoveryCommand}oops`],
+        ["continuation", `${example} ${"\\"}\n--force`, `${recoveryCommand} ${"\\"}\n--force`],
+        ["invalid format", example.replace("--format json", "--format invalid"), recoveryCommand.replace("--format json", "--format invalid")],
+        ["wrong operation family", example.replace("state progress", "state decisions"), recoveryCommand.replace("state progress", "state decisions")],
+        ["duplicate flag", example.replace("--format json", "--format json --format json"), `${recoveryCommand} --format json`],
+        ["omitted required value", example.replace("--input progress.yaml", "--input"), recoveryCommand.replace("--verb append", "--verb")],
+        ["extra positional", example.replace("state progress append", "state progress append extra"), recoveryCommand.replace("state progress explain", "state progress explain extra")],
+        ["option-like value", example.replace("--input progress.yaml", "--input --"), recoveryCommand.replace("--verb append", "--verb --")],
+      ];
+      for (const [label, badExample, badRecoveryCommand] of cases) {
+        for (const field of ["recovery", "examples"] as const) {
+          const authority = YAML.parse(original);
+          const operation = authority.mutation_grammar.operations.find(
+            (candidate: any) => candidate.artifact === "progress" && candidate.verb === "append",
+          );
+          operation[field] = field === "examples"
+            ? [badExample]
+            : operation.recovery.replace(recoveryCommand, badRecoveryCommand);
+          fs.writeFileSync(authorityPath, YAML.stringify(authority));
+          const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+          const result = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
+          expect(result.status, `${label}/${field}`).not.toBe(0);
+          expect(result.stdout).not.toContain(field === "examples" ? badExample : badRecoveryCommand);
+          expect(`${result.stdout}\n${result.stderr}`).toContain("invalid development command projection");
+        }
+      }
+
+      const authoritative = YAML.parse(original);
+      for (const sourceOperation of authoritative.mutation_grammar.operations) {
+        for (const field of ["recovery", "examples"] as const) {
+          const authority = structuredClone(authoritative);
+          const operation = authority.mutation_grammar.operations.find(
+            (candidate: any) => candidate.artifact === sourceOperation.artifact && candidate.verb === sourceOperation.verb,
+          );
+          if (field === "recovery") operation.recovery += " oops";
+          else operation.examples[0] += " oops";
+          fs.writeFileSync(authorityPath, YAML.stringify(authority));
+          const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+          const result = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
+          expect(result.status, `${sourceOperation.artifact}.${sourceOperation.verb}.${field}`).not.toBe(0);
+          const output = `${result.stdout}\n${result.stderr}`;
+          expect(output).toContain("invalid development command projection");
+          expect(output).not.toContain(field === "recovery" ? operation.recovery.replace("npx -y agentera@next", "agentera") : operation.examples[0].replace("npx -y agentera@next", "agentera"));
+        }
+      }
+      const invalidStatus = structuredClone(authoritative);
+      const setStatus = invalidStatus.mutation_grammar.operations.find(
+        (candidate: any) => candidate.artifact === "plan" && candidate.verb === "set-status",
+      );
+      setStatus.examples[0] = setStatus.examples[0].replace("--status complete", "--status retired");
+      fs.writeFileSync(authorityPath, YAML.stringify(invalidStatus));
+      const statusResult = run(process.execPath, [path.join(fixture.packageRoot, "dist/bin/agentera.js"), "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
+      expect(statusResult.status).not.toBe(0);
+      expect(`${statusResult.stdout}\n${statusResult.stderr}`).toContain("invalid development command projection");
+      expect(`${statusResult.stdout}\n${statusResult.stderr}`).not.toContain("agentera state plan set-status --id qjtrmnpvka --status retired");
+    } finally {
+      fs.writeFileSync(authorityPath, original);
+    }
+  });
+
+  it("rejects every installed-package retrieval projection owner before schema output", () => {
+    const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/state-storage-authority.yaml");
+    const original = fs.readFileSync(authorityPath, "utf8");
+    const authoritative = YAML.parse(original);
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    try {
+      for (const runtime of ENTITY_LIST_RUNTIME_FAMILIES) {
+        const mutations: Array<[string, (authority: any) => void]> = [
+          ["list", (authority) => { authority.entity_target.public_retrieval.commands[runtime.key].list += " oops"; }],
+          ["get", (authority) => { authority.entity_target.public_retrieval.commands[runtime.key].get += " oops"; }],
+          ["example", (authority) => { authority.entity_target.public_retrieval.list_help.families[runtime.key].example += " oops"; }],
+        ];
+        if (runtime.projection.bareRecovery) {
+          mutations.push(["bareRecovery", (authority) => { authority.entity_target.public_retrieval.list_help.families[runtime.key].bare_recovery += " oops"; }]);
+        }
+        for (const [field, mutate] of mutations) {
+          const authority = structuredClone(authoritative);
+          mutate(authority);
+          fs.writeFileSync(authorityPath, YAML.stringify(authority));
+          const result = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
+          expect(result.status, `${runtime.key}.${field}`).not.toBe(0);
+          expect(result.stdout).toBe("");
+          expect(result.stderr).toMatch(/invalid (?:state retrieval|entity list help) authority/);
+        }
+      }
+    } finally {
+      fs.writeFileSync(authorityPath, original);
+    }
+  });
+
+  it("rejects every installed-package glossary projection owner before runtime output", () => {
+    const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/glossary-entry-contract.yaml");
+    const original = fs.readFileSync(authorityPath, "utf8");
+    const authoritative = YAML.parse(original);
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const mutations: Array<[string, (authority: any) => void, string[], string | undefined]> = [
+      ["profile_output.command", (authority) => { authority.ownership_contracts.personal.profile_output.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined],
+      ["profile_grounding.command", (authority) => { authority.consumer_boundary.profile_grounding.command += " garbage"; }, ["report", "profile-grounding", "--format", "json"], undefined],
+      ["profile_grounding.repair", (authority) => { authority.consumer_boundary.profile_grounding.recovery.repair = authority.consumer_boundary.profile_grounding.recovery.repair.replace("--format json", "--format invalid"); }, ["report", "profile-grounding", "--format", "json"], undefined],
+      ["profile_grounding.absent", (authority) => { authority.consumer_boundary.profile_grounding.recovery.absent = `x${authority.consumer_boundary.profile_grounding.recovery.absent}`; }, ["report", "profile-grounding", "--format", "json"], undefined],
+      ["advice.command", (authority) => { authority.consumer_boundary.advice_resolution.invocation.command = "npx -y agentera@latest report glossary-advice --input REQUEST --format json"; }, ["report", "glossary-advice", "--input", "-", "--format", "json"], JSON.stringify({ schema_version: "agentera.glossaryAdviceRequest.v1", requested_term: "test", host_review: null })],
+    ];
+    try {
+      for (const [owner, mutate, args, input] of mutations) {
+        const authority = structuredClone(authoritative);
+        mutate(authority);
+        fs.writeFileSync(authorityPath, YAML.stringify(authority));
+        const result = run(process.execPath, [bin, ...args], fixture.root, isolatedPackageEnv(), input);
+        expect(result.status, owner).not.toBe(0);
+        expect(result.stdout).toBe("");
+        expect(result.stderr).toContain("invalid development command projection");
+      }
+    } finally {
+      fs.writeFileSync(authorityPath, original);
+    }
+  });
+
+  it("serves every approved mutation template and preserves quoted values from the installed package", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const schema = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
+    expect(schema.status, schema.stderr).toBe(0);
+    const artifacts = JSON.parse(schema.stdout).state_writer.artifacts as Array<{ artifact: string; operations: Array<{ verb: string; recovery: string; examples: string[]; fields: Array<{ flag: string; valid_values?: string[] }> }> }>;
+    const operations = artifacts.flatMap((artifact) => artifact.operations.map((operation) => ({ artifact: artifact.artifact, ...operation })));
+    expect(operations).toHaveLength(25);
+    for (const runtime of runtimeOperationSpecs()) {
+      const operation = operations.find((candidate) => candidate.artifact === runtime.artifact && candidate.verb === runtime.verb)!;
+      expect(operation.recovery).toBe(runtime.projection.recovery.runtime);
+      expect(operation.examples).toEqual(runtime.projection.examples.map(({ runtime: value }) => value));
+      for (const field of runtime.fields.filter(({ validValues }) => validValues)) {
+        expect(operation.fields.find((candidate) => candidate.flag === field.flag)?.valid_values).toEqual(field.validValues);
+      }
+    }
+    expect(operations.find(({ artifact, verb }) => artifact === "decisions" && verb === "update")?.examples[0])
+      .toContain('--satisfaction-evidence "..." --format json');
+    expect(operations.find(({ artifact, verb }) => artifact === "plan" && verb === "set-status")?.examples[0])
+      .toContain("--status complete --format json");
+
+    const project = fs.mkdtempSync(path.join(fixture.root, "approved-mutation-"));
+    fs.mkdirSync(path.join(project, ".agentera"));
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const input = path.join(project, "progress.yaml");
+    fs.writeFileSync(input, YAML.stringify({
+      type: "fix",
+      phase: "build",
+      what: "Prove installed-package approved mutation parsing.",
+      context: { intent: "Exercise the exact json-format control." },
+    }));
+    const accepted = run(process.execPath, [bin, "state", "progress", "append", "--input", input, "--dry-run", "--format", "json", "--project", project], project, isolatedPackageEnv());
+    expect(accepted.status, accepted.stderr).toBe(0);
+    expect(JSON.parse(accepted.stdout)).toMatchObject({ status: "pass" });
+    expect(fs.existsSync(path.join(project, ".agentera/entities/progress"))).toBe(false);
+
+    const validEnum = run(process.execPath, [bin, "state", "plan", "set-status", "--id", "qjtrmnpvka", "--status", "complete", "--format", "json", "--project", project], project, isolatedPackageEnv());
+    expect(validEnum.status).not.toBe(0);
+    expect(JSON.parse(validEnum.stdout).error.class).not.toBe("invalid_choice");
+    const invalidEnum = run(process.execPath, [bin, "state", "plan", "set-status", "--id", "qjtrmnpvka", "--status", "retired", "--format", "json", "--project", project], project, isolatedPackageEnv());
+    expect(JSON.parse(invalidEnum.stdout).error.class).toBe("invalid_choice");
+    const invalidFormat = run(process.execPath, [bin, "state", "progress", "append", "--input", input, "--format", "invalid", "--project", project], project, isolatedPackageEnv());
+    expect(invalidFormat.status).not.toBe(0);
+    expect(`${invalidFormat.stdout}\n${invalidFormat.stderr}`).toContain("invalid choice: 'invalid'");
+  });
+
   it("normalizes only valid atomic-create dependency ordinal forms in the installed package", () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const bundledSchemaPath = path.join(fixture.packageRoot, "bundle/skills/agentera/schemas/artifacts/plan.yaml");
@@ -635,7 +837,7 @@ describe("npm distribution boundary", () => {
       expect(sourceSchema.status).toBe(0);
       expect(packagedSchema.status).toBe(0);
       expect(JSON.parse(packagedSchema.stdout).state_retrieval).toEqual(JSON.parse(sourceSchema.stdout).state_retrieval);
-      expect(JSON.parse(packagedSchema.stdout).state_retrieval.list_help).toEqual(bundledAuthority.entity_target.public_retrieval.list_help);
+      expect(JSON.parse(packagedSchema.stdout).state_retrieval.list_help).toEqual(projectedListHelp(bundledAuthority.entity_target.public_retrieval.list_help));
       for (const family of families) {
         const helpArgs = ["state", ...family.commandTokens, "list", "--help"];
         const sourceHelp = run(process.execPath, [sourceBin, ...helpArgs], project, isolatedPackageEnv());
@@ -1117,6 +1319,8 @@ describe("npm distribution boundary", () => {
     expect(packageInventory.records.every(({ reason }) => reason.length > 0)).toBe(true);
     const parity = registryBootstrapAuthorityParity(CHECKOUT_ROOT, fixture.packageRoot);
     expect(parity.diagnostics, "exact normalized source/package command-authority parity").toEqual([]);
+    expect(parity.source).toHaveLength(196);
+    expect(parity.package).toHaveLength(196);
     expect(parity.package).toEqual(parity.source);
     for (const capability of ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]) {
       const result = run(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], project, isolatedPackageEnv());
@@ -1271,7 +1475,7 @@ describe("npm distribution boundary", () => {
       "utf8",
     );
     expect(authority).toContain("profile_full_rendering");
-    expect(authority).toContain("agentera report profile-glossary");
+    expect(authority).toContain("npx -y agentera@next report profile-glossary");
   });
 
   it("matches source and extracted-package producer readiness", { timeout: 120_000 }, async () => {

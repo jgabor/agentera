@@ -1,0 +1,30 @@
+id: eptmmfykbk
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M5 replacement A2 · Close universal command and inventory semantics
+  status: superseded
+  depends_on:
+    - owfvrfxcwa
+    - ouahnpflvx
+    - wfbpsymlxi
+    - vlxwhwqxqf
+  acceptance:
+    - GIVEN any executable-context Agentera token sequence in Markdown, YAML, JSON, or emitted guidance WHEN validated THEN every invocation and command boundary is inspected regardless of subcommand or wrapper; nested, quoted, multiline, composed, or multiple commands either match the exact allowed form or fail with complete diagnostics.
+    - GIVEN stable-channel text and the stable-v2 exemption WHEN validated THEN any @latest Agentera token outside the sole exact adjacent ordered pair rejects independently of subcommand recognition, while descriptive non-executable vocabulary remains allowed.
+    - GIVEN source/package inventories, generated declarations, exemptions, and command-constructor modules WHEN closure is compared THEN producer import/re-export closure and every declaration field match exactly; missing, extra, stale exemption, dynamic consumer, or classification drift fails closed.
+  evidence: Replaces blocked vzazfyoobl after audit-2; known probes include every subcommand, multiple scalar commands, nested shells, producer assignment/conditional/destructuring/element access/higher-order use, generated field drift, and unused exemptions.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Whole-statement executable context still does not reach later unquoted invocations after inline spans, so mixed statements can omit required per-invocation diagnostics.
+    provenance:
+      attempt_id: eptmmfykbk-audit-2
+      source: Independent Audit ses_031b22d97ffe8PDQJb1s1d7711 bounded re-review FAIL
+      recorded_at: 2026-08-04 22:12
+      writer_command: agentera state plan record-evaluation
+  blocked_reason: "Two independent evaluations exhausted: mixed inline and later unquoted commands still lose whole-statement executable context and omit diagnostics."
+  superseded_by:
+    - nuesozywif
+  superseded_reason: A6 replaces the failed command-authority lineage with exact fail-closed span and projection contracts.

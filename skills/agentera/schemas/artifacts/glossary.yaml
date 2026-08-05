@@ -42,7 +42,7 @@ DOCUMENT:
 PUBLICATION:
   implementation: active
   owner: build
-  command: agentera state glossary publish --input REQUEST --format json
+  command: npx -y agentera@next state glossary publish --input REQUEST --format json
   request_schema_version: agentera.glossaryPublicationRequest.v1
   atomic_unit: complete_document
   lock: established_project_writer_lock

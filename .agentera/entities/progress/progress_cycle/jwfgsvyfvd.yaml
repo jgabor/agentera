@@ -1,0 +1,16 @@
+id: jwfgsvyfvd
+artifact: progress
+record:
+  timestamp: 2026-08-05 13:18
+  type: fix
+  phase: build
+  what: Closed A5 composition and allowance-authority gaps while preserving canonical source and bare runtime command forms.
+  context:
+    intent: Complete replacement task boiabfwvpb without changing lifecycle state before evaluation.
+    constraints: Preserve A4 span authority, sibling boundaries, generated fields, protected staged blobs, and isolated execution.
+    unknowns: Independent evaluation remains outstanding.
+    scope: Numeric file-descriptor composition, corrective spans, exact scalar declarations, canonical source guidance, runtime projection, and package parity.
+  discovered: The prior approach projected commands ad hoc, missed schema and package seams, exceeded the monolith limit, and left the built CLI stale against edited authority. Raw-authority tests also conflated canonical source syntax with generated runtime syntax.
+  verified: Source tests passed 3245 with 1 skipped; package verification passed 27; typecheck, build, help, compact, capability-contract, Build capability, and diff checks passed. Package verification covered exact normalized source/package parity and retained 49/52 producer closure.
+  next: Leave task boiabfwvpb pending for independent evaluation; do not begin Task B.
+  publication_order: 82

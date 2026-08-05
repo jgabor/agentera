@@ -1,3 +1,4 @@
+import { projectGlossaryDevelopmentValue } from "../core/developmentInvocation.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { glossaryEntryAuthorityPath } from "./glossaryEntryContract.js";
 
@@ -73,7 +74,7 @@ export function glossaryAdviceContract(
   return {
     implementation: typeof advice?.implementation === "string" ? advice.implementation : "",
     runtime: typeof advice?.runtime === "string" ? advice.runtime : "",
-    command: typeof invocation?.command === "string" ? invocation.command : "",
+    command: projectGlossaryDevelopmentValue(invocation?.command, "advice.command"),
     requestSchemaVersion:
       typeof invocation?.request_schema_version === "string" ? invocation.request_schema_version : "",
     requestFields: strings(invocation?.request_fields),

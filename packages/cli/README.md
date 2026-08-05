@@ -23,8 +23,10 @@ capability instructions and bundled startup schemas use that same exact
 development-channel executable. Package verification parses every registry-owned
 instructional Markdown, YAML, and JSON surface, rejects duplicate keys and
 unsafe aliases, reason-classifies non-guidance and generated declarations, and
-closes constructor aliases, wrappers, and re-exports through TypeScript AST
-discovery. Source and extracted-package records must match exactly. Only the
+closes every static constructor importer and re-exporter through conservative
+TypeScript module closure. Every closure module is an explicit producer or
+reasoned non-producer. Generated declaration fields and source/package records
+must match exactly, and unused exemptions fail. Only the
 adjacent ordered stable-v2 preview/apply pair in `UPGRADE.md` may execute
 `@latest`. The second command is an independent read-only evidence probe on the
 same channel.

@@ -91,7 +91,7 @@ VALIDATION:
     id: V9
     rule: sanitized_profile_grounding
     description: >-
-      Plan MUST ground only from the `content` returned by `agentera report
+      Plan MUST ground only from the `content` returned by `npx -y agentera@next report
       profile-grounding --format json` when shared validity is valid; it MUST
       preserve absent/repair-needed recovery and MUST NOT direct-read PROFILE.md.
     severity: critical

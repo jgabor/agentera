@@ -1,4 +1,6 @@
-export const PRE_CUTOVER_CLI = "npx -y agentera@next";
+import { CANONICAL_DEVELOPMENT_CLI } from "../core/developmentChannel.js";
+
+export const PRE_CUTOVER_CLI = CANONICAL_DEVELOPMENT_CLI;
 
 export function assertPreCutoverCommand(command: string): string {
   if (!command.startsWith(`${PRE_CUTOVER_CLI} `) || command.includes("agentera@latest")) {
