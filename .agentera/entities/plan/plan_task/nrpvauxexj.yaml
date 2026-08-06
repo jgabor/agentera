@@ -11,3 +11,13 @@ record:
     - GIVEN workflow variants WHEN tested THEN each has one pass and one policy rejection.
     - GIVEN task closeout WHEN committed THEN TODO.md names the next selectable plan task and TODO.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: nrpvauxexj-retro-audit-1
+      source: Independent retrospective Audit ses_048747e2dffeqA5Ja1MaON2pBA
+      recorded_at: 2026-07-31 12:06
+      writer_command: agentera state plan record-evaluation
