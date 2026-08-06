@@ -1,59 +1,6 @@
 # TODO
 
-## Current execution
-
-- **Current milestone:** M4A retained-reference authority.
-- **Next plan task:** `zshrzmhhvq` — Establish retained-reference authority.
-- **Managed TODO:** Open `ezkdeggmgm` is the sole managed next item.
-- **M3 closeout:** Complete through replacement `wmxucwhvrw`, which supersedes failed `srdmkolwqc`; the full plan remains open.
-- **Exact request:** `Proceed with zshrzmhhvq for ezkdeggmgm; establish retained-reference and runbook authority.`
-
-This is an Agentera request that a compliant host routes semantically to Build. It is not a deterministic CLI phrase. The selection invariant is: exactly one selectable task exists—one in-progress task, otherwise one dependency-ready pending task—or the plan reports no selectable task with an exact blocker and recovery.
-
-Each task closeout must update the current milestone, next plan-task ID, TODO ID, and exact request in the same substantive commit. IDs shown in rows are canonical entity IDs used as presentation-only Markdown metadata until M3 reconciliation; they are not managed-row syntax and do not imply reconciliation already ships.
-
-Scheduling edges are verified handoffs: the predecessor must pass and synchronize state before the successor becomes selectable. They do not assert source-level coupling.
-
-Milestone debt is measured in three categories: (1) duplicate authorities, grammars, or scanners; (2) legacy public compatibility or native integration surfaces; and (3) non-advancing fallback, placeholder, or stale workflow paths. Before/after evidence comes from tracked source plus owning validation and package outputs. A milestone closes only when at least one category decreases and none increases without a named same-milestone retirement.
-
 ## ⇶ Critical
-
-### M1 · Trust the execution loop — complete
-
-Exit when execution selection, verification, logging, and closeout agree and measured milestone debt decreases.
-
-### M2 · Unify state mutation — complete
-
-Exit when one mutation grammar governs the converted writer families and measured milestone debt decreases.
-
-Measured M2 debt reduction: record payload writers for progress, decisions, TODO,
-and plan tasks now share one structured-input grammar and code-owned runtime with
-parity-only declarative authority instead of independent flag grammars; no new
-duplicate authority was introduced.
-
-### M3 · Reconcile TODO and canonical reads — current
-
-Exit when repository-first TODO reconciliation and bounded list/get reads share one verified lifecycle and measured milestone debt decreases.
-
-### M4A · Establish reference authority
-
-Exit when every retained reference has a production owner and consumer and measured milestone debt decreases.
-
-### M4B · Retire native runtime surfaces
-
-Exit when cleanup, compatibility quarantine, and diagnostics cover every retired resource and measured milestone debt decreases.
-
-### M5 · Collapse startup and route contracts
-
-Exit when route discovery, prime aggregation, bootstrap, and aliases converge on one bounded surface and measured milestone debt decreases.
-
-### M6 · Enforce activation
-
-Exit when one executable conjunction proves every retained surface and measured milestone debt decreases.
-
-### M7 · Cut over the stable channel
-
-Exit only after explicit approval, publication verification, final synchronization, and measured milestone debt reduction agree.
 
 - [ ] [id:huiepnrwav] [fix:3.0.0] At the explicitly approved stable cutover, promote the TypeScript package to npm `@latest`, update channel authority and bundled bootstrap from `agentera@next` to bare `agentera`, replace the v2 Python delivery path with an explicit deprecation response, and delete the quarantined v2 parsers, migrations, cleanup-only compatibility, native rewrite paths, retired Python, and shim delegation sources identified by TODO `fxddfkldsr`. Remove remaining native runtime hooks and run the clean, v2, partial, and v3 bootstrap matrix against `@latest`. Do not change stable-channel resolution or delete compatibility before the approval gate and final activation conjunction pass.
 
