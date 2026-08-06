@@ -10,13 +10,15 @@ import { npmChildEnvironment, normalizeConstruction } from "./package-constructi
 import { selectGeneratedGeneration } from "./generated-output.mjs";
 import { performanceEvidenceRecords } from "./performance-evidence.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
-import { loadPackagePublicationModel } from "../src/registries/packagePublication.ts";
-import {
+import "./source-loader-register.mjs";
+
+const { loadPackagePublicationModel } = await import("../src/registries/packagePublication.ts");
+const {
   PACKAGE_SNAPSHOT_DIRECTORY,
   PACKAGE_SNAPSHOT_SCHEMA,
   activationPackageIdentityViolations,
   removeRetainedPackageSnapshot,
-} from "../src/validate/activationArtifactEvidence.ts";
+} = await import("../src/validate/activationArtifactEvidence.ts");
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(scriptDir, "../../..");
