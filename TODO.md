@@ -95,6 +95,9 @@ Exit only after explicit approval, publication verification, final synchronizati
 - [ ] [id:ibomhottkk] [fix:3.0.0] Add an explicit TODO reconciliation activation command.
 - [ ] [id:rnhnurigbf] [fix:3.0.0] Report inactive TODO reconciliation as action-required.
 - [ ] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
+- [ ] [id:jyxnnzvysl] [fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
+- [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
+- [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 
 ## ⇢ Annoying
 

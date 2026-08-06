@@ -1,0 +1,25 @@
+id: jyxnnzvysl
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
+  requirements:
+    - Measure and report the continuous reader polling work inside generated-overlap.
+    - Remove repeated full-tree validation from the 10 ms polling path while preserving generation identity, lease, mixed-surface, and empty-surface checks.
+    - Keep observation cadence and total filesystem work explicitly bounded under the source qualification deadline.
+  acceptance:
+    - Generated-overlap still detects identity mismatches, mixed generations, empty generated surfaces, and retained leases.
+    - The continuous reader no longer recursively validates the complete dist and bundle trees every 10 ms.
+    - Focused generated-overlap and release-qualification verification pass within their governed timing budgets.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation."
+      severity: normal
+      status: open
+      order: 30

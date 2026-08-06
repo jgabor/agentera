@@ -1,0 +1,25 @@
+id: siuhfapafs
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
+  requirements:
+    - Measure source-owner wall time and machine contention while source, package, and build execute in generated-overlap.
+    - Select source concurrency through a named policy with a safe fallback instead of unconditionally setting VITEST_MAX_WORKERS to two.
+    - Preserve owner isolation, overlap evidence, and resource headroom for package and build participants.
+  acceptance:
+    - Generated-overlap no longer hard-codes VITEST_MAX_WORKERS=2 for every source run.
+    - The selected concurrency policy is covered by tests and backed by repeatable timing evidence.
+    - Source, package, build, stress, performance, and release-qualification gates remain reliable within their governed budgets.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy."
+      severity: normal
+      status: open
+      order: 31
