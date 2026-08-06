@@ -234,7 +234,8 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
     const bytes = fs.readFileSync(tarball);
     const integrity = `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
     const shasum = createHash("sha1").update(bytes).digest("hex");
-    expect(fixture.manifest.filename).toBe("agentera-3.0.0-dev.42.tgz");
+    const packageVersion = JSON.parse(fs.readFileSync(path.join(fixture.packageRoot, "package.json"), "utf8")).version;
+    expect(fixture.manifest.filename).toBe(`agentera-${packageVersion}.tgz`);
     expect(fixture.manifest.integrity).toBe(integrity);
     expect(fixture.manifest.shasum).toBe(shasum);
     const bin = fixture.manifest.files.find(({ path: pathname }) => pathname === "dist/bin/agentera.js");
