@@ -8,108 +8,28 @@ import { expect } from "vitest";
 import { preCutoverCommand } from "../../src/cli/preCutoverCommand.js";
 import { DEVELOPMENT_CHILD_PATH } from "../../src/core/developmentInvocation.js";
 import { commandText, fullEntityUpgradePreviewCommand } from "../../src/upgrade/upgradeCommands.js";
+import {
+  BOOTSTRAP_ACCEPTED_SPECS,
+  BOOTSTRAP_PROJECT_STATE_IDS,
+  BOOTSTRAP_REJECTION_SPECS,
+  BOOTSTRAP_RUNTIME_IDS,
+  bootstrapMatrixAuthority,
+} from "../../src/validate/bootstrapAuthority.js";
 import type { PackageFixture } from "../packaging/packageSetup.js";
 
 const DISPATCHER = path.resolve(import.meta.dirname, "preCutoverBootstrapDispatcher.mjs");
 const DANGER = `space ; $() & 'quote' [雪]`;
 
-export const RUNTIME_ID_AUTHORITY = Object.freeze(["source", "package"] as const);
-export const PROJECT_STATE_ID_AUTHORITY = Object.freeze(["clean", "v2", "partial", "v3"] as const);
+export const RUNTIME_ID_AUTHORITY = BOOTSTRAP_RUNTIME_IDS;
+export const PROJECT_STATE_ID_AUTHORITY = BOOTSTRAP_PROJECT_STATE_IDS;
 
 type ProjectState = (typeof PROJECT_STATE_ID_AUTHORITY)[number];
 type RuntimeName = (typeof RUNTIME_ID_AUTHORITY)[number];
 
-interface MatrixSpecAuthority {
-  readonly id: string;
-  readonly states: readonly ProjectState[];
-  readonly classification: string;
-}
-
-function immutableSpec(
-  id: string,
-  states: readonly ProjectState[],
-  classification: string,
-): MatrixSpecAuthority {
-  return Object.freeze({ id, states: Object.freeze([...states]), classification });
-}
-
-export const ACCEPTED_OPERATION_AUTHORITY = Object.freeze([
-  immutableSpec("prime-quoted-lf", ["clean"], "accepted"),
-  immutableSpec("prime-quoted-cr", ["v2"], "accepted"),
-  immutableSpec("prime", ["partial", "v3"], "accepted"),
-  immutableSpec("recommended-startup", PROJECT_STATE_ID_AUTHORITY, "accepted"),
-  immutableSpec("doctor-quoted-lf", ["clean"], "accepted"),
-  immutableSpec("doctor-quoted-cr", ["v2"], "accepted"),
-  immutableSpec("doctor", ["partial", "v3"], "accepted"),
-  immutableSpec("recovery-0", ["clean", "v2", "partial"], "accepted"),
-]);
-
-export const REJECTION_SPEC_AUTHORITY = Object.freeze([
-  immutableSpec("reject-bare", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-bare-next", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-stable", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-stable-bare", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-npx-no-y", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-split-selector", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-missing-format", PROJECT_STATE_ID_AUTHORITY, "not_exact"),
-  immutableSpec("reject-reordered", PROJECT_STATE_ID_AUTHORITY, "not_exact"),
-  immutableSpec("reject-env-wrapper", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-time-wrapper", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-eval-wrapper", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-bash-wrapper", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-alias", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-  immutableSpec("reject-function", PROJECT_STATE_ID_AUTHORITY, "malformed"),
-  immutableSpec("reject-nested", PROJECT_STATE_ID_AUTHORITY, "not_exact"),
-  immutableSpec("reject-composition", PROJECT_STATE_ID_AUTHORITY, "malformed"),
-  immutableSpec("reject-multiple", PROJECT_STATE_ID_AUTHORITY, "malformed"),
-  immutableSpec("reject-substitution", PROJECT_STATE_ID_AUTHORITY, "malformed"),
-  immutableSpec("reject-malformed-quote", PROJECT_STATE_ID_AUTHORITY, "malformed"),
-  immutableSpec("reject-malformed-channel", PROJECT_STATE_ID_AUTHORITY, "wrong_channel"),
-]);
-
-interface RejectionExecutionSpec {
-  readonly id: string;
-  readonly states: readonly ProjectState[];
-  readonly classification: string;
-  readonly candidate: string;
-}
-
-const ACCEPTED_EXECUTION_SPECS = Object.freeze([
-  immutableSpec("prime-quoted-lf", ["clean"], "accepted"),
-  immutableSpec("prime-quoted-cr", ["v2"], "accepted"),
-  immutableSpec("prime", ["partial", "v3"], "accepted"),
-  immutableSpec("recommended-startup", PROJECT_STATE_ID_AUTHORITY, "accepted"),
-  immutableSpec("doctor-quoted-lf", ["clean"], "accepted"),
-  immutableSpec("doctor-quoted-cr", ["v2"], "accepted"),
-  immutableSpec("doctor", ["partial", "v3"], "accepted"),
-  immutableSpec("recovery-0", ["clean", "v2", "partial"], "accepted"),
-]);
-
-const REJECTION_EXECUTION_SPECS: readonly RejectionExecutionSpec[] = Object.freeze([
-  { id: "reject-bare", states: PROJECT_STATE_ID_AUTHORITY, candidate: "agentera prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-bare-next", states: PROJECT_STATE_ID_AUTHORITY, candidate: "agentera@next prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-stable", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@latest prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-stable-bare", states: PROJECT_STATE_ID_AUTHORITY, candidate: "agentera@latest prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-npx-no-y", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx agentera@next prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-split-selector", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera @next prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-missing-format", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@next prime --context status", classification: "not_exact" },
-  { id: "reject-reordered", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@next prime --format json --context status", classification: "not_exact" },
-  { id: "reject-env-wrapper", states: PROJECT_STATE_ID_AUTHORITY, candidate: "env npx -y agentera@next prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-time-wrapper", states: PROJECT_STATE_ID_AUTHORITY, candidate: "time npx -y agentera@next prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-eval-wrapper", states: PROJECT_STATE_ID_AUTHORITY, candidate: "eval 'npx -y agentera@next prime --context status --format json'", classification: "wrong_channel" },
-  { id: "reject-bash-wrapper", states: PROJECT_STATE_ID_AUTHORITY, candidate: "bash -c 'npx -y agentera@next prime --context status --format json'", classification: "wrong_channel" },
-  { id: "reject-alias", states: PROJECT_STATE_ID_AUTHORITY, candidate: "a prime --context status --format json", classification: "wrong_channel" },
-  { id: "reject-function", states: PROJECT_STATE_ID_AUTHORITY, candidate: "agentera() { :; }; agentera prime --context status --format json", classification: "malformed" },
-  { id: "reject-nested", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@next prime --context 'bash -c whoami' --format json", classification: "not_exact" },
-  { id: "reject-composition", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@next prime --context status --format json && whoami", classification: "malformed" },
-  { id: "reject-multiple", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@next prime --context status --format json; npx -y agentera@next doctor", classification: "malformed" },
-  { id: "reject-substitution", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@next prime --context $(whoami) --format json", classification: "malformed" },
-  { id: "reject-malformed-quote", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@next prime --context 'status --format json", classification: "malformed" },
-  { id: "reject-malformed-channel", states: PROJECT_STATE_ID_AUTHORITY, candidate: "npx -y agentera@next@latest prime --context status --format json", classification: "wrong_channel" },
-].map((spec) => Object.freeze({ ...spec, states: Object.freeze([...spec.states]) })));
-
-const RUNTIME_EXECUTION_IDS = Object.freeze(["source", "package"] as const);
-const PROJECT_STATE_EXECUTION_IDS = Object.freeze(["clean", "v2", "partial", "v3"] as const);
+export const ACCEPTED_OPERATION_AUTHORITY = BOOTSTRAP_ACCEPTED_SPECS;
+export const REJECTION_SPEC_AUTHORITY = Object.freeze(BOOTSTRAP_REJECTION_SPECS.map(({ candidate: _candidate, ...entry }) => Object.freeze(entry)));
+const ACCEPTED_EXECUTION_SPECS = BOOTSTRAP_ACCEPTED_SPECS;
+const REJECTION_EXECUTION_SPECS = BOOTSTRAP_REJECTION_SPECS;
 
 export interface RuntimeMatrixExecutionRegistry {
   runtimeIds: string[];
@@ -119,16 +39,7 @@ export interface RuntimeMatrixExecutionRegistry {
 }
 
 export function runtimeMatrixExecutionRegistry(): RuntimeMatrixExecutionRegistry {
-  return {
-    runtimeIds: [...RUNTIME_EXECUTION_IDS],
-    stateIds: [...PROJECT_STATE_EXECUTION_IDS],
-    accepted: ACCEPTED_EXECUTION_SPECS.map((spec) => ({ ...spec, states: [...spec.states] })),
-    rejections: REJECTION_EXECUTION_SPECS.map(({ id, states, classification }) => ({
-      id,
-      states: [...states],
-      classification,
-    })),
-  };
+  return bootstrapMatrixAuthority();
 }
 
 interface TreeEntry {
@@ -161,6 +72,7 @@ export interface RuntimeBootstrapMatrixSummary {
   childStartRejections: number;
   packageArtifact: { filename: string; integrity: string; shasum: string; files: number };
   expectedCompositeRowIds: string[];
+  runtimeObservationDigests: Record<RuntimeName, Record<ProjectState, string>>;
   authority: {
     protectedRootCount: number;
     protectedRootDigest: string;
@@ -560,6 +472,10 @@ export function runRuntimeBootstrapMatrix(
   const artifact = path.join(fixture.root, fixture.manifest.filename);
   const rows: RowObservation[] = [];
   const parity = new Map<string, unknown>();
+  const runtimeObservationDigests = {
+    source: {} as Record<ProjectState, string>,
+    package: {} as Record<ProjectState, string>,
+  };
   let evidenceSequence = 0;
 
   for (const { id: runtime, root: originalRoot } of runtimeBindings) {
@@ -587,7 +503,7 @@ export function runRuntimeBootstrapMatrix(
     seedDecoys(paths.tmp);
     const env = isolatedEnvironment(paths);
 
-    for (const projectState of PROJECT_STATE_EXECUTION_IDS) {
+    for (const projectState of BOOTSTRAP_PROJECT_STATE_IDS) {
       const quotedSeparator = projectState === "clean" ? "\n" : projectState === "v2" ? "\r" : "";
       const quotedPathKind = projectState === "clean" ? "lf" : projectState === "v2" ? "cr" : null;
       const project = path.join(matrixRoot, `${runtime} ${projectState} project${quotedSeparator}${DANGER}`);
@@ -759,7 +675,7 @@ export function runRuntimeBootstrapMatrix(
 
       for (const { id, candidate, classification, states } of REJECTION_EXECUTION_SPECS) {
         if (!states.includes(projectState)) continue;
-        dispatch(id, { owner: "prime.status", source: primeCommand }, candidate, { accepted: false, classification });
+        dispatch(id, { owner: "prime.status", source: primeCommand }, candidate!, { accepted: false, classification });
       }
 
       const normalizedObservation = normalized({
@@ -772,6 +688,7 @@ export function runRuntimeBootstrapMatrix(
       const parityKey = projectState;
       if (runtime === "source") parity.set(parityKey, normalizedObservation);
       else expect(normalizedObservation, `${projectState} source/package parity`).toEqual(parity.get(parityKey));
+      runtimeObservationDigests[runtime][projectState] = digest(JSON.stringify(normalizedObservation));
     }
   }
 
@@ -797,6 +714,7 @@ export function runRuntimeBootstrapMatrix(
       files: fixture.manifest.files.length,
     },
     expectedCompositeRowIds: expectedAuthority.ids,
+    runtimeObservationDigests,
     authority: {
       protectedRootCount: PROTECTED_ROOT_AUTHORITY_COUNT,
       protectedRootDigest: PROTECTED_ROOT_AUTHORITY_SHA256,

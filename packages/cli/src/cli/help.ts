@@ -5,26 +5,14 @@ import { describeRouteReceipt } from "../registries/hybridRoute.js";
 import { advertisedValidateFamilyNames } from "./commands/validate.js";
 import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
 import { preCutoverCommand } from "./preCutoverCommand.js";
-
-const TOP_LEVEL = [
-  "prime",
-  "schema",
-  "route",
-  "state",
-  ...CAPABILITY_ROUTING_NAMES,
-  "upgrade",
-  "app-home",
-  "doctor",
-  "report",
-  "check",
-] as const;
+import { HELP_TOP_LEVEL_COMMANDS } from "./dispatch/projections.js";
 
 function lines(title: string, items: string[]): string[] {
   return [title, ...items.map((item) => `  ${item}`), ""];
 }
 
 export function printTopLevelHelp(): string {
-  const choices = TOP_LEVEL.join(",");
+  const choices = HELP_TOP_LEVEL_COMMANDS.join(",");
   const plans = entityListFamilies().find(({ key }) => key === "plans")!;
   const planListExample = `agentera state ${plans.commandTokens.join(" ")} list --format json`;
   return [
@@ -380,7 +368,7 @@ export function printCheckHelp(sub?: string): string {
       "",
       "validate families:",
       ...advertisedValidateFamilyNames().map((family) =>
-        family === "retained-references" ? "  retained-references (source checkout only)" : `  ${family}`,
+        ["retained-references", "activation-conjunction"].includes(family) ? `  ${family} (source checkout only)` : `  ${family}`,
       ),
     ].join("\n");
   }

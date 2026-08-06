@@ -10,10 +10,28 @@ import {
   runSourceQualificationDag,
 } from "../../scripts/release-qualification.mjs";
 import { runGeneratedOverlap } from "../../scripts/verify-generated-overlap.mjs";
+import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const GATES = RELEASE_CONTRACT.qualification.source.gates;
 const gate = (name: string) => GATES.find((entry: { name: string }) => entry.name === name)!;
+
+function packageIdentity() {
+  const unsigned = {
+    schemaVersion: "agentera.activationPackageIdentity.v1",
+    packageEvidenceDigest: "c".repeat(64),
+    packageArtifact: {
+      filename: "agentera-3.0.0-dev.42.tgz",
+      integrity: `sha512-${"A".repeat(86)}==`,
+      shasum: "1".repeat(40),
+      tarballSha256: "2".repeat(64),
+    },
+    packageArtifactObservationDigest: "3".repeat(64),
+    extractedTree: { count: 1, digest: "4".repeat(64) },
+    tarballTree: { count: 1, digest: "5".repeat(64) },
+  };
+  return { ...unsigned, identityDigest: observationDigest(unsigned) };
+}
 
 function overlapEvidence() {
   return {
@@ -33,6 +51,23 @@ function overlapEvidence() {
       generations: ["generation-a"],
     },
     generation: "generation-a",
+    activation_evidence: {
+      digest: "a".repeat(64),
+      checks: 42,
+      path: "packages/cli/.agentera-generated/generations/generation-a/activation-evidence.json",
+      package_identity: packageIdentity(),
+      package_snapshot: {
+        schemaVersion: "agentera.activationPackageSnapshot.v1",
+        path: ".activation-package-snapshot",
+        identityDigest: packageIdentity().identityDigest,
+      },
+      child_evidence: {
+        source: { path: `source-owner-${"b".repeat(64)}.json`, digest: "b".repeat(64) },
+        package: { path: `package-owner-${"c".repeat(64)}.json`, digest: "c".repeat(64) },
+        packageIdentity: { path: `package-identity-${packageIdentity().identityDigest}.json`, digest: packageIdentity().identityDigest },
+        generated: { path: "embedded:generated-owner", digest: "d".repeat(64) },
+      },
+    },
     invocation: "3.0.0-dev.41",
   };
 }
@@ -106,30 +141,40 @@ describe("source qualification DAG", () => {
 
     expect(started.map(({ name }) => name)).toEqual([
       "generated-overlap", "stress", "typecheck", "performance",
-      "compact", "capability-contract",
+      "compact", "capability-contract", "activation-conjunction",
     ]);
     expect(started.map(({ name }) => name)).not.toEqual(expect.arrayContaining(["source", "package", "build"]));
     expect(started[0]).toMatchObject({
       name: "generated-overlap",
-      timeoutMs: 290_000,
+      timeoutMs: 410_000,
       cooperativeStop: true,
       environment: {
-        AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "301000",
+        AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "421000",
         AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
       },
     });
-    expect(started.slice(0, 3).every(({ name }) => !["performance", "compact", "capability-contract"].includes(name))).toBe(true);
+    expect(started.slice(0, 3).every(({ name }) => !["performance", "compact", "capability-contract", "activation-conjunction"].includes(name))).toBe(true);
     expect(started.find(({ name }) => name === "performance")).toMatchObject({
-      timeoutMs: 296_000,
+      timeoutMs: 416_000,
       concurrentWith: [],
-      environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "301000" },
+      environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "421000" },
     });
-    expect(new Set(started.map(({ environment }) => environment.HOME)).size).toBe(6);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_CACHE)).size).toBe(6);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_USERCONFIG)).size).toBe(6);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_GLOBALCONFIG)).size).toBe(6);
-    expect(new Set(started.map(({ reportFile }) => reportFile)).size).toBe(6);
-    expect(cleaned).toHaveLength(6);
+    expect(started.filter(({ name }) => ["compact", "capability-contract", "activation-conjunction"].includes(name)).map(({ name, timeoutMs }) => ({ name, timeoutMs }))).toEqual([
+      { name: "compact", timeoutMs: 416_000 },
+      { name: "capability-contract", timeoutMs: 416_000 },
+      { name: "activation-conjunction", timeoutMs: 416_000 },
+    ]);
+    expect(started.find(({ name }) => name === "activation-conjunction")?.environment).toMatchObject({
+      AGENTERA_ACTIVATION_GENERATION_ID: "generation-a",
+      AGENTERA_ACTIVATION_EVIDENCE_DIGEST: "a".repeat(64),
+      AGENTERA_ACTIVATION_PACKAGE_IDENTITY: JSON.stringify(packageIdentity()),
+    });
+    expect(new Set(started.map(({ environment }) => environment.HOME)).size).toBe(7);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_CACHE)).size).toBe(7);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_USERCONFIG)).size).toBe(7);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_GLOBALCONFIG)).size).toBe(7);
+    expect(new Set(started.map(({ reportFile }) => reportFile)).size).toBe(7);
+    expect(cleaned).toHaveLength(7);
     expect(stateReads).toBe(3);
     expect(qualification.gates.map((entry: any) => entry.name)).toEqual(GATES.map((entry: any) => entry.name));
     expect(qualification.gates.every((entry: any) => entry.outcome === "passed")).toBe(true);
@@ -142,7 +187,7 @@ describe("source qualification DAG", () => {
     expect(qualification.gates.find((entry: any) => entry.name === "performance").phase)
       .toBe("performance-barrier");
     expect(qualification.gates.filter((entry: any) => entry.phase === "barrier-b").map((entry: any) => entry.name))
-      .toEqual(["compact", "capability-contract"]);
+      .toEqual(["compact", "capability-contract", "activation-conjunction"]);
     expect(qualification.execution).toMatchObject({
       strategy: "parallel-overlap-dag",
       overlapCleanupMarginMs: 10_000,
@@ -283,7 +328,7 @@ describe("source qualification DAG", () => {
         expect.objectContaining({ name: "capability-contract", status: "cancelled" }),
       ]),
     });
-    expect(started.slice(-2)).toEqual(["compact", "capability-contract"]);
+    expect(started.slice(-3)).toEqual(["compact", "capability-contract", "activation-conjunction"]);
     expect(cancelled).toContain("capability-contract");
   });
 
@@ -306,6 +351,39 @@ describe("source qualification DAG", () => {
       owner: "reader-barrier",
       message: "barrier B changed the selected generation or retained leases",
     });
+  });
+
+  it.each([
+    ["starts at the exact concurrent allocation boundary", 410_000, "pass"],
+    ["fails before starting below the allocation boundary", 410_001, "fail"],
+  ])("%s", async (_label, afterPerformance, expected) => {
+    let now = 0;
+    const phases: string[][] = [];
+    const runConcurrent = async (specifications: any[]) => {
+      phases.push(specifications.map(({ name }) => name));
+      const values = Object.fromEntries(specifications.map(({ name, timeoutMs }) => [name, { ...result(name), timeoutMs }]));
+      if (specifications[0]?.name === "performance") now = afterPerformance;
+      return values;
+    };
+    const operation = runSourceQualificationDag({
+      repo: REPO_ROOT,
+      gates: GATES,
+      clock: () => now,
+      wallClock: () => 1_000,
+      runConcurrent,
+      readGeneratedState: () => ({ generation: "generation-a", leases: [] }),
+    });
+    if (expected === "pass") {
+      const qualification = await operation;
+      expect(phases.at(-1)).toEqual(["compact", "capability-contract", "activation-conjunction"]);
+      expect(qualification.execution.unattributedElapsedMs).toBeGreaterThanOrEqual(0);
+    } else {
+      await expect(operation).rejects.toMatchObject({
+        owner: "reader-barrier",
+        message: "source qualification requires 6000ms for barrier B plus 4000ms reconciliation; 9999ms remain",
+      });
+      expect(phases).toHaveLength(2);
+    }
   });
 
   it("uses a fake deadline to stop starting overlap work and clean owned generated state before handoff", async () => {
@@ -468,11 +546,32 @@ describe("source qualification DAG", () => {
         withDeadline: async (promise: Promise<unknown>) => promise,
         readOwnerResult: () => ({ files: 1, tests: 1, pending: [] }),
         selectGeneration: () => ({ id: "generation-a" }),
+        writeActivationEvidence: async () => ({
+          path: "activation-evidence.json",
+          digest: "a".repeat(64),
+          checks: 42,
+          packageIdentity: packageIdentity(),
+          packageSnapshot: {
+            schemaVersion: "agentera.activationPackageSnapshot.v1",
+            path: ".activation-package-snapshot",
+            identityDigest: packageIdentity().identityDigest,
+          },
+        }),
       });
       expect(evidence).toMatchObject({
         schemaVersion: "agentera.generatedOverlapEvidence.v1",
         status: "pass",
         generation: "generation-a",
+        activation_evidence: {
+          digest: "a".repeat(64),
+          checks: 42,
+          package_identity: packageIdentity(),
+          package_snapshot: {
+            schemaVersion: "agentera.activationPackageSnapshot.v1",
+            path: ".activation-package-snapshot",
+            identityDigest: packageIdentity().identityDigest,
+          },
+        },
         invocation: "3.0.0-dev.41",
         participants: {
           source: { command: gate("source").command, elapsedMs: 10 },
@@ -500,15 +599,11 @@ describe("source qualification DAG", () => {
     expect(script).toContain('schemaVersion: "agentera.generatedOverlapEvidence.v1"');
     expect(RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema)
       .toBe(policy.owners.performance.evidence.schema_version);
-    expect(RELEASE_CONTRACT.qualification.source.dag).toMatchObject({
-      batchA: policy.release_qualification.batch_a,
-      performanceBarrier: policy.release_qualification.performance_barrier,
-      generatedOverlapOrigins: policy.release_qualification.generated_overlap_origins,
-      barrierB: policy.release_qualification.barrier_b,
-      overlapCleanupMarginMs: policy.release_qualification.deadline.generated_overlap_cleanup_margin_ms,
-      overlapParentReconciliationMarginMs: policy.release_qualification.deadline.parent_reconciliation_margin_ms,
+    expect(policy.release_qualification).toMatchObject({
+      schedule_authority: "references/adapters/package-publication.json#qualification.source.dag",
+      deadline_authority: "references/adapters/package-publication.json#benchmark.timeouts.sourceQualificationMs",
     });
-    expect(RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs)
-      .toBe(policy.release_qualification.deadline.total_ms);
+    expect(policy.release_qualification).not.toHaveProperty("batch_a");
+    expect(policy.release_qualification).not.toHaveProperty("barrier_b");
   });
 });

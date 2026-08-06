@@ -1,4 +1,5 @@
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
+import { DIAGNOSTIC_TOP_LEVEL_COMMANDS } from "./projections.js";
 
 /**
  * Top-level commands routed by `dispatch/main` (includes migration aliases still
@@ -20,8 +21,9 @@ export const DISPATCHER_TOP_LEVEL_COMMANDS = [
   "query",
   "compact",
   "validate",
+  "route",
   ...CAPABILITY_ROUTING_NAMES,
 ] as const;
 
 /** Set view for doctor in-process CLI probe checks. */
-export const DISPATCHER_COMMANDS = new Set<string>(DISPATCHER_TOP_LEVEL_COMMANDS);
+export const DISPATCHER_COMMANDS = new Set<string>(DIAGNOSTIC_TOP_LEVEL_COMMANDS);

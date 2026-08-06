@@ -68,17 +68,71 @@ After every batch owner passes and overlap settles one lease-free generation,
 performance runs alone in fresh isolated state. This ordered barrier provides
 resource isolation for machine-sensitive timing evidence; separate HOME and npm
 state provide output isolation but cannot prevent CPU contention. Performance
-receives the same absolute source deadline. After it passes, compact and
-capability-contract run together as reader barrier B.
+receives the same absolute source deadline. After it passes, compact,
+capability-contract, and the source-only activation conjunction run together as
+reader barrier B. All three use the newly built CLI from that exact lease-free
+generation.
+
+Before it returns, generated-overlap gives the source and package owners separate
+isolated evidence directories under its report root. The source owner atomically
+writes one schema-versioned, content-addressed file and loads each instruction
+module independently from a source-only compilation. The package owner writes two
+content-addressed receipts with separate bounds: package-owner evidence is at most
+262,144 bytes, and the independently retained package-identity receipt is at most
+16,384 bytes. The first records executed capability, runtime-matrix, diagnostic,
+startup-producer, portability, and missing-surface observations. The second binds
+that evidence digest to independently recomputed tarball SHA-512 integrity, SHA-1,
+SHA-256, artifact-observation digest, and complete extracted-tree and tarball-tree
+identities. Missing, stale, duplicate, unknown, malformed, wrongly attributed, or
+cross-receipt evidence fails before combination.
+
+Package finalization reads the tarball once through a bounded regular-file
+descriptor. Hashing and extraction consume those same retained bytes; extraction
+does not reopen the mutable construction path. The package parent also retains a
+private snapshot containing those bytes, their clean extraction, and a bounded
+schema marker. The snapshot permits at most a 64 MiB tarball, 128 MiB of extracted
+regular-file content, 4,096 entries, and 512 characters per relative path. It
+rejects symlinks, non-regular files, unexpected root entries, schema drift, and
+tree or byte-count drift.
+
+Generated-overlap then executes the selected generation's capability and
+bootstrap paths. Immediately before combination it validates the parent-owned
+snapshot against the package-identity receipt and installs it at the fixed private
+`.activation-package-snapshot` child of that generation. Neither an environment
+value nor `activation-evidence.json` can select another snapshot root. It then
+writes `activation-evidence.json` into that generation. The combined manifest
+binds its generation UUID, current source digest, extracted package integrity,
+immutable tuple digest, the three producer digests, and 42 identity checks with
+exact producer and artifact provenance. Observation digests hash only canonical
+normalized observations; check IDs are not digest salt.
+Source modules and runtime registry, generated modules, served CLI and schemas,
+and extracted modules, registry, served CLI and schemas must contain the same 12
+non-empty capability bodies and identities. Package semantic fields and source,
+generated, and extracted bootstrap classifications must also agree. Generated
+overlap returns the package identity and fixed snapshot descriptor separately
+from the combined manifest. The release parent forwards only the retained identity
+to Barrier B; the activation conjunction derives the snapshot from the already
+authoritative generation root, rechecks realpath containment and all bounds,
+rehashes the retained tarball, extracts those same bytes through stdin, and
+recomputes the complete retained extracted tree. Post-finalization mutation,
+deletion, or addition therefore fails with the package owner and correction even
+when attacker-controlled activation evidence is fully re-signed. The parent
+removes this unpublished private snapshot only after Barrier B settles. The
+manifest never creates surface identity; the code-owned tuple catalog remains the
+identity, owner, selector, semantic, and correction authority.
 
 The coordinator passes generated-overlap the actual remaining absolute source
-deadline. Overlap stops starting work 10,000 ms before the 300,000 ms envelope,
+deadline. Overlap stops starting work 10,000 ms before the 420,000 ms envelope,
 cancels and settles its owned process groups, and removes its generated surfaces
 on failure. It must return at least 4,000 ms before the envelope so the parent can
 reconcile and stop cancellable peers. The parent may request this cooperative
 stop with `SIGTERM`; it never force-kills the overlap owner during publication.
+The parent starts reader barrier B only when at least 6,000 ms of concurrent
+child execution plus the 4,000 ms reconciliation reserve remain. The 420,000 ms
+source envelope retains headroom over the observed 373,281 ms dirty-tree,
+offline, cold-isolation run that passed all ten gates.
 
-The content-addressed `source-receipt.json` contains all nine named gates with
+The content-addressed `source-receipt.json` contains all ten named gates with
 their execution origin, `outcome: "passed"`, observations, finite durations, and
 executed/reused state. Validation requires the exact gate order, governed origin
 and phase, successful outcome, execution shape, and gate-relevant observations;
@@ -280,9 +334,11 @@ node packages/cli/dist/bin/agentera.js check validate \
 pnpm -C packages/cli run pack:dry-run
 ```
 
-`verify:release` runs the source, stress, performance, and package owners in
-policy order. These commands construct and inspect packages locally; they do
-not publish, change a dist-tag, create a Git tag, or update a remote branch.
+`verify:release` runs that same ten-gate source-qualification DAG against the
+current source tree, including dirty or staged work, in check-only mode. It
+emits one bounded result and creates no source receipt, candidate, registry
+request, activation, or publication action. Receipt qualification retains its
+clean committed-tree and explicit external candidate-directory requirements.
 
 `pnpm -C packages/cli run verify:generated-overlap` starts the exact public
 source, build, and package commands from absent checkout output. Each participant

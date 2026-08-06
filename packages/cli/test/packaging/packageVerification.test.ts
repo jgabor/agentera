@@ -1319,8 +1319,8 @@ describe("npm distribution boundary", () => {
     expect(packageInventory.records.every(({ reason }) => reason.length > 0)).toBe(true);
     const parity = registryBootstrapAuthorityParity(CHECKOUT_ROOT, fixture.packageRoot);
     expect(parity.diagnostics, "exact normalized source/package command-authority parity").toEqual([]);
-    expect(parity.source).toHaveLength(196);
-    expect(parity.package).toHaveLength(196);
+    expect(parity.source).toHaveLength(197);
+    expect(parity.package).toHaveLength(197);
     expect(parity.package).toEqual(parity.source);
     for (const capability of ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]) {
       const result = run(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], project, isolatedPackageEnv());

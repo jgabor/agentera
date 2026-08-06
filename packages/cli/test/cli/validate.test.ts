@@ -454,6 +454,7 @@ describe("retired cli validate descriptors", () => {
         "app-home-contract",
         "vocabularyAuthority",
         "retained-references",
+        "activation-conjunction",
         "selfAudit",
       "release-metadata",
       "capability",

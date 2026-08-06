@@ -28,9 +28,23 @@ record:
     - wfbpsymlxi
     - vlxwhwqxqf
     - ghoargedhq
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN every retained surface WHEN gated THEN discovery, behavior, diagnostics, package, instructions, and adversarial evidence pass together.
     - GIVEN a mismatch WHEN gating fails THEN it names the owner and correction without activation or publication.
     - GIVEN surface classes WHEN tested THEN each has one pass and one broken case.
   plan: frkpjqmpnj
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Coordinated production omissions can shrink the class census because expected rows are recomputed from the same mutable inputs, and well-formed but wrong contract owner/correction declarations redefine their own expected identity.
+    provenance:
+      attempt_id: jvkovrswpv-audit-2
+      source: Independent Audit ses_02c6e215bffeUOqC8HrJfDD7iC bounded re-review FAIL
+      recorded_at: 2026-08-06 13:57
+      writer_command: agentera state plan record-evaluation
+  blocked_reason: "Two evaluations exhausted: the activation conjunction still lacks independent per-class census digests and code-owned exact owner/correction identities."
+  superseded_by:
+    - vhwksadaug
+  superseded_reason: Passing replacement completes the M6 activation conjunction with immutable tuple authority, independent artifact evidence, canonical diagnostics, and bounded no-effect behavior.

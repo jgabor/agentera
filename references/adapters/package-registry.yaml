@@ -364,6 +364,8 @@ records:
         - path: packages/cli/src/state/todoDocsEntities.ts
           reason: TODO reconciliation output transitively publishes guarded retrieval guidance.
       constructor_non_producers:
+        - path: packages/cli/src/validate/activationConjunction.ts
+          reason: Consumes contract-owned runnable corrections without constructing command guidance in source.
         - path: packages/cli/src/cli/capabilityContext/planState.ts
           reason: Imports constructor-closure modules for internal plan state, but does not publish command guidance.
         - path: packages/cli/src/cli/capabilityContext/progress.ts

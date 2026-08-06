@@ -1,0 +1,25 @@
+id: vhwksadaug
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M6 replacement 3 · Anchor package evidence before combination
+  status: complete
+  depends_on:
+    - kyjonukcok
+    - nuesozywif
+    - qalfdgluso
+  acceptance:
+    - GIVEN a package tarball and extracted root WHEN package evidence is finalized THEN current tarball SHA-512 integrity, SHA-1, SHA-256, and a complete extracted-tree manifest are independently recomputed from authoritative paths, bound together, and retained through a trust channel that the combined activation manifest cannot select; content mutation, deletion, or unobserved addition fails.
+    - GIVEN coordinated source, generated, extracted, tarball, package-evidence, check, parity, and manifest tampering WHEN every attacker-controlled digest is recomputed THEN the production activation-conjunction seam rejects it using independently retained identity and emits the canonical owner plus runnable package correction.
+    - GIVEN missing, malformed, or unexecutable authoritative artifacts WHEN activation validation runs THEN it returns bounded activation-evidence violations instead of generic unsupported-target errors; focused source, package, and production-seam tests pass without another broad release qualification, and completed M7 cancellation remains unchanged.
+  evidence: Package finalization now hashes, lists, and extracts one retained tarball buffer; a bounded private snapshot and independent identity receipt survive through Barrier B, where current tarball hashes and the complete extracted tree are re-observed before cleanup. Fully re-signed post-finalization mutation fails at validateActivationConjunction with canonical owner/correction. Focused 1, 33, and 41-test groups, typecheck, build, markdownlint, and diff checks passed; independent audit-2 passed. Prior ten-gate no-effect evidence completed in 356.692 seconds. M7 remains cancelled.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "High: package finalization hashes tarball bytes but later extracts the mutable path, so hashes and tree can observe different states. The retained identity contains only digests/counts, and Barrier B cannot re-observe a private package snapshot; post-finalization tarball or extracted-root mutation can therefore escape. Nonblocking: packaging documentation still describes the old one-receipt model."
+    provenance:
+      attempt_id: audit-2
+      source: Independent Audit specialist final bounded re-review PASS for replacement task vhwksadaug on 2026-08-06.
+      recorded_at: 2026-08-06 20:39
+      writer_command: agentera state plan record-evaluation

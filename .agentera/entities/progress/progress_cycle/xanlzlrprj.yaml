@@ -1,0 +1,16 @@
+id: xanlzlrprj
+artifact: progress
+record:
+  timestamp: 2026-08-06 17:28
+  type: fix
+  phase: build
+  what: Replaced aliased M6 activation inputs with content-addressed source, generated, and extracted-package evidence. All 12 capability bodies and identities now come from independently loaded or executed artifacts, package and bootstrap dimensions bind their owning manifests, integrity, classifications, diagnostics, startup producers, and missing-surface results, and emitted-producer reasons are immutable tuple semantics.
+  context:
+    intent: Close only executed-artifact evidence independence and emitted-producer reason binding after rrnhyssuxf audit-2.
+    constraints: Preserve the 274-surface census, ten-gate DAG, 420-second deadline, output bounds, no-effect behavior, protected staged blobs, lifecycle state, and offline isolation under /tmp/opencode/ievyhiiedc-home.
+    unknowns: Independent evaluation remains external to this Build cycle.
+    scope: Activation evidence producers and manifest validation, capability parity, package and bootstrap executed evidence, immutable tuple semantics, focused tests, and packaging guidance.
+  discovered: The failed design treated mutable projection labels as independent evidence. Source capability maps inherited one runtime registry, package and bootstrap checks cloned source authority, behavior digests used check-ID salt, extracted CLI behavior was absent, and emitted producers ignored their reason field. Authority also risked drift when Barrier B recreated expected evidence from the same mutable map.
+  verified: Focused activation and source-owner tests passed 41 checks; the extracted-package runtime and evidence suite passed 4 tests, including 190 runtime rows, 16 missing-surface probes, 42 manifest checks, coordinated capability blanking, package integrity and provenance mutations, bootstrap classification mutations, and no-alias checks. Full isolated offline verify:release passed all ten gates in 363668 ms with generation 19b19a13-e150-4336-bf6b-a65baecb0f93, activation digest 85f0a0d5e78a8dbdecb76a486b1302030bb814e3c31634cfb6e275e75b52cfc1, zero leases, and no receipt, candidate, registry, activation, or publication effects. Source ran 180373 ms, package 318263 ms, performance 20407 ms, and Barrier B 3261 ms. Build, capability-contract, retained-reference, typecheck, compact, help, schema, 197/197 package parity, and the 128 MiB performance authority passed through the same suites.
+  next: Leave ievyhiiedc pending and unevaluated for independent review; keep rrnhyssuxf and jvkovrswpv blocked, and do not resolve the activation TODO or archive the plan.
+  publication_order: 94

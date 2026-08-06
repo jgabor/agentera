@@ -8,7 +8,7 @@ import {
   runQualificationBenchmark,
   runQualifiedPublication,
 } from "../../scripts/release-benchmark.mjs";
-import { canonicalJson, sha256 } from "../../scripts/release-qualification.mjs";
+import { canonicalJson, RELEASE_CONTRACT, sha256 } from "../../scripts/release-qualification.mjs";
 
 function phases(timings: Record<string, number>) {
   return {
@@ -152,7 +152,7 @@ describe("release qualification benchmark coordinator", () => {
   });
 
   it("fails closed on a full qualification budget overrun", async () => {
-    await expect(runQualificationBenchmark(phases({ preflight: 1, source: 299_999, candidate: 1 }))).rejects.toThrow(
+    await expect(runQualificationBenchmark(phases({ preflight: 1, source: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs - 1, candidate: 1 }))).rejects.toThrow(
       "full-qualification",
     );
   });

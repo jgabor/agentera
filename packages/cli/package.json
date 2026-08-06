@@ -56,7 +56,7 @@
     "verify:local": "node scripts/verify-lane.mjs policy local",
     "verify:merge": "node scripts/verify-lane.mjs policy merge",
     "verify:scheduled": "node scripts/verify-lane.mjs policy scheduled",
-    "verify:release": "node scripts/verify-lane.mjs policy release",
+    "verify:release": "node scripts/release-qualification.mjs verify --json",
     "lint": "vp lint",
     "fmt": "vp fmt",
     "typecheck": "tsc -p tsconfig.json --noEmit",

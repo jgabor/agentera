@@ -35,7 +35,7 @@ function makeSkillDir(parent: string, name: string): string {
 function makeSymlink(skillsDir: string, name: string, target: string): string {
   fs.mkdirSync(skillsDir, { recursive: true });
   const linkPath = path.join(skillsDir, name);
-  fs.symlinkSync(target, linkPath);
+  fs.symlinkSync(path.relative(skillsDir, target), linkPath);
   return linkPath;
 }
 

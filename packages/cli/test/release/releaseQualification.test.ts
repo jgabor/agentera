@@ -25,10 +25,28 @@ import {
   validateSourceReceipt,
 } from "../../scripts/release-qualification.mjs";
 import { prepareTargetMetadata } from "../../scripts/publication-transaction.mjs";
+import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
 const temporary: string[] = [];
 const GOVERNED_GATES = RELEASE_CONTRACT.qualification.source.gates;
+
+function packageIdentity() {
+  const unsigned = {
+    schemaVersion: "agentera.activationPackageIdentity.v1",
+    packageEvidenceDigest: "c".repeat(64),
+    packageArtifact: {
+      filename: "agentera-3.0.0-dev.42.tgz",
+      integrity: `sha512-${"A".repeat(86)}==`,
+      shasum: "1".repeat(40),
+      tarballSha256: "2".repeat(64),
+    },
+    packageArtifactObservationDigest: "3".repeat(64),
+    extractedTree: { count: 1, digest: "4".repeat(64) },
+    tarballTree: { count: 1, digest: "5".repeat(64) },
+  };
+  return { ...unsigned, identityDigest: observationDigest(unsigned) };
+}
 
 function outputObservation() {
   return {
@@ -58,13 +76,30 @@ function overlapObservation() {
       generations: ["generation-a"],
     },
     generation: "generation-a",
+    activation_evidence: {
+      digest: "a".repeat(64),
+      checks: 42,
+      path: "packages/cli/.agentera-generated/generations/generation-a/activation-evidence.json",
+      package_identity: packageIdentity(),
+      package_snapshot: {
+        schemaVersion: "agentera.activationPackageSnapshot.v1",
+        path: ".activation-package-snapshot",
+        identityDigest: packageIdentity().identityDigest,
+      },
+      child_evidence: {
+        source: { path: `source-owner-${"b".repeat(64)}.json`, digest: "b".repeat(64) },
+        package: { path: `package-owner-${"c".repeat(64)}.json`, digest: "c".repeat(64) },
+        packageIdentity: { path: `package-identity-${packageIdentity().identityDigest}.json`, digest: packageIdentity().identityDigest },
+        generated: { path: "embedded:generated-owner", digest: "d".repeat(64) },
+      },
+    },
     invocation: "3.0.0-dev.41",
   };
 }
 
 function gateRecord(gate: { name: string; command: string[] }) {
   const overlapParticipant = ["source", "package", "build"].includes(gate.name);
-  const barrier = ["compact", "capability-contract"].includes(gate.name);
+  const barrier = ["compact", "capability-contract", "activation-conjunction"].includes(gate.name);
   const performanceBarrier = gate.name === "performance";
   let observation: any;
   if (["source", "package"].includes(gate.name)) {
@@ -377,7 +412,7 @@ describe("release qualification receipts", () => {
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
 
-  it("seals all nine governed DAG gates and execution evidence in one source receipt", async () => {
+  it("seals all ten governed DAG gates and execution evidence in one source receipt", async () => {
     const { repo, candidateDirectory } = fixture();
     const governed = GOVERNED_GATES;
     const issued = await issueSourceReceipt({
@@ -397,7 +432,7 @@ describe("release qualification receipts", () => {
 
     expect(issued.receipt.gates.map((gate: { name: string }) => gate.name))
       .toEqual(governed.map((gate: { name: string }) => gate.name));
-    expect(issued.receipt.gates).toHaveLength(9);
+    expect(issued.receipt.gates).toHaveLength(10);
     expect(issued.receipt.gates.every((gate: { outcome: string }) => gate.outcome === "passed")).toBe(true);
     expect(issued.receipt.execution).toMatchObject({
       strategy: "parallel-overlap-dag",

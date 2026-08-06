@@ -22,9 +22,33 @@ import {
   type RuntimeMatrixExecutionRegistry,
 } from "../helpers/runtimeBootstrapMatrix.js";
 import { DEVELOPMENT_RUNTIME_REQUIRED_FILES } from "../../src/core/developmentInvocation.js";
+import {
+  activationSourceDigest,
+  createGeneratedOwnerEvidence,
+  createSourceOwnerEvidence,
+  finalizePackageOwnerEvidence,
+  installRetainedPackageSnapshot,
+  observeCurrentPackageArtifact,
+  observationDigest,
+  PACKAGE_OWNER_EVIDENCE_SCHEMA,
+  readContentAddressedOwnerEvidence,
+  readContentAddressedPackageIdentity,
+  writeContentAddressedOwnerEvidence,
+  writeContentAddressedPackageIdentity,
+} from "../../src/validate/activationArtifactEvidence.js";
+import {
+  activationEvidenceViolations,
+  createActivationEvidenceManifest,
+} from "../../src/validate/activationEvidenceManifest.js";
+import {
+  collectActivationProductionEvidence,
+  loadActivationProductionInputs,
+  validateActivationConjunction,
+} from "../../src/validate/activationConjunction.js";
 
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
+let matrixSummary: ReturnType<typeof runRuntimeBootstrapMatrix> | undefined;
 
 function rootEntries(paths: ProtectedRootPaths): Array<readonly [string, string]> {
   return [
@@ -169,6 +193,7 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
 
   it("preserves every protected root and rejects wrong-channel specifications before child start", { timeout: 300_000 }, () => {
     const summary = runRuntimeBootstrapMatrix(fixture, CHECKOUT_ROOT);
+    matrixSummary = summary;
     expect(summary.runtimeCounts).toEqual({
       source: { accepted: 15, rejected: 80 },
       package: { accepted: 15, rejected: 80 },
@@ -251,15 +276,49 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
     expect(fixture.pathIndependence.secondManifest.shasum).toBe(fixture.manifest.shasum);
     expect(fixture.pathIndependence.regularFiles).toBe(fixture.manifest.files.length);
     expect(fixture.pathIndependence.contentSha256).toMatch(/^[a-f0-9]{64}$/u);
+
+    const observed = observeCurrentPackageArtifact(tarball, fixture.packageRoot);
+    expect(observed).toMatchObject({
+      integrity,
+      shasum,
+      tarballSha256: createHash("sha256").update(bytes).digest("hex"),
+      runtimeSupportPaths: ["node_modules"],
+    });
+    expect(observed.extractedTree.digest).toBe(observationDigest(observed.extractedTree.entries));
+    expect(observed.tarballTree.digest).toBe(observationDigest(observed.tarballTree.entries));
+
+    const packageJson = path.join(fixture.packageRoot, "package.json");
+    const originalPackageJson = fs.readFileSync(packageJson);
+    try {
+      fs.appendFileSync(packageJson, "\n");
+      expect(() => observeCurrentPackageArtifact(tarball, fixture.packageRoot)).toThrow(/does not exactly match/);
+    } finally {
+      fs.writeFileSync(packageJson, originalPackageJson);
+    }
+    const heldReadme = path.join(fixture.root, "held-readme");
+    fs.renameSync(path.join(fixture.packageRoot, "README.md"), heldReadme);
+    try {
+      expect(() => observeCurrentPackageArtifact(tarball, fixture.packageRoot)).toThrow(/does not exactly match/);
+    } finally {
+      fs.renameSync(heldReadme, path.join(fixture.packageRoot, "README.md"));
+    }
+    const addition = path.join(fixture.packageRoot, "unobserved-addition.txt");
+    fs.writeFileSync(addition, "added after extraction\n");
+    try {
+      expect(() => observeCurrentPackageArtifact(tarball, fixture.packageRoot)).toThrow(/does not exactly match/);
+    } finally {
+      fs.rmSync(addition);
+    }
   });
 
-  it("rejects every missing source and package surface before the CLI boundary", () => {
+  it("rejects every missing source and package surface before the CLI boundary", { timeout: 240_000 }, async () => {
     const dispatcher = path.join(CHECKOUT_ROOT, "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs");
     const project = path.join(fixture.root, "missing surface project");
     fs.mkdirSync(project);
     const command = "npx -y agentera@next prime --context status --format json";
     expect(DEVELOPMENT_RUNTIME_REQUIRED_FILES).toHaveLength(8);
     let attempts = 0;
+    const missingSurfaceResults: unknown[] = [];
     for (const [runtime, root] of Object.entries({ source: fixture.constructionRoot, package: fixture.packageRoot })) {
       for (const [index, relative] of DEVELOPMENT_RUNTIME_REQUIRED_FILES.entries()) {
         attempts += 1;
@@ -278,13 +337,343 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
             `${sentinel}.environment.json`,
           ], { cwd: project, env: process.env, encoding: "utf8", shell: false });
           expect(result.status, `${runtime}/${relative}`).toBe(64);
-          expect(JSON.parse(result.stderr).classification, `${runtime}/${relative}`).toBe("invalid_authority");
+          const classification = JSON.parse(result.stderr).classification;
+          expect(classification, `${runtime}/${relative}`).toBe("invalid_authority");
           expect(fs.existsSync(sentinel), `${runtime}/${relative}`).toBe(false);
+          missingSurfaceResults.push({ runtime, relative, status: result.status, classification, childStarted: fs.existsSync(sentinel) });
         } finally {
           fs.renameSync(held, target);
         }
       }
     }
     expect(attempts).toBe(16);
+    expect(matrixSummary).toBeDefined();
+    const snapshotOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_SNAPSHOT_OUTPUT;
+    const finalized = await finalizePackageOwnerEvidence({
+      root: CHECKOUT_ROOT,
+      fixture,
+      runtimeSummary: matrixSummary,
+      missingSurfaceResults,
+      requiredFiles: DEVELOPMENT_RUNTIME_REQUIRED_FILES,
+      snapshotDirectory: snapshotOutput,
+    });
+    const { evidence, packageIdentity } = finalized;
+    expect(evidence).toMatchObject({
+      schemaVersion: PACKAGE_OWNER_EVIDENCE_SCHEMA,
+      producerKind: "package-owner",
+      packageIntegrity: fixture.manifest.integrity,
+    });
+    expect(packageIdentity).toMatchObject({
+      packageEvidenceDigest: evidence.evidenceDigest,
+      packageArtifact: {
+        integrity: `sha512-${createHash("sha512").update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename))).digest("base64")}`,
+        shasum: createHash("sha1").update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename))).digest("hex"),
+        tarballSha256: createHash("sha256").update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename))).digest("hex"),
+      },
+    });
+    const output = process.env.AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT;
+    const identityOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_IDENTITY_OUTPUT;
+    if (output || identityOutput || snapshotOutput) {
+      expect(output).toBeTruthy();
+      expect(identityOutput).toBeTruthy();
+      expect(snapshotOutput).toBeTruthy();
+      expect(writeContentAddressedOwnerEvidence(output!, evidence).digest).toBe(evidence.evidenceDigest);
+      expect(writeContentAddressedPackageIdentity(identityOutput!, packageIdentity).digest).toBe(packageIdentity.identityDigest);
+      // Generated-overlap immediately combines and validates this exact package
+      // evidence after the owner passes. Avoid executing that same generated
+      // observation a second time inside the sole package evidence origin.
+      return;
+    }
+    const retainedProbe = path.join(fixture.root, "retained-package-identity-probe");
+    const retainedEvidenceDirectory = path.join(retainedProbe, "evidence");
+    const retainedIdentityDirectory = path.join(retainedProbe, "identity");
+    writeContentAddressedOwnerEvidence(retainedEvidenceDirectory, evidence);
+    writeContentAddressedPackageIdentity(retainedIdentityDirectory, packageIdentity);
+    expect(readContentAddressedOwnerEvidence(retainedEvidenceDirectory, "package-owner").evidenceDigest).toBe(evidence.evidenceDigest);
+    expect(readContentAddressedPackageIdentity(retainedIdentityDirectory)).toEqual(packageIdentity);
+    expect(() => readContentAddressedPackageIdentity(path.join(retainedProbe, "missing-identity"))).toThrow(/package identity is missing/);
+    fs.rmSync(retainedProbe, { recursive: true, force: true });
+
+    const generation = `package-fixture-${fixture.manifest.shasum}`;
+    const productionInputs = loadActivationProductionInputs(CHECKOUT_ROOT, fixture.constructionRoot);
+    const sourceEvidence = createSourceOwnerEvidence(CHECKOUT_ROOT, productionInputs);
+    const generatedEvidence = await createGeneratedOwnerEvidence({
+      root: CHECKOUT_ROOT,
+      generationRoot: fixture.constructionRoot,
+      generation,
+      productionInputs,
+    });
+    const manifest = createActivationEvidenceManifest({
+      root: CHECKOUT_ROOT,
+      generation,
+      productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
+      sourceEvidence,
+      generatedEvidence,
+      packageEvidence: evidence,
+    });
+    expect(activationEvidenceViolations(manifest, manifest)).toEqual([]);
+    expect(manifest.checks).toHaveLength(42);
+    expect(new Set(manifest.checks.flatMap((check) => check.observationRefs)).size)
+      .toBe(manifest.checks.flatMap((check) => check.observationRefs).length);
+    const records = new Map([
+      ...Object.entries(manifest.producers.source.records),
+      ...Object.entries(manifest.producers.generated.records),
+      ...Object.entries(manifest.producers.package.records),
+    ]);
+    for (const check of manifest.checks) {
+      expect(check.observationDigest).toBe(observationDigest(check.observationRefs.map((ref) => records.get(ref)?.content ?? null)));
+    }
+
+    const mutations: Array<[string, (copy: any) => void, RegExp]> = [
+      ["source body", (copy) => { copy.producers.source.records["capability.source-modules"].content.bodies.design.bytes = 0; }, /capability body projection/],
+      ["generated module body", (copy) => { copy.producers.generated.records["capability.generated-modules"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
+      ["generated served body", (copy) => { copy.producers.generated.records["capability.generated-served"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
+      ["extracted module body", (copy) => { copy.producers.package.records["capability.extracted-modules"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
+      ["extracted served body", (copy) => { copy.producers.package.records["capability.extracted-served"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
+      ["registry name", (copy) => { copy.producers.package.records["capability.extracted-registry"].content[0] = "wrong"; }, /capability identity projection/],
+      ["route set", (copy) => { copy.producers.generated.records["capability.generated-routes"].content.pop(); }, /capability identity projection/],
+      ["schema set", (copy) => { copy.producers.package.records["capability.extracted-schemas"].content.pop(); }, /capability identity projection/],
+      ["package integrity", (copy) => { copy.packageArtifact.integrity = "sha512-wrong"; }, /package artifact identity|package-owner evidence integrity/],
+      ["package manifest", (copy) => { copy.producers.package.records["package.extracted-artifact"].content.manifest.type = "directory"; }, /content digest|expected independently observed/],
+      ["package semantic reason", (copy) => { copy.producers.package.records["package.extracted-registry"].content[0] += "changed"; }, /package semantic projection/],
+      ["generated binder", (copy) => { copy.producers.generated.records["bootstrap.generated-binder"].content.rows[0].classification = "not_exact"; }, /content digest|expected independently observed/],
+      ["extracted classification", (copy) => { copy.producers.package.records["bootstrap.extracted-classifications"].content[0].classification = "malformed"; }, /content digest|expected independently observed/],
+      ["diagnostic", (copy) => { copy.producers.generated.records["bootstrap.generated-diagnostics"].content.pop(); }, /content digest|expected independently observed/],
+      ["startup producer", (copy) => { copy.producers.package.records["bootstrap.extracted-startup"].content.pop(); }, /content digest|expected independently observed/],
+      ["missing surface", (copy) => { copy.producers.package.records["bootstrap.missing-surface"].content.pop(); }, /content digest|expected independently observed/],
+      ["artifact provenance", (copy) => { copy.producers.package.records["package.extracted-artifact"].artifactIdentity = "wrong"; }, /wrong producer or artifact provenance/],
+      ["aliased record", (copy) => { copy.checks[1].observationRefs = [...copy.checks[0].observationRefs]; }, /aliased across checks|producer requirements drifted/],
+      ["aliased producer content", (copy) => {
+        const source = copy.producers.source.records["generic.cli.discovery"];
+        const target = copy.producers.source.records["generic.cli.adversarial"];
+        target.artifactContentDigest = source.artifactContentDigest;
+        target.content = structuredClone(source.content);
+        target.observationDigest = source.observationDigest;
+      }, /alias one producer artifact observation/],
+    ];
+    for (const [label, mutate, expected] of mutations) {
+      const copy = structuredClone(manifest);
+      mutate(copy);
+      expect(activationEvidenceViolations(copy, manifest).join("\n"), label).toMatch(expected);
+    }
+
+    const coordinatedBlank = structuredClone(manifest) as any;
+    for (const producer of Object.values(coordinatedBlank.producers) as any[]) {
+      for (const record of Object.values(producer.records) as any[]) {
+        if (record.artifactClass.includes("capability") && record.content?.bodies?.design) {
+          record.content.bodies.design = { sha256: createHash("sha256").update("").digest("hex"), bytes: 0 };
+        }
+      }
+    }
+    expect(activationEvidenceViolations(coordinatedBlank, manifest).join("\n")).toMatch(/capability body projection/);
+
+    const resigned = structuredClone(manifest) as any;
+    const resignedRecords = new Map<string, any>([
+      ...Object.entries(resigned.producers.source.records),
+      ...Object.entries(resigned.producers.generated.records),
+      ...Object.entries(resigned.producers.package.records),
+    ]);
+    for (const [ref, record] of resignedRecords) {
+      if (record.content?.bodies?.design) record.content.bodies.design = { sha256: createHash("sha256").update("").digest("hex"), bytes: 0 };
+      if (ref === "package.extracted-artifact") record.content.manifest.contentDigest = "0".repeat(64);
+      record.artifactContentDigest = observationDigest({ ref, content: record.content, resigned: true });
+      record.observationDigest = observationDigest(record.content);
+    }
+    for (const producer of Object.values(resigned.producers) as any[]) {
+      const { evidenceDigest: _oldDigest, ...unsigned } = producer;
+      producer.evidenceDigest = observationDigest(unsigned);
+    }
+    const bodyRefs = [
+      "capability.source-modules", "capability.source-runtime-registry",
+      "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served",
+      "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served",
+    ];
+    const identityRefs = [
+      "capability.source-registry", "capability.source-routes", "capability.source-schemas",
+      "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas",
+      "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas",
+    ];
+    resigned.capabilityParityDigest = observationDigest({
+      bodies: bodyRefs.map((ref) => ({ ref, content: resignedRecords.get(ref)?.content ?? null })),
+      identities: identityRefs.map((ref) => ({ ref, content: resignedRecords.get(ref)?.content ?? null })),
+    });
+    for (const check of resigned.checks) {
+      check.observationDigest = observationDigest(check.observationRefs.map((ref: string) => resignedRecords.get(ref)?.content ?? null));
+    }
+    const { manifestDigest: _oldManifestDigest, ...unsignedManifest } = resigned;
+    resigned.manifestDigest = observationDigest(unsignedManifest);
+
+    const productionViolations = activationEvidenceViolations(resigned, {
+      root: CHECKOUT_ROOT,
+      generationRoot: fixture.constructionRoot,
+      generation,
+      productionInputs,
+      expectedManifestDigest: manifest.manifestDigest,
+      expectedPackageIdentity: packageIdentity,
+    }).join("\n");
+    expect(productionViolations).toMatch(/capability\.source-modules.*authoritative artifact observation/);
+    expect(productionViolations).toMatch(/capability\.generated-modules.*authoritative artifact observation/);
+    expect(productionViolations).toMatch(/trusted release observation/);
+
+    const attackRoot = path.join(fixture.root, "coordinated-attack-checkout");
+    const copyIntoAttackRoot = (relative: string): void => {
+      const target = path.join(attackRoot, relative);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.cpSync(path.join(CHECKOUT_ROOT, relative), target, { recursive: true, verbatimSymlinks: true });
+    };
+    for (const relative of ["references", "skills", "docs", "packages/cli/src", "packages/cli/scripts"]) copyIntoAttackRoot(relative);
+    for (const relative of ["registry.json", "package.json", "packages/cli/package.json", "packages/cli/tsconfig.json"]) copyIntoAttackRoot(relative);
+    fs.symlinkSync(path.join(CHECKOUT_ROOT, "packages/cli/node_modules"), path.join(attackRoot, "packages/cli/node_modules"), "dir");
+    const attackGeneration = "123e4567-e89b-42d3-a456-426614174000";
+    const attackGenerationRoot = path.join(attackRoot, "packages/cli/.agentera-generated/generations", attackGeneration);
+    fs.mkdirSync(attackGenerationRoot, { recursive: true });
+    fs.cpSync(fs.realpathSync(path.join(fixture.constructionRoot, "dist")), path.join(attackGenerationRoot, "dist"), { recursive: true });
+    fs.cpSync(fs.realpathSync(path.join(fixture.constructionRoot, "bundle")), path.join(attackGenerationRoot, "bundle"), { recursive: true });
+    fs.symlinkSync(path.join(CHECKOUT_ROOT, "packages/cli/node_modules"), path.join(attackGenerationRoot, "node_modules"), "dir");
+    for (const relative of [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json"]) {
+      const marker = path.join(attackGenerationRoot, relative);
+      fs.writeFileSync(marker, `${JSON.stringify({ id: attackGeneration })}\n`);
+    }
+    const attackPackageRoot = path.join(fixture.root, "coordinated-attack-package");
+    fs.cpSync(fixture.packageRoot, attackPackageRoot, { recursive: true, verbatimSymlinks: true });
+    const attackTarball = path.join(fixture.root, "coordinated-attack-agentera-3.0.0-dev.42.tgz");
+    fs.copyFileSync(path.join(fixture.root, fixture.manifest.filename), attackTarball);
+    try {
+      const attackSourceSnapshot = path.join(fixture.root, "coordinated-attack-snapshot-source");
+      observeCurrentPackageArtifact(
+        path.join(fixture.root, fixture.manifest.filename),
+        fixture.packageRoot,
+        attackSourceSnapshot,
+      );
+      installRetainedPackageSnapshot(attackSourceSnapshot, attackGenerationRoot, packageIdentity);
+      expect(activationSourceDigest(attackRoot)).toBe(activationSourceDigest(CHECKOUT_ROOT));
+      const baselineInputs = loadActivationProductionInputs(attackRoot, attackGenerationRoot);
+      const baselinePackageEvidence = structuredClone(evidence);
+      const baselineManifest = createActivationEvidenceManifest({
+        root: attackRoot,
+        generation: attackGeneration,
+        productionEvidence: collectActivationProductionEvidence(attackRoot, baselineInputs),
+        sourceEvidence: createSourceOwnerEvidence(attackRoot, baselineInputs),
+        generatedEvidence: await createGeneratedOwnerEvidence({
+          root: attackRoot,
+          generationRoot: attackGenerationRoot,
+          generation: attackGeneration,
+          productionInputs: baselineInputs,
+        }),
+        packageEvidence: baselinePackageEvidence,
+      });
+
+      fs.appendFileSync(path.join(attackRoot, "packages/cli/src/capabilities/design/instructions.ts"), "\n// coordinated source tampering\n");
+      fs.appendFileSync(path.join(attackGenerationRoot, "dist/capabilities/design/instructions.js"), "\n// coordinated generated tampering\n");
+      const attackedPackageJson = path.join(attackPackageRoot, "package.json");
+      fs.appendFileSync(attackedPackageJson, "\n");
+      fs.writeFileSync(path.join(attackPackageRoot, "coordinated-addition.txt"), "attacker-added\n");
+      fs.appendFileSync(attackTarball, "coordinated-tarball-tampering");
+      const retainedSnapshot = path.join(attackGenerationRoot, ".activation-package-snapshot");
+      fs.appendFileSync(path.join(retainedSnapshot, "package.tgz"), "retained-tarball-tampering");
+      fs.writeFileSync(path.join(retainedSnapshot, "extracted", "retained-addition.txt"), "retained addition\n");
+
+      const attackedInputs = loadActivationProductionInputs(attackRoot, attackGenerationRoot);
+      const attackedPackageEvidence = structuredClone(baselinePackageEvidence) as any;
+      const attackedArtifactRecord = attackedPackageEvidence.records["package.extracted-artifact"];
+      const attackedArtifact = attackedArtifactRecord.content;
+      const tarballBytes = fs.readFileSync(attackTarball);
+      attackedArtifact.filename = fixture.manifest.filename;
+      attackedArtifact.integrity = `sha512-${createHash("sha512").update(tarballBytes).digest("base64")}`;
+      attackedArtifact.shasum = createHash("sha1").update(tarballBytes).digest("hex");
+      attackedArtifact.tarballSha256 = createHash("sha256").update(tarballBytes).digest("hex");
+      attackedArtifact.manifest.contentDigest = createHash("sha256").update(fs.readFileSync(attackedPackageJson)).digest("hex");
+      const packageJsonEntry = attackedArtifact.extractedTree.entries.find((entry: any) => entry.path === "package.json");
+      packageJsonEntry.size = fs.statSync(attackedPackageJson).size;
+      packageJsonEntry.sha256 = attackedArtifact.manifest.contentDigest;
+      attackedArtifact.extractedTree.entries.push({
+        path: "coordinated-addition.txt",
+        type: "file",
+        mode: fs.statSync(path.join(attackPackageRoot, "coordinated-addition.txt")).mode & 0o777,
+        size: fs.statSync(path.join(attackPackageRoot, "coordinated-addition.txt")).size,
+        sha256: createHash("sha256").update(fs.readFileSync(path.join(attackPackageRoot, "coordinated-addition.txt"))).digest("hex"),
+      });
+      attackedArtifact.extractedTree.entries.sort((left: any, right: any) => left.path.localeCompare(right.path));
+      attackedArtifact.extractedTree.digest = observationDigest(attackedArtifact.extractedTree.entries);
+      const resignedTarballEntries = attackedArtifact.extractedTree.entries.filter((entry: any) => entry.path !== "node_modules");
+      attackedArtifact.tarballTree.count = resignedTarballEntries.length;
+      attackedArtifact.tarballTree.digest = observationDigest(resignedTarballEntries);
+      attackedPackageEvidence.sourceDigest = activationSourceDigest(attackRoot);
+      attackedPackageEvidence.packageIntegrity = attackedArtifact.integrity;
+      for (const record of Object.values(attackedPackageEvidence.records) as any[]) record.packageIntegrity = attackedArtifact.integrity;
+      attackedArtifactRecord.artifactContentDigest = observationDigest(attackedArtifact);
+      attackedArtifactRecord.observationDigest = observationDigest(attackedArtifact);
+      const { evidenceDigest: _attackedEvidenceDigest, ...unsignedAttackedPackageEvidence } = attackedPackageEvidence;
+      attackedPackageEvidence.evidenceDigest = observationDigest(unsignedAttackedPackageEvidence);
+
+      const coordinatedManifest = createActivationEvidenceManifest({
+        root: attackRoot,
+        generation: attackGeneration,
+        productionEvidence: collectActivationProductionEvidence(attackRoot, attackedInputs),
+        sourceEvidence: createSourceOwnerEvidence(attackRoot, attackedInputs),
+        generatedEvidence: await createGeneratedOwnerEvidence({
+          root: attackRoot,
+          generationRoot: attackGenerationRoot,
+          generation: attackGeneration,
+          productionInputs: attackedInputs,
+        }),
+        packageEvidence: attackedPackageEvidence,
+      });
+      fs.writeFileSync(path.join(attackGenerationRoot, "activation-evidence.json"), `${JSON.stringify(coordinatedManifest)}\n`);
+
+      const conjunction = validateActivationConjunction({
+        root: attackRoot,
+        expectedGeneration: attackGeneration,
+        generationRoot: attackGenerationRoot,
+        expectedEvidenceDigest: baselineManifest.manifestDigest,
+        expectedPackageIdentity: packageIdentity,
+      }) as any;
+      expect(conjunction.status).toBe("fail");
+      expect(conjunction.violations).toEqual(expect.arrayContaining([{
+        owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
+        violation: "retained package snapshot differs from the independently retained package identity",
+        correction: "pnpm -C packages/cli run verify:package",
+      }]));
+
+      fs.rmSync(retainedSnapshot, { recursive: true, force: true });
+      installRetainedPackageSnapshot(attackSourceSnapshot, attackGenerationRoot, packageIdentity);
+
+      const generatedCli = path.join(attackGenerationRoot, "dist/bin/agentera.js");
+      const originalGeneratedCli = fs.readFileSync(generatedCli);
+      const originalGeneratedCliMode = fs.statSync(generatedCli).mode & 0o777;
+      const observerCases: Array<[string, () => void, string]> = [
+        ["missing", () => fs.rmSync(generatedCli), "authoritative activation evidence artifact is missing"],
+        ["malformed", () => fs.writeFileSync(generatedCli, 'process.stdout.write("not-json")\n'), "authoritative activation evidence artifact is malformed"],
+        ["unexecutable", () => fs.writeFileSync(generatedCli, "process.exit(64)\n"), "authoritative activation evidence artifact could not be executed"],
+      ];
+      for (const [label, breakArtifact, expectedViolation] of observerCases) {
+        fs.writeFileSync(generatedCli, originalGeneratedCli, { mode: originalGeneratedCliMode });
+        breakArtifact();
+        const result = validateActivationConjunction({
+          root: attackRoot,
+          productionInputs: attackedInputs,
+          expectedGeneration: attackGeneration,
+          generationRoot: attackGenerationRoot,
+          evidenceManifest: coordinatedManifest,
+          expectedEvidenceDigest: baselineManifest.manifestDigest,
+          expectedPackageIdentity: packageIdentity,
+        }) as any;
+        expect(result, label).toMatchObject({
+          status: "fail",
+          violation_count: 1,
+          violations: [{
+            owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
+            violation: expectedViolation,
+            correction: "pnpm -C packages/cli run verify:package",
+          }],
+        });
+        expect(JSON.stringify(result), label).not.toContain("unsupported_target");
+      }
+      fs.writeFileSync(generatedCli, originalGeneratedCli, { mode: originalGeneratedCliMode });
+    } finally {
+      fs.rmSync(attackRoot, { recursive: true, force: true });
+      fs.rmSync(attackPackageRoot, { recursive: true, force: true });
+      fs.rmSync(attackTarball, { force: true });
+    }
   });
 });

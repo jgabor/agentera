@@ -19,6 +19,7 @@ import { entityListFamilies } from "../../state/entityRetrievalHelp.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
 import { advertisedValidateFamilyNames } from "./validate.js";
+import { SCHEMA_TOP_LEVEL_COMMANDS } from "../dispatch/projections.js";
 
 export interface TransitionalTopLevelAlias {
   legacy: string;
@@ -390,6 +391,14 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       app_model: appModelPayload(appModel),
     },
     commands: describeCommands(),
+    command_vocabulary: {
+      scope: "selected_schema_projection",
+      note: "commands is a scoped schema projection; dispatcher_top_level is the complete accepted top-level runtime inventory",
+    },
+    dispatcher_top_level: {
+      authority: "packages/cli/src/cli/dispatch/commands.ts#DISPATCHER_TOP_LEVEL_COMMANDS",
+      commands: [...SCHEMA_TOP_LEVEL_COMMANDS],
+    },
     validation: {
       command: "agentera check validate",
        families: [...advertisedValidateFamilyNames()],

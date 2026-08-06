@@ -79,22 +79,53 @@
         "gate_set"
       ],
       "gates": [
-        { "name": "source", "command": ["pnpm", "-C", "packages/cli", "run", "test:source"] },
-        { "name": "stress", "command": ["pnpm", "-C", "packages/cli", "run", "test:stress"] },
+        {
+          "name": "source",
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:source"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#source",
+          "correction": "pnpm -C packages/cli run test:source"
+        },
+        {
+          "name": "stress",
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:stress"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#stress",
+          "correction": "pnpm -C packages/cli run test:stress"
+        },
         {
           "name": "performance",
-          "command": ["pnpm", "-C", "packages/cli", "run", "test:performance"]
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:performance"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#performance",
+          "correction": "pnpm -C packages/cli run test:performance"
         },
-        { "name": "package", "command": ["pnpm", "-C", "packages/cli", "run", "verify:package"] },
+        {
+          "name": "package",
+          "command": ["pnpm", "-C", "packages/cli", "run", "verify:package"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#package",
+          "correction": "pnpm -C packages/cli run verify:package"
+        },
         {
           "name": "generated-overlap",
-          "command": ["pnpm", "-C", "packages/cli", "run", "verify:generated-overlap"]
+          "command": ["pnpm", "-C", "packages/cli", "run", "verify:generated-overlap"],
+          "owner": "packages/cli/scripts/verify-generated-overlap.mjs#runGeneratedOverlap",
+          "correction": "pnpm -C packages/cli run verify:generated-overlap"
         },
-        { "name": "typecheck", "command": ["pnpm", "-C", "packages/cli", "run", "typecheck"] },
-        { "name": "build", "command": ["pnpm", "-C", "packages/cli", "build"] },
+        {
+          "name": "typecheck",
+          "command": ["pnpm", "-C", "packages/cli", "run", "typecheck"],
+          "owner": "packages/cli/package.json#scripts.typecheck",
+          "correction": "pnpm -C packages/cli run typecheck"
+        },
+        {
+          "name": "build",
+          "command": ["pnpm", "-C", "packages/cli", "build"],
+          "owner": "packages/cli/scripts/build-package.mjs#main",
+          "correction": "pnpm -C packages/cli build"
+        },
         {
           "name": "compact",
-          "command": ["node", "packages/cli/dist/bin/agentera.js", "check", "compact"]
+          "command": ["node", "packages/cli/dist/bin/agentera.js", "check", "compact"],
+          "owner": "packages/cli/src/cli/commands/compact.ts#cmdGate",
+          "correction": "node packages/cli/dist/bin/agentera.js check compact"
         },
         {
           "name": "capability-contract",
@@ -106,12 +137,171 @@
             "capability-contract",
             "--format",
             "json"
-          ]
+          ],
+          "owner": "packages/cli/src/cli/commands/validate.ts#cmdValidateCapabilityContract",
+          "correction": "node packages/cli/dist/bin/agentera.js check validate capability-contract --format json"
+        },
+        {
+          "name": "activation-conjunction",
+          "command": [
+            "node",
+            "packages/cli/dist/bin/agentera.js",
+            "check",
+            "validate",
+            "activation-conjunction",
+            "--format",
+            "json"
+          ],
+          "owner": "packages/cli/src/validate/activationConjunction.ts#activationConjunctionMain",
+          "correction": "node packages/cli/dist/bin/agentera.js check validate activation-conjunction --format json"
         }
       ],
       "performanceEvidenceSchema": "agentera.entityAuthorityPerformanceEvidence.v1",
       "overlapEvidenceSchema": "agentera.generatedOverlapEvidence.v1",
-      "gateEvidence": "A source receipt contains the exact nine governed gates in contract order. Every gate has its governed origin and phase, outcome passed, a finite non-negative duration, the exact executed/reused shape, and gate-relevant observations. Digest validation precedes semantic validation; either kind of one-field tampering fails closed.",
+      "gateEvidence": "A source receipt contains the exact ten governed gates in contract order. Every gate has its governed origin and phase, outcome passed, a finite non-negative duration, the exact executed/reused shape, and gate-relevant observations. Digest validation precedes semantic validation; either kind of one-field tampering fails closed.",
+      "activationConjunction": {
+        "gateIdentity": "agentera.activationConjunction.v1",
+        "classes": ["cli", "capability", "runtime", "reference", "state", "package", "bootstrap"],
+        "dimensions": [
+          "discovery",
+          "behavior",
+          "diagnostics",
+          "package_projection",
+          "instructions",
+          "adversarial"
+        ],
+        "checkIds": [
+          "cli.discovery",
+          "cli.behavior",
+          "cli.diagnostics",
+          "cli.package_projection",
+          "cli.instructions",
+          "cli.adversarial",
+          "capability.discovery",
+          "capability.behavior",
+          "capability.diagnostics",
+          "capability.package_projection",
+          "capability.instructions",
+          "capability.adversarial",
+          "runtime.discovery",
+          "runtime.behavior",
+          "runtime.diagnostics",
+          "runtime.package_projection",
+          "runtime.instructions",
+          "runtime.adversarial",
+          "reference.discovery",
+          "reference.behavior",
+          "reference.diagnostics",
+          "reference.package_projection",
+          "reference.instructions",
+          "reference.adversarial",
+          "state.discovery",
+          "state.behavior",
+          "state.diagnostics",
+          "state.package_projection",
+          "state.instructions",
+          "state.adversarial",
+          "package.discovery",
+          "package.behavior",
+          "package.diagnostics",
+          "package.package_projection",
+          "package.instructions",
+          "package.adversarial",
+          "bootstrap.discovery",
+          "bootstrap.behavior",
+          "bootstrap.diagnostics",
+          "bootstrap.package_projection",
+          "bootstrap.instructions",
+          "bootstrap.adversarial"
+        ],
+        "bounds": {
+          "maxRows": 320,
+          "maxViolations": 40,
+          "maxDiagnosticCharacters": 500,
+          "maxOutputBytes": 196608,
+          "maxGenerationIdCharacters": 36,
+          "maxPathCharacters": 240,
+          "maxSymbolCharacters": 120,
+          "maxSelectorCharacters": 240,
+          "maxCorrectionCharacters": 320,
+          "maxCheckIdCharacters": 80,
+          "maxSurfaceIdCharacters": 240
+        },
+        "owners": {
+          "cli": {
+            "path": "packages/cli/src/cli/dispatch/commands.ts",
+            "symbol": "DISPATCHER_TOP_LEVEL_COMMANDS",
+            "correction": "pnpm -C packages/cli test:source -- test/cli/activationConjunction.test.ts"
+          },
+          "capability": {
+            "path": "packages/cli/src/capabilities/index.ts",
+            "symbol": "CAPABILITY_INSTRUCTIONS",
+            "correction": "pnpm -C packages/cli test:source -- test/cli/activationConjunction.test.ts"
+          },
+          "runtime": {
+            "path": "packages/cli/src/runtime/lifecycleAuthority.ts",
+            "symbol": "loadLifecycleAuthority",
+            "correction": "pnpm -C packages/cli test:source -- test/runtime/runtimeLifecycle.test.ts"
+          },
+          "reference": {
+            "path": "packages/cli/src/validate/retainedReferenceAuthority.ts",
+            "symbol": "validateRetainedReferenceAuthority",
+            "correction": "node packages/cli/dist/bin/agentera.js check validate retained-references --format json"
+          },
+          "state": {
+            "path": "packages/cli/src/state/write/runtimeOperations.ts",
+            "symbol": "runtimeOperationSpecs",
+            "correction": "node packages/cli/dist/bin/agentera.js check validate state --format json"
+          },
+          "package": {
+            "path": "packages/cli/src/registries/packageRegistry.ts",
+            "symbol": "loadRegistry",
+            "correction": "pnpm -C packages/cli run verify:package"
+          },
+          "bootstrap": {
+            "path": "packages/cli/src/validate/bootstrapAuthority.ts",
+            "symbol": "bootstrapMatrixAuthority",
+            "correction": "pnpm -C packages/cli test:source -- test/cli/runtimeBootstrapMatrix.test.ts"
+          }
+        },
+        "census": {
+          "algorithm": "sha256(sorted_utf8_ids_joined_by_lf)",
+          "classes": {
+            "cli": {
+              "count": 27,
+              "sha256": "986a637f5c11c57ab7a897a01bd291d0811846e5339c3831c715932cf9659ad4"
+            },
+            "capability": {
+              "count": 12,
+              "sha256": "007e1157a892fec54182b1803aeaa442cf8e2e332e6a055c3bd020e2b0731867"
+            },
+            "runtime": {
+              "count": 81,
+              "sha256": "03fe600a3a27f05daf0d1b59c16b00bedc354a13c70ea60be0b457175fdf743c"
+            },
+            "reference": {
+              "count": 22,
+              "sha256": "2b48c82bb7ee10388d9ebb4fa7ea3743ea82a7e9aaedfcd5a858eeedb9d891ae"
+            },
+            "state": {
+              "count": 34,
+              "sha256": "58bf873151d6433807ae003b3dc8e1b879c1bfa03cb13567fb6f25207187ece9"
+            },
+            "package": {
+              "count": 64,
+              "sha256": "6e2e6f88d2062d4a7cf4c4482bcf3615f84bfc1202806669ed6cab8cee5a9542"
+            },
+            "bootstrap": {
+              "count": 34,
+              "sha256": "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e"
+            }
+          },
+          "total": {
+            "count": 274,
+            "sha256": "5de43802de8eba85772c7f30ef679d4be13c6fe49e68c86701f839547805433e"
+          }
+        }
+      },
       "reuseCheck": {
         "command": "node packages/cli/scripts/release-qualification.mjs source-check --candidate-dir DIR [--json]",
         "precommitEnvironment": "AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR",
@@ -124,14 +314,19 @@
         "batchA": ["generated-overlap", "stress", "typecheck"],
         "performanceBarrier": ["performance"],
         "generatedOverlapOrigins": ["source", "package", "build", "generated-overlap"],
-        "barrierB": ["compact", "capability-contract"],
+        "barrierB": ["compact", "capability-contract", "activation-conjunction"],
         "generatedOutputWriter": "generated-overlap",
         "overlapCleanupMarginMs": 10000,
         "overlapParentReconciliationMarginMs": 4000,
+        "minimumExecutionWindowMs": {
+          "compact": 3000,
+          "capability-contract": 3000,
+          "activation-conjunction": 6000
+        },
         "failure": "The coordinator passes generated-overlap and the solo performance barrier the actual source deadline. Overlap stops owned work 10000ms before that deadline, settles and cleans its generated state, and returns at least 4000ms before the deadline for parent reconciliation. The first observed owner failure cancels only cancellable process groups. generated-overlap is cooperatively stopped and never force-killed; performance, barrier B, and receipt issuance remain blocked after any batch failure, and barrier B and receipt issuance remain blocked after any performance failure.",
         "isolation": "Every child receives a distinct HOME, cache, user config, global config, and report output. Batch A provides output isolation. Performance additionally runs alone after batch A settles to provide resource isolation for machine-sensitive evidence."
       },
-      "parallelism": "Batch A runs generated-overlap, stress, and typecheck concurrently. generated-overlap is the sole checkout generated-output writer and sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, performance runs alone in fresh isolated state. After performance passes, compact and capability-contract run concurrently as readers of the settled generation."
+      "parallelism": "Batch A runs generated-overlap, stress, and typecheck concurrently. generated-overlap is the sole checkout generated-output writer and sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, performance runs alone in fresh isolated state. After performance passes, compact, capability-contract, and activation-conjunction run concurrently as readers of the settled generation."
     },
     "candidate": {
       "component": "release-candidate",
@@ -228,7 +423,7 @@
     },
     "timeouts": {
       "preflightMs": 30000,
-      "sourceQualificationMs": 300000,
+      "sourceQualificationMs": 420000,
       "qualifiedPublicationMs": 120000
     },
     "failureRule": "The first observed failing owner remains the reported label. Cancellable peers are stopped, generated-overlap is allowed to settle without forced termination, barrier B and receipt issuance are blocked, and completed/cancelled failures are reported. No timeout or failure authorizes repair, candidate work, or registry mutation."

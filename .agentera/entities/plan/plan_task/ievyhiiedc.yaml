@@ -1,0 +1,28 @@
+id: ievyhiiedc
+artifact: plan
+record:
+  plan: frkpjqmpnj
+  name: M6 replacement 2 · Bind executed artifact activation evidence
+  status: superseded
+  depends_on:
+    - kyjonukcok
+    - nuesozywif
+    - qalfdgluso
+  acceptance:
+    - GIVEN source, served, generated, and extracted capability surfaces WHEN activation evidence is produced THEN all 12 exact instruction bodies and identities are independently read or executed from each artifact and compared; coordinated omission or body drift in any one or every projection fails instead of inheriting the source map.
+    - GIVEN package and bootstrap activation dimensions WHEN evidenced THEN source registry, construction behavior, generated projection, extracted manifest/integrity/runtime classifications, command declarations, diagnostics, startup producers, and adversarial results come from their owning executed artifacts with content-addressed provenance; repeated labels or check-ID-salted copies cannot satisfy independence.
+    - GIVEN canonical package tuples and the repaired shared release DAG WHEN verified THEN emitted-producer reason and every declared semantic field are tuple-bound, artifact evidence mutations fail with canonical owner/correction, and real dirty-tree offline verify:release passes ten bounded no-effect gates within the 420-second contract.
+  evidence: Replaces rrnhyssuxf after audit-2. Immutable 274-tuple identity and ten-gate execution pass; remaining probes blank design across aliased capability projections and change an emitted producer reason, while package/bootstrap evidence still omits executed extracted behavior.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Package identity remains self-authorized: generated-overlap derives expected integrity from submitted package evidence, while finalization does not recompute current tarball integrity or a complete extracted-tree manifest. The coordinated tampering regression mutates only in-memory evidence and bypasses production diagnostics. Missing or malformed authoritative observations can also escape as generic unsupported-target errors instead of bounded canonical owner/correction violations."
+    provenance:
+      attempt_id: audit-2
+      source: Independent Audit specialist bounded re-review for task ievyhiiedc on 2026-08-06.
+      recorded_at: 2026-08-06 19:36
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - vhwksadaug
+  superseded_reason: Passing replacement anchors independently retained source, generated, package, and extracted evidence through the production activation conjunction.

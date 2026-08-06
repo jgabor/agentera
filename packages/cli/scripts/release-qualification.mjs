@@ -10,11 +10,19 @@ import { npmChildEnvironment, normalizeConstruction } from "./package-constructi
 import { selectGeneratedGeneration } from "./generated-output.mjs";
 import { performanceEvidenceRecords } from "./performance-evidence.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
+import { loadPackagePublicationModel } from "../src/registries/packagePublication.ts";
+import {
+  PACKAGE_SNAPSHOT_DIRECTORY,
+  PACKAGE_SNAPSHOT_SCHEMA,
+  activationPackageIdentityViolations,
+  removeRetainedPackageSnapshot,
+} from "../src/validate/activationArtifactEvidence.ts";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(scriptDir, "../../..");
 const CONTRACT_PATH = path.join(REPO_ROOT, "references/adapters/package-publication.json");
 export const RELEASE_CONTRACT = JSON.parse(fs.readFileSync(CONTRACT_PATH, "utf8"));
+export const RELEASE_MODEL = loadPackagePublicationModel(REPO_ROOT);
 const RECEIPT_SCHEMA = "agentera.releaseQualification.v1";
 const ARTIFACT_MODE = Number.parseInt(RELEASE_CONTRACT.qualification.candidate.retainedArtifactMode, 8);
 
@@ -173,7 +181,7 @@ export function toolVersion(command, args = ["--version"], repo = REPO_ROOT, opt
 }
 
 function sourceGateSet() {
-  return RELEASE_CONTRACT.qualification.source.gates;
+  return RELEASE_MODEL.sourceGates;
 }
 
 function governedSourceGates(gates = sourceGateSet()) {
@@ -293,7 +301,7 @@ function validReceiptDigest(receipt, label) {
   return receipt;
 }
 
-const SOURCE_DAG = RELEASE_CONTRACT.qualification.source.dag;
+const SOURCE_DAG = RELEASE_MODEL.sourceDag;
 const SOURCE_BATCH_A = SOURCE_DAG.batchA;
 const SOURCE_PERFORMANCE_BARRIER = SOURCE_DAG.performanceBarrier;
 const SOURCE_BARRIER_B = SOURCE_DAG.barrierB;
@@ -301,19 +309,16 @@ const GENERATED_OVERLAP_ORIGINS = SOURCE_DAG.generatedOverlapOrigins;
 const OVERLAP_PARTICIPANTS = GENERATED_OVERLAP_ORIGINS.filter((name) => name !== "generated-overlap");
 
 function sourceGateMap(gates) {
-  const entries = new Map(gates.map((gate) => [gate.name, gate]));
-  if (entries.size !== gates.length) throw new Error("source qualification gate names must be unique");
-  const required = [...new Set([
-    ...GENERATED_OVERLAP_ORIGINS,
-    ...SOURCE_BATCH_A,
-    ...SOURCE_PERFORMANCE_BARRIER,
-    ...SOURCE_BARRIER_B,
-  ])];
-  if (entries.size !== required.length || [...entries.keys()].some((name) => !required.includes(name))) {
-    throw new Error("source qualification gate set must contain exactly the nine governed gates");
-  }
-  for (const name of required) {
-    if (!entries.has(name)) throw new Error(`source qualification gate set is missing ${name}`);
+  const required = sourceGateSet();
+  if (!Array.isArray(gates) || gates.length !== required.length) throw new Error("source qualification gate set must contain exactly the ten governed gates");
+  const entries = new Map();
+  for (let index = 0; index < required.length; index += 1) {
+    const expected = required[index];
+    const gate = gates[index];
+    if (!gate || gate.name !== expected.name || entries.has(gate.name) || canonicalJson(gate) !== canonicalJson(expected)) {
+      throw new Error(`source qualification gate ${index} must exactly match '${expected.name}'`);
+    }
+    entries.set(gate.name, gate);
   }
   return entries;
 }
@@ -326,7 +331,12 @@ function sourceProcessFailure(name, detail, status) {
 }
 
 function sourceDiagnostic(value) {
-  return String(value).trim().slice(-RELEASE_CONTRACT.bounds.diagnosticCharacters);
+  return String(value)
+    .replaceAll(REPO_ROOT, "<repository>")
+    .replaceAll(os.homedir(), "<home>")
+    .replaceAll(os.tmpdir(), "<tmp>")
+    .trim()
+    .slice(-RELEASE_CONTRACT.bounds.diagnosticCharacters);
 }
 
 function killProcessGroup(child, signal) {
@@ -487,6 +497,22 @@ function validateOverlapEvidence(evidence, gates) {
     || evidence.reader?.identity_mismatches !== 0
     || evidence.reader?.surface_validation_failures !== 0
     || typeof evidence.generation !== "string"
+    || evidence.activation_evidence?.checks !== RELEASE_MODEL.activationConjunction.checkIds.length
+    || !/^[0-9a-f]{64}$/.test(evidence.activation_evidence?.digest ?? "")
+    || evidence.activation_evidence?.path !== `packages/cli/.agentera-generated/generations/${evidence.generation}/activation-evidence.json`
+    || activationPackageIdentityViolations(evidence.activation_evidence?.package_identity).length !== 0
+    || evidence.activation_evidence?.package_snapshot?.schemaVersion !== PACKAGE_SNAPSHOT_SCHEMA
+    || evidence.activation_evidence?.package_snapshot?.path !== PACKAGE_SNAPSHOT_DIRECTORY
+    || evidence.activation_evidence?.package_snapshot?.identityDigest !== evidence.activation_evidence?.package_identity?.identityDigest
+    || !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.source?.digest ?? "")
+    || !/^source-owner-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.source?.path ?? "")
+    || !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.package?.digest ?? "")
+    || !/^package-owner-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.package?.path ?? "")
+    || evidence.activation_evidence?.child_evidence?.package?.digest !== evidence.activation_evidence?.package_identity?.packageEvidenceDigest
+    || evidence.activation_evidence?.child_evidence?.packageIdentity?.digest !== evidence.activation_evidence?.package_identity?.identityDigest
+    || !/^package-identity-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.packageIdentity?.path ?? "")
+    || !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.generated?.digest ?? "")
+    || evidence.activation_evidence?.child_evidence?.generated?.path !== "embedded:generated-owner"
     || !["source", "package", "stress", "performance"].every(
       (name) => Number.isInteger(evidence.inventory?.[name]) && evidence.inventory[name] >= 0,
     )
@@ -539,6 +565,7 @@ function generatedState(repo) {
   const leasesRoot = path.join(packageRoot, ".agentera-generated", "leases");
   return {
     generation: selected.id,
+    root: selected.root,
     leases: fs.existsSync(leasesRoot) ? fs.readdirSync(leasesRoot).sort() : [],
   };
 }
@@ -681,7 +708,7 @@ export async function runSourceQualificationDag(options = {}) {
   const clock = options.clock ?? (() => performance.now());
   const wallClock = options.wallClock ?? (() => Date.now());
   const started = options.startedAt ?? clock();
-  const deadlineMs = RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
+  const deadlineMs = RELEASE_MODEL.sourceQualificationMs;
   const cleanupMarginMs = SOURCE_DAG.overlapCleanupMarginMs;
   const reconciliationMarginMs = SOURCE_DAG.overlapParentReconciliationMarginMs;
   const remaining = () => Math.floor(deadlineMs - (clock() - started));
@@ -738,16 +765,44 @@ export async function runSourceQualificationDag(options = {}) {
   }
   const barrierStarted = clock();
   const barrierTimeout = remaining();
-  if (barrierTimeout <= reconciliationMarginMs) {
-    throw sourceProcessFailure("reader-barrier", "source qualification has no safe reader window before reconciliation", "failed");
+  const requiredBarrierWindowMs = Math.max(...SOURCE_BARRIER_B.map((name) => SOURCE_DAG.minimumExecutionWindowMs[name]));
+  if (barrierTimeout < requiredBarrierWindowMs + reconciliationMarginMs) {
+    throw sourceProcessFailure(
+      "reader-barrier",
+      `source qualification requires ${requiredBarrierWindowMs}ms for barrier B plus ${reconciliationMarginMs}ms reconciliation; ${barrierTimeout}ms remain`,
+      "failed",
+    );
   }
-  const barrier = await runConcurrent(SOURCE_BARRIER_B.map((name) => ({
-    name,
-    command: gates.get(name).command,
-    repo,
-    timeoutMs: barrierTimeout - reconciliationMarginMs,
-    cancellable: true,
-  })), common);
+  const freshGenerationRoot = beforeBarrier.root ?? path.join(repo, "packages/cli/.agentera-generated/generations", beforeBarrier.generation);
+  const freshCli = path.join(freshGenerationRoot, "dist/bin/agentera.js");
+  let barrier;
+  let barrierFailure;
+  try {
+    barrier = await runConcurrent(SOURCE_BARRIER_B.map((name) => ({
+      name,
+      command: gates.get(name).command[0] === "node"
+        ? ["node", freshCli, ...gates.get(name).command.slice(2)]
+        : gates.get(name).command,
+      repo,
+      timeoutMs: Math.max(SOURCE_DAG.minimumExecutionWindowMs[name], barrierTimeout - reconciliationMarginMs),
+      cancellable: true,
+      environment: {
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: repo,
+        AGENTERA_ACTIVATION_GENERATION_ID: beforeBarrier.generation,
+        AGENTERA_ACTIVATION_GENERATION_ROOT: freshGenerationRoot,
+        AGENTERA_ACTIVATION_EVIDENCE_DIGEST: overlap.activation_evidence.digest,
+        AGENTERA_ACTIVATION_PACKAGE_IDENTITY: JSON.stringify(overlap.activation_evidence.package_identity),
+      },
+    })), common);
+  } catch (error) {
+    barrierFailure = error;
+  }
+  try {
+    if (beforeBarrier.root) removeRetainedPackageSnapshot(freshGenerationRoot);
+  } catch {
+    if (!barrierFailure) throw sourceProcessFailure("reader-barrier", "retained package snapshot cleanup failed", "failed");
+  }
+  if (barrierFailure) throw barrierFailure;
   const barrierElapsedMs = Math.max(0, Math.round(clock() - barrierStarted));
   const afterBarrier = readState(repo);
   if (afterBarrier.generation !== beforeBarrier.generation || afterBarrier.leases.length !== 0) {
@@ -844,6 +899,16 @@ export async function runSourceQualificationDag(options = {}) {
       reused: false,
       observation: { generation: afterBarrier.generation, ...outputObservation(barrier["capability-contract"]) },
     },
+    "activation-conjunction": {
+      name: "activation-conjunction",
+      origin: "activation-conjunction",
+      phase: "barrier-b",
+      outcome: "passed",
+      elapsedMs: barrier["activation-conjunction"].elapsedMs,
+      executed: "command",
+      reused: false,
+      observation: { generation: afterBarrier.generation, ...outputObservation(barrier["activation-conjunction"]) },
+    },
   };
   return {
     gates: gateSet.map((gate) => entries[gate.name]),
@@ -860,6 +925,7 @@ export async function runSourceQualificationDag(options = {}) {
       reconciled: batchElapsedMs + performanceElapsedMs + barrierElapsedMs + unattributedElapsedMs === elapsedMs,
       generation: afterBarrier.generation,
       leasesAfterBarrier: afterBarrier.leases.length,
+      activationEvidence: overlap.activation_evidence,
     },
   };
 }
@@ -903,6 +969,73 @@ export async function issueSourceReceipt(options = {}) {
   receipt.receiptSha256 = receiptDigest(receipt);
   writeImmutableJson(file, receipt, "source receipt");
   return { receipt, reused: false, gates: qualification.gates };
+}
+
+export function sourceQualificationGateIdentity() {
+  return sha256(canonicalJson({
+    gates: sourceGateSet(),
+    dag: {
+      batchA: SOURCE_BATCH_A,
+      performanceBarrier: SOURCE_PERFORMANCE_BARRIER,
+      barrierB: SOURCE_BARRIER_B,
+      generatedOverlapOrigins: GENERATED_OVERLAP_ORIGINS,
+    },
+    activation: RELEASE_CONTRACT.qualification.source.activationConjunction.gateIdentity,
+  }));
+}
+
+/** Run the receipt-qualified DAG against the current tree without issuing authority. */
+export async function runSourceConjunction(options = {}) {
+  const repo = options.repo ?? REPO_ROOT;
+  const started = performance.now();
+  const gates = governedSourceGates(options.gates);
+  try {
+    const result = await (options.runDag ?? runSourceQualificationDag)({
+      ...options,
+      repo,
+      gates,
+      startedAt: started,
+      environment: {
+        ...process.env,
+        ...options.environment,
+        AGENTERA_OFFLINE: "1",
+        AGENTERA_ISOLATION_TMP_ROOT: process.env.AGENTERA_ISOLATION_TMP_ROOT ?? process.env.TMPDIR ?? os.tmpdir(),
+      },
+    });
+    return {
+      schemaVersion: "agentera.releaseConjunction.v1",
+      gate_identity: sourceQualificationGateIdentity(),
+      status: "pass",
+      gate_count: gates.length,
+      gates: result.gates.map(({ name, phase, outcome, elapsedMs, origin }) => ({ name, phase, outcome, elapsedMs, origin })),
+      execution: result.execution,
+      first_failure: null,
+      owner: null,
+      correction: null,
+      generated_artifact: {
+        generation: result.execution.generation,
+        path: `packages/cli/.agentera-generated/generations/${result.execution.generation}/dist/bin/agentera.js`,
+      },
+      side_effects: { receipt: false, candidate: false, registry: false, activation: false, publication: false },
+    };
+  } catch (error) {
+    const owner = error?.owner ?? "full-qualification";
+    const gate = gates.find((entry) => entry.name === owner);
+    return {
+      schemaVersion: "agentera.releaseConjunction.v1",
+      gate_identity: sourceQualificationGateIdentity(),
+      status: "fail",
+      gate_count: gates.length,
+      gates: [],
+      execution: { elapsedMs: Math.max(0, Math.round(performance.now() - started)) },
+      first_failure: owner,
+      owner: gate?.owner ?? `packages/cli/scripts/release-qualification.mjs#${owner}`,
+      violation: sourceDiagnostic(error instanceof Error ? error.message : error),
+      correction: gate?.correction ?? (gate ? gate.command.join(" ") : "pnpm -C packages/cli run verify:release"),
+      generated_artifact: null,
+      side_effects: { receipt: false, candidate: false, registry: false, activation: false, publication: false },
+    };
+  }
 }
 
 export function validateSourceReceipt(options = {}) {
@@ -1033,15 +1166,18 @@ function sameConstructionObservation(dry, packed) {
 
 export function isolatedNpmState(prefix = "agentera-release-smoke-", options = {}) {
   const ignoreScripts = options.ignoreScripts !== false;
-  const registry = "https://registry.npmjs.org/";
   const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
   const home = path.join(root, "home");
   const cache = path.join(root, "cache");
+  const tmp = path.join(root, "tmp");
   const npmrc = path.join(root, "npmrc");
   const globalNpmrc = path.join(root, "global-npmrc");
-  fs.mkdirSync(home, { recursive: true, mode: 0o700 });
-  fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
-  fs.writeFileSync(npmrc, `registry=${registry}\n${ignoreScripts ? "ignore-scripts=true\n" : ""}`, { mode: 0o600, flag: "wx" });
+  const offline = options.offline === true || options.environment?.AGENTERA_OFFLINE === "1";
+  for (const directory of [home, cache, tmp, path.join(root, "data"), path.join(root, "config"), path.join(root, "state"), path.join(root, "agentera"), path.join(root, "reports"), path.join(root, "output")]) {
+    fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  }
+  const registry = offline ? `file://${path.join(root, "registry")}` : "https://registry.npmjs.org/";
+  fs.writeFileSync(npmrc, `registry=${registry}\n${offline ? "offline=true\n" : ""}${ignoreScripts ? "ignore-scripts=true\n" : ""}`, { mode: 0o600, flag: "wx" });
   fs.writeFileSync(
     globalNpmrc,
     options.registryInGlobalConfig ? `registry=${registry}\n` : "",
@@ -1052,11 +1188,22 @@ export function isolatedNpmState(prefix = "agentera-release-smoke-", options = {
     environment: {
       ...npmChildEnvironment(options.environment ?? process.env, npmrc),
       HOME: home,
+      XDG_DATA_HOME: path.join(root, "data"),
       XDG_CONFIG_HOME: path.join(root, "config"),
+      XDG_CACHE_HOME: cache,
+      XDG_STATE_HOME: path.join(root, "state"),
+      TMPDIR: tmp,
+      AGENTERA_HOME: path.join(root, "agentera"),
+      AGENTERA_REPORT_ROOT: path.join(root, "reports"),
+      AGENTERA_OUTPUT_ROOT: path.join(root, "output"),
       NPM_CONFIG_CACHE: cache,
+      NPM_CONFIG_USERCONFIG: npmrc,
       NPM_CONFIG_GLOBALCONFIG: globalNpmrc,
+      ...(offline ? { NPM_CONFIG_OFFLINE: "true" } : {}),
       NPM_CONFIG_AUDIT: "false",
       NPM_CONFIG_FUND: "false",
+      NO_UPDATE_NOTIFIER: "1",
+      DO_NOT_TRACK: "1",
       ...(ignoreScripts ? { NPM_CONFIG_IGNORE_SCRIPTS: "true" } : {}),
     },
   };
@@ -1671,18 +1818,28 @@ export function runSourceReceiptCheckCommand(flags, options = {}) {
   }
 }
 
+export async function runNoReceiptVerificationCommand(flags, options = {}) {
+  const result = await runSourceConjunction(options);
+  const json = Boolean(flags.get("--json"));
+  if (json) process.stdout.write(`${JSON.stringify(result)}\n`);
+  else process.stdout.write(`release conjunction ${result.status}; gates:${result.gate_count}; generation:${result.generated_artifact?.generation ?? "none"}; first failure:${result.first_failure ?? "none"}; correction:${result.correction ?? "none"}\n`);
+  if (result.status !== "pass") process.exitCode = 1;
+  return result;
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
-  if (!["source", "source-check", "candidate", "approval", "attest"].includes(command)) {
-    throw new Error("usage: release-qualification.mjs <source|source-check|candidate|approval|attest> --candidate-dir DIR [--adapter development|stable] [--json]");
+  if (!["verify", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
+    throw new Error("usage: release-qualification.mjs <verify|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
   }
-  const valueFlags = command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
+  const valueFlags = command === "verify" ? [] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
   if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
   const flags = parseReleaseFlags(rest, {
-    boolean: command === "source-check" ? ["--json"] : ["--json", "--verbose"],
+    boolean: ["verify", "source-check"].includes(command) ? ["--json"] : ["--json", "--verbose"],
     value: valueFlags,
   });
-  if (command === "source-check") runSourceReceiptCheckCommand(flags);
+  if (command === "verify") await runNoReceiptVerificationCommand(flags);
+  else if (command === "source-check") runSourceReceiptCheckCommand(flags);
   else await runCommand(command, flags);
 }
 

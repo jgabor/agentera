@@ -214,6 +214,8 @@ describe("repository-native retirement inventory", () => {
       "packages/cli/src/upgrade/migrationPublication.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/retiredResourceDiagnostics.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/upgradeOrchestrator.ts -> packages/cli/src/upgrade/lifecycleUpgrade.ts",
+      "packages/cli/src/validate/activationConjunction.ts -> packages/cli/src/runtime/lifecycleAuthority.ts",
+      "packages/cli/src/validate/activationConjunction.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
     ]);
 
     const referenceOwners = Object.fromEntries(RETAINED_LIFECYCLE_REFERENCES.map((reference) => [
@@ -223,6 +225,7 @@ describe("repository-native retirement inventory", () => {
     expect(referenceOwners).toEqual({
       "references/adapters/runtime-lifecycle-authority.yaml": [
         "packages/cli/src/runtime/lifecycleAuthority.ts",
+        "packages/cli/src/validate/activationConjunction.ts",
       ],
       "references/adapters/runtime-lifecycle-adapters.yaml": [
         "packages/cli/src/runtime/lifecycleAuthority.ts",
@@ -232,6 +235,7 @@ describe("repository-native retirement inventory", () => {
       ],
       "references/adapters/runtime-retired-resources.yaml": [
         "packages/cli/src/runtime/lifecycleAuthority.ts",
+        "packages/cli/src/validate/activationConjunction.ts",
       ],
     });
 

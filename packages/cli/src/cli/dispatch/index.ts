@@ -92,7 +92,7 @@ export function main(argv: string[], io: Io = {}): number {
   // Retained-reference validation audits package source, not project state. It
   // must report its source-checkout boundary before project migration checks.
   const sourceOnlyReferenceValidation =
-    args[0] === "check" && args[1] === "validate" && args[2] === "retained-references";
+    args[0] === "check" && args[1] === "validate" && ["retained-references", "activation-conjunction"].includes(args[2] ?? "");
   if (!sourceOnlyReferenceValidation && requiresCompletedEntityCutover(args)) {
     const failure = enforceCompletedEntityCutover(
         migrationProject(args),

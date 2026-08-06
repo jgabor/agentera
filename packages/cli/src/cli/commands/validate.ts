@@ -11,6 +11,7 @@ import { validateGraph } from "../../validate/crossCapability.js";
 import { validate as validateAppHome } from "../../validate/appHomeContract.js";
 import { selfAuditMain } from "../../validate/selfAudit.js";
 import { vocabularyAuthorityMain } from "../../validate/vocabularyAuthority.js";
+import { activationConjunctionMain } from "../../validate/activationConjunction.js";
 import {
   isRetainedReferenceSourceCheckout,
   retainedReferenceAuthorityMain,
@@ -42,6 +43,7 @@ export const VALIDATE_FAMILY_NAMES = [
   "app-home-contract",
   "vocabularyAuthority",
   "retained-references",
+  "activation-conjunction",
   "selfAudit",
   "release-metadata",
   "capability",
@@ -54,7 +56,7 @@ export const VALIDATE_FAMILY_NAMES = [
 export function advertisedValidateFamilyNames(): readonly string[] {
   return isRetainedReferenceSourceCheckout()
     ? VALIDATE_FAMILY_NAMES
-    : VALIDATE_FAMILY_NAMES.filter((family) => family !== "retained-references");
+    : VALIDATE_FAMILY_NAMES.filter((family) => !["retained-references", "activation-conjunction"].includes(family));
 }
 
 interface ProcResult {
@@ -226,6 +228,10 @@ export function cmdValidate(family: string, args: DelegatedValidateArgs, io: Io)
 
 export function isDelegatedValidateFamily(family: string): boolean {
   return family in DELEGATED_RUNNERS;
+}
+
+export function cmdValidateActivationConjunction(io: Io): number {
+  return activationConjunctionMain({ out: io.out });
 }
 
 // ── capability + capability-contract families ───────────────────────

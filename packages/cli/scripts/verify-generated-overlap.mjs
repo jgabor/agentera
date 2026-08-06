@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { pinGeneratedGeneration, selectGeneratedGeneration } from "./generated-output.mjs";
 import { validatePendingTests } from "./overlap-pending.mjs";
@@ -23,6 +24,46 @@ function overlapFailure(message) {
   error.owner = "generated-overlap";
   error.sourceStatus = "failed";
   return error;
+}
+
+export async function writeActivationEvidence({ repoRoot, generationRoot, generation, sourceEvidenceDirectory, packageEvidenceDirectory, packageIdentityDirectory, packageSnapshotDirectory }) {
+  const evidence = await import(pathToFileURL(path.join(generationRoot, "dist/validate/activationEvidenceManifest.js")).href);
+  const artifacts = await import(pathToFileURL(path.join(generationRoot, "dist/validate/activationArtifactEvidence.js")).href);
+  const conjunction = await import(pathToFileURL(path.join(generationRoot, "dist/validate/activationConjunction.js")).href);
+  const sourceEvidence = artifacts.readContentAddressedOwnerEvidence(sourceEvidenceDirectory, "source-owner");
+  const packageIdentity = artifacts.readContentAddressedPackageIdentity(packageIdentityDirectory);
+  const packageEvidence = artifacts.readContentAddressedOwnerEvidence(packageEvidenceDirectory, "package-owner");
+  const productionInputs = conjunction.loadActivationProductionInputs(repoRoot, generationRoot);
+  const productionEvidence = conjunction.collectActivationProductionEvidence(repoRoot, productionInputs);
+  const generatedEvidence = await artifacts.createGeneratedOwnerEvidence({ root: repoRoot, generationRoot, generation, productionInputs });
+  const packageSnapshot = artifacts.installRetainedPackageSnapshot(packageSnapshotDirectory, generationRoot, packageIdentity);
+  const manifest = evidence.createActivationEvidenceManifest({ root: repoRoot, generation, productionEvidence, sourceEvidence, generatedEvidence, packageEvidence });
+  const violations = evidence.activationEvidenceViolations(manifest, {
+    root: repoRoot,
+    generationRoot,
+    generation,
+    productionInputs,
+    expectedManifestDigest: manifest.manifestDigest,
+    expectedPackageIdentity: packageIdentity,
+  });
+  if (violations.length > 0) throw overlapFailure(`activation evidence rejected: ${violations[0]}`);
+  const target = path.join(generationRoot, evidence.ACTIVATION_EVIDENCE_FILE);
+  const temporary = `${target}.${process.pid}.tmp`;
+  fs.writeFileSync(temporary, `${artifacts.canonicalObservationJson(manifest)}\n`, { flag: "wx", mode: 0o600 });
+  fs.renameSync(temporary, target);
+  return {
+    path: target,
+    digest: manifest.manifestDigest,
+    checks: manifest.checks.length,
+    packageIdentity,
+    packageSnapshot,
+    childEvidence: {
+      source: { path: path.basename(fs.readdirSync(sourceEvidenceDirectory)[0]), digest: sourceEvidence.evidenceDigest },
+      package: { path: path.basename(fs.readdirSync(packageEvidenceDirectory)[0]), digest: packageEvidence.evidenceDigest },
+      packageIdentity: { path: path.basename(fs.readdirSync(packageIdentityDirectory)[0]), digest: packageIdentity.identityDigest },
+      generated: { path: "embedded:generated-owner", digest: generatedEvidence.evidenceDigest },
+    },
+  };
 }
 
 function killGroup(child, signal) {
@@ -56,20 +97,39 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
   const cache = path.join(stateRoot, "cache");
   const userConfig = path.join(stateRoot, "user.npmrc");
   const globalConfig = path.join(stateRoot, "global.npmrc");
-  fs.mkdirSync(home, { recursive: true, mode: 0o700 });
-  fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
-  fs.writeFileSync(userConfig, "registry=https://registry.npmjs.org/\n", { mode: 0o600, flag: "wx" });
-  fs.writeFileSync(globalConfig, "registry=https://registry.npmjs.org/\n", { mode: 0o600, flag: "wx" });
+  const childTmp = process.env.AGENTERA_ISOLATION_TMP_ROOT
+    ? path.join(process.env.AGENTERA_ISOLATION_TMP_ROOT, `.go-${createHash("sha256").update(root).digest("hex").slice(0, 8)}-${name}`)
+    : path.join(stateRoot, "tmp");
+  const offline = process.env.AGENTERA_OFFLINE === "1";
+  for (const directory of [home, cache, path.join(stateRoot, "data"), path.join(stateRoot, "config"), path.join(stateRoot, "state"), childTmp, path.join(stateRoot, "agentera"), path.join(stateRoot, "reports"), path.join(stateRoot, "output")]) {
+    fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  }
+  const registry = offline ? `file://${path.join(stateRoot, "registry")}` : "https://registry.npmjs.org/";
+  fs.writeFileSync(userConfig, `registry=${registry}\n${offline ? "offline=true\n" : ""}`, { mode: 0o600, flag: "wx" });
+  fs.writeFileSync(globalConfig, `registry=${registry}\n${offline ? "offline=true\n" : ""}`, { mode: 0o600, flag: "wx" });
   const child = spawn(command[0], command.slice(1), {
     cwd: repoRoot,
     env: {
       ...npmChildEnvironment(process.env, userConfig, globalConfig),
       HOME: home,
+      XDG_DATA_HOME: path.join(stateRoot, "data"),
       XDG_CONFIG_HOME: path.join(stateRoot, "config"),
+      XDG_CACHE_HOME: cache,
+      XDG_STATE_HOME: path.join(stateRoot, "state"),
+      TMPDIR: childTmp,
+      AGENTERA_HOME: path.join(stateRoot, "agentera"),
+      AGENTERA_REPORT_ROOT: path.join(stateRoot, "reports"),
+      AGENTERA_OUTPUT_ROOT: path.join(stateRoot, "output"),
       NPM_CONFIG_CACHE: cache,
+      NPM_CONFIG_OFFLINE: offline ? "true" : "false",
       AGENTERA_VERIFICATION_BARRIER: barrier,
       AGENTERA_VERIFICATION_PARTICIPANT: name,
+      ...(name === "source" ? { VITEST_MAX_WORKERS: "2" } : {}),
       ...(name === "build" || name === "invocation" ? {} : { AGENTERA_VERIFICATION_RESULT: path.join(root, `${name}.json`) }),
+      ...(name === "source" ? { AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "source") } : {}),
+      ...(name === "package" ? { AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "package") } : {}),
+      ...(name === "package" ? { AGENTERA_ACTIVATION_PACKAGE_IDENTITY_OUTPUT: path.join(root, "activation-owner-evidence", "package-identity") } : {}),
+      ...(name === "package" ? { AGENTERA_ACTIVATION_PACKAGE_SNAPSHOT_OUTPUT: path.join(root, "activation-package-snapshot") } : {}),
     },
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
@@ -77,11 +137,16 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
   let closed = false;
   let forceTimer;
   let stdout = "";
+  let stderr = "";
+  const capture = (current, chunk) => `${current}${chunk}`.slice(-1000);
   child.stdout.setEncoding("utf8").on("data", (chunk) => {
-    stdout += chunk;
+    stdout = capture(stdout, chunk);
     stream.write(chunk);
   });
-  child.stderr.pipe(stream);
+  child.stderr.setEncoding("utf8").on("data", (chunk) => {
+    stderr = capture(stderr, chunk);
+    stream.write(chunk);
+  });
   const cancel = () => {
     if (closed) return;
     killGroup(child, "SIGTERM");
@@ -103,11 +168,27 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
           stdout: stdout.trim(),
         });
       } else {
-        reject(overlapFailure(`${name} overlap command failed with exit ${code ?? signal ?? "unknown"}; log: ${output}`));
+        let failures = "";
+        const resultFile = path.join(root, `${name}.json`);
+        try {
+          const report = JSON.parse(fs.readFileSync(resultFile, "utf8"));
+          failures = (report.testResults ?? [])
+            .filter((suite) => suite.status === "failed")
+            .slice(0, 5)
+            .map((suite) => `${path.relative(repoRoot, suite.name)}: ${(suite.assertionResults ?? []).filter((assertion) => assertion.status === "failed").slice(0, 3).map((assertion) => `${assertion.fullName ?? assertion.title} [${String(assertion.failureMessages?.[0] ?? "no detail").replace(/\s+/g, " ").slice(0, 240)}]`).join(" | ")}`)
+            .join("; ");
+        } catch {
+          failures = "";
+        }
+        reject(overlapFailure(`${name} overlap command failed with exit ${code ?? signal ?? "unknown"}; tail: ${(stderr || stdout).trim() || "no output"}; failures: ${failures || "unavailable"}`));
       }
     });
   });
-  return { name, promise, cancel };
+  return {
+    name,
+    promise: promise.finally(() => fs.rmSync(childTmp, { recursive: true, force: true })),
+    cancel,
+  };
 }
 
 function cleanupGeneratedSurfaces(packageRoot) {
@@ -287,6 +368,16 @@ export async function runGeneratedOverlap(options = {}) {
     }
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before selecting generated output");
     const selected = (options.selectGeneration ?? (() => selectGeneratedGeneration(packageRoot)))();
+    const generationRoot = selected.root ?? path.join(packageRoot, ".agentera-generated/generations", selected.id);
+    const activationEvidence = await withDeadline((options.writeActivationEvidence ?? writeActivationEvidence)({
+      repoRoot,
+      generationRoot,
+      generation: selected.id,
+      sourceEvidenceDirectory: path.join(root, "activation-owner-evidence", "source"),
+      packageEvidenceDirectory: path.join(root, "activation-owner-evidence", "package"),
+      packageIdentityDirectory: path.join(root, "activation-owner-evidence", "package-identity"),
+      packageSnapshotDirectory: path.join(root, "activation-package-snapshot"),
+    }), operationDeadline, "activation evidence manifest");
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before selected CLI invocation");
     const invocation = start("invocation", [process.execPath, path.join(packageRoot, "dist/bin/agentera.js"), "--version"]);
     handles.push(invocation);
@@ -312,6 +403,14 @@ export async function runGeneratedOverlap(options = {}) {
         generations: readerEvidence.generations,
       },
       generation: selected.id,
+      activation_evidence: {
+        digest: activationEvidence.digest,
+        checks: activationEvidence.checks,
+        path: `packages/cli/.agentera-generated/generations/${selected.id}/activation-evidence.json`,
+        package_identity: activationEvidence.packageIdentity ?? null,
+        package_snapshot: activationEvidence.packageSnapshot ?? null,
+        child_evidence: activationEvidence.childEvidence ?? null,
+      },
       invocation: invocationResult.value.stdout,
     };
   } catch (error) {

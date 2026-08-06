@@ -42,17 +42,11 @@ overlap:
 # checkout generated-output writer and the only execution origin for source,
 # package, build, and overlap evidence.
 release_qualification:
-  batch_a: [generated-overlap, stress, typecheck]
-  performance_barrier: [performance]
-  generated_overlap_origins: [source, package, build, generated-overlap]
-  barrier_b: [compact, capability-contract]
-  deadline:
-    total_ms: 300000
-    generated_overlap_cleanup_margin_ms: 10000
-    parent_reconciliation_margin_ms: 4000
-    authority: the source coordinator passes the actual absolute deadline;
-      overlap stops new work at the cleanup margin, settles owned children,
-      removes its generated state on failure, and returns before the parent margin
+  schedule_authority: references/adapters/package-publication.json#qualification.source.dag
+  deadline_authority: references/adapters/package-publication.json#benchmark.timeouts.sourceQualificationMs
+  deadline_behavior: the source coordinator passes the actual absolute deadline;
+    overlap stops new work at the contract cleanup margin, settles owned children,
+    removes its generated state on failure, and returns before the contract parent margin
   isolation: distinct_home_cache_user_global_config_and_report_per_child
   resource_isolation: performance_runs_alone_after_batch_a_settles
   failure:
@@ -167,12 +161,21 @@ conservative_routing:
     - packages/cli/scripts/generate-extract-corpus-parity.mjs
     - packages/cli/scripts/verification-barrier.mjs
     - packages/cli/scripts/verify-generated-overlap.mjs
+    - packages/cli/scripts/observe-capability-source.mjs
+    - packages/cli/scripts/observe-runtime-artifact.mjs
     - packages/cli/scripts/pack-package.mjs
     - packages/cli/scripts/package-construction.mjs
     - packages/cli/scripts/reject-direct-prepack.mjs
     - packages/cli/scripts/publication-transaction.mjs
     - packages/cli/scripts/release-qualification.mjs
     - packages/cli/scripts/release-benchmark.mjs
+    - packages/cli/src/validate/activationConjunction.ts
+    - packages/cli/src/validate/activationArtifactEvidence.ts
+    - packages/cli/src/validate/activationEvidenceManifest.ts
+    - packages/cli/src/validate/activationPackageSemantics.ts
+    - packages/cli/src/validate/bootstrapAuthority.ts
+    - packages/cli/src/registries/activationTuples.ts
+    - packages/cli/src/registries/packagePublication.ts
     - packages/cli/test/sourceSetup.ts
     - packages/cli/test/helpers/sourceSubprocess.ts
     - packages/cli/test/helpers/runtimeBootstrapMatrix.ts

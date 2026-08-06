@@ -9,6 +9,7 @@ import {
   cmdValidateState,
   isDelegatedValidateFamily,
   VALIDATE_FAMILY_NAMES,
+  cmdValidateActivationConjunction,
 } from "../commands/validate.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, type Io } from "./shared.js";
@@ -286,6 +287,9 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
     }
     if (family === "capability-contract") {
       return cmdValidateCapabilityContract({ format }, io);
+    }
+    if (family === "activation-conjunction") {
+      return cmdValidateActivationConjunction(io);
     }
     if (family === "artifact") {
       if (artifactFlag === null) {

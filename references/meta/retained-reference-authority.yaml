@@ -8,6 +8,7 @@ inventory:
     production_owner: { module: packages/cli/scripts/publication-transaction.mjs, symbol: PUBLICATION_CONTRACT }
     consumers:
       - { kind: runtime, module: packages/cli/scripts/publication-transaction.mjs, symbol: PUBLICATION_CONTRACT, consumption: loads }
+      - { kind: runtime, module: packages/cli/src/registries/packagePublication.ts, symbol: loadPackagePublicationModel, consumption: loads }
   - path: references/adapters/package-registry.yaml
     classification: current
     production_owner: { module: packages/cli/src/registries/packageRegistry.ts, symbol: loadRegistry }
