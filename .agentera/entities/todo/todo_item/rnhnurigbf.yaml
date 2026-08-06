@@ -3,32 +3,35 @@ artifact: todo
 record:
   kind: fix
   target_version: 3.0.0
-  title: Report inactive TODO reconciliation as action-required.
+  title: Report inactive or unsafe TODO reconciliation as action-required.
   requirements:
-    - "`agentera prime`, `agentera doctor`, and `agentera check validate state` must distinguish structurally valid but inactive TODO reconciliation from an operable project."
-    - Return exact activation preview and apply commands; never activate from a read.
+    - "`agentera prime`, `agentera doctor`, and `agentera check validate state` must distinguish structurally valid but inactive reconciliation and marker-active duplicate or stale-public projections from an operable project."
+    - Return the exact activation or repair preview and apply commands for the detected state; inspection must never create activation state or reconcile as a side effect.
+    - Keep diagnostics bounded and content-private while reporting enough matched, retained, duplicate, stale, and conflicting counts to choose the supported recovery.
   acceptance:
     - Prime reports action-required attention instead of stay or up-to-date when `.agentera/todo-reconciliation-activation.json` is absent.
-    - State validation reports lifecycle incompleteness without misclassifying a valid entity graph as corrupt.
-    - Active projects retain current output, and all inspection commands remain mutation-free.
+    - An OpenEval-shaped post-incident fixture with duplicate legacy and managed rows or completed work projected open reports action-required with the exact repair preview command.
+    - Healthy active projects retain current output, invalid lifecycle state is not mislabeled as generic corruption, and all inspection commands remain mutation-free.
   release_blocker: true
   severity: normal
   readiness:
     capability: build
-    reason: Project orientation must expose inactive reconciliation instead of declaring an incomplete cutover operable.
+    reason: Project orientation must expose incomplete or unsafe reconciliation and route the exact supported recovery.
     dependencies:
       - artifact: todo
         id: ibomhottkk
+      - artifact: todo
+        id: lgruqgycgo
     blocked: null
     gate: null
     queue_rank: 39
-    order_reason: Wire truthful recovery after the explicit activation command exists.
+    order_reason: Wire truthful activation and repair recovery after both supported mutation paths exist.
   status: open
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] Report inactive TODO reconciliation as action-required."
+      description: "[fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required."
       severity: normal
       status: open
       order: 28

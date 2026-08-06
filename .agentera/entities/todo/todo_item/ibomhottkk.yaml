@@ -3,14 +3,16 @@ artifact: todo
 record:
   kind: fix
   target_version: 3.0.0
-  title: Add an explicit TODO reconciliation activation command.
+  title: Add explicit TODO activation and block implicit activation.
   requirements:
     - Add `agentera state todo activate` with read-only `--dry-run` and explicit confirmed apply for marker-active inactive projects.
-    - Reuse `.agentera/.todo-reconciliation/` transaction journals; do not require a synthetic TODO field update.
+    - When activation is absent, `todo create`, `update`, `set-severity`, `supersede`, `resolve`, and `reopen` must reject with exact activation preview and apply commands; ordinary mutations must not create the marker, rewrite `TODO.md`, or publish baselines.
+    - "Make activation preview effect-complete: report matched, converted, retained, and conflicting row counts plus bounded public-document change evidence, and ensure apply cannot publish a target or public-row effect absent from preview."
+    - Reuse `.agentera/.todo-reconciliation/` transaction journals for validated apply and recovery; do not require a synthetic TODO field update.
   acceptance:
-    - Dry-run reports targets and validation without writes.
-    - Apply publishes activation metadata, visible IDs, and entity baselines for subsequent clean projection reads.
-    - Conflicts fail before effects; interruption and repeated apply recover idempotently.
+    - The readiness update that reproduced the OpenEval incident exits nonzero on an inactive project and leaves every tracked and activation byte unchanged.
+    - Activation dry-run exposes duplicate-row and resolved-item resurrection risks without writes, and confirmed apply publishes only the validated previewed target set.
+    - Successful apply publishes activation metadata, visible IDs, and entity baselines for clean projection reads; conflicts fail before effects and interruption or replay converges idempotently.
   release_blocker: true
   severity: normal
   readiness:
@@ -27,7 +29,7 @@ record:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] Add an explicit TODO reconciliation activation command."
+      description: "[fix:3.0.0] Add explicit TODO activation and block implicit activation."
       severity: normal
       status: open
       order: 27

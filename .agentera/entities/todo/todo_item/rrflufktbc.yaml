@@ -3,14 +3,15 @@ artifact: todo
 record:
   kind: fix
   target_version: 3.0.0
-  title: Activate TODO reconciliation during explicit entity cutover.
+  title: Make explicit TODO cutover preserve one authoritative public row per item.
   requirements:
-    - During `agentera upgrade --yes`, publish `.agentera/todo-reconciliation-activation.json`, visible row IDs, and public baselines before success when exact matching validates.
-    - Keep previews read-only; reject ambiguous or conflicting rows before effects; make retries converge without reallocating IDs.
+    - During `agentera upgrade --yes`, activate only after proving a complete one-to-one match between current TODO checkbox rows and canonical entities, including rows under legacy or project-specific headings; refuse entity-derived unmatched rows instead of appending a second projection.
+    - Treat current `TODO.md` text, severity, checkbox status, and order as public authority; stale pre-created entity values must not reopen resolved work or override Markdown during cutover.
+    - Publish the activation marker, visible IDs, public baselines, and canonical Markdown in one recoverable journal; keep previews read-only, reject ambiguity before effects, and preserve IDs across retries.
   acceptance:
-    - A recognized v2 project with exact ID-less TODO matches upgrades to a clean active projection before `agentera prime` runs.
-    - Ambiguous input fails without partial activation, and interrupted or repeated upgrade preserves canonical IDs and converges.
-    - Ordinary reads remain mutation-free.
+    - An OpenEval-shaped fixture with a hierarchical TODO, 161 pre-created entities, and stale open entity statuses never gains a second 161-row Normal section and never reopens completed Markdown items.
+    - A complete exact fixture activates with one ID-bearing public row per entity while preserving unrelated prose; an unmatched, stale, or ambiguous fixture exits before changing any bytes.
+    - Interrupted or repeated upgrade converges without reallocating IDs, and ordinary reads remain mutation-free.
   release_blocker: true
   severity: normal
   readiness:
@@ -27,7 +28,7 @@ record:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] Activate TODO reconciliation during explicit entity cutover."
+      description: "[fix:3.0.0] Make explicit TODO cutover preserve one authoritative public row per item."
       severity: normal
       status: open
       order: 26

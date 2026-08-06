@@ -89,13 +89,14 @@ Exit only after explicit approval, publication verification, final synchronizati
 - [ ] [id:azsvrmuhch] [fix:3.0.0] Make Doctor report project operability separately from installation health.
 - [ ] [id:zeyfnbqdov] [fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup.
 - [ ] [id:yqyodsuqfb] [fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests.
-- [ ] [id:rrflufktbc] [fix:3.0.0] Activate TODO reconciliation during explicit entity cutover.
-- [ ] [id:ibomhottkk] [fix:3.0.0] Add an explicit TODO reconciliation activation command.
-- [ ] [id:rnhnurigbf] [fix:3.0.0] Report inactive TODO reconciliation as action-required.
+- [ ] [id:rrflufktbc] [fix:3.0.0] Make explicit TODO cutover preserve one authoritative public row per item.
+- [ ] [id:ibomhottkk] [fix:3.0.0] Add explicit TODO activation and block implicit activation.
+- [ ] [id:rnhnurigbf] [fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required.
 - [ ] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
 - [ ] [id:jyxnnzvysl] [fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
+- [ ] [id:lgruqgycgo] [fix:3.0.0] Repair projects affected by implicit TODO reconciliation activation.
 
 ## ⇢ Annoying
 

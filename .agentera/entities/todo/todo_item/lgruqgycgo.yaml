@@ -1,0 +1,35 @@
+id: lgruqgycgo
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Repair projects affected by implicit TODO reconciliation activation.
+  requirements:
+    - Add an explicit, previewable repair route for marker-active projects where an ordinary TODO mutation appended managed rows beside legacy checkbox rows or projected stale entity public values.
+    - "Repair only with complete one-to-one evidence: preserve current Markdown-owned text, severity, status, and order; preserve entity-owned IDs and operational fields; reject ambiguous or unmatched rows before effects."
+    - Publish repaired Markdown, activation provenance, and entity baselines through the existing recoverable journal with bounded diagnostics and idempotent replay.
+  acceptance:
+    - An OpenEval-shaped fixture with duplicate legacy and managed rows plus completed Markdown items backed by stale open entities is diagnosed without writes.
+    - Confirmed repair leaves exactly one public row per entity, does not reopen completed work, preserves unrelated prose, and passes `agentera check validate state`.
+    - Ambiguous evidence fails before effects, while interrupted and repeated repair converges to the same IDs, public bytes, activation record, and baselines.
+  release_blocker: true
+  severity: normal
+  readiness:
+    capability: build
+    reason: Published implicit activation can leave a project marked active with a duplicated or resurrected public backlog, so affected projects need a bounded recovery path.
+    dependencies:
+      - artifact: todo
+        id: ibomhottkk
+    blocked: null
+    gate: null
+    queue_rank: 40
+    order_reason: Build repair on the explicit activation contract, then let startup route unsafe active projects to it.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Repair projects affected by implicit TODO reconciliation activation."
+      severity: normal
+      status: open
+      order: 33
