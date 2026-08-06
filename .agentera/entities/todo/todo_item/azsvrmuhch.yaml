@@ -13,13 +13,17 @@ record:
     - When Prime or a required typed writer is blocked, Doctor cannot report an aggregate up_to_date outcome.
     - An up-to-date app with a blocked project preserves the app result while reporting the aggregate project outcome as blocked or action-required.
   release_blocker: true
-  severity: critical
+  severity: normal
   status: open
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make Doctor report project operability separately from installation health."
-      severity: critical
+      severity: normal
       status: open
-      order: 4
+      order: 23
+  lifecycle:
+    operation: set-severity
+    reason: Moved from the duplicated Critical section to the Normal backlog.
+    date: 2026-08-06

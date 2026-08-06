@@ -13,13 +13,17 @@ record:
     - Normal project recovery leaves global resource bytes and ownership records unchanged.
     - Explicit legacy cleanup remains separately previewable, ownership-gated, bounded, and idempotent.
   release_blocker: true
-  severity: critical
+  severity: normal
   status: open
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup."
-      severity: critical
+      severity: normal
       status: open
-      order: 5
+      order: 24
+  lifecycle:
+    operation: set-severity
+    reason: Moved from the duplicated Critical section to the Normal backlog.
+    date: 2026-08-06

@@ -13,13 +13,17 @@ record:
     - A request that explicitly requires profile grounding fails with one bounded correction when grounding is unavailable.
     - Unavailable grounding reads no private profile content into capability context, diagnostics, logs, or plan state.
   release_blocker: true
-  severity: critical
+  severity: normal
   status: open
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests."
-      severity: critical
+      severity: normal
       status: open
-      order: 6
+      order: 25
+  lifecycle:
+    operation: set-severity
+    reason: Moved from the duplicated Critical section to the Normal backlog.
+    date: 2026-08-06

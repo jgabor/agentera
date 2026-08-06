@@ -12,7 +12,7 @@ record:
     - Apply publishes activation metadata, visible IDs, and entity baselines for subsequent clean projection reads.
     - Conflicts fail before effects; interruption and repeated apply recover idempotently.
   release_blocker: true
-  severity: critical
+  severity: normal
   readiness:
     capability: build
     reason: Already-cut-over projects need a discoverable supported recovery instead of an unrelated no-op TODO update.
@@ -28,6 +28,10 @@ record:
     public:
       present: true
       description: "[fix:3.0.0] Add an explicit TODO reconciliation activation command."
-      severity: critical
+      severity: normal
       status: open
-      order: 8
+      order: 27
+  lifecycle:
+    operation: set-severity
+    reason: Moved from the duplicated Critical section to the Normal backlog.
+    date: 2026-08-06

@@ -12,7 +12,7 @@ record:
     - State validation reports lifecycle incompleteness without misclassifying a valid entity graph as corrupt.
     - Active projects retain current output, and all inspection commands remain mutation-free.
   release_blocker: true
-  severity: critical
+  severity: normal
   readiness:
     capability: build
     reason: Project orientation must expose inactive reconciliation instead of declaring an incomplete cutover operable.
@@ -29,6 +29,10 @@ record:
     public:
       present: true
       description: "[fix:3.0.0] Report inactive TODO reconciliation as action-required."
-      severity: critical
+      severity: normal
       status: open
-      order: 9
+      order: 28
+  lifecycle:
+    operation: set-severity
+    reason: Moved from the duplicated Critical section to the Normal backlog.
+    date: 2026-08-06

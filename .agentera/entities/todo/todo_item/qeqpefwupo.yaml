@@ -14,13 +14,17 @@ record:
     - Recognized legacy input uses only its supported forward route, while unknown, partial, and corrupt state fail closed without mutation.
     - Every machine-returned recovery command passes its own dry-run preflight and fresh initialization leaves global runtime resources unchanged.
   release_blocker: true
-  severity: critical
+  severity: normal
   status: open
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make marker-absent fresh-project startup converge without legacy migration."
-      severity: critical
+      severity: normal
       status: open
-      order: 3
+      order: 22
+  lifecycle:
+    operation: set-severity
+    reason: Moved from the duplicated Critical section to the Normal backlog.
+    date: 2026-08-06

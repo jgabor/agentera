@@ -1,0 +1,25 @@
+id: vhsrtulfio
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Reduce the focused runtimeBootstrapMatrix.test.ts package-verification wall time from about 128 seconds to a bounded release-gate budget without weakening the 190-row source/package bootstrap proof.
+  requirements:
+    - Eliminate redundant recursive protected-root hashing and unnecessary process startups.
+    - Preserve per-row command classification, pre-child rejection evidence, environment isolation, path independence, and protected-root immutability.
+    - Report the major timing components and enforce a regression budget for the optimized lane.
+  acceptance:
+    - The focused package-verification lane satisfies a bounded release-gate runtime budget.
+    - The optimized lane retains the complete 190-row source/package bootstrap proof and its protected-root guarantees.
+    - Verification reports major timing components and enforces the regression budget.
+  release_blocker: true
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Reduce the focused runtimeBootstrapMatrix.test.ts package-verification wall time from about 128 seconds to a bounded release-gate budget without weakening the 190-row source/package bootstrap proof."
+      severity: normal
+      status: open
+      order: 21

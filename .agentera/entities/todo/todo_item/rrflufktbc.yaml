@@ -12,7 +12,7 @@ record:
     - Ambiguous input fails without partial activation, and interrupted or repeated upgrade preserves canonical IDs and converges.
     - Ordinary reads remain mutation-free.
   release_blocker: true
-  severity: critical
+  severity: normal
   readiness:
     capability: build
     reason: The explicit v3 cutover must leave TODO public and operational state fully connected before reporting success.
@@ -28,6 +28,10 @@ record:
     public:
       present: true
       description: "[fix:3.0.0] Activate TODO reconciliation during explicit entity cutover."
-      severity: critical
+      severity: normal
       status: open
-      order: 7
+      order: 26
+  lifecycle:
+    operation: set-severity
+    reason: Moved from the duplicated Critical section to the Normal backlog.
+    date: 2026-08-06
