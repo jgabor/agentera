@@ -73,6 +73,8 @@ tiers:
         - project_path
         - session_id
         - conversation_key
+        - content_fingerprint
+        - author_class
     source_identity_rule: >-
       `source_id` is the stable, content-addressable identity of one full
       record. It is derived deterministically from source kind and source parts
@@ -104,6 +106,8 @@ tiers:
       optional:
         - conversation_key
         - session_id
+        - content_fingerprint
+        - author_class
     derivation_rule: >-
       The signal tier is a pure function of the full-evidence tier: identical
       inputs produce identical signal membership and ordering. It never stores
@@ -228,6 +232,24 @@ signal_semantics:
         severs the citation chain.
       derivable_from: signal record evidence_anchor -> full_evidence source_id
       consumer: glossary
+    session_id:
+      meaning: >-
+        The stable session identity needed to distinguish independent
+        conversation origins without exposing a raw session transcript.
+      derivable_from: conversation_turn session_id
+      consumer: glossary
+    content_fingerprint:
+      meaning: >-
+        A lowercase SHA-256 fingerprint of the source content used to prevent
+        copied or repeated conversation text from counting as independent.
+      derivable_from: source record content
+      consumer: glossary
+    author_class:
+      meaning: >-
+        The source author class, such as user, agent, or injected instruction,
+        used to keep agent-authored text from establishing personal terminology.
+      derivable_from: conversation_turn actor metadata
+      consumer: glossary
   preservation_rule: >-
     Fixing the contract must not remove the required meaning of any kind above
     from current consumers. Personal glossary synthesis is named here because it
@@ -313,6 +335,9 @@ consumer_map:
         - record_identity
         - date
         - evidence_anchor
+        - session_id
+        - content_fingerprint
+        - author_class
       rule: >-
         Personal glossary synthesis actively consumes bounded personal-history
         signals. Project-file provenance remains repository evidence under the

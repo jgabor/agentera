@@ -1,0 +1,15 @@
+id: cviizrgkvm
+artifact: plan
+record:
+  name: Apply review dispositions
+  depends_on:
+    - zbiibnlfgd
+    - uvvlfjycxk
+  status: pending
+  acceptance:
+    - GIVEN a current user response WHEN disposition records THEN it binds stable term, semantic fingerprint, revision, generation, and policy.
+    - GIVEN only corroborating evidence changes WHEN a rejected or deferred term recurs THEN it is not repeatedly proposed.
+    - GIVEN meaning, scope, or policy changes WHEN disposition compares THEN review may reopen with visible reason.
+    - GIVEN accepted or corrected review WHEN publication runs THEN current-evidence and fail-before-effects checks still govern.
+    - GIVEN each disposition and reopening rule WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

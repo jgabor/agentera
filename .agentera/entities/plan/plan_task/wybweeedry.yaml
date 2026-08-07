@@ -1,0 +1,13 @@
+id: wybweeedry
+artifact: plan
+record:
+  name: Prove release readiness and update delivery surfaces
+  depends_on:
+    - bbkwyfhhnc
+  status: pending
+  acceptance:
+    - GIVEN source and package evidence WHEN release, metadata, compact, and dry-pack gates run THEN all pass without reconstructing the candidate.
+    - GIVEN behavior changed WHEN delivery surfaces are reviewed THEN commands, privacy, review, compatibility, and inferred-admission hold are accurate.
+    - GIVEN task state changed WHEN commits are inspected THEN updates are folded into substantive tasks with no bookkeeping-only commit.
+    - GIVEN readiness passes WHEN delivery concludes THEN versions stay within the 3.0 boundary and no external mutation occurs.
+  plan: bcpkchatfu

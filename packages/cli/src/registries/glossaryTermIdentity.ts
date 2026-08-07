@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -15,4 +17,141 @@ function escapeRegExp(value: string): string {
 export function unicodeCaselessExact(left: string, right: string): boolean {
   const literal = escapeRegExp(left);
   return new RegExp(`^(?:${literal})$(?![\\s\\S])`, "iu").test(right);
+}
+
+function compareCodePoints(left: string, right: string): number {
+  const leftCodePoint = left.codePointAt(0) ?? 0;
+  const rightCodePoint = right.codePointAt(0) ?? 0;
+  return leftCodePoint - rightCodePoint;
+}
+
+function compareUnicodeStrings(left: string, right: string): number {
+  const leftScalars = [...left];
+  const rightScalars = [...right];
+  for (let index = 0; index < Math.min(leftScalars.length, rightScalars.length); index += 1) {
+    const comparison = compareCodePoints(leftScalars[index]!, rightScalars[index]!);
+    if (comparison !== 0) return comparison;
+  }
+  return leftScalars.length - rightScalars.length;
+}
+
+function singleScalar(value: string): string | null {
+  return [...value].length === 1 ? value : null;
+}
+
+/**
+ * Build the same simple-case equivalence key used by the stable identity.
+ * Full case mappings that expand to multiple scalars are intentionally ignored,
+ * because the equality runtime uses Unicode simple folding rather than full
+ * case folding (for example, `ß` is not equal to `SS`).
+ */
+function unicodeSimpleCaseFoldClosureKey(value: string): string {
+  return [...value]
+    .map((character) => {
+      const seen = new Set([character]);
+      const pending = [character];
+      while (pending.length > 0) {
+        const current = pending.pop()!;
+        for (const mapped of [current.toUpperCase(), current.toLowerCase()]) {
+          const scalar = singleScalar(mapped);
+          if (scalar !== null && !seen.has(scalar)) {
+            seen.add(scalar);
+            pending.push(scalar);
+          }
+        }
+      }
+      return [...seen].sort(compareCodePoints)[0]!;
+    })
+    .join("");
+}
+
+function sha256Utf8(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function requireNonEmpty(value: string, field: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new TypeError(`${field} must be a non-empty string`);
+  }
+  return value;
+}
+
+/**
+ * Return a content-addressed identity for one Unicode caseless-exact term.
+ * The original spelling is not changed or stored in the identity key.
+ */
+export function stableGlossaryTermIdentity(term: string): string {
+  const value = requireNonEmpty(term, "term");
+  const key = unicodeSimpleCaseFoldClosureKey(value);
+  return sha256Utf8(
+    JSON.stringify({
+      schema_version: "agentera.personalGlossaryTermIdentity.v1",
+      key,
+    }),
+  );
+}
+
+export type GlossaryCandidateScope = "personal" | "project" | "ambiguous";
+
+export interface GlossaryCandidateEvidenceIdentity {
+  source_id: string;
+  evidence_anchor: string;
+  [field: string]: unknown;
+}
+
+export interface GlossaryCandidateRevisionInput {
+  stable_term_identity: string;
+  meaning: string;
+  scope: GlossaryCandidateScope;
+  evidence: readonly GlossaryCandidateEvidenceIdentity[];
+  policy_version: string;
+  generation: string;
+}
+
+function canonicalJson(value: unknown): string {
+  if (value === undefined) throw new TypeError("canonical JSON cannot contain undefined");
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort(compareUnicodeStrings)
+    .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
+    .join(",")}}`;
+}
+
+/**
+ * Return a content-addressed candidate revision without mining or publishing.
+ * Evidence order is not semantic, but every evidence identity remains bound.
+ */
+export function glossaryCandidateRevision(input: GlossaryCandidateRevisionInput): string {
+  const stableTermIdentity = requireNonEmpty(input.stable_term_identity, "stable_term_identity");
+  const meaning = requireNonEmpty(input.meaning, "meaning");
+  const policyVersion = requireNonEmpty(input.policy_version, "policy_version");
+  const generation = requireNonEmpty(input.generation, "generation");
+  if (!Array.isArray(input.evidence)) throw new TypeError("evidence must be a list");
+  if (!["personal", "project", "ambiguous"].includes(input.scope)) {
+    throw new TypeError("scope must be personal, project, or ambiguous");
+  }
+  const evidence = input.evidence
+    .map((item) => {
+      requireNonEmpty(item.source_id, "evidence.source_id");
+      requireNonEmpty(item.evidence_anchor, "evidence.evidence_anchor");
+      return item;
+    })
+    .sort((left, right) => {
+      const leftCanonical = canonicalJson(left);
+      const rightCanonical = canonicalJson(right);
+      return compareUnicodeStrings(leftCanonical, rightCanonical);
+    });
+  return sha256Utf8(
+    canonicalJson({
+      schema_version: "agentera.personalGlossaryCandidateRevision.v1",
+      stable_term_identity: stableTermIdentity,
+      meaning,
+      scope: input.scope,
+      evidence,
+      policy_version: policyVersion,
+      generation,
+    }),
+  );
 }

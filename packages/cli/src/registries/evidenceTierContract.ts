@@ -122,6 +122,9 @@ export const REQUIRED_SIGNAL_KINDS = [
   "record_identity",
   "date",
   "evidence_anchor",
+  "session_id",
+  "content_fingerprint",
+  "author_class",
 ] as const;
 
 /** Compatibility states that must have deterministic, actionable outcomes. */

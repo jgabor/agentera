@@ -1,0 +1,29 @@
+id: kfxafffkyy
+artifact: plan
+record:
+  name: Reconcile final state without mutation
+  depends_on:
+    - bloijvifoi
+    - ekgowckdus
+    - qgimpwprim
+    - zabolpjiro
+    - milybqttmo
+    - ddoncnlhro
+    - tahegtlmco
+    - tlholqmvtn
+    - kuovmqppuy
+    - zbiibnlfgd
+    - uvvlfjycxk
+    - cviizrgkvm
+    - wjzgtphdwk
+    - qalythqtiq
+    - onlyyjethm
+    - bbkwyfhhnc
+    - wybweeedry
+  status: pending
+  acceptance:
+    - GIVEN prior tasks are verified WHEN bounded state is read THEN plan, TODO, progress, health, decisions, and delivery documentation match behavior.
+    - GIVEN reconciliation finds differences WHEN it runs THEN it writes nothing and reopens the owning task or Plan.
+    - GIVEN an unknown changed acceptance WHEN final state is assessed THEN affected work stays open without false completion.
+    - GIVEN final state is consistent WHEN reconciliation completes THEN no commit is created and no pending or contradictory glossary claim remains.
+  plan: bcpkchatfu

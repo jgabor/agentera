@@ -1,0 +1,14 @@
+id: zbiibnlfgd
+artifact: plan
+record:
+  name: Replace personal direct publication grammar
+  depends_on:
+    - kuovmqppuy
+  status: pending
+  acceptance:
+    - GIVEN an authorized personal decision WHEN publish runs THEN current provenance revalidates before only the owned profile section changes.
+    - GIVEN identical receipt, profile, policy, generation, and date WHEN publish repeats THEN bytes match and unchanged replay reports.
+    - GIVEN stale generation, changed meaning, invalid scope, unresolved evidence, or malformed receipt WHEN publish runs THEN profile bytes stay unchanged.
+    - GIVEN replacement ships WHEN help and schema are inspected THEN explicit personal publish is canonical, old personal grammar is absent, and project publication is unchanged.
+    - GIVEN each publication rule WHEN source and package regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

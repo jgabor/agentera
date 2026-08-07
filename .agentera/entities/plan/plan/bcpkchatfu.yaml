@@ -1,0 +1,45 @@
+id: bcpkchatfu
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-07
+    status: open
+    reviewed: 2026-08-07
+    critic_issues: 12 found, 12 addressed, 0 dismissed
+    title: "Plan: Bounded personal glossary mining"
+  what: Replace host-discovered glossary publication with bounded source-aware mining, separate host classification from CLI authorization, review uncertain meanings, and publish only replay-safe personal entries.
+  why: Current evidence and admission rules can yield an empty glossary despite recurring terminology. Improve recall without promoting copied, agent-authored, project-only, or unsupported terms.
+  constraints: Preserve personal/project isolation, consumer precedence, consent-gated history, the shared primitive, headless CLI behavior, profile decay, and fail-before-effects publication. Host output is semantic evidence, not proof. Add no runtime dependency or suite version beyond 3.0.0. Do not publish, tag, push, or mutate registry state. Fold state updates into substantive commits.
+  overall_acceptance: GIVEN consent-authorized bounded evidence WHEN Profile Full mines terms THEN supported explicit definitions publish, inferred or conflicting meanings enter review, abstentions and gaps are explained, project state stays isolated, and identical validated inputs replay without duplicate effects.
+  scope:
+    included:
+      - Origin, authorship, fingerprint, independence, consent, and degraded-coverage evidence.
+      - Capsules, host receipts, CLI decisions, stable term identity, revisions, safe excerpts, and deterministic selection.
+      - Candidate reads, publication, user-local review, Profile Full, consumer compatibility, evaluation, package parity, and delivery documentation.
+    excluded:
+      - Project glossary discovery, mutation, precedence changes, and project proposal publication.
+      - Unbounded corpus scans, legacy corpus loading, interactive CLI prompts, and agent-only personal terminology.
+      - Release publication, registry mutation, tags, pushes, or suite versions beyond 3.0.0.
+    deferred:
+      - Automatic admission of inferred meanings until a separately approved measured precision gate passes.
+      - Project-glossary proposals derived from personal mining.
+  design: Contract gates settle identity, consent, provenance, privacy, review ownership, and quality thresholds. Evidence preserves original origins. Deterministic discovery emits bounded safe capsules. The host classifies semantics; the CLI validates provenance and decides outcomes without claiming proof. Publication revalidates one receipt and generation. Review is bounded and user-local. Profile Full starts after the base profile. Source, package, release, and final-state evidence stay distinct.
+  unknowns:
+    - question: How should caseless-equal spellings map to one stable term identity without adding Unicode normalization?
+      affects_task: 1
+      resolve_by: Approve one rule against current no-normalization authority and adversarial Unicode vectors before candidate contracts.
+    - question: How should conversation-derived inference and accepted review persist provenance when the current inferred variant requires exactly two instruction or configuration anchors?
+      affects_task: 1
+      resolve_by: Amend or retain shared provenance before implementation; never truncate qualifying evidence.
+    - question: May Profile Full refresh evidence, or must it consume only an existing consent-authorized generation?
+      affects_task: 1
+      resolve_by: Select one consent lifecycle with denied-consent and stale-generation behavior before extraction changes.
+    - question: Which secret classes, retention period, purge behavior, and user-local owner govern excerpts and review records?
+      affects_task: 1
+      resolve_by: Approve privacy and storage rules with adversarial secret fixtures before output or persistence.
+    - question: Which labeled-corpus provenance, sample size, metrics, and thresholds authorize explicit automatic admission and inferred review suggestions?
+      affects_task: 2
+      resolve_by: Approve a frozen privacy-safe holdout and quantitative delivery gate.
+  surprises:
+    []

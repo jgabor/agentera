@@ -1,0 +1,16 @@
+id: kuovmqppuy
+artifact: plan
+record:
+  name: Validate classifications and compute decisions
+  depends_on:
+    - zabolpjiro
+    - tahegtlmco
+    - tlholqmvtn
+  status: pending
+  acceptance:
+    - GIVEN host classification WHEN validated THEN it binds capsule, revision, generation, and policy without admission authority.
+    - GIVEN one permitted explicit definition with one resolved anchor WHEN CLI decides THEN it may authorize automatic admission.
+    - GIVEN inferred use, ambiguous scope, inconsistent meaning, or entry conflict WHEN CLI decides THEN it reviews or abstains without overwrite.
+    - GIVEN unavailable, changed, malformed, or conflicting classification WHEN validation runs THEN it abstains or queues review without claiming proof.
+    - GIVEN each receipt and decision rule WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

@@ -1,0 +1,14 @@
+id: tlholqmvtn
+artifact: plan
+record:
+  name: Expose candidate list and exact reads
+  depends_on:
+    - tahegtlmco
+  status: pending
+  acceptance:
+    - GIVEN a current generation WHEN list runs THEN filters, limit, continuation, summaries, abstentions, and coverage remain bounded and mutation-free.
+    - GIVEN one current revision WHEN exact read runs THEN only bounded validated occurrences and safe context return.
+    - GIVEN continuation crosses generation, policy, filters, or order WHEN list resumes THEN it fails closed without omitted-data disclosure.
+    - GIVEN a stale, unknown, malformed, or mismatched revision WHEN exact read runs THEN it fails closed without effects.
+    - GIVEN each read and pagination rule WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

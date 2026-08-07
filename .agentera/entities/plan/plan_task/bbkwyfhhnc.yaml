@@ -1,0 +1,13 @@
+id: bbkwyfhhnc
+artifact: plan
+record:
+  name: Qualify the constructed package in cold state
+  depends_on:
+    - onlyyjethm
+  status: pending
+  acceptance:
+    - GIVEN source qualification WHEN canonical packaging constructs an artifact THEN one immutable candidate serves every package check.
+    - GIVEN that artifact runs cold outside the checkout WHEN feature paths execute THEN behavior and bundled authorities match source.
+    - GIVEN construction, parity, or cold smoke fails WHEN reported THEN no registry action occurs and the owning layer is explicit.
+    - GIVEN each package parity rule WHEN regressions run THEN one pass and one fail prove it.
+  plan: bcpkchatfu

@@ -1,0 +1,14 @@
+id: qgimpwprim
+artifact: plan
+record:
+  name: Preserve origins in bounded evidence
+  depends_on:
+    - bloijvifoi
+  status: pending
+  acceptance:
+    - GIVEN transported instructions WHEN evidence refreshes THEN original origin, author, source class, runtime, project, and timestamp stay distinct.
+    - GIVEN repeated injections share origin and fingerprint WHEN independence is counted THEN they count once while distinct origins remain independent.
+    - GIVEN an adapter lacks required provenance WHEN evidence loads THEN coverage degrades instead of converting records to user conversation.
+    - GIVEN refresh lacks consent WHEN generation is requested THEN no history scan occurs and bounded recovery returns.
+    - GIVEN each provenance rule WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

@@ -1,0 +1,15 @@
+id: ddoncnlhro
+artifact: plan
+record:
+  name: Mine recurring usage candidates
+  depends_on:
+    - qgimpwprim
+    - zabolpjiro
+  status: pending
+  acceptance:
+    - GIVEN consistent use across approved origins WHEN mining runs THEN one inferred candidate cites every authority-required bounded origin.
+    - GIVEN one session, copied content, agent-only use, or insufficient diversity WHEN mining runs THEN the term abstains with a stable reason.
+    - GIVEN conflicting meaning or uncertain scope WHEN grouping runs THEN evidence enters review and never automatic admission.
+    - GIVEN project-only context WHEN grouping runs THEN no personal definition or project glossary read occurs.
+    - GIVEN each recurrence and exclusion WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

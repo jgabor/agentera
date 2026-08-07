@@ -19,6 +19,9 @@ CONFORMANCE:
   ownership_contract: project
   provenance_variant: project_file
   term_identity_runtime: packages/cli/src/registries/glossaryTermIdentity.ts#unicodeCaselessExact
+  personal_mining_authority: references/artifacts/glossary-entry-contract.yaml#personal_mining_authority
+  stable_term_identity_runtime: packages/cli/src/registries/glossaryTermIdentity.ts#stableGlossaryTermIdentity
+  candidate_revision_runtime: packages/cli/src/registries/glossaryTermIdentity.ts#glossaryCandidateRevision
   term_occurrence_runtime: packages/cli/src/registries/glossaryTermOccurrence.ts#containsGlossaryTerm
 
 DOCUMENT:

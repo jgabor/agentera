@@ -1,0 +1,17 @@
+id: zyvgyvjnsv
+artifact: decisions
+record:
+  date: 2026-08-07
+  question: How should personal glossary mining bind identity, provenance, consent, and review privacy?
+  context: Firm decisions prmnztjytv and mcsmqqitnm already own the shared primitive, personal/project isolation, consumer precedence, and Build-owned project publication. This task must settle the authority needed before extraction and review work without changing those decisions.
+  alternatives:
+    - name: Add an authority-only mining contract that preserves Unicode caseless-exact equality, hashes a stable equality-class term identity and a separate evidence-bound candidate revision, appends explicit conversation provenance, reuses existing consented generations, and keeps review records user-local.
+      status: chosen
+    - name: Normalize terms or hash raw spellings, silently cap conversation evidence, or let Profile Full refresh local history.
+      status: rejected
+    - name: Let agents or project state authenticate personal review dispositions.
+      status: rejected
+  choice: Add the authority-only personal mining contract and keep inferred automatic admission disabled until the evaluation task approves a measured gate.
+  reasoning: The stable identity follows the current equality relation without introducing normalization, while the separate revision hash makes meaning, evidence, policy, and generation changes observable. An explicit conversation variant preserves every qualifying user-authored anchor instead of forcing it into the existing two-record instruction/configuration variant. Reusing one existing consent-bound generation prevents Profile Full from expanding local-history access. User-local redacted excerpts and current-user-bound dispositions keep private mining state separate from project publication.
+  confidence: firm
+  feeds_into: Plan bcpkchatfu Task bloijvifoi and downstream personal glossary mining, review, and Profile Full tasks.

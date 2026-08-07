@@ -1,0 +1,15 @@
+id: wjzgtphdwk
+artifact: plan
+record:
+  name: Integrate mining into Profile Full
+  depends_on:
+    - tlholqmvtn
+    - cviizrgkvm
+  status: pending
+  acceptance:
+    - GIVEN Profile Full creates a base profile WHEN mining begins THEN the base and owned glossary remain until authorized replacement.
+    - GIVEN mixed candidate outcomes WHEN workflow completes THEN only authorized explicit entries auto-publish and other outcomes stay explainable.
+    - GIVEN a question channel WHEN reviews are pending THEN only a bounded set appears; otherwise Profile Full completes and reports queued review.
+    - GIVEN project glossary trap state WHEN Profile Full runs THEN mining avoids it while consumer checks preserve precedence, proven-gap fallback, and equivalence review.
+    - GIVEN each workflow and compatibility rule WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

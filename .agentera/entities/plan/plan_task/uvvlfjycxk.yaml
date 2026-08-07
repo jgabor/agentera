@@ -1,0 +1,16 @@
+id: uvvlfjycxk
+artifact: plan
+record:
+  name: Persist review records and bounded reads
+  depends_on:
+    - bloijvifoi
+    - zabolpjiro
+    - kuovmqppuy
+  status: pending
+  acceptance:
+    - GIVEN review without a question channel WHEN queued THEN bounded metadata uses the user-local owner without project or profile-entry mutation.
+    - GIVEN review records WHEN list or exact read runs THEN output is bounded, privacy-safe, inspectable, and owner-restricted.
+    - GIVEN excerpts lack persistence authority WHEN records store THEN only approved identities, fingerprints, reasons, dates, and lifecycle metadata remain.
+    - GIVEN expiry or purge WHEN maintenance runs THEN records and permitted cache follow retention without changing published entries.
+    - GIVEN each storage, read, and deletion rule WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

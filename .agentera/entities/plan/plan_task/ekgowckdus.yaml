@@ -1,0 +1,13 @@
+id: ekgowckdus
+artifact: plan
+record:
+  name: Establish evaluation authority and holdout
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN labeled examples WHEN authority is approved THEN discovery recall, scope accuracy, review precision, and admission precision have separate denominators.
+    - GIVEN privacy and leakage risks WHEN holdout freezes THEN records are synthetic or consented, provenance is recorded, and failures cannot be relabeled.
+    - GIVEN sample and uncertainty rules WHEN thresholds are approved THEN explicit admission and inferred review have gates while inferred auto-admission stays disabled.
+    - GIVEN each metric rule WHEN tests run THEN one pass and one fail prove calculation and gating.
+  plan: bcpkchatfu

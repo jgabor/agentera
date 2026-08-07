@@ -54,8 +54,226 @@ term_occurrence:
     occurrence adjacent to Unicode ID_Continue, dollar sign, U+200C ZERO WIDTH
     NON-JOINER, or U+200D ZERO WIDTH JOINER. These are the ECMAScript identifier
     continuation characters relevant to source-line terminology boundaries.
-    Literal escaping and fixed-width boundary assertions prevent regex syntax,
-    partial identifier matches, and input-dependent backtracking.
+     Literal escaping and fixed-width boundary assertions prevent regex syntax,
+     partial identifier matches, and input-dependent backtracking.
+
+personal_mining_authority:
+  status: authority_only
+  implementation_boundary: >-
+    This section settles personal glossary mining identity, evidence provenance,
+    consent, privacy, and lifecycle authority. It does not implement extraction,
+    candidate mining, candidate reads, publication replacement, or review storage.
+  preserved_decisions: [prmnztjytv, mcsmqqitnm, zyvgyvjnsv]
+  replacement:
+    shared_primitive: shared_primitive
+    personal_owner: ownership_contracts.personal
+    project_owner: ownership_contracts.project
+    consumer_precedence: consumer_boundary.primary_selection
+    project_publication: ownership_contracts.project.publication
+    allowed_effects: [personal_profile_output]
+    forbidden_effects:
+      - project_glossary_read
+      - project_glossary_mutation
+      - project_publication_replacement
+      - consumer_precedence_change
+      - personal_project_merge
+    rule: >-
+      Mining may replace only the user-owned personal profile glossary through
+      the existing personal profile output lifecycle. It never reads or writes
+      project glossary state, changes consumer precedence, or changes the
+      Build-owned digest-confirmed project publication operation.
+  term_identity:
+    equality:
+      runtime: packages/cli/src/registries/glossaryTermIdentity.ts#unicodeCaselessExact
+      semantics: unicode_caseless_exact_no_normalization
+      rule: >-
+        Equality remains the existing locale-independent ECMAScript Unicode
+        caseless-exact matcher. Canonical, compatibility, accent, and locale
+        normalization are not added to equality.
+    stable_term_identity:
+      schema_version: agentera.personalGlossaryTermIdentity.v1
+      runtime: packages/cli/src/registries/glossaryTermIdentity.ts#stableGlossaryTermIdentity
+      algorithm: sha256
+      encoding: lowercase_hex
+      canonical_input: ecmascript_simple_case_fold_closure_key
+      no_unicode_normalization: true
+      key_rule: >-
+        For each Unicode scalar, repeatedly apply the locale-independent
+        ECMAScript upper- and lower-case mappings, retain only one-scalar
+        results, and choose the lowest Unicode scalar in that closure. Concatenate
+        those chosen scalars without normalization, then hash the resulting UTF-8
+        key with the versioned schema name. Equal terms therefore share one stable
+        identity while canonically or compatibility-distinct terms remain distinct
+        unless the existing equality matcher already relates them.
+      invariant: >-
+        Stable identity is an identifier for the existing equality class, not a
+        new comparison rule. It never lowercases, normalizes, trims, or changes
+        the term stored in a shared entry.
+    candidate_revision:
+      schema_version: agentera.personalGlossaryCandidateRevision.v1
+      runtime: packages/cli/src/registries/glossaryTermIdentity.ts#glossaryCandidateRevision
+      algorithm: sha256
+      encoding: lowercase_hex
+      canonicalization: >-
+        Hash canonical UTF-8 JSON with recursively code-point-sorted object keys,
+        preserved string bytes, and evidence records sorted by their canonical
+        JSON. The schema name, stable_term_identity, meaning, scope, complete
+        evidence identity set, policy_version, and generation are all included.
+        No field may be omitted, reordered semantically, normalized, or replaced
+        by a display label.
+      bound_fields:
+        - stable_term_identity
+        - meaning
+        - scope
+        - evidence
+        - policy_version
+        - generation
+      policy_version: agentera.personalGlossaryMiningPolicy.v1
+      generation: content_addressed_candidate_projection_generation
+      evidence: complete_source_id_anchor_identity_set
+      replay_rule: >-
+        A changed meaning, scope, evidence identity set, policy version, or
+        candidate generation creates a new revision. Identical canonical inputs
+        create the same revision and do not imply a second candidate.
+  provenance:
+    existing_inferred_variant: provenance_variants.personal_inferred_usage
+    conversation_variant: provenance_variants.personal_inferred_conversation
+    evolution:
+      status: explicit_append_only_extension
+      shared_primitive: unchanged
+      existing_variant_rule: >-
+        The firm two-independent-record instruction/configuration route remains
+        exactly two records with both anchors exposed.
+      conversation_rule: >-
+        Conversation inference uses the explicit conversation provenance variant
+        and retains every qualifying evidence record. It never projects a longer
+        evidence set into the two-record variant.
+      audit_rule: >-
+        The provenance kind, complete-evidence marker, source identities, anchors,
+        session identities, project identities, author class, and content
+        fingerprints remain inspectable by the later validator. Missing metadata,
+        unresolved anchors, or incomplete evidence fail closed.
+  consent_lifecycle:
+    authority: references/analysis/evidence-tier-authority.yaml
+    operation: Profile_Full
+    policy: reuse_existing_generation
+    refresh: forbidden_during_profile_full
+    reuse: >-
+      Profile Full may consume one existing local-history generation only when a
+      valid local-history consent binding and a readable current generation are
+      already present. Profile Full never refreshes, discovers, or rereads local
+      history to obtain consent.
+    states:
+      present:
+        condition: valid_local_history_consent_and_current_complete_generation
+        action: reuse_generation_once_for_bounded_mining
+        result: mining_authorized
+      absent:
+        condition: no_valid_local_history_consent_or_no_generation
+        action: skip_mining_without_read_or_refresh
+        result: degraded_consent_required
+      stale:
+        condition: consent_or_generation_binding_does_not_match_the_current_generation
+        action: reject_generation_for_new_mining_and_preserve_existing_entries
+        result: degraded_refresh_required
+      degraded:
+        condition: current_generation_is_readable_but_coverage_is_flagged_or_bounded
+        action: reuse_only_as_degraded_evidence_without_automatic_admission
+        result: degraded_coverage
+    recovery:
+      command: npx -y agentera@next stats refresh --consent local-history
+      explicit_consent: required
+      after_refresh: retry_profile_full_with_the_new_generation
+      forbidden: [live_extraction_without_consent, silent_refresh, stale_generation_reuse]
+      rule: >-
+        Absent, stale, and degraded states expose the same explicit refresh
+        recovery without inspecting raw history. Recovery never changes project
+        state or project glossary publication.
+  privacy:
+    owner: current_user
+    scope: user_local
+    storage:
+      root: $AGENTERA_PROFILE_DIR/intermediate/personal-glossary
+      project_storage: forbidden
+      records: [candidate_metadata, safe_excerpts, review_dispositions]
+      project_state: unchanged
+      rule: >-
+        Mining records live below the user data root and are never written to
+        .agentera, TODO.md, progress, the project glossary, or any project path.
+    excerpts:
+      purpose: bounded_review_context_only
+      max_utf8_bytes: 500
+      redaction:
+        before_persistence: true
+        replacement: "[REDACTED]"
+        secret_classes:
+          - api_keys
+          - access_tokens
+          - passwords
+          - cookies
+          - private_keys
+          - authorization_headers
+          - personal_contact_data
+        rule: >-
+          Redact secret-class values before any excerpt is persisted. If a
+          high-risk value cannot be redacted deterministically, reject the
+          excerpt rather than storing it.
+      forbidden_content:
+        - raw_transcript
+        - raw_tool_arguments
+        - raw_runtime_store_paths
+        - raw_session_identifiers
+        - unredacted_secret
+        - unrelated_conversation
+      failure: reject_before_persistence
+    reviews:
+      owner: current_user
+      required_fields:
+        - candidate_id
+        - candidate_revision
+        - generation
+        - disposition
+        - disposed_at
+      dispositions: [accept, correct, reject, defer]
+      trusted_disposition_authority: current_user
+      authentication:
+        proof: >-
+          A disposition is accepted only from the host-authenticated current
+          user through an explicit local action bound to candidate_id,
+          candidate_revision, generation, disposition, and disposed_at. A model,
+          agent, imported transcript, or unbound text field cannot authenticate it.
+        binding_fields: [candidate_id, candidate_revision, generation, disposition, disposed_at]
+        forbidden_principals: [agent, model, imported_record, generic_consent]
+    retention:
+      pending_excerpt_days: 30
+      terminal_excerpt_days: 0
+      review_metadata_days_after_terminal: 90
+      accepted_entry: ownership_contracts.personal.retention_and_decay
+      rule: >-
+        Safe excerpts expire after 30 days and are removed immediately when a
+        review becomes terminal. Disposition metadata remains for 90 days after
+        a terminal disposition to suppress the same revision, then expires.
+        Accepted glossary entries follow the existing personal profile decay
+        authority and never retain an excerpt.
+    purge:
+      authority: current_user
+      trigger: explicit_authenticated_user_request_or_retention_expiry
+      removes: [candidate_metadata, safe_excerpts, review_dispositions]
+      behavior: atomic_remove_user_local_records_before_next_read
+      project_state: untouched
+      profile_entry: not_implicitly_deleted
+      recovery: >-
+        A purge is local and irreversible to the mining records. A later run
+        requires fresh consent-bound evidence and creates no project-side record.
+  admission:
+    inferred_automatic_admission: disabled
+    inferred_review: allowed
+    quality_threshold: deferred_to_bcpkchatfu_task_ekgowckdus
+    holdout: deferred_to_bcpkchatfu_task_ekgowckdus
+    rule: >-
+      This authority does not set a quality threshold, holdout, or automatic
+      admission rule. Inferred meanings remain review-only until the separately
+      approved evaluation authority enables a measured gate.
 
 provenance_variants:
   personal_explicit_definition:
@@ -77,8 +295,41 @@ provenance_variants:
     resolution_rule: >-
       Each evidence_anchor resolves to its source_id in retained full evidence.
       Both source_id and evidence_anchor must be pairwise distinct, so two
-      signals or anchors resolving to one retained record fail. Both anchors
-      remain exposed on the entry.
+       signals or anchors resolving to one retained record fail. Both anchors
+       remain exposed on the entry.
+  personal_inferred_conversation:
+    owner: personal
+    evidence_count: variable
+    minimum_evidence_count: 3
+    required_evidence_fields:
+      - source_id
+      - evidence_anchor
+      - source_kind
+      - signal_type
+      - session_id
+      - project_id
+      - content_fingerprint
+      - author_class
+    additional_evidence_fields: forbidden
+    allowed_signal_types: [correction, decision, question, instruction, configuration]
+    allowed_source_kinds: [conversation_turn]
+    allowed_author_classes: [user]
+    distinctness:
+      source_ids: 3
+      evidence_anchors: 3
+      session_ids: 2
+      project_ids: 2
+      content_fingerprints: 3
+    completeness_field: provenance.evidence_complete
+    completeness_value: true
+    admission: review_only
+    resolution_rule: >-
+      Retain every qualifying user-authored conversation record. At least three
+      pairwise-distinct source identities, anchors, and content fingerprints must
+      span at least two sessions and two projects. Agent-authored text may
+      corroborate a later review but cannot satisfy this variant. The evidence
+      list is complete, not a bounded preview; any unresolved, duplicated, or
+      missing identity fails.
   project_file:
     owner: project
     evidence_count: 1
@@ -105,6 +356,7 @@ ownership_contracts:
     allowed_provenance:
       - personal_explicit_definition
       - personal_inferred_usage
+      - personal_inferred_conversation
     input:
       tier: signal
       authority: references/analysis/evidence-tier-authority.yaml

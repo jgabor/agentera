@@ -1,0 +1,13 @@
+id: onlyyjethm
+artifact: plan
+record:
+  name: Qualify source integration
+  depends_on:
+    - qalythqtiq
+  status: pending
+  acceptance:
+    - GIVEN source behavior is complete WHEN source, type, build, compact, profile, and contract gates run THEN all pass from the local artifact.
+    - GIVEN a gate fails WHEN reported THEN its discovery, loading, execution, or integration owner is explicit and earlier evidence is not end-to-end success.
+    - GIVEN generated authorities and projections WHEN qualification runs THEN help, schema, commands, contracts, and capability instructions agree.
+    - GIVEN each integration gate WHEN regressions run THEN one pass and one fail prove it.
+  plan: bcpkchatfu

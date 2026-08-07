@@ -1,0 +1,15 @@
+id: qalythqtiq
+artifact: plan
+record:
+  name: Prove quantitative glossary quality
+  depends_on:
+    - ekgowckdus
+    - wjzgtphdwk
+  status: pending
+  acceptance:
+    - GIVEN the frozen holdout WHEN evaluation runs THEN discovery recall, scope accuracy, review precision, and explicit admission precision report separately.
+    - GIVEN repeated evaluation of one corpus and policy WHEN metrics produce THEN labels, provenance, denominators, uncertainty, and results reproduce.
+    - GIVEN explicit precision misses threshold WHEN qualification runs THEN delivery fails without weakening labels or fixtures.
+    - GIVEN inferred suggestions meet or miss threshold WHEN evaluation completes THEN results show while inferred auto-admission stays disabled.
+    - GIVEN each metric and threshold rule WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

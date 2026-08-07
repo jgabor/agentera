@@ -1,0 +1,15 @@
+id: milybqttmo
+artifact: plan
+record:
+  name: Mine explicit definition candidates
+  depends_on:
+    - qgimpwprim
+    - zabolpjiro
+  status: pending
+  acceptance:
+    - GIVEN supported definition forms WHEN mining runs THEN term and meaning spans retain one resolvable user-authored anchor.
+    - GIVEN examples, negations, hypotheticals, retractions, or agent definitions WHEN mining runs THEN they are ineligible explicit definitions.
+    - GIVEN project-qualified language WHEN mining runs THEN personal admission excludes it without reading project glossary state.
+    - GIVEN identical evidence and policy WHEN mining repeats THEN terms, spans, reasons, and order are byte-identical.
+    - GIVEN each cue and exclusion WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu

@@ -1,0 +1,16 @@
+id: fylmyspnsy
+artifact: progress
+record:
+  timestamp: 2026-08-07 19:40
+  type: feat
+  phase: build
+  what: Settled personal glossary mining identity, provenance, consent, privacy, and replacement authority without implementing downstream mining.
+  context:
+    intent: Make the approved mining authority executable before dependent work.
+    constraints: Preserve shared entry semantics, personal/project isolation, consumer precedence, Build-owned project publication, local-history consent, and suite version hold.
+    scope: Authority YAML, evidence-tier field supply, pure identity helpers, contract validators, boundary tests, and authority documentation only.
+  inspiration: Plan bcpkchatfu Task bloijvifoi, firm Decisions prmnztjytv and mcsmqqitnm, and the new firm authority Decision zyvgyvjnsv.
+  discovered: The existing equality matcher is Unicode caseless-exact with no normalization, while the existing inferred variant is fixed at two instruction/configuration records. The evidence-tier authority lacked conversation session, content fingerprint, and author-class semantics. The task required an explicit append-only conversation variant so qualifying evidence is complete rather than silently capped.
+  verified: "The authority validator passes through the rebuilt local CLI at version 3.0.0-dev.43. Focused glossary, evidence-tier, identity, occurrence, and runtime-inventory tests pass: 343 tests in 6 files. The full source lane passes 229 files with 3408 passed and 1 skipped. Package verification passes 3 files with 34 tests. Typecheck, build, and compact checks pass. Validation fixtures include pass/fail boundaries for replacement isolation and project publication, Unicode identity and revision binding, conversation anchors and independence, consent states, privacy authority, and disabled inferred automatic admission."
+  next: Downstream tasks may implement extraction, candidate projections, review persistence, Profile Full integration, and measured quality authority against this contract. No project glossary or project state behavior was changed.
+  publication_order: 96

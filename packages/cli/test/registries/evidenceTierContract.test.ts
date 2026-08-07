@@ -237,7 +237,7 @@ describe("AC2 — no supported source family is silently omitted", () => {
 });
 
 describe("AC3 — signal semantics required meaning available to current and deferred consumers", () => {
-  it("reserves correction, decision, question, instruction, configuration, record identity, date, and evidence anchor", () => {
+  it("reserves signal meaning and conversation provenance identity fields", () => {
     const kinds = signalSemantics(PRODUCTION_CONTRACT).map((s) => s.kind);
     expect(kinds.sort()).toEqual([...REQUIRED_SIGNAL_KINDS].sort());
     for (const semantic of signalSemantics(PRODUCTION_CONTRACT)) {
@@ -292,6 +292,16 @@ describe("AC3 — signal semantics required meaning available to current and def
       }),
     );
     expect(errors.some((e) => e.includes("decision") && e.includes("omitted"))).toBe(true);
+  });
+
+  it("rejects a contract that drops conversation content fingerprints", () => {
+    const errors = validateEvidenceTierContract(
+      writeFixture((obj) => {
+        delete ((obj.signal_semantics as Record<string, unknown>).kinds as Record<string, unknown>)
+          .content_fingerprint;
+      }),
+    );
+    expect(errors.some((e) => e.includes("content_fingerprint") && e.includes("omitted"))).toBe(true);
   });
 });
 

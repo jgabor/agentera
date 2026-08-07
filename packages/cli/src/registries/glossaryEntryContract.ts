@@ -7,6 +7,12 @@ import {
   validateConsumerBoundary,
   validateConsumerEvidenceOwner,
 } from "./glossaryConsumerContractValidation.js";
+import {
+  validateConversationProvenance,
+  validateHistoryEvidence,
+  validatePersonalMiningAuthority,
+  validateProvenanceVariants,
+} from "./glossaryMiningAuthority.js";
 
 type Mapping = Record<string, unknown>;
 
@@ -16,12 +22,17 @@ export class GlossaryEntryBoundError extends Error {}
 export type GlossaryProvenanceKind =
   | "personal_explicit_definition"
   | "personal_inferred_usage"
+  | "personal_inferred_conversation"
   | "project_file";
 
 export interface RetainedEvidence {
   sourceId: string;
   sourceKind: string;
   signalType: string;
+  sessionId?: string;
+  projectId?: string;
+  contentFingerprint?: string;
+  authorClass?: string;
 }
 
 export interface GlossaryAdmissionContext {
@@ -32,6 +43,12 @@ export interface PersonalGlossaryAdmissionContract {
   explicitSignalTypes: string[];
   inferredSignalTypes: string[];
   inferredSourceKinds: string[];
+  conversationSignalTypes: string[];
+  conversationSourceKinds: string[];
+  conversationAuthorClasses: string[];
+  conversationEvidenceFields: string[];
+  conversationMinimumEvidenceCount: number;
+  conversationAdmission: string;
   insufficientRecovery: string;
 }
 
@@ -104,10 +121,23 @@ export function personalGlossaryAdmissionContract(
   const authority = contract(pathname);
   const personal = mapping(mapping(authority.ownership_contracts)?.personal);
   const admission = mapping(personal?.admission);
+  const conversation = mapping(
+    mapping(authority.provenance_variants)?.personal_inferred_conversation,
+  );
   return {
     explicitSignalTypes: strings(mapping(admission?.explicit)?.candidate_signal_types),
     inferredSignalTypes: strings(mapping(admission?.inferred)?.candidate_signal_types),
     inferredSourceKinds: strings(mapping(admission?.inferred)?.source_kinds),
+    conversationSignalTypes: strings(conversation?.allowed_signal_types),
+    conversationSourceKinds: strings(conversation?.allowed_source_kinds),
+    conversationAuthorClasses: strings(conversation?.allowed_author_classes),
+    conversationEvidenceFields: strings(conversation?.required_evidence_fields),
+    conversationMinimumEvidenceCount:
+      typeof conversation?.minimum_evidence_count === "number"
+        ? conversation.minimum_evidence_count
+        : 0,
+    conversationAdmission:
+      typeof conversation?.admission === "string" ? conversation.admission : "",
     insufficientRecovery:
       typeof admission?.insufficient_recovery === "string"
         ? admission.insufficient_recovery.trim()
@@ -262,6 +292,7 @@ export function validateGlossaryEntryContract(
   if (authority.schema_version !== "agentera.glossaryEntryContract.v1") {
     errors.push("schema_version must be agentera.glossaryEntryContract.v1");
   }
+  errors.push(...validatePersonalMiningAuthority(authority));
 
   const occurrence = mapping(authority.term_occurrence);
   if (
@@ -334,57 +365,7 @@ export function validateGlossaryEntryContract(
   }
 
   const variants = mapping(authority.provenance_variants);
-  const variantExpectations: Record<string, Mapping> = {
-    personal_explicit_definition: {
-      owner: "personal",
-      evidence_count: 1,
-      required_evidence_fields: ["source_id", "evidence_anchor", "signal_type"],
-      allowed_signal_types: ["correction", "decision", "instruction"],
-    },
-    personal_inferred_usage: {
-      owner: "personal",
-      evidence_count: 2,
-      required_evidence_fields: ["source_id", "evidence_anchor", "source_kind"],
-      allowed_source_kinds: ["instruction_document", "project_config_signal"],
-    },
-    project_file: {
-      owner: "project",
-      evidence_count: 1,
-      required_evidence_fields: ["source_path", "source_record_sha256"],
-    },
-  };
-  for (const [kind, expectedVariant] of Object.entries(variantExpectations)) {
-    const variant = mapping(variants?.[kind]);
-    if (!variant) {
-      errors.push(`provenance variant ${kind} is required`);
-      continue;
-    }
-    if (variant.owner !== expectedVariant.owner)
-      errors.push(`${kind}.owner must be ${expectedVariant.owner}`);
-    if (variant.evidence_count !== expectedVariant.evidence_count) {
-      errors.push(`${kind}.evidence_count must be ${expectedVariant.evidence_count}`);
-    }
-    if (
-      !sameStrings(
-        variant.required_evidence_fields,
-        expectedVariant.required_evidence_fields as string[],
-      )
-    ) {
-      errors.push(`${kind}.required_evidence_fields must match its provenance variant`);
-    }
-    if (variant.additional_evidence_fields !== "forbidden") {
-      errors.push(`${kind}.additional_evidence_fields must be forbidden`);
-    }
-    for (const allowedField of ["allowed_signal_types", "allowed_source_kinds"]) {
-      if (
-        allowedField in expectedVariant &&
-        !sameStrings(variant[allowedField], expectedVariant[allowedField] as string[])
-      ) {
-        errors.push(`${kind}.${allowedField} must preserve the admitted evidence classes`);
-      }
-    }
-    if (!nonEmpty(variant.resolution_rule)) errors.push(`${kind}.resolution_rule is required`);
-  }
+  errors.push(...validateProvenanceVariants(variants));
 
   const ownership = mapping(authority.ownership_contracts);
   const personal = mapping(ownership?.personal);
@@ -393,6 +374,7 @@ export function validateGlossaryEntryContract(
     !sameStrings(personal?.allowed_provenance, [
       "personal_explicit_definition",
       "personal_inferred_usage",
+      "personal_inferred_conversation",
     ])
   ) {
     errors.push("personal ownership must admit only personal provenance variants");
@@ -886,25 +868,6 @@ function evidenceShape(
   return errors;
 }
 
-function validateHistoryEvidence(
-  evidence: Mapping,
-  context: GlossaryAdmissionContext,
-  index: number,
-): string[] {
-  const errors: string[] = [];
-  const sourceId = typeof evidence.source_id === "string" ? evidence.source_id : "";
-  const anchor = typeof evidence.evidence_anchor === "string" ? evidence.evidence_anchor : "";
-  const retained = context.retainedHistory.get(anchor);
-  if (!sourceId || !anchor)
-    errors.push(`provenance.evidence[${index}] requires source_id and evidence_anchor`);
-  if (!retained || retained.sourceId !== sourceId) {
-    errors.push(
-      `provenance.evidence[${index}].evidence_anchor must resolve to its retained source_id`,
-    );
-  }
-  return errors;
-}
-
 export function validateGlossaryEntry(
   entry: Mapping,
   owner: GlossaryOwner,
@@ -978,6 +941,10 @@ export function validateGlossaryEntry(
         );
       }
     }
+  }
+
+  if (kind === "personal_inferred_conversation") {
+    errors.push(...validateConversationProvenance(evidence, provenance, variant, context));
   }
 
   if (kind === "project_file") {

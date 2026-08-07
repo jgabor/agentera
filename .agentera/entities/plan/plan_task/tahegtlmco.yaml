@@ -1,0 +1,16 @@
+id: tahegtlmco
+artifact: plan
+record:
+  name: Select safe bounded candidate projections
+  depends_on:
+    - zabolpjiro
+    - milybqttmo
+    - ddoncnlhro
+  status: pending
+  acceptance:
+    - GIVEN demand exceeds bounds WHEN selection runs THEN allocation, ties, retained and dropped counts, and degraded coverage are deterministic and visible.
+    - GIVEN diverse sources and projects WHEN caps apply THEN one abundant family cannot silently consume all evidence.
+    - GIVEN sensitive context WHEN excerpts project THEN output and persistence follow redaction, omission, retention, and purge authority.
+    - GIVEN identical candidates and policy WHEN projection repeats THEN capsule bytes, identities, order, and reports match.
+    - GIVEN each cap, diversity, and privacy rule WHEN regressions run THEN one pass and one fail cover it.
+  plan: bcpkchatfu
