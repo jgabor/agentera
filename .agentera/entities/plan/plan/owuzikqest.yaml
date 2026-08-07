@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-08-07
-    status: open
+    status: complete
     reviewed: 2026-08-07
     critic_issues: 4 found, 4 addressed, 0 dismissed
     revised: Unified transaction ownership, ordered recovery before reporting, bounded ambiguous repair, and added final state verification.
