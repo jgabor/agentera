@@ -1,0 +1,12 @@
+id: apgveejdaq
+artifact: plan
+record:
+  name: Require explicit effect-complete activation (ibomhottkk)
+  depends_on:
+    - fhrpugzmhb
+  status: pending
+  acceptance:
+    - GIVEN an inactive project WHEN any ordinary TODO mutation is requested THEN it fails with exact preview and apply commands and changes no public, entity, baseline, or activation state.
+    - GIVEN activation preview and confirmed apply WHEN effects are compared THEN matched, converted, retained, conflicting, and public-document changes are bounded and apply introduces no unpreviewed effect.
+    - GIVEN success, conflict, interruption, replay, and one passing plus one failing case per activation transition WHEN activation runs THEN publication is atomic, refusal is effect-free, and retries converge.
+  plan: owuzikqest

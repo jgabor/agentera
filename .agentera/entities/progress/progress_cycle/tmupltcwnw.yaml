@@ -1,0 +1,15 @@
+id: tmupltcwnw
+artifact: progress
+record:
+  timestamp: 2026-08-07 14:22
+  type: fix
+  phase: build
+  what: Superseded progress bzcubefuos for replacement task jstgyilsyk by binding interrupted recovery to the complete original entity inventory; final independent re-review remains pending.
+  context:
+    intent: Reject added or missing non-TODO entity drift before any interrupted cutover recovery effect while preserving TODO authority and deterministic retry/replay.
+    constraints: Address only the accepted complete-inventory finding; preserve existing uncommitted work and failed evaluation; no explicit activation, repair, startup diagnostics, terminal state, commit, publication, or version change.
+    scope: Automatic upgrade cutover journal inventory, recovery revalidation, and focused added/missing non-TODO regressions.
+  discovered: Audit jstgyilsyk-audit-1 exposed that TODO-only path equality and schema validation cannot distinguish an added or missing schema-valid non-TODO entity. The content-addressed cutover journal must retain every unchanged and changed entity target beside its source/preview-bound marker target.
+  verified: "Pre-correction proof: the focused test rejects an added non-TODO entity before resuming an interrupted TODO cutover failed at the marker assertion (expected false, received true). Complete-inventory proof: the final added and missing non-TODO regressions each passed after asserting the drifted graph remained schema-valid; both retries failed before resumed effects, kept .agentera/state-mode.yaml absent, and preserved exact project-tree and journal bytes. After removing or restoring only the injected plan entity, correction, retry, and replay preserved exact .agentera/entities and TODO.md bytes. TODO-local behavior remained correct: the unmatched TODO drift, unchanged interruption, already-ID-bearing interruption, and 161-row hierarchy cases passed. pnpm -C packages/cli exec vp test run --config vite.config.ts test/upgrade/upgradeEntityCutover.test.ts test/state/entityMigrationPreview.test.ts passed 132/132; pnpm -C packages/cli exec vp test run --config vite.config.ts test/state/todoDocsEntities.test.ts passed 62/62; pnpm -C packages/cli run typecheck and pnpm -C packages/cli run build passed. Rebuilt node packages/cli/dist/bin/agentera.js behavior returned interrupted_exit=2, drift_retry_exit=2, effect_free=true, marker_after_drift=false, corrected_exit=0, replay_exit=0, stable=true. check validate state passed with 2149 entities and zero issues; check compact and git diff --check passed."
+  next: Independent Audit should re-review jstgyilsyk against complete-inventory recovery. Preserve jstgyilsyk-audit-1 and do not record another evaluation, complete or supersede tasks, alter rrflufktbc terminal state, or commit before that review.
+  publication_order: 99

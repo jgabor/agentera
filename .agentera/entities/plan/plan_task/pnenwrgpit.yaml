@@ -1,0 +1,15 @@
+id: pnenwrgpit
+artifact: plan
+record:
+  name: Verify lifecycle and synchronize final state
+  depends_on:
+    - fhrpugzmhb
+    - apgveejdaq
+    - ajalzcdhey
+    - xhozujudhq
+  status: pending
+  acceptance:
+    - GIVEN all four source TODO outcomes WHEN focused and repository-wide gates run against the built local CLI THEN type, behavior, package, compaction, and state-validation checks pass.
+    - GIVEN passing evidence WHEN project state is synchronized THEN rrflufktbc, ibomhottkk, lgruqgycgo, and rnhnurigbf are resolved with evidence and plan, progress, TODO, and changelog views agree.
+    - GIVEN final synchronization WHEN diffs are reviewed THEN no unrelated state, release publication, tag, push, or prohibited version change is present.
+  plan: owuzikqest

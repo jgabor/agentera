@@ -32,7 +32,7 @@ record:
       description: "[fix:3.0.0] Add explicit TODO activation and block implicit activation."
       severity: normal
       status: open
-      order: 27
+      order: 26
   lifecycle:
     operation: set-severity
     reason: Moved from the duplicated Critical section to the Normal backlog.

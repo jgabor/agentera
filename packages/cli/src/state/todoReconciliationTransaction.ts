@@ -14,17 +14,15 @@ import {
   type PublishedTargetIdentity,
 } from "./entityPublicationContext.js";
 import { ExactReplacementConflictError, FileReplacementError } from "./exactReplacementRecovery.js";
-import {
-  TODO_RECONCILIATION_ACTIVATION_PATH,
-  TODO_RECONCILIATION_ITEM_LIMIT,
-} from "./todoReconciliationActivation.js";
+import { TODO_RECONCILIATION_ACTIVATION_PATH } from "./todoReconciliationActivation.js";
 import { reject } from "./write/errors.js";
 
 const VERSION = "agentera.todoReconciliationTransaction.v1";
 const DIRECTORY = ".agentera/.todo-reconciliation";
 const MAX_JOURNAL_BYTES = 4 * 1024 * 1024;
 const MAX_TARGET_BYTES = 1024 * 1024;
-const MAX_TARGETS = TODO_RECONCILIATION_ITEM_LIMIT + 2;
+const MAX_TARGETS = Math.floor(MAX_JOURNAL_BYTES / 32);
+const ENTITY_MODE_MARKER = ".agentera/state-mode.yaml";
 
 export interface TodoReconciliationTarget {
   path: string;
@@ -50,13 +48,23 @@ export interface TodoReconciliationRecoveryReceipt {
 
 export interface TodoReconciliationRecoveryOptions {
   createRequestSha256?: string;
+  beforeRecovery?: (targets: readonly ValidatedTodoReconciliationTarget[]) => void;
   beforeCommit?: () => void;
+  beforeActivation?: () => void;
 }
 
 export interface TodoReconciliationPublicationOptions {
   create?: TodoReconciliationCreateReceipt;
   interruptAfterTarget?: number;
+  retainUnchangedTargets?: boolean;
   beforeCommit?: () => void;
+  beforeActivation?: () => void;
+}
+
+export interface ValidatedTodoReconciliationTarget {
+  path: string;
+  before: Buffer | null;
+  after: Buffer;
 }
 
 interface JournalTarget {
@@ -124,7 +132,8 @@ function same(left: Buffer | null, right: Buffer | null): boolean {
 function validTarget(relative: string, publicPath: string): boolean {
   return relative === publicPath
     || relative === TODO_RECONCILIATION_ACTIVATION_PATH
-    || /^\.agentera\/entities\/todo\/todo_item\/[a-z]{10}\.yaml$/.test(relative);
+    || relative === ENTITY_MODE_MARKER
+    || /^\.agentera\/entities\/[a-z][a-z0-9_]*\/[a-z][a-z0-9_]*\/[a-z]{10}\.yaml$/.test(relative);
 }
 
 function createReceiptFromTargets(targets: JournalTarget[]): TodoReconciliationCreateReceipt | undefined {
@@ -218,7 +227,7 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
 }
 
 function targetLimit(target: JournalTarget, sourceRoot: string): number {
-  return target.path.startsWith(".agentera/entities/todo/todo_item/") ? entityExactGetMaxBytes(sourceRoot) : MAX_TARGET_BYTES;
+  return target.path.startsWith(".agentera/entities/") ? entityExactGetMaxBytes(sourceRoot) : MAX_TARGET_BYTES;
 }
 
 function assertBinding(journal: Journal, binding: TodoReconciliationBinding): void {
@@ -539,9 +548,15 @@ export function recoverTodoReconciliation(
       message: `pending TODO create for '${journal.create.created_id}' does not match this request`,
       recovery: `Retry the exact original TODO create input to recover '${journal.create.created_id}'; no transaction target bytes were changed.`,
     });
+    options.beforeRecovery?.(journal.targets.map((target) => ({
+      path: target.path,
+      before: target.before === null ? null : decode(target.before),
+      after: decode(target.after),
+    })));
     const applied: AppliedTarget[] = [];
     try {
       for (const target of journal.targets) {
+        if (target.path === ENTITY_MODE_MARKER) options.beforeActivation?.();
         const identity = applyTarget(context, root, target, sourceRoot, journal.public_path);
         if (identity) applied.push({ target, identity });
       }
@@ -573,8 +588,10 @@ export function publishTodoReconciliation(
   options: TodoReconciliationPublicationOptions = {},
 ): { id: string; targetCount: number } {
   const normalized = targets
-    .filter((target) => !same(target.before, Buffer.from(target.after)))
-    .sort((left, right) => Number(left.path === binding.publicPath) - Number(right.path === binding.publicPath) || left.path.localeCompare(right.path));
+    .filter((target) => options.retainUnchangedTargets || !same(target.before, Buffer.from(target.after)))
+    .sort((left, right) => Number(left.path === ENTITY_MODE_MARKER) - Number(right.path === ENTITY_MODE_MARKER)
+      || Number(left.path === binding.publicPath) - Number(right.path === binding.publicPath)
+      || left.path.localeCompare(right.path));
   const body = normalized.map((target) => ({ path: target.path, before: target.before === null ? null : encode(target.before), after: encode(target.after) }));
   const identity = options.create ? { create: options.create, targets: body } : body;
   const id = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
@@ -586,7 +603,7 @@ export function publishTodoReconciliation(
   ) reject({
     class: "schema_violation",
     message: "TODO reconciliation transaction has invalid or duplicate bounded targets",
-    recovery: `Reduce the managed TODO working set to at most ${TODO_RECONCILIATION_ITEM_LIMIT} items and retry; no state was changed.`,
+    recovery: "Reduce the managed TODO working set or cutover entity inventory below the declared journal bounds and retry; no state was changed.",
   });
   const publicTarget = normalized.find((target) => target.path === binding.publicPath && target.before !== null);
   if (publicTarget) {
@@ -620,6 +637,7 @@ export function publishTodoReconciliation(
   const applied: AppliedTarget[] = [];
   try {
     for (const target of journal.targets) {
+      if (target.path === ENTITY_MODE_MARKER) options.beforeActivation?.();
       const identity = applyTarget(context, context.pinnedPath(), target, sourceRoot, journal.public_path);
       if (identity) applied.push({ target, identity });
       if (options.interruptAfterTarget === applied.length) throw new InjectedTodoReconciliationInterruption(applied.length);

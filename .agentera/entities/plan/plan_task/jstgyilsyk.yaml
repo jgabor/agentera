@@ -1,0 +1,25 @@
+id: jstgyilsyk
+artifact: plan
+record:
+  plan: owuzikqest
+  name: Replace blocked cutover with journal target revalidation
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN exact hierarchical or project-specific TODO rows WHEN automatic cutover completes THEN each entity has one ID-bearing public row and unrelated prose, Markdown-owned values, operational fields, status, and order are preserved.
+    - GIVEN unmatched, stale, ambiguous, or changed journal/entity/Markdown evidence WHEN initial cutover or interrupted recovery evaluates authority publication THEN initial failure is effect-free, recovery publishes no remaining target or marker effect, the marker stays absent, and the journal remains safely recoverable.
+    - GIVEN interruption, target-set drift, correction, retry, replay, and one passing plus one failing case per cutover decision class WHEN outcomes are compared THEN IDs and final public state converge without duplicates or reopened work.
+  evidence:
+    - Replaces blocked task fhrpugzmhb after Audit ses_0241c5153ffeAGPl42g9san8BT reproduced authority-marker publication following interruption and insertion of a valid unmatched TODO entity.
+    - After this replacement records PASS and completes, supersede fhrpugzmhb by the replacement before downstream dependencies resume.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Audit proved interrupted recovery validates only TODO journal targets: adding a schema-valid non-TODO plan entity allowed state-mode.yaml publication over a six-entity graph, then startup failed. Recovery must bind the complete original cutover inventory and reject added or missing non-TODO entities before effects and before the marker."
+    provenance:
+      attempt_id: jstgyilsyk-audit-2
+      source: audit:ses_023e7b643ffeR55uRkd4DciD89:bounded-rereview
+      recorded_at: 2026-08-07 14:29
+      writer_command: agentera state plan record-evaluation

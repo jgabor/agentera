@@ -350,16 +350,15 @@ describe("entity migration read-only preview", () => {
     ]));
   });
 
-  it("blocks migration when a managed TODO row disagrees with an existing entity public projection", () => {
+  it("uses an explicit managed TODO ID while importing Markdown-owned public values", () => {
     const root = project();
     const id = "aaaaaaaaaa";
     write(root, "TODO.md", `# TODO\n\n## → Normal\n- [ ] [id:${id}] [fix:3.0.0] Markdown title\n`);
     write(root, `.agentera/entities/todo/todo_item/${id}.yaml`, `id: ${id}\nartifact: todo\nrecord:\n  kind: fix\n  target_version: 3.0.0\n  title: Agentera title\n  requirements: []\n  acceptance: []\n  release_blocker: false\n  severity: normal\n  status: open\n`);
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
-    const conflict = preview.entries.find((entry) => entry.source_identity === `conflict:todo:public:${id}`);
-    expect(conflict).toMatchObject({ classification: "conflict", artifact: "todo", boundary: "todo_item", detail_availability: "unavailable", recovery: expect.any(String) });
-    expect(conflict?.recovery).toContain("TODO.md");
-    expect(preview.status).not.toBe("ready");
+    const todo = preview.entries.find((entry) => entry.proposed_target?.id === id);
+    expect(todo).toMatchObject({ classification: "verified_full", artifact: "todo", boundary: "todo_item", proposed_target: { id } });
+    expect(preview.status).toBe("ready");
   });
 
   it("inventories the docs-mapped TODO authority when the root default is absent", () => {

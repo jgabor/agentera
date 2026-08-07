@@ -113,7 +113,7 @@ function todoPublicPath(root: string, sourceRoot: string): string {
   return resolveArtifactPath(todo, root, { strictWrite: true });
 }
 
-function todoReconciliationBinding(root: string, sourceRoot: string): TodoReconciliationBinding {
+export function todoReconciliationBinding(root: string, sourceRoot: string): TodoReconciliationBinding {
   const publicPath = relative(root, todoPublicPath(root, sourceRoot));
   const docsRecord = loadArtifactRecord("docs", artifactSchemasDir(sourceRoot), registryModelPath(sourceRoot));
   if (!docsRecord) throw new Error("artifact registry is missing the canonical 'docs' record");
@@ -216,7 +216,7 @@ function readTodoMarkdown(target: string): { bytes: Buffer; text: string } {
 function managedRows(
   markdown: string,
   activation: TodoReconciliationActivation | null,
-  entities: DiscoveredEntity[],
+  entities: readonly TodoEntityView[],
 ): ManagedRowScan {
   const result = new Map<string, ManagedRow>();
   const order = new Map<string, number>();
@@ -224,7 +224,7 @@ function managedRows(
   let section: string | null = null;
   markdown.split(/\r?\n/).forEach((line, index) => {
     const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
-    if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : null;
+    if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : heading === "notes" ? null : section;
     const item = parseTodoMarkdownListItem(line.trim());
     if (!item) return;
     const severity = section ? markdownSeverity(section) : null;
@@ -299,6 +299,33 @@ function managedRows(
 
 function rowSnapshot(row: ManagedRow, record: JsonObject): TodoPublicSnapshot {
   return { ...row.snapshot, severity: row.section === "resolved" ? String(record.severity) : row.snapshot.severity };
+}
+
+export function todoCutoverPublicProjectionViolations(
+  markdown: string,
+  targets: readonly { id: string; record: JsonObject }[],
+): string[] {
+  let rows: Map<string, ManagedRow>;
+  try {
+    const activation = JSON.parse(todoReconciliationActivationBytes([])) as TodoReconciliationActivation;
+    rows = managedRows(markdown, activation, targets.map(({ id, record }) => ({ boundary: TODO.boundary, id, record }))).rows;
+  } catch (error) {
+    return [error instanceof StateWriteInputError ? error.body.message : (error as Error).message];
+  }
+  const targetIds = new Set(targets.map(({ id }) => id));
+  if (targetIds.size !== targets.length) return ["pending TODO cutover target IDs are not unique"];
+  const unexpected = [...rows.keys()].find((id) => !targetIds.has(id));
+  if (unexpected) return [`final managed TODO Markdown ID '${unexpected}' has no journal entity target`];
+  for (const { id, record } of targets) {
+    const row = rows.get(id);
+    if (!row) return [`journal TODO entity '${id}' has no final managed Markdown row`];
+    const projected = rowSnapshot(row, record);
+    const prior = baseline(record);
+    if (!prior || canonicalRecordJson(prior) !== canonicalRecordJson(projected)) return [`journal TODO entity '${id}' has no exact final public baseline`];
+    if (!samePublic(publicSnapshot(record), projected, false)) return [`journal TODO entity '${id}' public values do not match its final managed Markdown row`];
+  }
+  if (rows.size !== targets.length) return ["final managed TODO Markdown rows do not match the journal entity target set"];
+  return [];
 }
 
 function inspectTodoReadView(

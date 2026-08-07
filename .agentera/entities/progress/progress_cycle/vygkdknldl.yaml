@@ -1,0 +1,15 @@
+id: vygkdknldl
+artifact: progress
+record:
+  timestamp: 2026-08-07 13:01
+  type: fix
+  phase: build
+  what: Implemented and verified Task fhrpugzmhb safe automatic one-to-one TODO cutover; independent Audit remains pending.
+  context:
+    intent: Supply concrete non-terminal verified evidence for Task fhrpugzmhb after orchestration presence evaluation failed.
+    constraints: Preserve evaluation attempt fhrpugzmhb-presence-1; do not complete the task, record another evaluation, resolve rrflufktbc, commit, or change terminal plan/TODO state.
+    scope: Progress evidence only; implementation and tests are unchanged.
+  discovered: Pre-created TODO entities were projected separately from hierarchical Markdown, so stale entity status could duplicate rows or reopen completed work; marker-last recovery also needed the existing reconciliation journal to own cutover effects.
+  verified: "Task fhrpugzmhb acceptance 1: `pnpm -C packages/cli exec vp test run test/upgrade/upgradeEntityCutover.test.ts --config vite.config.ts` passed 32/32 tests. Its 161-row hierarchical and client-specific-heading fixture proves one ID-bearing row per pre-created entity, no second Normal projection, 54 completed rows remain resolved, Markdown text/severity/status/order and unrelated prose remain authoritative, and operational readiness fields survive. Acceptance 2: the same 32/32 run includes effect-free unmatched public identity, unknown explicit ID, ambiguous identity, and stale activation failures; each compares the complete project tree before/after and requires no authority marker. The explicit-ID passing case imports stale entity public text from Markdown, while the 161-row case imports stale open statuses without reopening completed work. `pnpm -C packages/cli exec vp test run test/state/entityMigrationPreview.test.ts --config vite.config.ts` passed 96/96 and `pnpm -C packages/cli exec vp test run test/state/todoDocsEntities.test.ts --config vite.config.ts` passed 62/62. Acceptance 3: the 32/32 upgrade run includes interruption after two journal targets, retry recovery, repeated apply, stable IDs, and byte-stable final Markdown; it covers passing explicit-ID and exact ID-less matching plus failing unknown-ID, unmatched, ambiguous, and stale-activation decisions. `pnpm -C packages/cli run typecheck` passed; `pnpm -C packages/cli build` passed; rebuilt `node packages/cli/dist/bin/agentera.js --version` reported 3.0.0-dev.43; its upgrade dry-run rendered preview-only output without mutation. `git diff --check` passed after the failed presence evaluation wrote only its preserved task provenance."
+  next: Independent Audit must evaluate this evidence before any task completion, TODO resolution, terminal state write, evaluation retry, or commit.
+  publication_order: 96

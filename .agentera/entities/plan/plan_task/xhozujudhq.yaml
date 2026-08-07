@@ -1,0 +1,13 @@
+id: xhozujudhq
+artifact: plan
+record:
+  name: Report inactive and unsafe active states (rnhnurigbf)
+  depends_on:
+    - apgveejdaq
+    - ajalzcdhey
+  status: pending
+  acceptance:
+    - GIVEN inactive, unsafe active, and healthy active projects WHEN prime, doctor, or state validation inspects them THEN each state is distinguished and receives the exact supported preview and apply command.
+    - GIVEN inspection WHEN diagnostics are emitted THEN counts are bounded and content-private, invalid lifecycle state is not mislabeled as generic corruption, and no state changes.
+    - GIVEN one passing and one failing case per reported state WHEN compatibility is checked THEN healthy output stays unchanged and unsafe states remain action-required.
+  plan: owuzikqest

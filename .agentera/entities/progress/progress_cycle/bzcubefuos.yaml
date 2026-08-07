@@ -1,0 +1,15 @@
+id: bzcubefuos
+artifact: progress
+record:
+  timestamp: 2026-08-07 13:57
+  type: fix
+  phase: build
+  what: Implemented journal target revalidation for replacement task jstgyilsyk; independent Audit and terminal state changes remain pending.
+  context:
+    intent: Make automatic TODO cutover recovery reject journal target drift before resumed publication and still converge after correction.
+    constraints: Preserve the recoverable journal and TODO.md authority; no terminal plan, evaluation, TODO, commit, publication, version, activation-command, repair, or startup-diagnostic work.
+    scope: Automatic upgrade cutover journal construction, interrupted recovery revalidation, focused regression coverage, and verification.
+  discovered: "The recovery lifecycle needed two checks against one validated journal target set: before the first resumed target and immediately before the authority marker. Cutover journals also need unchanged entity and Markdown targets so exact final evidence remains complete."
+  verified: "Criterion 1: pnpm -C packages/cli exec vp test run --config vite.config.ts test/upgrade/upgradeEntityCutover.test.ts test/state/entityMigrationPreview.test.ts passed 130/130, including the 161-row hierarchical cutover and explicit-ID recovery with preserved prose, Markdown-owned values, status, order, readiness, and one ID-bearing row per entity. Criterion 2: the exact regression rejects unmatched entity drift before resuming an interrupted TODO cutover passed after asserting the injected extra TODO entity was schema-valid; retry failed before effects, .agentera/state-mode.yaml stayed absent, and the complete project tree and pending journal bytes equaled their pre-retry snapshots. Existing unmatched, unknown-ID, ambiguous, stale-activation, target-change, and source-drift cases also passed in the 130-test run. Criterion 3: that regression removed only the injected drift, then correction retry and replay preserved exact .agentera/entities and TODO.md bytes; unchanged and already-ID-bearing interrupted recovery also passed with stable IDs. pnpm -C packages/cli run typecheck, pnpm -C packages/cli run build, 62/62 todoDocsEntities tests, rebuilt-local-CLI upgrade smoke, check validate state (2148 entities, 0 issues), check compact, and git diff --check passed."
+  next: Independent Audit should evaluate jstgyilsyk. Do not record PASS, complete or supersede tasks, resolve TODO state, or commit until that evaluation returns.
+  publication_order: 98

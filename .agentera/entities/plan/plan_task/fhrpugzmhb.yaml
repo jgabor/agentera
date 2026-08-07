@@ -1,0 +1,25 @@
+id: fhrpugzmhb
+artifact: plan
+record:
+  name: Deliver safe one-to-one automatic cutover (rrflufktbc)
+  depends_on:
+    []
+  status: superseded
+  acceptance:
+    - GIVEN exact hierarchical or project-specific TODO rows WHEN automatic cutover completes THEN each entity has one ID-bearing public row and unrelated prose, public values, status, and order are preserved.
+    - GIVEN unmatched, stale, or ambiguous evidence WHEN cutover is requested THEN it exits before changing any tracked or activation bytes and never reopens completed work.
+    - GIVEN interruption, retry, and one passing plus one failing case per cutover decision class WHEN outcomes are compared THEN IDs and final public state converge deterministically.
+  plan: owuzikqest
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Audit reproduced interrupted cutover followed by a valid unmatched TODO entity: retry published state-mode.yaml before final verification failed. Recovery validates only a nonempty graph, violating effect-free unmatched handling and retry convergence."
+    provenance:
+      attempt_id: fhrpugzmhb-audit-2
+      source: audit:ses_0241c5153ffeAGPl42g9san8BT
+      recorded_at: 2026-08-07 13:13
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - jstgyilsyk
+  superseded_reason: Replacement jstgyilsyk passed independent Audit after binding recovery to the complete cutover inventory.

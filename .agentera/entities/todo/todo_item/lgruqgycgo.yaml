@@ -32,4 +32,4 @@ record:
       description: "[fix:3.0.0] Repair projects affected by implicit TODO reconciliation activation."
       severity: normal
       status: open
-      order: 33
+      order: 32

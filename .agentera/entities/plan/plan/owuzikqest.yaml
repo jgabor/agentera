@@ -1,0 +1,35 @@
+id: owuzikqest
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-07
+    status: open
+    reviewed: 2026-08-07
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    revised: Unified transaction ownership, ordered recovery before reporting, bounded ambiguous repair, and added final state verification.
+    title: "Plan: Safe TODO reconciliation activation and recovery"
+  what: Deliver safe automatic cutover, explicit activation, bounded repair, and truthful diagnostics for TODO reconciliation without duplicate public rows or reopened work.
+  why: Projects must retain an editable authoritative TODO.md while Agentera preserves operational entity state, even across migration, interruption, recovery, and repeated execution.
+  constraints: TODO.md owns public text, severity, checkbox status, and order; Agentera owns IDs and operational fields. Reads are mutation-free, conflicts fail before effects, previews describe every permitted apply effect, existing recoverable transaction ownership is reused, and no publication, tag, push, or suite-version increase is included.
+  overall_acceptance: GIVEN inactive, healthy active, unsafe active, ambiguous, interrupted, and replayed project states WHEN users inspect, activate, upgrade, repair, or validate TODO reconciliation THEN each item has one authoritative public row, completed work stays completed, every write is preview-bound and recoverable, and each state receives the exact safe next action.
+  scope:
+    included:
+      - "TODO rrflufktbc: safe one-to-one automatic cutover"
+      - "TODO ibomhottkk: explicit activation, blocked implicit activation, and effect-complete previews"
+      - "TODO lgruqgycgo: repair for projects damaged by implicit activation"
+      - "TODO rnhnurigbf: inactive and unsafe-active diagnostics"
+      - Coupled tests, user-facing guidance, changelog, progress, TODO, and plan-state synchronization
+    excluded:
+      - General transactional TODO batch apply
+      - Unrelated TODO reconciliation redesign
+      - npm publication, Git tagging, pushing, and suite-version increases
+    deferred:
+      []
+  design: Establish one clean cutover invariant, then expose that invariant through explicit activation and mutation blocking. Build damaged-project repair on the same proof and recovery boundary. Only after both safe write paths exist, report inactive and unsafe active states with exact recovery. Finish by verifying the complete lifecycle and synchronizing public and operational project state.
+  unknowns:
+    - question: Can the clean one-to-one proof unambiguously collapse every supported damaged duplicate projection, or must repair abstain for a bounded state class?
+      affects_task: 3
+      resolve_by: Use clean cutover and activation fixture evidence before repair; preserve explicit refusal and manual recovery for any state without complete matching evidence.
+  surprises:
+    []

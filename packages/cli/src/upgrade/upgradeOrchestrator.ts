@@ -278,7 +278,7 @@ function entityReadinessPhase(
       action: empty ? "unsupported-state-source" : "entity-cutover",
       message: empty
         ? "marker-absent state has no recognized v2 entity input; preserve it and follow the manual source recovery instructions in UPGRADE.md"
-        : `${cutover.entityCount} entity record(s) are ready for marker-last Git cutover`,
+        : `${cutover.entityCount} entity record(s) are ready for marker-last Git cutover${cutover.todoReconciliation ? "; apply also journals TODO visible IDs, Markdown-owned public baselines, activation, canonical Markdown, and the authority marker" : ""}`,
     }]);
   } catch (error) {
     return summarizeOrchestratorPhase("entities", [{
