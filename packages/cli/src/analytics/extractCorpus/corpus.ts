@@ -7,6 +7,7 @@ import {
   runtimeStatus,
   discoverRuntimeStore,
   COPILOT_SPARSE_REMEDIATION,
+  assessProvenance,
 } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject } from "./core.js";
@@ -96,6 +97,23 @@ function extractRuntimeStore(
   }
   const fc = (discovery.file_count ?? null) as number | null; // cast: discovery payload IO boundary
   const errorCount = errors.length - errorStart;
+  const recordProvenance = assessProvenance(records);
+  if (!recordProvenance.complete) {
+    return [
+      records,
+      runtimeStatus(runtime, {
+        status: "degraded",
+        reason: "provenance_missing",
+        storePath,
+        fileCount: fc,
+        recordCount: records.length,
+        errorCount,
+        provenanceMissingFields: recordProvenance.missingFields,
+        provenanceMissingRecords: recordProvenance.missingRecords,
+        ...provenance,
+      }),
+    ];
+  }
   if (errorCount) {
     return [records, runtimeStatus(runtime, { status: "degraded", reason: "schema_divergent", storePath, fileCount: fc, recordCount: records.length, errorCount, ...provenance })];
   }

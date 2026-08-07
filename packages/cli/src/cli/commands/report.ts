@@ -196,10 +196,31 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       return 2;
     }
     if (!dryRun && consent !== "local-history") {
-      err(
+      const recovery = "agentera report refresh --consent local-history";
+      const message =
         "Error: agentera stats refresh requires explicit --consent local-history to read local runtime history. " +
-          "Preview first with agentera stats refresh --dry-run\n",
-      );
+        "Preview first with agentera stats refresh --dry-run";
+      if (outputFormat === "json") {
+        out(
+          JSON.stringify(
+            {
+              command: "stats refresh",
+              status: "degraded_consent_required",
+              recovery,
+              privacy: {
+                local_history_read: false,
+                local_history_write: false,
+                tier_write: false,
+                required_consent: "local-history",
+                provided_consent: consent,
+              },
+            },
+            null,
+            2,
+          ) + "\n",
+        );
+      }
+      err(`${message}\nRecovery: ${recovery}\n`);
       return 2;
     }
     const corpusPath = args.output || statsCorpusPath();

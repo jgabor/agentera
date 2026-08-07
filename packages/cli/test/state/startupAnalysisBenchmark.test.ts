@@ -11,7 +11,7 @@ import {
   persistStartupBenchmark,
   previousBenchmarkWatermark,
 } from "../../src/state/startupAnalysis.js";
-import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 import { evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
@@ -127,7 +127,7 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
   it("reads from bounded tiers when published, without reading the monolithic corpus", () => {
     const corpusPath = path.join(tmp, "corpus.json");
     const records = [
-      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", project_id: "agentera", timestamp: "2026-02-01T00:00:00.000Z", runtime: "codex", source_class: "active_runtime", source_product: "codex", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { actor: "user", content: "/build build it" } },
+      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", conversation_key: "c1", origin_id: originIdentity("fixture:u1"), content_fingerprint: contentFingerprint("/build build it"), author_class: "user", project_id: "agentera", timestamp: "2026-02-01T00:00:00.000Z", runtime: "codex", source_class: "active_runtime", source_product: "codex", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { actor: "user", content: "/build build it" } },
       { source_kind: "tool_call", source_id: "t1", session_id: "c1", project_id: "agentera", timestamp: "2026-02-01T00:00:01.000Z", runtime: "codex", source_class: "active_runtime", source_product: "codex", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { tool: "bash", arguments: { command: "echo hello" } } },
     ];
     const runtimeStatuses = [

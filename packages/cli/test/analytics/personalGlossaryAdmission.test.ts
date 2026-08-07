@@ -8,7 +8,7 @@ import {
   admitPersonalGlossaryEvidence,
   classifyExplicitGlossaryLanguage,
 } from "../../src/analytics/personalGlossaryAdmission.js";
-import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
 import {
   publishEvidenceTiers,
@@ -32,7 +32,7 @@ function record(
   signalType: string,
   data: Record<string, unknown>,
 ): Record<string, unknown> {
-  return {
+  const record: Record<string, unknown> = {
     source_id: sourceId,
     source_kind: sourceKind,
     timestamp: `2026-07-2${sourceId.length}T00:00:00.000Z`,
@@ -46,6 +46,14 @@ function record(
     adapter_version: ADAPTER_VERSION,
     data: { ...data, signal_type: signalType },
   };
+  if (sourceKind === "conversation_turn" || sourceKind === "history_prompt") {
+    record.session_id = `session-${sourceId}`;
+    record.conversation_key = record.session_id;
+    record.origin_id = originIdentity(`fixture:${sourceId}`);
+    record.content_fingerprint = contentFingerprint(String(data.text ?? data.prompt ?? data.content ?? sourceId));
+    record.author_class = data.actor === "assistant" ? "agent" : "user";
+  }
+  return record;
 }
 
 function publish(records: Array<Record<string, unknown>>): void {

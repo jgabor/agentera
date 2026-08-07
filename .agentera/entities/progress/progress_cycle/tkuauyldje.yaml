@@ -1,0 +1,16 @@
+id: tkuauyldje
+artifact: progress
+record:
+  timestamp: 2026-08-08 00:57
+  type: feat
+  phase: build
+  what: Preserved bounded personal-glossary evidence provenance across corpus extraction, tier publication, and consent-gated recovery.
+  context:
+    intent: Add bounded provenance and independence semantics for personal glossary mining while preserving project and personal isolation.
+    constraints: Read project state through the CLI, use typed state writes, keep evidence bounded, require consent before personal source reads, and do not inspect or persist project glossary content.
+    unknowns: Evaluator confirmation of the final acceptance interpretation remains pending.
+    scope: Corpus adapters, provenance helpers, evidence tiers, report recovery, authority parity, and proportional regression coverage.
+  discovered: Conversation records need stable origin identity, content fingerprint, author class, and session provenance. Repeated transport of one origin must not inflate independent evidence, and missing provenance must surface as degraded coverage without reading project glossary state.
+  verified: Focused provenance, tier, report, adapter, and parity tests passed. Full source suite passed with 3482 tests and 1 skipped. Package verification passed with 34 tests. Typecheck and build passed. Performance owner passed with bounded startup, list, and exact-get measurements.
+  next: Await evaluator review; no commit or terminal task transition requested.
+  publication_order: 101

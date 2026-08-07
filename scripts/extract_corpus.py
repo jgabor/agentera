@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 # GENERATED constants synced from packages/cli/src/analytics/extractCorpus/core.ts
-ADAPTER_VERSION = "agentera-v3-corpus-2"
+ADAPTER_VERSION = "agentera-v3-corpus-3"
 MAX_SQLITE_ROWS = 100000
 MAX_SQLITE_SESSIONS = 60
 MAX_TOOL_ARG_TEXT = 500

@@ -4,6 +4,7 @@ import path from "node:path";
 import { resolvePath } from "../../core/paths.js";
 import {
   claudeContentItems,
+  authorClassForRole,
   eventKind,
   eventTimestamp,
   isPlainObject,
@@ -14,6 +15,7 @@ import {
   rglob,
   signalType,
   textFromContent,
+  transportProvenance,
   toolCallRecord,
   toolCallRecordFromItem,
 } from "./core.js";
@@ -31,6 +33,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
   for (const p of rglob(sessionsDir, "*.jsonl")) {
     const fallbackTimestamp = isoFromMtime(p);
     let sessionId = pathStem(p);
+    let sessionOriginId: string | null = null;
     let projectPath: string | null = null;
     let previousAssistant = "";
     let index = 0;
@@ -41,6 +44,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
       if (kind === "session_meta") {
         const sid = payload.id || event.id;
         if (typeof sid === "string" && sid) sessionId = sid;
+        sessionOriginId = transportProvenance(event, payload).originId ?? sessionOriginId;
         const cwd = payload.cwd || payload.working_directory;
         if (typeof cwd === "string" && cwd) projectPath = cwd;
         continue;
@@ -59,13 +63,16 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
       const itemType = item.type;
       let role = item.role || item.actor;
       if (kind === "user_msg") role = "user";
-      if (role !== "user" && role !== "assistant") continue;
+      if (typeof role !== "string" || role.length === 0) continue;
       const skipType = itemType !== undefined && itemType !== null && itemType !== "message";
       if (skipType && !["response_item", "user_msg"].includes(kind)) continue;
 
       const content = textFromContent(item.content || item.text || item.message);
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
+      const transport = transportProvenance(event, item);
+      const originId = transport.originId ?? sessionOriginId;
+      const authorClass = authorClassForRole(role, transport.authorClass, originId);
       const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
@@ -82,6 +89,9 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
           runtime: "codex",
           sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
           sessionId,
+          originId,
+          authorClass,
+          content,
           data,
         }),
       );
@@ -96,6 +106,9 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
               runtime: "codex",
               sourceParts: [resolvePath(p), index, "history", content.slice(0, 120)],
               sessionId,
+              originId,
+              authorClass,
+              content,
               data: { prompt: content, signal_type: sig },
             }),
           );
@@ -162,10 +175,13 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
         const message = event.message;
         if (isPlainObject(message)) role = message.role;
       }
-      if (role !== "user" && role !== "assistant") continue;
+      if (typeof role !== "string" || role.length === 0) continue;
       const content = textFromContent(event.content || event.text || (isPlainObject(event.message) ? event.message : null));
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
+      const transport = transportProvenance(event, isPlainObject(event.message) ? event.message : null);
+      const originId = transport.originId;
+      const authorClass = authorClassForRole(role, transport.authorClass, transport.originId);
       const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
@@ -176,16 +192,19 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
       }
       records.push(
         record({
-          sourceKind: "conversation_turn",
-          timestamp,
-          projectPath,
-          runtime: null,
-          sourceClass: "historical_import",
-          sourceProduct: "claude-code",
-          activeRuntime: false,
-          sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
-          sessionId,
-          data,
+           sourceKind: "conversation_turn",
+           timestamp,
+           projectPath,
+           runtime: null,
+           sourceClass: "historical_import",
+           sourceProduct: "claude-code",
+           activeRuntime: false,
+           sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
+           sessionId,
+           originId,
+           authorClass,
+           content,
+           data,
         }),
       );
       if (role === "user") {
@@ -202,6 +221,9 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
               activeRuntime: false,
               sourceParts: [resolvePath(p), index, "history", content.slice(0, 120)],
               sessionId,
+              originId,
+              authorClass,
+              content,
               data: { prompt: content, signal_type: sig },
             }),
           );

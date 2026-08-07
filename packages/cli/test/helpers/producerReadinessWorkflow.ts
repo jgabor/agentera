@@ -190,7 +190,7 @@ function evidenceRecord(
   data: Record<string, unknown>,
   adapterVersion: string,
 ) {
-  return {
+  const record = {
     source_id: sourceId,
     source_kind: sourceKind,
     timestamp: "2026-07-26T00:00:00.000Z",
@@ -204,6 +204,18 @@ function evidenceRecord(
     adapter_version: adapterVersion,
     data: { ...data, signal_type: signalType },
   };
+  if (sourceKind === "conversation_turn" || sourceKind === "history_prompt") {
+    const text = Object.values(data).find((value): value is string => typeof value === "string") ?? "";
+    return {
+      ...record,
+      origin_id: createHash("sha256").update(`producer-readiness:${sourceId}`, "utf-8").digest("hex"),
+      content_fingerprint: createHash("sha256").update(text, "utf-8").digest("hex"),
+      author_class: data.actor === "assistant" ? "agent" : "user",
+      conversation_key: `producer-readiness:${sourceId}`,
+      session_id: `producer-readiness:${sourceId}`,
+    };
+  }
+  return record;
 }
 
 export async function runProducerReadinessWorkflow(

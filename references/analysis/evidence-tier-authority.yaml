@@ -72,9 +72,10 @@ tiers:
       optional:
         - project_path
         - session_id
-        - conversation_key
-        - content_fingerprint
-        - author_class
+         - conversation_key
+         - origin_id
+         - content_fingerprint
+         - author_class
     source_identity_rule: >-
       `source_id` is the stable, content-addressable identity of one full
       record. It is derived deterministically from source kind and source parts
@@ -101,11 +102,14 @@ tiers:
         - timestamp
         - project_id
         - runtime
+        - source_class
         - source_product
+        - active_runtime
         - evidence_anchor
       optional:
         - conversation_key
         - session_id
+        - origin_id
         - content_fingerprint
         - author_class
     derivation_rule: >-
@@ -238,6 +242,14 @@ signal_semantics:
         conversation origins without exposing a raw session transcript.
       derivable_from: conversation_turn session_id
       consumer: glossary
+    origin_id:
+      meaning: >-
+        The stable, content-addressed identity of the source that originally
+        supplied transported content. It distinguishes one original
+        instruction origin from transcript copies without retaining the raw
+        source label.
+      derivable_from: explicit adapter transport provenance or session origin
+      consumer: glossary
     content_fingerprint:
       meaning: >-
         A lowercase SHA-256 fingerprint of the source content used to prevent
@@ -248,7 +260,10 @@ signal_semantics:
       meaning: >-
         The source author class, such as user, agent, or injected instruction,
         used to keep agent-authored text from establishing personal terminology.
-      derivable_from: conversation_turn actor metadata
+      derivable_from: >-
+        explicit original author provenance when origin_id is transported;
+        otherwise conversation_turn actor metadata when no transported origin
+        is claimed
       consumer: glossary
   preservation_rule: >-
     Fixing the contract must not remove the required meaning of any kind above
@@ -336,6 +351,7 @@ consumer_map:
         - date
         - evidence_anchor
         - session_id
+        - origin_id
         - content_fingerprint
         - author_class
       rule: >-

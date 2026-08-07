@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
 import {
   deriveSignalRecords,
@@ -57,6 +57,14 @@ function fullRecord(opts: {
     adapter_version: ADAPTER_VERSION,
     data: opts.data ?? { actor: "user", text: "hello" },
   };
+  if (opts.sourceKind === "conversation_turn" || opts.sourceKind === "history_prompt") {
+    const actor = r.data && typeof r.data === "object" && !Array.isArray(r.data) ? r.data.actor : null;
+    r.session_id = opts.sessionId ?? `session-${opts.sourceId}`;
+    r.conversation_key = r.session_id;
+    r.origin_id = originIdentity(`fixture:${opts.sourceId}`);
+    r.content_fingerprint = contentFingerprint(`fixture:${opts.sourceId}`);
+    r.author_class = actor === "assistant" ? "agent" : "user";
+  }
   if (opts.sessionId) {
     r.session_id = opts.sessionId;
     r.conversation_key = opts.sessionId;
@@ -112,14 +120,13 @@ describe("AC1 — publication retains every record within declared bounds", () =
     expect(claude!.source_class).toBe("historical_import");
     expect(claude!.active_runtime).toBe(false);
     expect(claude!.runtime).toBeNull();
-    // The signal-tier view labels claude-code provenance without the
-    // active-runtime fields the signal contract intentionally omits.
+    // The signal-tier view preserves source class and active-runtime metadata.
     const signal = readSignalTier(tmp)!.records.find((r) => r.source_id === "h1");
     expect(signal).toBeDefined();
     expect(signal!.source_product).toBe("claude-code");
     expect(signal!.runtime).toBeNull();
-    expect(signal).not.toHaveProperty("active_runtime");
-    expect(signal).not.toHaveProperty("source_class");
+    expect(signal!.active_runtime).toBe(false);
+    expect(signal!.source_class).toBe("historical_import");
   });
 
   it("no full-evidence shard or signal tier exceeds its declared bound", () => {

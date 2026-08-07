@@ -4,7 +4,7 @@ record:
   name: Preserve origins in bounded evidence
   depends_on:
     - bloijvifoi
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN transported instructions WHEN evidence refreshes THEN original origin, author, source class, runtime, project, and timestamp stay distinct.
     - GIVEN repeated injections share origin and fingerprint WHEN independence is counted THEN they count once while distinct origins remain independent.
@@ -12,3 +12,13 @@ record:
     - GIVEN refresh lacks consent WHEN generation is requested THEN no history scan occurs and bounded recovery returns.
     - GIVEN each provenance rule WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Codex session-level transported origin is preserved but its session-level author is discarded; valid session provenance degrades and the paired session-level passing regression is missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_0218ca7daffeABYVzOPgMXQdAB bounded re-review
+      recorded_at: 2026-08-08 01:40
+      writer_command: agentera state plan record-evaluation

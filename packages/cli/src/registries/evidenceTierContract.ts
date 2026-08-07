@@ -123,6 +123,7 @@ export const REQUIRED_SIGNAL_KINDS = [
   "date",
   "evidence_anchor",
   "session_id",
+  "origin_id",
   "content_fingerprint",
   "author_class",
 ] as const;

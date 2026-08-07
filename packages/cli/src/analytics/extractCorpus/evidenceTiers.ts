@@ -4,7 +4,12 @@ import path from "node:path";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import { writeFileAtomic } from "../../core/atomicWriter.js";
-import { stableId, defaultProfileDir, type Env } from "./core.js";
+import {
+  assessProvenance,
+  stableId,
+  defaultProfileDir,
+  type Env,
+} from "./core.js";
 import { evidenceTierBounds, loadEvidenceTierContract } from "../../registries/evidenceTierContract.js";
 import type { CorpusEnvelopeCoverage } from "./coverageAudit.js";
 
@@ -46,9 +51,14 @@ export interface SignalRecord {
   project_id: string;
   runtime: string | null;
   source_product: string;
+  source_class?: string;
   evidence_anchor: string;
+  origin_id?: string;
+  content_fingerprint?: string;
+  author_class?: string;
   conversation_key?: string;
   session_id?: string;
+  active_runtime?: boolean;
 }
 
 export interface FullEvidenceShard {
@@ -192,8 +202,13 @@ export function deriveSignalRecords(fullRecords: JsonObject[]): SignalRecord[] {
       project_id: asStringField(r, "project_id"),
       runtime: typeof r.runtime === "string" ? r.runtime : null,
       source_product: asStringField(r, "source_product"),
+      source_class: asStringField(r, "source_class"),
       evidence_anchor: sourceId,
+      active_runtime: r.active_runtime === true,
     };
+    if (typeof r.origin_id === "string") rec.origin_id = r.origin_id;
+    if (typeof r.content_fingerprint === "string") rec.content_fingerprint = r.content_fingerprint;
+    if (typeof r.author_class === "string") rec.author_class = r.author_class;
     if (typeof r.conversation_key === "string") rec.conversation_key = r.conversation_key;
     if (typeof r.session_id === "string") rec.session_id = r.session_id;
     out.push(rec);
@@ -398,6 +413,9 @@ function coverageFromStatuses(runtimeStatuses: JsonObject[] | undefined): Eviden
     }
     if (GAP.has(status)) {
       const entry: { runtime: string | null; reason: string; store_path?: string } = { runtime, reason: reason || status };
+      if (Array.isArray(s.provenance_missing_fields) && s.provenance_missing_fields.length > 0) {
+        entry.reason += ` (missing provenance: ${s.provenance_missing_fields.join(",")})`;
+      }
       if (typeof s.store_path === "string") entry.store_path = s.store_path;
       skipped.push(entry);
     }
@@ -419,6 +437,29 @@ export function publishEvidenceTiers(
   const bounds = evidenceTierBounds(contractPath);
   const productFamily = productFamilyIndex(contractPath);
   const sortedRecords = records.slice().sort(tierSortKey);
+  const provenance = assessProvenance(sortedRecords);
+  const runtimeStatuses = [...(opts.runtimeStatuses ?? [])];
+  if (!provenance.complete) {
+    const gapProducts = new Map<string, JsonObject>();
+    for (const record of sortedRecords) {
+      if (Object.keys(record).length === 0) continue;
+      if (assessProvenance([record]).complete) continue;
+      const product = typeof record.source_product === "string" ? record.source_product : "unknown";
+      if (!gapProducts.has(product)) {
+        gapProducts.set(product, {
+          runtime: typeof record.runtime === "string" ? record.runtime : null,
+          source_product: product,
+          source_class: typeof record.source_class === "string" ? record.source_class : "unknown",
+          active_runtime: record.active_runtime === true,
+          status: "degraded",
+          reason: "provenance_missing",
+          provenance_missing_fields: provenance.missingFields,
+          provenance_missing_records: provenance.missingRecords,
+        });
+      }
+    }
+    runtimeStatuses.push(...gapProducts.values());
+  }
   const signals = deriveSignalRecords(sortedRecords);
   const { records: selectedSignals, selection } = selectSignalsForBound(signals, bounds.signalByteCap);
   const shards = shardFullEvidence(sortedRecords, bounds.shardByteCap, productFamily);
@@ -469,7 +510,7 @@ export function publishEvidenceTiers(
     families: familiesAgg,
     shards: shardDescriptors,
     signal: { path: signalRel, record_count: selectedSignals.length, bytes: signalBytes, selection },
-    coverage: coverageFromStatuses(opts.runtimeStatuses),
+    coverage: coverageFromStatuses(runtimeStatuses),
     corpus_metadata: opts.corpusMetadata,
   };
   writeFileAtomic(path.join(stageDir, "manifest.json"), encodeSorted(manifest) + "\n");
@@ -582,6 +623,64 @@ function isEvidenceTierManifest(value: unknown): value is EvidenceTierManifest {
   );
 }
 
+function lowerSha256(value: unknown): boolean {
+  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+}
+
+/** Validate bounded signal provenance without reading any full-evidence shard. */
+export function missingSignalProvenanceFields(record: SignalRecord): string[] {
+  const missing: string[] = [];
+  const required: Array<[string, boolean]> = [
+    ["source_id", typeof record.source_id === "string" && record.source_id.length > 0],
+    ["source_kind", typeof record.source_kind === "string" && record.source_kind.length > 0],
+    ["signal_type", typeof record.signal_type === "string" && record.signal_type.length > 0],
+    ["timestamp", typeof record.timestamp === "string" && record.timestamp.length > 0],
+    ["project_id", typeof record.project_id === "string" && record.project_id.length > 0],
+    ["source_product", typeof record.source_product === "string" && record.source_product.length > 0],
+    ["active_runtime", typeof record.active_runtime === "boolean"],
+    ["source_class", typeof record.source_class === "string" && record.source_class.length > 0],
+    ["evidence_anchor", record.evidence_anchor === record.source_id && record.evidence_anchor.length > 0],
+  ];
+  for (const [field, present] of required) if (!present) missing.push(field);
+  if (CONVERSATION_SIGNAL_SOURCE_KINDS.has(record.source_kind)) {
+    if (!lowerSha256(record.origin_id)) missing.push("origin_id");
+    if (!lowerSha256(record.content_fingerprint)) missing.push("content_fingerprint");
+    if (typeof record.author_class !== "string" || record.author_class.length === 0) missing.push("author_class");
+    if (typeof record.session_id !== "string" || record.session_id.length === 0) missing.push("session_id");
+  }
+  return [...new Set(missing)];
+}
+
+const CONVERSATION_SIGNAL_SOURCE_KINDS = new Set(["conversation_turn", "history_prompt"]);
+
+function signalProvenanceGaps(records: SignalRecord[]): string[] {
+  const gaps = new Set<string>();
+  for (const record of records) {
+    if (!isMapping(record)) {
+      gaps.add("record");
+      continue;
+    }
+    for (const field of missingSignalProvenanceFields(record as SignalRecord)) gaps.add(field);
+  }
+  return [...gaps].sort();
+}
+
+function readSignalPayload(
+  gen: GenerationDir,
+): { records: SignalRecord[]; bytes: number } | null {
+  const signalPath = path.join(gen.dir, gen.manifest.signal.path);
+  if (!fs.existsSync(signalPath)) return null;
+  try {
+    const bytes = fs.statSync(signalPath).size;
+    if (bytes > evidenceTierBounds().signalByteCap) return null;
+    const data = JSON.parse(fs.readFileSync(signalPath, "utf-8")) as { records?: SignalRecord[] };
+    if (!data || !Array.isArray(data.records)) return null;
+    return { records: data.records, bytes };
+  } catch {
+    return null;
+  }
+}
+
 /** Resolve the current generation directory and manifest, or null. */
 export function readCurrentGeneration(tiersDir: string): GenerationDir | null {
   const pointer = readCurrentPointer(tiersDir);
@@ -602,18 +701,9 @@ export function readCurrentGeneration(tiersDir: string): GenerationDir | null {
 export function readSignalTier(tiersDir: string): { records: SignalRecord[]; bytes: number; manifest: EvidenceTierManifest } | null {
   const gen = readCurrentGeneration(tiersDir);
   if (!gen) return null;
-  const signalPath = path.join(gen.dir, gen.manifest.signal.path);
-  if (!fs.existsSync(signalPath)) return null;
-  try {
-    const bytes = fs.statSync(signalPath).size;
-    const signalByteCap = evidenceTierBounds().signalByteCap;
-    if (bytes > signalByteCap) return null;
-    const data = JSON.parse(fs.readFileSync(signalPath, "utf-8")) as { records?: SignalRecord[] };
-    if (!data || !Array.isArray(data.records)) return null;
-    return { records: data.records, bytes, manifest: gen.manifest };
-  } catch {
-    return null;
-  }
+  const payload = readSignalPayload(gen);
+  if (!payload || signalProvenanceGaps(payload.records).length > 0) return null;
+  return { ...payload, manifest: gen.manifest };
 }
 
 /** Resolve a bounded signal's identity (evidence_anchor) to its full record. */
@@ -689,6 +779,22 @@ export function evidenceTierCompatibility(tiersDir: string, corpusPath?: string)
     gen.manifest.signal.bytes > evidenceTierBounds().signalByteCap
   ) {
     return { state: "oversized", reason: "oversized", artifact: gen.manifest.signal.path };
+  }
+  let signalPayload: { records: SignalRecord[]; bytes: number } | null;
+  try {
+    const data = JSON.parse(fs.readFileSync(signalPath, "utf-8")) as { records?: SignalRecord[] };
+    signalPayload = data && Array.isArray(data.records) ? { records: data.records, bytes: actualSignalBytes } : null;
+  } catch {
+    signalPayload = null;
+  }
+  if (!signalPayload) return { state: "corrupt", reason: "unreadable_or_schema_divergent" };
+  const provenanceGaps = signalProvenanceGaps(signalPayload.records);
+  if (provenanceGaps.length > 0) {
+    return {
+      state: "incomplete",
+      reason: "provenance_missing",
+      detail: provenanceGaps.map((field) => `signal: missing ${field}`),
+    };
   }
   // Incomplete: a supported source family is skipped/sparse/missing.
   const skipped = gen.manifest.coverage.skipped;

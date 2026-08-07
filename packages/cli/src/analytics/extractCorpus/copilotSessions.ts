@@ -2,10 +2,12 @@ import fs from "node:fs";
 
 import { resolvePath } from "../../core/paths.js";
 import {
+  authorClassForRole,
   isoFromMtime,
   record,
   signalType,
   textFromContent,
+  transportProvenance,
 } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject, rglob, isFilePath } from "./core.js";
@@ -18,6 +20,7 @@ import {
   type SqliteDb,
   PermissionDeniedError,
   openSqlite,
+  jsonDict,
   sqliteTimestamp,
   tableColumns,
   firstColumn,
@@ -231,13 +234,16 @@ export function extractCopilotSessions(
     let index = 0;
     for (const row of rows) {
       index += 1;
-      const role = String(row.role).toLowerCase();
-      if (role !== "user" && role !== "assistant") continue;
+      if (typeof row.role !== "string" || row.role.length === 0) continue;
+      const role = row.role.toLowerCase();
       const content = textFromContent(row.turn_text);
       const toolItems = copilotRowTools(row, errors);
       if (!content && toolItems.length === 0) continue;
       const projectPath = row.project_path ? String(row.project_path) : null;
       const timestamp = sqliteTimestamp(row.turn_time || row.session_time, fallbackTimestamp);
+      const transport = transportProvenance(row, jsonDict(row.turn_data));
+      const originId = transport.originId;
+      const authorClass = authorClassForRole(role, transport.authorClass, transport.originId);
       if (content) {
         const data: JsonObject = { actor: role, content };
         if (role === "user") {
@@ -256,6 +262,9 @@ export function extractCopilotSessions(
             sourceProduct: "github-copilot",
             sourceParts: [resolvePath(dbPath), index, role, content.slice(0, 80)],
             sessionId: String(row.session_id),
+            originId,
+            authorClass,
+            content,
             data,
           }),
         );
@@ -288,6 +297,9 @@ export function extractCopilotSessions(
               sourceProduct: "github-copilot",
               sourceParts: [resolvePath(dbPath), index, "history", content.slice(0, 120)],
               sessionId: String(row.session_id),
+              originId,
+              authorClass,
+              content,
               data: { prompt: content, signal_type: sig },
             }),
           );

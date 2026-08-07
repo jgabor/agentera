@@ -5,10 +5,12 @@ import { createRequire } from "node:module";
 import { resolvePath } from "../../core/paths.js";
 import type { JsonValue, JsonObject } from "../../core/jsonValue.js";
 import {
+  authorClassForRole,
   isoFromMtime,
   record,
   signalType,
   textFromContent,
+  transportProvenance,
 } from "./core.js";
 import { isPlainObject, isFilePath, rglob } from "./core.js";
 import {
@@ -109,6 +111,8 @@ interface OpencodeSchema {
 
 interface OpencodeMessage {
   role: JsonValue;
+  origin_id: string | null;
+  author_class: string | null;
   session_id: string;
   project_path: JsonValue;
   timestamp: string;
@@ -369,8 +373,11 @@ export function extractOpencodeSessions(
       const messageTime = row.message_time || nestedTimeCreated(messageData);
       let item = messages.get(messageId);
       if (item === undefined) {
+        const transport = transportProvenance(messageData);
         item = {
           role,
+          origin_id: transport.originId,
+          author_class: authorClassForRole(role, transport.authorClass, transport.originId),
           session_id: String(row.session_id),
           project_path: row.project_path,
           timestamp: sqliteTimestamp(messageTime, fallbackTimestamp),
@@ -402,8 +409,8 @@ export function extractOpencodeSessions(
     let index = 0;
     for (const item of messages.values()) {
       index += 1;
-      const role = String(item.role).toLowerCase();
-      if (role !== "user" && role !== "assistant") continue;
+      if (typeof item.role !== "string" || item.role.length === 0) continue;
+      const role = item.role.toLowerCase();
       const content = item.parts.filter((p: string) => p).join("\n");
       if (!content && item.tools.length === 0) continue;
       const projectPath = item.project_path ? String(item.project_path) : null;
@@ -424,6 +431,9 @@ export function extractOpencodeSessions(
             runtime: "opencode",
             sourceParts: [resolvePath(dbPath), index, role, content.slice(0, 80)],
             sessionId: item.session_id,
+            originId: item.origin_id,
+            authorClass: item.author_class,
+            content,
             data,
           }),
         );
@@ -454,6 +464,9 @@ export function extractOpencodeSessions(
               runtime: "opencode",
               sourceParts: [resolvePath(dbPath), index, "history", content.slice(0, 120)],
               sessionId: item.session_id,
+              originId: item.origin_id,
+              authorClass: item.author_class,
+              content,
               data: { prompt: content, signal_type: sig },
             }),
           );

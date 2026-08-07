@@ -2,11 +2,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cmdReport, statsCorpusPath, statsExistingCorpusStatus, ReportArgs } from "../../src/cli/commands/report.js";
 import { MAX_CORPUS_READ_BYTES, usageMain } from "../../src/analytics/usageStats.js";
-import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers, readSignalTier } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 
@@ -77,6 +77,11 @@ describe("statsExistingCorpusStatus", () => {
         source_product: "opencode",
         active_runtime: true,
         adapter_version: ADAPTER_VERSION,
+        session_id: "session-c1",
+        conversation_key: "session-c1",
+        origin_id: originIdentity("fixture:c1"),
+        content_fingerprint: contentFingerprint("hi"),
+        author_class: "user",
         data: { actor: "user", text: "hi" },
       },
     ];
@@ -168,6 +173,23 @@ describe("cmdReport", () => {
     const { rc, err } = run({ action: "refresh" });
     expect(rc).toBe(2);
     expect(err).toContain("requires explicit --consent local-history");
+  });
+
+  it("does not scan local history before consent and returns bounded recovery", () => {
+    const scan = vi.spyOn(fs, "readdirSync");
+    try {
+      const { rc, out, err } = run({ action: "refresh", format: "json" });
+      expect(rc).toBe(2);
+      const payload = JSON.parse(out);
+      expect(payload.status).toBe("degraded_consent_required");
+      expect(payload.recovery).toBe("agentera report refresh --consent local-history");
+      expect(payload.privacy.local_history_read).toBe(false);
+      expect(payload.privacy.tier_write).toBe(false);
+      expect(scan).not.toHaveBeenCalled();
+      expect(err).toContain("Recovery:");
+    } finally {
+      scan.mockRestore();
+    }
   });
 
   it("previews refresh in dry-run mode (json)", () => {

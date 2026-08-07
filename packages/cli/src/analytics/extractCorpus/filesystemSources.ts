@@ -30,7 +30,9 @@ export function extractInstructionDocuments(projectRoots: string[], errors: stri
           timestamp: isoFromMtime(p),
           projectPath: root,
           runtime: "filesystem",
+          origin: resolvePath(p),
           sourceParts: [resolvePath(p)],
+          content,
           data: { doc_type: docType, name: filename, content, scope: "project" },
         }),
       );
@@ -111,7 +113,9 @@ export function extractProjectConfigSignals(projectRoots: string[], errors: stri
           timestamp: isoFromMtime(p),
           projectPath: root,
           runtime: "filesystem",
+          origin: resolvePath(p),
           sourceParts: [resolvePath(p), configType],
+          content: signals.join("\n"),
           data: { config_type: configType, file_path: path.relative(root, p), signals },
         }),
       );

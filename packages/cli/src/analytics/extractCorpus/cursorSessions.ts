@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
 import {
+  authorClassForRole,
   type Env,
   MAX_TOOL_ARG_TEXT,
   eventTimestamp,
@@ -15,6 +16,7 @@ import {
   record,
   signalType,
   textFromContent,
+  transportProvenance,
   toolCallRecordFromItem,
 } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -171,7 +173,7 @@ export function extractCursorSessions(
     for (const event of iterJsonl(p, errors)) {
       index += 1;
       const role = event.role;
-      if (role !== "user" && role !== "assistant") continue;
+      if (typeof role !== "string" || role.length === 0) continue;
       let contentIndex = 0;
       for (const item of cursorContentItems(event)) {
         contentIndex += 1;
@@ -196,6 +198,9 @@ export function extractCursorSessions(
       const content = textFromContent(items.length > 0 ? items : event.message);
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
+      const transport = transportProvenance(event, ...items);
+      const originId = transport.originId;
+      const authorClass = authorClassForRole(role, transport.authorClass, transport.originId);
       const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
@@ -207,11 +212,14 @@ export function extractCursorSessions(
       records.push(
         record({
           sourceKind: "conversation_turn",
-          timestamp,
-          projectPath,
-          runtime: "cursor",
+           timestamp,
+           projectPath,
+           runtime: "cursor",
           sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
           sessionId,
+          originId,
+          authorClass,
+          content,
           data,
         }),
       );
@@ -226,6 +234,9 @@ export function extractCursorSessions(
               runtime: "cursor",
               sourceParts: [resolvePath(p), index, "history", content.slice(0, 120)],
               sessionId,
+              originId,
+              authorClass,
+              content,
               data: { prompt: content, signal_type: sig },
             }),
           );
@@ -366,6 +377,7 @@ export function extractCursorAgentSessions(
     for (const [blobId, message] of cursorAgentBlobMessages(storeDb, errors)) {
       index += 1;
       const role = message.role;
+      if (typeof role !== "string" || role.length === 0) continue;
       let toolIndex = 0;
       for (const toolItem of cursorAgentToolItems(message)) {
         toolIndex += 1;
@@ -387,10 +399,12 @@ export function extractCursorAgentSessions(
           records.push(tr);
         }
       }
-      if (role !== "user" && role !== "assistant") continue;
       const content = cursorAgentMessageText(message);
       if (!content) continue;
       const timestamp = eventTimestamp(message, fallbackTimestamp);
+      const transport = transportProvenance(message);
+      const originId = transport.originId;
+      const authorClass = authorClassForRole(role, transport.authorClass, transport.originId);
       const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
@@ -404,10 +418,13 @@ export function extractCursorAgentSessions(
           sourceKind: "conversation_turn",
           timestamp,
           projectPath,
-          runtime: "cursor",
-          sourceProduct: "cursor-agent",
+           runtime: "cursor",
+           sourceProduct: "cursor-agent",
           sourceParts: [resolvePath(storeDb), blobId, role, content.slice(0, 80)],
           sessionId,
+          originId,
+          authorClass,
+          content,
           data,
         }),
       );
@@ -423,6 +440,9 @@ export function extractCursorAgentSessions(
               sourceProduct: "cursor-agent",
               sourceParts: [resolvePath(storeDb), blobId, "history", content.slice(0, 120)],
               sessionId,
+              originId,
+              authorClass,
+              content,
               data: { prompt: content, signal_type: sig },
             }),
           );

@@ -9,20 +9,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildCorpus,
   COVERAGE_EXIT_FLAGGED,
+  contentFingerprint,
+  countIndependentOrigins,
   dedupeRecords,
   discoverRuntimeStore,
   extractCopilotSessions,
   extractCorpusMain,
   extractCursorAgentSessions,
   extractInstructionDocuments,
+  extractCodexSessions,
   extractOpencodeSessions,
   extractProjectConfigSignals,
   formatCoverageSummaryText,
   projectIdFromPath,
+  originIdentity,
+  publishEvidenceTiers,
+  record,
   runCoverageAudit,
   signalType,
   stableId,
   readSignalTier,
+  evidenceTierCompatibility,
 } from "../../src/analytics/extractCorpus.js";
 
 let tmp: string;
@@ -39,6 +46,13 @@ describe("extract_corpus helpers", () => {
     expect(a).toMatch(/^[0-9a-f]{24}$/);
     expect(stableId("conversation_turn", "/p", 1, "user")).toBe(a);
     expect(stableId("conversation_turn", "/p", 2, "user")).not.toBe(a);
+  });
+  it("uses deterministic bounded origin identities and exact content fingerprints", () => {
+    expect(originIdentity("instruction://one")).toMatch(/^[a-f0-9]{64}$/);
+    expect(originIdentity("instruction://one")).toBe(originIdentity("instruction://one"));
+    expect(originIdentity("instruction://one")).not.toBe(originIdentity("instruction://two"));
+    expect(contentFingerprint("same")).toBe("0967115f2813a3541eaef77de9d9d5773f1c0c04314b0bbfe4ff3b3b1c55b5d5");
+    expect(contentFingerprint("same")).not.toBe(contentFingerprint("same\n"));
   });
   it("projectIdFromPath slugs the basename, null -> global", () => {
     expect(projectIdFromPath(null)).toBe("global");
@@ -126,6 +140,9 @@ describe("SQLite extractors (node:sqlite)", () => {
     const userTurn = recs.find((r) => r.data.actor === "user");
     expect(userTurn!.data.signal_type).toBe("question");
     expect(userTurn!.runtime).toBe("opencode");
+    expect(userTurn!.author_class).toBe("user");
+    expect(userTurn!.origin_id).toBe(originIdentity("session:s1"));
+    expect(userTurn!.content_fingerprint).toBe(contentFingerprint("why should we avoid this approach?"));
     expect(errors).toEqual([]);
   });
 
@@ -139,7 +156,10 @@ describe("SQLite extractors (node:sqlite)", () => {
     db.close();
     const errors: string[] = [];
     const recs = extractCopilotSessions(dbp, errors);
-    expect(recs.some((r) => r.source_kind === "conversation_turn" && r.runtime === "copilot" && r.source_product === "github-copilot")).toBe(true);
+    const user = recs.find((r) => r.source_kind === "conversation_turn" && r.data.actor === "user");
+    expect(user).toMatchObject({ runtime: "copilot", source_product: "github-copilot", author_class: "user" });
+    expect(user!.content_fingerprint).toBe(contentFingerprint("should we change the plan?"));
+    expect(user!.origin_id).toBe(originIdentity("session:s1"));
     expect(recs.some((r) => r.source_kind === "history_prompt")).toBe(true);
   });
 
@@ -156,7 +176,205 @@ describe("SQLite extractors (node:sqlite)", () => {
     db.close();
     const errors: string[] = [];
     const recs = extractCursorAgentSessions(chats, errors, [], null);
-    expect(recs.some((r) => r.runtime === "cursor" && r.source_product === "cursor-agent" && r.source_kind === "conversation_turn")).toBe(true);
+    const user = recs.find((r) => r.runtime === "cursor" && r.source_product === "cursor-agent" && r.source_kind === "conversation_turn");
+    expect(user).toMatchObject({ author_class: "user", origin_id: originIdentity("session:sess1") });
+    expect(user!.content_fingerprint).toBe(contentFingerprint("why avoid this?"));
+  });
+});
+
+describe("bounded provenance", () => {
+  it("preserves explicit transport origin and author through extraction and tier round-trip", () => {
+    const sessionsDir = path.join(tmp, "codex");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    const transcript = path.join(sessionsDir, "session.jsonl");
+    fs.writeFileSync(
+      transcript,
+      [
+        JSON.stringify({ type: "session_meta", payload: { id: "s1", cwd: "/project" } }),
+        JSON.stringify({
+          type: "response_item",
+          timestamp: "2026-01-01T00:00:01.000Z",
+          payload: {
+            type: "message",
+            role: "user",
+            provenance: { origin: "instruction://shared", author_class: "injected_instruction" },
+            content: [{ type: "input_text", text: "prefer the bounded route" }],
+          },
+        }),
+        JSON.stringify({
+          type: "response_item",
+          timestamp: "2026-01-01T00:00:02.000Z",
+          payload: { type: "message", role: "assistant", content: [{ type: "output_text", text: "done" }] },
+        }),
+      ].join("\n") + "\n",
+    );
+
+    const errors: string[] = [];
+    const records = extractCodexSessions(sessionsDir, errors);
+    expect(errors).toEqual([]);
+    const user = records.find((record) => record.data.actor === "user")!;
+    const agent = records.find((record) => record.data.actor === "assistant")!;
+    expect(user).toMatchObject({
+      origin_id: originIdentity("instruction://shared"),
+      author_class: "injected_instruction",
+      source_class: "active_runtime",
+      runtime: "codex",
+      project_id: "project",
+      timestamp: "2026-01-01T00:00:01.000Z",
+    });
+    expect(user.content_fingerprint).toBe(contentFingerprint("prefer the bounded route"));
+    expect(agent.author_class).toBe("agent");
+    expect(agent.origin_id).not.toBe(user.origin_id);
+
+    const tiersDir = path.join(tmp, "tiers");
+    publishEvidenceTiers(records, {
+      tiersDir,
+      adapterVersion: "agentera-v3-corpus-3",
+      runtimeStatuses: [{ runtime: "codex", source_product: "codex", source_class: "active_runtime", active_runtime: true, status: "ok", reason: "records_extracted" }],
+      publishedAt: "2026-01-03T00:00:00.000Z",
+    });
+    const signal = readSignalTier(tiersDir);
+    expect(signal).not.toBeNull();
+    const transported = signal!.records.find((record) => record.source_id === user.source_id)!;
+    expect(transported).toMatchObject({
+      origin_id: user.origin_id,
+      author_class: "injected_instruction",
+      source_class: "active_runtime",
+      runtime: "codex",
+      project_id: "project",
+      timestamp: user.timestamp,
+      evidence_anchor: user.source_id,
+    });
+  });
+
+  it("degrades a transported origin when original author provenance is omitted", () => {
+    const sessionsDir = path.join(tmp, "codex-author-gap");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    const transcript = path.join(sessionsDir, "session.jsonl");
+    const message = (timestamp: string, origin: string | null, text: string, authorClass?: string) =>
+      JSON.stringify({
+        type: "response_item",
+        timestamp,
+        payload: {
+          type: "message",
+          role: "user",
+          ...(origin === null
+            ? {}
+            : { provenance: { origin, ...(authorClass === undefined ? {} : { author_class: authorClass }) } }),
+          content: [{ type: "input_text", text }],
+        },
+      });
+    fs.writeFileSync(
+      transcript,
+      [
+        JSON.stringify({ type: "session_meta", payload: { id: "s1", cwd: "/project", provenance: { origin: "instruction://session-origin" } } }),
+        message("2026-01-01T00:00:01.000Z", "instruction://with-author", "transported with author", "injected_instruction"),
+        message("2026-01-01T00:00:02.000Z", "instruction://missing-author", "transported without author"),
+        message("2026-01-01T00:00:03.000Z", null, "session origin without author"),
+      ].join("\n") + "\n",
+    );
+
+    const errors: string[] = [];
+    const records = extractCodexSessions(sessionsDir, errors);
+    expect(errors).toEqual([]);
+    const withAuthor = records.find((record) => record.data.content === "transported with author")!;
+    const withoutAuthor = records.find((record) => record.data.content === "transported without author")!;
+    const withoutSessionAuthor = records.find((record) => record.data.content === "session origin without author")!;
+    expect(withAuthor.author_class).toBe("injected_instruction");
+    expect(withoutAuthor.origin_id).toBe(originIdentity("instruction://missing-author"));
+    expect(withoutAuthor.author_class).toBeUndefined();
+    expect(withoutAuthor.data.actor).toBe("user");
+    expect(withoutSessionAuthor.origin_id).toBe(originIdentity("instruction://session-origin"));
+    expect(withoutSessionAuthor.author_class).toBeUndefined();
+
+    const corpus = buildCorpus({
+      projectRoots: [],
+      codexSessionsDir: sessionsDir,
+      claudeProjectsDir: null,
+      opencodeConversationsDir: null,
+      copilotConversationsDir: null,
+      cursorProjectsDir: null,
+      cursorChatsDir: null,
+    });
+    const status = corpus.metadata.runtime_statuses.find((item) => item.runtime === "codex")!;
+    expect(status).toMatchObject({ status: "degraded", reason: "provenance_missing" });
+    expect(status.provenance_missing_fields).toContain("author_class");
+    expect(corpus.records.find((record) => record.data.content === "transported without author")!.author_class).toBeUndefined();
+
+    const tiersDir = path.join(tmp, "author-gap-tiers");
+    publishEvidenceTiers(corpus.records, {
+      tiersDir,
+      adapterVersion: "agentera-v3-corpus-3",
+      runtimeStatuses: corpus.metadata.runtime_statuses,
+      publishedAt: "2026-01-03T00:00:00.000Z",
+    });
+    expect(evidenceTierCompatibility(tiersDir)).toMatchObject({ state: "incomplete", reason: "provenance_missing" });
+    expect(readSignalTier(tiersDir)).toBeNull();
+  });
+
+  it("counts one repeated origin/fingerprint once and keeps a distinct origin independent", () => {
+    const make = (id: string, origin: string) =>
+      record({
+        sourceKind: "conversation_turn",
+        timestamp: "2026-01-01T00:00:00.000Z",
+        projectPath: "/project",
+        runtime: "codex",
+        sessionId: id,
+        origin,
+        authorClass: "injected_instruction",
+        content: "same injected instruction",
+        sourceParts: [id],
+        data: { actor: "user", content: "same injected instruction" },
+      });
+    const repeated = make("s1", "instruction://one");
+    const copied = { ...make("s2", "instruction://one"), source_id: "different-record-id" };
+    const distinct = make("s3", "instruction://two");
+    expect(countIndependentOrigins([repeated, copied])).toBe(1);
+    expect(countIndependentOrigins([repeated, copied, distinct])).toBe(2);
+  });
+
+  it("degrades coverage for missing provenance instead of loading a user conversation", () => {
+    const record = {
+      source_id: "missing-provenance",
+      source_kind: "conversation_turn",
+      timestamp: "2026-01-01T00:00:00.000Z",
+      project_id: "project",
+      runtime: "codex",
+      source_class: "active_runtime",
+      source_product: "codex",
+      active_runtime: true,
+      adapter_version: "agentera-v3-corpus-3",
+      data: { actor: "assistant", content: "unknown origin" },
+    };
+    const tiersDir = path.join(tmp, "missing-provenance-tiers");
+    publishEvidenceTiers([record], { tiersDir, adapterVersion: "agentera-v3-corpus-3" });
+    const assessment = evidenceTierCompatibility(tiersDir);
+    expect(assessment.state).toBe("incomplete");
+    expect(assessment.reason).toBe("provenance_missing");
+    expect(readSignalTier(tiersDir)).toBeNull();
+  });
+
+  it("flags an adapter with an unknown author rather than converting it to user", () => {
+    const sessionsDir = path.join(tmp, "codex-unknown");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sessionsDir, "session.jsonl"),
+      JSON.stringify({ type: "response_item", payload: { type: "message", role: "external", content: [{ type: "input_text", text: "prefer this" }] } }) + "\n",
+    );
+    const corpus = buildCorpus({
+      projectRoots: [],
+      codexSessionsDir: sessionsDir,
+      claudeProjectsDir: null,
+      opencodeConversationsDir: null,
+      copilotConversationsDir: null,
+      cursorProjectsDir: null,
+      cursorChatsDir: null,
+    });
+    const status = corpus.metadata.runtime_statuses.find((item) => item.runtime === "codex")!;
+    expect(status).toMatchObject({ status: "degraded", reason: "provenance_missing" });
+    expect(status.provenance_missing_fields).toContain("author_class");
+    expect(corpus.records[0]!.data.actor).toBe("external");
+    expect(corpus.records[0]!.author_class).toBeUndefined();
   });
 });
 
@@ -344,7 +562,7 @@ describe("buildCorpus + extractCorpusMain", () => {
       claudeProjectsDir: null,
       opencodeConversationsDir: dbp,
     });
-    expect(corpus.metadata.adapter_version).toBe("agentera-v3-corpus-2");
+    expect(corpus.metadata.adapter_version).toBe("agentera-v3-corpus-3");
     expect(corpus.metadata.families.instruction_document.count).toBe(1);
     expect(corpus.metadata.families.conversation_turn.count).toBeGreaterThanOrEqual(1);
     expect(corpus.metadata.runtimes).toContain("opencode");
@@ -442,8 +660,8 @@ describe("buildCorpus + extractCorpusMain", () => {
     expect(tier).not.toBeNull();
     const imported = tier!.records.filter((r) => r.source_product === "claude-code");
     expect(imported.length).toBeGreaterThan(0);
-    expect(imported.every((r) =>
-      r.runtime === null)).toBe(true);
+    expect(imported.every((r) => r.runtime === null && r.source_class === "historical_import")).toBe(true);
+    expect(imported.some((r) => r.author_class === "user" && r.content_fingerprint)).toBe(true);
   });
 
   it("requires the import flag before accepting a Claude history path", () => {

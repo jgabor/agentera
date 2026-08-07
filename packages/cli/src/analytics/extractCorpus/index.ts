@@ -1,4 +1,4 @@
-export type { Env, RecordOpts, RuntimeStatusOpts } from "./core.js";
+export type { Env, RecordOpts, RuntimeStatusOpts, ProvenanceCoverage, TransportProvenance } from "./core.js";
 export type { BuildCorpusOpts } from "./corpus.js";
 export type { ExtractArgs, ExtractMainIo } from "./cli.js";
 export {
@@ -8,6 +8,13 @@ export {
   isoNow,
   isoFromMtime,
   stableId,
+  originIdentity,
+  contentFingerprint,
+  transportProvenance,
+  authorClassForRole,
+  missingProvenanceFields,
+  assessProvenance,
+  countIndependentOrigins,
   projectIdFromPath,
   defaultAgenteraHome,
   defaultProfileDir,
@@ -70,6 +77,7 @@ export {
   readCurrentPointer,
   readCurrentGeneration,
   readSignalTier,
+  missingSignalProvenanceFields,
   getFullRecord,
   resolveEvidenceAnchor,
   evidenceTierCompatibility,

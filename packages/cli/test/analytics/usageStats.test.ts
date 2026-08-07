@@ -17,7 +17,7 @@ import {
   pairInvocations,
   renderMarkdown,
 } from "../../src/analytics/usageStats.js";
-import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 
@@ -290,6 +290,10 @@ describe("usageMain tier-aware path", () => {
         source_id: "c1",
         source_kind: "conversation_turn",
         session_id: "s1",
+        conversation_key: "s1",
+        origin_id: originIdentity("fixture:s1:user"),
+        content_fingerprint: contentFingerprint("/build go"),
+        author_class: "user",
         project_id: "agentera",
         timestamp: "2026-01-01T00:00:00.000Z",
         runtime: "opencode",
@@ -303,6 +307,10 @@ describe("usageMain tier-aware path", () => {
         source_id: "a1",
         source_kind: "conversation_turn",
         session_id: "s1",
+        conversation_key: "s1",
+        origin_id: originIdentity("fixture:s1:assistant"),
+        content_fingerprint: contentFingerprint("done"),
+        author_class: "agent",
         project_id: "agentera",
         timestamp: "2026-01-01T00:00:01.000Z",
         runtime: "opencode",

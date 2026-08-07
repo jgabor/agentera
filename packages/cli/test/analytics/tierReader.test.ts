@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import {
   evidenceTierAuthorityPath,
   evidenceTierBounds,
@@ -40,7 +40,8 @@ function fullRecord(opts: {
   runtime?: string | null;
   data?: JsonObject;
 }): JsonObject {
-  return {
+  const data = opts.data ?? { actor: "user", text: "hello" };
+  const record: JsonObject = {
     source_id: opts.sourceId,
     source_kind: opts.sourceKind ?? "conversation_turn",
     timestamp: opts.timestamp ?? "2026-01-01T00:00:00.000Z",
@@ -50,8 +51,17 @@ function fullRecord(opts: {
     source_product: opts.sourceProduct ?? "opencode",
     active_runtime: true,
     adapter_version: ADAPTER_VERSION,
-    data: opts.data ?? { actor: "user", text: "hello" },
+    data,
   };
+  if (record.source_kind === "conversation_turn" || record.source_kind === "history_prompt") {
+    const actor = data.actor;
+    record.session_id = `session-${opts.sourceId}`;
+    record.conversation_key = record.session_id;
+    record.origin_id = originIdentity(`fixture:${opts.sourceId}`);
+    record.content_fingerprint = contentFingerprint(`fixture:${opts.sourceId}`);
+    record.author_class = actor === "assistant" ? "agent" : "user";
+  }
+  return record;
 }
 
 function representativeRecords(): JsonObject[] {

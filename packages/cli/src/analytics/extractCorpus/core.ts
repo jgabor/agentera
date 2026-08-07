@@ -11,7 +11,7 @@ import { resolvePath } from "../../core/paths.js";
 
 export type Env = Record<string, string | undefined>;
 
-export const ADAPTER_VERSION = "agentera-v3-corpus-2";
+export const ADAPTER_VERSION = "agentera-v3-corpus-3";
 export const FAMILIES = [
   "instruction_document",
   "history_prompt",
@@ -35,6 +35,20 @@ export const MAX_SQLITE_ROWS = 100_000;
 export const MAX_SQLITE_SESSIONS = 60;
 export const COPILOT_SPARSE_REMEDIATION = "/chronicle reindex";
 
+const ORIGIN_ID_RE = /^[a-f0-9]{64}$/;
+const CONTENT_FINGERPRINT_RE = /^[a-f0-9]{64}$/;
+const CONVERSATION_SOURCE_KINDS = new Set(["conversation_turn", "history_prompt"]);
+const PROVENANCE_NESTED_KEYS = ["payload", "item", "metadata", "meta", "provenance", "source"] as const;
+const PROVENANCE_ORIGIN_KEYS = [
+  "origin_id",
+  "original_origin_id",
+  "original_origin",
+  "origin",
+  "source_origin",
+  "instruction_origin",
+] as const;
+const PROVENANCE_AUTHOR_KEYS = ["author_class", "authorClass", "author"] as const;
+
 const DECISION_RE =
   /\b(decide|decision|prefer|preference|instead|avoid|don't|do not|should|trade[- ]?off|scope|plan|commit|review|fix|why|question|blocked|stuck|approve|reject|change|keep|remove)\b/i;
 const CORRECTION_RE =
@@ -56,6 +70,175 @@ export function isoFromMtime(p: string): string {
 export function stableId(...parts: unknown[]): string {
   const raw = parts.map((p) => pyStr(p)).join("\0");
   return crypto.createHash("sha256").update(raw, "utf-8").digest("hex").slice(0, 24);
+}
+
+/** A bounded, deterministic identity for the source that originally supplied a record. */
+export function originIdentity(origin: string): string {
+  if (typeof origin !== "string" || origin.length === 0) {
+    throw new TypeError("origin must be a non-empty string");
+  }
+  return crypto
+    .createHash("sha256")
+    .update("agentera.corpus.origin.v1\0", "utf-8")
+    .update(origin, "utf-8")
+    .digest("hex");
+}
+
+/** A lowercase SHA-256 of the exact source text, without normalization or truncation. */
+export function contentFingerprint(content: string): string {
+  if (typeof content !== "string") throw new TypeError("content must be a string");
+  return crypto.createHash("sha256").update(content, "utf-8").digest("hex");
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function provenanceObjects(sources: unknown[]): JsonObject[] {
+  const out: JsonObject[] = [];
+  const pending = sources.slice();
+  const seen = new Set<object>();
+  while (pending.length > 0 && out.length < 24) {
+    const value = pending.shift();
+    if (!isPlainObject(value) || seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+    for (const key of PROVENANCE_NESTED_KEYS) {
+      const nested = value[key];
+      if (isPlainObject(nested)) pending.push(nested);
+    }
+  }
+  return out;
+}
+
+export interface TransportProvenance {
+  originId: string | null;
+  authorClass: string | null;
+}
+
+/**
+ * Read only explicit transport metadata. Content is never inspected to infer
+ * either ownership or origin. An adapter may provide an origin digest directly,
+ * or a bounded source label that is converted to one.
+ */
+export function transportProvenance(...sources: unknown[]): TransportProvenance {
+  let origin: string | null = null;
+  let authorClass: string | null = null;
+  for (const source of provenanceObjects(sources)) {
+    if (origin === null) {
+      for (const key of PROVENANCE_ORIGIN_KEYS) {
+        const value = source[key];
+        if (nonEmptyString(value)) {
+          origin = ORIGIN_ID_RE.test(value) && key.endsWith("_id") ? value : originIdentity(value);
+          break;
+        }
+      }
+    }
+    if (authorClass === null) {
+      for (const key of PROVENANCE_AUTHOR_KEYS) {
+        const value = source[key];
+        if (nonEmptyString(value)) {
+          authorClass = value;
+          break;
+        }
+      }
+    }
+    if (origin !== null && authorClass !== null) break;
+  }
+  return { originId: origin, authorClass };
+}
+
+/**
+ * Map a transport role to a source-author class without examining its text.
+ * A claimed transported origin requires the original author to be explicit;
+ * the envelope role is not evidence for the source that was transported.
+ */
+export function authorClassForRole(
+  role: unknown,
+  explicitAuthorClass: string | null = null,
+  transportedOriginId: string | null = null,
+): string | null {
+  const explicit = nonEmptyString(explicitAuthorClass);
+  if (!explicit && nonEmptyString(transportedOriginId)) return null;
+  const value = explicit ? explicitAuthorClass : nonEmptyString(role) ? role : null;
+  if (value === null) return null;
+  switch (value.toLowerCase()) {
+    case "user":
+      return "user";
+    case "assistant":
+    case "model":
+    case "tool":
+      return "agent";
+    case "system":
+    case "developer":
+    case "instruction":
+      return "injected_instruction";
+    default:
+      return explicit ? value : null;
+  }
+}
+
+export interface ProvenanceCoverage {
+  complete: boolean;
+  missingFields: string[];
+  missingRecords: number;
+}
+
+/** Return the bounded provenance fields missing from one retained record. */
+export function missingProvenanceFields(item: JsonObject): string[] {
+  const missing: string[] = [];
+  const required: Array<[string, boolean]> = [
+    ["source_id", nonEmptyString(item.source_id)],
+    ["source_kind", nonEmptyString(item.source_kind)],
+    ["timestamp", nonEmptyString(item.timestamp)],
+    ["project_id", nonEmptyString(item.project_id)],
+    ["source_class", nonEmptyString(item.source_class)],
+    ["source_product", nonEmptyString(item.source_product)],
+    ["adapter_version", nonEmptyString(item.adapter_version)],
+    ["data", isPlainObject(item.data)],
+  ];
+  for (const [field, present] of required) if (!present) missing.push(field);
+  if (typeof item.runtime !== "string" && item.runtime !== null) missing.push("runtime");
+  if (typeof item.active_runtime !== "boolean") missing.push("active_runtime");
+
+  if (CONVERSATION_SOURCE_KINDS.has(String(item.source_kind))) {
+    if (!ORIGIN_ID_RE.test(String(item.origin_id ?? ""))) missing.push("origin_id");
+    if (!nonEmptyString(item.author_class)) missing.push("author_class");
+    if (!CONTENT_FINGERPRINT_RE.test(String(item.content_fingerprint ?? ""))) {
+      missing.push("content_fingerprint");
+    }
+    if (!nonEmptyString(item.session_id)) missing.push("session_id");
+  }
+  return [...new Set(missing)];
+}
+
+export function assessProvenance(records: readonly JsonObject[]): ProvenanceCoverage {
+  const fields = new Set<string>();
+  let missingRecords = 0;
+  for (const record of records) {
+    const missing = missingProvenanceFields(record);
+    if (missing.length === 0) continue;
+    missingRecords += 1;
+    for (const field of missing) fields.add(field);
+  }
+  return { complete: missingRecords === 0, missingFields: [...fields].sort(), missingRecords };
+}
+
+/**
+ * Count independent conversation origins without using record IDs or copy
+ * counts. Repeated transport of one origin and fingerprint contributes once;
+ * a different origin remains independent even when its text is identical.
+ */
+export function countIndependentOrigins(records: readonly JsonObject[]): number {
+  const identities = new Set<string>();
+  for (const record of records) {
+    if (!CONVERSATION_SOURCE_KINDS.has(String(record.source_kind))) continue;
+    const originId = record.origin_id;
+    const fingerprint = record.content_fingerprint;
+    if (!ORIGIN_ID_RE.test(String(originId ?? "")) || !CONTENT_FINGERPRINT_RE.test(String(fingerprint ?? ""))) continue;
+    identities.add(`${originId}\0${fingerprint}`);
+  }
+  return identities.size;
 }
 
 /** Python str() for the scalar/None values stable_id receives. */
@@ -109,6 +292,8 @@ export interface RuntimeStatusOpts {
   truncatedAt?: string | null;
   truncationCap?: "sessions" | "rows" | null;
   truncationLimit?: number | null;
+  provenanceMissingFields?: string[] | null;
+  provenanceMissingRecords?: number | null;
   sourceClass?: "active_runtime" | "historical_import";
   sourceProduct?: string;
   activeRuntime?: boolean;
@@ -132,6 +317,12 @@ export function runtimeStatus(runtime: string | null, opts: RuntimeStatusOpts): 
   if (opts.truncatedAt) item.truncated_at = opts.truncatedAt;
   if (opts.truncationCap) item.truncation_cap = opts.truncationCap;
   if (opts.truncationLimit !== null && opts.truncationLimit !== undefined) item.truncation_limit = opts.truncationLimit;
+  if (opts.provenanceMissingFields && opts.provenanceMissingFields.length > 0) {
+    item.provenance_missing_fields = opts.provenanceMissingFields;
+  }
+  if (opts.provenanceMissingRecords !== null && opts.provenanceMissingRecords !== undefined) {
+    item.provenance_missing_records = opts.provenanceMissingRecords;
+  }
   return item;
 }
 
@@ -206,7 +397,7 @@ export function discoverRuntimeStore(
     });
   }
   if (!isDir(storePath)) {
-    return runtimeStatus(runtime, { status: "degraded", reason: "store_not_directory", storePath });
+    return runtimeStatus(runtime, { status: "degraded", reason: "store_not_directory", storePath, ...statusOpts });
   }
   let candidates: string[];
   try {
@@ -214,7 +405,7 @@ export function discoverRuntimeStore(
     if (!pattern) throw new Error("no declared store pattern");
     candidates = rglob(storePath, pattern);
   } catch {
-    return runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath });
+    return runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath, ...statusOpts });
   }
   if (candidates.length === 0) {
     return runtimeStatus(runtime, {
@@ -254,6 +445,10 @@ export interface RecordOpts {
   data: JsonObject;
   sourceParts: unknown[];
   sessionId?: string | null;
+  origin?: string | null;
+  originId?: string | null;
+  authorClass?: string | null;
+  content?: string | null;
 }
 
 export function record(opts: RecordOpts): JsonObject {
@@ -275,6 +470,11 @@ export function record(opts: RecordOpts): JsonObject {
     item.session_id = opts.sessionId;
     item.conversation_key = opts.sessionId;
   }
+  if (opts.originId) item.origin_id = opts.originId;
+  else if (opts.origin) item.origin_id = originIdentity(opts.origin);
+  else if (opts.sessionId) item.origin_id = originIdentity(`session:${opts.sessionId}`);
+  if (opts.authorClass) item.author_class = opts.authorClass;
+  if (typeof opts.content === "string") item.content_fingerprint = contentFingerprint(opts.content);
   return item;
 }
 
@@ -420,6 +620,8 @@ export function toolCallRecordFromItem(args: {
     activeRuntime: args.activeRuntime,
     sourceParts: [resolvePath(args.sourcePath), args.index, "tool", toolName],
     sessionId: args.sessionId,
+    originId: transportProvenance(args.event, args.item).originId,
+    authorClass: "agent",
     data: { tool_name: toolName, arguments: argumentsVal as JsonValue }, // cast: parsed JSON IO boundary
   });
 }

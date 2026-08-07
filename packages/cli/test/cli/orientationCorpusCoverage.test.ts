@@ -12,7 +12,7 @@ import {
 } from "../../src/cli/orientation/corpusCoverage.js";
 import type { OrientationState } from "../../src/cli/contracts/orientationState.js";
 import { projectIntegrationAttention } from "../../src/upgrade/projectIntegration.js";
-import { ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 import type {
@@ -204,7 +204,7 @@ describe("corpus coverage attention", () => {
     const corpusPath = path.join(profileDir, "intermediate", "corpus.json");
     fs.mkdirSync(path.dirname(corpusPath), { recursive: true });
     const records: Record<string, unknown>[] = [
-      { source_id: "c1", source_kind: "conversation_turn", timestamp: "2026-01-01T00:00:00.000Z", project_id: "demo", runtime: "opencode", source_class: "active_runtime", source_product: "opencode", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { actor: "user", text: "hi" } },
+      { source_id: "c1", source_kind: "conversation_turn", timestamp: "2026-01-01T00:00:00.000Z", project_id: "demo", runtime: "opencode", source_class: "active_runtime", source_product: "opencode", active_runtime: true, adapter_version: ADAPTER_VERSION, session_id: "s1", conversation_key: "s1", origin_id: originIdentity("fixture:c1"), content_fingerprint: contentFingerprint("hi"), author_class: "user", data: { actor: "user", text: "hi" } },
     ];
     const runtimeStatuses = [
       { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },

@@ -397,6 +397,6 @@ describe("bounds and scope", () => {
     const required = (raw.tiers as Record<string, unknown>).full_evidence as Record<string, unknown>;
     const stored = (required.stored_fields as Record<string, unknown>).required as string[];
     expect(stored).toContain("adapter_version");
-    expect(ADAPTER_VERSION).toBe("agentera-v3-corpus-2");
+    expect(ADAPTER_VERSION).toBe("agentera-v3-corpus-3");
   });
 });

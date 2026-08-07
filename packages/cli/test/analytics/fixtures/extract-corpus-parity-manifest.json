@@ -1,6 +1,6 @@
 {
   "schema_version": "agentera-extract-corpus-parity-v1",
-  "adapter_version": "agentera-v3-corpus-2",
+  "adapter_version": "agentera-v3-corpus-3",
   "max_sqlite_sessions": 60,
   "max_sqlite_rows": 100000,
   "max_tool_arg_text": 500,

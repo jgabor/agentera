@@ -1,0 +1,16 @@
+id: ffnadtsjan
+artifact: progress
+record:
+  timestamp: 2026-08-08 01:33
+  type: fix
+  phase: build
+  what: Closed the transported-origin author trust boundary without changing the bounded mining scope.
+  context:
+    intent: Preserve original authorship trust boundaries for transported evidence while retaining ordinary envelope-role behavior when no transported origin is claimed.
+    constraints: Preserve the existing uncommitted candidate, progress, and audit-1 FAIL state. Do not run Audit, commit, publish, broaden mining, read project glossary state, or write an evaluator verdict.
+    unknowns: Prime's bounded re-review is still pending.
+    scope: Transport provenance author classification, affected extraction adapters, tier degradation, and proportional regression evidence only.
+  discovered: An explicit transported origin cannot use the envelope role as original-author evidence. Missing original author provenance must remain absent, so adapter and signal coverage degrade with provenance_missing instead of classifying the record as user-authored.
+  verified: "Focused command `pnpm -C packages/cli exec vp test run test/analytics/extractCorpus.test.ts test/analytics/evidenceTiers.test.ts test/analytics/tierReader.test.ts test/analytics/personalGlossaryAdmission.test.ts test/analytics/extractCorpusParity.test.ts test/cli/report.test.ts test/analytics/profileSignals.test.ts test/analytics/usageStats.test.ts`: 8 files, 145/145 tests passed. Repeated copied origin/fingerprint measured as 1 independent origin; adding one distinct origin measured as 2. Missing original author measured adapter status=degraded and reason=provenance_missing, with author_class absent; tier state=incomplete and reason=provenance_missing. No-consent report regression measured fs.readdirSync source-access calls=0, local_history_read=false, tier_write=false, status=degraded_consent_required, recovery=agentera report refresh --consent local-history. Tier round-trip preserved origin_id, author_class, source_class, runtime, project_id, timestamp, and evidence_anchor. Broader source suite: 230 files, 3483 passed, 1 skipped. Package suite: 3 files, 34 passed. Typecheck passed. Build passed and reported manifest/Python parity in sync. Dedicated parity suite: 1 file, 5 passed."
+  next: Await Prime's bounded re-review; keep the task pending and do not write another evaluator verdict.
+  publication_order: 102
