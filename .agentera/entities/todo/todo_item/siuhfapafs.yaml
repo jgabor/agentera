@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy."
       severity: normal
       status: open
-      order: 30
+      order: 29

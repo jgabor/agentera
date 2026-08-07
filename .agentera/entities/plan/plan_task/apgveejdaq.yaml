@@ -4,9 +4,19 @@ record:
   name: Require explicit effect-complete activation (ibomhottkk)
   depends_on:
     - fhrpugzmhb
-  status: pending
+  status: complete
   acceptance:
     - GIVEN an inactive project WHEN any ordinary TODO mutation is requested THEN it fails with exact preview and apply commands and changes no public, entity, baseline, or activation state.
     - GIVEN activation preview and confirmed apply WHEN effects are compared THEN matched, converted, retained, conflicting, and public-document changes are bounded and apply introduces no unpreviewed effect.
     - GIVEN success, conflict, interruption, replay, and one passing plus one failing case per activation transition WHEN activation runs THEN publication is atomic, refusal is effect-free, and retries converge.
   plan: owuzikqest
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Audit proved effect-bound replay is incomplete: after activation, an arbitrary valid SHA-256 succeeds and pending journal recovery can run before digest validation. Bind authorization to the original effect digest and reject unrelated digests for active and pending replay. Also correct TODO schema wording that implies activate requires reason/date."
+    provenance:
+      attempt_id: apgveejdaq-audit-2
+      source: audit:ses_0239524a7ffeihSe3OfqdqArvA:bounded-rereview
+      recorded_at: 2026-08-07 16:06
+      writer_command: agentera state plan record-evaluation

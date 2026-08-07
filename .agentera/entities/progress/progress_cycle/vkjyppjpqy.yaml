@@ -1,0 +1,15 @@
+id: vkjyppjpqy
+artifact: progress
+record:
+  timestamp: 2026-08-07 15:19
+  type: fix
+  phase: build
+  what: Implemented explicit effect-complete TODO activation and inactive-mutation blocking for apgveejdaq; independent Audit remains next.
+  context:
+    intent: Require explicit, effect-complete TODO reconciliation activation without synthetic TODO mutation.
+    constraints: Preserve Markdown public authority, entity operational authority, journal atomicity, and evaluator-owned terminal lifecycle.
+    scope: Explicit activation, inactive ordinary-mutation refusal, proportional contracts/tests, and no damaged-project or diagnostic routing work.
+  discovered: Before correction, pnpm -C packages/cli exec vp test run test/state/todoDocsEntities.test.ts --config vite.config.ts -t "activates bounded legacy rows once" passed 1 test and proved an ordinary update implicitly created activation, entity baselines, and public IDs. The first attempted pnpm exec vitest command failed because this checkout exposes vp, not a vitest binary.
+  verified: 'Criterion 1: pnpm -C packages/cli exec vp test run test/state/todoDocsEntities.test.ts --config vite.config.ts -t "blocks ordinary mutations|rejects every ordinary inactive" passed 2 tests; create, update, set-severity, supersede, resolve, and reopen each exited 2 with exact npx -y agentera@next state todo activate --dry-run --format json and --yes commands, and full fixture maps (TODO.md, entities/baselines, marker, activation, journals) were byte-identical. Criterion 2: the rebuilt local node packages/cli/dist/bin/agentera.js fixture run observed matched=0, converted=1, retained=1, conflicting=0, changed_lines=1, targets=3, effect_sha256=f27b1986400a9f5c7d87d979efe593f08e82c1284a718a7508e216981822f272; dry-run bytes were unchanged and apply activation evidence plus target count exactly equaled preview. Criterion 3: pnpm -C packages/cli exec vp test run test/state/todoDocsEntities.test.ts test/state/write/mutationGrammar.test.ts --config vite.config.ts passed 95/95, including duplicate conflict preview/apply effect-free refusal, explicit confirmation failure, every injected entity/activation/public target boundary, real SIGKILL before/after activation publication, replay, and resolved-row resurrection risk. pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; activation conjunction/package model passed 61/61. pnpm -C packages/cli test reached 3405 passed, 1 skipped, 1 worktree-index race failure; exact isolated rerun pnpm -C packages/cli exec vp test run test/release/rootReleaseScripts.test.ts --config vite.config.ts passed 4/4.'
+  next: Independent Audit evaluates apgveejdaq; do not record evaluation, complete the task, resolve ibomhottkk, or commit before that lifecycle step.
+  publication_order: 100

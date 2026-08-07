@@ -33,6 +33,7 @@ function project(entity = true): string {
   roots.push(root);
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
   if (entity) fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), MARKER);
+  if (entity) fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([]));
   fs.writeFileSync(path.join(root, "TODO.md"), "# legacy TODO sentinel\n");
   fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), dumpYamlMapping({
     last_audit: "2026-07-17 (fixture)",
@@ -112,6 +113,7 @@ function seedAbsentTodoEntity(root: string, id: string, title: string, queueRank
 
 function preactivationProject(id = "abcdefghij", title = "Legacy matched row"): { root: string; id: string; entity: string } {
   const root = project();
+  fs.unlinkSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH));
   const entity = seedTodoEntity(root, id, title);
   fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [ ] [task:3.0.0] ${title}\n- [ ] [note] Retained pre-activation note\n`);
   return { root, id, entity };
@@ -655,11 +657,12 @@ describe("TODO item and documentation inventory entity authority", () => {
 
   it("updates a valid noncanonical TODO through the public writer and publishes canonical bytes", () => {
     const root = project(); const id = "ldzkfdcopb"; const file = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
-    const noncanonical = `id: ${id}\nartifact: todo\nrecord:\n  severity: normal\n  status: resolved\n  description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists."\n  readiness:\n    capability: plan\n    reason: Shared semantics and ownership shipped as the prerequisite for both glossary producers and their consumer.\n    dependencies: []\n    blocked: null\n    gate: null\n    queue_rank: 1\n    order_reason: Resolved prerequisite; downstream order is owned by the open producer and consumer TODOs.\n`.replaceAll("\n", "\r\n");
-    fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, noncanonical);
+    const noncanonical = `id: ${id}\nartifact: todo\nrecord:\n  severity: normal\n  status: resolved\n  description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists."\n  readiness:\n    capability: plan\n    reason: Shared semantics and ownership shipped as the prerequisite for both glossary producers and their consumer.\n    dependencies: []\n    blocked: null\n    gate: null\n    queue_rank: 1\n    order_reason: Resolved prerequisite; downstream order is owned by the open producer and consumer TODOs.\n  reconciliation:\n    schema_version: agentera.todoReconciliation.v1\n    public:\n      present: true\n      description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists."\n      status: resolved\n      order: 1\n`.replaceAll("\n", "\r\n");
+    const validNoncanonical = noncanonical.replace("      status: resolved\r\n      order: 1", "      severity: normal\r\n      status: resolved\r\n      order: 1");
+    fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, validNoncanonical);
     fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## ✓ Resolved\n- [x] [id:${id}] [feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists.\n`);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
-    expect(dumpYamlMapping(loadYamlMapping(noncanonical))).not.toBe(noncanonical);
+    expect(dumpYamlMapping(loadYamlMapping(validNoncanonical))).not.toBe(validNoncanonical);
 
     const beforeDryRun = fs.readFileSync(file);
     const dryRun = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--dry-run", "--format", "json"], { title: "Shipped and synchronized." });
@@ -1065,7 +1068,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(todoHelp.out).toContain("todo resolve|reopen --id ID --reason TEXT --date YYYY-MM-DD"); expect(todoHelp.out).toContain("todo create --input TODO.yaml"); expect(docsHelp.out).toContain("docs update --id ID"); expect(todoHelp.out + docsHelp.out).not.toContain("--number"); expect(docsHelp.out).toContain("path is record data, not identity");
     const explain = capture(root, ["state", "todo", "explain", "--verb", "update", "--format", "json"]); expect(explain.json.fields).toEqual(expect.arrayContaining([expect.objectContaining({ flag: "--id", required: true })])); expect(explain.json.example).toContain("--id qjtrmnpvka");
     expect(capture(root, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).toEqual(expect.arrayContaining(["todo", "docs"]));
-    const legacy = project(false); expect(capture(legacy, ["state", "todo", "--help"]).out).toContain("todo create"); expect(capture(legacy, ["state", "todo", "explain", "--format", "json"]).json.example).toContain("todo create"); expect(capture(legacy, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).toEqual(expect.arrayContaining(["todo", "docs"]));
+    const legacy = project(false); expect(capture(legacy, ["state", "todo", "--help"]).out).toContain("todo create"); expect(capture(legacy, ["state", "todo", "explain", "--format", "json"]).json.example).toContain("todo activate"); expect(capture(legacy, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).toEqual(expect.arrayContaining(["todo", "docs"]));
   });
 
   it("reconciles one-sided Markdown edits with the requested mutation in one transaction", () => {
@@ -1283,18 +1286,45 @@ describe("TODO item and documentation inventory entity authority", () => {
     }
   });
 
-  it("activates bounded legacy rows once, preserves unmatched legacy bytes, and then requires managed IDs", () => {
+  it("blocks ordinary mutations until an effect-complete activation preview is explicitly applied", () => {
     const { root, id, entity } = preactivationProject();
     const activation = path.join(root, ".agentera/todo-reconciliation-activation.json");
     const beforePreview = files(root);
-    const preview = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--dry-run", "--format", "json"], { readiness: readinessInput() });
+    const blocked = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    expect(blocked.rc).toBe(2);
+    expect(blocked.json.error).toMatchObject({
+      class: "conflict",
+      syntax: "npx -y agentera@next state todo activate --dry-run --format json",
+      example: "npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json",
+    });
+    expect(files(root)).toEqual(beforePreview);
+
+    const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
     expect(preview.rc, preview.err || preview.out).toBe(0);
-    expect(preview.json.reconciliation).toMatchObject({ transaction_id: null, targets: 3, recovered: [] });
+    expect(preview.json.activation).toMatchObject({
+      counts: { matched: 0, converted: 1, retained: 1, conflicting: 0 },
+      public_document: { path: "TODO.md", changed: true, changed_lines: { count: 1, omitted_count: 0 } },
+      risks: { resurrected_count: 0 },
+      targets: expect.arrayContaining([
+        expect.objectContaining({ path: `.agentera/entities/todo/todo_item/${id}.yaml` }),
+        expect.objectContaining({ path: TODO_RECONCILIATION_ACTIVATION_PATH }),
+        expect.objectContaining({ path: "TODO.md" }),
+      ]),
+      effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
     expect(files(root)).toEqual(beforePreview);
     expect(fs.existsSync(activation)).toBe(false);
 
-    const applied = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    expect(capture(root, ["state", "todo", "activate", "--format", "json"]).rc).toBe(2);
+    expect(files(root)).toEqual(beforePreview);
+    const staleApply = capture(root, ["state", "todo", "activate", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"]);
+    expect(staleApply.rc).toBe(2);
+    expect(staleApply.json.error.message).toContain("changed after preview");
+    expect(files(root)).toEqual(beforePreview);
+    const applied = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
     expect(applied.rc, applied.err || applied.out).toBe(0);
+    expect(applied.json.activation).toEqual(preview.json.activation);
+    expect(applied.json.reconciliation.targets).toBe(preview.json.reconciliation.targets);
     expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain(`- [ ] [id:${id}] [task:3.0.0] Legacy matched row`);
     expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("- [ ] [note] Retained pre-activation note");
     const activationRecord = JSON.parse(fs.readFileSync(activation, "utf8"));
@@ -1306,6 +1336,16 @@ describe("TODO item and documentation inventory entity authority", () => {
       schema_version: "agentera.todoReconciliation.v1",
       public: { present: true, severity: "normal", status: "open" },
     });
+    const activeBytes = files(root);
+    const arbitraryReplay = capture(root, ["state", "todo", "activate", "--effect-sha256", "b".repeat(64), "--yes", "--format", "json"]);
+    expect(arbitraryReplay.rc).toBe(2);
+    expect(arbitraryReplay.json.error.message).toContain("does not match the authorized effect");
+    expect(files(root)).toEqual(activeBytes);
+    const legitimateReplay = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
+    expect(legitimateReplay.rc, legitimateReplay.err || legitimateReplay.out).toBe(0);
+    expect(legitimateReplay.json).toMatchObject({ activation: { effect_sha256: preview.json.activation.effect_sha256 }, operation: { idempotent_replay: true } });
+    expect(files(root)).toEqual(activeBytes);
+    expect(capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() }).rc).toBe(0);
 
     fs.appendFileSync(path.join(root, "TODO.md"), "\n## → Degraded\n- [ ] [fix:3.0.0] New ID-less managed row\n");
     const beforeReject = files(root);
@@ -1319,13 +1359,61 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(files(root)).toEqual(beforeReject);
   });
 
-  it("rejects identical pre-activation managed rows before assigning either row an entity ID", () => {
+  it("rejects every ordinary inactive TODO mutation without changing project bytes", () => {
+    const cases: Array<{ args: string[]; input?: Record<string, unknown> }> = [
+      { args: ["state", "todo", "create", "--input", "-", "--format", "json"], input: { kind: "task", target_version: "3.0.0", title: "Blocked create", requirements: [], acceptance: [], release_blocker: false, severity: "normal" } },
+      { args: ["state", "todo", "update", "--id", "abcdefghij", "--input", "-", "--format", "json"], input: { readiness: readinessInput() } },
+      { args: ["state", "todo", "set-severity", "--id", "abcdefghij", "--severity", "degraded", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"] },
+      { args: ["state", "todo", "supersede", "--id", "abcdefghij", "--replacement", "bbbbbbbbbb", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"] },
+      { args: ["state", "todo", "resolve", "--id", "abcdefghij", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"] },
+      { args: ["state", "todo", "reopen", "--id", "abcdefghij", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"] },
+    ];
+    for (const testCase of cases) {
+      const { root } = preactivationProject();
+      const before = files(root);
+      const result = capture(root, testCase.args, testCase.input);
+      expect(result.rc, testCase.args[2]).toBe(2);
+      expect(result.json.error).toMatchObject({
+        class: "conflict",
+        syntax: "npx -y agentera@next state todo activate --dry-run --format json",
+        example: "npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json",
+      });
+      expect(files(root), testCase.args[2]).toEqual(before);
+    }
+  });
+
+  it("reports resolved-row resurrection risk in a mutation-free activation preview", () => {
+    const { root, entity } = preactivationProject("abcdefghij", "Resolved legacy row");
+    const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8"));
+    (envelope.record as any).status = "resolved";
+    fs.writeFileSync(entity, dumpYamlMapping(envelope));
+    fs.writeFileSync(path.join(root, "TODO.md"), "# TODO\n\n## ✓ Resolved\n- [x] [task:3.0.0] Resolved legacy row\n");
+    const before = files(root);
+
+    const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
+
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    expect(preview.json.activation).toMatchObject({ counts: { converted: 1, conflicting: 0 }, risks: { resurrected_count: 1, resurrected_ids: ["abcdefghij"], omitted_count: 0 } });
+    expect(files(root)).toEqual(before);
+  });
+
+  it("authorizes legacy active replay only through its current no-op preview", () => {
+    const root = project(); const before = files(root);
+    const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
+    expect(preview.rc).toBe(0); expect(files(root)).toEqual(before);
+    const rejected = capture(root, ["state", "todo", "activate", "--effect-sha256", "b".repeat(64), "--yes", "--format", "json"]);
+    expect(rejected.rc).toBe(2); expect(files(root)).toEqual(before);
+    const replay = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
+    expect(replay.rc).toBe(0); expect(replay.json.operation.idempotent_replay).toBe(true); expect(files(root)).toEqual(before);
+  });
+
+  it("exposes duplicate activation risk without assigning either row an entity ID", () => {
     const { root, id } = preactivationProject();
     const markdown = path.join(root, "TODO.md");
     fs.writeFileSync(markdown, `# TODO\n\n## → Normal\n- [ ] [task:3.0.0] Legacy matched row\n- [ ] [task:3.0.0] Legacy matched row\n`);
     const before = files(root);
 
-    const rejected = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    const rejected = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
 
     expect(rejected.rc).toBe(2);
     expect(rejected.json.error).toMatchObject({
@@ -1335,6 +1423,10 @@ describe("TODO item and documentation inventory entity authority", () => {
     });
     expect(files(root)).toEqual(before);
     expect(fs.existsSync(path.join(root, ".agentera/todo-reconciliation-activation.json"))).toBe(false);
+    const apply = capture(root, ["state", "todo", "activate", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"]);
+    expect(apply.rc).toBe(2);
+    expect(apply.json.error.message).toBe(rejected.json.error.message);
+    expect(files(root)).toEqual(before);
   });
 
   it("rejects ID-less rows only inside managed sections", () => {
@@ -1367,7 +1459,7 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("recovers interrupted create at every target boundary without allocating a second ID", () => {
-    for (const boundary of [0, 1, 2, 3]) {
+    for (const boundary of [0, 1, 2]) {
       const root = project();
       const input = { kind: "task", target_version: "3.0.0", title: `Interrupted create ${boundary}`, requirements: [], acceptance: [], release_blocker: false, severity: "normal" };
       const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "create")!, projectRoot: root, dryRun: false, force: false, values: {}, callerPayload: {}, input };
@@ -1387,7 +1479,6 @@ describe("TODO item and documentation inventory entity authority", () => {
       });
       expect(journal.targets.map((target: any) => target.path)).toEqual([
         ".agentera/entities/todo/todo_item/aaaaaaaaaa.yaml",
-        ".agentera/todo-reconciliation-activation.json",
         "TODO.md",
       ]);
 
@@ -1499,15 +1590,19 @@ describe("TODO item and documentation inventory entity authority", () => {
   it("resumes pre-activation entity, activation-baseline, and public targets at every boundary", () => {
     for (const boundary of [0, 1, 2, 3]) {
       const { root, id } = preactivationProject("abcdefghij", `Activation ${boundary}`);
+      const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
       const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-      const spec = operationSpec("todo", "update")!;
-      const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id }, callerPayload: {}, input: { readiness: readinessInput() } };
+      const spec = operationSpec("todo", "activate")!;
+      const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.activation.effect_sha256 }, callerPayload: { confirmed: true, effect_sha256: preview.json.activation.effect_sha256 }, input: null };
       expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: boundary })).toThrow(/interruption/);
       binding.publicationContext.close();
       expect(fs.existsSync(path.join(root, "TODO.md"))).toBe(true);
       const blocked = capture(root, ["state", "todo", "list", "--format", "json"]);
       expect(blocked.rc).toBe(1); expect(blocked.json.error.class).toBe("unsupported_state");
-      const retry = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+      const pending = files(root);
+      const arbitrary = capture(root, ["state", "todo", "activate", "--effect-sha256", "b".repeat(64), "--yes", "--format", "json"]);
+      expect(arbitrary.rc).toBe(2); expect(arbitrary.json.error.message).toContain("pending TODO activation"); expect(files(root)).toEqual(pending);
+      const retry = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
       expect(retry.rc, retry.err || retry.out).toBe(0);
       expect(retry.json.reconciliation.recovered).toHaveLength(1);
       expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain(`[id:${id}]`);
@@ -1519,11 +1614,12 @@ describe("TODO item and documentation inventory entity authority", () => {
   it("recovers real SIGKILL before and after the activation-baseline publication boundary", () => {
     for (const phase of ["before", "after"] as const) {
       const { root, id } = preactivationProject("abcdefghij", `Activation kill ${phase}`);
+      const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
       const script = path.join(root, `kill-activation-${phase}.mjs`);
       fs.writeFileSync(script, `import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-const [root, build, id, phase] = process.argv.slice(2);
+const [root, build, phase, effect] = process.argv.slice(2);
 const { detectStateModeBinding } = await import(pathToFileURL(path.join(build, "state/stateMode.js")).href);
 const { operationSpec } = await import(pathToFileURL(path.join(build, "state/write/operations.js")).href);
 const { mutateTodoDocsEntity } = await import(pathToFileURL(path.join(build, "state/todoDocsEntities.js")).href);
@@ -1536,14 +1632,14 @@ fs.linkSync = (source, target) => {
   return result;
 };
 const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), projectRoot: root, dryRun: false, force: false, values: { id }, callerPayload: {}, input: { readiness: ${JSON.stringify(readinessInput())} } }, { publicationContext: binding.publicationContext });
+mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "activate"), projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: effect }, callerPayload: { confirmed: true, effect_sha256: effect }, input: null }, { publicationContext: binding.publicationContext });
 `);
-      const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), id, phase], { encoding: "utf8" });
+      const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), phase, preview.json.activation.effect_sha256], { encoding: "utf8" });
       expect(killed.status, killed.stderr || killed.stdout).toBeNull(); expect(killed.signal).toBe("SIGKILL");
       expect(fs.existsSync(path.join(root, "TODO.md"))).toBe(true);
       const blocked = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]);
       expect(blocked.rc).toBe(1); expect(blocked.json.error.class).toBe("unsupported_state");
-      const retry = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+      const retry = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
       expect(retry.rc, retry.err || retry.out).toBe(0);
       expect(retry.json.reconciliation.recovered).toHaveLength(1);
       expect(fs.existsSync(path.join(root, ".agentera/todo-reconciliation-activation.json"))).toBe(true);

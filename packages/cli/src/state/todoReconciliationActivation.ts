@@ -3,6 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { reject } from "./write/errors.js";
+import type { JsonObject } from "../core/jsonValue.js";
+import { CANONICAL_DEVELOPMENT_CLI } from "../core/developmentChannel.js";
+import { canonicalRecordJson } from "./archiveDiscovery.js";
+import type { TodoReconciliationTarget } from "./todoReconciliationTransaction.js";
 
 export const TODO_RECONCILIATION_ACTIVATION_PATH = ".agentera/todo-reconciliation-activation.json";
 export const TODO_RECONCILIATION_ACTIVATION_VERSION = "agentera.todoReconciliationActivation.v1";
@@ -10,10 +14,14 @@ export const TODO_RECONCILIATION_ITEM_LIMIT = 256;
 
 const MAX_ACTIVATION_BYTES = 32 * 1024;
 const SHA256 = /^[a-f0-9]{64}$/;
+export const TODO_ACTIVATION_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo activate --dry-run --format json`;
+export const TODO_ACTIVATION_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json`;
+const CHANGE_LIMIT = 20;
 
 export interface TodoReconciliationActivation {
   schema_version: typeof TODO_RECONCILIATION_ACTIVATION_VERSION;
   retained_legacy_rows: string[];
+  effect_sha256?: string;
 }
 
 function activationFailure(message: string): never {
@@ -30,6 +38,7 @@ export function todoLegacyRowFingerprint(section: string, line: string): string 
 
 export function todoReconciliationActivationBytes(
   retainedLegacyRows: Iterable<string>,
+  effectSha256?: string,
 ): string {
   const retained = [...retainedLegacyRows].sort();
   if (
@@ -37,9 +46,11 @@ export function todoReconciliationActivationBytes(
     || new Set(retained).size !== retained.length
     || retained.some((digest) => !SHA256.test(digest))
   ) activationFailure("TODO reconciliation activation has invalid retained legacy-row identities");
+  if (effectSha256 !== undefined && !SHA256.test(effectSha256)) activationFailure("TODO reconciliation activation has an invalid effect authorization");
   return `${JSON.stringify({
     schema_version: TODO_RECONCILIATION_ACTIVATION_VERSION,
     retained_legacy_rows: retained,
+    ...(effectSha256 ? { effect_sha256: effectSha256 } : {}),
   })}\n`;
 }
 
@@ -67,12 +78,37 @@ export function loadTodoReconciliationActivation(
   }
   const record = value as Partial<TodoReconciliationActivation>;
   if (
-    Object.keys(record).sort().join(",") !== "retained_legacy_rows,schema_version"
+    !["retained_legacy_rows,schema_version", "effect_sha256,retained_legacy_rows,schema_version"].includes(Object.keys(record).sort().join(","))
     || record.schema_version !== TODO_RECONCILIATION_ACTIVATION_VERSION
     || !Array.isArray(record.retained_legacy_rows)
     || record.retained_legacy_rows.length > TODO_RECONCILIATION_ITEM_LIMIT
     || record.retained_legacy_rows.some((digest) => typeof digest !== "string" || !SHA256.test(digest))
     || new Set(record.retained_legacy_rows).size !== record.retained_legacy_rows.length
+    || (record.effect_sha256 !== undefined && (typeof record.effect_sha256 !== "string" || !SHA256.test(record.effect_sha256)))
   ) activationFailure("TODO reconciliation activation has an invalid canonical record");
   return { record: record as TodoReconciliationActivation, bytes };
+}
+
+function sha256(bytes: Buffer | string): string { return createHash("sha256").update(bytes).digest("hex"); }
+function boundedPublicChanges(before: string, after: string): JsonObject {
+  const beforeLines = before.split(/\r?\n/); const afterLines = after.split(/\r?\n/); const changes: JsonObject[] = []; let count = 0;
+  for (let index = 0; index < Math.max(beforeLines.length, afterLines.length); index += 1) {
+    if (beforeLines[index] === afterLines[index]) continue; count += 1;
+    if (changes.length < CHANGE_LIMIT) changes.push({ line: index + 1, before: (beforeLines[index] ?? "").slice(0, 240), after: (afterLines[index] ?? "").slice(0, 240) });
+  }
+  return { count, items: changes, omitted_count: count - changes.length };
+}
+export function todoActivationEffect(scan: { matchedRows: number; convertedRows: number; retainedLegacyRows: string[] }, targets: readonly TodoReconciliationTarget[], publicPath: string, markdownBefore: Buffer, rendered: string, resurrectedIds: readonly string[]): JsonObject {
+  const changedTargets = targets.filter((target) => target.before === null || !target.before.equals(Buffer.from(target.after))).map((target) => ({ path: target.path, before_sha256: target.before === null ? null : sha256(target.before), after_sha256: sha256(target.after) }));
+  const evidence: JsonObject = {
+    counts: { matched: scan.matchedRows, converted: scan.convertedRows, retained: scan.retainedLegacyRows.length, conflicting: 0 }, targets: changedTargets,
+    public_document: { path: publicPath, changed: !markdownBefore.equals(Buffer.from(rendered)), before_bytes: markdownBefore.length, after_bytes: Buffer.byteLength(rendered), before_sha256: sha256(markdownBefore), after_sha256: sha256(rendered), changed_lines: boundedPublicChanges(markdownBefore.toString("utf8"), rendered) },
+    risks: { resurrected_count: resurrectedIds.length, resurrected_ids: resurrectedIds.slice(0, CHANGE_LIMIT), omitted_count: Math.max(0, resurrectedIds.length - CHANGE_LIMIT) },
+  };
+  const authorizedTargets = changedTargets.map((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH ? { ...target, after_sha256: "activation_effect_authorization" } : target);
+  return { ...evidence, effect_sha256: sha256(canonicalRecordJson({ ...evidence, targets: authorizedTargets })) };
+}
+export function unchangedTodoActivationEffect(publicPath: string, markdown: Buffer, retained: number, authorizedEffectSha256?: string): JsonObject {
+  const evidence: JsonObject = { counts: { matched: 0, converted: 0, retained, conflicting: 0 }, targets: [], public_document: { path: publicPath, changed: false, before_bytes: markdown.length, after_bytes: markdown.length, before_sha256: sha256(markdown), after_sha256: sha256(markdown), changed_lines: { count: 0, items: [], omitted_count: 0 } }, risks: { resurrected_count: 0, resurrected_ids: [], omitted_count: 0 } };
+  return { ...evidence, effect_sha256: authorizedEffectSha256 ?? sha256(canonicalRecordJson(evidence)) };
 }

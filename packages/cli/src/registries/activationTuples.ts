@@ -86,7 +86,10 @@ const EMITTED_REASON_CATALOG = "H4sIAAAAAAACA8VYXXPrJhD9K0ye6+v3+9Z8zPShHbfx7X1H
 const decodedCatalog = gunzipSync(Buffer.from(CATALOG, "base64")).toString("utf8");
 const emittedReasons = JSON.parse(gunzipSync(Buffer.from(EMITTED_REASON_CATALOG, "base64")).toString("utf8")) as Record<string, string>;
 const rawTuples = JSON.parse(decodedCatalog.slice(decodedCatalog.indexOf("[", 2)).replace(/,\s*]$/, "]")) as ActivationCanonicalTuple[];
-const tuples = rawTuples.map((tuple): ActivationCanonicalTuple => {
+const addedTuples: ActivationCanonicalTuple[] = [
+  { class: "state", surface_id: "write:todo.activate", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.activate", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
+];
+const tuples = [...rawTuples, ...addedTuples].map((tuple): ActivationCanonicalTuple => {
   const reason = emittedReasons[tuple.surface_id];
   if (tuple.class !== "package" || reason === undefined || tuple.semantic_selector_if_any === null) return tuple;
   const semantic = JSON.parse(tuple.semantic_selector_if_any) as Record<string, unknown>;
@@ -102,11 +105,11 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
     capability: { count: 12, sha256: "892e6e5e2a57b41064bc44fa2946453225f1b1195aff77aad05365fd0a1071c2" },
     runtime: { count: 81, sha256: "99b2abff3ebff889b54b1781c563ab4b32609a479c4e90d6aad854f48fba7edc" },
     reference: { count: 22, sha256: "243fd3c317553f8924c56a52c61af90ccf2793b7b0018af1373b73c69b6c3afb" },
-    state: { count: 34, sha256: "c4a16e74a0803a93ffcde1b51f8c81a50a724f8fec36446ac685fc94a3dffcfc" },
+    state: { count: 35, sha256: "76e4b7b3bea99ff8433d3e68488c09f3ad997f4b786af88054e78d9013e7007d" },
     package: { count: 64, sha256: "67f2b0433a51ca72084c38e32c6dd0851a3213e78047bfca4ec31c2ab0499f6d" },
     bootstrap: { count: 34, sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc" },
   },
-  total: { count: 274, sha256: "4630ab04484cfeec099bb07a7429714f1bc69b16886dedc24d5352dfa892185e" },
+  total: { count: 275, sha256: "ea4e982d6575565300533955da2ac4cbecc215be492ea523f3216ab60323dd3b" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string { return JSON.stringify(value); }
 export function digestCanonicalTuples(values: readonly ActivationCanonicalTuple[]): string {

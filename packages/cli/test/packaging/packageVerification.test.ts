@@ -584,7 +584,7 @@ describe("npm distribution boundary", () => {
     expect(schema.status, schema.stderr).toBe(0);
     const artifacts = JSON.parse(schema.stdout).state_writer.artifacts as Array<{ artifact: string; operations: Array<{ verb: string; recovery: string; examples: string[]; fields: Array<{ flag: string; valid_values?: string[] }> }> }>;
     const operations = artifacts.flatMap((artifact) => artifact.operations.map((operation) => ({ artifact: artifact.artifact, ...operation })));
-    expect(operations).toHaveLength(25);
+    expect(operations).toHaveLength(26);
     for (const runtime of runtimeOperationSpecs()) {
       const operation = operations.find((candidate) => candidate.artifact === runtime.artifact && candidate.verb === runtime.verb)!;
       expect(operation.recovery).toBe(runtime.projection.recovery.runtime);

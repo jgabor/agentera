@@ -1,0 +1,15 @@
+id: tbpzvruffi
+artifact: progress
+record:
+  timestamp: 2026-08-07 15:54
+  type: fix
+  phase: build
+  what: Corrected apgveejdaq after apgveejdaq-audit-1 by binding explicit activation authorization across pending recovery and active replay; independent Audit re-review remains next.
+  context:
+    intent: Close the persisted Audit findings without broadening explicit TODO activation into repair or diagnostics.
+    constraints: Preserve exact legitimate replay, journal atomicity, Markdown/entity authority split, automatic cutover behavior, and evaluator-owned terminal lifecycle.
+    scope: Activation journal authorization, active replay authorization, focused regression coverage, and schema grammar correction only.
+  discovered: "Audit apgveejdaq-audit-1 proved the previous implementation compared effect_sha256 only for absent activation: an arbitrary 64-hex digest succeeded after activation, and recoverTodoReconciliation could apply a pending activation journal before validating caller authorization. The activation schema prose also incorrectly grouped activate with reason/date item lifecycle transitions."
+  verified: "Supersedes progress vkjyppjpqy. Criteria 1-3 and corrections: `pnpm -C packages/cli exec vp test run test/state/todoDocsEntities.test.ts test/state/write/mutationGrammar.test.ts --config vite.config.ts` passed 96/96. It proves all six inactive ordinary mutations exit 2 with exact preview/apply guidance and byte-identical public/entity/baseline/marker/journal state; preview reports matched/converted/retained/conflicting counts, bounded public changes and exact targets; stale preview and conflicts are effect-free; explicit apply publishes only the digest-bound target set; all injected entity/activation/public boundaries and real SIGKILL replay converge. New active tests reject b*64 with exit 2 and unchanged bytes, accept the original stored digest as exact idempotent replay, and enforce legacy active no-op preview authorization. New pending tests reject b*64 before journal target recovery with the full pending file map unchanged, then recover with the original digest at every boundary. Rebuilt `node packages/cli/dist/bin/agentera.js` observed marker digest 735724c2cd40b29bcb37658cf69226f33bec4f4dbeaee409b6d1e5a8c7120149, arbitrary active exit 2/effect-free, and legitimate replay exit 0/effect-free. `pnpm -C packages/cli run typecheck` passed; `pnpm -C packages/cli build` passed; `pnpm -C packages/cli test` passed 228 files with 3407 passed and 1 skipped. `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` passed 3/3, including corrected todo.yaml grammar that separates activation digest/confirmation from item reason/date lifecycle requirements."
+  next: Independent Audit re-reviews the bounded correction; preserve apgveejdaq-audit-1 and do not complete, evaluate, resolve ibomhottkk, or commit before that result.
+  publication_order: 101

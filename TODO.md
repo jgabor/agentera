@@ -36,7 +36,6 @@
 - [ ] [id:azsvrmuhch] [fix:3.0.0] Make Doctor report project operability separately from installation health.
 - [ ] [id:zeyfnbqdov] [fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup.
 - [ ] [id:yqyodsuqfb] [fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests.
-- [ ] [id:ibomhottkk] [fix:3.0.0] Add explicit TODO activation and block implicit activation.
 - [ ] [id:rnhnurigbf] [fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required.
 - [ ] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
 - [ ] [id:jyxnnzvysl] [fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
@@ -143,5 +142,6 @@
 - [x] [id:vptlelnadp] [fix:3.0.0] Make every documented and machine-returned v3 bootstrap one safe, channel-correct call. Until stable promotion, `agentera route receipt` provenance, `prime` startup and fallback commands, shared-skill examples, and package smokes must use `npx -y agentera@next`, not authorize bare `agentera`. Verify clean, v2, partial, and v3 projects end with `prime` and `doctor` passing without redirecting `@latest`. The matrix must assert the unified startup outcome owned by TODO `rsplcfvosn` and prove healthy projects require no second dashboard or fallback call.
 - [x] [id:odiytubocn] [fix:3.0.0] Add one executable activation-conjunction release gate for every retained CLI, capability, runtime, reference, and state surface. Derive checks from owning authorities and require public discovery and help, runtime acceptance, bounded privacy-safe diagnostics, package projection, served instructions, and adversarial behavior tests to agree before a surface is active. TypeScript runtime code owns behavior; schemas declare structure and bounds; tests prove behavior but never create authority. A test import, bundle inclusion, fixture, comment, or archived decision cannot retain or activate a surface. Report the exact owner and runnable correction for every mismatch. Partial for Decision `imumkmffwh`: this verifies conformance after its dependency lanes complete; it does not implement those lanes or authorize stable cutover.
 - [x] [id:rrflufktbc] [fix:3.0.0] Make explicit TODO cutover preserve one authoritative public row per item.
+- [x] [id:ibomhottkk] [fix:3.0.0] Add explicit TODO activation and block implicit activation.
 
 ## → Critical

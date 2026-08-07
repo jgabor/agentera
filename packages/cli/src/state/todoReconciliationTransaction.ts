@@ -48,6 +48,7 @@ export interface TodoReconciliationRecoveryReceipt {
 
 export interface TodoReconciliationRecoveryOptions {
   createRequestSha256?: string;
+  activationEffectSha256?: string;
   beforeRecovery?: (targets: readonly ValidatedTodoReconciliationTarget[]) => void;
   beforeCommit?: () => void;
   beforeActivation?: () => void;
@@ -55,6 +56,7 @@ export interface TodoReconciliationRecoveryOptions {
 
 export interface TodoReconciliationPublicationOptions {
   create?: TodoReconciliationCreateReceipt;
+  activationEffectSha256?: string;
   interruptAfterTarget?: number;
   retainUnchangedTargets?: boolean;
   beforeCommit?: () => void;
@@ -79,6 +81,7 @@ interface Journal {
   public_path: string;
   mapping_sha256: string;
   create?: TodoReconciliationCreateReceipt;
+  activation_effect_sha256?: string;
   targets: JournalTarget[];
 }
 
@@ -168,9 +171,7 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
   catch { invalidJournal("TODO reconciliation journal is not valid bounded UTF-8 JSON"); }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) invalidJournal("TODO reconciliation journal is not a mapping");
   const value = parsed as Partial<Journal>;
-  const expectedKeys = value.create === undefined
-    ? "id,mapping_sha256,public_path,schema_version,targets"
-    : "create,id,mapping_sha256,public_path,schema_version,targets";
+  const expectedKeys = ["schema_version", "id", "public_path", "mapping_sha256", "targets", ...(value.create === undefined ? [] : ["create"]), ...(value.activation_effect_sha256 === undefined ? [] : ["activation_effect_sha256"])].sort().join(",");
   if (
     Object.keys(value).sort().join(",") !== expectedKeys
     || value.schema_version !== VERSION
@@ -183,6 +184,7 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
     || value.targets.length < 1
     || value.targets.length > MAX_TARGETS
   ) invalidJournal("TODO reconciliation journal is malformed");
+  if (value.activation_effect_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.activation_effect_sha256)) invalidJournal("TODO reconciliation journal has an invalid activation effect authorization");
   if (value.create !== undefined && (
     !value.create
     || typeof value.create !== "object"
@@ -211,13 +213,17 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
     paths.add(target.path);
   }
   const body = value.targets as JournalTarget[];
+  const activates = body.some((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH);
+  if (!activates && value.activation_effect_sha256 !== undefined) invalidJournal("TODO reconciliation journal effect authorization has no activation target");
   const inferredCreate = createReceiptFromTargets(body);
   if (value.create && (
     !inferredCreate
     || value.create.created_id !== inferredCreate.created_id
     || value.create.request_sha256 !== inferredCreate.request_sha256
   )) invalidJournal("TODO reconciliation create receipt does not match its canonical entity target");
-  const identity = value.create ? { create: value.create, targets: body } : body;
+  const identity = value.create || value.activation_effect_sha256
+    ? { ...(value.create ? { create: value.create } : {}), ...(value.activation_effect_sha256 ? { activation_effect_sha256: value.activation_effect_sha256 } : {}), targets: body }
+    : body;
   const expectedId = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (value.id !== expectedId || (fileName !== undefined && fileName !== `${value.id}.json`)) {
     invalidJournal("TODO reconciliation journal identity does not match its canonical targets");
@@ -548,6 +554,11 @@ export function recoverTodoReconciliation(
       message: `pending TODO create for '${journal.create.created_id}' does not match this request`,
       recovery: `Retry the exact original TODO create input to recover '${journal.create.created_id}'; no transaction target bytes were changed.`,
     });
+    if (journal.activation_effect_sha256 && options.activationEffectSha256 !== journal.activation_effect_sha256) reject({
+      class: "conflict",
+      message: "pending TODO activation does not match the authorized preview effect",
+      recovery: "Retry the exact activation apply command returned by the original preview; no transaction target bytes were changed.",
+    });
     options.beforeRecovery?.(journal.targets.map((target) => ({
       path: target.path,
       before: target.before === null ? null : decode(target.before),
@@ -593,7 +604,10 @@ export function publishTodoReconciliation(
       || Number(left.path === binding.publicPath) - Number(right.path === binding.publicPath)
       || left.path.localeCompare(right.path));
   const body = normalized.map((target) => ({ path: target.path, before: target.before === null ? null : encode(target.before), after: encode(target.after) }));
-  const identity = options.create ? { create: options.create, targets: body } : body;
+  if (options.activationEffectSha256 && !normalized.some((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH)) reject({ class: "schema_violation", message: "TODO activation authorization requires its activation target", recovery: "Recompute the complete activation target set from a fresh dry-run; no state was changed." });
+  const identity = options.create || options.activationEffectSha256
+    ? { ...(options.create ? { create: options.create } : {}), ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}), targets: body }
+    : body;
   const id = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (!normalized.length) return { id, targetCount: 0 };
   if (
@@ -622,6 +636,7 @@ export function publishTodoReconciliation(
     public_path: binding.publicPath,
     mapping_sha256: binding.mappingSha256,
     ...(options.create ? { create: options.create } : {}),
+    ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}),
     targets: body,
   };
   const bytes = `${JSON.stringify(journal)}\n`;
