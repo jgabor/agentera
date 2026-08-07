@@ -21,15 +21,20 @@ import { collectEntityOrientation } from "./collectEntityOrientation.js";
 import { acquireProfile } from "../../profileAcquisition.js";
 import { fullEntityUpgradeCommand } from "../../../upgrade/upgradeCommands.js";
 import { classifyEntityCutoverProject } from "../../../state/entityMigrationPreview.js";
+import { preCutoverCommand } from "../../preCutoverCommand.js";
 
 const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
 
 function stateCutover(project: string, sourceRoot: string): OrientationState["state_cutover"] {
-  const projectState = classifyEntityCutoverProject(project, sourceRoot);
-  if (projectState === "v3") {
-    return { status: "complete", project_state: "v3", recovery_command: null };
+  try {
+    const projectState = classifyEntityCutoverProject(project, sourceRoot);
+    if (projectState === "v3") {
+      return { status: "complete", project_state: "v3", recovery_command: null };
+    }
+    return { status: "required", project_state: projectState, recovery_command: fullEntityUpgradeCommand(project) };
+  } catch {
+    return { status: "invalid_lifecycle", project_state: "invalid_lifecycle", recovery_command: preCutoverCommand("check validate state --format json") };
   }
-  return { status: "required", project_state: projectState, recovery_command: fullEntityUpgradeCommand(project) };
 }
 
 export function collectOrientationState(opts: PrimeOpts): OrientationState {
@@ -98,14 +103,22 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     precomputedV1Artifacts: v1Artifacts,
   });
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, entity.todoReadiness);
-  const nextAction = cutover.status === "required"
+  const reconciliationReadiness = entity.todoReconciliation?.status === "action_required"
+    ? withRecommended(readiness, {
+      object: entity.todoReconciliation.state === "inactive" ? "Activate TODO reconciliation" : "Repair TODO reconciliation",
+      capability: "build",
+      reason: entity.todoReconciliation.recovery_command,
+      phase: entity.todoReconciliation.state === "invalid_lifecycle" ? "audit" : "build",
+    })
+    : readiness;
+  const nextAction = cutover.status !== "complete"
     ? withRecommended(readiness, {
       object: "Complete Agentera entity-state cutover",
       capability: "status",
       reason: `Status startup is blocked until entity-state cutover completes. Exact recovery: ${cutover.recovery_command}`,
       phase: "build",
     })
-    : selectProjectIntegrationNextAction(readiness, projectIntegration);
+    : selectProjectIntegrationNextAction(reconciliationReadiness, projectIntegration);
 
   const attention = buildOrientationAttention({
     project_root: project,
@@ -129,6 +142,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     corpus_coverage: corpusCoverage,
     todo_items: todoItems,
     todo_detail: entity.todoDetail,
+    todo_reconciliation: entity.todoReconciliation,
     counts,
     decision_attention: decisionAttention,
     glossary_caveat_attention: entity.glossaryCaveatAttention,
@@ -160,6 +174,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     corpus_coverage: corpusCoverage,
     todo_items: todoItems,
     todo_detail: entity.todoDetail,
+    todo_reconciliation: entity.todoReconciliation,
     counts,
     decision_attention: decisionAttention,
     glossary_caveat_attention: entity.glossaryCaveatAttention,

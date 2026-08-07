@@ -36,7 +36,6 @@
 - [ ] [id:azsvrmuhch] [fix:3.0.0] Make Doctor report project operability separately from installation health.
 - [ ] [id:zeyfnbqdov] [fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup.
 - [ ] [id:yqyodsuqfb] [fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests.
-- [ ] [id:rnhnurigbf] [fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required.
 - [ ] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
 - [ ] [id:jyxnnzvysl] [fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
@@ -143,5 +142,6 @@
 - [x] [id:rrflufktbc] [fix:3.0.0] Make explicit TODO cutover preserve one authoritative public row per item.
 - [x] [id:ibomhottkk] [fix:3.0.0] Add explicit TODO activation and block implicit activation.
 - [x] [id:lgruqgycgo] [fix:3.0.0] Repair projects affected by implicit TODO reconciliation activation.
+- [x] [id:rnhnurigbf] [fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required.
 
 ## → Critical

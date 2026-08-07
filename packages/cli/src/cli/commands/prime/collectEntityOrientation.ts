@@ -7,6 +7,7 @@ import { listHealthEntities } from "../../../state/healthEntities.js";
 import { listPlanEntities, listPlanTaskEntities } from "../../../state/planEntities.js";
 import { listObjectiveEntities, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
 import { assertTodoReconciliationReadable, listTodoDocsEntities, projectTodoReadEntities } from "../../../state/todoDocsEntities.js";
+import { inspectTodoReconciliationState, type TodoReconciliationInspection } from "../../../state/todoReconciliationInspection.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { discoverEntities } from "../../../state/entityStorage.js";
 import { summaryCaveat } from "../../../state/summaryEntityRead.js";
@@ -163,6 +164,7 @@ export interface EntityOrientationProjection {
   todoCounts: IssueCounts;
   todoDetail: TodoDetailSummary;
   todoReadiness: TodoReadinessQueueSelection;
+  todoReconciliation: TodoReconciliationInspection | null;
   decision: DecisionFollowUp | null;
   decisionAttention: DecisionReviewAttention | null;
   glossaryCaveatAttention: string | null;
@@ -174,6 +176,7 @@ export interface EntityOrientationProjection {
 export function collectEntityOrientation(projectRoot: string, sourceRoot: string): EntityOrientationProjection {
   assertTodoReconciliationReadable(projectRoot, sourceRoot);
   const discovery = discoverEntities(projectRoot, sourceRoot);
+  const todoReconciliation = inspectTodoReconciliationState(projectRoot, sourceRoot, discovery);
   const caveatContract = glossaryCaveatContract(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml"));
   const glossaryCaveatProjection = projectCurrentGlossaryCaveats(discovery.entities, caveatContract);
   const invalidProgress = (entity: (typeof discovery.entities)[number]): boolean =>
@@ -370,7 +373,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   });
   // The opaque continuation cursor is already list-budget bounded and must stay
   // byte-exact so omitted TODO detail remains recoverable.
-  const result = { ...projection, todoDetail, todoReadiness };
+  const result = { ...projection, todoDetail, todoReadiness, todoReconciliation };
   rememberPlanTaskIndex(result.plan as unknown as JsonObject, allTaskEntries);
   return result;
 }

@@ -379,6 +379,7 @@ describe("cli validate state", () => {
         manifest_sha256: hash(manifest),
       }),
     );
+    fs.writeFileSync(path.join(root, ".agentera/todo-reconciliation-activation.json"), '{"schema_version":"agentera.todoReconciliationActivation.v1","retained_legacy_rows":[]}\n');
 
     const { rc, out } = capture((io) => cmdValidateState({ cwd: root, format: "json" }, io));
 

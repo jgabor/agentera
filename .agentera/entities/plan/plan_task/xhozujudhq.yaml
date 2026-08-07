@@ -5,9 +5,19 @@ record:
   depends_on:
     - apgveejdaq
     - ajalzcdhey
-  status: pending
+  status: complete
   acceptance:
     - GIVEN inactive, unsafe active, and healthy active projects WHEN prime, doctor, or state validation inspects them THEN each state is distinguished and receives the exact supported preview and apply command.
     - GIVEN inspection WHEN diagnostics are emitted THEN counts are bounded and content-private, invalid lifecycle state is not mislabeled as generic corruption, and no state changes.
     - GIVEN one passing and one failing case per reported state WHEN compatibility is checked THEN healthy output stays unchanged and unsafe states remain action-required.
   plan: owuzikqest
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: xhozujudhq-audit-1
+      source: audit:ses_0228c3774ffeL468vHp7w3WlXA
+      recorded_at: 2026-08-07 20:34
+      writer_command: agentera state plan record-evaluation

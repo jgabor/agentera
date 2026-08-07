@@ -25,6 +25,7 @@ import { emitStructured } from "../structured.js";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { validateEntityState } from "../../state/entityStorage.js";
 import { inspectTodoReconciliationDrift } from "../../state/todoDocsEntities.js";
+import { inspectTodoReconciliationState, type TodoReconciliationInspection } from "../../state/todoReconciliationInspection.js";
 import { detectStateModeBinding } from "../../state/stateMode.js";
 import { loadEntityCutoverTargetsForMarker } from "../../state/entityCutover.js";
 import { validateRealProjectRoot } from "../../state/projectRoot.js";
@@ -522,6 +523,18 @@ export function cmdValidateState(
   return payload.valid ? 0 : 1;
 }
 
+function todoReconciliationValidationIssue(diagnosis: TodoReconciliationInspection): JsonObject {
+  const label = diagnosis.state === "inactive" ? "inactive" : diagnosis.state === "unsafe_active" ? "unsafe active" : "invalid lifecycle";
+  return {
+    code: `todo_reconciliation_${diagnosis.state}`,
+    path: "TODO.md",
+    artifact: "todo",
+    message: `TODO reconciliation is ${label}; the project is not operable through the reconciled TODO surface`,
+    recovery: diagnosis.recovery_command,
+    diagnosis: diagnosis as unknown as JsonObject,
+  };
+}
+
 /** The executable whole-state contract shared by the public command and upgrade verification. */
 export function validateStatePayload(projectRootInput: string): JsonObject {
   const projectRoot = resolvePath(projectRootInput);
@@ -549,10 +562,28 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
       }
     }
   } catch (error) {
-    if (issues.length < 100) issues.push({ code: "invalid_state_marker_or_manifest", path: ".agentera/state-mode.yaml", message: (error as Error).message, recovery: "Restore the durable marker and immutable migration evidence, then rerun this read-only check." });
+    const message = (error as Error).message;
+    if (issues.length < 100) issues.push({
+      code: message.includes("state mode marker") ? "invalid_lifecycle_state" : "invalid_state_marker_or_manifest",
+      path: ".agentera/state-mode.yaml",
+      message: message.includes("state mode marker") ? "entity-state lifecycle marker is invalid" : message,
+      recovery: "Restore the durable marker and immutable migration evidence, then rerun this read-only check.",
+    });
     else additionalOmittedIssues += 1;
   }
   if (entityMode) {
+    let reconciliation: TodoReconciliationInspection | null = null;
+    try {
+      reconciliation = inspectTodoReconciliationState(projectRoot);
+      if (reconciliation?.status === "action_required") {
+        if (issues.length < 100) issues.push(todoReconciliationValidationIssue(reconciliation));
+        else additionalOmittedIssues += 1;
+      }
+    } catch (error) {
+      if (issues.length < 100) issues.push({ code: "invalid_todo_reconciliation", path: "TODO.md", artifact: "todo", message: "TODO reconciliation could not be inspected without state changes", recovery: "Restore valid bounded TODO reconciliation state, then rerun this read-only check." });
+      else additionalOmittedIssues += 1;
+    }
+    if (reconciliation?.state === "invalid_lifecycle") return finishStateValidation(projectRoot, result, issues, additionalOmittedIssues);
     try {
       const reconciliation = inspectTodoReconciliationDrift(projectRoot);
       const driftItems = Array.isArray(reconciliation.items) ? reconciliation.items.filter((item): item is JsonObject => item !== null && typeof item === "object" && !Array.isArray(item)) : [];
@@ -581,6 +612,15 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
       else additionalOmittedIssues += 1;
     }
   }
+  return finishStateValidation(projectRoot, result, issues, additionalOmittedIssues);
+}
+
+function finishStateValidation(
+  projectRoot: string,
+  result: ReturnType<typeof validateEntityState>,
+  issues: JsonObject[],
+  additionalOmittedIssues: number,
+): JsonObject {
   const omittedIssueCount = result.omittedIssueCount + additionalOmittedIssues;
   const valid = result.valid && issues.length === 0 && omittedIssueCount === 0;
   const payload: JsonObject = {

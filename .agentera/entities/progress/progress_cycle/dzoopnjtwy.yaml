@@ -1,0 +1,16 @@
+id: dzoopnjtwy
+artifact: progress
+record:
+  timestamp: 2026-08-07 20:18
+  type: fix
+  phase: build
+  what: Implemented bounded TODO reconciliation lifecycle diagnostics across prime, doctor, and state validation.
+  context:
+    intent: Expose safe, bounded, read-only reconciliation diagnostics and exact effect-bound recovery commands without changing project state during inspection.
+    constraints: Use the typed progress writer, preserve healthy output, keep recovery commands explicit, and verify the rebuilt local CLI rather than an installed or published copy.
+    unknowns: Live prime brief output is budget-limited by the current checkout state; fixture and targeted CLI matrix coverage passed.
+    scope: packages/cli diagnostics, lifecycle projection, package authorities, regression tests, README guidance, and package registry records.
+  discovered: The shared TODO reconciliation activation is the lifecycle authority. Missing activation is inactive, byte or identity drift is unsafe_active, and malformed effect metadata is invalid_lifecycle. Adding doctor and inspection producers also required updating the code-owned activation census, tuple catalog, package publication census, and packaged command-authority parity from 197 to 199 records.
+  verified: "pnpm -C packages/cli test passed: 228 files, 3416 tests passed, 1 skipped. pnpm -C packages/cli run verify:package passed: 3 files, 34 tests. pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli build passed. node packages/cli/dist/bin/agentera.js check compact passed. The rebuilt local CLI inspection matrix passed healthy, inactive, unsafe_active, and invalid_lifecycle read-only cases with unchanged project bytes. git diff --check passed."
+  next: Keep task xhozujudhq and TODO source rnhnurigbf open for evaluator review. Do not close the task, resolve the TODO, or commit until lifecycle ownership directs it.
+  publication_order: 104

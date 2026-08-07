@@ -89,6 +89,8 @@ const rawTuples = JSON.parse(decodedCatalog.slice(decodedCatalog.indexOf("[", 2)
 const addedTuples: ActivationCanonicalTuple[] = [
   { class: "state", surface_id: "write:todo.activate", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.activate", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
   { class: "state", surface_id: "write:todo.repair", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.repair", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
+  { class: "package", surface_id: "emitted:packages/cli/src/cli/commands/doctor.ts", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: "packages/cli/src/cli/commands/doctor.ts", semantic_selector_if_any: JSON.stringify({ path: "packages/cli/src/cli/commands/doctor.ts", selector: null, format: null, classification: null, reason: "Doctor project-state signals publish bounded reconciliation preview and apply guidance." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
+  { class: "package", surface_id: "emitted:packages/cli/src/state/todoReconciliationInspection.ts", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: "packages/cli/src/state/todoReconciliationInspection.ts", semantic_selector_if_any: JSON.stringify({ path: "packages/cli/src/state/todoReconciliationInspection.ts", selector: null, format: null, classification: null, reason: "TODO reconciliation inspection publishes bounded preview and effect-bound apply guidance." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
 ];
 const tuples = [...rawTuples, ...addedTuples].map((tuple): ActivationCanonicalTuple => {
   const reason = emittedReasons[tuple.surface_id];
@@ -107,10 +109,10 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
     runtime: { count: 81, sha256: "99b2abff3ebff889b54b1781c563ab4b32609a479c4e90d6aad854f48fba7edc" },
     reference: { count: 22, sha256: "243fd3c317553f8924c56a52c61af90ccf2793b7b0018af1373b73c69b6c3afb" },
     state: { count: 36, sha256: "c3366cd6d538a47b5554f2e142eb255ac371bfc77e89128aceb59dfd8376c20a" },
-    package: { count: 64, sha256: "67f2b0433a51ca72084c38e32c6dd0851a3213e78047bfca4ec31c2ab0499f6d" },
+    package: { count: 66, sha256: "83e6971af7f7564e42369aaccc445b32a0793bfffade843d149b6abd4fd3dbbc" },
     bootstrap: { count: 34, sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc" },
   },
-  total: { count: 276, sha256: "0a24bc0899e7fed979e92c552f9940bfb8ea3ee7f85dcd87a21392f7e2ed4d7a" },
+  total: { count: 278, sha256: "52a349aa3901626cba0bef4e06d380067722d73d3039fea95f2d806a8018fe54" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string { return JSON.stringify(value); }
 export function digestCanonicalTuples(values: readonly ActivationCanonicalTuple[]): string {

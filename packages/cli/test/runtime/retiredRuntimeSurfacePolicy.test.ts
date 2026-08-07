@@ -1039,7 +1039,7 @@ describe("retired runtime current-surface policy", () => {
     expect(Object.fromEntries(["source", "generated", "emitted"].map((surface) => [
       surface,
       inventory.records.filter((record) => record.surface === surface).length,
-    ]))).toEqual({ source: 93, generated: 2, emitted: 102 });
+    ]))).toEqual({ source: 93, generated: 2, emitted: 104 });
     expect(inventory.records.every(({ classification, reason }) =>
       ["parsed_and_scanned", "reason_classified"].includes(classification) && reason.length > 0)).toBe(true);
     expect(new Set(inventory.records
@@ -1047,7 +1047,7 @@ describe("retired runtime current-surface policy", () => {
       .map(({ emitted_classification }) => emitted_classification)))
       .toEqual(new Set(["producer", "non_producer"]));
     expect(inventory.census).toEqual(expect.objectContaining({
-      scanned_scalars: 14642,
+      scanned_scalars: 14646,
       invocation_occurrences: 532,
       canonical_development: 282,
       stable_pair: 2,
@@ -1082,7 +1082,7 @@ describe("retired runtime current-surface policy", () => {
     expect(Object.fromEntries(["producer", "non_producer"].map((classification) => [
       classification,
       inventory.records.filter((record) => record.emitted_classification === classification).length,
-    ]))).toEqual({ producer: 49, non_producer: 53 });
+    ]))).toEqual({ producer: 51, non_producer: 53 });
     expect(inventory.records
       .filter(({ surface }) => surface === "generated")
       .map(({ generated_declaration }) => generated_declaration))

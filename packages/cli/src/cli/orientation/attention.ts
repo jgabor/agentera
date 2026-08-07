@@ -14,9 +14,16 @@ export function buildOrientationAttention(state: OrientationState): string[] {
     glossary_caveat_attention: glossaryCaveatAttention,
     corpus_coverage: corpusCoverage,
     todo_items: todoItems,
+    todo_reconciliation: todoReconciliation,
   } = state;
 
   const attention: string[] = [];
+  if (todoReconciliation?.status === "action_required") {
+    const label = todoReconciliation.state === "inactive" ? "inactive" : todoReconciliation.state === "unsafe_active" ? "unsafe active" : "invalid lifecycle";
+    attention.push(
+      `action-required: TODO reconciliation is ${label}; preview \`${todoReconciliation.preview_command ?? "n/a"}\`; apply \`${todoReconciliation.apply_command ?? "n/a"}\``,
+    );
+  }
   const skillDivergenceSignals = (state.app.signals ?? []).filter(
     (s) => s.kind === "skill_root_divergence",
   );

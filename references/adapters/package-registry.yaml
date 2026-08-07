@@ -321,6 +321,8 @@ records:
           reason: Build request diagnostics construct executable guidance only through preCutoverCommand.
         - path: packages/cli/src/cli/commands/prime/briefOrientation.ts
           reason: Brief orientation fields construct executable guidance only through preCutoverCommand.
+        - path: packages/cli/src/cli/commands/doctor.ts
+          reason: Doctor project-state signals publish bounded reconciliation preview and apply guidance.
         - path: packages/cli/src/bin/agentera.ts
           reason: The executable entry point publishes dispatcher output that transitively contains guarded command guidance.
         - path: packages/cli/src/cli/capabilityContext.ts
@@ -363,6 +365,8 @@ records:
           reason: Routing evaluation transitively publishes guarded startup provenance.
         - path: packages/cli/src/state/todoDocsEntities.ts
           reason: TODO reconciliation output transitively publishes guarded retrieval guidance.
+        - path: packages/cli/src/state/todoReconciliationInspection.ts
+          reason: TODO reconciliation inspection publishes bounded preview and effect-bound apply guidance.
       constructor_non_producers:
         - path: packages/cli/src/validate/activationConjunction.ts
           reason: Consumes contract-owned runnable corrections without constructing command guidance in source.

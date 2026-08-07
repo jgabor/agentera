@@ -26,16 +26,16 @@ record:
     gate: null
     queue_rank: 39
     order_reason: Wire truthful activation and repair recovery after both supported mutation paths exist.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required."
+      status: resolved
+      order: 98
       severity: normal
-      status: open
-      order: 26
   lifecycle:
-    operation: set-severity
-    reason: Moved from the duplicated Critical section to the Normal backlog.
-    date: 2026-08-06
+    operation: resolve
+    reason: Prime, doctor, and state validation lifecycle reporting passed independent Audit across healthy, inactive, unsafe active, and invalid states.
+    date: 2026-08-07

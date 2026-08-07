@@ -150,7 +150,8 @@ export function buildOrientationJsonPayload(
   const schemasDir = state.schemas_dir;
   const bundlePublic = publicDoctorStatus(bundle);
   const appHome = orientationAppHome(bundle);
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject);
+  const todoReconciliation = (state.todo_reconciliation as unknown as JsonObject | null | undefined) ?? null;
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation);
   const bespoke: JsonObject = {
     orchestration_context: null,
     closeout_context: null,
@@ -175,6 +176,7 @@ export function buildOrientationJsonPayload(
     v1_migration: state.v1_migration,
     shared_skill: state.shared_skill,
     project_integration: state.project_integration,
+    ...(state.todo_reconciliation?.status === "action_required" ? { todo_reconciliation: state.todo_reconciliation } : {}),
     health: state.health,
     todo: { ...state.counts, detail: state.todo_detail },
     plan: startupPlanSummary(state.plan),
@@ -198,7 +200,7 @@ export function buildOrientationJsonPayload(
       artifacts_present: state.mode === "returning",
     },
     source_contract: {
-      fields: STATUS_STRUCTURED_FIELDS,
+      fields: state.todo_reconciliation?.status === "action_required" ? [...STATUS_STRUCTURED_FIELDS, "todo_reconciliation"] : STATUS_STRUCTURED_FIELDS,
       render,
       access,
       empty_state: "fresh: summaries absent; zero TODO items",
@@ -213,7 +215,8 @@ export function buildStatusContextState(
   _command = "prime",
   _options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {},
 ): Record<string, unknown> {
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject);
+  const todoReconciliation = (state.todo_reconciliation as unknown as JsonObject | null | undefined) ?? null;
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation);
   const plan = state.plan;
   const firstPending = plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
     ? plan.first_pending as JsonObject
@@ -237,6 +240,7 @@ export function buildStatusContextState(
       degrading: Boolean(state.health.degrading),
     },
     todo: { ...state.counts, detail: state.todo_detail },
+    ...(state.todo_reconciliation?.status === "action_required" ? { todo_reconciliation: state.todo_reconciliation } : {}),
     plan: {
       exists: plan.exists,
       active: plan.active ?? false,
@@ -371,7 +375,8 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     out(`project_integration_message: ${projectIntegration.message}\n`);
   }
   out(`shared_skill: status=${String(state.shared_skill.status)} | path=${String(state.shared_skill.path)}\n`);
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject);
+  const todoReconciliation = (state.todo_reconciliation as unknown as JsonObject | null | undefined) ?? null;
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation);
   out(`outcome: ${String(startup.outcome)}\n`);
   if (health.exists && health.id) {
     const worst = health.worst;

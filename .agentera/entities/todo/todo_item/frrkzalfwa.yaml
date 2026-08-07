@@ -31,7 +31,7 @@ record:
       description: "[fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data."
       severity: normal
       status: open
-      order: 27
+      order: 26
   lifecycle:
     operation: set-severity
     reason: Moved from the duplicated Critical section to the Normal backlog.

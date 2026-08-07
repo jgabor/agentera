@@ -36,7 +36,20 @@ bytes). Status startup returns
 `capability_context.instructions` and bounded
 `capability_context.context.status_context` together (at most 25000 UTF-8
 bytes). Omitted detail names its authoritative recovery command. `doctor`
-returns detailed read-only evidence and exact user actions.
+returns detailed read-only evidence and exact user actions. Entity-mode projects
+with an absent or unsafe TODO reconciliation marker return `action_required`
+instead of `ok` or `up_to_date`; use the reported preview command, then the
+preview's exact effect-bound apply command:
+
+```bash
+npx -y agentera@next state todo activate --dry-run --format json
+npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json
+npx -y agentera@next state todo repair --dry-run --format json
+npx -y agentera@next state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json
+```
+
+`check validate state` reports the same bounded, read-only diagnosis. Healthy
+active TODO projections keep the existing output.
 
 ## Shared-skill integration
 

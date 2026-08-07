@@ -30,6 +30,7 @@ import { emitStructured } from "../structured.js";
 import { diagnoseCanonicalSkill } from "../../setup/sharedSkill.js";
 import { diagnoseRetiredResources, type RetiredResourceDiagnosis } from "../../upgrade/retiredResourceDiagnostics.js";
 import { commandText } from "../../upgrade/upgradeCommands.js";
+import { inspectTodoReconciliationState } from "../../state/todoReconciliationInspection.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -113,9 +114,22 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
       if (signal.missingCommands && signal.missingCommands.length > 0) {
         lines.push(`    Missing command: ${signal.missingCommands.join(", ")}`);
       }
+      if (signal.kind === "todo_reconciliation") {
+        if (signal.reconciliationState) lines.push(`    Reconciliation state: ${signal.reconciliationState}`);
+        if (signal.reconciliationCounts) {
+          const counts = ["matched", "converted", "retained", "duplicate", "stale", "conflicting"]
+            .filter((name) => name in signal.reconciliationCounts!)
+            .map((name) => `${name}=${signal.reconciliationCounts![name]}`)
+            .join(" | ");
+          lines.push(`    Counts: ${counts} | omitted=${String(signal.reconciliationOmittedCount ?? 0)}`);
+        }
+        if (signal.previewCommand) lines.push(`    Preview: ${signal.previewCommand}`);
+        if (signal.applyCommand) lines.push(`    Apply: ${signal.applyCommand}`);
+      }
     }
   }
   const resources = Array.isArray(retiredResources?.resources) ? retiredResources.resources as Array<Record<string, unknown>> : [];
+  const todoReconciliation = status.signals?.some((signal) => signal.kind === "todo_reconciliation") ?? false;
   if (resources.length > 0) {
     lines.push("");
     lines.push("Retired native resources:");
@@ -139,6 +153,9 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
         "  3. Then retry Agentera once a retry command is available.",
       );
     }
+  } else if (todoReconciliation) {
+    lines.push("");
+    lines.push("Next: run the reported TODO reconciliation preview, review its bounded effect, then use its exact apply_command.");
   } else if (resources.length > 0) {
     lines.push("");
     lines.push("Next: review each read-only retirement preview before any explicit cleanup.");
@@ -198,6 +215,21 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     expectedVersion: args.expectedVersion ?? null,
     expectedCommands,
   });
+  const todoReconciliation = inspectTodoReconciliationState(project, sourceRoot);
+  if (todoReconciliation?.status === "action_required") {
+    status.signals.push({
+      status: APP_MANUAL_REVIEW_NEEDED,
+      kind: "todo_reconciliation",
+      message: `action-required: TODO reconciliation is ${todoReconciliation.state === "inactive" ? "inactive" : todoReconciliation.state === "unsafe_active" ? "unsafe active" : "in an invalid lifecycle state"}`,
+      reconciliationState: todoReconciliation.state,
+      reconciliationCounts: todoReconciliation.counts,
+      reconciliationOmittedCount: todoReconciliation.omitted_count,
+      previewCommand: todoReconciliation.preview_command,
+      applyCommand: todoReconciliation.apply_command,
+      recoveryCommand: todoReconciliation.recovery_command,
+    });
+    if (status.status === APP_UP_TO_DATE) status.status = APP_MANUAL_REVIEW_NEEDED;
+  }
   const retiredDiagnosis = diagnoseRetiredResources({
     home,
     project,

@@ -83,7 +83,7 @@ describe("activation conjunction", () => {
     expect(activationCensus(evidence)).toEqual({ classes: ACTIVATION_CENSUS_AUTHORITY.classes, total: ACTIVATION_CENSUS_AUTHORITY.total });
     const result = validate();
     expect(result.status).toBe("pass");
-    expect((result.counts as any)).toMatchObject({ classes: 7, surfaces: 276, dimensions: 6 });
+    expect((result.counts as any)).toMatchObject({ classes: 7, surfaces: 278, dimensions: 6 });
   });
 
   it("recomputes every immutable canonical tuple count and digest independently", () => {
@@ -272,7 +272,7 @@ describe("activation conjunction", () => {
     omitUsage(inputs);
     const result = validate(inputs);
     authorityFailure(result, "cli", "census closure failed");
-    expect((result.counts as any).surfaces).toBe(275);
+    expect((result.counts as any).surfaces).toBe(277);
   });
 
   it("fails the exact coordinated design omission instead of shrinking capabilities", () => {

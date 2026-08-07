@@ -14,7 +14,7 @@ import { FILE_REPLACEMENT_RECOVERY_VERSION } from "../../src/state/entityPublica
 import { ExactReplacementConflictError } from "../../src/state/exactReplacementRecovery.js";
 import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
-import { todoLegacyRowFingerprint, todoReconciliationActivationBytes, todoRepairEffect, TODO_RECONCILIATION_ACTIVATION_PATH } from "../../src/state/todoReconciliationActivation.js";
+import { todoLegacyRowFingerprint, todoReconciliationActivationBytes, todoRepairEffect, TODO_ACTIVATION_APPLY_COMMAND, TODO_ACTIVATION_PREVIEW_COMMAND, TODO_REPAIR_APPLY_COMMAND, TODO_REPAIR_PREVIEW_COMMAND, TODO_RECONCILIATION_ACTIVATION_PATH } from "../../src/state/todoReconciliationActivation.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
@@ -2131,5 +2131,96 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext })).toThrow(/changed|conflict|invalid/i); binding.publicationContext.close();
       const actualRoot = invalidation === "root" ? `${root}-held` : root; expect(fs.readFileSync(path.join(actualRoot, path.relative(root, file)))).toEqual(before);
     }
+  });
+
+  it("routes inactive, unsafe-active, healthy-active, and invalid lifecycle states on every inspection surface", () => {
+    const cases = [
+      {
+        name: "inactive",
+        make: () => preactivationProject().root,
+        state: "inactive",
+        preview: TODO_ACTIVATION_PREVIEW_COMMAND,
+        apply: TODO_ACTIVATION_APPLY_COMMAND,
+        validationCode: "todo_reconciliation_inactive",
+      },
+      {
+        name: "unsafe-active",
+        make: () => damagedActiveProject().root,
+        state: "unsafe_active",
+        preview: TODO_REPAIR_PREVIEW_COMMAND,
+        apply: TODO_REPAIR_APPLY_COMMAND,
+        validationCode: "todo_reconciliation_unsafe_active",
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const root = testCase.make();
+      const before = files(root);
+      const prime = capture(root, ["prime", "--format", "json"]);
+      const doctor = capture(root, ["doctor", "--format", "json"]);
+      const validation = capture(root, ["check", "validate", "state", "--format", "json"]);
+      expect(prime.rc, `${testCase.name} prime: ${prime.err}`).toBe(0);
+      expect(prime.json.outcome).toBe("blocked");
+      expect(prime.json.todo_reconciliation).toMatchObject({ state: testCase.state, status: "action_required", preview_command: testCase.preview, apply_command: testCase.apply });
+      expect(prime.json.attention.join("\n")).toContain(testCase.preview);
+      const primeText = capture(root, ["prime"]);
+      expect(primeText.out).toContain(testCase.apply);
+      expect(doctor.rc, `${testCase.name} doctor: ${doctor.err}`).toBe(1);
+      const signal = doctor.json.signals.find((entry: any) => entry.kind === "todo_reconciliation");
+      expect(signal).toMatchObject({ reconciliationState: testCase.state, previewCommand: testCase.preview, applyCommand: testCase.apply });
+      const doctorText = capture(root, ["doctor"]);
+      expect(doctorText.out).toContain(testCase.apply);
+      expect(validation.rc, `${testCase.name} validation: ${validation.err}`).toBe(1);
+      const issue = validation.json.issues.find((entry: any) => entry.code === testCase.validationCode);
+      expect(issue).toMatchObject({ diagnosis: { state: testCase.state, preview_command: testCase.preview, apply_command: testCase.apply } });
+      const validationText = capture(root, ["check", "validate", "state"]);
+      expect(validationText.out + validationText.err).toContain(testCase.apply);
+      expect(files(root), testCase.name).toEqual(before);
+    }
+  });
+
+  it("keeps healthy active inspection compatible and bounds private unsafe diagnosis", () => {
+    const healthyRoot = project();
+    todo(healthyRoot, "Healthy active row");
+    const healthyBefore = files(healthyRoot);
+    const healthyPrime = capture(healthyRoot, ["prime", "--format", "json"]);
+    const healthyDoctor = capture(healthyRoot, ["doctor", "--format", "json"]);
+    const healthyValidation = capture(healthyRoot, ["check", "validate", "state", "--format", "json"]);
+    expect(healthyPrime.rc).toBe(0);
+    expect(healthyPrime.json.outcome).toBe("ok");
+    expect(healthyPrime.json).not.toHaveProperty("todo_reconciliation");
+    expect(healthyDoctor.json.signals.some((entry: any) => entry.kind === "todo_reconciliation")).toBe(false);
+    expect(healthyValidation.rc).toBe(0);
+    expect(healthyValidation.json.issues).toEqual([]);
+    expect(files(healthyRoot)).toEqual(healthyBefore);
+
+    const unsafeRoot = damagedActiveProject().root;
+    const unsafe = capture(unsafeRoot, ["prime", "--format", "json"]);
+    const diagnosis = unsafe.json.todo_reconciliation;
+    expect(diagnosis).toMatchObject({ state: "unsafe_active", counts: { matched: 1, retained: 1, duplicate: 2, stale: 1, conflicting: 0 }, omitted_count: 0 });
+    expect(diagnosis).not.toHaveProperty("items");
+    expect(JSON.stringify(diagnosis)).not.toContain("Keep current open text");
+    for (const count of Object.values(diagnosis.counts)) expect(count).toBeLessThanOrEqual(20);
+  });
+
+  it("classifies invalid reconciliation lifecycle metadata without generic corruption", () => {
+    const root = project();
+    todo(root, "Invalid lifecycle row");
+    fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), JSON.stringify({
+      schema_version: "agentera.todoReconciliationActivation.v1",
+      retained_legacy_rows: [],
+      effect_sha256: "a".repeat(64),
+      effect_operation: "invalid",
+    }) + "\n");
+    const before = files(root);
+    const prime = capture(root, ["prime", "--format", "json"]);
+    const doctor = capture(root, ["doctor", "--format", "json"]);
+    const validation = capture(root, ["check", "validate", "state", "--format", "json"]);
+    expect(prime.json.todo_reconciliation).toMatchObject({ state: "invalid_lifecycle", status: "action_required", preview_command: null, apply_command: null });
+    expect(doctor.json.signals.find((entry: any) => entry.kind === "todo_reconciliation")).toMatchObject({ reconciliationState: "invalid_lifecycle", previewCommand: null, applyCommand: null });
+    expect(validation.rc).toBe(1);
+    expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "todo_reconciliation_invalid_lifecycle" })]));
+    expect(validation.json.issues).not.toEqual(expect.arrayContaining([expect.objectContaining({ code: "invalid_todo_reconciliation" })]));
+    expect(files(root)).toEqual(before);
   });
 });

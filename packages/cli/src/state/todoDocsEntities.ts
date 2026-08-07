@@ -79,7 +79,7 @@ function failure(kind: StateFailureClass, artifact: string, message: string, rec
   return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: family?.syntax ?? `agentera state ${artifact} get --id ID --format json`, example: family?.example ?? `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`, recovery, artifact, ...(id ? { id } : {}) } }, exitCode);
 }
 
-function relevant(root: string, sourceRoot: string, artifact?: "todo" | "docs", supplied?: EntityDiscoveryResult, sourceBinding?: MigrationSourceBindingContext): DiscoveredEntity[] {
+export function relevant(root: string, sourceRoot: string, artifact?: "todo" | "docs", supplied?: EntityDiscoveryResult, sourceBinding?: MigrationSourceBindingContext): DiscoveredEntity[] {
   if (supplied) assertEntityDiscoveryOrigin(root, sourceRoot, supplied);
   const discovery = supplied ?? discoverEntities(root, sourceRoot, sourceBinding);
   const selected = discovery.entities.filter((entity) => [TODO.boundary, DOCS.boundary].includes(entity.boundary as typeof TODO.boundary) || [TODO.artifact, DOCS.artifact].includes(entity.artifact as typeof TODO.artifact));
@@ -111,7 +111,7 @@ function markdownSeverity(section: string): string | null {
   return section === "critical" || section === "degraded" || section === "normal" || section === "annoying" ? section : null;
 }
 
-function todoPublicPath(root: string, sourceRoot: string): string {
+export function todoPublicPath(root: string, sourceRoot: string): string {
   const todo = loadArtifactRecord("todo", artifactSchemasDir(sourceRoot), registryModelPath(sourceRoot));
   if (!todo) throw new Error("artifact registry is missing the canonical 'todo' record");
   return resolveArtifactPath(todo, root, { strictWrite: true });
@@ -142,9 +142,9 @@ export function assertTodoReconciliationReadable(root: string, sourceRoot: strin
 }
 
 interface TodoPublicSnapshot { present: boolean; description?: string; severity?: string; status?: string; order?: number }
-interface ManagedRow { id: string; line: number; section: string; sourceLine: string; snapshot: TodoPublicSnapshot; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> }
+export interface ManagedRow { id: string; line: number; section: string; sourceLine: string; snapshot: TodoPublicSnapshot; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> }
 interface LegacyRow { line: number; section: string; sourceLine: string; snapshot: TodoPublicSnapshot; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> }
-interface ManagedRowScan { rows: Map<string, ManagedRow>; retainedLegacyRows: string[]; matchedRows: number; convertedRows: number }
+export interface ManagedRowScan { rows: Map<string, ManagedRow>; retainedLegacyRows: string[]; matchedRows: number; convertedRows: number }
 type TodoEntityView = Pick<DiscoveredEntity, "boundary" | "id" | "record">;
 const RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
 const TODO_DRIFT_ITEM_LIMIT = 20;
@@ -195,7 +195,7 @@ function todoAuthority(): JsonObject {
   };
 }
 
-function managedRows(
+export function managedRows(
   markdown: string,
   activation: TodoReconciliationActivation | null,
   entities: readonly TodoEntityView[],
@@ -284,39 +284,27 @@ function rowSnapshot(row: ManagedRow, record: JsonObject): TodoPublicSnapshot {
   return { ...row.snapshot, severity: row.section === "resolved" ? String(record.severity) : row.snapshot.severity };
 }
 
-export function todoCutoverPublicProjectionViolations(
-  markdown: string,
-  targets: readonly { id: string; record: JsonObject }[],
-): string[] {
-  let rows: Map<string, ManagedRow>;
-  try {
-    const activation = JSON.parse(todoReconciliationActivationBytes([])) as TodoReconciliationActivation;
-    rows = managedRows(markdown, activation, targets.map(({ id, record }) => ({ boundary: TODO.boundary, id, record }))).rows;
-  } catch (error) {
-    return [error instanceof StateWriteInputError ? error.body.message : (error as Error).message];
-  }
-  const targetIds = new Set(targets.map(({ id }) => id));
-  if (targetIds.size !== targets.length) return ["pending TODO cutover target IDs are not unique"];
-  const unexpected = [...rows.keys()].find((id) => !targetIds.has(id));
-  if (unexpected) return [`final managed TODO Markdown ID '${unexpected}' has no journal entity target`];
-  for (const { id, record } of targets) {
-    const row = rows.get(id);
-    if (!row) return [`journal TODO entity '${id}' has no final managed Markdown row`];
-    const projected = rowSnapshot(row, record);
-    const prior = baseline(record);
-    if (!prior || canonicalRecordJson(prior) !== canonicalRecordJson(projected)) return [`journal TODO entity '${id}' has no exact final public baseline`];
-    if (!samePublic(publicSnapshot(record), projected, false)) return [`journal TODO entity '${id}' public values do not match its final managed Markdown row`];
-  }
-  if (rows.size !== targets.length) return ["final managed TODO Markdown rows do not match the journal entity target set"];
-  return [];
-}
-
 function inspectTodoReadView(
   root: string,
   sourceRoot: string,
   entities: DiscoveredEntity[],
 ): TodoReadView {
-  const activation = loadTodoReconciliationActivation(root)?.record ?? null;
+  let activation: TodoReconciliationActivation | null;
+  try {
+    activation = loadTodoReconciliationActivation(root)?.record ?? null;
+  } catch {
+    return {
+      rows: new Map(),
+      drift: {
+        schema_version: RECONCILIATION_VERSION,
+        status: "invalid_lifecycle",
+        read_effect: "none",
+        authority: todoAuthority(),
+        counts: { managed: 0, drifted: 0, conflicts: 1 },
+        items: [],
+      },
+    };
+  }
   if (!activation) {
     return {
       rows: new Map(),
@@ -330,10 +318,27 @@ function inspectTodoReadView(
       },
     };
   }
-  const markdownPath = todoPublicPath(root, sourceRoot);
-  const markdown = readTodoMarkdown(markdownPath).text;
   const todoEntities = entities.filter(({ boundary }) => boundary === TODO.boundary);
-  const rows = managedRows(markdown, activation, todoEntities).rows;
+  let markdown: string;
+  let rows: Map<string, ManagedRow>;
+  try {
+    markdown = readTodoMarkdown(todoPublicPath(root, sourceRoot)).text;
+    rows = managedRows(markdown, activation, todoEntities).rows;
+  } catch (error) {
+    if (error instanceof StateWriteInputError && /Markdown/i.test(error.body.message)) throw error;
+    return {
+      rows: new Map(),
+      drift: {
+        schema_version: RECONCILIATION_VERSION,
+        status: "unsafe",
+        read_effect: "none",
+        next_write_boundary: "atomic_reconciliation",
+        authority: todoAuthority(),
+        counts: { managed: 0, drifted: 0, conflicts: 1 },
+        items: [],
+      },
+    };
+  }
   const items: TodoDriftItem[] = [];
   const entityIds = new Set<string>();
   for (const entity of todoEntities) {

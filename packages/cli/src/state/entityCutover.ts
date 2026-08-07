@@ -12,7 +12,8 @@ import { validateRealProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 import { acquireWriterLock } from "./write/lock.js";
 import { EntityPublicationContext } from "./entityPublicationContext.js";
-import { todoCutoverPublicProjectionViolations, todoReconciliationBinding } from "./todoDocsEntities.js";
+import { todoReconciliationBinding } from "./todoDocsEntities.js";
+import { todoCutoverPublicProjectionViolations } from "./todoReconciliationInspection.js";
 import { TODO_RECONCILIATION_ACTIVATION_PATH, todoReconciliationActivationBytes } from "./todoReconciliationActivation.js";
 import { inspectTodoReconciliation, publishTodoReconciliation, recoverTodoReconciliation, type TodoReconciliationTarget, type ValidatedTodoReconciliationTarget } from "./todoReconciliationTransaction.js";
 
