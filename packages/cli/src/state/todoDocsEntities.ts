@@ -45,9 +45,12 @@ import {
   todoReconciliationActivationBytes,
   TODO_RECONCILIATION_ACTIVATION_PATH,
   TODO_RECONCILIATION_ITEM_LIMIT,
-  TODO_ACTIVATION_APPLY_COMMAND, TODO_ACTIVATION_PREVIEW_COMMAND, todoActivationEffect, unchangedTodoActivationEffect,
+  TODO_ACTIVATION_APPLY_COMMAND, TODO_ACTIVATION_PREVIEW_COMMAND, TODO_REPAIR_APPLY_COMMAND, TODO_REPAIR_PREVIEW_COMMAND,
+  todoActivationEffect, todoRepairEffect, unchangedTodoActivationEffect,
   type TodoReconciliationActivation,
 } from "./todoReconciliationActivation.js";
+import { planTodoRepair } from "./todoReconciliationRepair.js";
+import { readTodoMarkdown, renderManagedMarkdown } from "./todoMarkdownProjection.js";
 
 const ID = /^[a-z]{10}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -144,7 +147,6 @@ interface LegacyRow { line: number; section: string; sourceLine: string; snapsho
 interface ManagedRowScan { rows: Map<string, ManagedRow>; retainedLegacyRows: string[]; matchedRows: number; convertedRows: number }
 type TodoEntityView = Pick<DiscoveredEntity, "boundary" | "id" | "record">;
 const RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
-const TODO_MARKDOWN_MAX_BYTES = 1024 * 1024;
 const TODO_DRIFT_ITEM_LIMIT = 20;
 const PUBLIC_FIELDS = ["description", "severity", "status"] as const;
 
@@ -191,26 +193,6 @@ function todoAuthority(): JsonObject {
     public: { owner: "markdown", source: "TODO.md", fields: ["description", "severity", "status", "order"] },
     operational: { owner: "agentera", source: "canonical_entity_file", fields: ["readiness", "dependencies", "blocked", "gate", "evidence", "lifecycle"] },
   };
-}
-
-function readTodoMarkdown(target: string): { bytes: Buffer; text: string } {
-  if (!fs.existsSync(target)) return { bytes: Buffer.from(""), text: "" };
-  const stat = fs.lstatSync(target);
-  if (!stat.isFile() || stat.isSymbolicLink()) reject({
-    class: "conflict",
-    message: "managed TODO Markdown must be a regular file",
-    recovery: "Restore the docs-mapped TODO artifact as a regular file within the project and retry; no state was changed.",
-  });
-  if (stat.size > TODO_MARKDOWN_MAX_BYTES) reject({
-    class: "conflict",
-    message: `managed TODO Markdown exceeds the ${TODO_MARKDOWN_MAX_BYTES}-byte reconciliation bound`,
-    recovery: "Compact unmanaged or resolved Markdown content below the declared bound and retry; no state was changed.",
-  });
-  const bytes = fs.readFileSync(target);
-  let text: string;
-  try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
-  catch { reject({ class: "conflict", message: "managed TODO Markdown is not valid UTF-8", recovery: "Restore valid UTF-8 TODO Markdown and retry; no state was changed." }); }
-  return { bytes, text: text! };
 }
 
 function managedRows(
@@ -480,35 +462,9 @@ function withBaseline(record: JsonObject, value: TodoPublicSnapshot): JsonObject
   return { ...record, reconciliation: { schema_version: RECONCILIATION_VERSION, public: publicValue } };
 }
 
-function sectionFor(record: JsonObject): string { return record.status === "resolved" ? "resolved" : String(record.severity); }
-function headingFor(section: string): string { return section === "resolved" ? "## ✓ Resolved" : `## → ${section[0]!.toUpperCase()}${section.slice(1)}`; }
-function rowFor(id: string, record: JsonObject): string { return `- [${record.status === "resolved" ? "x" : " "}] [id:${id}] ${renderTodoPublicRecord(record)}`; }
-
-function renderManagedMarkdown(markdown: string, records: Map<string, JsonObject>, existing: Map<string, ManagedRow>): string {
-  const byLine = new Map([...existing.values()].map((row) => [row.line, row]));
-  const retained = new Set<string>();
-  const lines = markdown.split(/\r?\n/).flatMap((line, index) => {
-    const row = byLine.get(index); if (!row) return [line];
-    const record = records.get(row.id);
-    if (!record || sectionFor(record) !== row.section) return [];
-    retained.add(row.id); return [rowFor(row.id, record)];
-  });
-  for (const section of ["critical", "degraded", "normal", "annoying", "resolved"]) {
-    const ids = [...records.entries()].filter(([id, record]) => !retained.has(id) && sectionFor(record) === section).sort(([left], [right]) => {
-      const a = existing.get(left); const b = existing.get(right);
-      return (a?.section === section ? a.snapshot.order! : Number.MAX_SAFE_INTEGER) - (b?.section === section ? b.snapshot.order! : Number.MAX_SAFE_INTEGER) || left.localeCompare(right);
-    }).map(([id]) => id);
-    if (!ids.length) continue;
-    let heading = lines.findIndex((line) => line.trim().toLowerCase() === headingFor(section).toLowerCase());
-    if (heading < 0) { if (lines.at(-1)?.trim()) lines.push(""); lines.push(headingFor(section)); heading = lines.length - 1; }
-    let insert = heading + 1; while (insert < lines.length && !/^##\s+/.test(lines[insert]!.trim())) insert += 1;
-    while (insert > heading + 1 && !lines[insert - 1]!.trim()) insert -= 1;
-    lines.splice(insert, 0, ...ids.map((id) => rowFor(id, records.get(id)!)));
-  }
-  return `${lines.join("\n").replace(/\n*$/, "")}\n`;
-}
 function inactiveTodoMutation(): never { reject({ class: "conflict", message: "TODO reconciliation is inactive; ordinary TODO mutations cannot activate it implicitly", syntax: TODO_ACTIVATION_PREVIEW_COMMAND, example: TODO_ACTIVATION_APPLY_COMMAND, recovery: `Run exactly '${TODO_ACTIVATION_PREVIEW_COMMAND}', review every reported effect, then run exactly '${TODO_ACTIVATION_APPLY_COMMAND}'; no state was changed.` }); }
 function activationEnvelope(effect: JsonObject, dryRun: boolean, replay: boolean, transactionId: string | null, targets: number, recovered: string[]): StateWriteEnvelope { return { schemaVersion: "agentera.stateWrite.v1", command: "state todo activate", status: "pass", path: TODO_RECONCILIATION_ACTIVATION_PATH, artifact: "todo", operation: { verb: "activate", dry_run: dryRun, idempotent_replay: replay }, validation: { status: "pass", violations: [] }, activation: effect, apply_command: TODO_ACTIVATION_APPLY_COMMAND.replace("EFFECT_SHA256", String(effect.effect_sha256)), reconciliation: { transaction_id: transactionId, targets, recovered } }; }
+function repairEnvelope(effect: JsonObject, dryRun: boolean, replay: boolean, transactionId: string | null, targets: number, recovered: string[]): StateWriteEnvelope { return { schemaVersion: "agentera.stateWrite.v1", command: "state todo repair", status: "pass", path: TODO_RECONCILIATION_ACTIVATION_PATH, artifact: "todo", operation: { verb: "repair", dry_run: dryRun, idempotent_replay: replay }, validation: { status: "pass", violations: [] }, repair: effect, apply_command: TODO_REPAIR_APPLY_COMMAND.replace("EFFECT_SHA256", String(effect.effect_sha256)), reconciliation: { transaction_id: transactionId, targets, recovered } }; }
 function envelope(command: string, entity: { id: string; path: string; replay: boolean }, artifact: "todo" | "docs", record: JsonObject, dryRun: boolean): StateWriteEnvelope {
   return { schemaVersion: "agentera.stateWrite.v1", command, status: "pass", path: entity.path, id: entity.id, artifact, record, operation: { verb: command.split(" ").at(-1), dry_run: dryRun, idempotent_replay: entity.replay }, validation: { status: "pass", violations: [] } };
 }
@@ -735,9 +691,13 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const todoBinding = artifact === "todo" ? todoReconciliationBinding(req.projectRoot, sourceRoot) : null;
     const pending = todoBinding ? inspectTodoReconciliation(pinnedRoot, todoBinding) : [];
     const initialActivation = artifact === "todo" ? loadTodoReconciliationActivation(pinnedRoot) : null;
-    if (artifact === "todo" && req.spec.verb === "activate") {
-      if (req.dryRun && (req.values.confirmed === true || req.values.effect_sha256 !== undefined)) reject({ class: "mutually_exclusive", message: "TODO activation --dry-run cannot include apply confirmation", recovery: `Run exactly '${TODO_ACTIVATION_PREVIEW_COMMAND}' or the preview's exact apply_command; no state was changed.` });
-      if (!req.dryRun && (req.values.confirmed !== true || !SHA256.test(String(req.values.effect_sha256 ?? "")))) reject({ class: "missing_argument", message: "TODO activation apply requires the preview effect SHA-256 and explicit --yes confirmation", syntax: TODO_ACTIVATION_PREVIEW_COMMAND, example: TODO_ACTIVATION_APPLY_COMMAND, recovery: `Run exactly '${TODO_ACTIVATION_PREVIEW_COMMAND}', review every reported effect, then run its exact apply_command; no state was changed.` });
+    if (artifact === "todo" && ["activate", "repair"].includes(req.spec.verb)) {
+      const repairing = req.spec.verb === "repair";
+      const previewCommand = repairing ? TODO_REPAIR_PREVIEW_COMMAND : TODO_ACTIVATION_PREVIEW_COMMAND;
+      const applyCommand = repairing ? TODO_REPAIR_APPLY_COMMAND : TODO_ACTIVATION_APPLY_COMMAND;
+      if (repairing && !initialActivation) reject({ class: "conflict", message: "TODO repair requires an existing reconciliation activation marker", recovery: `Use '${TODO_ACTIVATION_PREVIEW_COMMAND}' for an inactive project; no state was changed.` });
+      if (req.dryRun && (req.values.confirmed === true || req.values.effect_sha256 !== undefined)) reject({ class: "mutually_exclusive", message: `TODO ${req.spec.verb} --dry-run cannot include apply confirmation`, recovery: `Run exactly '${previewCommand}' or the preview's exact apply_command; no state was changed.` });
+      if (!req.dryRun && (req.values.confirmed !== true || !SHA256.test(String(req.values.effect_sha256 ?? "")))) reject({ class: "missing_argument", message: `TODO ${req.spec.verb} apply requires the preview effect SHA-256 and explicit --yes confirmation`, syntax: previewCommand, example: applyCommand, recovery: `Run exactly '${previewCommand}', review every reported effect, then run its exact apply_command; no state was changed.` });
     } else if (artifact === "todo" && !initialActivation) inactiveTodoMutation();
     if (req.dryRun && pending.length) reject({ class: "conflict", message: `TODO reconciliation transaction '${pending[0]}' requires recovery before dry-run`, recovery: "Retry the exact TODO mutation without --dry-run once to complete recovery; this dry-run changed no state." });
     const createRequest = artifact === "todo" && req.spec.verb === "create" ? mutationRecord(req, undefined) : null;
@@ -745,7 +705,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const recoveryReceipts = todoBinding && !req.dryRun
       ? recoverTodoReconciliation(context, sourceRoot, todoBinding, {
           createRequestSha256,
-          ...(req.spec.verb === "activate" ? { activationEffectSha256: String(req.values.effect_sha256) } : {}),
+          ...(["activate", "repair"].includes(req.spec.verb) ? { activationEffectSha256: String(req.values.effect_sha256) } : {}),
           beforeCommit: () => assertState(pinnedRoot, sourceRoot, sourceBinding),
         })
       : [];
@@ -802,6 +762,37 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
           },
         });
         context.assertValid(); return activationEnvelope(effect, false, false, transaction.id, transaction.targetCount, recovered);
+      }
+      if (req.spec.verb === "repair") {
+        if (!activation || !loadedActivation) throw new Error("TODO repair lost its required activation marker");
+        const plan = planTodoRepair(markdown, activation, todoEntities);
+        let activationBytesAfter = todoReconciliationActivationBytes(plan.retainedLegacyRows, "0".repeat(64), "repair");
+        const targets: TodoReconciliationTarget[] = todoEntities.map((entity) => ({ path: entity.relativePath, before: exactDiscoveredEntityBytes(entity), after: canonicalEntityEnvelopeBytes({ id: entity.id!, artifact: "todo", record: plan.records.get(entity.id!)!, migrationProvenance: entity.migrationProvenance ?? undefined }) }));
+        targets.push({ path: TODO_RECONCILIATION_ACTIVATION_PATH, before: loadedActivation.bytes, after: activationBytesAfter });
+        targets.push({ path: publicRelative, before: publicExists ? markdownBefore : null, after: plan.rendered });
+        const substantiveChange = targets.some((target) => target.path !== TODO_RECONCILIATION_ACTIVATION_PATH && (target.before === null || !target.before.equals(Buffer.from(target.after))));
+        if (!req.dryRun && !substantiveChange && activation.effect_operation === "repair" && req.values.effect_sha256 === activation.effect_sha256) {
+          const replayEffect = todoRepairEffect(plan.diagnosis, [], publicRelative, markdownBefore, markdown,);
+          replayEffect.effect_sha256 = activation.effect_sha256!;
+          return repairEnvelope(replayEffect, false, true, null, 0, recovered);
+        }
+        const preliminaryEffect = todoRepairEffect(plan.diagnosis, targets, publicRelative, markdownBefore, plan.rendered);
+        activationBytesAfter = todoReconciliationActivationBytes(plan.retainedLegacyRows, String(preliminaryEffect.effect_sha256), "repair");
+        targets.find((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH)!.after = activationBytesAfter;
+        const effect = todoRepairEffect(plan.diagnosis, targets, publicRelative, markdownBefore, plan.rendered);
+        if (effect.effect_sha256 !== preliminaryEffect.effect_sha256) throw new Error("TODO repair effect authorization is not self-consistent");
+        if (req.dryRun) return repairEnvelope(effect, true, false, null, (effect.targets as unknown[]).length, recovered);
+        if (req.values.effect_sha256 !== effect.effect_sha256) reject({ class: "conflict", message: "TODO repair effects changed after preview", syntax: TODO_REPAIR_PREVIEW_COMMAND, example: TODO_REPAIR_APPLY_COMMAND, recovery: `Rerun exactly '${TODO_REPAIR_PREVIEW_COMMAND}', review the changed bounded effects, then run its new exact apply_command; no state was changed.` });
+        const transaction = publishTodoReconciliation(context, sourceRoot, todoBinding!, targets, {
+          activationEffectSha256: String(effect.effect_sha256),
+          interruptAfterTarget: options.interruptAfterTarget,
+          beforeCommit: () => {
+            assertState(pinnedRoot, sourceRoot, sourceBinding);
+            const currentBinding = todoReconciliationBinding(req.projectRoot, sourceRoot);
+            if (currentBinding.publicPath !== todoBinding!.publicPath || currentBinding.mappingSha256 !== todoBinding!.mappingSha256) reject({ class: "conflict", message: "TODO reconciliation mapping changed during repair publication", recovery: "Preserve the changed docs mapping and retry repair after every transaction target is restored; no mapping bytes were overwritten." });
+          },
+        });
+        context.assertValid(); return repairEnvelope(effect, false, false, transaction.id, transaction.targetCount, recovered);
       }
       const activating = activation === null;
       const scan = managedRows(markdown, activation, todoEntities);

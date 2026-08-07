@@ -71,11 +71,11 @@ export const ACTIVATION_CENSUS_AUTHORITY: Readonly<{
     capability: { count: 12, sha256: "007e1157a892fec54182b1803aeaa442cf8e2e332e6a055c3bd020e2b0731867" },
     runtime: { count: 81, sha256: "03fe600a3a27f05daf0d1b59c16b00bedc354a13c70ea60be0b457175fdf743c" },
     reference: { count: 22, sha256: "2b48c82bb7ee10388d9ebb4fa7ea3743ea82a7e9aaedfcd5a858eeedb9d891ae" },
-    state: { count: 35, sha256: "f47170218f6628ddb5fbb787f1e1988c99ac5782290afcdafc633e9067761dbe" },
+    state: { count: 36, sha256: "a9f371e2f6d49e7cb890767d7dfe26edee11d4a7d28ee35ab6c491c0abafbbf0" },
     package: { count: 64, sha256: "6e2e6f88d2062d4a7cf4c4482bcf3615f84bfc1202806669ed6cab8cee5a9542" },
     bootstrap: { count: 34, sha256: "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e" },
   },
-  total: { count: 275, sha256: "4753bfafa4c245a72834e72b83d2c8950b757a51096fe98531c2b2b587f6d1e6" },
+  total: { count: 276, sha256: "39855572af39ca187ef7cfd169294dc1e469a99c7fbbcf2e34d1eb66caf32d76" },
 });
 
 /** Each dimension names the production contract it observes independently. */

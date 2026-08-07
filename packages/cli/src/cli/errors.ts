@@ -33,6 +33,7 @@ export interface InvalidInputErrorBody {
   syntax?: string;
   example?: string;
   violations?: string[];
+  diagnosis?: import("../core/jsonValue.js").JsonObject;
   recovery?: string;
 }
 

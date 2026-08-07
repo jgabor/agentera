@@ -14,7 +14,7 @@ import { FILE_REPLACEMENT_RECOVERY_VERSION } from "../../src/state/entityPublica
 import { ExactReplacementConflictError } from "../../src/state/exactReplacementRecovery.js";
 import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
-import { todoReconciliationActivationBytes, TODO_RECONCILIATION_ACTIVATION_PATH } from "../../src/state/todoReconciliationActivation.js";
+import { todoLegacyRowFingerprint, todoReconciliationActivationBytes, todoRepairEffect, TODO_RECONCILIATION_ACTIVATION_PATH } from "../../src/state/todoReconciliationActivation.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
@@ -97,6 +97,40 @@ function seedTodoEntity(root: string, id: string, title: string, severity = "nor
     },
   }));
   return target;
+}
+
+function damagedActiveProject(): { root: string; ids: string[]; entityBytes: Record<string, string>; markdown: string } {
+  const root = project();
+  const rows = {
+    openLegacy: "- [ ] [task:3.0.0] Keep current open text",
+    retained: "- [ ] [note] Keep unrelated retained prose",
+    completedLegacy: "- [x] [fix:3.0.0] Keep completed Markdown state",
+  };
+  const markdown = `# TODO fixture\n\nUnrelated introduction survives.\n\n## → Normal\n${rows.openLegacy}\n${rows.retained}\n- [ ] [id:abcdefghij] [task:3.0.0] Keep current open text\n- [ ] [id:bbbbbbbbbb] [fix:3.0.0] Keep completed Markdown state\n- [ ] [id:cccccccccc] [task:3.0.0] Keep matched managed row\n\n## ✓ Resolved\n${rows.completedLegacy}\n\nUnrelated footer survives.\n`;
+  fs.writeFileSync(path.join(root, "TODO.md"), markdown);
+  fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([
+    todoLegacyRowFingerprint("normal", rows.openLegacy),
+    todoLegacyRowFingerprint("normal", rows.retained),
+    todoLegacyRowFingerprint("resolved", rows.completedLegacy),
+  ]));
+  const entityBytes: Record<string, string> = {};
+  for (const [id, kind, title] of [
+    ["abcdefghij", "task", "Keep current open text"],
+    ["bbbbbbbbbb", "fix", "Keep completed Markdown state"],
+    ["cccccccccc", "task", "Keep matched managed row"],
+  ] as const) {
+    const target = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    const record = {
+      kind, target_version: "3.0.0", title, requirements: ["Operational requirement"], acceptance: ["Operational acceptance"], release_blocker: true,
+      severity: "normal", status: "open",
+      readiness: { capability: "build", reason: "Operational fields survive repair.", dependencies: [], blocked: null, gate: null, queue_rank: id === "abcdefghij" ? 1 : id === "bbbbbbbbbb" ? 2 : 3, order_reason: "Stable operational order." },
+      reconciliation: { schema_version: "agentera.todoReconciliation.v1", public: { present: true, description: `[${kind}:3.0.0] ${title}`, severity: "normal", status: "open", order: id === "abcdefghij" ? 3 : id === "bbbbbbbbbb" ? 4 : 5 } },
+    };
+    fs.writeFileSync(target, dumpYamlMapping({ id, artifact: "todo", record }));
+    entityBytes[id] = fs.readFileSync(target, "utf8");
+  }
+  return { root, ids: ["abcdefghij", "bbbbbbbbbb", "cccccccccc"], entityBytes, markdown };
 }
 
 function seedAbsentTodoEntity(root: string, id: string, title: string, queueRank = 1): string {
@@ -1357,6 +1391,152 @@ describe("TODO item and documentation inventory entity authority", () => {
       recovery: expect.stringContaining("[id:abcdefghij]"),
     });
     expect(files(root)).toEqual(beforeReject);
+  });
+
+  it("previews and repairs marker-active duplicate and stale projections without losing Markdown or operational authority", () => {
+    const { root, ids, entityBytes, markdown } = damagedActiveProject();
+    const before = files(root);
+
+    const preview = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
+
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    expect(preview.json.repair).toMatchObject({
+      diagnosis: { counts: { duplicate: 2, stale: 1, matched: 1, retained: 1, conflicting: 0 }, omitted_count: 0 },
+      public_document: { path: "TODO.md", changed: true },
+      effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+    });
+    expect(preview.json.repair.diagnosis.items.map((item: any) => item.decision)).toEqual(expect.arrayContaining(["duplicate_collapsed", "managed_matched", "retained_unrelated"]));
+    expect(preview.json.apply_command).toContain("state todo repair --effect-sha256");
+    expect(files(root)).toEqual(before);
+
+    const staleApply = capture(root, ["state", "todo", "repair", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"]);
+    expect(staleApply.rc).toBe(2); expect(staleApply.json.error.message).toContain("changed after preview"); expect(files(root)).toEqual(before);
+    const applied = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
+    expect(applied.rc, applied.err || applied.out).toBe(0);
+    expect(applied.json.repair).toEqual(preview.json.repair);
+    const repaired = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+    for (const id of ids) expect(repaired.match(new RegExp(`id:${id}`, "g"))).toHaveLength(1);
+    expect(repaired).toContain("Unrelated introduction survives."); expect(repaired).toContain("Unrelated footer survives.");
+    expect(repaired).toContain("- [x] [id:bbbbbbbbbb] [fix:3.0.0] Keep completed Markdown state");
+    expect(repaired).toContain("- [ ] [note] Keep unrelated retained prose");
+    for (const id of ids) {
+      const beforeRecord = loadYamlMapping(entityBytes[id]!).record as any;
+      const afterEnvelope = loadYamlMapping(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`), "utf8"));
+      expect(afterEnvelope.id).toBe(id);
+      expect((afterEnvelope.record as any).readiness).toEqual(beforeRecord.readiness);
+      expect((afterEnvelope.record as any).requirements).toEqual(beforeRecord.requirements);
+    }
+    expect((loadYamlMapping(fs.readFileSync(path.join(root, ".agentera/entities/todo/todo_item/bbbbbbbbbb.yaml"), "utf8")).record as any).status).toBe("resolved");
+    expect(JSON.parse(fs.readFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), "utf8"))).toMatchObject({ effect_operation: "repair", effect_sha256: preview.json.repair.effect_sha256 });
+    expect(capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]).rc).toBe(0);
+    const stable = files(root);
+    const replay = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
+    expect(replay.rc, replay.err || replay.out).toBe(0); expect(replay.json.operation.idempotent_replay).toBe(true); expect(files(root)).toEqual(stable);
+    expect(markdown).not.toBe(repaired);
+  });
+
+  it("refuses legacy-only identity even when a resolved publicly absent entity has identical prose", () => {
+    const root = project(); const id = "abcdefghij"; const row = "- [ ] [task:3.0.0] Identical legacy-only prose";
+    const entity = seedAbsentTodoEntity(root, id, "Identical legacy-only prose");
+    const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8")); (envelope.record as any).status = "resolved"; fs.writeFileSync(entity, dumpYamlMapping(envelope));
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n${row}\n`);
+    fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([todoLegacyRowFingerprint("normal", row)]));
+    const before = files(root);
+
+    const rejected = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
+
+    expect(rejected.rc).toBe(2);
+    expect(rejected.json.error).toMatchObject({
+      class: "conflict",
+      diagnosis: { items: expect.arrayContaining([expect.objectContaining({ decision: "legacy_without_managed_identity", id, source_line: 4 })]) },
+    });
+    expect(files(root)).toEqual(before);
+    expect((loadYamlMapping(fs.readFileSync(entity, "utf8")).record as any).status).toBe("resolved");
+  });
+
+  it("binds repair authorization to normalized exact activation after-content", () => {
+    const markdown = Buffer.from("# TODO\n"); const diagnosis = { counts: { duplicate: 0, stale: 0, matched: 0, retained: 1, conflicting: 0 }, items: [], omitted_count: 0 };
+    const effect = (retained: string, operation: "activate" | "repair" = "repair") => todoRepairEffect(diagnosis, [{ path: TODO_RECONCILIATION_ACTIVATION_PATH, before: Buffer.from(todoReconciliationActivationBytes([])), after: todoReconciliationActivationBytes([retained], "0".repeat(64), operation) }], "TODO.md", markdown, markdown.toString("utf8"));
+
+    const first = effect("a".repeat(64)); const replay = effect("a".repeat(64)); const different = effect("b".repeat(64)); const differentOperation = effect("a".repeat(64), "activate");
+
+    expect(first.effect_sha256).toBe(replay.effect_sha256);
+    expect(first.effect_sha256).not.toBe(different.effect_sha256);
+    expect(first.effect_sha256).not.toBe(differentOperation.effect_sha256);
+    expect((first.targets as any[])[0].after_sha256).not.toBe((different.targets as any[])[0].after_sha256);
+  });
+
+  it("rejects ambiguous and unmatched active repair evidence before effects with bounded diagnosis", () => {
+    for (const kind of ["ambiguous", "unmatched"] as const) {
+      const { root } = damagedActiveProject(); const todoPath = path.join(root, "TODO.md");
+      if (kind === "ambiguous") {
+        const text = fs.readFileSync(todoPath, "utf8");
+        fs.writeFileSync(todoPath, text.replace("- [ ] [note] Keep unrelated retained prose", "- [ ] [task:3.0.0] Keep current open text"));
+        const activation = JSON.parse(fs.readFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), "utf8"));
+        activation.retained_legacy_rows = [todoLegacyRowFingerprint("normal", "- [ ] [task:3.0.0] Keep current open text"), todoLegacyRowFingerprint("resolved", "- [x] [fix:3.0.0] Keep completed Markdown state")];
+        fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), `${JSON.stringify(activation)}\n`);
+      } else fs.appendFileSync(todoPath, "\n## → Degraded\n- [ ] [fix:3.0.0] Unproven row\n");
+      const before = files(root);
+      const rejected = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
+      expect(rejected.rc, kind).toBe(2);
+      expect(rejected.json.error).toMatchObject({ class: "conflict", message: expect.stringContaining("complete one-to-one evidence"), violations: expect.any(Array), diagnosis: { counts: { conflicting: expect.any(Number) } } });
+      expect(rejected.json.error.violations.join("\n")).toContain(kind === "ambiguous" ? "matches retained rows" : "has no activation provenance");
+      expect(rejected.json.error.violations.length).toBeLessThanOrEqual(20);
+      expect(files(root), kind).toEqual(before);
+    }
+  });
+
+  it("recovers interrupted active repair at every journal target boundary and converges", () => {
+    for (const boundary of [0, 1, 2, 3, 4]) {
+      const { root, ids } = damagedActiveProject();
+      const preview = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
+      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "repair")!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.repair.effect_sha256 }, callerPayload: { confirmed: true, effect_sha256: preview.json.repair.effect_sha256 }, input: null };
+      expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: boundary })).toThrow(/interruption/);
+      binding.publicationContext.close();
+      const retry = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
+      expect(retry.rc, retry.err || retry.out).toBe(0); expect(retry.json.reconciliation.recovered).toHaveLength(1);
+      const stable = files(root); const markdownAfter = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      for (const id of ids) expect(markdownAfter.match(new RegExp(`id:${id}`, "g"))).toHaveLength(1);
+      const replay = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
+      expect(replay.rc, replay.err || replay.out).toBe(0); expect(files(root)).toEqual(stable);
+    }
+  });
+
+  it("keeps repaired public bytes old-or-new across real SIGKILL and converges on retry", () => {
+    for (const phase of ["before", "after"] as const) {
+      const { root, ids, markdown } = damagedActiveProject();
+      const preview = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
+      const script = path.join(root, `kill-repair-${phase}.mjs`);
+      fs.writeFileSync(script, `import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+const [root, build, phase, effect] = process.argv.slice(2);
+const { detectStateModeBinding } = await import(pathToFileURL(path.join(build, "state/stateMode.js")).href);
+const { operationSpec } = await import(pathToFileURL(path.join(build, "state/write/operations.js")).href);
+const { mutateTodoDocsEntity } = await import(pathToFileURL(path.join(build, "state/todoDocsEntities.js")).href);
+const rename = fs.renameSync.bind(fs);
+fs.renameSync = (from, to) => {
+  const visible = String(to).endsWith("/TODO.md");
+  if (visible && phase === "before") process.kill(process.pid, "SIGKILL");
+  const result = rename(from, to);
+  if (visible && phase === "after") process.kill(process.pid, "SIGKILL");
+  return result;
+};
+const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: effect }, callerPayload: { confirmed: true, effect_sha256: effect }, input: null }, { publicationContext: binding.publicationContext });
+`);
+      const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), phase, preview.json.repair.effect_sha256], { encoding: "utf8" });
+      expect(killed.status, killed.stderr || killed.stdout).toBeNull(); expect(killed.signal).toBe("SIGKILL");
+      const interrupted = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      expect([markdown, preview.json.repair.public_document.after_sha256]).toContain(interrupted === markdown ? markdown : createHash("sha256").update(interrupted).digest("hex"));
+      const retry = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
+      expect(retry.rc, retry.err || retry.out).toBe(0); expect(retry.json.reconciliation.recovered).toHaveLength(1);
+      const stable = files(root); const repaired = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      for (const id of ids) expect(repaired.match(new RegExp(`id:${id}`, "g"))).toHaveLength(1);
+      const replay = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
+      expect(replay.rc, replay.err || replay.out).toBe(0); expect(files(root)).toEqual(stable);
+    }
   });
 
   it("rejects every ordinary inactive TODO mutation without changing project bytes", () => {

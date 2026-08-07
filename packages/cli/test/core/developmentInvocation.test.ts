@@ -202,8 +202,8 @@ describe("exact code-owned development invocation projection", () => {
 
   it("enumerates and exercises every mutation, retrieval, glossary, schema, and help projection owner", () => {
     const owners = developmentProjectionOwners();
-    expect(owners).toHaveLength(91);
-    expect(owners.filter(({ family }) => family === "mutation")).toHaveLength(53);
+    expect(owners).toHaveLength(94);
+    expect(owners.filter(({ family }) => family === "mutation")).toHaveLength(56);
     expect(owners.filter(({ family }) => family === "retrieval")).toHaveLength(33);
     expect(owners.filter(({ family }) => family === "glossary")).toHaveLength(5);
     expect(new Set(owners.map(({ owner }) => owner)).size).toBe(owners.length);
