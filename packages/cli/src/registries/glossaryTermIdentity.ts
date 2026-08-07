@@ -41,26 +41,21 @@ function singleScalar(value: string): string | null {
 
 /**
  * Build the same simple-case equivalence key used by the stable identity.
- * Full case mappings that expand to multiple scalars are intentionally ignored,
- * because the equality runtime uses Unicode simple folding rather than full
- * case folding (for example, `ß` is not equal to `SS`).
+ * Lowercase mapping is the primary Unicode simple-fold projection. A
+ * lowercased uppercase mapping is admitted only when the existing equality
+ * matcher confirms it, which avoids transitive casing mistakes such as
+ * treating ASCII `I` and dotless `ı` as equal.
  */
-function unicodeSimpleCaseFoldClosureKey(value: string): string {
+function unicodeSimpleCaseFoldKey(value: string): string {
   return [...value]
     .map((character) => {
-      const seen = new Set([character]);
-      const pending = [character];
-      while (pending.length > 0) {
-        const current = pending.pop()!;
-        for (const mapped of [current.toUpperCase(), current.toLowerCase()]) {
-          const scalar = singleScalar(mapped);
-          if (scalar !== null && !seen.has(scalar)) {
-            seen.add(scalar);
-            pending.push(scalar);
-          }
-        }
+      const lower = singleScalar(character.toLowerCase()) ?? character;
+      const upper = singleScalar(character.toUpperCase());
+      const upperLower = upper === null ? null : singleScalar(upper.toLowerCase());
+      if (upperLower !== null && unicodeCaselessExact(character, upperLower)) {
+        return upperLower;
       }
-      return [...seen].sort(compareCodePoints)[0]!;
+      return lower;
     })
     .join("");
 }
@@ -82,7 +77,7 @@ function requireNonEmpty(value: string, field: string): string {
  */
 export function stableGlossaryTermIdentity(term: string): string {
   const value = requireNonEmpty(term, "term");
-  const key = unicodeSimpleCaseFoldClosureKey(value);
+  const key = unicodeSimpleCaseFoldKey(value);
   return sha256Utf8(
     JSON.stringify({
       schema_version: "agentera.personalGlossaryTermIdentity.v1",

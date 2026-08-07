@@ -4,7 +4,7 @@ record:
   name: Settle mining authority and lifecycle
   depends_on:
     []
-  status: complete
+  status: pending
   acceptance:
     - GIVEN firm glossary decisions WHEN replacement authority is approved THEN shared semantics, isolation, precedence, and project publication stay unchanged.
     - GIVEN Unicode and provenance edges WHEN rules are approved THEN term identity, revisions, explicit anchors, and conversation inference are unambiguous.
@@ -12,3 +12,13 @@ record:
     - GIVEN personal excerpts and reviews WHEN privacy authority is approved THEN ownership, redaction, retention, authentication, and purge are executable.
     - GIVEN each authority rule WHEN validation runs THEN one pass and one fail cover it before dependent work.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Unicode stable identity merges I and dotless-i; conversation completeness is self-asserted; consent states overlap; review authentication is not verifiable; boundary tests miss these invariants.
+    provenance:
+      attempt_id: audit-1
+      source: Audit session ses_0229d0ceaffeFnoqxQ7pFinEwA
+      recorded_at: 2026-08-07 20:09
+      writer_command: agentera state plan record-evaluation

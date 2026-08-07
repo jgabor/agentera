@@ -95,16 +95,16 @@ personal_mining_authority:
       runtime: packages/cli/src/registries/glossaryTermIdentity.ts#stableGlossaryTermIdentity
       algorithm: sha256
       encoding: lowercase_hex
-      canonical_input: ecmascript_simple_case_fold_closure_key
+      canonical_input: ecmascript_simple_case_fold_key
       no_unicode_normalization: true
       key_rule: >-
-        For each Unicode scalar, repeatedly apply the locale-independent
-        ECMAScript upper- and lower-case mappings, retain only one-scalar
-        results, and choose the lowest Unicode scalar in that closure. Concatenate
-        those chosen scalars without normalization, then hash the resulting UTF-8
-        key with the versioned schema name. Equal terms therefore share one stable
-        identity while canonically or compatibility-distinct terms remain distinct
-        unless the existing equality matcher already relates them.
+        For each Unicode scalar, use its one-scalar locale-independent lowercase
+        mapping. Also derive the lowercase mapping of its one-scalar uppercase
+        mapping, but use that alternate only when unicodeCaselessExact confirms
+        the original scalar and alternate are equal. Concatenate those selected
+        scalars without normalization, then hash the resulting UTF-8 key with the
+        versioned schema name. This follows the exact matcher, including keeping
+        ASCII I and dotless ı distinct.
       invariant: >-
         Stable identity is an identifier for the existing equality class, not a
         new comparison rule. It never lowercases, normalizes, trims, or changes
@@ -163,21 +163,42 @@ personal_mining_authority:
       valid local-history consent binding and a readable current generation are
       already present. Profile Full never refreshes, discovers, or rereads local
       history to obtain consent.
+    discriminator:
+      inputs: [consent_status, generation_status, coverage_status, signal_tier_bounded]
+      order: [absent, stale, degraded, present]
+      values:
+        consent_status: [absent, valid, stale]
+        generation_status: [absent, current, stale]
+        coverage_status: [complete, cap_selected, truncated, flagged_incomplete]
+        signal_tier_bounded: [true, false]
+      predicates:
+        absent: consent_absent_or_generation_absent
+        stale: after_absent_consent_or_generation_stale
+        degraded: valid_current_actual_cap_truncation_or_flagged_incomplete
+        present: valid_current_complete_any_boundedness
+      exclusivity: >-
+        Evaluate the ordered predicates exactly once and select the first match.
+        Absent wins over stale, stale wins over degraded, and degraded wins over
+        present. No input tuple may select two states.
+      boundedness_rule: >-
+        A signal tier being inherently bounded does not make a generation
+        degraded. Degraded requires actual cap selection, truncation, or flagged
+        incomplete coverage.
     states:
       present:
-        condition: valid_local_history_consent_and_current_complete_generation
+        condition: valid_current_complete_any_boundedness
         action: reuse_generation_once_for_bounded_mining
         result: mining_authorized
       absent:
-        condition: no_valid_local_history_consent_or_no_generation
+        condition: consent_absent_or_generation_absent
         action: skip_mining_without_read_or_refresh
         result: degraded_consent_required
       stale:
-        condition: consent_or_generation_binding_does_not_match_the_current_generation
+        condition: after_absent_consent_or_generation_stale
         action: reject_generation_for_new_mining_and_preserve_existing_entries
         result: degraded_refresh_required
       degraded:
-        condition: current_generation_is_readable_but_coverage_is_flagged_or_bounded
+        condition: valid_current_actual_cap_truncation_or_flagged_incomplete
         action: reuse_only_as_degraded_evidence_without_automatic_admission
         result: degraded_coverage
     recovery:
@@ -237,18 +258,67 @@ personal_mining_authority:
       dispositions: [accept, correct, reject, defer]
       trusted_disposition_authority: current_user
       authentication:
+        receipt_schema_version: agentera.personalGlossaryReviewApproval.v1
+        issuer: agentera-local-host
+        subject: current_user
+        trusted_channel: agentera-local-host-ipc
+        required_fields:
+          - schema_version
+          - issuer
+          - subject
+          - trusted_channel
+          - candidate_id
+          - candidate_revision
+          - generation
+          - disposition
+          - disposed_at
+          - expires_at
+          - nonce
+          - signature
         proof: >-
-          A disposition is accepted only from the host-authenticated current
-          user through an explicit local action bound to candidate_id,
-          candidate_revision, generation, disposition, and disposed_at. A model,
-          agent, imported transcript, or unbound text field cannot authenticate it.
+          The local host signs an explicit current-user action. The verifier
+          checks the trusted host public key before accepting the receipt; a
+          model, agent, imported transcript, or unbound text field cannot create
+          proof by asserting issuer or subject values.
         binding_fields: [candidate_id, candidate_revision, generation, disposition, disposed_at]
         forbidden_principals: [agent, model, imported_record, generic_consent]
+        signature:
+          algorithm: ed25519
+          encoding: base64url
+          key_source: user_local_trusted_host_key
+          signed_fields:
+            - schema_version
+            - issuer
+            - subject
+            - trusted_channel
+            - candidate_id
+            - candidate_revision
+            - generation
+            - disposition
+            - disposed_at
+            - expires_at
+            - nonce
+          verification: trusted_host_public_key_signature_check
+        freshness:
+          max_age_seconds: 300
+          disposed_at: trusted_host_clock
+          expires_at_required: true
+          rule: disposed_at_must_not_be_future_and_expires_at_must_be_after_now
+        replay:
+          nonce: required_unique_receipt_nonce
+          index: user_local_consumed_receipt_digest_index
+          exact_replay: no_op_only_when_nonce_and_receipt_digest_match
+          conflicting_replay: reject_reused_nonce_with_changed_bindings_or_signature
+        terminal_disposition:
+          terminal: [accept, correct, reject]
+          pending: [defer]
     retention:
       pending_excerpt_days: 30
       terminal_excerpt_days: 0
       review_metadata_days_after_terminal: 90
       accepted_entry: ownership_contracts.personal.retention_and_decay
+      pending_review_metadata: retained_until_terminal_or_purge
+      terminal_review_metadata: retained_for_90_days_after_disposition
       rule: >-
         Safe excerpts expire after 30 days and are removed immediately when a
         review becomes terminal. Disposition metadata remains for 90 days after
@@ -262,6 +332,10 @@ personal_mining_authority:
       behavior: atomic_remove_user_local_records_before_next_read
       project_state: untouched
       profile_entry: not_implicitly_deleted
+      boundaries:
+        pending: purge_removes_excerpt_and_metadata_immediately
+        terminal: purge_removes_excerpt_and_metadata_before_next_read
+        accepted_profile_entry: purge_does_not_implicitly_delete_profile_entry
       recovery: >-
         A purge is local and irreversible to the mining records. A later run
         requires fresh consent-bound evidence and creates no project-side record.
@@ -322,6 +396,21 @@ provenance_variants:
       content_fingerprints: 3
     completeness_field: provenance.evidence_complete
     completeness_value: true
+    completeness_authority: expected_qualifying_anchor_set_exact_match
+    expected_evidence:
+      binding: generation_bound
+      context_fields: [generation, qualifying_evidence_anchors, qualifying_evidence_set_sha256]
+      exact_set: required
+      set_digest:
+        algorithm: sha256
+        encoding: lowercase_hex
+        canonicalization: >-
+          Hash canonical UTF-8 JSON containing the schema name, generation, and
+          lexicographically code-point-sorted qualifying evidence anchors. The
+          expected set digest is authoritative; list order is not.
+      duplicate_rule: >-
+        Reject duplicate source_id, evidence_anchor, or content_fingerprint at
+        every list length, even when the list still meets the minimum count.
     admission: review_only
     resolution_rule: >-
       Retain every qualifying user-authored conversation record. At least three

@@ -35,8 +35,15 @@ export interface RetainedEvidence {
   authorClass?: string;
 }
 
+export interface GlossaryConversationEvidenceExpectation {
+  generation: string;
+  qualifyingEvidenceAnchors: readonly string[];
+  qualifyingEvidenceSetSha256: string;
+}
+
 export interface GlossaryAdmissionContext {
   retainedHistory: ReadonlyMap<string, RetainedEvidence>;
+  conversationEvidence?: GlossaryConversationEvidenceExpectation;
 }
 
 export interface PersonalGlossaryAdmissionContract {
@@ -47,7 +54,9 @@ export interface PersonalGlossaryAdmissionContract {
   conversationSourceKinds: string[];
   conversationAuthorClasses: string[];
   conversationEvidenceFields: string[];
+  conversationExpectedEvidenceContextFields: string[];
   conversationMinimumEvidenceCount: number;
+  conversationCompletenessAuthority: string;
   conversationAdmission: string;
   insufficientRecovery: string;
 }
@@ -124,6 +133,7 @@ export function personalGlossaryAdmissionContract(
   const conversation = mapping(
     mapping(authority.provenance_variants)?.personal_inferred_conversation,
   );
+  const expectedEvidence = mapping(conversation?.expected_evidence);
   return {
     explicitSignalTypes: strings(mapping(admission?.explicit)?.candidate_signal_types),
     inferredSignalTypes: strings(mapping(admission?.inferred)?.candidate_signal_types),
@@ -132,10 +142,15 @@ export function personalGlossaryAdmissionContract(
     conversationSourceKinds: strings(conversation?.allowed_source_kinds),
     conversationAuthorClasses: strings(conversation?.allowed_author_classes),
     conversationEvidenceFields: strings(conversation?.required_evidence_fields),
+    conversationExpectedEvidenceContextFields: strings(expectedEvidence?.context_fields),
     conversationMinimumEvidenceCount:
       typeof conversation?.minimum_evidence_count === "number"
         ? conversation.minimum_evidence_count
         : 0,
+    conversationCompletenessAuthority:
+      typeof conversation?.completeness_authority === "string"
+        ? conversation.completeness_authority
+        : "",
     conversationAdmission:
       typeof conversation?.admission === "string" ? conversation.admission : "",
     insufficientRecovery:

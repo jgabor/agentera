@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { generateKeyPairSync, sign } from "node:crypto";
 
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
@@ -10,6 +11,15 @@ import {
   stableGlossaryTermIdentity,
   unicodeCaselessExact,
 } from "../../src/registries/glossaryTermIdentity.js";
+import {
+  classifyPersonalMiningConsent,
+  glossaryEvidenceSetDigest,
+  personalReviewApprovalReceiptDigest,
+  personalReviewApprovalReplayStatus,
+  personalReviewDispositionLifecycle,
+  projectPersonalReviewRetention,
+  validatePersonalReviewApprovalReceipt,
+} from "../../src/registries/glossaryMiningAuthority.js";
 import {
   glossaryEntryAuthorityPath,
   personalGlossaryAdmissionContract,
@@ -38,7 +48,7 @@ function conversationEvidence(index: number): Record<string, string> {
     source_id: `conversation-source-${index}`,
     evidence_anchor: `conversation-anchor-${index}`,
     source_kind: "conversation_turn",
-    signal_type: ["correction", "decision", "question"][index]!,
+    signal_type: ["correction", "decision", "question", "instruction"][index]!,
     session_id: session,
     project_id: project,
     content_fingerprint: fingerprint,
@@ -46,22 +56,37 @@ function conversationEvidence(index: number): Record<string, string> {
   };
 }
 
-const conversationContext: GlossaryAdmissionContext = {
-  retainedHistory: new Map(
-    [0, 1, 2].map((index) => {
-      const evidence = conversationEvidence(index);
-      return [evidence.evidence_anchor, {
-        sourceId: evidence.source_id,
-        sourceKind: evidence.source_kind,
-        signalType: evidence.signal_type,
-        sessionId: evidence.session_id,
-        projectId: evidence.project_id,
-        contentFingerprint: evidence.content_fingerprint,
-        authorClass: evidence.author_class,
-      }];
-    }),
-  ),
-};
+function conversationContextFor(
+  retainedIndexes: number[],
+  expectedIndexes = retainedIndexes,
+): GlossaryAdmissionContext {
+  const expectedAnchors = expectedIndexes.map(
+    (index) => conversationEvidence(index).evidence_anchor,
+  );
+  return {
+    retainedHistory: new Map(
+      retainedIndexes.map((index) => {
+        const evidence = conversationEvidence(index);
+        return [evidence.evidence_anchor, {
+          sourceId: evidence.source_id,
+          sourceKind: evidence.source_kind,
+          signalType: evidence.signal_type,
+          sessionId: evidence.session_id,
+          projectId: evidence.project_id,
+          contentFingerprint: evidence.content_fingerprint,
+          authorClass: evidence.author_class,
+        }] as const;
+      }),
+    ),
+    conversationEvidence: {
+      generation: "generation-a",
+      qualifyingEvidenceAnchors: expectedAnchors,
+      qualifyingEvidenceSetSha256: glossaryEvidenceSetDigest("generation-a", expectedAnchors),
+    },
+  };
+}
+
+const conversationContext = conversationContextFor([0, 1, 2]);
 
 function conversationEntry(evidence = [0, 1, 2].map(conversationEvidence)) {
   return {
@@ -97,7 +122,13 @@ describe("personal glossary mining authority", () => {
       conversationSignalTypes: ["correction", "decision", "question", "instruction", "configuration"],
       conversationSourceKinds: ["conversation_turn"],
       conversationAuthorClasses: ["user"],
+      conversationExpectedEvidenceContextFields: [
+        "generation",
+        "qualifying_evidence_anchors",
+        "qualifying_evidence_set_sha256",
+      ],
       conversationMinimumEvidenceCount: 3,
+      conversationCompletenessAuthority: "expected_qualifying_anchor_set_exact_match",
       conversationAdmission: "review_only",
     });
   });
@@ -134,9 +165,44 @@ describe("personal glossary mining authority", () => {
       "personal_mining_authority consent lifecycle must reuse existing generations and define present, absent, stale, and degraded recovery",
     ],
     [
+      "consent precedence",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.consent_lifecycle.discriminator.order = [
+          "present",
+          "degraded",
+          "stale",
+          "absent",
+        ];
+      },
+      "personal_mining_authority consent lifecycle must reuse existing generations and define present, absent, stale, and degraded recovery",
+    ],
+    [
+      "inherent boundedness rule",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.consent_lifecycle.discriminator.boundedness_rule =
+          "all bounded generations are degraded";
+      },
+      "personal_mining_authority consent lifecycle must reuse existing generations and define present, absent, stale, and degraded recovery",
+    ],
+    [
       "privacy authority",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.privacy.owner = "project";
+      },
+      "personal_mining_authority privacy must be user-local, redacted, authenticated, retained, and purgeable",
+    ],
+    [
+      "trusted receipt issuer",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.privacy.reviews.authentication.issuer = "agent";
+      },
+      "personal_mining_authority privacy must be user-local, redacted, authenticated, retained, and purgeable",
+    ],
+    [
+      "receipt replay rule",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.privacy.reviews.authentication.replay.exact_replay =
+          "always_accept";
       },
       "personal_mining_authority privacy must be user-local, redacted, authenticated, retained, and purgeable",
     ],
@@ -157,6 +223,54 @@ describe("personal glossary mining authority", () => {
     expect(validateGlossaryEntry(conversationEntry(), "personal", conversationContext)).toEqual([]);
   });
 
+  it("accepts a four-record conversation set only when every expected anchor is present", () => {
+    const context = conversationContextFor([0, 1, 2, 3]);
+    expect(
+      validateGlossaryEntry(conversationEntry([0, 1, 2, 3].map(conversationEvidence)), "personal", context),
+    ).toEqual([]);
+  });
+
+  it("rejects a four-record set that omits one expected anchor even when completeness is asserted", () => {
+    const context = conversationContextFor([0, 1, 2, 3, 4], [0, 1, 2, 3]);
+    const errors = validateGlossaryEntry(
+      conversationEntry([0, 1, 2, 4].map(conversationEvidence)),
+      "personal",
+      context,
+    );
+    expect(errors).toContain(
+      "conversation inference evidence must exactly match the generation-bound anchor set",
+    );
+  });
+
+  it("rejects a four-record set with a duplicate at any list length", () => {
+    const context = conversationContextFor([0, 1, 2, 3]);
+    const errors = validateGlossaryEntry(
+      conversationEntry([0, 1, 2, 2].map(conversationEvidence)),
+      "personal",
+      context,
+    );
+    expect(errors).toContain(
+      "conversation inference rejects duplicate source, anchor, or content identities",
+    );
+  });
+
+  it("rejects a conversation entry without a generation-bound expected set or with a bad set digest", () => {
+    expect(validateGlossaryEntry(conversationEntry(), "personal")).toContain(
+      "conversation inference requires generation-bound expected evidence",
+    );
+    const context = conversationContextFor([0, 1, 2]);
+    const badDigestContext = {
+      ...context,
+      conversationEvidence: {
+        ...context.conversationEvidence!,
+        qualifyingEvidenceSetSha256: "f".repeat(64),
+      },
+    };
+    expect(validateGlossaryEntry(conversationEntry(), "personal", badDigestContext)).toContain(
+      "conversation inference expected evidence digest is invalid",
+    );
+  });
+
   it.each([
     ["too few records", [0, 1].map(conversationEvidence), "conversation inference requires at least three complete retained records"],
     [
@@ -167,7 +281,7 @@ describe("personal glossary mining authority", () => {
     [
       "duplicate origins",
       [conversationEvidence(0), conversationEvidence(0), conversationEvidence(2)],
-      "conversation inference requires distinct source identities, anchors, sessions, projects, and content fingerprints",
+      "conversation inference rejects duplicate source, anchor, or content identities",
     ],
   ])("rejects conversation provenance with %s", (_name, evidence, expected) => {
     const entry = conversationEntry(evidence);
@@ -178,25 +292,220 @@ describe("personal glossary mining authority", () => {
   it("rejects agent-authored conversation evidence as an establishing source", () => {
     const evidence = [0, 1, 2].map(conversationEvidence);
     evidence[2]!.author_class = "agent";
-    const context = {
-      retainedHistory: new Map(conversationContext.retainedHistory).set(
-        evidence[2]!.evidence_anchor,
-        { ...conversationContext.retainedHistory.get(evidence[2]!.evidence_anchor)!, authorClass: "agent" },
-      ),
-    };
+      const context = {
+        retainedHistory: new Map(conversationContext.retainedHistory).set(
+          evidence[2]!.evidence_anchor,
+          { ...conversationContext.retainedHistory.get(evidence[2]!.evidence_anchor)!, authorClass: "agent" },
+        ),
+        conversationEvidence: conversationContext.conversationEvidence,
+      };
     expect(validateGlossaryEntry(conversationEntry(evidence), "personal", context)).toContain(
       "provenance.evidence[2] has inadmissible conversation provenance",
     );
   });
 });
 
+describe("personal glossary consent discriminator", () => {
+  it.each([
+    [
+      "present",
+      { consentStatus: "valid", generationStatus: "current", coverageStatus: "complete", signalTierBounded: true },
+    ],
+    [
+      "absent",
+      { consentStatus: "absent", generationStatus: "current", coverageStatus: "complete", signalTierBounded: true },
+    ],
+    [
+      "absent when generation is missing",
+      { consentStatus: "valid", generationStatus: "absent", coverageStatus: "complete", signalTierBounded: true },
+    ],
+    [
+      "stale",
+      { consentStatus: "stale", generationStatus: "current", coverageStatus: "complete", signalTierBounded: true },
+    ],
+    [
+      "stale when generation is stale",
+      { consentStatus: "valid", generationStatus: "stale", coverageStatus: "complete", signalTierBounded: true },
+    ],
+    [
+      "degraded after cap selection",
+      { consentStatus: "valid", generationStatus: "current", coverageStatus: "cap_selected", signalTierBounded: true },
+    ],
+    [
+      "degraded after truncation",
+      { consentStatus: "valid", generationStatus: "current", coverageStatus: "truncated", signalTierBounded: true },
+    ],
+    [
+      "degraded after flagged incompleteness",
+      { consentStatus: "valid", generationStatus: "current", coverageStatus: "flagged_incomplete", signalTierBounded: true },
+    ],
+  ])("classifies %s as one mutually exclusive state", (expected, input) => {
+    expect(classifyPersonalMiningConsent(input as any)).toBe(expected.split(" ")[0]);
+  });
+
+  it("does not degrade inherent signal-tier boundedness when coverage is complete", () => {
+    expect(
+      classifyPersonalMiningConsent({
+        consentStatus: "valid",
+        generationStatus: "current",
+        coverageStatus: "complete",
+        signalTierBounded: true,
+      }),
+    ).toBe("present");
+  });
+
+  it.each([
+    { consentStatus: "unknown", generationStatus: "current", coverageStatus: "complete", signalTierBounded: true },
+    { consentStatus: "valid", generationStatus: "unknown", coverageStatus: "complete", signalTierBounded: true },
+    { consentStatus: "valid", generationStatus: "current", coverageStatus: "unknown", signalTierBounded: true },
+    { consentStatus: "valid", generationStatus: "current", coverageStatus: "complete", signalTierBounded: "yes" },
+  ])("rejects invalid discriminator input %j", (input) => {
+    expect(() => classifyPersonalMiningConsent(input as any)).toThrow(
+      "consent discriminator input is invalid",
+    );
+  });
+
+  it("uses the ordered precedence absent, stale, degraded, then present", () => {
+    expect(
+      classifyPersonalMiningConsent({
+        consentStatus: "absent",
+        generationStatus: "stale",
+        coverageStatus: "cap_selected",
+        signalTierBounded: true,
+      }),
+    ).toBe("absent");
+    expect(
+      classifyPersonalMiningConsent({
+        consentStatus: "stale",
+        generationStatus: "current",
+        coverageStatus: "cap_selected",
+        signalTierBounded: true,
+      }),
+    ).toBe("stale");
+    expect(
+      classifyPersonalMiningConsent({
+        consentStatus: "valid",
+        generationStatus: "current",
+        coverageStatus: "cap_selected",
+        signalTierBounded: true,
+      }),
+    ).toBe("degraded");
+  });
+});
+
+const reviewKeyPair = generateKeyPairSync("ed25519");
+const reviewNow = new Date("2026-08-07T12:00:00.000Z");
+const reviewVerification = {
+  currentUserSubject: "user:current",
+  candidateId: "candidate-a",
+  candidateRevision: "revision-a",
+  generation: "generation-a",
+  now: reviewNow,
+  trustedHostPublicKey: reviewKeyPair.publicKey,
+};
+
+function reviewReceipt(overrides: Record<string, string> = {}): Record<string, string> {
+  const { signature: signatureOverride, ...overriddenFields } = overrides;
+  const unsigned = {
+    schema_version: "agentera.personalGlossaryReviewApproval.v1",
+    issuer: "agentera-local-host",
+    subject: "user:current",
+    trusted_channel: "agentera-local-host-ipc",
+    candidate_id: "candidate-a",
+    candidate_revision: "revision-a",
+    generation: "generation-a",
+    disposition: "accept",
+    disposed_at: "2026-08-07T11:59:00.000Z",
+    expires_at: "2026-08-07T12:04:00.000Z",
+    nonce: "nonce-a",
+    ...overriddenFields,
+  };
+  const payload = JSON.stringify(unsigned);
+  return {
+    ...unsigned,
+    signature:
+      signatureOverride ?? sign(null, Buffer.from(payload, "utf8"), reviewKeyPair.privateKey).toString("base64url"),
+  };
+}
+
+describe("personal glossary review approval receipts", () => {
+  it("accepts a trusted signed receipt with concrete current-user bindings", () => {
+    const receipt = reviewReceipt();
+    expect(validatePersonalReviewApprovalReceipt(receipt, reviewVerification)).toEqual([]);
+    expect(personalReviewApprovalReplayStatus(receipt)).toBe("new");
+  });
+
+  it.each([
+    ["issuer", { issuer: "agent" }, "review approval receipt issuer is not trusted"],
+    ["subject", { subject: "agent" }, "review approval receipt subject is not the trusted current user"],
+    ["channel", { trusted_channel: "untrusted-channel" }, "review approval receipt trusted channel is invalid"],
+    ["candidate binding", { candidate_id: "candidate-b" }, "review approval receipt candidate binding is invalid"],
+    ["revision binding", { candidate_revision: "revision-b" }, "review approval receipt revision binding is invalid"],
+    ["generation binding", { generation: "generation-b" }, "review approval receipt generation binding is invalid"],
+    ["stale freshness", { disposed_at: "2026-08-07T11:54:00.000Z" }, "review approval receipt is stale"],
+    ["expired freshness", { expires_at: "2026-08-07T11:59:30.000Z" }, "review approval receipt expires_at is not current"],
+    ["forged signature", { signature: "Zm9yZ2Vk" }, "review approval receipt signature is not from the trusted host"],
+  ])("rejects a receipt with invalid %s", (_name, overrides, expected) => {
+    expect(validatePersonalReviewApprovalReceipt(reviewReceipt(overrides), reviewVerification)).toContain(expected);
+  });
+
+  it("allows only an exact replay as a no-op and rejects a changed nonce replay", () => {
+    const receipt = reviewReceipt();
+    const consumed = new Map([[receipt.nonce, personalReviewApprovalReceiptDigest(receipt)]]);
+    expect(personalReviewApprovalReplayStatus(receipt, consumed)).toBe("exact_replay");
+    expect(validatePersonalReviewApprovalReceipt(receipt, { ...reviewVerification, consumedReceiptDigests: consumed })).toEqual([]);
+    const changed = reviewReceipt({ nonce: receipt.nonce, disposition: "reject" });
+    expect(personalReviewApprovalReplayStatus(changed, consumed)).toBe("conflicting_replay");
+    expect(validatePersonalReviewApprovalReceipt(changed, { ...reviewVerification, consumedReceiptDigests: consumed })).toContain(
+      "review approval receipt nonce was replayed with changed content",
+    );
+  });
+
+  it("maps terminal dispositions and enforces retention and purge boundaries", () => {
+    expect(personalReviewDispositionLifecycle("accept")).toBe("terminal");
+    expect(personalReviewDispositionLifecycle("correct")).toBe("terminal");
+    expect(personalReviewDispositionLifecycle("reject")).toBe("terminal");
+    expect(personalReviewDispositionLifecycle("defer")).toBe("pending");
+    expect(projectPersonalReviewRetention("defer", 29)).toEqual({ excerpt: "retained", metadata: "retained" });
+    expect(projectPersonalReviewRetention("defer", 30)).toEqual({ excerpt: "expired", metadata: "retained" });
+    expect(projectPersonalReviewRetention("accept", 0)).toEqual({ excerpt: "purged", metadata: "retained" });
+    expect(projectPersonalReviewRetention("accept", 89)).toEqual({ excerpt: "purged", metadata: "retained" });
+    expect(projectPersonalReviewRetention("accept", 90)).toEqual({ excerpt: "purged", metadata: "expired" });
+    expect(projectPersonalReviewRetention("defer", 1, true)).toEqual({ excerpt: "purged", metadata: "purged" });
+    expect(projectPersonalReviewRetention("accept", 1, true)).toEqual({ excerpt: "purged", metadata: "purged" });
+  });
+
+  it("rejects invalid retention transitions", () => {
+    expect(() => personalReviewDispositionLifecycle("unknown" as any)).toThrow("review disposition is invalid");
+    expect(() => projectPersonalReviewRetention("defer", -1)).toThrow("review age must be non-negative");
+  });
+});
+
 describe("personal glossary term and candidate identities", () => {
-  it("keeps existing Unicode equality while giving caseless spellings one stable identity", () => {
-    expect(unicodeCaselessExact("ΟΣ", "ος")).toBe(true);
-    expect(stableGlossaryTermIdentity("ΟΣ")).toBe(stableGlossaryTermIdentity("ος"));
-    expect(stableGlossaryTermIdentity("K")).toBe(stableGlossaryTermIdentity("K"));
-    expect(stableGlossaryTermIdentity("é")).not.toBe(stableGlossaryTermIdentity("e\u0301"));
-    expect(stableGlossaryTermIdentity("ß")).not.toBe(stableGlossaryTermIdentity("SS"));
+  it.each([
+    ["Ship Shape", "sHIP sHAPE"],
+    ["ΟΣ", "οσ"],
+    ["ΟΣ", "ος"],
+    ["𐐀", "𐐨"],
+    ["A+B (draft)?", "a+b (DRAFT)?"],
+    ["line\nTERM\u0000", "LINE\nterm\u0000"],
+  ])("gives existing caseless-equal vector %j and %j one stable identity", (left, right) => {
+    expect(unicodeCaselessExact(left, right)).toBe(true);
+    expect(stableGlossaryTermIdentity(left)).toBe(stableGlossaryTermIdentity(right));
+  });
+
+  it.each([
+    ["é", "e\u0301"],
+    ["resume", "résumé"],
+    ["i", "İ"],
+    ["I", "ı"],
+    ["ß", "SS"],
+    [".*", "anything"],
+    ["[term]", "t"],
+    ["line\nterm", "line\nterm\n"],
+  ])("keeps existing distinct vector %j and %j on separate identities", (left, right) => {
+    expect(unicodeCaselessExact(left, right)).toBe(false);
+    expect(stableGlossaryTermIdentity(left)).not.toBe(stableGlossaryTermIdentity(right));
   });
 
   it("binds a separate candidate revision to meaning, evidence, policy, and generation", () => {

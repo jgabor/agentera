@@ -1,0 +1,16 @@
+id: hpumhuopds
+artifact: progress
+record:
+  timestamp: 2026-08-07 20:47
+  type: fix
+  phase: build
+  what: Corrected the bounded personal-glossary mining authority after the failed audit, including Unicode identity, generation-bound evidence, consent state discrimination, trusted review receipts, replay handling, retention, and purge projections.
+  context:
+    intent: Make the smallest bounded authority correction required by the audit before independent evaluation.
+    constraints: Preserve the failed evaluation attempt, do not rewrite the prior commit, use the local CLI output, and do not implement downstream glossary behavior.
+    unknowns: Independent evaluation may identify additional contract gaps after this corrective cycle.
+    scope: Shared glossary contract, personal mining authority, term identity, focused tests, runtime census expectation, contract YAML, and retry state.
+  discovered: "The audit gap was limited to authority-level invariants: locale-sensitive identity logic could conflate I with dotless ı, evidence validation lacked a generation-bound expected anchor set, consent and review outcomes needed explicit exclusive states, and trusted-host approval evidence needed durable binding and replay semantics."
+  verified: Independent Unicode probe passed 14 identity-vector tests, including the I/dotless-ı distinction. Authority-focused tests passed 197 tests. The full source suite passed 3456 tests with 1 skip, typecheck passed, lint reported no warnings for the changed files, the local build passed, vocabulary validation passed, compact passed, and package verification passed with 34 tests.
+  next: Keep the plan task pending for independent evaluation. Downstream extraction, mining, publication, and review-storage implementation remain intentionally out of scope.
+  publication_order: 97
