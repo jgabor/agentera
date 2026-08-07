@@ -1,0 +1,36 @@
+id: zmlfggxlmq
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Restore forced plan archival and successor publication semantics.
+  requirements:
+    - Remove the unconditional parser rejection for plan create and archive force flags, and evaluate force eligibility from canonical entity state under the writer lock.
+    - With exactly one open predecessor, make plan create --force atomically archive that plan without changing its task records, publish the successor, and record the predecessor through the CLI-owned previous_plan_archived lineage field.
+    - Make plan archive --force perform the lifecycle contract's forced archive of unfinished work without claiming task completion.
+    - Derive zero, one, and multiple-open-plan outcomes from one authority; actual multiple-open conflicts must identify the canonical plan IDs and preserve explicit historical-plan operations.
+  acceptance:
+    - Dry-run and apply cover zero-open creation, one-open forced replacement, one-open forced archive, and actual multiple-open conflict with matching diagnostics and effects.
+    - A failed successor publication or final validation removes every successor entity and restores the predecessor byte-for-byte with its original active status.
+    - Forced replacement preserves incomplete predecessor tasks as history and publishes previous_plan_archived with the predecessor's canonical entity path.
+    - Parser help, schema, explain output, operation allow_force metadata, runtime behavior, and source/package regression tests expose one consistent contract.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: The typed writer advertises forced plan archival and replacement, but the parser rejects both flags before reading state and the writer does not implement the declared transaction.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 2
+    order_reason: Repair the plan lifecycle writer before 3.0.0 so an approved incomplete-plan replacement is safe, atomic, and truthfully diagnosed.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Restore forced plan archival and successor publication semantics."
+      severity: critical
+      status: open
+      order: 3

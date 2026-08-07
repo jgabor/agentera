@@ -13,7 +13,7 @@ record:
     - Explicit AGENTERA_BOOTSTRAP_SOURCE_ROOT and direct repository-build executions continue to select their intended source roots.
     - Regression coverage proves bundle/version skew cannot become a cwd-dependent invalid-input or unsupported-contract failure.
   release_blocker: true
-  severity: normal
+  severity: critical
   readiness:
     capability: build
     reason: The published self-contained CLI can currently load incompatible source data from the project cwd and fail before prime returns its supported contract.
@@ -29,10 +29,10 @@ record:
     public:
       present: true
       description: "[fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data."
-      severity: normal
+      severity: critical
       status: open
-      order: 29
+      order: 2
   lifecycle:
     operation: set-severity
-    reason: Moved from the duplicated Critical section to the Normal backlog.
-    date: 2026-08-06
+    reason: Published 3.0.0-dev.41 can load incompatible checkout authority and crash before routing; staged correction remains a 3.0.0 release blocker.
+    date: 2026-08-07

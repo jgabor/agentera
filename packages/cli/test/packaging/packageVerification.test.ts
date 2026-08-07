@@ -1447,6 +1447,35 @@ describe("npm distribution boundary", () => {
     expect(result.stdout).toContain("agentera");
   });
 
+  it("keeps the extracted package bound to its bundle from an Agentera checkout", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const env = isolatedPackageEnv();
+    delete env.AGENTERA_HOME;
+    const result = run(
+      process.execPath,
+      [bin, "prime", "--fields", "app_home,app", "--format", "json"],
+      CHECKOUT_ROOT,
+      env,
+    );
+    expect(result.status, `package checkout-cwd invocation failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
+    const payload = JSON.parse(result.stdout) as {
+      app_home: { home: string; source: string };
+      app: { sourceRoot: string };
+    };
+    expect(payload).toMatchObject({
+      app_home: { home: expect.any(String), source: "bundled app" },
+      app: { sourceRoot: expect.any(String) },
+    });
+    const bundleRoot = fs.realpathSync(path.join(fixture.packageRoot, "bundle"));
+    for (const reportedSource of [payload.app_home.home, payload.app.sourceRoot]) {
+      const appSource = fs.realpathSync(reportedSource);
+      expect(
+        isContained(bundleRoot, appSource),
+        `package checkout-cwd escaped extracted bundle: source=${appSource} bundle=${bundleRoot}`,
+      ).toBe(true);
+    }
+  });
+
   it("routes a structured request from the extracted package without exposing it in diagnostics", () => {
     const request = "help me decide: private package-boundary topic";
     const input = path.join(fixture.root, "route-request.yaml");

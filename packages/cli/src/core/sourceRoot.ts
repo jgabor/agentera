@@ -50,9 +50,9 @@ function walkUp(start: string): string | null {
 
 /**
  * Resolve the Agentera "app source root" that holds skills/, scripts/, schemas,
- * references/, etc. Mirrors the bootstrap precedence in src/agentera/__main__.py:
- * AGENTERA_BOOTSTRAP_SOURCE_ROOT wins, then a walk-up from the module location,
- * then a walk-up from the working directory.
+ * references/, etc. AGENTERA_BOOTSTRAP_SOURCE_ROOT wins, followed by a
+ * checkout containing the executing module, a self-contained package bundle,
+ * and finally a walk-up from the working directory.
  */
 export function resolveSourceRoot(
   env: Record<string, string | undefined> = process.env,
@@ -66,17 +66,15 @@ export function resolveSourceRoot(
   if (fromModule) {
     return fromModule;
   }
+  // A packaged CLI must keep runtime code and app data on the same version.
+  // Otherwise an Agentera checkout used as cwd can override the package bundle.
+  const bundled = path.resolve(moduleDir, "..", "..", "bundle");
+  if (isNpxBundleRoot(bundled)) {
+    return bundled;
+  }
   const fromCwd = walkUp(process.cwd());
   if (fromCwd) {
     return fromCwd;
-  }
-  // Self-contained npm package: app data is staged under <packageRoot>/bundle
-  // (see scripts/copy-bundle.mjs). This makes `npx agentera` work with no repo
-  // checkout and no AGENTERA_HOME. Only reached when no checkout/app-home is
-  // found, so it never overrides a real checkout, installed app, or cwd match.
-  const bundled = path.resolve(moduleDir, "..", "..", "bundle");
-  if (hasSourceMarker(bundled)) {
-    return bundled;
   }
   // Last resort: package root two levels above dist/core.
   return path.resolve(moduleDir, "..", "..");

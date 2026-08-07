@@ -1,25 +1,40 @@
-.claude
-.codex
-.opencode/goals/
-docs/*
-!docs/README.md
-!docs/packaging/
+# Local tool state
+/.claude/
+/.codex/
+/.opencode/goals/
+/.playwright-cli/
+/.pnpm-store/
+
+# Local documentation
+/docs/*
+!/docs/README.md
+!/docs/packaging/
+
+# Python artifacts
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Credentials and local package configuration
 .env
 .npmrc
-node_modules
+
+# Package manager artifacts
+node_modules/
 package-lock.json
 bun.lock
-.pnpm-store
-packages/cli/dist
-packages/cli/*.tgz
-packages/cli/bundle
-packages/cli/.agentera-generated
-packages/cli/.agentera-generated-publication.json
-packages/cli/.dist.agentera-backup-*
-packages/cli/.bundle.agentera-backup-*
-packages/cli/.agentera-launcher-*
-packages/cli/.agentera-legacy-dist-*
+
+# CLI build and publication output
+/packages/cli/dist/
+/packages/cli/*.tgz
+/packages/cli/bundle/
+/packages/cli/.agentera-generated/
+/packages/cli/.agentera-generated-publication.json
+/packages/cli/.dist.agentera-backup-*
+/packages/cli/.bundle.agentera-backup-*
+/packages/cli/.agentera-launcher-*
+/packages/cli/.agentera-legacy-dist-*
 *.bun-build
-sandbox-report-*.json
+/sandbox-report-*.json

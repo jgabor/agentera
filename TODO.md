@@ -39,7 +39,6 @@
 - [ ] [id:rrflufktbc] [fix:3.0.0] Make explicit TODO cutover preserve one authoritative public row per item.
 - [ ] [id:ibomhottkk] [fix:3.0.0] Add explicit TODO activation and block implicit activation.
 - [ ] [id:rnhnurigbf] [fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required.
-- [ ] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
 - [ ] [id:jyxnnzvysl] [fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
@@ -146,3 +145,6 @@
 - [x] [id:odiytubocn] [fix:3.0.0] Add one executable activation-conjunction release gate for every retained CLI, capability, runtime, reference, and state surface. Derive checks from owning authorities and require public discovery and help, runtime acceptance, bounded privacy-safe diagnostics, package projection, served instructions, and adversarial behavior tests to agree before a surface is active. TypeScript runtime code owns behavior; schemas declare structure and bounds; tests prove behavior but never create authority. A test import, bundle inclusion, fixture, comment, or archived decision cannot retain or activate a surface. Report the exact owner and runnable correction for every mismatch. Partial for Decision `imumkmffwh`: this verifies conformance after its dependency lanes complete; it does not implement those lanes or authorize stable cutover.
 
 ## → Critical
+
+- [ ] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
+- [ ] [id:zmlfggxlmq] [fix:3.0.0] Restore forced plan archival and successor publication semantics.

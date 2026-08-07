@@ -598,6 +598,7 @@ LIFECYCLE_CONTRACT:
           - .venv
           - .pytest_cache
           - .ruff_cache
+          - .playwright-cli
           - .cache
           - .snapshots
           - __pycache__
@@ -635,8 +636,8 @@ LIFECYCLE_CONTRACT:
           reason: Installed third-party dependencies are vendor content.
         - patterns: [.pnpm-store, .pnpm-store/**, .venv, .venv/**]
           reason: Package and Python environments are external dependency caches.
-        - patterns: [.pytest_cache, .pytest_cache/**, .ruff_cache, .ruff_cache/**]
-          reason: Tool caches are generated and carry no product contract.
+        - patterns: [.pytest_cache, .pytest_cache/**, .ruff_cache, .ruff_cache/**, .playwright-cli, .playwright-cli/**]
+          reason: Tool caches and local browser sessions are generated and carry no product contract.
         - patterns: ["**/.cache", "**/.cache/**", .snapshots, .snapshots/**]
           reason: Caches and filesystem snapshots are generated or external state.
         - patterns: ["**/dist", "**/dist/**", "**/build", "**/build/**", "**/coverage", "**/coverage/**"]
