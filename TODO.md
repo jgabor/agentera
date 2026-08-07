@@ -44,6 +44,7 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:lgruqgycgo] [fix:3.0.0] Repair projects affected by implicit TODO reconciliation activation.
+- [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
 
 ## ⇢ Annoying
 
