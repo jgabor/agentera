@@ -1,0 +1,17 @@
+id: akeerhsufb
+artifact: progress
+record:
+  timestamp: 2026-08-07 22:33
+  type: feat
+  phase: build
+  what: Established the personal glossary evaluation authority, frozen synthetic holdout, and executable fail-closed metric gate.
+  context:
+    intent: Resolve the quantitative authority and privacy-safe holdout needed before downstream personal glossary mining work.
+    constraints: Use synthetic records only, bind labels to immutable fixture bytes, preserve personal-project isolation and inferred automatic admission disabled, do not implement glossary mining or mutate project state, and preserve the prior Task bloijvifoi PASS update.
+    unknowns: The task authority is resolved for the synthetic holdout; production mining quality remains unmeasured until downstream mining supplies observations.
+    scope: Evaluation authority YAML, synthetic holdout, executable metric and gate harness, verify eval glossary target, authority projections, focused regressions, and directly affected inventory/parity expectations.
+  inspiration: Plan bcpkchatfu Task ekgowckdus and firm personal glossary authority in references/artifacts/glossary-entry-contract.yaml.
+  discovered: "The four metrics require distinct eligibility populations: discoverable positives for recall, all scope labels for accuracy, observed inferred-review suggestions for review precision, and observed explicit admissions for admission precision. A fixture digest must be checked before metrics so changing an expected label cannot repair a failure."
+  verified: "The focused evaluation, CLI, and mining-authority tests passed 87/87 tests across 3 files. The full source lane passed 230 files with 3470 passed and 1 skipped. Package verification passed 3 files with 34/34 tests. Typecheck and build passed. The rebuilt local command `node packages/cli/dist/bin/agentera.js check verify eval glossary --format json` passed the frozen holdout: discovery recall 20/20, scope accuracy 20/20, inferred-review precision 20/20, and explicit-admission precision 50/50. The release gate reported every digest, denominator, sample, point-threshold, uncertainty, and disabled-inferred-auto requirement true. Regression tests covered changed-label digest rejection, synthetic and consent provenance, zero denominator, insufficient samples, threshold boundaries, and inferred automatic admission remaining disabled. Retained-reference validation, compact, capability-contract validation, and package verification passed."
+  next: Leave Task ekgowckdus pending. Prime must independently audit and persist PASS or FAIL before lifecycle completion; no evaluator verdict was written.
+  publication_order: 98

@@ -4,10 +4,20 @@ record:
   name: Establish evaluation authority and holdout
   depends_on:
     []
-  status: pending
+  status: complete
   acceptance:
     - GIVEN labeled examples WHEN authority is approved THEN discovery recall, scope accuracy, review precision, and admission precision have separate denominators.
     - GIVEN privacy and leakage risks WHEN holdout freezes THEN records are synthetic or consented, provenance is recorded, and failures cannot be relabeled.
     - GIVEN sample and uncertainty rules WHEN thresholds are approved THEN explicit admission and inferred review have gates while inferred auto-admission stays disabled.
     - GIVEN each metric rule WHEN tests run THEN one pass and one fail prove calculation and gating.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: The Wilson bound uses the two-sided 95% z value instead of one-sided 95%; the frozen holdout embeds perfect observations with labels, so the release gate does not consume evaluated behavior or expose false positives.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_0221023eeffevroQBq1V8d91w4 bounded re-review
+      recorded_at: 2026-08-07 23:46
+      writer_command: agentera state plan record-evaluation

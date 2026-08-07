@@ -1,0 +1,192 @@
+schema_version: agentera.personalGlossaryEvaluationHoldout.v1
+holdout_id: personal-glossary-synthetic-v1
+status: frozen
+provenance:
+  record_class: synthetic
+  source: hand_authored_deterministic_synthetic_labels
+  source_ref: references/analysis/personal-glossary-evaluation-authority.yaml
+  consent: not_required_synthetic
+  contains_personal_history: false
+  owner: evaluation_authority
+  frozen_at: 2026-08-07
+  privacy_rule: no_raw_personal_history_or_transcript_content
+label_freeze:
+  expected_labels_immutable: true
+  relabeling: forbidden_after_freeze
+  failure_recording: append_only
+  changed_fixture: fail_before_metrics
+
+synthetic_record_provenance: &synthetic_record_provenance
+  record_class: synthetic
+  source_namespace: synthetic://personal-glossary/
+  consent: not_required_synthetic
+  contains_personal_history: false
+
+discovery:
+  - { id: discovery-01, source_id: "synthetic:discovery-01", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-02, source_id: "synthetic:discovery-02", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-03, source_id: "synthetic:discovery-03", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-04, source_id: "synthetic:discovery-04", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-05, source_id: "synthetic:discovery-05", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-06, source_id: "synthetic:discovery-06", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-07, source_id: "synthetic:discovery-07", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-08, source_id: "synthetic:discovery-08", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-09, source_id: "synthetic:discovery-09", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-10, source_id: "synthetic:discovery-10", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-11, source_id: "synthetic:discovery-11", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-12, source_id: "synthetic:discovery-12", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-13, source_id: "synthetic:discovery-13", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-14, source_id: "synthetic:discovery-14", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-15, source_id: "synthetic:discovery-15", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-16, source_id: "synthetic:discovery-16", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-17, source_id: "synthetic:discovery-17", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-18, source_id: "synthetic:discovery-18", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-19, source_id: "synthetic:discovery-19", expected_discoverable: true, provenance: *synthetic_record_provenance }
+  - { id: discovery-20, source_id: "synthetic:discovery-20", expected_discoverable: true, provenance: *synthetic_record_provenance }
+
+scope:
+  - { id: scope-01, source_id: "synthetic:scope-01", expected_scope: personal, provenance: *synthetic_record_provenance }
+  - { id: scope-02, source_id: "synthetic:scope-02", expected_scope: project, provenance: *synthetic_record_provenance }
+  - { id: scope-03, source_id: "synthetic:scope-03", expected_scope: neither, provenance: *synthetic_record_provenance }
+  - { id: scope-04, source_id: "synthetic:scope-04", expected_scope: personal, provenance: *synthetic_record_provenance }
+  - { id: scope-05, source_id: "synthetic:scope-05", expected_scope: project, provenance: *synthetic_record_provenance }
+  - { id: scope-06, source_id: "synthetic:scope-06", expected_scope: neither, provenance: *synthetic_record_provenance }
+  - { id: scope-07, source_id: "synthetic:scope-07", expected_scope: personal, provenance: *synthetic_record_provenance }
+  - { id: scope-08, source_id: "synthetic:scope-08", expected_scope: project, provenance: *synthetic_record_provenance }
+  - { id: scope-09, source_id: "synthetic:scope-09", expected_scope: neither, provenance: *synthetic_record_provenance }
+  - { id: scope-10, source_id: "synthetic:scope-10", expected_scope: personal, provenance: *synthetic_record_provenance }
+  - { id: scope-11, source_id: "synthetic:scope-11", expected_scope: project, provenance: *synthetic_record_provenance }
+  - { id: scope-12, source_id: "synthetic:scope-12", expected_scope: neither, provenance: *synthetic_record_provenance }
+  - { id: scope-13, source_id: "synthetic:scope-13", expected_scope: personal, provenance: *synthetic_record_provenance }
+  - { id: scope-14, source_id: "synthetic:scope-14", expected_scope: project, provenance: *synthetic_record_provenance }
+  - { id: scope-15, source_id: "synthetic:scope-15", expected_scope: neither, provenance: *synthetic_record_provenance }
+  - { id: scope-16, source_id: "synthetic:scope-16", expected_scope: personal, provenance: *synthetic_record_provenance }
+  - { id: scope-17, source_id: "synthetic:scope-17", expected_scope: project, provenance: *synthetic_record_provenance }
+  - { id: scope-18, source_id: "synthetic:scope-18", expected_scope: neither, provenance: *synthetic_record_provenance }
+  - { id: scope-19, source_id: "synthetic:scope-19", expected_scope: personal, provenance: *synthetic_record_provenance }
+  - { id: scope-20, source_id: "synthetic:scope-20", expected_scope: project, provenance: *synthetic_record_provenance }
+
+inferred_review:
+  - { id: review-01, source_id: "synthetic:review-01", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-02, source_id: "synthetic:review-02", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-03, source_id: "synthetic:review-03", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-04, source_id: "synthetic:review-04", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-05, source_id: "synthetic:review-05", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-06, source_id: "synthetic:review-06", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-07, source_id: "synthetic:review-07", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-08, source_id: "synthetic:review-08", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-09, source_id: "synthetic:review-09", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-10, source_id: "synthetic:review-10", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-11, source_id: "synthetic:review-11", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-12, source_id: "synthetic:review-12", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-13, source_id: "synthetic:review-13", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-14, source_id: "synthetic:review-14", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-15, source_id: "synthetic:review-15", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-16, source_id: "synthetic:review-16", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-17, source_id: "synthetic:review-17", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-18, source_id: "synthetic:review-18", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-19, source_id: "synthetic:review-19", expected_reviewable: true, provenance: *synthetic_record_provenance }
+  - { id: review-20, source_id: "synthetic:review-20", expected_reviewable: false, provenance: *synthetic_record_provenance }
+  - { id: review-21, source_id: "synthetic:review-21", expected_reviewable: false, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+
+explicit_admission:
+  - { id: admission-01, source_id: "synthetic:admission-01", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-02, source_id: "synthetic:admission-02", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-03, source_id: "synthetic:admission-03", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-04, source_id: "synthetic:admission-04", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-05, source_id: "synthetic:admission-05", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-06, source_id: "synthetic:admission-06", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-07, source_id: "synthetic:admission-07", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-08, source_id: "synthetic:admission-08", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-09, source_id: "synthetic:admission-09", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-10, source_id: "synthetic:admission-10", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-11, source_id: "synthetic:admission-11", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-12, source_id: "synthetic:admission-12", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-13, source_id: "synthetic:admission-13", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-14, source_id: "synthetic:admission-14", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-15, source_id: "synthetic:admission-15", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-16, source_id: "synthetic:admission-16", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-17, source_id: "synthetic:admission-17", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-18, source_id: "synthetic:admission-18", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-19, source_id: "synthetic:admission-19", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-20, source_id: "synthetic:admission-20", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-21, source_id: "synthetic:admission-21", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-22, source_id: "synthetic:admission-22", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-23, source_id: "synthetic:admission-23", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-24, source_id: "synthetic:admission-24", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-25, source_id: "synthetic:admission-25", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-26, source_id: "synthetic:admission-26", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-27, source_id: "synthetic:admission-27", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-28, source_id: "synthetic:admission-28", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-29, source_id: "synthetic:admission-29", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-30, source_id: "synthetic:admission-30", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-31, source_id: "synthetic:admission-31", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-32, source_id: "synthetic:admission-32", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-33, source_id: "synthetic:admission-33", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-34, source_id: "synthetic:admission-34", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-35, source_id: "synthetic:admission-35", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-36, source_id: "synthetic:admission-36", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-37, source_id: "synthetic:admission-37", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-38, source_id: "synthetic:admission-38", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-39, source_id: "synthetic:admission-39", expected_admissible: true, provenance: *synthetic_record_provenance }
+  - { id: admission-40, source_id: "synthetic:admission-40", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-41, source_id: "synthetic:admission-41", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-42, source_id: "synthetic:admission-42", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-43, source_id: "synthetic:admission-43", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-44, source_id: "synthetic:admission-44", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-45, source_id: "synthetic:admission-45", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-46, source_id: "synthetic:admission-46", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-47, source_id: "synthetic:admission-47", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-48, source_id: "synthetic:admission-48", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-49, source_id: "synthetic:admission-49", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-50, source_id: "synthetic:admission-50", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-51, source_id: "synthetic:admission-51", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-52, source_id: "synthetic:admission-52", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-53, source_id: "synthetic:admission-53", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-54, source_id: "synthetic:admission-54", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-55, source_id: "synthetic:admission-55", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-56, source_id: "synthetic:admission-56", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-57, source_id: "synthetic:admission-57", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-58, source_id: "synthetic:admission-58", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-59, source_id: "synthetic:admission-59", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-60, source_id: "synthetic:admission-60", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-61, source_id: "synthetic:admission-61", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-62, source_id: "synthetic:admission-62", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-63, source_id: "synthetic:admission-63", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-64, source_id: "synthetic:admission-64", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-65, source_id: "synthetic:admission-65", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-66, source_id: "synthetic:admission-66", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-67, source_id: "synthetic:admission-67", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-68, source_id: "synthetic:admission-68", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-69, source_id: "synthetic:admission-69", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-70, source_id: "synthetic:admission-70", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-71, source_id: "synthetic:admission-71", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-72, source_id: "synthetic:admission-72", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-73, source_id: "synthetic:admission-73", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-74, source_id: "synthetic:admission-74", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-75, source_id: "synthetic:admission-75", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-76, source_id: "synthetic:admission-76", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-77, source_id: "synthetic:admission-77", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-78, source_id: "synthetic:admission-78", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-79, source_id: "synthetic:admission-79", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-80, source_id: "synthetic:admission-80", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-81, source_id: "synthetic:admission-81", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-82, source_id: "synthetic:admission-82", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-83, source_id: "synthetic:admission-83", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-84, source_id: "synthetic:admission-84", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-85, source_id: "synthetic:admission-85", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-86, source_id: "synthetic:admission-86", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-87, source_id: "synthetic:admission-87", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-88, source_id: "synthetic:admission-88", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-89, source_id: "synthetic:admission-89", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-90, source_id: "synthetic:admission-90", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-91, source_id: "synthetic:admission-91", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-92, source_id: "synthetic:admission-92", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-93, source_id: "synthetic:admission-93", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-94, source_id: "synthetic:admission-94", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-95, source_id: "synthetic:admission-95", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-96, source_id: "synthetic:admission-96", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-97, source_id: "synthetic:admission-97", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-98, source_id: "synthetic:admission-98", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-99, source_id: "synthetic:admission-99", expected_admissible: true, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }
+  - { id: admission-100, source_id: "synthetic:admission-100", expected_admissible: false, provenance: { record_class: synthetic, source_namespace: "synthetic://personal-glossary/", consent: not_required_synthetic, contains_personal_history: false } }

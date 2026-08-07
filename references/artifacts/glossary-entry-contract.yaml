@@ -342,12 +342,12 @@ personal_mining_authority:
   admission:
     inferred_automatic_admission: disabled
     inferred_review: allowed
-    quality_threshold: deferred_to_bcpkchatfu_task_ekgowckdus
-    holdout: deferred_to_bcpkchatfu_task_ekgowckdus
+    quality_threshold: references/analysis/personal-glossary-evaluation-authority.yaml#gates.release_authorizing_gate
+    holdout: references/analysis/personal-glossary-evaluation-authority.yaml#holdout
     rule: >-
-      This authority does not set a quality threshold, holdout, or automatic
-      admission rule. Inferred meanings remain review-only until the separately
-      approved evaluation authority enables a measured gate.
+      The separate evaluation authority defines the frozen holdout, metric
+      thresholds, and fail-closed release gate. Inferred meanings remain
+      review-only, and no measured result enables inferred automatic admission.
 
 provenance_variants:
   personal_explicit_definition:

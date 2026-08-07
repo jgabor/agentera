@@ -211,7 +211,7 @@ describe("personal glossary mining authority", () => {
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.admission.inferred_automatic_admission = "enabled";
       },
-      "personal_mining_authority must keep inferred automatic admission disabled and defer quality authority",
+      "personal_mining_authority must keep inferred automatic admission disabled and bind the evaluation authority",
     ],
   ])("rejects drift in %s", (_name, mutate, expected) => {
     const pathname = authorityFixture(mutate);

@@ -1,5 +1,6 @@
 import { main as evalSkillsMain } from "../../eval/evalSkills.js";
 import { main as semanticEvalMain } from "../../eval/semanticEval.js";
+import { main as personalGlossaryEvaluationMain } from "../../eval/glossaryEvaluation.js";
 import { evaluateHybridRoute } from "../../eval/hybridRouteEvaluation.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { routeEvaluationExitCode } from "./route.js";
@@ -9,7 +10,7 @@ type Io = { out?: (t: string) => void; err?: (t: string) => void };
 export const VERIFY_FAMILIES = ["eval"] as const;
 export const RETIRED_VERIFY_FAMILIES = ["smoke"] as const;
 export const VERIFY_TARGETS: Record<string, string[]> = {
-  eval: ["skills", "semantic", "routing"],
+  eval: ["skills", "semantic", "routing", "glossary"],
 };
 export const VERIFY_FORMATS = ["text", "json"] as const;
 export const VERIFY_DIAGNOSTIC_LINE_LIMIT = 20;
@@ -39,6 +40,7 @@ export interface VerifyArgs {
   parallel?: number;
   runtime?: string;
   fixtures?: string[];
+  observations?: string | null;
 }
 
 function verifySyntax(): string {
@@ -111,9 +113,15 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
   if (family === "eval" && target === "semantic" && (args.fixtures ?? []).length === 0) {
     throw new Error(
       "semantic verify requires explicit fixture path(s); broad fixture discovery is not a safe default. " +
-        "Valid targets for eval: skills, semantic. " +
+        "Valid targets for eval: skills, semantic, routing, glossary. " +
         "Syntax: agentera verify eval semantic <fixture> [<fixture>...] [--format text|json]. " +
         "Example: agentera verify eval semantic fixtures/semantic/bare-agentera-message.md --format json",
+    );
+  }
+  if (family === "eval" && target === "glossary" && (args.fixtures ?? []).length > 0) {
+    throw new Error(
+      "glossary verify uses the contract-owned frozen holdout and accepts no fixture path. " +
+        "Supply evaluated behavior with --observations PATH. Syntax: agentera check verify eval glossary [--observations PATH] --format text|json.",
     );
   }
   return [family, target, outputFormat];
@@ -173,6 +181,21 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
     };
     const result = runInProcess(["eval", "semantic", ...fixtures], (out) =>
       semanticEvalMain(fixtures, (l) => out(l)),
+    );
+    return { result, safety };
+  }
+  if (family === "eval" && target === "glossary") {
+    const engineArgs = args.observations ? ["--observations", args.observations] : [];
+    const safety = {
+      mode: "offline-frozen-holdout",
+      summary: args.observations
+        ? "runs the contract-owned synthetic holdout against separately supplied observations; it never invokes glossary mining or a semantic host"
+        : "validates the contract-owned synthetic holdout without observations; no release-authorizing metrics run",
+      live: false,
+      long_running_default: false,
+    };
+    const result = runInProcess(["eval", "glossary", ...engineArgs], (out) =>
+      personalGlossaryEvaluationMain(args.observations ?? undefined, (line) => out(line)),
     );
     return { result, safety };
   }

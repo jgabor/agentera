@@ -19,6 +19,21 @@ inventory:
     production_owner: { module: packages/cli/src/registries/evidenceTierContract.ts, symbol: loadEvidenceTierContract }
     consumers:
       - { kind: runtime, module: packages/cli/src/registries/evidenceTierContract.ts, symbol: loadEvidenceTierContract, consumption: loads }
+  - path: references/analysis/personal-glossary-evaluation-authority.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: loadGlossaryEvaluationAuthority }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: evaluateGlossaryHoldout, consumption: loads }
+  - path: references/analysis/personal-glossary-holdout.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: loadGlossaryEvaluationHoldout }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: evaluateGlossaryHoldout, consumption: loads }
+  - path: references/analysis/personal-glossary-observations.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: glossaryEvaluationObservationsPath }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: evaluateGlossaryHoldout, consumption: loads }
   - path: references/analysis/verification-policy.yaml
     classification: current
     production_owner: { module: packages/cli/scripts/verify-lane.mjs, symbol: loadContract }

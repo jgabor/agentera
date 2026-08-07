@@ -1,0 +1,162 @@
+schema_version: agentera.personalGlossaryEvaluationAuthority.v1
+status: active_authority
+purpose: >-
+  Establish the quantitative authority for personal glossary mining without
+  implementing mining. The frozen holdout reports separate discovery recall,
+  scope accuracy, inferred-review precision, and explicit-admission precision.
+  Every result is a metric report plus an explicit fail-closed gate result.
+implementation_boundary: >-
+  This authority and its executable harness define labels, denominators,
+  provenance, uncertainty, and delivery gates. They do not extract terms,
+  generate candidates, read candidates, persist reviews, publish a glossary, or
+  integrate with Profile Full.
+preserved_authority:
+  shared_primitive: references/artifacts/glossary-entry-contract.yaml#shared_primitive
+  personal_owner: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.personal
+  project_owner: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.project
+  consumer_precedence: references/artifacts/glossary-entry-contract.yaml#consumer_boundary.primary_selection
+  project_publication: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.project.publication
+  inferred_automatic_admission: disabled
+
+holdout:
+  path: references/analysis/personal-glossary-holdout.yaml
+  fixture_sha256: d758f5e1ac5c8eb72a422fd0d79b5b5097d48a726b83a0cbdf752dbf8d064a54
+  status: frozen
+  identity: content_addressed_fixture_bytes
+  labels:
+    source: evaluation_authority
+    expected_labels_immutable: true
+    relabeling: forbidden_after_freeze
+    changed_fixture: fail_before_metrics
+    failure_recording: append_only
+  provenance:
+    allowed_record_classes: [synthetic, consented]
+    default_record_class: synthetic
+    synthetic:
+      consent: not_required_synthetic
+      raw_personal_history: forbidden
+      source_rule: generated_or_hand_authored_synthetic_records_only
+    consented:
+      required_fields: [consent_subject, consent_receipt, consented_at]
+      raw_personal_history: allowed_only_with_fixture_record_consent
+      source_rule: each_record_must_bind_to_its_own_consent_provenance
+    missing_or_invalid: reject_before_metrics
+
+observations:
+  schema_version: agentera.personalGlossaryEvaluationObservations.v1
+  source: evaluated_behavior_supplied_separately
+  required_fields: [schema_version, holdout_id, holdout_fixture_sha256, discovery, scope, inferred_review, explicit_admission]
+  digest_binding: holdout_fixture_sha256_must_equal_frozen_fixture_digest
+  coverage: exact_frozen_id_set_per_metric
+  missing: not_run_non_authorizing
+  invalid: reject_before_metrics
+
+metrics:
+  discovery_recall:
+    definition: >-
+      Of labeled examples that the authority says are discoverable, the share
+      that the evaluated output discovers.
+    numerator: expected_discoverable_true_and_observed_discovered_true
+    denominator: count_expected_discoverable_true
+    denominator_zero: fail
+    sample_unit: labeled_discovery_example
+    minimum_sample_size: 20
+    point_estimate_minimum: 0.90
+    uncertainty:
+      method: wilson_lower_bound
+      confidence: 0.95
+      lower_bound_minimum: 0.80
+  scope_accuracy:
+    definition: >-
+      Of all scope-labeled examples, the share whose evaluated scope exactly
+      matches the frozen expected scope label.
+    numerator: expected_scope_equals_observed_scope
+    denominator: count_all_scope_labeled_examples
+    denominator_zero: fail
+    sample_unit: labeled_scope_example
+    labels: [personal, project, neither]
+    minimum_sample_size: 20
+    point_estimate_minimum: 0.95
+    uncertainty:
+      method: wilson_lower_bound
+      confidence: 0.95
+      lower_bound_minimum: 0.80
+  inferred_review_precision:
+    definition: >-
+      Of inferred candidates for which the evaluated output suggests review,
+      the share whose frozen label says review is warranted.
+    numerator: expected_reviewable_true_and_observed_reviewed_true
+    denominator: count_observed_reviewed_true
+    denominator_zero: fail
+    sample_unit: inferred_review_suggestion
+    minimum_sample_size: 20
+    point_estimate_minimum: 0.95
+    uncertainty:
+      method: wilson_lower_bound
+      confidence: 0.95
+      lower_bound_minimum: 0.80
+  explicit_admission_precision:
+    definition: >-
+      Of explicit candidates for which the evaluated output automatically
+      admits an entry, the share whose frozen label says admission is correct.
+    numerator: expected_admissible_true_and_observed_admitted_true
+    denominator: count_observed_admitted_true
+    denominator_zero: fail
+    sample_unit: explicit_automatic_admission
+    minimum_sample_size: 50
+    point_estimate_minimum: 0.99
+    uncertainty:
+      method: wilson_lower_bound
+      confidence: 0.95
+      lower_bound_minimum: 0.90
+
+uncertainty:
+  method: one_sided_wilson_lower_bound
+  confidence: 0.95
+  rule: >-
+    A metric passes only when its point estimate and one-sided Wilson lower
+    bound meet their authority thresholds. A zero denominator, non-finite
+    value, or sample below the metric minimum fails closed.
+  rounding: report_full_precision_compare_unrounded
+
+gates:
+  exploratory_report:
+    release_authorizing: false
+    rule: metrics_are_observational_and_do_not_authorize_delivery
+  release_authorizing_gate:
+    release_authorizing: true
+    requirements:
+      - frozen_holdout_digest_matches_authority
+      - observations_exactly_cover_frozen_ids
+      - every_metric_has_a_nonzero_denominator
+      - every_metric_meets_minimum_sample_size
+      - every_metric_meets_point_threshold
+      - every_metric_meets_uncertainty_threshold
+      - inferred_automatic_admission_remains_disabled
+    rule: >-
+      Only this gate may authorize the measured delivery decision. A passing
+      exploratory report is never substituted for this gate.
+  explicit_admission:
+    metric: explicit_admission_precision
+    outcome: explicit_automatic_admission_only
+  inferred_review:
+    metric: inferred_review_precision
+    outcome: review_suggestions_only
+  inferred_automatic_admission:
+    status: disabled
+    measured_result: cannot_enable
+    rule: >-
+      No measured result enables inferred automatic admission. Inferred results
+      may gate review suggestions only until a separate authority changes this
+      disabled state.
+
+scope:
+  in_scope:
+    - Frozen synthetic holdout provenance and label immutability.
+    - Separate metric definitions, denominators, sample rules, and uncertainty.
+    - Fail-closed calculation and release-gate validation.
+  out_of_scope:
+    - Glossary extraction or candidate generation.
+    - Candidate reads, review persistence, glossary publication, or Profile Full.
+    - Project glossary reads, writes, precedence, or publication replacement.
+    - Suite version changes, registry mutation, release, or publication.

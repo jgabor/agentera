@@ -375,6 +375,7 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
     parallel: 1,
     runtime: "auto",
     fixtures: [],
+    observations: null,
   };
   const positionals: string[] = [];
   let i = 0;
@@ -400,6 +401,7 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--runtime")) !== null) args.runtime = v;
     else if ((v = value("--timeout")) !== null) args.timeout = Number(v);
     else if ((v = value("--parallel")) !== null) args.parallel = Number(v);
+    else if ((v = value("--observations")) !== null) args.observations = v;
     else if (a === "--run") args.run = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {

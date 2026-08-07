@@ -12,6 +12,12 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const SEMANTIC_FIXTURE = path.join(repoRoot, "fixtures", "semantic", "status-bare-message.md");
+const GLOSSARY_OBSERVATIONS = path.join(
+  repoRoot,
+  "references",
+  "analysis",
+  "personal-glossary-observations.yaml",
+);
 
 function run(args: VerifyArgs): { rc: number; out: string; err: string } {
   let out = "";
@@ -93,6 +99,35 @@ describe("cmdVerify", () => {
     const payload = JSON.parse(out);
     expect(payload.status).toBe("pass");
     expect(payload.safety.mode).toBe("dry-run");
+  });
+
+  it("runs the frozen personal glossary evaluation gate in-process", () => {
+    const { rc, out } = run({
+      family: "eval",
+      target: "glossary",
+      observations: GLOSSARY_OBSERVATIONS,
+      format: "json",
+    });
+    expect(rc).toBe(0);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("pass");
+    expect(payload.target).toBe("glossary");
+    expect(payload.safety.mode).toBe("offline-frozen-holdout");
+    expect(payload.diagnostics.stdout.join("\n")).toContain('"status": "pass"');
+  });
+
+  it("reports glossary verification as not run when observations are omitted", () => {
+    const { rc, out } = run({ family: "eval", target: "glossary", format: "json" });
+    expect(rc).toBe(1);
+    const payload = JSON.parse(out);
+    expect(payload.status).toBe("fail");
+    expect(payload.diagnostics.stdout.join("\n")).toContain('"status": "not_run"');
+  });
+
+  it("does not allow a caller-supplied fixture to replace the frozen holdout", () => {
+    expect(() => validateVerifyRequest({ family: "eval", target: "glossary", fixtures: ["other.yaml"] })).toThrow(
+      /uses the contract-owned frozen holdout/,
+    );
   });
 
 });

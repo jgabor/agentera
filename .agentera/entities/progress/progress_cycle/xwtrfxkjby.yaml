@@ -1,0 +1,17 @@
+id: xwtrfxkjby
+artifact: progress
+record:
+  timestamp: 2026-08-07 23:35
+  type: feat
+  phase: build
+  what: Recorded the complete evidence for the audit-1 correction retry without changing task lifecycle state.
+  context:
+    intent: Complete the required evidence step for Plan bcpkchatfu Task ekgowckdus.
+    constraints: Keep ekgowckdus pending; do not write an evaluator verdict, commit, or alter the frozen authority beyond the corrected implementation.
+    unknowns: Production mining quality remains unmeasured until a production evaluation supplies observations.
+    scope: Retry evidence for the personal glossary evaluation authority, holdout, supplied observations, evaluator, CLI, tests, and gates.
+  inspiration: Audit attempt audit-1 failure evidence for Plan bcpkchatfu Task ekgowckdus.
+  discovered: The rebuilt local CLI uses the structured progress append contract with --input PATH and writer-assigned identity and publication order.
+  verified: "Correct one-sided Wilson evidence is recorded: wilsonLowerBound(19, 20) is exactly 0.8039927632259837. Frozen expected labels and separately supplied observations are distinct and digest-bound. Exact-coverage failures and malformed observation failures reject before metrics. False-positive precision behavior is exposed by inferred-review precision 19/20 (0.95, lower bound 0.8039927632259837) and explicit-admission precision 99/100 (0.99, lower bound 0.9564182264659439). Without observations, the rebuilt local CLI exits 1 and reports status not_run. Inferred automatic admission remains disabled. Focused evaluation and CLI tests passed 31/31; the full source lane passed 230 files with 3476 passed and 1 skipped; package verification passed 34/34. Broader gates passed: typecheck, build, retained-reference validation, activation-conjunction validation, compact, capability-contract validation, and git diff check."
+  next: Leave ekgowckdus pending for independent audit; do not write an evaluator verdict or commit.
+  publication_order: 100

@@ -622,12 +622,14 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   if (
     admission?.inferred_automatic_admission !== "disabled" ||
     admission?.inferred_review !== "allowed" ||
-    admission?.quality_threshold !== "deferred_to_bcpkchatfu_task_ekgowckdus" ||
-    admission?.holdout !== "deferred_to_bcpkchatfu_task_ekgowckdus" ||
+    admission?.quality_threshold !==
+      "references/analysis/personal-glossary-evaluation-authority.yaml#gates.release_authorizing_gate" ||
+    admission?.holdout !==
+      "references/analysis/personal-glossary-evaluation-authority.yaml#holdout" ||
     !nonEmpty(admission?.rule)
   ) {
     errors.push(
-      "personal_mining_authority must keep inferred automatic admission disabled and defer quality authority",
+      "personal_mining_authority must keep inferred automatic admission disabled and bind the evaluation authority",
     );
   }
   return errors;
