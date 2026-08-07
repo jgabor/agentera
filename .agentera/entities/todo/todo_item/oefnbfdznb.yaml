@@ -1,0 +1,37 @@
+id: oefnbfdznb
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
+  requirements:
+    - Retain the explicit deprecation warning for prime --dashboard --format json.
+    - Preserve the decision-authorized status-capsule direction; do not restore a second old top-level dashboard JSON contract merely for compatibility.
+    - A legacy top-level --fields request must receive a documented typed nonzero migration failure with recovery to prime --context status --format json rather than successful partial JSON.
+    - Document the nested status path for consumers as capability_context.context.status_context.
+    - Add regression coverage for the exact legacy selector list used by plugin consumers.
+  acceptance:
+    - The legacy selector list does not exit zero with only command and outcome fields.
+    - Its JSON failure is typed, names the deprecated surface, and supplies the status-capsule migration command.
+    - Unfiltered dashboard alias behavior remains explicit and parseable as the status capsule.
+    - Tests prove no selected legacy field is silently dropped on a successful response.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: The local CLI accepts legacy dashboard selectors but silently returns an incompatible successful shape.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 5
+    order_reason: Fail closed at the compatibility boundary before another development-channel release.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration."
+      severity: critical
+      status: open
+      order: 5

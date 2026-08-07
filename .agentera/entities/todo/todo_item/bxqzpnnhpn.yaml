@@ -1,0 +1,36 @@
+id: bxqzpnnhpn
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Keep Prime health availability truthful when bounded current-audit detail is omitted.
+  requirements:
+    - Prime must not report health.exists false when canonical current health_audit entities exist but their detail was omitted by a bounded list projection.
+    - Preserve a bounded health summary or explicit omission state, including exact typed state health list/get recovery, without raw artifact reads.
+    - Retain truthful distinction among absent, available, degraded, and summary-only health.
+    - Preserve existing status-context byte bounds.
+  acceptance:
+    - A project with oversized current full audits returns status_context.health.exists true from prime --context status --format json.
+    - That response never claims absence solely because list detail was omitted.
+    - Summary-only and mixed current/summary health histories remain truthful and recoverable.
+    - Regression tests cover large current audit records plus existing summary-history cases within the status budget.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: A valid oversized health audit currently becomes an absent Prime health projection and breaks typed consumers.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 4
+    order_reason: Restore truthful bounded state before consumer migration and stable release.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted."
+      severity: critical
+      status: open
+      order: 4

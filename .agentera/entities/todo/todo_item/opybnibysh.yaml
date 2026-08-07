@@ -1,0 +1,37 @@
+id: opybnibysh
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Emit typed JSON bootstrap-authority failures before CLI dispatch.
+  requirements:
+    - Add an earliest-entrypoint failure boundary that honors --format json, including failures during static or bootstrap authority loading.
+    - Convert malformed or missing packaged state-storage authority and version-registry failures into documented typed nonzero envelopes.
+    - Include safe classification, recovery, and a no-mutation claim; never print parser or module stacks as the primary JSON-mode result.
+    - Cover both prime --context status --format json and doctor --format json with isolated packaged fixtures.
+    - Coordinate with the existing version-diagnostic TODO without duplicating its detailed loadSuiteVersion work.
+  acceptance:
+    - Malformed packaged state-storage-authority.yaml produces typed JSON on stdout, a nonzero exit, and no YAML parser stack.
+    - Malformed or missing registry.json produces a typed corruption diagnostic rather than expectedVersion unknown plus an apparently up-to-date Doctor result.
+    - JSON-mode startup failures have stable schema, classification, and recovery fields.
+    - Fixture tests prove the failure boundary works before normal dispatch is available.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: Authority corruption can currently escape during module loading before JSON mode returns a typed automation-safe failure.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 6
+    order_reason: Make the CLI failure boundary reliable before stable release while coordinating with the narrower registry diagnostic item.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch."
+      severity: critical
+      status: open
+      order: 6
