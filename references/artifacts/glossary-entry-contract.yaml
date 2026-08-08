@@ -58,11 +58,13 @@ term_occurrence:
      partial identifier matches, and input-dependent backtracking.
 
 personal_mining_authority:
-  status: authority_only
+  status: active_partial
   implementation_boundary: >-
     This section settles personal glossary mining identity, evidence provenance,
-    consent, privacy, and lifecycle authority. It does not implement extraction,
-    candidate mining, candidate reads, publication replacement, or review storage.
+    consent, privacy, lifecycle, and bounded explicit-discovery authority. The
+    runtime implements only the declared bounded discovery surface. It does not
+    implement candidate reads, host classification, CLI decisions, publication
+    replacement, review storage, or Profile integration.
   preserved_decisions: [prmnztjytv, mcsmqqitnm, zyvgyvjnsv]
   replacement:
     shared_primitive: shared_primitive
@@ -82,6 +84,99 @@ personal_mining_authority:
       the existing personal profile output lifecycle. It never reads or writes
       project glossary state, changes consumer precedence, or changes the
       Build-owned digest-confirmed project publication operation.
+  explicit_discovery:
+    status: active
+    runtime: packages/cli/src/analytics/personalGlossaryExplicit.ts#discoverExplicitGlossaryCues
+    mining_runtime: packages/cli/src/analytics/personalGlossaryExplicitMining.ts#mineExplicitGlossaryCandidates
+    input: bounded_signal_tier_plus_direct_single_anchor_resolution
+    output: evidence_capsule_plus_exact_source_spans_only
+    scope_window: current_sentence_and_one_adjacent_sentence_each_side
+    scope_binding: explicit_scope_marker_must_contain_the_term_or_be_a_direct_qualifier
+    span_encoding: utf8_byte_offsets
+    strings: preserve_exact_source_bytes_without_unicode_normalization
+    adjacent_direct_reference_exclusion:
+      references:
+        - this_definition
+        - this_term
+        - this_meaning
+        - following_definition
+        - following_term
+        - following_meaning
+      qualifiers: [question, example, future, hypothetical]
+      binding:
+        preceding_sentence: following_reference_only
+        following_sentence: this_reference_only
+        exact_literal_term: either_direction
+    grammar:
+      forms:
+        - id: quoted_means
+          syntax: quoted_or_code_delimited_term_means_meaning
+          term: one_balanced_supported_quote_or_backtick_delimited_span
+        - id: definition_list_colon
+          syntax: standalone_safe_definition_list_term_colon_meaning
+          prefix: sentence_or_line_start_with_optional_markdown_list_bullet
+          unmarked_terms:
+            - quoted_or_code_delimited_term
+            - uppercase_acronym_with_exact_expansion_initials
+          markers: [definition, term]
+          marked_term: bounded_nonempty_term
+          bare_multiword_term_without_marker: reject
+          meaning_start: nonempty_same_physical_line
+          continuation: after_nonempty_inline_meaning_within_maximum_meaning_bound_only
+          empty_marker_structure: reject_immediately_following_colon_line
+          exclusions: yaml_config_labels_times_urls_headings_citations_and_labels
+        - id: acronym_stands_for
+          syntax: bounded_acronym_stands_for_expansion
+          validation: expansion_initials_must_match_acronym_exactly
+        - id: acronym_parenthetical
+          syntax: bounded_acronym_parenthesized_expansion_or_reverse
+          validation: expansion_initials_must_match_acronym_exactly
+        - id: by_i_mean
+          syntax: by_term_i_mean_meaning
+        - id: use_for
+          syntax: use_term_for_meaning
+        - id: use_to_mean
+          syntax: use_term_to_mean_meaning
+        - id: refers_to
+          syntax: term_refers_to_meaning
+        - id: clarification_prefer_to_mean
+          syntax: to_clarify_i_prefer_term_to_mean_meaning
+        - id: correction_means
+          syntax: approved_correction_prefix_quoted_or_code_term_means_meaning
+          prefixes: [actually, correction, not_quite, instead, rather]
+      bounds:
+        maximum_term_utf8_bytes: 256
+        maximum_meaning_utf8_bytes: 4096
+        maximum_acronym_utf8_bytes: 32
+        maximum_acronym_words: 32
+    exclusions:
+      - examples
+      - mere_mentions
+      - direct_or_indirect_questions
+      - negations
+      - hypotheticals_conditionals
+      - future_language
+      - deterministic_sarcasm_markers
+      - quotations_attributed_to_others
+      - retractions_or_replacements_bound_to_the_same_term
+      - project_qualified_scope
+      - malformed_empty_or_oversized_spans
+      - incomplete_or_invalid_source_provenance
+    provenance:
+      required_source_fields:
+        - source_id
+        - evidence_anchor
+        - source_kind
+        - signal_type
+        - origin_id
+        - content_fingerprint
+        - author_class
+        - session_id
+        - project_id
+      allowed_source_kinds: [conversation_turn]
+      identity_fields_must_match_full_record: true
+      user_author_class: user
+      unresolved_or_invalid: stable_provenance_abstention
   term_identity:
     equality:
       runtime: packages/cli/src/registries/glossaryTermIdentity.ts#unicodeCaselessExact
@@ -609,6 +704,10 @@ provenance_variants:
     evidence_count: 1
     required_evidence_fields: [source_id, evidence_anchor, signal_type]
     additional_evidence_fields: forbidden
+    source_provenance:
+      required_fields: [source_id, evidence_anchor, source_kind, signal_type, origin_id, content_fingerprint, author_class, session_id, project_id]
+      allowed_source_kinds: [conversation_turn]
+      identity_fields_must_match_full_record: true
     allowed_signal_types: [correction, decision, instruction]
     resolution_rule: >-
       evidence_anchor resolves to source_id of exactly one retained
@@ -694,6 +793,7 @@ ownership_contracts:
       status: active_partial
       active:
         - bounded_admission
+        - bounded_explicit_discovery
         - explicit_classification
         - inferred_evidence_check
         - profile_full_rendering
@@ -719,10 +819,13 @@ ownership_contracts:
       explicit:
         candidate_signal_types: [correction, decision]
         language_rule: >-
-          Admit only a quoted or code-delimited term followed by explicit
-          `means` language, or clarification language that combines `to clarify`
-          with `prefer` and `to mean`. The classifier returns the stated term
-          and meaning; unrelated correction or decision language abstains.
+          The bounded explicit discovery grammar accepts only the ten forms in
+          personal_mining_authority.explicit_discovery. Quoted or code-delimited
+          means, standalone safe definition-list colons, exact acronym expansions,
+          By X I mean Y, Use X for/to mean Y, To clarify X refers to Y, the
+          clarification prefer form, and approved correction means forms are
+          recognized. YAML/config labels, times, URLs, headings, citations,
+          indirect questions, future language, and unbound prose are rejected.
         evidence_count: 1
       inferred:
         candidate_signal_types: [instruction, configuration]

@@ -1,0 +1,15 @@
+id: exucggtnvb
+artifact: progress
+record:
+  timestamp: 2026-08-08 09:32
+  type: feat
+  phase: build
+  what: Finalized bounded deterministic personal explicit-definition discovery and corrected the regression count after adding the attributed-colon boundary. Output remains capsule-only evidence with exact UTF-8 spans and one resolved user anchor; task scope remains limited to discovery and the existing classifier seam.
+  context:
+    intent: Record final implementation and verification evidence for explicit cue mining without changing recurring mining or any downstream host, decision, review, publication, Profile, or evaluator lifecycle.
+    constraints: No project glossary input, legacy corpus read, unbounded scan, dependency/version/registry change, commit, push, publish, tag, or evaluator-state write. Retry state remains not_recorded.
+    scope: personalGlossaryExplicit.ts; personalGlossaryExplicitMining.ts; personalGlossaryAdmission.ts; personalGlossaryExplicit.test.ts; bounded tier and layered capsule contracts.
+  discovered: "The prior classifier was reproduced at 17 passing admission tests and supported only correction plus clarification. The final parser supports 10 positive forms: quoted/code-delimited means, definition-list colon, acronym stands-for, parenthetical acronym expansion, By X I mean, Use X for, Use X to mean, To clarify X refers to, To clarify I prefer X to mean, and correction means. It preserves exact source bytes for Unicode, combining marks, punctuation, multiline meanings, quotes, backticks, colons, and sentence boundaries."
+  verified: Final focused explicit tests passed 30/30 and the explicit, admission, and unchanged recurrence set passed 77/77. The suite covers 13 exclusion boundaries (example, negation, question, hypothetical/conditional, sarcasm, attributed prose, attributed-colon prose, retraction/replacement, project-only, uncertain scope, malformed, empty term, empty meaning), three provenance exclusions (agent, injected, unknown), three bounds exclusions, unresolved and stale anchors, duplicate and conflicting same-anchor cues, project-glossary absent/present trap equality, deterministic order and replay, and capsule validation. The primary candidate has exactly one resolved anchor explicit, term UTF-8 span {start:11,end:21}, meaning UTF-8 span {start:29,end:59}, and zero capsule validation errors. Full source passed 233 files, 3562 passed, 1 skipped. Package verification passed 3 files, 34 passed. Typecheck, local rebuilt CLI 3.0.0-dev.43, capability-contract 3/3, compact, Python/TypeScript parity, diff check, and lint (0 errors, 177 warnings) passed. Source monoliths are 852 and 303 lines. Repeated identical evidence produced byte-identical terms, spans, reasons, and order; no project path or project record entered output.
+  next: Leave task milybqttmo pending for independent evaluation. Progress ID yrzuepleqc remains the first complete evidence record; this append is the final verification correction. No evaluator state or commit was created.
+  publication_order: 113

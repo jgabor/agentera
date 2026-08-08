@@ -14,6 +14,19 @@ import {
   validatePersonalMiningAuthority,
   validateProvenanceVariants,
 } from "./glossaryMiningAuthority.js";
+import type {
+  ConfirmedVariantGuardContract,
+  PersonalGlossaryAdmissionContract,
+  PersonalGlossaryOutputContract,
+  PersonalProfileGroundingContract,
+} from "./personalGlossaryContracts.js";
+
+export type {
+  ConfirmedVariantGuardContract,
+  PersonalGlossaryAdmissionContract,
+  PersonalGlossaryOutputContract,
+  PersonalProfileGroundingContract,
+};
 
 type Mapping = Record<string, unknown>;
 
@@ -45,40 +58,6 @@ export interface GlossaryConversationEvidenceExpectation {
 export interface GlossaryAdmissionContext {
   retainedHistory: ReadonlyMap<string, RetainedEvidence>;
   conversationEvidence?: GlossaryConversationEvidenceExpectation;
-}
-
-export interface PersonalGlossaryAdmissionContract {
-  explicitSignalTypes: string[];
-  inferredSignalTypes: string[];
-  inferredSourceKinds: string[];
-  conversationSignalTypes: string[];
-  conversationSourceKinds: string[];
-  conversationAuthorClasses: string[];
-  conversationEvidenceFields: string[];
-  conversationExpectedEvidenceContextFields: string[];
-  conversationMinimumEvidenceCount: number;
-  conversationCompletenessAuthority: string;
-  conversationAdmission: string;
-  insufficientRecovery: string;
-}
-
-export interface ConfirmedVariantGuardContract {
-  excludedDirectories: string[];
-}
-
-export interface PersonalGlossaryOutputContract {
-  command: string;
-  requestSchemaVersion: string;
-  sectionSchemaVersion: string;
-  outputStatuses: string[];
-}
-
-export interface PersonalProfileGroundingContract {
-  command: string;
-  schemaVersion: string;
-  maxProfileUtf8Bytes: number;
-  validityStatuses: string[]; validityClasses: string[]; freshnessStates: string[];
-  repairRecovery: string; absentRecovery: string;
 }
 
 export interface GlossaryConsumerContract {
@@ -134,9 +113,22 @@ export function personalGlossaryAdmissionContract(
   const conversation = mapping(
     mapping(authority.provenance_variants)?.personal_inferred_conversation,
   );
+  const explicitVariant = mapping(
+    mapping(authority.provenance_variants)?.personal_explicit_definition,
+  );
+  const explicitDiscovery = mapping(
+    mapping(authority.personal_mining_authority)?.explicit_discovery,
+  );
+  const explicitGrammar = mapping(explicitDiscovery?.grammar);
   const expectedEvidence = mapping(conversation?.expected_evidence);
   return {
     explicitSignalTypes: strings(mapping(admission?.explicit)?.candidate_signal_types),
+    explicitGrammarIds: (Array.isArray(explicitGrammar?.forms) ? explicitGrammar.forms : [])
+      .map((item) => mapping(item))
+      .filter((item): item is Mapping => item !== null)
+      .map((item) => String(item.id))
+      .filter(Boolean),
+    explicitProvenanceFields: strings(mapping(explicitVariant?.source_provenance)?.required_fields),
     inferredSignalTypes: strings(mapping(admission?.inferred)?.candidate_signal_types),
     inferredSourceKinds: strings(mapping(admission?.inferred)?.source_kinds),
     conversationSignalTypes: strings(conversation?.allowed_signal_types),
@@ -200,8 +192,14 @@ export function personalProfileGroundingContract(
     validityStatuses: strings(mapping(grounding?.validity)?.statuses),
     validityClasses: strings(mapping(grounding?.validity)?.classes),
     freshnessStates: strings(mapping(grounding?.freshness)?.states),
-    repairRecovery: projectGlossaryDevelopmentValue(mapping(grounding?.recovery)?.repair, "profile_grounding.repair"),
-    absentRecovery: projectGlossaryDevelopmentValue(mapping(grounding?.recovery)?.absent, "profile_grounding.absent"),
+    repairRecovery: projectGlossaryDevelopmentValue(
+      mapping(grounding?.recovery)?.repair,
+      "profile_grounding.repair",
+    ),
+    absentRecovery: projectGlossaryDevelopmentValue(
+      mapping(grounding?.recovery)?.absent,
+      "profile_grounding.absent",
+    ),
   };
 }
 
@@ -420,6 +418,7 @@ export function validateGlossaryEntryContract(
     personalImplementation?.status !== "active_partial" ||
     !sameStrings(personalImplementation?.active, [
       "bounded_admission",
+      "bounded_explicit_discovery",
       "explicit_classification",
       "inferred_evidence_check",
       "profile_full_rendering",
@@ -627,7 +626,8 @@ export function validateGlossaryEntryContract(
   }
   if (
     publication?.owner !== "build" ||
-    publication?.command !== "npx -y agentera@next state glossary publish --input REQUEST --format json" ||
+    publication?.command !==
+      "npx -y agentera@next state glossary publish --input REQUEST --format json" ||
     publicationRequest?.schema_version !== "agentera.glossaryPublicationRequest.v1" ||
     !sameStrings(publicationRequest?.required_fields, [
       "schema_version",
@@ -680,8 +680,21 @@ export function validateGlossaryEntryContract(
     profileGrounding?.parser !==
       "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||
     profileGrounding?.max_profile_utf8_bytes !== 65536 ||
-    !sameStrings(mapping(profileGrounding?.validity)?.statuses, ["absent", "valid", "repair_needed"]) ||
-    !sameStrings(mapping(profileGrounding?.validity)?.classes, ["absent", "valid", "malformed", "ambiguous", "unreadable", "unsafe", "oversized", "invalid_utf8"]) ||
+    !sameStrings(mapping(profileGrounding?.validity)?.statuses, [
+      "absent",
+      "valid",
+      "repair_needed",
+    ]) ||
+    !sameStrings(mapping(profileGrounding?.validity)?.classes, [
+      "absent",
+      "valid",
+      "malformed",
+      "ambiguous",
+      "unreadable",
+      "unsafe",
+      "oversized",
+      "invalid_utf8",
+    ]) ||
     !sameStrings(mapping(profileGrounding?.freshness)?.states, ["current", "stale", "unknown"]) ||
     !nonEmpty(mapping(profileGrounding?.recovery)?.repair) ||
     !nonEmpty(mapping(profileGrounding?.recovery)?.absent) ||
@@ -793,9 +806,7 @@ export function validateGlossaryEntryContract(
     consumers?.behavior !== "consumer_boundary" ||
     !sameStrings(consumers?.forbidden_current_claims, [])
   ) {
-    errors.push(
-      "build, discuss, plan, and prime glossary consumption must be active",
-    );
+    errors.push("build, discuss, plan, and prime glossary consumption must be active");
   }
   return errors;
 }

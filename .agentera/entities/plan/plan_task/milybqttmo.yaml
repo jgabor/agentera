@@ -5,7 +5,7 @@ record:
   depends_on:
     - qgimpwprim
     - zabolpjiro
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN supported definition forms WHEN mining runs THEN term and meaning spans retain one resolvable user-authored anchor.
     - GIVEN examples, negations, hypotheticals, retractions, or agent definitions WHEN mining runs THEN they are ineligible explicit definitions.
@@ -13,3 +13,13 @@ record:
     - GIVEN identical evidence and policy WHEN mining repeats THEN terms, spans, reasons, and order are byte-identical.
     - GIVEN each cue and exclusion WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Multiword colon siblings such as Notes, RFC labels, build status, and last updated still parse as definitions; adjacent following-definition question/example/future/hypothetical qualifiers are ignored; paired regressions and new-file formatting remain incomplete.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_01fb4c281ffeB9BuGfZYa7w8jE bounded re-review
+      recorded_at: 2026-08-08 11:16
+      writer_command: agentera state plan record-evaluation

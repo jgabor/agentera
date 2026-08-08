@@ -1,0 +1,28 @@
+id: guhuzevlez
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Harden explicit-definition boundaries
+  status: blocked
+  depends_on:
+    - qgimpwprim
+    - zabolpjiro
+  acceptance:
+    - GIVEN explicit definition-list colon syntax WHEN mined THEN approved forms remain eligible and ordinary labels, times, headings, citations, and config prose are ineligible.
+    - GIVEN an adjacent sentence directly qualifies the following definition as a question, example, future rule, or hypothetical WHEN mined THEN the cue is ineligible.
+    - GIVEN unrelated adjacent prose WHEN mined THEN it does not suppress a valid definition.
+    - GIVEN the replacement runs WHEN verified THEN provenance, scope, conflict, retraction, UTF-8 spans, replay, traps, and recurring mining remain intact.
+    - GIVEN changed explicit-mining files WHEN formatting and paired regressions run THEN all repository gates pass.
+  evidence:
+    - Audit-2 finding from milybqttmo
+    - TODO psteyugpzv
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: YAML block-scalar headers with inline comments and non-immediate marker nesting still mine as definitions; line-oriented colon parsing loses later same-line cues and masks directional behavior.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_01f319c9dffeYM88QegNWIbK7i bounded re-review
+      recorded_at: 2026-08-08 12:49
+      writer_command: agentera state plan record-evaluation

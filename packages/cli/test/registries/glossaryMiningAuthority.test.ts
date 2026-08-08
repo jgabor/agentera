@@ -67,15 +67,18 @@ function conversationContextFor(
     retainedHistory: new Map(
       retainedIndexes.map((index) => {
         const evidence = conversationEvidence(index);
-        return [evidence.evidence_anchor, {
-          sourceId: evidence.source_id,
-          sourceKind: evidence.source_kind,
-          signalType: evidence.signal_type,
-          sessionId: evidence.session_id,
-          projectId: evidence.project_id,
-          contentFingerprint: evidence.content_fingerprint,
-          authorClass: evidence.author_class,
-        }] as const;
+        return [
+          evidence.evidence_anchor,
+          {
+            sourceId: evidence.source_id,
+            sourceKind: evidence.source_kind,
+            signalType: evidence.signal_type,
+            sessionId: evidence.session_id,
+            projectId: evidence.project_id,
+            contentFingerprint: evidence.content_fingerprint,
+            authorClass: evidence.author_class,
+          },
+        ] as const;
       }),
     ),
     conversationEvidence: {
@@ -108,7 +111,27 @@ describe("personal glossary mining authority", () => {
     expect(validateGlossaryEntryContract(glossaryEntryAuthorityPath())).toEqual([]);
     const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8"));
     expect(authority.personal_mining_authority).toMatchObject({
-      status: "authority_only",
+      status: "active_partial",
+      explicit_discovery: {
+        status: "active",
+        grammar: { forms: expect.any(Array) },
+        adjacent_direct_reference_exclusion: {
+          references: [
+            "this_definition",
+            "this_term",
+            "this_meaning",
+            "following_definition",
+            "following_term",
+            "following_meaning",
+          ],
+          qualifiers: ["question", "example", "future", "hypothetical"],
+          binding: {
+            preceding_sentence: "following_reference_only",
+            following_sentence: "this_reference_only",
+            exact_literal_term: "either_direction",
+          },
+        },
+      },
       replacement: {
         shared_primitive: "shared_primitive",
         personal_owner: "ownership_contracts.personal",
@@ -119,13 +142,42 @@ describe("personal glossary mining authority", () => {
       admission: { inferred_automatic_admission: "disabled" },
     });
     expect(personalGlossaryAdmissionContract()).toMatchObject({
-      conversationSignalTypes: ["correction", "decision", "question", "instruction", "configuration"],
+      conversationSignalTypes: [
+        "correction",
+        "decision",
+        "question",
+        "instruction",
+        "configuration",
+      ],
       conversationSourceKinds: ["conversation_turn"],
       conversationAuthorClasses: ["user"],
       conversationExpectedEvidenceContextFields: [
         "generation",
         "qualifying_evidence_anchors",
         "qualifying_evidence_set_sha256",
+      ],
+      explicitGrammarIds: [
+        "quoted_means",
+        "definition_list_colon",
+        "acronym_stands_for",
+        "acronym_parenthetical",
+        "by_i_mean",
+        "use_for",
+        "use_to_mean",
+        "refers_to",
+        "clarification_prefer_to_mean",
+        "correction_means",
+      ],
+      explicitProvenanceFields: [
+        "source_id",
+        "evidence_anchor",
+        "source_kind",
+        "signal_type",
+        "origin_id",
+        "content_fingerprint",
+        "author_class",
+        "session_id",
+        "project_id",
       ],
       conversationMinimumEvidenceCount: 3,
       conversationCompletenessAuthority: "expected_qualifying_anchor_set_exact_match",
@@ -134,6 +186,37 @@ describe("personal glossary mining authority", () => {
   });
 
   it.each([
+    [
+      "explicit discovery runtime",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.explicit_discovery.runtime = "wrong-runtime";
+      },
+      "personal_mining_authority explicit discovery must declare the active ten-form bounded grammar",
+    ],
+    [
+      "explicit definition-list grammar",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.explicit_discovery.grammar.forms[1].bare_multiword_term_without_marker =
+          "accept";
+      },
+      "personal_mining_authority explicit discovery must declare the active ten-form bounded grammar",
+    ],
+    [
+      "adjacent direct-reference binding",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.explicit_discovery.adjacent_direct_reference_exclusion.binding.preceding_sentence =
+          "either_direction";
+      },
+      "personal_mining_authority explicit discovery must declare the active ten-form bounded grammar",
+    ],
+    [
+      "explicit source provenance",
+      (authority: Record<string, any>) => {
+        authority.provenance_variants.personal_explicit_definition.source_provenance.required_fields =
+          ["source_id"];
+      },
+      "personal_explicit_definition source provenance must require complete conversation identity",
+    ],
     [
       "replacement authority",
       (authority: Record<string, any>) => {
@@ -145,8 +228,7 @@ describe("personal glossary mining authority", () => {
     [
       "term identity",
       (authority: Record<string, any>) => {
-        authority.personal_mining_authority.term_identity.stable_term_identity.no_unicode_normalization =
-          false;
+        authority.personal_mining_authority.term_identity.stable_term_identity.no_unicode_normalization = false;
       },
       "personal_mining_authority term identity must preserve Unicode caseless-exact no-normalization semantics and stable identity runtime",
     ],
@@ -226,7 +308,11 @@ describe("personal glossary mining authority", () => {
   it("accepts a four-record conversation set only when every expected anchor is present", () => {
     const context = conversationContextFor([0, 1, 2, 3]);
     expect(
-      validateGlossaryEntry(conversationEntry([0, 1, 2, 3].map(conversationEvidence)), "personal", context),
+      validateGlossaryEntry(
+        conversationEntry([0, 1, 2, 3].map(conversationEvidence)),
+        "personal",
+        context,
+      ),
     ).toEqual([]);
   });
 
@@ -272,7 +358,11 @@ describe("personal glossary mining authority", () => {
   });
 
   it.each([
-    ["too few records", [0, 1].map(conversationEvidence), "conversation inference requires at least three complete retained records"],
+    [
+      "too few records",
+      [0, 1].map(conversationEvidence),
+      "conversation inference requires at least three complete retained records",
+    ],
     [
       "incomplete evidence",
       [0, 1, 2].map(conversationEvidence),
@@ -292,13 +382,16 @@ describe("personal glossary mining authority", () => {
   it("rejects agent-authored conversation evidence as an establishing source", () => {
     const evidence = [0, 1, 2].map(conversationEvidence);
     evidence[2]!.author_class = "agent";
-      const context = {
-        retainedHistory: new Map(conversationContext.retainedHistory).set(
-          evidence[2]!.evidence_anchor,
-          { ...conversationContext.retainedHistory.get(evidence[2]!.evidence_anchor)!, authorClass: "agent" },
-        ),
-        conversationEvidence: conversationContext.conversationEvidence,
-      };
+    const context = {
+      retainedHistory: new Map(conversationContext.retainedHistory).set(
+        evidence[2]!.evidence_anchor,
+        {
+          ...conversationContext.retainedHistory.get(evidence[2]!.evidence_anchor)!,
+          authorClass: "agent",
+        },
+      ),
+      conversationEvidence: conversationContext.conversationEvidence,
+    };
     expect(validateGlossaryEntry(conversationEntry(evidence), "personal", context)).toContain(
       "provenance.evidence[2] has inadmissible conversation provenance",
     );
@@ -309,35 +402,75 @@ describe("personal glossary consent discriminator", () => {
   it.each([
     [
       "present",
-      { consentStatus: "valid", generationStatus: "current", coverageStatus: "complete", signalTierBounded: true },
+      {
+        consentStatus: "valid",
+        generationStatus: "current",
+        coverageStatus: "complete",
+        signalTierBounded: true,
+      },
     ],
     [
       "absent",
-      { consentStatus: "absent", generationStatus: "current", coverageStatus: "complete", signalTierBounded: true },
+      {
+        consentStatus: "absent",
+        generationStatus: "current",
+        coverageStatus: "complete",
+        signalTierBounded: true,
+      },
     ],
     [
       "absent when generation is missing",
-      { consentStatus: "valid", generationStatus: "absent", coverageStatus: "complete", signalTierBounded: true },
+      {
+        consentStatus: "valid",
+        generationStatus: "absent",
+        coverageStatus: "complete",
+        signalTierBounded: true,
+      },
     ],
     [
       "stale",
-      { consentStatus: "stale", generationStatus: "current", coverageStatus: "complete", signalTierBounded: true },
+      {
+        consentStatus: "stale",
+        generationStatus: "current",
+        coverageStatus: "complete",
+        signalTierBounded: true,
+      },
     ],
     [
       "stale when generation is stale",
-      { consentStatus: "valid", generationStatus: "stale", coverageStatus: "complete", signalTierBounded: true },
+      {
+        consentStatus: "valid",
+        generationStatus: "stale",
+        coverageStatus: "complete",
+        signalTierBounded: true,
+      },
     ],
     [
       "degraded after cap selection",
-      { consentStatus: "valid", generationStatus: "current", coverageStatus: "cap_selected", signalTierBounded: true },
+      {
+        consentStatus: "valid",
+        generationStatus: "current",
+        coverageStatus: "cap_selected",
+        signalTierBounded: true,
+      },
     ],
     [
       "degraded after truncation",
-      { consentStatus: "valid", generationStatus: "current", coverageStatus: "truncated", signalTierBounded: true },
+      {
+        consentStatus: "valid",
+        generationStatus: "current",
+        coverageStatus: "truncated",
+        signalTierBounded: true,
+      },
     ],
     [
       "degraded after flagged incompleteness",
-      { consentStatus: "valid", generationStatus: "current", coverageStatus: "flagged_incomplete", signalTierBounded: true },
+      {
+        consentStatus: "valid",
+        generationStatus: "current",
+        coverageStatus: "flagged_incomplete",
+        signalTierBounded: true,
+      },
     ],
   ])("classifies %s as one mutually exclusive state", (expected, input) => {
     expect(classifyPersonalMiningConsent(input as any)).toBe(expected.split(" ")[0]);
@@ -355,10 +488,30 @@ describe("personal glossary consent discriminator", () => {
   });
 
   it.each([
-    { consentStatus: "unknown", generationStatus: "current", coverageStatus: "complete", signalTierBounded: true },
-    { consentStatus: "valid", generationStatus: "unknown", coverageStatus: "complete", signalTierBounded: true },
-    { consentStatus: "valid", generationStatus: "current", coverageStatus: "unknown", signalTierBounded: true },
-    { consentStatus: "valid", generationStatus: "current", coverageStatus: "complete", signalTierBounded: "yes" },
+    {
+      consentStatus: "unknown",
+      generationStatus: "current",
+      coverageStatus: "complete",
+      signalTierBounded: true,
+    },
+    {
+      consentStatus: "valid",
+      generationStatus: "unknown",
+      coverageStatus: "complete",
+      signalTierBounded: true,
+    },
+    {
+      consentStatus: "valid",
+      generationStatus: "current",
+      coverageStatus: "unknown",
+      signalTierBounded: true,
+    },
+    {
+      consentStatus: "valid",
+      generationStatus: "current",
+      coverageStatus: "complete",
+      signalTierBounded: "yes",
+    },
   ])("rejects invalid discriminator input %j", (input) => {
     expect(() => classifyPersonalMiningConsent(input as any)).toThrow(
       "consent discriminator input is invalid",
@@ -424,7 +577,8 @@ function reviewReceipt(overrides: Record<string, string> = {}): Record<string, s
   return {
     ...unsigned,
     signature:
-      signatureOverride ?? sign(null, Buffer.from(payload, "utf8"), reviewKeyPair.privateKey).toString("base64url"),
+      signatureOverride ??
+      sign(null, Buffer.from(payload, "utf8"), reviewKeyPair.privateKey).toString("base64url"),
   };
 }
 
@@ -437,28 +591,70 @@ describe("personal glossary review approval receipts", () => {
 
   it.each([
     ["issuer", { issuer: "agent" }, "review approval receipt issuer is not trusted"],
-    ["subject", { subject: "agent" }, "review approval receipt subject is not the trusted current user"],
-    ["channel", { trusted_channel: "untrusted-channel" }, "review approval receipt trusted channel is invalid"],
-    ["candidate binding", { candidate_id: "candidate-b" }, "review approval receipt candidate binding is invalid"],
-    ["revision binding", { candidate_revision: "revision-b" }, "review approval receipt revision binding is invalid"],
-    ["generation binding", { generation: "generation-b" }, "review approval receipt generation binding is invalid"],
-    ["stale freshness", { disposed_at: "2026-08-07T11:54:00.000Z" }, "review approval receipt is stale"],
-    ["expired freshness", { expires_at: "2026-08-07T11:59:30.000Z" }, "review approval receipt expires_at is not current"],
-    ["forged signature", { signature: "Zm9yZ2Vk" }, "review approval receipt signature is not from the trusted host"],
+    [
+      "subject",
+      { subject: "agent" },
+      "review approval receipt subject is not the trusted current user",
+    ],
+    [
+      "channel",
+      { trusted_channel: "untrusted-channel" },
+      "review approval receipt trusted channel is invalid",
+    ],
+    [
+      "candidate binding",
+      { candidate_id: "candidate-b" },
+      "review approval receipt candidate binding is invalid",
+    ],
+    [
+      "revision binding",
+      { candidate_revision: "revision-b" },
+      "review approval receipt revision binding is invalid",
+    ],
+    [
+      "generation binding",
+      { generation: "generation-b" },
+      "review approval receipt generation binding is invalid",
+    ],
+    [
+      "stale freshness",
+      { disposed_at: "2026-08-07T11:54:00.000Z" },
+      "review approval receipt is stale",
+    ],
+    [
+      "expired freshness",
+      { expires_at: "2026-08-07T11:59:30.000Z" },
+      "review approval receipt expires_at is not current",
+    ],
+    [
+      "forged signature",
+      { signature: "Zm9yZ2Vk" },
+      "review approval receipt signature is not from the trusted host",
+    ],
   ])("rejects a receipt with invalid %s", (_name, overrides, expected) => {
-    expect(validatePersonalReviewApprovalReceipt(reviewReceipt(overrides), reviewVerification)).toContain(expected);
+    expect(
+      validatePersonalReviewApprovalReceipt(reviewReceipt(overrides), reviewVerification),
+    ).toContain(expected);
   });
 
   it("allows only an exact replay as a no-op and rejects a changed nonce replay", () => {
     const receipt = reviewReceipt();
     const consumed = new Map([[receipt.nonce, personalReviewApprovalReceiptDigest(receipt)]]);
     expect(personalReviewApprovalReplayStatus(receipt, consumed)).toBe("exact_replay");
-    expect(validatePersonalReviewApprovalReceipt(receipt, { ...reviewVerification, consumedReceiptDigests: consumed })).toEqual([]);
+    expect(
+      validatePersonalReviewApprovalReceipt(receipt, {
+        ...reviewVerification,
+        consumedReceiptDigests: consumed,
+      }),
+    ).toEqual([]);
     const changed = reviewReceipt({ nonce: receipt.nonce, disposition: "reject" });
     expect(personalReviewApprovalReplayStatus(changed, consumed)).toBe("conflicting_replay");
-    expect(validatePersonalReviewApprovalReceipt(changed, { ...reviewVerification, consumedReceiptDigests: consumed })).toContain(
-      "review approval receipt nonce was replayed with changed content",
-    );
+    expect(
+      validatePersonalReviewApprovalReceipt(changed, {
+        ...reviewVerification,
+        consumedReceiptDigests: consumed,
+      }),
+    ).toContain("review approval receipt nonce was replayed with changed content");
   });
 
   it("maps terminal dispositions and enforces retention and purge boundaries", () => {
@@ -466,18 +662,43 @@ describe("personal glossary review approval receipts", () => {
     expect(personalReviewDispositionLifecycle("correct")).toBe("terminal");
     expect(personalReviewDispositionLifecycle("reject")).toBe("terminal");
     expect(personalReviewDispositionLifecycle("defer")).toBe("pending");
-    expect(projectPersonalReviewRetention("defer", 29)).toEqual({ excerpt: "retained", metadata: "retained" });
-    expect(projectPersonalReviewRetention("defer", 30)).toEqual({ excerpt: "expired", metadata: "retained" });
-    expect(projectPersonalReviewRetention("accept", 0)).toEqual({ excerpt: "purged", metadata: "retained" });
-    expect(projectPersonalReviewRetention("accept", 89)).toEqual({ excerpt: "purged", metadata: "retained" });
-    expect(projectPersonalReviewRetention("accept", 90)).toEqual({ excerpt: "purged", metadata: "expired" });
-    expect(projectPersonalReviewRetention("defer", 1, true)).toEqual({ excerpt: "purged", metadata: "purged" });
-    expect(projectPersonalReviewRetention("accept", 1, true)).toEqual({ excerpt: "purged", metadata: "purged" });
+    expect(projectPersonalReviewRetention("defer", 29)).toEqual({
+      excerpt: "retained",
+      metadata: "retained",
+    });
+    expect(projectPersonalReviewRetention("defer", 30)).toEqual({
+      excerpt: "expired",
+      metadata: "retained",
+    });
+    expect(projectPersonalReviewRetention("accept", 0)).toEqual({
+      excerpt: "purged",
+      metadata: "retained",
+    });
+    expect(projectPersonalReviewRetention("accept", 89)).toEqual({
+      excerpt: "purged",
+      metadata: "retained",
+    });
+    expect(projectPersonalReviewRetention("accept", 90)).toEqual({
+      excerpt: "purged",
+      metadata: "expired",
+    });
+    expect(projectPersonalReviewRetention("defer", 1, true)).toEqual({
+      excerpt: "purged",
+      metadata: "purged",
+    });
+    expect(projectPersonalReviewRetention("accept", 1, true)).toEqual({
+      excerpt: "purged",
+      metadata: "purged",
+    });
   });
 
   it("rejects invalid retention transitions", () => {
-    expect(() => personalReviewDispositionLifecycle("unknown" as any)).toThrow("review disposition is invalid");
-    expect(() => projectPersonalReviewRetention("defer", -1)).toThrow("review age must be non-negative");
+    expect(() => personalReviewDispositionLifecycle("unknown" as any)).toThrow(
+      "review disposition is invalid",
+    );
+    expect(() => projectPersonalReviewRetention("defer", -1)).toThrow(
+      "review age must be non-negative",
+    );
   });
 });
 
@@ -522,10 +743,12 @@ describe("personal glossary term and candidate identities", () => {
     };
     const revision = glossaryCandidateRevision(base);
     expect(revision).toMatch(/^[a-f0-9]{64}$/);
-    expect(
-      glossaryCandidateRevision({ ...base, evidence: [...base.evidence].reverse() }),
-    ).toBe(revision);
-    expect(glossaryCandidateRevision({ ...base, meaning: "a different meaning" })).not.toBe(revision);
+    expect(glossaryCandidateRevision({ ...base, evidence: [...base.evidence].reverse() })).toBe(
+      revision,
+    );
+    expect(glossaryCandidateRevision({ ...base, meaning: "a different meaning" })).not.toBe(
+      revision,
+    );
     expect(glossaryCandidateRevision({ ...base, policy_version: "policy-b" })).not.toBe(revision);
     expect(glossaryCandidateRevision({ ...base, generation: "generation-b" })).not.toBe(revision);
   });

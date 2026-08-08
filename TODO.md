@@ -161,3 +161,5 @@
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
 
 ## → Degraded
+
+- [ ] [id:psteyugpzv] [fix:3.0.0] Replan explicit-definition parser segmentation

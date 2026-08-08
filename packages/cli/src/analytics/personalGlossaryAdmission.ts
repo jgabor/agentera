@@ -7,6 +7,7 @@ import {
   type SignalRecord,
 } from "./extractCorpus/evidenceTiers.js";
 import { assessTiers, recoveryForState } from "./extractCorpus/tierReader.js";
+import { mineExplicitGlossaryCandidates } from "./personalGlossaryExplicitMining.js";
 
 export interface ExplicitGlossaryCandidate {
   kind: "personal_explicit_definition";
@@ -37,41 +38,6 @@ export interface PersonalGlossaryAdmissionInput {
 }
 
 type AnchorResolver = (anchor: string, tiersDir: string) => JsonObject | null;
-
-function trimMeaning(value: string): string {
-  return value
-    .trim()
-    .replace(/[.!?]+$/, "")
-    .trim();
-}
-
-/** Classify only authority-supported explicit correction or clarification forms. */
-export function classifyExplicitGlossaryLanguage(
-  text: string,
-): { term: string; meaning: string } | null {
-  const correction =
-    /\b(?:actually|not quite|instead|correction)\b[^`"']*([`"'])([^`"']+)\1\s+means\s+(.+)$/i.exec(
-      text,
-    );
-  const clarification = /\bto clarify\b.*?\bprefer\s+([`"'])([^`"']+)\1\s+to mean\s+(.+)$/i.exec(
-    text,
-  );
-  const match = correction ?? clarification;
-  if (!match) return null;
-  const term = match[2].trim();
-  const meaning = trimMeaning(match[3]);
-  return term && meaning ? { term, meaning } : null;
-}
-
-function recordText(record: JsonObject): string {
-  const data = record.data;
-  if (!data || typeof data !== "object" || Array.isArray(data)) return "";
-  const object = data as JsonObject;
-  for (const field of ["text", "prompt", "content"]) {
-    if (typeof object[field] === "string") return object[field];
-  }
-  return "";
-}
 
 function semanticValues(record: JsonObject): string[] {
   const data = record.data;
@@ -136,6 +102,7 @@ export function admitPersonalGlossaryEvidence(
   );
   const resolved = new Map<string, { signal: SignalRecord; record: JsonObject }>();
   for (const signal of selected) {
+    if (explicitTypes.has(signal.signal_type)) continue;
     if (resolved.has(signal.evidence_anchor)) continue;
     const record = resolveAnchor(signal.evidence_anchor, input.tiersDir);
     if (
@@ -148,20 +115,20 @@ export function admitPersonalGlossaryEvidence(
   }
 
   const candidates: PersonalGlossaryCandidate[] = [];
-  for (const { signal, record } of resolved.values()) {
-    if (!explicitTypes.has(signal.signal_type)) continue;
-    const classified = classifyExplicitGlossaryLanguage(recordText(record));
-    if (!classified) continue;
+  const explicitMining = mineExplicitGlossaryCandidates(
+    { tiersDir: input.tiersDir },
+    resolveAnchor,
+  );
+  for (const { capsule } of explicitMining.candidates) {
     candidates.push({
       kind: "personal_explicit_definition",
-      ...classified,
-      evidence: [
-        {
-          source_id: signal.source_id,
-          evidence_anchor: signal.evidence_anchor,
-          signal_type: signal.signal_type,
-        },
-      ],
+      term: capsule.term,
+      meaning: capsule.meaning,
+      evidence: capsule.evidence.map((evidence) => ({
+        source_id: String(evidence.source_id),
+        evidence_anchor: String(evidence.evidence_anchor),
+        signal_type: String(evidence.signal_type),
+      })),
     });
   }
 
@@ -207,6 +174,20 @@ export function admitPersonalGlossaryEvidence(
       };
 }
 
+export {
+  classifyExplicitGlossaryLanguage,
+  discoverExplicitGlossaryCues,
+  mineExplicitGlossaryCandidates,
+  mineExplicitGlossaryEvidence,
+  minePersonalExplicitGlossaryCandidates,
+  EXPLICIT_GLOSSARY_REASONS,
+  type ExplicitGlossaryAbstention,
+  type ExplicitGlossaryCue,
+  type ExplicitGlossaryMiningInput,
+  type ExplicitGlossaryMiningResult,
+  type ExplicitGlossaryReason,
+  type ExplicitGlossarySpan,
+} from "./personalGlossaryExplicit.js";
 export {
   mineRecurringGlossaryCandidates,
   mineRecurringGlossaryEvidence,

@@ -46,10 +46,7 @@ function sha256Utf8(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-export function glossaryEvidenceSetDigest(
-  generation: string,
-  anchors: readonly string[],
-): string {
+export function glossaryEvidenceSetDigest(generation: string, anchors: readonly string[]): string {
   if (!nonEmpty(generation)) throw new TypeError("generation must be a non-empty string");
   if (
     anchors.length === 0 ||
@@ -111,9 +108,7 @@ const REVIEW_RECEIPT_FIELDS = [
   "signature",
 ] as const;
 
-const REVIEW_RECEIPT_SIGNED_FIELDS = REVIEW_RECEIPT_FIELDS.filter(
-  (field) => field !== "signature",
-);
+const REVIEW_RECEIPT_SIGNED_FIELDS = REVIEW_RECEIPT_FIELDS.filter((field) => field !== "signature");
 
 export const PERSONAL_REVIEW_DISPOSITIONS = ["accept", "correct", "reject", "defer"] as const;
 export type PersonalReviewDisposition = (typeof PERSONAL_REVIEW_DISPOSITIONS)[number];
@@ -174,7 +169,8 @@ export function validatePersonalReviewApprovalReceipt(
   const extraFields = Object.keys(receipt).filter(
     (field) => !REVIEW_RECEIPT_FIELDS.includes(field as (typeof REVIEW_RECEIPT_FIELDS)[number]),
   );
-  if (extraFields.length > 0) errors.push(`review approval receipt has forbidden fields: ${extraFields.join(", ")}`);
+  if (extraFields.length > 0)
+    errors.push(`review approval receipt has forbidden fields: ${extraFields.join(", ")}`);
   let payload = "";
   let signature = "";
   try {
@@ -226,7 +222,14 @@ export function validatePersonalReviewApprovalReceipt(
     errors.push("review approval receipt signature encoding is invalid");
   } else if (payload) {
     try {
-      if (!verifySignature(null, Buffer.from(payload, "utf8"), expected.trustedHostPublicKey, Buffer.from(signature, "base64url"))) {
+      if (
+        !verifySignature(
+          null,
+          Buffer.from(payload, "utf8"),
+          expected.trustedHostPublicKey,
+          Buffer.from(signature, "base64url"),
+        )
+      ) {
         errors.push("review approval receipt signature is not from the trusted host");
       }
     } catch {
@@ -235,10 +238,8 @@ export function validatePersonalReviewApprovalReceipt(
   }
   try {
     if (
-      personalReviewApprovalReplayStatus(
-        receipt,
-        expected.consumedReceiptDigests,
-      ) === "conflicting_replay"
+      personalReviewApprovalReplayStatus(receipt, expected.consumedReceiptDigests) ===
+      "conflicting_replay"
     ) {
       errors.push("review approval receipt nonce was replayed with changed content");
     }
@@ -266,7 +267,8 @@ export function projectPersonalReviewRetention(
   ageDays: number,
   purgeRequested = false,
 ): PersonalReviewRetentionProjection {
-  if (!Number.isFinite(ageDays) || ageDays < 0) throw new TypeError("review age must be non-negative");
+  if (!Number.isFinite(ageDays) || ageDays < 0)
+    throw new TypeError("review age must be non-negative");
   if (purgeRequested) return { excerpt: "purged", metadata: "purged" };
   if (personalReviewDispositionLifecycle(disposition) === "pending") {
     return {
@@ -284,8 +286,16 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   const errors: string[] = [];
   const mining = mapping(authority.personal_mining_authority);
   const replacement = mapping(mining?.replacement);
+  const explicitDiscovery = mapping(mining?.explicit_discovery);
+  const explicitGrammar = mapping(explicitDiscovery?.grammar);
+  const adjacentDirectReference = mapping(explicitDiscovery?.adjacent_direct_reference_exclusion);
+  const adjacentDirectionalBinding = mapping(adjacentDirectReference?.binding);
+  const explicitForms = Array.isArray(explicitGrammar?.forms)
+    ? explicitGrammar.forms.map(mapping).filter((value): value is Mapping => value !== null)
+    : [];
+  const form = (id: string): Mapping => explicitForms.find((value) => value.id === id) ?? {};
   if (
-    mining?.status !== "authority_only" ||
+    mining?.status !== "active_partial" ||
     !nonEmpty(mining?.implementation_boundary) ||
     !sameStrings(mining?.preserved_decisions, ["prmnztjytv", "mcsmqqitnm", "zyvgyvjnsv"]) ||
     replacement?.shared_primitive !== "shared_primitive" ||
@@ -305,6 +315,110 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   ) {
     errors.push(
       "personal_mining_authority replacement must preserve shared primitive, isolation, consumer precedence, and Build project publication",
+    );
+  }
+  if (
+    explicitDiscovery?.status !== "active" ||
+    explicitDiscovery?.runtime !==
+      "packages/cli/src/analytics/personalGlossaryExplicit.ts#discoverExplicitGlossaryCues" ||
+    explicitDiscovery?.mining_runtime !==
+      "packages/cli/src/analytics/personalGlossaryExplicitMining.ts#mineExplicitGlossaryCandidates" ||
+    explicitDiscovery?.input !== "bounded_signal_tier_plus_direct_single_anchor_resolution" ||
+    explicitDiscovery?.output !== "evidence_capsule_plus_exact_source_spans_only" ||
+    explicitDiscovery?.scope_window !== "current_sentence_and_one_adjacent_sentence_each_side" ||
+    explicitDiscovery?.scope_binding !==
+      "explicit_scope_marker_must_contain_the_term_or_be_a_direct_qualifier" ||
+    explicitDiscovery?.span_encoding !== "utf8_byte_offsets" ||
+    explicitDiscovery?.strings !== "preserve_exact_source_bytes_without_unicode_normalization" ||
+    !sameStrings(adjacentDirectReference?.references, [
+      "this_definition",
+      "this_term",
+      "this_meaning",
+      "following_definition",
+      "following_term",
+      "following_meaning",
+    ]) ||
+    !sameStrings(adjacentDirectReference?.qualifiers, [
+      "question",
+      "example",
+      "future",
+      "hypothetical",
+    ]) ||
+    adjacentDirectionalBinding?.preceding_sentence !== "following_reference_only" ||
+    adjacentDirectionalBinding?.following_sentence !== "this_reference_only" ||
+    adjacentDirectionalBinding?.exact_literal_term !== "either_direction" ||
+    !sameStrings(
+      explicitForms.map((value) => String(value.id)),
+      [
+        "quoted_means",
+        "definition_list_colon",
+        "acronym_stands_for",
+        "acronym_parenthetical",
+        "by_i_mean",
+        "use_for",
+        "use_to_mean",
+        "refers_to",
+        "clarification_prefer_to_mean",
+        "correction_means",
+      ],
+    ) ||
+    form("quoted_means").syntax !== "quoted_or_code_delimited_term_means_meaning" ||
+    form("definition_list_colon").syntax !== "standalone_safe_definition_list_term_colon_meaning" ||
+    form("definition_list_colon").prefix !==
+      "sentence_or_line_start_with_optional_markdown_list_bullet" ||
+    !sameStrings(form("definition_list_colon").unmarked_terms, [
+      "quoted_or_code_delimited_term",
+      "uppercase_acronym_with_exact_expansion_initials",
+    ]) ||
+    !sameStrings(form("definition_list_colon").markers, ["definition", "term"]) ||
+    form("definition_list_colon").marked_term !== "bounded_nonempty_term" ||
+    form("definition_list_colon").bare_multiword_term_without_marker !== "reject" ||
+    form("definition_list_colon").meaning_start !== "nonempty_same_physical_line" ||
+    form("definition_list_colon").continuation !==
+      "after_nonempty_inline_meaning_within_maximum_meaning_bound_only" ||
+    form("definition_list_colon").empty_marker_structure !==
+      "reject_immediately_following_colon_line" ||
+    form("acronym_stands_for").syntax !== "bounded_acronym_stands_for_expansion" ||
+    form("acronym_parenthetical").syntax !== "bounded_acronym_parenthesized_expansion_or_reverse" ||
+    form("by_i_mean").syntax !== "by_term_i_mean_meaning" ||
+    form("use_for").syntax !== "use_term_for_meaning" ||
+    form("use_to_mean").syntax !== "use_term_to_mean_meaning" ||
+    form("refers_to").syntax !== "term_refers_to_meaning" ||
+    form("clarification_prefer_to_mean").syntax !== "to_clarify_i_prefer_term_to_mean_meaning" ||
+    form("correction_means").syntax !==
+      "approved_correction_prefix_quoted_or_code_term_means_meaning" ||
+    form("acronym_stands_for").validation !== "expansion_initials_must_match_acronym_exactly" ||
+    form("acronym_parenthetical").validation !== "expansion_initials_must_match_acronym_exactly" ||
+    Number(mapping(explicitGrammar?.bounds)?.maximum_term_utf8_bytes) !== 256 ||
+    Number(mapping(explicitGrammar?.bounds)?.maximum_meaning_utf8_bytes) !== 4096 ||
+    Number(mapping(explicitGrammar?.bounds)?.maximum_acronym_utf8_bytes) !== 32 ||
+    Number(mapping(explicitGrammar?.bounds)?.maximum_acronym_words) !== 32
+  ) {
+    errors.push(
+      "personal_mining_authority explicit discovery must declare the active ten-form bounded grammar",
+    );
+  }
+  const explicitSourceProvenance = mapping(
+    mapping(authority.provenance_variants)?.personal_explicit_definition,
+  );
+  const explicitSourceFields = mapping(explicitSourceProvenance?.source_provenance);
+  if (
+    !sameStrings(explicitSourceFields?.required_fields, [
+      "source_id",
+      "evidence_anchor",
+      "source_kind",
+      "signal_type",
+      "origin_id",
+      "content_fingerprint",
+      "author_class",
+      "session_id",
+      "project_id",
+    ]) ||
+    !sameStrings(explicitSourceFields?.allowed_source_kinds, ["conversation_turn"]) ||
+    explicitSourceFields?.identity_fields_must_match_full_record !== true
+  ) {
+    errors.push(
+      "personal_explicit_definition source provenance must require complete conversation identity",
     );
   }
 
@@ -359,8 +473,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   const setDigest = mapping(expectedEvidence?.set_digest);
   if (
     provenance?.existing_inferred_variant !== "provenance_variants.personal_inferred_usage" ||
-    provenance?.conversation_variant !==
-      "provenance_variants.personal_inferred_conversation" ||
+    provenance?.conversation_variant !== "provenance_variants.personal_inferred_conversation" ||
     evolution?.status !== "explicit_append_only_extension" ||
     evolution?.shared_primitive !== "unchanged" ||
     !nonEmpty(evolution?.existing_variant_rule) ||
@@ -395,8 +508,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     distinctness?.content_fingerprints !== 3 ||
     conversationVariant?.completeness_field !== "provenance.evidence_complete" ||
     conversationVariant?.completeness_value !== true ||
-    conversationVariant?.completeness_authority !==
-      "expected_qualifying_anchor_set_exact_match" ||
+    conversationVariant?.completeness_authority !== "expected_qualifying_anchor_set_exact_match" ||
     expectedEvidence?.binding !== "generation_bound" ||
     !sameStrings(expectedEvidence?.context_fields, [
       "generation",
@@ -501,7 +613,11 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     privacy?.scope !== "user_local" ||
     storage?.root !== "$AGENTERA_PROFILE_DIR/intermediate/personal-glossary" ||
     storage?.project_storage !== "forbidden" ||
-    !sameStrings(storage?.records, ["candidate_metadata", "safe_excerpts", "review_dispositions"]) ||
+    !sameStrings(storage?.records, [
+      "candidate_metadata",
+      "safe_excerpts",
+      "review_dispositions",
+    ]) ||
     storage?.project_state !== "unchanged" ||
     !nonEmpty(storage?.rule) ||
     excerpts?.purpose !== "bounded_review_context_only" ||
@@ -593,8 +709,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     replay?.nonce !== "required_unique_receipt_nonce" ||
     replay?.index !== "user_local_consumed_receipt_digest_index" ||
     replay?.exact_replay !== "no_op_only_when_nonce_and_receipt_digest_match" ||
-    replay?.conflicting_replay !==
-      "reject_reused_nonce_with_changed_bindings_or_signature" ||
+    replay?.conflicting_replay !== "reject_reused_nonce_with_changed_bindings_or_signature" ||
     !sameStrings(terminalDisposition?.terminal, ["accept", "correct", "reject"]) ||
     !sameStrings(terminalDisposition?.pending, ["defer"]) ||
     retention?.pending_excerpt_days !== 30 ||
@@ -612,8 +727,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     purge?.profile_entry !== "not_implicitly_deleted" ||
     purgeBoundaries?.pending !== "purge_removes_excerpt_and_metadata_immediately" ||
     purgeBoundaries?.terminal !== "purge_removes_excerpt_and_metadata_before_next_read" ||
-    purgeBoundaries?.accepted_profile_entry !==
-      "purge_does_not_implicitly_delete_profile_entry" ||
+    purgeBoundaries?.accepted_profile_entry !== "purge_does_not_implicitly_delete_profile_entry" ||
     !nonEmpty(purge?.recovery)
   ) {
     errors.push(
@@ -693,7 +807,9 @@ export function validateProvenanceVariants(variants: Mapping | null): string[] {
     ) {
       errors.push(`${kind}.minimum_evidence_count must be ${expected.minimum_evidence_count}`);
     }
-    if (!sameStrings(variant.required_evidence_fields, expected.required_evidence_fields as string[])) {
+    if (
+      !sameStrings(variant.required_evidence_fields, expected.required_evidence_fields as string[])
+    ) {
       errors.push(`${kind}.required_evidence_fields must match its provenance variant`);
     }
     if (variant.additional_evidence_fields !== "forbidden") {
@@ -786,7 +902,9 @@ function validateExpectedConversationEvidence(
     errors.push("conversation inference rejects duplicate source, anchor, or content identities");
   }
   if (!sameStringSet(actualAnchors, expectedAnchors)) {
-    errors.push("conversation inference evidence must exactly match the generation-bound anchor set");
+    errors.push(
+      "conversation inference evidence must exactly match the generation-bound anchor set",
+    );
   }
   return errors;
 }
