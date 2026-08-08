@@ -4,6 +4,7 @@ import type {
   GlossaryAdmissionContext,
   GlossaryConversationEvidenceExpectation,
 } from "./glossaryEntryContract.js";
+import { validateExplicitSegmentGrammar } from "./explicitSegmentGrammarContract.js";
 
 type Mapping = Record<string, unknown>;
 
@@ -398,6 +399,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
       "personal_mining_authority explicit discovery must declare the active ten-form bounded grammar",
     );
   }
+  errors.push(...validateExplicitSegmentGrammar(explicitGrammar));
   const explicitSourceProvenance = mapping(
     mapping(authority.provenance_variants)?.personal_explicit_definition,
   );

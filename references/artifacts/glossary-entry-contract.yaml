@@ -110,9 +110,17 @@ personal_mining_authority:
     grammar:
       forms:
         - id: quoted_means
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: quoted_or_code_delimited_term_means_meaning
           term: one_balanced_supported_quote_or_backtick_delimited_span
         - id: definition_list_colon
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: standalone_safe_definition_list_term_colon_meaning
           prefix: sentence_or_line_start_with_optional_markdown_list_bullet
           unmarked_terms:
@@ -126,22 +134,54 @@ personal_mining_authority:
           empty_marker_structure: reject_immediately_following_colon_line
           exclusions: yaml_config_labels_times_urls_headings_citations_and_labels
         - id: acronym_stands_for
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: bounded_acronym_stands_for_expansion
           validation: expansion_initials_must_match_acronym_exactly
         - id: acronym_parenthetical
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: bounded_acronym_parenthesized_expansion_or_reverse
           validation: expansion_initials_must_match_acronym_exactly
         - id: by_i_mean
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: by_term_i_mean_meaning
         - id: use_for
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: use_term_for_meaning
         - id: use_to_mean
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: use_term_to_mean_meaning
         - id: refers_to
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: term_refers_to_meaning
         - id: clarification_prefer_to_mean
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: to_clarify_i_prefer_term_to_mean_meaning
         - id: correction_means
+          segment_class: explicit_cue_segment
+          entry: outside_approved_cue
+          termination: shared_bounded_termination
+          output: shared_cue_segment_output
           syntax: approved_correction_prefix_quoted_or_code_term_means_meaning
           prefixes: [actually, correction, not_quite, instead, rather]
       bounds:
@@ -149,6 +189,151 @@ personal_mining_authority:
         maximum_meaning_utf8_bytes: 4096
         maximum_acronym_utf8_bytes: 32
         maximum_acronym_words: 32
+      segment_grammar:
+         schema_version: agentera.personalGlossarySegmentGrammar.v1
+         segment_class: explicit_cue_segment
+         states: [outside, cue, inline_meaning, continuation, structural_config, terminated, rejected]
+         input_classes:
+           - approved_cue
+           - non_empty_inline_meaning
+           - continuation_line
+           - blank_line
+           - next_cue
+           - structural_fragment
+           - comment
+           - list_boundary
+           - indentation
+           - nested_marker
+           - block_scalar
+           - prose
+           - unsupported
+           - eof
+         initial_state: outside
+         terminal_states: [terminated, rejected]
+         entry:
+           from: outside
+           input: approved_cue
+           to: cue
+           accepted_forms:
+             - quoted_means
+             - definition_list_colon
+             - acronym_stands_for
+             - acronym_parenthetical
+             - by_i_mean
+             - use_for
+             - use_to_mean
+             - refers_to
+             - clarification_prefer_to_mean
+             - correction_means
+           unsupported_reason: unsupported_transition
+         termination:
+           start_state: inline_meaning
+           continuation_state: continuation
+           terminal_state: terminated
+           required: non_empty_inline_meaning
+           boundary_inputs: [blank_line, next_cue, structural_fragment, comment, list_boundary]
+           maximum_meaning_utf8_bytes: 4096
+           limit: inclusive
+           over_limit_reason: meaning_bound_exceeded
+         output:
+           fields: [term, meaning, term_span, meaning_span]
+           span_encoding: utf8_byte_offsets
+           source_semantics: exact_source_bytes_without_unicode_normalization
+         continuation:
+           starts_after: non_empty_inline_meaning
+           preserves: exact_source_newlines_and_utf8_bytes
+           stops_on: [blank_line, next_cue, structural_fragment, comment, list_boundary]
+           maximum_utf8_bytes: 4096
+           limit: inclusive
+           over_limit: reject
+           over_limit_reason: meaning_bound_exceeded
+         structural_configuration:
+           state: structural_config
+           entry_inputs: [structural_fragment, list_boundary]
+           persist_inputs: [comment, blank_line, indentation, nested_marker, block_scalar, structural_fragment, list_boundary]
+           reject_inputs: [comment, blank_line, indentation, nested_marker, block_scalar, structural_fragment, list_boundary, approved_cue]
+           exit:
+             input: prose
+             condition: top_level_nonempty_noncomment_nonmarker_nonstructural_line
+             action: reject_fragment_then_exit
+             next_state: outside
+             definition_allowed: next_physical_line_only
+         reference_binding:
+           following: nearest_next_cue
+           this: nearest_previous_cue
+           exact_term: nearest_matching_cue
+           matching: unicode_caseless_exact_no_normalization
+           duplicate_target_reason: ambiguous_reference
+           missing_target_reason: ambiguous_reference
+           duplicate_target_outcome: exclude_bound_cue_only
+           missing_target_outcome: exclude_bound_cue_only
+           unrelated_cue_outcome: retain
+         deduplication:
+           identity: personal_mining_authority.term_identity.stable_term_identity
+           same_identity_same_meaning: retain_one_earliest_source_span
+           same_identity_different_meaning: reject_all_conflicting_meaning
+           unrelated_cue_outcome: retain
+         canonical_order:
+           fields: [term, meaning, term_span.start, meaning_span.start]
+           comparator: unicode_scalar_code_point_ascending
+           direction: ascending
+         transitions:
+           - {from: outside, input: approved_cue, to: cue, action: enter_cue_segment}
+           - {from: outside, input: structural_fragment, to: structural_config, action: enter_structural_config, reason: structural_fragment}
+           - {from: outside, input: list_boundary, to: structural_config, action: enter_structural_config, reason: structural_fragment}
+           - {from: outside, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           - {from: cue, input: non_empty_inline_meaning, to: inline_meaning, action: capture_inline_meaning}
+           - {from: cue, input: blank_line, to: rejected, action: reject, reason: empty_meaning}
+           - {from: cue, input: next_cue, to: rejected, action: reject, reason: empty_meaning}
+           - {from: cue, input: structural_fragment, to: rejected, action: reject, reason: empty_meaning}
+           - {from: cue, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           - {from: inline_meaning, input: continuation_line, to: continuation, action: append_original_newline}
+           - {from: inline_meaning, input: blank_line, to: terminated, action: finish_before_boundary}
+           - {from: inline_meaning, input: next_cue, to: terminated, action: finish_before_boundary}
+           - {from: inline_meaning, input: structural_fragment, to: terminated, action: finish_before_boundary}
+           - {from: inline_meaning, input: comment, to: terminated, action: finish_before_boundary}
+           - {from: inline_meaning, input: list_boundary, to: terminated, action: finish_before_boundary}
+           - {from: inline_meaning, input: prose, to: continuation, action: append_original_newline}
+           - {from: inline_meaning, input: eof, to: terminated, action: finish_at_eof}
+           - {from: inline_meaning, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           - {from: continuation, input: continuation_line, to: continuation, action: append_original_newline}
+           - {from: continuation, input: prose, to: continuation, action: append_original_newline}
+           - {from: continuation, input: blank_line, to: terminated, action: finish_before_boundary}
+           - {from: continuation, input: next_cue, to: terminated, action: finish_before_boundary}
+           - {from: continuation, input: structural_fragment, to: terminated, action: finish_before_boundary}
+           - {from: continuation, input: comment, to: terminated, action: finish_before_boundary}
+           - {from: continuation, input: list_boundary, to: terminated, action: finish_before_boundary}
+           - {from: continuation, input: eof, to: terminated, action: finish_at_eof}
+           - {from: continuation, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           - {from: structural_config, input: approved_cue, to: rejected, action: reject, reason: structural_fragment}
+           - {from: structural_config, input: structural_fragment, to: structural_config, action: reject_structural_fragment, reason: structural_fragment}
+           - {from: structural_config, input: comment, to: structural_config, action: reject_structural_fragment, reason: structural_fragment}
+           - {from: structural_config, input: blank_line, to: structural_config, action: reject_structural_fragment, reason: structural_fragment}
+           - {from: structural_config, input: indentation, to: structural_config, action: reject_structural_fragment, reason: structural_fragment}
+           - {from: structural_config, input: nested_marker, to: structural_config, action: reject_structural_fragment, reason: structural_fragment}
+           - {from: structural_config, input: block_scalar, to: structural_config, action: reject_structural_fragment, reason: structural_fragment}
+           - {from: structural_config, input: list_boundary, to: structural_config, action: reject_structural_fragment, reason: structural_fragment}
+           - {from: structural_config, input: prose, to: outside, action: reject_fragment_then_exit, reason: structural_fragment}
+           - {from: structural_config, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           - {from: structural_config, input: eof, to: rejected, action: reject, reason: structural_fragment}
+           - {from: terminated, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           - {from: rejected, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+         fallback_transitions:
+           outside: {from: outside, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           cue: {from: cue, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           inline_meaning: {from: inline_meaning, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           continuation: {from: continuation, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           structural_config: {from: structural_config, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           terminated: {from: terminated, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+           rejected: {from: rejected, input: unsupported, to: rejected, action: reject, reason: unsupported_transition}
+         reasons:
+           unsupported_transition: unsupported_transition
+           structural_fragment: structural_fragment
+           empty_meaning: empty_meaning
+           meaning_bound_exceeded: meaning_bound_exceeded
+           ambiguous_reference: ambiguous_reference
+           conflicting_meaning: conflicting_meaning
+           invalid_exit_boundary: invalid_exit_boundary
     exclusions:
       - examples
       - mere_mentions

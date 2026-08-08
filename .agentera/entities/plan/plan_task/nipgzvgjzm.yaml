@@ -1,0 +1,19 @@
+id: nipgzvgjzm
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Implement finite explicit segment grammar
+  status: pending
+  depends_on:
+    - uhdotliobu
+  acceptance:
+    - GIVEN two or three distinct eligible non-conflicting cues share one or more physical lines WHEN mined THEN each cue appears once with exact UTF-8 spans and results retain canonical lexical order, including reverse source-versus-lexical cases.
+    - GIVEN repeated cue identities WHEN mined THEN equal meanings retain one canonical occurrence and source span, conflicting meanings retain the stable conflict abstention, and duplicate exact-term references use the authority ambiguity rule before lexical ordering.
+    - GIVEN three cues and a following, this, exact-term, term-inside-meaning, missing-target, or near-miss reference WHEN mined THEN only the authority-bound target is excluded; ambiguous references yield the stable reason and unrelated cues remain.
+    - GIVEN YAML or config entry, nesting, comments, blank lines, prose, block scalars, or non-immediate marker structures WHEN mined THEN structural fragments yield the authority reason, no basename or meaning fragment leaks, and a valid definition after a declared exit boundary still mines.
+    - GIVEN approved inline continuation WHEN mined THEN blank, next-cue, structural, comment, list, exact-4,096-byte, and one-byte-over boundaries produce authority-matching exact spans and outcomes.
+    - GIVEN inherited safety verification WHEN targeted parser and source checks run THEN complete user provenance, agent and injected rejection, project-glossary non-read, scope, conflicts, term-bound retractions, replay, UTF-8 spans, recurring mining, and formatter conformance pass with one positive and negative boundary per changed rule; later selection, CLI, package, and release gates remain unchanged.
+  evidence:
+    - Run the named targeted checks, then obtain and persist an independent Audit PASS on this task.
+    - Only after PASS supersede milybqttmo and guhuzevlez with this task and resolve TODO psteyugpzv; any FAIL leaves all three open.
+    - If the prerequisite cannot define one finite structural-config exit that preserves a valid post-config definition, keep this task blocked and invoke Plan again.

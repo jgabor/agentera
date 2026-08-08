@@ -1,0 +1,28 @@
+id: uhdotliobu
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Define finite explicit segment grammar
+  status: complete
+  depends_on:
+    - qgimpwprim
+    - zabolpjiro
+  acceptance:
+    - GIVEN any of the ten approved explicit cue forms WHEN authority classifies its raw text THEN it maps to one bounded cue-segment class with declared entry, termination, output, and fail-closed transitions; unsupported transitions return a stable reason.
+    - GIVEN colon or list text enters structural configuration context WHEN comments, blank lines, indentation, nested markers, block scalars, or prose follow THEN authority declares how context persists and exits, rejects every structural fragment, and permits a valid definition only after a defined exit boundary.
+    - GIVEN following, this, or exact-term references near multiple cues WHEN binding runs THEN following targets the nearest next cue, this the nearest previous cue, exact terms the nearest matching cue, and duplicate or missing targets yield stable ambiguity without suppressing unrelated cues.
+    - GIVEN an approved inline colon or list meaning continues WHEN bytes are counted THEN continuation starts only after non-empty inline meaning, includes exact original newlines, stops at blank, next-cue, structural, comment, or list boundaries, accepts exactly 4,096 UTF-8 bytes, and rejects one byte more.
+    - GIVEN authority validation runs WHEN each state transition, rejection, exit, direction, duplicate-target, bound, and canonical lexical-order rule is mutated THEN one passing and one failing contract case protect each rule without changing shared or project glossary semantics.
+  evidence:
+    - Authority validation must pass before the dependent implementation starts.
+    - This task does not supersede blocked parser tasks milybqttmo or guhuzevlez.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Declared list_boundary structural entry lacks outside:list_boundary transition; validator accepts undeclared extra transition keys, so fail-closed mutation coverage is incomplete.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_01e94e1f4ffeDpyiF0asDc7K4b bounded re-review
+      recorded_at: 2026-08-08 15:09
+      writer_command: agentera state plan record-evaluation

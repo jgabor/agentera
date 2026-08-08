@@ -1,0 +1,16 @@
+id: hpmpwwpxvz
+artifact: progress
+record:
+  timestamp: 2026-08-08 14:47
+  type: feat
+  phase: build
+  what: Finalized the finite explicit segment grammar authority for uhdotliobu without changing parser behavior.
+  context:
+    intent: Leave a finite, executable authority for dependent task nipgzvgjzm to consume before parser implementation.
+    constraints: Preserve canonical lexical output order, duplicate and conflict behavior, personal/project isolation, no project-glossary reads, exact UTF-8 source semantics, consent, provenance, and disabled inferred auto-admission. No parser behavior, release, registry, publication, or commit changes.
+    unknowns: Independent Audit has not run. Decisions, vision, and profile detail remained deferred; supplied decision satisfaction remains null. The structural exit remains one top-level non-structural prose line, then the next physical line may define.
+    scope: references/artifacts/glossary-entry-contract.yaml; packages/cli/src/registries/explicitSegmentGrammarContract.ts; packages/cli/test/registries/explicitSegmentGrammarContract.test.ts; packages/cli/test/runtime/retiredRuntimeSurfacePolicy.test.ts.
+  discovered: The finite contract now has one explicit_cue_segment class, seven states, declared input transitions and per-state fail-closed fallbacks, structural-config persistence and exit, reference binding, exact continuation limits, output spans, deduplication, and lexical ordering. The source module stays below the 1000-line monolith gate.
+  verified: The rebuilt local artifact prime returned outcome ok and selected uhdotliobu as pending. Targeted authority tests passed 2 files and 92 tests; monolith lint passed; typecheck and build passed. Full source verification passed 234 files, 3655 tests, and 1 skip. Package verification passed 3 files and 34 tests. Local vocabularyAuthority, capability-contract (3 checks), compact, targeted lint, and format checks passed. Mutation coverage rejects altered transitions, rejection reasons, structural exit, direction, duplicate and missing ambiguity outcomes, both 4096-byte bounds, output and form mappings, deduplication conflict semantics, and canonical lexical order. No parser source or project glossary behavior changed.
+  next: Leave uhdotliobu pending for evaluator-owned Audit. Keep nipgzvgjzm pending and do not supersede blocked tasks. No commit was created.
+  publication_order: 118

@@ -1,0 +1,16 @@
+id: cllqasldur
+artifact: progress
+record:
+  timestamp: 2026-08-08 15:06
+  type: fix
+  phase: build
+  what: Retried uhdotliobu after persisted audit-1 failure without implementing parser behavior.
+  context:
+    intent: Correct only the finite authority defects identified by audit-1 and leave the task pending for re-audit.
+    constraints: Preserve the failed evaluation, prior progress records, approved plan-task records, parser ownership, all glossary semantics, and uncommitted worktree. No parser behavior, release, registry, publication, or commit changes.
+    unknowns: Independent re-audit has not run. The prior audit-1 verdict remains persisted as fail; task status must remain pending. Decisions, vision, and profile detail remain deferred with supplied satisfaction null.
+    scope: references/artifacts/glossary-entry-contract.yaml; packages/cli/src/registries/explicitSegmentGrammarContract.ts; packages/cli/test/registries/explicitSegmentGrammarContract.test.ts; affected scalar census only.
+  discovered: Audit-1 identified that structural_configuration.entry_inputs listed list_boundary without an outside:list_boundary transition, and that validation checked required transition keys but allowed an appended recognized-state/input key. The authority now enters structural_config for outside list boundaries and rejects every key outside REQUIRED_TRANSITIONS.
+  verified: The rebuilt local artifact prime returned outcome ok, selected uhdotliobu as pending, and preserved audit-1 fail. Targeted authority tests passed 2 files and 94 tests, including outside:list_boundary resolver coverage and appended-transition rejection. Monolith lint passed with the explicit authority module under 1000 lines; typecheck and build passed. Full source verification passed 234 files, 3657 tests, and 1 skip. Local vocabularyAuthority, capability-contract (3 checks), compact, targeted lint, and format checks passed. No parser source or project glossary behavior changed.
+  next: Keep uhdotliobu pending for independent re-audit. Preserve audit-1 failure provenance, prior progress, both approved plan-task records, and all intended worktree files. Do not commit.
+  publication_order: 119
