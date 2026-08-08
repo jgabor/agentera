@@ -599,6 +599,7 @@ LIFECYCLE_CONTRACT:
           - .pytest_cache
           - .ruff_cache
           - .playwright-cli
+          - .agentera-generated
           - .cache
           - .snapshots
           - __pycache__
@@ -642,7 +643,7 @@ LIFECYCLE_CONTRACT:
           reason: Caches and filesystem snapshots are generated or external state.
         - patterns: ["**/dist", "**/dist/**", "**/build", "**/build/**", "**/coverage", "**/coverage/**"]
           reason: Compiled, bundled, and coverage outputs are generated from classified sources.
-        - patterns: [packages/cli/bundle, packages/cli/bundle/**, "**/.astro", "**/.astro/**", "**/.svelte-kit", "**/.svelte-kit/**"]
+        - patterns: [packages/cli/.agentera-generated, packages/cli/.agentera-generated/**, packages/cli/bundle, packages/cli/bundle/**, "**/.astro", "**/.astro/**", "**/.svelte-kit", "**/.svelte-kit/**"]
           reason: Runtime bundles and framework outputs are generated publication artifacts.
         - patterns: [.wrangler, .wrangler/**, "**/.wrangler", "**/.wrangler/**", "*.tgz", "**/*.tgz"]
           reason: Deployment outputs and package tarballs are generated publication artifacts.

@@ -170,11 +170,13 @@ describe("plan lifecycle contract", () => {
         ".snapshots",
         ".wrangler",
         ".playwright-cli",
+        ".agentera-generated",
       ]),
     );
     expect(inventory.scan.markers).toEqual(expect.arrayContaining(["plan.yaml", "state.plan."]));
     expect(exclusions).toContain("**/*.tgz");
     expect(exclusions).toContain(".playwright-cli/**");
+    expect(exclusions).toContain("packages/cli/.agentera-generated/**");
     for (const exclusion of inventory.scan.exclusions) {
       expect(exclusion.patterns.length).toBeGreaterThan(0);
       expect(exclusion.reason.length).toBeGreaterThan(20);

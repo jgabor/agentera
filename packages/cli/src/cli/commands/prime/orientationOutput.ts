@@ -240,7 +240,6 @@ export function buildStatusContextState(
       degrading: Boolean(state.health.degrading),
     },
     todo: { ...state.counts, detail: state.todo_detail },
-    ...(state.todo_reconciliation?.status === "action_required" ? { todo_reconciliation: state.todo_reconciliation } : {}),
     plan: {
       exists: plan.exists,
       active: plan.active ?? false,

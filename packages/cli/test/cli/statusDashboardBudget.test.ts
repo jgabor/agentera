@@ -56,4 +56,24 @@ describe("status startup budget", () => {
       expect(finalized.capability_context.context.status_context.outcome).toBe(finalized.capability_context.startup.outcome);
     });
   });
+
+  it("carries action-required TODO reconciliation once in the startup aggregation", () => {
+    withSyntheticState((state) => {
+      state.todo_reconciliation = {
+        state: "unsafe_active",
+        status: "action_required",
+        counts: { matched: 0, converted: 0, retained: 0, duplicate: 0, stale: 1, conflicting: 0 },
+        omitted_count: 0,
+        preview_command: "agentera state todo repair --dry-run --format json",
+        apply_command: "agentera state todo repair --yes --format json",
+        recovery_command: "Run the preview, review it, then run its exact apply command.",
+      };
+      const payload = buildStatusCapabilityContextPayload(state) as Record<string, any>;
+      const capsule = payload.capability_context;
+
+      expect(capsule.startup.todo_reconciliation).toEqual(state.todo_reconciliation);
+      expect(capsule.context.status_context).not.toHaveProperty("todo_reconciliation");
+      expect(briefUtf8Bytes(payload)).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    });
+  });
 });

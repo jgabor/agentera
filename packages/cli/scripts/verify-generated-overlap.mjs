@@ -124,7 +124,6 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
       NPM_CONFIG_OFFLINE: offline ? "true" : "false",
       AGENTERA_VERIFICATION_BARRIER: barrier,
       AGENTERA_VERIFICATION_PARTICIPANT: name,
-      ...(name === "source" ? { VITEST_MAX_WORKERS: "2" } : {}),
       ...(name === "build" || name === "invocation" ? {} : { AGENTERA_VERIFICATION_RESULT: path.join(root, `${name}.json`) }),
       ...(name === "source" ? { AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "source") } : {}),
       ...(name === "package" ? { AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "package") } : {}),
