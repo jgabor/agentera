@@ -300,7 +300,8 @@ describe("plan lifecycle contract", () => {
   });
 
   posixIt("skips nonregular filesystem entries", async () => {
-    const root = temporaryDirectory();
+    // Unix socket paths are short; qualification deliberately nests TMPDIR.
+    const root = fs.mkdtempSync(path.join("/tmp", "agentera-plan-socket-"));
     const socketPath = path.join(root, "scanner.sock");
     const server = net.createServer();
     let listening = false;
