@@ -644,6 +644,7 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   if ("profile" in payload) out.profile = briefProfile(payload.profile);
   if ("shared_skill" in payload) out.shared_skill = briefSharedSkill(payload.shared_skill);
   if ("project_integration" in payload) out.project_integration = briefProjectIntegration(payload.project_integration);
+  if ("todo_reconciliation" in payload) out.todo_reconciliation = payload.todo_reconciliation;
   if ("startup" in payload) out.startup = payload.startup;
   if ("health" in payload) out.health = briefHealth(payload.health);
   if ("todo" in payload) out.todo = payload.todo;

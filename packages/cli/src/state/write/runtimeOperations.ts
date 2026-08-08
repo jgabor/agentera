@@ -50,7 +50,7 @@ export interface RuntimeOperationSpec {
 
 export const RUNTIME_WRITE_VERBS = [
   "append", "update", "amend", "set-status", "supersede", "set-plan-status",
-  "record-evaluation", "archive", "create", "publish", "set-severity", "resolve", "reopen", "explain",
+  "record-evaluation", "archive", "create", "publish", "activate", "repair", "set-severity", "resolve", "reopen", "explain",
 ] as const;
 export type RuntimeWriteVerb = (typeof RUNTIME_WRITE_VERBS)[number];
 
@@ -111,6 +111,8 @@ const RUNTIME_OPERATION_CORES: RuntimeOperationCoreSpec[] = [
   op("objective", "create", [], { ownedFields: ["id", "artifact", "header.id"], inputMode: "structured", inputRoot: "one objective document", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id"], inputMaxBytes: 32768 }),
   op("objective", "update", [f("--id", "id", "string", { required: true })], { selectors: ["--id"], ownedFields: ["id", "artifact", "header.id"], inputMode: "structured", inputRoot: "one objective document", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id"], inputMaxBytes: 32768 }),
   op("experiments", "publish", [f("--objective", "objective", "string", { required: true }), f("--id", "id", "string")], { selectors: ["--objective", "--id"], ownedFields: ["id", "artifact", "objective", "archive_identity"], inputMode: "structured", inputRoot: "one experiment entry", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "objective"], inputMaxBytes: 32768, compacts: true }),
+  op("todo", "activate", [f("--effect-sha256", "effect_sha256", "string"), f("--yes", "confirmed", "boolean")], { ownedFields: ["reconciliation", "public_document", "activation"], compacts: true }),
+  op("todo", "repair", [f("--effect-sha256", "effect_sha256", "string"), f("--yes", "confirmed", "boolean")], { ownedFields: ["reconciliation", "public_document", "activation"], compacts: true }),
   op("todo", "create", [], { ownedFields: ["id", "artifact", "status", "public_order", "lifecycle"], inputMode: "structured", inputRoot: "full typed TODO record", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "status", "public_order", "lifecycle"], inputMaxBytes: 32768 }),
   op("todo", "update", [f("--id", "id", "string", { required: true })], { selectors: ["--id"], ownedFields: ["id", "artifact", "status", "public_order", "lifecycle"], inputMode: "structured", inputRoot: "TODO record patch", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "status", "public_order", "lifecycle"], inputMaxBytes: 32768 }),
   op("todo", "set-severity", [f("--id", "id", "string", { required: true }), f("--severity", "severity", "string", { required: true, validValues: ["critical", "degraded", "normal", "annoying"] }), f("--reason", "lifecycle.reason", "string", { required: true }), f("--date", "lifecycle.date", "date", { required: true })], { selectors: ["--id"], ownedFields: ["id", "artifact", "severity", "lifecycle"] }),
@@ -210,6 +212,16 @@ const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionCo
   "experiments.publish": projection(
     "Use a bare objective ID, omit numeric legacy selectors, and retry the exact input; divergent immutable identities remain untouched.",
     developmentCommand("state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json"),
+  ),
+  "todo.activate": projection(
+    "Preview and review every reported activation effect before explicit confirmed apply; use the returned examples without modification.",
+    developmentCommand("state todo activate --dry-run --format json"),
+    developmentCommand("state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json"),
+  ),
+  "todo.repair": projection(
+    "Preview and review every diagnosed repair decision before explicit confirmed apply; ambiguous evidence is rejected without effects.",
+    developmentCommand("state todo repair --dry-run --format json"),
+    developmentCommand("state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json"),
   ),
   "todo.create": projection(
     `Run ${developmentCommand("state todo explain --verb create --format json")}, remove CLI-owned fields, provide the full typed TODO record, and retry.`,

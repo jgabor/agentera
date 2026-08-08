@@ -145,6 +145,15 @@
   non-cooperating writer that races after final successful validation remains
   outside the contract. One bounded activation transaction rejects duplicate
   ID-less rows before requiring canonical IDs for all newly managed rows.
+- Fixed TODO cutover and activation to require a complete one-to-one inventory,
+  preserve Markdown-owned status and order, and block implicit mutation. The
+  effect-complete `agentera state todo activate --dry-run` preview now binds
+  its confirmed apply to the exact reported targets and effect digest.
+- Fixed unsafe TODO reconciliation recovery and reporting. `agentera state todo
+  repair` collapses only proven duplicate or stale projections without reopening
+  completed work, while `agentera prime`, `agentera doctor`, and `agentera check
+  validate state` report inactive and unsafe-active projects with exact bounded
+  recovery commands.
 - Fixed plan task append and update to require bounded YAML/JSON file-or-stdin
   records and patches with bare ten-letter selectors and relationships. Complete
   plan create now resolves positive integer or canonical numeric-string ordinals

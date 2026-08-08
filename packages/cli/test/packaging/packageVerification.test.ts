@@ -584,7 +584,7 @@ describe("npm distribution boundary", () => {
     expect(schema.status, schema.stderr).toBe(0);
     const artifacts = JSON.parse(schema.stdout).state_writer.artifacts as Array<{ artifact: string; operations: Array<{ verb: string; recovery: string; examples: string[]; fields: Array<{ flag: string; valid_values?: string[] }> }> }>;
     const operations = artifacts.flatMap((artifact) => artifact.operations.map((operation) => ({ artifact: artifact.artifact, ...operation })));
-    expect(operations).toHaveLength(25);
+    expect(operations).toHaveLength(27);
     for (const runtime of runtimeOperationSpecs()) {
       const operation = operations.find((candidate) => candidate.artifact === runtime.artifact && candidate.verb === runtime.verb)!;
       expect(operation.recovery).toBe(runtime.projection.recovery.runtime);
@@ -1319,8 +1319,8 @@ describe("npm distribution boundary", () => {
     expect(packageInventory.records.every(({ reason }) => reason.length > 0)).toBe(true);
     const parity = registryBootstrapAuthorityParity(CHECKOUT_ROOT, fixture.packageRoot);
     expect(parity.diagnostics, "exact normalized source/package command-authority parity").toEqual([]);
-    expect(parity.source).toHaveLength(197);
-    expect(parity.package).toHaveLength(197);
+    expect(parity.source).toHaveLength(199);
+    expect(parity.package).toHaveLength(199);
     expect(parity.package).toEqual(parity.source);
     for (const capability of ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]) {
       const result = run(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], project, isolatedPackageEnv());

@@ -308,6 +308,11 @@ function validateOperationExample(spec: RuntimeOperationSpec, template: RuntimeO
       if (flag === "--force" && !spec.allowForce) invalid(`${spec.artifact}.${spec.verb} example uses unauthorized --force`);
       continue;
     }
+    const bareBoolean = fields.get(flag);
+    if (bareBoolean?.kind === "boolean" && (words[index] === undefined || words[index]!.startsWith("--"))) {
+      if (!bareBoolean.repeatable && count > 1) invalid(`${spec.artifact}.${spec.verb} example repeats ${flag}`);
+      continue;
+    }
     const argument = words[index++];
     if (argument === undefined || argument.startsWith("--")) invalid(`${spec.artifact}.${spec.verb} ${flag} needs one non-option value`);
     if (flag === "--format") {

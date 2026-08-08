@@ -24,12 +24,16 @@ record:
     gate: null
     queue_rank: 40
     order_reason: Build repair on the explicit activation contract, then let startup route unsafe active projects to it.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Repair projects affected by implicit TODO reconciliation activation."
+      status: resolved
+      order: 97
       severity: normal
-      status: open
-      order: 32
+  lifecycle:
+    operation: resolve
+    reason: Explicit marker-active TODO repair passed independent Audit with canonical identity and effect-bound provenance.
+    date: 2026-08-07

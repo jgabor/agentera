@@ -1,0 +1,15 @@
+id: rgpmrbjyyw
+artifact: progress
+record:
+  timestamp: 2026-08-07 13:42
+  type: fix
+  phase: build
+  what: Started replacement task jstgyilsyk and reproduced the accepted interrupted-cutover recovery defect; correction and independent Audit remain pending.
+  context:
+    intent: Repair automatic TODO cutover recovery so accepted authority publication cannot follow journal target drift.
+    constraints: Preserve the recoverable journal and existing implementation; local rebuilt CLI only; no terminal plan, TODO, evaluation, supersession, commit, push, tag, publish, version, or unrelated activation/diagnostic work.
+    scope: Automatic upgrade cutover and interrupted recovery for TODO reconciliation.
+  discovered: Recovery treated a pending journal plus a schema-valid nonempty entity graph as sufficient, so target-set drift was detected only by read-only final verification after authority publication.
+  verified: "Criterion 1: focused upgradeEntityCutover tests for the 161-row hierarchical TODO, initial rejection classes, and unchanged interrupted recovery passed 6/6, covering one ID-bearing row per entity plus preserved prose, Markdown values, status, order, readiness, stable IDs, and replay bytes. Criterion 2: the same run passed four initial unmatched, unknown-ID, ambiguous, and stale-activation effect-free cases. The exact new regression rejects unmatched entity drift before resuming an interrupted TODO cutover failed as expected: after interruption at two journal targets and insertion of a schema-valid unmatched TODO entity, retry returned failure but .agentera/state-mode.yaml existed (expected false, received true). Criterion 3: unchanged interrupted recovery/replay passed in that 6/6 run; the new drift case proves target-set revalidation is still missing before recovery effects."
+  next: Revalidate the validated journal target set, canonical TODO entities, final managed Markdown rows, and public baselines before any recovery target or marker publication; then rerun focused and broader checks without terminal task state.
+  publication_order: 97

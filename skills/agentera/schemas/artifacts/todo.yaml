@@ -132,10 +132,12 @@ PUBLIC_OWNERSHIP:
 
 LIFECYCLE:
   description: >-
-    set-severity, supersede, resolve, and reopen are flag-only typed transitions.
-    Each requires a reason and date; supersede additionally requires a distinct
-    existing replacement ID. Lifecycle operations are never accepted as
-    structured record content and never encoded as Markdown strikethrough.
+    activate is a flag-only reconciliation transition that requires the
+    preview effect SHA-256 and explicit confirmation. Item lifecycle transitions
+    set-severity, supersede, resolve, and reopen require a reason and date;
+    supersede additionally requires a distinct existing replacement ID. These
+    operations never accept structured record content or use Markdown
+    strikethrough.
   clearable_patch_fields: [target_version, requirements, acceptance, readiness]
   cli_owned_fields: [id, artifact, status, public_order, lifecycle]
   transition_fields: [reason, date, replacement]

@@ -1,0 +1,16 @@
+id: cxppmnunge
+artifact: progress
+record:
+  timestamp: 2026-08-07 17:06
+  type: fix
+  phase: build
+  what: Added explicit, recoverable repair for marker-active TODO projects damaged by implicit reconciliation.
+  context:
+    intent: Repair unsafe active TODO projects without overwriting Markdown or entity authority.
+    constraints: Preview is read-only and effect-complete; apply requires its digest and reuses .agentera/.todo-reconciliation. No task/TODO terminal state, evaluation, commit, release, or publication.
+    unknowns: "Resolved: retained fingerprint plus one unique public-identity candidate and canonical managed ID proves each supported collapse. Every incomplete, multiple, orphaned, or unproven mapping refuses before effects instead of guessing."
+    scope: Explicit repair for marker-active unsafe projects, operation discovery/contracts, regression fixtures, and non-terminal progress evidence only.
+  discovered: The supported damage has retained legacy-row provenance plus a unique public-identity candidate and canonical managed ID. Missing, duplicate, orphaned, or multiple candidates are not safely collapsible.
+  verified: "Criterion 1: the 68-test TODO authority file includes a damaged fixture whose preview reports duplicate=2, stale=1, matched=1, retained=1, conflicting=0 and preserves the exact pre-preview file map; two ambiguous/unmatched previews return bounded conflicts and preserve exact file maps. Criterion 2: confirmed apply leaves one row for each of 3 entity IDs, keeps the completed item resolved, preserves introduction/footer plus retained prose, IDs, readiness, requirements, and activation provenance, then state validation passes. Criterion 3: injected interruptions after target boundaries 0,1,2,3,4 recover and replay to exact stable file maps; stale effect apply and two refusal cases are effect-free. `pnpm run test:source` passed 228 files, 3410 tests, 1 skipped; `pnpm run verify:package` passed 3 files/34 tests; typecheck and build passed. Rebuilt local preview diagnosed this checkout as duplicate=0, stale=0, matched=107, retained=23, conflicting=0 and reported TODO.md unchanged at 47749 bytes with identical SHA-256 23702ef2437914589f17eb8459b471dd93162a50edb9e634f2db2b014d253b2d. Local state validation passed 2152 entities/0 issues; capability-contract passed 3/3; compact reported changed=0."
+  next: Independent Audit evaluates task ajalzcdhey; do not close the task or source TODO before PASS.
+  publication_order: 102

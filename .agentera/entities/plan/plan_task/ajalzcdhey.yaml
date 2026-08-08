@@ -1,0 +1,22 @@
+id: ajalzcdhey
+artifact: plan
+record:
+  name: Repair unsafe active projects (lgruqgycgo)
+  depends_on:
+    - apgveejdaq
+  status: complete
+  acceptance:
+    - GIVEN a marker-active damaged project WHEN repair is previewed THEN duplicate, stale, matched, retained, and conflicting evidence is diagnosed without writes.
+    - GIVEN complete one-to-one evidence WHEN repair is confirmed THEN exactly one row remains per entity, current public values and unrelated prose survive, and IDs plus operational fields remain stable.
+    - GIVEN ambiguous evidence, interruption, replay, and one passing plus one failing case per repair decision class WHEN repair runs THEN ambiguity is effect-free and supported outcomes converge.
+  plan: owuzikqest
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Audit found two blocking repair defects: legacy_matched assigns ID-less retained rows without canonical managed-row identity and can reopen resolved entities; repair effect authorization replaces activation after_sha256 with a constant, so exact activation provenance is not digest-bound. Remove unsupported matching, add refusal pairs, and hash normalized exact activation after-content."
+    provenance:
+      attempt_id: ajalzcdhey-audit-2
+      source: audit:ses_0233521b6ffee36GcmePP4QBlR:bounded-rereview
+      recorded_at: 2026-08-07 17:44
+      writer_command: agentera state plan record-evaluation

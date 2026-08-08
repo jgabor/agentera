@@ -2,6 +2,7 @@ import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import type { SchemaInfo } from "../appContext.js";
 import type { BundleStatus } from "./bundleStatus.js";
 import type { ProjectIntegrationSummary } from "../../upgrade/projectIntegration.js";
+import type { TodoReconciliationInspection } from "../../state/todoReconciliationInspection.js";
 import type {
   ProfileFreshnessResult,
   ProfileValidityResult,
@@ -215,8 +216,8 @@ export interface OrientationState {
   v1_migration: V1MigrationSummary;
   project_integration: ProjectIntegrationSummary;
   state_cutover: {
-    status: "complete" | "required";
-    project_state: "v3" | "clean" | "v2" | "partial";
+    status: "complete" | "required" | "invalid_lifecycle";
+    project_state: "v3" | "clean" | "v2" | "partial" | "invalid_lifecycle";
     recovery_command: string | null;
   };
   shared_skill: JsonObject;
@@ -229,6 +230,7 @@ export interface OrientationState {
   corpus_coverage: CorpusCoverageSummary;
   todo_items: JsonObject[];
   todo_detail: TodoDetailSummary;
+  todo_reconciliation?: TodoReconciliationInspection | null;
   counts: IssueCounts;
   decision_attention: DecisionReviewAttention | null;
   glossary_caveat_attention: string | null;

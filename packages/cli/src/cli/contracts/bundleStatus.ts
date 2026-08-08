@@ -17,6 +17,12 @@ export interface DoctorSignal {
   appHome?: string;
   resourceIds?: string[];
   omittedResourceCount?: number;
+  reconciliationState?: string;
+  reconciliationCounts?: Record<string, number>;
+  reconciliationOmittedCount?: number;
+  previewCommand?: string | null;
+  applyCommand?: string | null;
+  recoveryCommand?: string;
 }
 
 /** Npx bundle platform app-home overlay on bundle status. */

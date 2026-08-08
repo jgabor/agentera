@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { todoReconciliationActivationBytes } from "../../src/state/todoReconciliationActivation.js";
 
 export interface PrimeEvidenceFixture {
   planId: string;
@@ -59,6 +60,7 @@ export function seedPrimeEvidenceProject(root: string): PrimeEvidenceFixture {
   const agentera = path.join(root, ".agentera");
   fs.mkdirSync(agentera, { recursive: true });
   fs.writeFileSync(path.join(agentera, "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  fs.writeFileSync(path.join(agentera, "todo-reconciliation-activation.json"), todoReconciliationActivationBytes([]));
 
   const planId = "zzzzzzzzzz";
   const taskIds = Array.from({ length: 21 }, (_, index) => alphaId(index + 200));

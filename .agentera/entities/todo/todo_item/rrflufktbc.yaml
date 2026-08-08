@@ -23,16 +23,16 @@ record:
     gate: null
     queue_rank: 37
     order_reason: Complete automatic migration before relying on manual recovery or downstream status reporting.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make explicit TODO cutover preserve one authoritative public row per item."
+      status: resolved
+      order: 95
       severity: normal
-      status: open
-      order: 26
   lifecycle:
-    operation: set-severity
-    reason: Moved from the duplicated Critical section to the Normal backlog.
-    date: 2026-08-06
+    operation: resolve
+    reason: Replacement plan task jstgyilsyk passed independent Audit for safe automatic cutover and recovery convergence.
+    date: 2026-08-07

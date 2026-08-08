@@ -22,4 +22,4 @@ record:
       description: "[docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance."
       severity: normal
       status: open
-      order: 33
+      order: 29

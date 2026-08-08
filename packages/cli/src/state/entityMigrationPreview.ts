@@ -9,10 +9,9 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.js";
-import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMarkdown.js";
 import { assertRealpathBoundary, docsPathOverridesFromBytes, loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js";
-import { canonicalEntityEnvelopeBytes, discoverEntities, entityForbiddenCanonicalAliases, entityPreservedAggregateCollections, validateCanonicalEntityTargets } from "./entityStorage.js";
+import { canonicalEntityEnvelopeBytes, entityForbiddenCanonicalAliases, entityPreservedAggregateCollections, validateCanonicalEntityTargets } from "./entityStorage.js";
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
 import { classifyCompleteDecisionConfidence, decisionLegacyCoexistence } from "./decisionLegacyValidation.js";
@@ -26,7 +25,9 @@ import { legacyIdentity } from "./legacyIdentity.js";
 import { canonicalMigrationRecord } from "./canonicalMigrationRecord.js";
 import { legacySummaryRecord } from "./legacySummaryRecord.js";
 import { applyCausalBlockers } from "./entityMigrationCausality.js";
+import { todoMigrationObservations, todoReconciliationMigrationPlan } from "./entityMigrationTodo.js";
 import { detectStateMode } from "./stateMode.js";
+import { TODO_RECONCILIATION_ACTIVATION_PATH } from "./todoReconciliationActivation.js";
 import {
   projectPathIsStable as migrationPathIsStable,
   readProjectFileSnapshot,
@@ -111,6 +112,13 @@ export interface DurableEntityMigrationPlan {
   sources: DurableEntityMigrationSource[];
   counts: EntityMigrationPreview["counts"];
   diagnostics: EntityMigrationPreview["diagnostics"];
+  todo_reconciliation?: {
+    public_path: string;
+    mapping_sha256: string;
+    markdown_before_base64: string;
+    markdown_after: string;
+    activation_after: string;
+  };
 }
 
 export interface EntityMigrationPreview {
@@ -162,6 +170,7 @@ interface Observation {
   migrationProvenance?: JsonObject;
   inheritedConfidenceProvenance?: JsonObject;
   sourceRecordSha256?: string;
+  explicitId?: string;
 }
 
 type SourceFile =
@@ -286,8 +295,10 @@ function collectSources(root: string, validatedRoot: ValidatedProjectRoot, todoP
   const objectives = [".agentera/optimize", ".agentera/optimera"].flatMap((directory) =>
     directoryFiles(root, validatedRoot, directory, (candidate) => /\/(objective|experiments)\.yaml$/.test(candidate), descriptorPathResolver),
   );
-  const collected = [...exact, ...archives, ...objectives];
-  const missingRoots = [".agentera/archive/", ".agentera/optimize/", ".agentera/optimera/"]
+  const todoEntities = directoryFiles(root, validatedRoot, ".agentera/entities/todo/todo_item", (candidate) => candidate.endsWith(".yaml"), descriptorPathResolver);
+  const activation = readMigrationSource(validatedRoot, TODO_RECONCILIATION_ACTIVATION_PATH, descriptorPathResolver);
+  const collected = [...exact, ...archives, ...objectives, ...todoEntities, activation];
+  const missingRoots = [".agentera/archive/", ".agentera/optimize/", ".agentera/optimera/", ".agentera/entities/todo/todo_item/"]
     .filter((directory) => {
       if (collected.some((source) => source.kind === "unsafe" && source.relative === directory)) return false;
       try { return !fs.lstatSync(path.join(root, directory)).isDirectory(); } catch { return true; }
@@ -607,36 +618,8 @@ function objectiveObservations(root: string, files: SourceFile[], observations: 
   }
 }
 
-function todoAndDocs(root: string, todoPath: string, files: SourceFile[], observations: Observation[]): void {
-  const todo = files.find((source) => source.relative === todoPath);
-  if (todo?.kind === "file" && todo.bytes) {
-    let section = "normal";
-    todo.bytes.toString("utf8").split(/\r?\n/).forEach((line, index) => {
-      const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
-      if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : section;
-      const item = parseTodoMarkdownListItem(line.trim());
-      if (!item) return;
-       const severity = section === "resolved" ? "normal" : section;
-       const record: JsonObject = item.kind
-         ? { kind: item.kind, target_version: item.target_version ?? null, title: item.title ?? item.description, requirements: [], acceptance: [], release_blocker: false, severity, status: item.status }
-         : { severity, status: item.status, description: item.description };
-      const violations = todoDocsRecordViolations("todo_item", record);
-      observations.push({ key: `${todoPath}:line:${index + 1}`, artifact: "todo", boundary: "todo_item", path: todoPath, provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined });
-    });
-  } else if (todo?.kind === "unsafe") {
-    observations.push({ key: "todo:document", artifact: "todo", boundary: "todo_item", path: todoPath, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(todoPath) });
-  }
-  const existingTodos = discoverEntities(root, resolveSourceRoot()).entities.filter((entity) => entity.boundary === "todo_item" && entity.id && entity.record);
-  for (const entity of existingTodos) {
-    const row = todoMarkdownRowForMigration(todo?.kind === "file" && todo.bytes ? todo.bytes.toString("utf8") : "", entity.id!);
-    if (!row) continue;
-    const severityMatches = row.severity === "resolved" || row.severity === null || entity.record!.severity === row.severity;
-    const publicText = row.item.public_description ?? row.item.description;
-    const entityText = renderTodoPublicRecord(entity.record!);
-    const textMatches = entity.record!.title !== undefined ? entityText === publicText : entityText === row.item.description || entityText === publicText;
-    const publicMatches = entity.record!.status === row.item.status && severityMatches && textMatches;
-    if (!publicMatches) observations.push({ key: `conflict:todo:public:${entity.id}`, artifact: "todo", boundary: "todo_item", path: todoPath, provenance: "public_authority_conflict", record: null, detail: "corrupt", relationships: [], message: `TODO.md and Agentera disagree on public values for TODO '${entity.id}'` });
-  }
+function todoAndDocs(root: string, sourceRoot: string, todoPath: string, files: SourceFile[], observations: Observation[]): void {
+  observations.push(...todoMigrationObservations(root, sourceRoot, todoPath, files));
   const docs = files.find((source) => source.relative === ".agentera/docs.yaml");
   if (docs?.kind === "file") {
     try {
@@ -657,17 +640,6 @@ function todoAndDocs(root: string, todoPath: string, files: SourceFile[], observ
   } else if (docs?.kind === "unsafe") {
     observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(docs.relative) });
   }
-}
-
-function todoMarkdownRowForMigration(text: string, id: string): { severity: string | null; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> } | null {
-  let section = "normal";
-  for (const line of text.split(/\r?\n/)) {
-    const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
-    if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : section;
-    const item = parseTodoMarkdownListItem(line.trim());
-    if (item?.id === id) return { severity: section === "resolved" ? "resolved" : ["critical", "degraded", "normal", "annoying"].includes(section) ? section : null, item };
-  }
-  return null;
 }
 
 function preservedSingletons(files: SourceFile[]): EntityMigrationPreview["preserved_singletons"] {
@@ -739,7 +711,8 @@ function buildEntries(project: string, sourceRoot: string, fingerprint: string, 
       ? [...canonicalSummaryBodies(group, forbiddenAliases)].sort()
       : [];
     const identityBinding = canonicalSummaries.length === 1 ? hash(canonicalRecordJson(canonicalSummaries)) : fingerprint;
-    ids.set(key, entityMigrationId(identityBinding, key));
+    const explicitIds = [...new Set(group.map((item) => item.explicitId).filter((id): id is string => id !== undefined))];
+    ids.set(key, explicitIds.length === 1 ? explicitIds[0]! : entityMigrationId(identityBinding, key));
   }
   const collisions = new Set<string>();
   const idOwners = new Map<string, string>();
@@ -839,11 +812,12 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   decisionEvidence(sourceRoot, files, observations);
   planObservations(project, files, observations);
   objectiveObservations(project, files, observations);
-  todoAndDocs(project, todoPath, files, observations);
+  todoAndDocs(project, sourceRoot, todoPath, files, observations);
   const preserved = preservedSingletons(files);
   const completeInventory = buildEntries(project, sourceRoot, fingerprint, observations, entityForbiddenCanonicalAliases(sourceRoot));
   const preservedResidues = completeInventory.filter((entry) => entry.classification === "historical_projection_residue");
   const completeEntries = completeInventory.filter((entry) => entry.classification !== "historical_projection_residue");
+  const todoReconciliation = todoReconciliationMigrationPlan(todoPath, files, completeEntries);
   for (const entry of completeEntries) {
     if (entry.proposed_target && entry.artifact) entry.target_sha256 = hash(canonicalEntityEnvelopeBytes({ id: entry.proposed_target.id, artifact: entry.artifact, record: entry.record, migrationProvenance: entry.canonical_migration_provenance }));
   }
@@ -907,12 +881,12 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   counts.blockers = counts.root_blockers + counts.dependent_blockers;
   const digestEntries = completeEntries.map(({ record: _record, ...entry }) => entry);
   const digestResidues = preservedResidues.map(({ record: _record, ...entry }) => entry);
-  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: digestEntries, preserved_residues: digestResidues, preserved_singletons: preserved, counts, diagnostics };
+  const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: digestEntries, preserved_residues: digestResidues, preserved_singletons: preserved, counts, diagnostics, todo_reconciliation: todoReconciliation ?? null };
   const previewDigest = hash(canonicalRecordJson(digestBody));
   const sources = files.map((file): DurableEntityMigrationSource => {
     return { path: file.relative, presence: file.kind === "file" ? "file" : "missing", size: file.bytes?.byteLength ?? 0, sha256: file.bytes ? hash(file.bytes) : null, mode: file.kind === "file" ? file.mode : null, dev: file.kind === "file" ? String(file.dev) : null, ino: file.kind === "file" ? String(file.ino) : null, type: file.kind === "file" ? file.type : null, bytes_base64: file.bytes?.toString("base64") ?? null };
   });
-  return { project, source_fingerprint: fingerprint, preview_digest: previewDigest, ...authority, preserved_singletons: preserved, entries: completeEntries, preserved_residues: preservedResidues, sources, counts, diagnostics };
+  return { project, source_fingerprint: fingerprint, preview_digest: previewDigest, ...authority, preserved_singletons: preserved, entries: completeEntries, preserved_residues: preservedResidues, sources, counts, diagnostics, ...(todoReconciliation ? { todo_reconciliation: todoReconciliation } : {}) };
 }
 
 export function planEntityMigration(projectRoot: string, sourceRoot: string, options: { resolveDescriptorPath?: DescriptorPathResolver } = {}): DurableEntityMigrationPlan {

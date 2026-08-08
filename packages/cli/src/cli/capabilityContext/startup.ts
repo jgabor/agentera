@@ -120,6 +120,7 @@ export function slimCapabilityContext(
   todoItems: JsonObject[],
   bespokeContexts: JsonObject | null,
   cutover: JsonObject | null = null,
+  todoReconciliation: JsonObject | null = null,
 ): JsonObject {
   const context: JsonObject = capabilityContext(capability) ?? {
     capability,
@@ -141,7 +142,7 @@ export function slimCapabilityContext(
     capability,
     mode,
     app: capabilityContextAppSummary(appHome, bundle),
-    startup: startupAggregation(context, health, cutover),
+    startup: startupAggregation(context, health, cutover, todoReconciliation),
     context: boundStartupValue(contextPayload) as JsonObject,
     instructions: CAPABILITY_INSTRUCTIONS[capability] ?? "",
   };
@@ -169,7 +170,8 @@ export function buildPrimeCapabilityContextPayload(
   const bespoke = bespokeCapabilityContexts(capabilityName, stateDict, buildRequest);
   const contract = capabilityContext(capabilityName) ?? {};
   const cutover = stateDict.state_cutover as JsonObject;
-  const startup = startupAggregation(contract, stateDict.health as JsonObject, cutover);
+  const todoReconciliation = (stateDict.todo_reconciliation as JsonObject | null | undefined) ?? null;
+  const startup = startupAggregation(contract, stateDict.health as JsonObject, cutover, todoReconciliation);
   return {
     command,
     outcome: startup.outcome,
@@ -186,6 +188,7 @@ export function buildPrimeCapabilityContextPayload(
       state.todo_items,
       bespoke,
       cutover,
+      todoReconciliation,
     ),
   };
 }

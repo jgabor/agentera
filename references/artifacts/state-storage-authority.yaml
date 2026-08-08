@@ -756,6 +756,14 @@ entity_target:
           cardinality: zero_before_activation_then_exactly_one
           initial_match: exact_unique_public_fields_only
           retained_legacy_rows: bounded_section_and_exact_line_sha256_identities
+          effect_sha256: optional_for_legacy_cutover_required_for_explicit_activation
+          journal_authorization: >-
+            Explicit activation journals bind the preview effect SHA-256 into
+            transaction identity. Recovery validates that digest before target
+            effects. A completed explicit activation retains the same digest in
+            activation metadata so exact apply replay converges and unrelated
+            digests reject without effects; legacy activation accepts only its
+            current no-op preview digest.
           rule: >-
             The first reconciliation may assign a canonical ID only when one
             ID-less pre-activation row exactly matches one otherwise-unclaimed
@@ -2798,6 +2806,36 @@ mutation_grammar:
       fields:
         - { flag: --objective, field: objective, kind: string, required: true }
         - { flag: --id, field: id, kind: string }
+
+    - artifact: todo
+      verb: activate
+      class: batch_transaction
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid, activation_is_absent_or_replay, todo_reconciliation_is_valid, confirmed_effect_sha256_is_authorized_for_preview_or_replay]
+      owned_fields: [reconciliation, public_document, activation]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Preview and review every reported activation effect before explicit confirmed apply; use the returned examples without modification.
+      examples: ['npx -y agentera@next state todo activate --dry-run --format json', 'npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 256 }
+      compacts: true
+      fields:
+        - { flag: --effect-sha256, field: effect_sha256, kind: string }
+        - { flag: --yes, field: confirmed, kind: boolean }
+
+    - artifact: todo
+      verb: repair
+      class: batch_transaction
+      selectors: []
+      preconditions: [entity_mode_marker_is_valid, activation_is_present, complete_one_to_one_repair_evidence_is_valid, confirmed_effect_sha256_is_authorized_for_preview_or_replay]
+      owned_fields: [reconciliation, public_document, activation]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Preview and review every diagnosed repair decision before explicit confirmed apply; ambiguous evidence is rejected without effects.
+      examples: ['npx -y agentera@next state todo repair --dry-run --format json', 'npx -y agentera@next state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 256 }
+      compacts: true
+      fields:
+        - { flag: --effect-sha256, field: effect_sha256, kind: string }
+        - { flag: --yes, field: confirmed, kind: boolean }
 
     - artifact: todo
       verb: create

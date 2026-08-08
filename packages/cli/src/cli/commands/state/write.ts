@@ -222,6 +222,16 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       i += 1;
       continue;
     }
+    const bareBoolean = byFlag.get(token);
+    if (bareBoolean?.kind === "boolean") {
+      if ((occurrences.get(token) ?? 0) > 0)
+        invalid({ class: "mutually_exclusive", message: `${token} may only be supplied once` });
+      occurrences.set(token, 1);
+      setNested(values, bareBoolean.field, true);
+      setNested(callerPayload, bareBoolean.field, true);
+      i += 1;
+      continue;
+    }
     const parsed = readFlag(argv, i);
     if (parsed.value === null || parsed.value.startsWith("--"))
       invalid({
