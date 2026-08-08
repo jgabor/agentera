@@ -203,12 +203,13 @@ function evidenceRecord(
     active_runtime: true,
     adapter_version: adapterVersion,
     data: { ...data, signal_type: signalType },
+    origin_id: createHash("sha256").update(`producer-readiness:${sourceId}`, "utf-8").digest("hex"),
+    content_fingerprint: createHash("sha256").update(JSON.stringify(data), "utf-8").digest("hex"),
   };
   if (sourceKind === "conversation_turn" || sourceKind === "history_prompt") {
     const text = Object.values(data).find((value): value is string => typeof value === "string") ?? "";
     return {
       ...record,
-      origin_id: createHash("sha256").update(`producer-readiness:${sourceId}`, "utf-8").digest("hex"),
       content_fingerprint: createHash("sha256").update(text, "utf-8").digest("hex"),
       author_class: data.actor === "assistant" ? "agent" : "user",
       conversation_key: `producer-readiness:${sourceId}`,

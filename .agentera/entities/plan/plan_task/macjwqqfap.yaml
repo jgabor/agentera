@@ -1,0 +1,28 @@
+id: macjwqqfap
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Harden recurring-term lexical exclusion
+  status: complete
+  depends_on:
+    - qgimpwprim
+    - zabolpjiro
+  acceptance:
+    - GIVEN routine frequency words WHEN recurrence mining runs THEN common-word classes abstain with noise_term.
+    - GIVEN known commands in concatenated or segmented form WHEN mined THEN all forms abstain with noise_term.
+    - GIVEN path-like tokens WHEN mined THEN they abstain without semantic guessing.
+    - GIVEN a legitimate uncommon term WHEN mined THEN it remains review-eligible with settled Unicode identity.
+    - GIVEN each lexical class WHEN regressions run THEN paired pass and fail boundaries preserve all prior recurrence behavior.
+  evidence:
+    - Audit-2 finding from ddoncnlhro
+    - TODO gcrflfxlxq
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Leading-dot paths such as .config leak basename candidates; Unicode combining marks split decomposed terms and emit rewritten fragments; paired dotfile and decomposed-identity regressions are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_02021629fffeaNzco0cfFodqy8 bounded re-review
+      recorded_at: 2026-08-08 08:06
+      writer_command: agentera state plan record-evaluation

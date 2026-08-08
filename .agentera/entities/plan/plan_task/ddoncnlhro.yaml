@@ -5,7 +5,7 @@ record:
   depends_on:
     - qgimpwprim
     - zabolpjiro
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN consistent use across approved origins WHEN mining runs THEN one inferred candidate cites every authority-required bounded origin.
     - GIVEN one session, copied content, agent-only use, or insufficient diversity WHEN mining runs THEN the term abstains with a stable reason.
@@ -13,3 +13,16 @@ record:
     - GIVEN project-only context WHEN grouping runs THEN no personal definition or project glossary read occurs.
     - GIVEN each recurrence and exclusion WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Lexical filtering rejects only reported exemplars; common-word sibling usually and concatenated command gitstatus still become inferred review candidates, and paired class-level regressions are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_02080c595ffeHNCgLsfJeFO0K6 bounded re-review
+      recorded_at: 2026-08-08 07:03
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - macjwqqfap
+  superseded_reason: Replacement hardened recurrence lexical classes and passed bounded independent evaluation.

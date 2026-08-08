@@ -152,6 +152,7 @@
 - [x] [id:qeqpefwupo] [fix:3.0.0] Make marker-absent fresh-project startup converge without legacy migration.
 - [x] [id:lkpvbgwhby] [fix:3.0.0] Restore generated-overlap package verification to its governed wall-time budget.
 - [x] [id:rbuoixpxzp] [fix:3.0.0] Preserve Codex session-level transported author provenance
+- [x] [id:gcrflfxlxq] [fix:3.0.0] Reject recurring glossary noise classes instead of exemplars
 
 ## → Critical
 

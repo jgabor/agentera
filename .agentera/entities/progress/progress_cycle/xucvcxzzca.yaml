@@ -1,0 +1,16 @@
+id: xucvcxzzca
+artifact: progress
+record:
+  timestamp: 2026-08-08 06:45
+  type: fix
+  phase: build
+  what: Corrected recurring personal glossary mining after the persisted audit-1 failure.
+  context:
+    intent: Make recurring personal glossary mining produce review-only, project-scoped, provenance-backed, complete, bounded, and lexical-noise-resistant candidates.
+    constraints: Preserve personal/project isolation, exact-two instruction/configuration admission, the persisted audit failure, progress ntlynknjye, and the pending task state. Do not modify later workflow layers.
+    unknowns: The evaluator must confirm the corrected behavior through its own audit provenance.
+    scope: Recurrence mining, bounded signal reading, personal admission regressions, and the directly affected producer-readiness fixture.
+  discovered: Audit-1 exposed project-only conversation leakage, missing or invalid provenance, incomplete and over-bound conversation evidence, lexical noise, and an inferred-evidence path that silently truncated surplus origins.
+  verified: Focused recurrence, admission, authority, evidence-tier, tier-reader, extraction, candidate-contract, and producer-readiness tests passed (194 tests). Typecheck and lint passed. The source lane passed (232 files, 3527 passed, 1 skipped), package verification passed (3 files, 34 passed), generated-overlap verification passed, the local build passed, compact passed, and capability-contract validation passed.
+  next: Evaluator-owned rerun of the pending task remains required; later selection, CLI, decision, review, publication, and Profile work remains untouched.
+  publication_order: 108

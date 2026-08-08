@@ -1,0 +1,16 @@
+id: hchkttlizb
+artifact: progress
+record:
+  timestamp: 2026-08-08 07:33
+  type: fix
+  phase: build
+  what: Hardened recurring-term lexical exclusion for replacement task macjwqqfap.
+  context:
+    intent: Replace exemplar-only recurrence noise filtering with bounded deterministic lexical classes while preserving all accepted recurrence behavior.
+    constraints: Keep ddoncnlhro blocked, macjwqqfap pending, and TODO gcrflfxlxq open; do not write evaluator state, run Audit, commit, or touch later glossary workflow layers.
+    unknowns: An evaluator-owned persisted PASS remains required before any lifecycle transition.
+    scope: The recurring lexical classifier and its coupled recurrence boundary tests only.
+  discovered: "The prior filter used exact examples and separator-only segment matching, so sibling frequency words and concatenated commands escaped. The first broad run also found two verification seams: the recurrence module reached 1008 lines, and concurrent source/package lanes exposed transient package-generation files to a repository scan. The classifier moved to one focused module, and the lanes were rerun sequentially after rebuilding through the generated-output owner."
+  verified: "Requested-term observations: usually, often, and always each produced 0 candidates and 1 noise_term abstention. gitstatus, git-status, npmtest, and npm-test each produced 0/1 noise_term. Direct /tmp/path and src/path.ts plus derived tmp-path, src_path, and node_modules each produced 0/1 noise_term. Near-miss common, frequency, command, and path terms each produced 1/0 inferred_usage_requires_review. Code-delimited žargon-λ produced 1/0 with stable identity ab9c81ded2ebe0e3dd430c34508fbb425b6fd2db83340d2f268a9fcf2ded696b. All 29 recurrence tests and 108 focused recurrence/admission/authority tests passed. Full source passed 232 files, 3531 passed, 1 skipped, 3532 total. Package passed 3 files and 34 tests. Typecheck, targeted lint, format, rebuilt local CLI, and compact passed; compact reported 1 artifact and zero limits, formatting errors, protected overflow, errors, or changes."
+  next: Leave macjwqqfap pending, ddoncnlhro blocked with both FAIL evaluations, and TODO gcrflfxlxq open until evaluator-owned persisted PASS.
+  publication_order: 110

@@ -1,0 +1,16 @@
+id: ynofmeesjv
+artifact: progress
+record:
+  timestamp: 2026-08-08 08:01
+  type: fix
+  phase: build
+  what: Corrected the two accepted lexical boundaries from macjwqqfap audit-1.
+  context:
+    intent: Reject leading-dot path basenames and preserve exact decomposed Unicode terms without widening recurrence mining.
+    constraints: Preserve the complete uncommitted recurrence candidate, hchkttlizb, macjwqqfap audit-1 FAIL and pending state, blocked ddoncnlhro, and open TODO gcrflfxlxq; do not run Audit, write evaluator state, commit, or touch later layers.
+    unknowns: Evaluator-owned persisted PASS remains required before any lifecycle transition.
+    scope: Leading-dot path context, combining-mark token boundaries, and paired recurrence regressions only.
+  discovered: TOKEN_RE discarded combining marks, so a decomposed term split after its first base and could emit argon-λ. Leading-dot path context required any immediately preceding dot to remain path syntax; the prior check recognized only dots preceded by letters or numbers.
+  verified: Requested .config and workspace/.config/tool each produced 0 candidates and 1 noise_term abstention; unfiltered mining emitted no config basename candidate. hidden-glyph and signal-path each produced 1/0 inferred_usage_requires_review. Precomposed žargon-λ produced 1/0 with identity ab9c81ded2ebe0e3dd430c34508fbb425b6fd2db83340d2f268a9fcf2ded696b. Exact decomposed žargon-λ produced 1/0 with distinct identity 61d145a61e8f8726089401b3f02eece7fe0bf5911efbe91dda34b9839936a5ae. Leading-mark ̌argon-λ produced 0/1 noise_term, and no argon-λ fragment appeared. A decomposed mark after a separator remained eligible; a mark immediately after a separator produced 0/1 noise_term with no glyph fragment. The complete 30-test recurrence matrix passed. Focused recurrence/admission/authority/monolith checks passed 4 files and 110 tests. Full source passed 232 files, 3532 passed, 1 skipped, 3533 total. Package passed 3 files and 34 tests. Typecheck, changed-file lint and format, two local rebuilds, compact, and final lifecycle/monolith checks passed.
+  next: Keep macjwqqfap pending with audit-1 FAIL, ddoncnlhro blocked, and TODO gcrflfxlxq open until evaluator-owned persisted PASS.
+  publication_order: 111

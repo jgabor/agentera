@@ -95,6 +95,13 @@ function containsCompleteTerm(text: string, term: string): boolean {
   return escaped.length > 0 && new RegExp(`(^|[^a-z0-9])${escaped}(?=$|[^a-z0-9])`, "i").test(text);
 }
 
+function hasInferredProvenance(signal: SignalRecord): boolean {
+  return (
+    /^[a-f0-9]{64}$/.test(signal.origin_id ?? "") &&
+    /^[a-f0-9]{64}$/.test(signal.content_fingerprint ?? "")
+  );
+}
+
 function unavailable(
   state: EvidenceTierCompatibilityState["state"],
 ): PersonalGlossaryAdmissionResult {
@@ -164,6 +171,7 @@ export function admitPersonalGlossaryEvidence(
         ({ signal, record }) =>
           inferredTypes.has(signal.signal_type) &&
           inferredKinds.has(signal.source_kind) &&
+          hasInferredProvenance(signal) &&
           semanticValues(record).some((value) => containsCompleteTerm(value, term)),
       )
       .map(({ signal }) => ({
@@ -181,11 +189,11 @@ export function admitPersonalGlossaryEvidence(
       )
       .sort((left, right) => left.source_id.localeCompare(right.source_id));
     if (
-      evidence.length >= 2 &&
-      new Set(evidence.map((item) => item.source_id)).size >= 2 &&
-      new Set(evidence.map((item) => item.evidence_anchor)).size >= 2
+      evidence.length === 2 &&
+      new Set(evidence.map((item) => item.source_id)).size === 2 &&
+      new Set(evidence.map((item) => item.evidence_anchor)).size === 2
     ) {
-      candidates.push({ kind: "personal_inferred_usage", term, evidence: evidence.slice(0, 2) });
+      candidates.push({ kind: "personal_inferred_usage", term, evidence });
     }
   }
 
@@ -198,3 +206,17 @@ export function admitPersonalGlossaryEvidence(
         recovery: authority.insufficientRecovery,
       };
 }
+
+export {
+  mineRecurringGlossaryCandidates,
+  mineRecurringGlossaryEvidence,
+  PERSONAL_GLOSSARY_MINING_POLICY_VERSION,
+  RECURRING_MEANING_PENDING_REVIEW,
+  RECURRING_REASONS,
+  type RecurringAbstentionReason,
+  type RecurringGlossaryAbstention,
+  type RecurringGlossaryCandidate,
+  type RecurringGlossaryMiningInput,
+  type RecurringGlossaryMiningResult,
+  type RecurringReviewReason,
+} from "./personalGlossaryRecurrence.js";

@@ -45,12 +45,12 @@ function record(
     active_runtime: true,
     adapter_version: ADAPTER_VERSION,
     data: { ...data, signal_type: signalType },
+    origin_id: originIdentity(`fixture:${sourceId}`),
+    content_fingerprint: contentFingerprint(String(data.text ?? data.prompt ?? data.content ?? sourceId)),
   };
   if (sourceKind === "conversation_turn" || sourceKind === "history_prompt") {
     record.session_id = `session-${sourceId}`;
     record.conversation_key = record.session_id;
-    record.origin_id = originIdentity(`fixture:${sourceId}`);
-    record.content_fingerprint = contentFingerprint(String(data.text ?? data.prompt ?? data.content ?? sourceId));
     record.author_class = data.actor === "assistant" ? "agent" : "user";
   }
   return record;
@@ -190,6 +190,25 @@ describe("bounded personal evidence admission", () => {
       tiersDir,
       requestedTerms: ["ship shape", "ship shape"],
     });
+    expect(result.status).toBe("insufficient");
+    expect(result.candidates).toEqual([]);
+    expect(result.recovery).toContain("another distinct qualifying record");
+  });
+
+  it("does not truncate inferred usage when more than two origins qualify", () => {
+    publish([
+      record("instruction-a", "instruction_document", "instruction", {
+        content: "Keep the ship shape explicit.",
+      }),
+      record("instruction-b", "instruction_document", "instruction", {
+        content: "Verify the ship shape directly.",
+      }),
+      record("configuration", "project_config_signal", "configuration", {
+        signals: ["ship shape"],
+      }),
+    ]);
+
+    const result = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: ["ship shape"] });
     expect(result.status).toBe("insufficient");
     expect(result.candidates).toEqual([]);
     expect(result.recovery).toContain("another distinct qualifying record");

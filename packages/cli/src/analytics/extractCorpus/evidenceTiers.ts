@@ -698,11 +698,15 @@ export function readCurrentGeneration(tiersDir: string): GenerationDir | null {
 }
 
 /** Read the bounded signal tier records for the current generation. */
-export function readSignalTier(tiersDir: string): { records: SignalRecord[]; bytes: number; manifest: EvidenceTierManifest } | null {
+export function readSignalTier(
+  tiersDir: string,
+  options: { allowProvenanceGaps?: boolean } = {},
+): { records: SignalRecord[]; bytes: number; manifest: EvidenceTierManifest } | null {
   const gen = readCurrentGeneration(tiersDir);
   if (!gen) return null;
   const payload = readSignalPayload(gen);
-  if (!payload || signalProvenanceGaps(payload.records).length > 0) return null;
+  if (!payload) return null;
+  if (!options.allowProvenanceGaps && signalProvenanceGaps(payload.records).length > 0) return null;
   return { ...payload, manifest: gen.manifest };
 }
 

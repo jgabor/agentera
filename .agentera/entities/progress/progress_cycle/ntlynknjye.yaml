@@ -1,0 +1,16 @@
+id: ntlynknjye
+artifact: progress
+record:
+  timestamp: 2026-08-08 05:49
+  type: feat
+  phase: build
+  what: Mine recurring personal glossary usage from bounded provenance
+  context:
+    intent: Emit deterministic recurring evidence candidates or stable abstention/review reasons only.
+    constraints: Consume current bounded retained evidence, preserve personal/project isolation, keep inferred automatic admission disabled, and do not implement later selection, decision, review persistence, publication, or Profile Full work.
+    scope: packages/cli/src/analytics/personalGlossaryRecurrence.ts, shared admission export and non-truncation guard, and paired recurrence regressions.
+  inspiration: Plan bcpkchatfu Task ddoncnlhro and the settled provenance and layered candidate contracts.
+  discovered: The prior inferred route truncated evidence with slice(0, 2); recurring extraction also needed separate conversation provenance, origin/fingerprint independence, and review-only outcomes.
+  verified: "Focused recurrence fixtures observed: valid instruction/configuration produced 1 review candidate and 0 abstentions with anchors [configuration, instruction] and retained origins [ae9910b8d2e028549b2479fc32ec4554008d0d6e481cea1c96b17a322e03bac0, 65a6a3319f9b922503a3b996d43f758d52a27e7a26e60fd733127ee7196613e6]; copied content produced 0/1 copied_content; repeated origin 0/1 copied_content with origin 603059541045c81cc496feeef2e589199d6a5ce247ae0e5274aca801a9a44b81; one-session conversation 0/1 insufficient_sessions; one-project conversation 0/1 insufficient_projects; agent-only 0/1 agent_only_evidence; mixed authors 0/1 user_authorship_required; project-only configuration 0/1 project_only_scope and no project glossary trap read; conflicting meanings 1/0 conflicting_meaning with review_required; complete conversation produced 1/0 with all anchors [turn-a, turn-b, turn-c], origins [8d7723012cd4687ee2b2695a042f0efce5deb7aadad192f5c349174f48440cae, 0b9d740a97c5eaaa1edc8075c9a3b65b268302c9b8a7d723cc939ca2b1569530, 635c1a23f04f153bdeb4746b2f3c321f9cb9ed9bef3e97b47b0e5416f50ba919], and fingerprints [511800a63492326b80d789c94ddd693e574245117ce7a4e5e42fb321f3e24d95, f95ec6eaa7446a480f6c3610aad7519a9fd63e80198e211000abc9e81d8d7d2d, 3a25569d191d55eb78cd491274aeff79f04285bbccd3c086a99c9e278ded5fee]; surplus origins 0/1 too_many_qualifying_origins; command/noise build did not become a candidate. Identical replay was equal, direct resolution saw only requested anchors, and a legacy corpus sentinel returned legacy with no candidate. Focused tests: 15 recurrence plus existing authority/admission tests, 107 passed. Full source: 232 files, 3516 passed, 1 skipped. Typecheck, local build, package lane (3 files/34 tests), generated-overlap, capability-contract, retained-references, state, self-audit, and compact passed. The unsupported check parity subcommand was not used; build emitted extract-corpus parity pass."
+  next: Keep ddoncnlhro pending. Prime owns Audit and evaluator state; do not write evaluator or lifecycle state here.
+  publication_order: 107

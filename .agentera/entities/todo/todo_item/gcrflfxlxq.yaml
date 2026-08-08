@@ -1,0 +1,30 @@
+id: gcrflfxlxq
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Reject recurring glossary noise classes instead of exemplars
+  requirements:
+    - Use an inspectable deterministic lexical rule for common routine words, concatenated known commands, segmented commands, and path-like tokens.
+    - Preserve legitimate uncommon personal terms and settled Unicode term identity.
+    - Add paired class-level regressions and complete a passing replacement plan task.
+  acceptance:
+    - Common words such as usually and often abstain with noise_term.
+    - Command forms such as gitstatus, git-status, npmtest, and path-like tokens abstain with noise_term.
+    - Legitimate uncommon terms remain eligible for review.
+    - A replacement task receives persisted PASS before this TODO resolves.
+  release_blocker: false
+  severity: degraded
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Reject recurring glossary noise classes instead of exemplars"
+      status: resolved
+      order: 96
+      severity: degraded
+  lifecycle:
+    operation: resolve
+    reason: Replacement task macjwqqfap enforced lexical noise classes and received persisted independent PASS.
+    date: 2026-08-08

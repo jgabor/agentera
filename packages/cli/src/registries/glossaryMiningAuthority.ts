@@ -7,6 +7,8 @@ import type {
 
 type Mapping = Record<string, unknown>;
 
+export const PERSONAL_GLOSSARY_MINING_POLICY_VERSION = "agentera.personalGlossaryMiningPolicy.v1";
+
 function mapping(value: unknown): Mapping | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Mapping)
@@ -337,7 +339,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
       "policy_version",
       "generation",
     ]) ||
-    revision?.policy_version !== "agentera.personalGlossaryMiningPolicy.v1" ||
+    revision?.policy_version !== PERSONAL_GLOSSARY_MINING_POLICY_VERSION ||
     revision?.generation !== "content_addressed_candidate_projection_generation" ||
     revision?.evidence !== "complete_source_id_anchor_identity_set" ||
     !nonEmpty(revision?.canonicalization) ||

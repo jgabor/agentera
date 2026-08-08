@@ -1,0 +1,15 @@
+id: ifvipkrivr
+artifact: progress
+record:
+  timestamp: 2026-08-08 06:57
+  type: test
+  phase: build
+  what: Completed the missing bounded evidence step for the ddoncnlhro retry without changing evaluator state.
+  context:
+    intent: Supply materially specific, reproducible evidence for the same recurring glossary mining retry.
+    constraints: Preserve task pending state, audit-1 provenance, prior progress records, personal/project isolation, and the no-commit boundary.
+    unknowns: The evaluator must independently accept this evidence and rerun the task.
+    scope: Bounded recurrence observations, direct anchor resolution, replay, admission boundaries, and verification counts only.
+  verified: "Requested-term observations report candidate/abstention counts; total result counts are noted where they differ. Project-only conversation/orbit: 0/1, abstention project_only_scope, project-glossary trap reads 0. Missing origin/signal-braid: 0/1, provenance_missing. Missing fingerprint/signal-braid: 0/1, provenance_missing. Invalid exact anchor set/orbit: 0/1, conversation_evidence_incomplete. Conversation at 100/orbit: 1/0, inferred_usage_requires_review, evidence 100. Conversation over 100/orbit: 0/1, conversation_evidence_bound_exceeded. Valid four-record surplus/orbit: 1/0, inferred_usage_requires_review, evidence 4, all anchors surplus-four-0 through surplus-four-3 retained. Three sufficient user records plus agent corroboration/orbit: 1/0, inferred_usage_requires_review, evidence 3, agent anchor excluded. Uncertain scope/orbit: 1/0, review_required with uncertain_scope. Conflicting meaning/orbit: 1/0, review_required with conflicting_meaning; total result was 3 candidates and 4 abstentions while orbit remained 1/0. always, git-status, and /tmp/path each: 0/1, noise_term. Uncommon žargon-λ: 1/0, inferred_usage_requires_review, evidence 2. Exact-two instruction/configuration signal-braid: 1/0, inferred_usage_requires_review, evidence 2. Three-origin surplus: 0/1, too_many_qualifying_origins; total result was 0 candidates and 3 abstentions. Copied origin and copied content each: 0/1, copied_content. Deterministic signal-braid replay: 1/0, inferred_usage_requires_review, evidence 2, replay_equal true; direct anchor resolution count 2 with configuration and instruction anchors. Observation probe: 1 test passed. Focused rerun: 8 files, 194 tests passed. Previously verified full source: 232 files, 3527 passed, 1 skipped, 3528 total. Package: 3 files, 34 passed. Generated-overlap gate: 239 inventory entries, source 232, stress 1, performance 3, package 3; source 3528 tests (3527 passed, 1 skipped), package 34, build pass, identity mismatches 0, surface failures 0. Compact: artifacts 1, over_limit 0, formatting 0, protected_overflow 0, errors 0, changed 0. Capability-contract validation: 3 passed, 0 failed. Typecheck and lint passed."
+  next: Evaluator-owned retry remains required; keep ddoncnlhro pending and audit-1 unchanged. Do not run Audit or later workflow layers.
+  publication_order: 109
