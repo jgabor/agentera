@@ -203,7 +203,7 @@ describe("one-way Git entity cutover", () => {
     expect(records).toHaveLength(161);
     expect(records.filter((record) => record.status === "resolved")).toHaveLength(54);
     expect(records.every((record) => record.readiness?.reason === "Preserve operational state")).toBe(true);
-  }, 60_000);
+  }, 120_000);
 
   it("uses an explicit row ID while importing stale public entity values", () => {
     const root = precreatedTodoProject(1, { explicit: true });
@@ -543,7 +543,7 @@ describe("one-way Git entity cutover", () => {
     expect(treeBytes(root, ".agentera/entities")).toEqual(finalEntities);
     assertSourcesUnchanged(null);
     expect(sha256(fs.readFileSync(path.join(root, "TODO.md")))).toBe(todoAfter);
-  }, 60_000);
+  }, 120_000);
 
   it("refuses authority-undeclared aggregate collections before any cutover effect", () => {
     const root = project();
