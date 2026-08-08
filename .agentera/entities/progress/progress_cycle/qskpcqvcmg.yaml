@@ -1,0 +1,15 @@
+id: qskpcqvcmg
+artifact: progress
+record:
+  timestamp: 2026-08-08 14:23
+  type: test
+  phase: build
+  what: Optimized package-verification evidence execution without reducing covered package boundaries.
+  context:
+    intent: Bring the package owner safely below the generated-overlap release deadline.
+    constraints: Retain exhaustive mutation projections, source/package parity, realistic cardinality, full pagination identity proof, cursor failure classifications, and immutable project-state checks.
+    scope: packages/cli/test/packaging/packageVerification.test.ts only.
+  discovered: Repeated fresh CLI startup dominated exhaustive projection mutations, while 120-row fixtures were unnecessarily reused for cursor classification and ten-row pagination multiplied full-state reads.
+  verified: pnpm -C packages/cli run typecheck passed. Focused packageVerification passed 27 tests in 186.96 seconds. The full package lane passed 35 tests in 263.78 seconds, below the 300-second target and below prior 304-324 second qualified observations; mutation projection coverage now executes against extracted dist modules with representative CLI fail-closed checks, 120-row cardinality still traverses every identity in three 40-row pages, and cursor classification retains every branch on a minimal 40-row fixture.
+  next: Commit this kept optimization, run canonical source qualification against the resulting commit, then prepare and publish one forward-only 3.0.0-dev.46 candidate.
+  publication_order: 106

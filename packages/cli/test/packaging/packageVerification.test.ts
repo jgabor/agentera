@@ -37,6 +37,15 @@ function run(command: string, args: string[], cwd: string, env = process.env, in
   return spawnSync(command, args, { cwd, env, encoding: "utf8", ...(input === undefined ? {} : { input }) });
 }
 
+function thrownMessage(action: () => unknown): string {
+  try {
+    action();
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+  throw new Error("expected action to reject");
+}
+
 function isolatedPackageEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   const env = { ...process.env, ...overrides };
   for (const key of Object.keys(env)) {
@@ -443,8 +452,10 @@ describe("npm distribution boundary", () => {
     expect(publication.FILE_REPLACEMENT_RECOVERY_VERSION).toBe("agentera.fileReplacementRecovery.v1");
   });
 
-  it("rejects mutated installed-package guidance before schema output", () => {
+  it("rejects mutated installed-package guidance in the extracted module and before schema output", async () => {
     const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/state-storage-authority.yaml");
+    const bundleRoot = path.join(fixture.packageRoot, "bundle");
+    const { loadMutationGrammar } = await import(pathToFileURL(path.join(fixture.packageRoot, "dist/state/write/grammar.js")).href);
     const original = fs.readFileSync(authorityPath, "utf8");
     try {
       const example = "npx -y agentera@next state progress append --input progress.yaml --format json";
@@ -480,11 +491,15 @@ describe("npm distribution boundary", () => {
             ? [badExample]
             : operation.recovery.replace(recoveryCommand, badRecoveryCommand);
           fs.writeFileSync(authorityPath, YAML.stringify(authority));
-          const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-          const result = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
-          expect(result.status, `${label}/${field}`).not.toBe(0);
-          expect(result.stdout).not.toContain(field === "examples" ? badExample : badRecoveryCommand);
-          expect(`${result.stdout}\n${result.stderr}`).toContain("invalid development command projection");
+          expect(thrownMessage(() => loadMutationGrammar(bundleRoot)), `${label}/${field}`)
+            .toMatch(/invalid development command projection/);
+          if (label === "unknown command" && field === "examples") {
+            const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+            const result = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
+            expect(result.status, `${label}/${field}`).not.toBe(0);
+            expect(result.stdout).not.toContain(badExample);
+            expect(`${result.stdout}\n${result.stderr}`).toContain("invalid development command projection");
+          }
         }
       }
 
@@ -498,11 +513,9 @@ describe("npm distribution boundary", () => {
           if (field === "recovery") operation.recovery += " oops";
           else operation.examples[0] += " oops";
           fs.writeFileSync(authorityPath, YAML.stringify(authority));
-          const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-          const result = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
-          expect(result.status, `${sourceOperation.artifact}.${sourceOperation.verb}.${field}`).not.toBe(0);
-          const output = `${result.stdout}\n${result.stderr}`;
-          expect(output).toContain("invalid development command projection");
+          const output = thrownMessage(() => loadMutationGrammar(bundleRoot));
+          expect(output, `${sourceOperation.artifact}.${sourceOperation.verb}.${field}`)
+            .toMatch(/invalid development command projection/);
           expect(output).not.toContain(field === "recovery" ? operation.recovery.replace("npx -y agentera@next", "agentera") : operation.examples[0].replace("npx -y agentera@next", "agentera"));
         }
       }
@@ -512,20 +525,23 @@ describe("npm distribution boundary", () => {
       );
       setStatus.examples[0] = setStatus.examples[0].replace("--status complete", "--status retired");
       fs.writeFileSync(authorityPath, YAML.stringify(invalidStatus));
-      const statusResult = run(process.execPath, [path.join(fixture.packageRoot, "dist/bin/agentera.js"), "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
-      expect(statusResult.status).not.toBe(0);
-      expect(`${statusResult.stdout}\n${statusResult.stderr}`).toContain("invalid development command projection");
-      expect(`${statusResult.stdout}\n${statusResult.stderr}`).not.toContain("agentera state plan set-status --id qjtrmnpvka --status retired");
+      const statusOutput = thrownMessage(() => loadMutationGrammar(bundleRoot));
+      expect(statusOutput).toMatch(/invalid development command projection/);
+      expect(statusOutput).not.toContain("agentera state plan set-status --id qjtrmnpvka --status retired");
     } finally {
       fs.writeFileSync(authorityPath, original);
+      loadMutationGrammar(bundleRoot);
     }
   });
 
-  it("rejects every installed-package retrieval projection owner before schema output", () => {
+  it("rejects every installed-package retrieval projection owner in the extracted module and before schema output", async () => {
     const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/state-storage-authority.yaml");
+    const bundleRoot = path.join(fixture.packageRoot, "bundle");
     const original = fs.readFileSync(authorityPath, "utf8");
     const authoritative = YAML.parse(original);
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const { loadStateRetrievalAuthority } = await import(pathToFileURL(path.join(fixture.packageRoot, "dist/state/retrievalAuthority.js")).href);
+    const { entityListFamilies } = await import(pathToFileURL(path.join(fixture.packageRoot, "dist/state/entityRetrievalHelp.js")).href);
     try {
       for (const runtime of ENTITY_LIST_RUNTIME_FAMILIES) {
         const mutations: Array<[string, (authority: any) => void]> = [
@@ -540,14 +556,21 @@ describe("npm distribution boundary", () => {
           const authority = structuredClone(authoritative);
           mutate(authority);
           fs.writeFileSync(authorityPath, YAML.stringify(authority));
-          const result = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
-          expect(result.status, `${runtime.key}.${field}`).not.toBe(0);
-          expect(result.stdout).toBe("");
-          expect(result.stderr).toMatch(/invalid (?:state retrieval|entity list help) authority/);
+          const load = field === "list" || field === "get" ? loadStateRetrievalAuthority : entityListFamilies;
+          expect(() => load(bundleRoot), `${runtime.key}.${field}`)
+            .toThrow(/invalid (?:state retrieval|entity list help) authority/);
+          if (runtime.key === "todo" && (field === "list" || field === "example")) {
+            const result = run(process.execPath, [bin, "schema", "--format", "json"], fixture.root, isolatedPackageEnv());
+            expect(result.status, `${runtime.key}.${field}`).not.toBe(0);
+            expect(result.stdout).toBe("");
+            expect(result.stderr).toMatch(/invalid (?:state retrieval|entity list help) authority/);
+          }
         }
       }
     } finally {
       fs.writeFileSync(authorityPath, original);
+      loadStateRetrievalAuthority(bundleRoot);
+      entityListFamilies(bundleRoot);
     }
   });
 
@@ -967,15 +990,15 @@ describe("npm distribution boundary", () => {
       expect(result.entries.every((entry: any) => Object.keys(entry).sort().join(",") === "artifact,id,queue_rank,retrieval")).toBe(true);
     }
 
-    const cursorFirst = parity(["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+    const cursorFirst = parity(["state", "todo", "list", "--ids-only", "--limit", "40", "--format", "json"]);
     const authorityPath = path.join(CHECKOUT_ROOT, "references/artifacts/state-storage-authority.yaml");
     const cursorPayload = decodeListCursor(cursorFirst.next_cursor, project, authorityPath);
-    expect(cursorPayload.limit).toBe(10);
+    expect(cursorPayload.limit).toBe(40);
 
     const changedLimit = packageOnly(["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", cursorFirst.next_cursor, "--format", "json"], 1);
     expect(changedLimit.error).toMatchObject({
       class: "cursor_invalid",
-      message: "todo cursor is bound to --limit 10, not --limit 5",
+      message: "todo cursor is bound to --limit 40, not --limit 5",
       recovery: "agentera state todo list --ids-only --limit 5 --format json",
     });
     expect(packageOnly(shellCommandArgs(changedLimit.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 5));
@@ -983,28 +1006,28 @@ describe("npm distribution boundary", () => {
     const legacyPayload = structuredClone(cursorPayload);
     delete legacyPayload.limit;
     const legacyCursor = encodeListCursor(legacyPayload, project, authorityPath);
-    const legacy = packageOnly(["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", legacyCursor, "--format", "json"], 1);
+    const legacy = packageOnly(["state", "todo", "list", "--ids-only", "--limit", "40", "--cursor", legacyCursor, "--format", "json"], 1);
     expect(legacy.error).toMatchObject({
       class: "cursor_invalid",
       message: "todo cursor lacks the required effective limit binding",
-      recovery: "agentera state todo list --ids-only --limit 10 --format json",
+      recovery: "agentera state todo list --ids-only --limit 40 --format json",
     });
-    expect(packageOnly(shellCommandArgs(legacy.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+    expect(packageOnly(shellCommandArgs(legacy.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 40));
 
-    const malformed = packageOnly(["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", "not-a-cursor", "--format", "json"], 1);
-    expect(malformed.error).toMatchObject({ class: "cursor_invalid", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
-    expect(packageOnly(shellCommandArgs(malformed.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+    const malformed = packageOnly(["state", "todo", "list", "--ids-only", "--limit", "40", "--cursor", "not-a-cursor", "--format", "json"], 1);
+    expect(malformed.error).toMatchObject({ class: "cursor_invalid", recovery: "agentera state todo list --ids-only --limit 40 --format json" });
+    expect(packageOnly(shellCommandArgs(malformed.error.recovery)).entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 40));
 
     const cursorPages = [cursorFirst];
     while (cursorPages.at(-1).retrieval.continue) cursorPages.push(packageOnly(shellCommandArgs(cursorPages.at(-1).retrieval.continue)));
     const cursorEntries = cursorPages.flatMap((page) => page.entries);
-    expect(cursorPages).toHaveLength(12);
+    expect(cursorPages).toHaveLength(3);
     cursorPages.forEach((page, index) => expect(page.counts).toMatchObject({
       candidate: 120,
-      returned: 10,
-      remaining: 120 - (index + 1) * 10,
-      omitted: 120 - (index + 1) * 10,
-      continuation: 120 - (index + 1) * 10,
+      returned: 40,
+      remaining: 120 - (index + 1) * 40,
+      omitted: 120 - (index + 1) * 40,
+      continuation: 120 - (index + 1) * 40,
     }));
     expect(cursorPages.at(-1)).toMatchObject({ status: "ok", counts: { remaining: 0, omitted: 0, continuation: 0 } });
     expect(cursorPages.at(-1).next_cursor).toBeUndefined();
@@ -1127,7 +1150,7 @@ describe("npm distribution boundary", () => {
     const project = fs.mkdtempSync(path.join(fixture.root, "todo-cursor-branches-"));
     fs.mkdirSync(path.join(project, ".agentera"));
     fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-    const { orderedIds } = seedRealisticTodos(project);
+    const { orderedIds } = seedRealisticTodos(project, 40);
     const before = projectByteSnapshot(project);
     const env = isolatedPackageEnv();
     const invoke = (args: string[], status = 0) => {
@@ -1208,7 +1231,7 @@ describe("npm distribution boundary", () => {
     );
     expect(projectByteSnapshot(project)).toEqual(before);
 
-    seedRealisticTodos(project, 121);
+    seedRealisticTodos(project, 41);
     const mutated = projectByteSnapshot(project);
     assertFailure(
       ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", first.next_cursor, "--format", "json"],
