@@ -11,6 +11,7 @@ import {
   executePublication,
   formatPublicationResult,
   normalizeRegistryField,
+  normalizeRegistryTag,
   parseNpmRegistryJson,
   prepareMetadata,
   preflightPublication,
@@ -429,6 +430,13 @@ describe("npm registry response normalization", () => {
     ["npm 12 object array", [{ next: PUBLISHED_VERSION }]],
   ])("accepts the %s dist-tag fixture", (_name, fixture) => {
     expect(normalizeRegistryField(fixture, "next")).toBe(PUBLISHED_VERSION);
+  });
+
+  it("treats an absent first-use candidate tag as untagged", () => {
+    expect(normalizeRegistryTag(
+      { latest: "0.0.2", next: "3.0.0-dev.41" },
+      "candidate-3.0.0-dev.45",
+    )).toBeNull();
   });
 
   it.each([

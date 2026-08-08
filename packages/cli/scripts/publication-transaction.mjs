@@ -342,6 +342,18 @@ export function normalizeRegistryField(response, field) {
   return candidates[0];
 }
 
+export function normalizeRegistryTag(response, tag) {
+  const value = Array.isArray(response) && response.length === 1 ? response[0] : response;
+  if (
+    value !== null
+    && typeof value === "object"
+    && !Array.isArray(value)
+    && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null)
+    && !Object.hasOwn(value, tag)
+  ) return null;
+  return normalizeRegistryField(response, tag);
+}
+
 export function registryState(manifest, adapter, query = npmJson) {
   const exact = optionalNpmJson(
     ["view", `${manifest.name}@${manifest.version}`, "dist.integrity"],
@@ -350,7 +362,7 @@ export function registryState(manifest, adapter, query = npmJson) {
   const tags = optionalNpmJson(["view", manifest.name, "dist-tags"], query);
   const integrity = exact === REGISTRY_NOT_FOUND ? null : normalizeRegistryField(exact, "dist.integrity");
   const expectedTagVersion =
-    tags === REGISTRY_NOT_FOUND ? null : normalizeRegistryField(tags, adapter.expectedTag);
+    tags === REGISTRY_NOT_FOUND ? null : normalizeRegistryTag(tags, adapter.expectedTag);
   return {
     exists: exact !== REGISTRY_NOT_FOUND,
     integrity,
