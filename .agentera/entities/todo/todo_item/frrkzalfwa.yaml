@@ -23,16 +23,16 @@ record:
     gate: null
     queue_rank: 11
     order_reason: Fix the isolated package-boundary defect before activation gating and stable promotion.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data."
+      status: resolved
+      order: 99
       severity: critical
-      status: open
-      order: 2
   lifecycle:
-    operation: set-severity
-    reason: Published 3.0.0-dev.41 can load incompatible checkout authority and crash before routing; staged correction remains a 3.0.0 release blocker.
-    date: 2026-08-07
+    operation: resolve
+    reason: Fixed package source-root precedence and verified package-bound execution
+    date: 2026-08-08

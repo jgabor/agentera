@@ -143,10 +143,10 @@
 - [x] [id:ibomhottkk] [fix:3.0.0] Add explicit TODO activation and block implicit activation.
 - [x] [id:lgruqgycgo] [fix:3.0.0] Repair projects affected by implicit TODO reconciliation activation.
 - [x] [id:rnhnurigbf] [fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required.
+- [x] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
 
 ## → Critical
 
-- [ ] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
 - [ ] [id:zmlfggxlmq] [fix:3.0.0] Restore forced plan archival and successor publication semantics.
 - [ ] [id:bxqzpnnhpn] [fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted.
 - [ ] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.

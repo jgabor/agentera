@@ -33,4 +33,4 @@ record:
       description: "[fix:3.0.0] Restore forced plan archival and successor publication semantics."
       severity: critical
       status: open
-      order: 3
+      order: 2
