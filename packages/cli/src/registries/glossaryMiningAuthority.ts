@@ -113,7 +113,8 @@ const REVIEW_RECEIPT_SIGNED_FIELDS = REVIEW_RECEIPT_FIELDS.filter(
   (field) => field !== "signature",
 );
 
-export type PersonalReviewDisposition = "accept" | "correct" | "reject" | "defer";
+export const PERSONAL_REVIEW_DISPOSITIONS = ["accept", "correct", "reject", "defer"] as const;
+export type PersonalReviewDisposition = (typeof PERSONAL_REVIEW_DISPOSITIONS)[number];
 
 export interface PersonalReviewApprovalVerification {
   currentUserSubject: string;

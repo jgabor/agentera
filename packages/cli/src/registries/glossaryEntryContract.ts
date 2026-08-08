@@ -7,6 +7,7 @@ import {
   validateConsumerBoundary,
   validateConsumerEvidenceOwner,
 } from "./glossaryConsumerContractValidation.js";
+import { validatePersonalCandidateContracts } from "./glossaryCandidateContracts.js";
 import {
   validateConversationProvenance,
   validateHistoryEvidence,
@@ -308,6 +309,7 @@ export function validateGlossaryEntryContract(
     errors.push("schema_version must be agentera.glossaryEntryContract.v1");
   }
   errors.push(...validatePersonalMiningAuthority(authority));
+  errors.push(...validatePersonalCandidateContracts(authority));
 
   const occurrence = mapping(authority.term_occurrence);
   if (

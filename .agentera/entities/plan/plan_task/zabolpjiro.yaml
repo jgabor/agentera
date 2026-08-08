@@ -4,7 +4,7 @@ record:
   name: Establish layered candidate contracts
   depends_on:
     - bloijvifoi
-  status: pending
+  status: complete
   acceptance:
     - GIVEN one term WHEN contracts are inspected THEN capsule, host receipt, CLI decision, review, and publication have separate owners.
     - GIVEN meaning, evidence, policy, or generation changes WHEN identities compute THEN stable identity remains and revision changes.
@@ -12,3 +12,13 @@ record:
     - GIVEN existing entries WHEN the shared primitive validates THEN new evidence contracts preserve precedence and project publication.
     - GIVEN each contract rule WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Duplicate canonical evidence can receive a revision, and personal inferred usage lacks machine-readable two-source/two-anchor distinctness; duplicate-evidence regressions are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_0213a1375ffe5rx7T1ZmdlbElR bounded re-review
+      recorded_at: 2026-08-08 02:49
+      writer_command: agentera state plan record-evaluation

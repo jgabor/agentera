@@ -22,6 +22,8 @@ CONFORMANCE:
   personal_mining_authority: references/artifacts/glossary-entry-contract.yaml#personal_mining_authority
   stable_term_identity_runtime: packages/cli/src/registries/glossaryTermIdentity.ts#stableGlossaryTermIdentity
   candidate_revision_runtime: packages/cli/src/registries/glossaryTermIdentity.ts#glossaryCandidateRevision
+  candidate_contracts_authority: references/artifacts/glossary-entry-contract.yaml#candidate_contracts
+  candidate_contracts_runtime: packages/cli/src/registries/glossaryCandidateContracts.ts#validatePersonalCandidateContracts
   term_occurrence_runtime: packages/cli/src/registries/glossaryTermOccurrence.ts#containsGlossaryTerm
 
 DOCUMENT:

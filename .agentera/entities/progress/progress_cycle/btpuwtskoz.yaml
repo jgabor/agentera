@@ -1,0 +1,16 @@
+id: btpuwtskoz
+artifact: progress
+record:
+  timestamp: 2026-08-08 02:46
+  type: fix
+  phase: build
+  what: Rejected duplicate canonical candidate evidence and enforced the existing two-source/two-anchor inferred-usage boundary without expanding downstream workflow.
+  context:
+    intent: Correct only the accepted audit-1 duplicate-evidence and inferred-distinctness gaps in the preserved layered candidate contract.
+    constraints: Preserve the layered-contract candidate, progress iusoookbwx, zabolpjiro audit-1 FAIL state, shared entry and project invariance, disabled inferred automatic admission, and all downstream deferrals. Do not touch qgimpwprim or TODO rbuoixpxzp, write evaluator state, commit, publish, tag, or push.
+    unknowns: Independent Audit must verify the correction; candidate discovery, reads, runtime admission, review persistence, publication, and Profile Full remain out of scope.
+    scope: Candidate revision duplicate detection, personal_inferred_usage authority distinctness, capsule validation, and paired regression coverage only.
+  discovered: The prior revision helper canonicalized and sorted repeated records, while the inferred-usage provenance variant had no machine-readable distinctness map. The existing capsule validator already consumed variant distinctness generically, so the smallest correction is to reject duplicate canonical records in the settled helper and add the missing two-source/two-anchor authority declaration plus its authority regression.
+  verified: Exact duplicate evidence records, including the same fields in a different object order, now fail glossaryCandidateRevision with deterministic duplicate canonical evidence error text before hashing. An inferred capsule with one source ID and two distinct anchors fails capsule validation with the required two-distinct- source_id violation. A valid inferred capsule with two source IDs and two anchors passes. Reordering those two records produces the same capsule and candidate revision. Existing explicit-definition and three-record conversation variants still pass, proving duplicate handling did not weaken other provenance variants. Focused identity, layered-contract, mining-authority, entry, project-invariance, and publication tests passed 203/203 across 6 files. Full source passed 231 files with 3497 passed and 1 skipped. Package verification passed 3 files with 34/34 tests. Typecheck passed, the rebuilt local CLI is 3.0.0-dev.43, vocabulary authority validation passed, capability-contract validation passed all 3 checks, compact passed, runtime inventory passed 194/194 tests, changed-file lint passed with 0 warnings and 0 errors, and git diff --check passed.
+  next: Leave zabolpjiro pending for independent Audit. Preserve the audit-1 FAIL state and do not write evaluator state or run Audit in this session.
+  publication_order: 104

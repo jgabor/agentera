@@ -25,7 +25,7 @@ function compareCodePoints(left: string, right: string): number {
   return leftCodePoint - rightCodePoint;
 }
 
-function compareUnicodeStrings(left: string, right: string): number {
+export function compareGlossaryUnicodeStrings(left: string, right: string): number {
   const leftScalars = [...left];
   const rightScalars = [...right];
   for (let index = 0; index < Math.min(leftScalars.length, rightScalars.length); index += 1) {
@@ -86,7 +86,13 @@ export function stableGlossaryTermIdentity(term: string): string {
   );
 }
 
-export type GlossaryCandidateScope = "personal" | "project" | "ambiguous";
+export const GLOSSARY_CANDIDATE_SCOPES = ["personal", "project", "ambiguous"] as const;
+
+export type GlossaryCandidateScope = (typeof GLOSSARY_CANDIDATE_SCOPES)[number];
+
+export function isGlossaryCandidateScope(value: unknown): value is GlossaryCandidateScope {
+  return GLOSSARY_CANDIDATE_SCOPES.includes(value as GlossaryCandidateScope);
+}
 
 export interface GlossaryCandidateEvidenceIdentity {
   source_id: string;
@@ -103,15 +109,19 @@ export interface GlossaryCandidateRevisionInput {
   generation: string;
 }
 
-function canonicalJson(value: unknown): string {
+export function canonicalGlossaryJson(value: unknown): string {
   if (value === undefined) throw new TypeError("canonical JSON cannot contain undefined");
   if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (Array.isArray(value)) return `[${value.map(canonicalGlossaryJson).join(",")}]`;
   const record = value as Record<string, unknown>;
   return `{${Object.keys(record)
-    .sort(compareUnicodeStrings)
-    .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
+    .sort(compareGlossaryUnicodeStrings)
+    .map((key) => `${JSON.stringify(key)}:${canonicalGlossaryJson(record[key])}`)
     .join(",")}}`;
+}
+
+export function glossaryCanonicalSha256(value: unknown): string {
+  return sha256Utf8(canonicalGlossaryJson(value));
 }
 
 /**
@@ -124,22 +134,31 @@ export function glossaryCandidateRevision(input: GlossaryCandidateRevisionInput)
   const policyVersion = requireNonEmpty(input.policy_version, "policy_version");
   const generation = requireNonEmpty(input.generation, "generation");
   if (!Array.isArray(input.evidence)) throw new TypeError("evidence must be a list");
-  if (!["personal", "project", "ambiguous"].includes(input.scope)) {
+  if (!isGlossaryCandidateScope(input.scope)) {
     throw new TypeError("scope must be personal, project, or ambiguous");
   }
-  const evidence = input.evidence
-    .map((item) => {
-      requireNonEmpty(item.source_id, "evidence.source_id");
-      requireNonEmpty(item.evidence_anchor, "evidence.evidence_anchor");
-      return item;
-    })
-    .sort((left, right) => {
-      const leftCanonical = canonicalJson(left);
-      const rightCanonical = canonicalJson(right);
-      return compareUnicodeStrings(leftCanonical, rightCanonical);
-    });
+  const evidence = input.evidence.map((item) => {
+    requireNonEmpty(item.source_id, "evidence.source_id");
+    requireNonEmpty(item.evidence_anchor, "evidence.evidence_anchor");
+    return item;
+  });
+  const canonicalEvidence = new Set<string>();
+  for (const item of evidence) {
+    const canonical = canonicalGlossaryJson(item);
+    if (canonicalEvidence.has(canonical)) {
+      throw new TypeError("evidence must not contain duplicate canonical evidence records");
+    }
+    canonicalEvidence.add(canonical);
+  }
+  evidence.sort(
+    (left, right) => {
+      const leftCanonical = canonicalGlossaryJson(left);
+      const rightCanonical = canonicalGlossaryJson(right);
+      return compareGlossaryUnicodeStrings(leftCanonical, rightCanonical);
+    },
+  );
   return sha256Utf8(
-    canonicalJson({
+    canonicalGlossaryJson({
       schema_version: "agentera.personalGlossaryCandidateRevision.v1",
       stable_term_identity: stableTermIdentity,
       meaning,

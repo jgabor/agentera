@@ -347,7 +347,261 @@ personal_mining_authority:
     rule: >-
       The separate evaluation authority defines the frozen holdout, metric
       thresholds, and fail-closed release gate. Inferred meanings remain
-      review-only, and no measured result enables inferred automatic admission.
+       review-only, and no measured result enables inferred automatic admission.
+
+candidate_contracts:
+  schema_version: agentera.personalGlossaryCandidateContracts.v1
+  status: authority_only
+  implementation_boundary: contracts_only_no_candidate_runtime
+  purpose: >-
+    Define five distinct, content-addressed boundaries for one personal glossary
+    candidate. Discovery and projection own evidence, the semantic host owns only
+    bounded classification, the CLI owns deterministic admission validation, the
+    user owns review lifecycle, and Profile Full owns personal publication result.
+    No layer discovers candidates, exposes candidate reads, publishes entries, or
+    replaces the shared consumer and project publication contracts.
+  canonicalization:
+    algorithm: sha256
+    encoding: lowercase_hex
+    input: canonical_utf8_json
+    object_keys: unicode_code_point_sorted
+    evidence_records: canonical_json_sorted
+    digest_field_rule: exclude_digest_field_from_body
+    arrays: preserve_declared_order
+    rule: >-
+      Every digest hashes canonical UTF-8 JSON with recursively sorted object keys.
+      Evidence records are sorted by their canonical JSON before capsule creation.
+      A layer digest excludes only its own digest field. Strings are preserved
+      exactly; no Unicode normalization or display-label substitution is allowed.
+  identity:
+    stable_term_identity: personal_mining_authority.term_identity.stable_term_identity
+    candidate_revision: personal_mining_authority.term_identity.candidate_revision
+    rule: >-
+      candidate_id is the settled stable term identity. candidate_revision is
+      produced only by the current revision helper, so meaning, evidence, policy,
+      or generation changes produce a new revision while an unchanged equality
+      class keeps the same stable identity.
+  bounds:
+    term_max_utf8_bytes: 256
+    meaning_max_utf8_bytes: 4096
+    binding_max_utf8_bytes: 256
+    evidence_records_max: 100
+    reason_max_utf8_bytes: 512
+    corrected_meaning_max_utf8_bytes: 4096
+    digest_bytes: 32
+    rule: >-
+      These limits apply before downstream effects. Candidate evidence remains a
+      complete bounded projection, not a preview that can silently omit records.
+  layers:
+    evidence_capsule:
+      owner: deterministic_discovery_projection
+      schema_version: agentera.personalGlossaryCandidateCapsule.v1
+      required_fields:
+        - schema_version
+        - owner
+        - candidate_id
+        - candidate_revision
+        - term
+        - meaning
+        - scope
+        - provenance_kind
+        - evidence
+        - evidence_complete
+        - evidence_set_sha256
+        - policy_version
+        - generation
+        - capsule_sha256
+      additional_fields: forbidden
+      binding_fields: [candidate_id, candidate_revision, generation, policy_version]
+      body_digest: capsule_sha256
+      evidence_owner: deterministic_discovery_projection
+      evidence_source: personal_mining_authority.provenance
+      evidence_required_fields: provenance_variant_required_fields
+      evidence_complete: true
+      forbidden_fields:
+        - admission
+        - decision
+        - review
+        - publication
+        - mutation
+        - trusted_publication_effect
+      rule: >-
+        The capsule contains only the bounded candidate projection and complete
+        qualifying evidence identities. It has no host judgment, admission result,
+        review disposition, or publication effect.
+    host_classification_receipt:
+      owner: semantic_host_classification
+      schema_version: agentera.personalGlossaryHostClassificationReceipt.v1
+      required_fields:
+        - schema_version
+        - owner
+        - candidate_id
+        - candidate_revision
+        - candidate_capsule_sha256
+        - generation
+        - policy_version
+        - classification
+        - semantic_fingerprint
+        - receipt_sha256
+      additional_fields: forbidden
+      binding_fields:
+        - candidate_id
+        - candidate_revision
+        - candidate_capsule_sha256
+        - generation
+        - policy_version
+      body_digest: receipt_sha256
+      classification:
+        fields: [term, meaning, scope, permanence, consistency, confidence]
+        term: shared_primitive.fields.term
+        meaning: shared_primitive.fields.meaning
+        scope: packages/cli/src/registries/glossaryTermIdentity.ts#GlossaryCandidateScope
+        permanence: shared_primitive.fields.permanence
+        confidence: shared_primitive.fields.confidence
+        consistency_values: [consistent, inconsistent, uncertain]
+      forbidden_fields:
+        - admission
+        - decision
+        - mutation
+        - publication
+        - review_bypass
+        - trusted_publication_effect
+        - project_glossary
+        - project_publication
+      rule: >-
+        The host may classify only term, meaning, scope, permanence, consistency,
+        and confidence. The receipt binds the exact capsule, revision, generation,
+        and policy. It cannot choose admission, authorize mutation, bypass review,
+        or supply a trusted publication effect.
+    cli_decision:
+      owner: deterministic_cli_admission_validation
+      schema_version: agentera.personalGlossaryAdmissionDecision.v1
+      required_fields:
+        - schema_version
+        - owner
+        - candidate_id
+        - candidate_revision
+        - candidate_capsule_sha256
+        - host_receipt_sha256
+        - generation
+        - policy_version
+        - outcome
+        - reason
+        - decision_sha256
+      additional_fields: forbidden
+      binding_fields:
+        - candidate_id
+        - candidate_revision
+        - candidate_capsule_sha256
+        - host_receipt_sha256
+        - generation
+        - policy_version
+      body_digest: decision_sha256
+      outcomes: [automatic_admission, review_required, abstain]
+      automatic_admission:
+        owner: deterministic_cli_admission_validation
+        allowed_provenance: provenance_variants.personal_explicit_definition
+        inferred_automatic_admission: disabled
+      forbidden_fields: [host_authority, host_override, mutation, publication]
+      rule: >-
+        Only the deterministic CLI validator may emit an admission outcome. It
+        validates the capsule and host receipt bindings before any later workflow;
+        it does not itself write a profile, project glossary, or review record.
+    review_record:
+      owner: user_local_review_lifecycle
+      schema_version: agentera.personalGlossaryReviewRecord.v1
+      required_fields:
+        - schema_version
+        - owner
+        - candidate_id
+        - candidate_revision
+        - candidate_capsule_sha256
+        - host_receipt_sha256
+        - cli_decision_sha256
+        - semantic_fingerprint
+        - generation
+        - policy_version
+        - disposition
+        - corrected_meaning
+        - disposed_at
+        - expires_at
+        - record_sha256
+      additional_fields: forbidden
+      binding_fields:
+        - candidate_id
+        - candidate_revision
+        - candidate_capsule_sha256
+        - host_receipt_sha256
+        - cli_decision_sha256
+        - semantic_fingerprint
+        - generation
+        - policy_version
+      body_digest: record_sha256
+      storage: $AGENTERA_PROFILE_DIR/intermediate/personal-glossary
+      dispositions_from: [personal_mining_authority.privacy.reviews.dispositions]
+      authentication: personal_mining_authority.privacy.reviews.authentication
+      forbidden_fields:
+        - project_glossary
+        - project_publication
+        - profile_entry_mutation
+        - trusted_host_authority
+      rule: >-
+        A review record is user-local lifecycle state bound to the exact candidate,
+        semantic classification, generation, policy, and CLI decision. It is not a
+        host classification receipt and cannot mutate project or profile state by
+        itself.
+    publication_result:
+      owner: personal_profile_publication
+      schema_version: agentera.personalGlossaryPublicationResult.v1
+      required_fields:
+        - schema_version
+        - owner
+        - candidate_id
+        - candidate_revision
+        - candidate_capsule_sha256
+        - decision_sha256
+        - review_record_sha256
+        - generation
+        - policy_version
+        - status
+        - profile_section_sha256
+        - published_at
+        - result_sha256
+      additional_fields: forbidden
+      binding_fields:
+        - candidate_id
+        - candidate_revision
+        - candidate_capsule_sha256
+        - decision_sha256
+        - generation
+        - policy_version
+      body_digest: result_sha256
+      command: ownership_contracts.personal.profile_output.command.canonical
+      status_values_from: [ownership_contracts.personal.profile_output.command.output_statuses]
+      forbidden_fields:
+        - project_glossary
+        - project_publication
+        - consumer_precedence
+        - review_authorization
+      rule: >-
+        This is the bounded result of personal Profile publication only. It binds
+        the validated decision and optional review record, reports the existing
+        personal output status, and never changes Build-owned project publication.
+  shared_invariance:
+    shared_primitive: shared_primitive
+    consumer_precedence: consumer_boundary.primary_selection
+    project_publication: ownership_contracts.project.publication
+    personal_project_isolation: ownership_contracts.personal.admission.isolation_rule
+    rule: >-
+      Candidate contracts add evidence and identity bindings without adding fields
+      to the shared glossary entry. Consumers keep project precedence and Build
+      publication unchanged; personal mining has no project glossary input.
+  recovery:
+    stale_or_mismatch: fail_closed_no_effects
+    retry: >-
+      Reject the layer before effects, reread the current bounded source contract,
+      recompute the capsule and settled identities, and retry the downstream
+      operation with all exact bindings. Never repair a stale receipt in place.
 
 provenance_variants:
   personal_explicit_definition:
@@ -365,6 +619,9 @@ provenance_variants:
     evidence_count: 2
     required_evidence_fields: [source_id, evidence_anchor, source_kind]
     additional_evidence_fields: forbidden
+    distinctness:
+      source_ids: 2
+      evidence_anchors: 2
     allowed_source_kinds: [instruction_document, project_config_signal]
     resolution_rule: >-
       Each evidence_anchor resolves to its source_id in retained full evidence.
