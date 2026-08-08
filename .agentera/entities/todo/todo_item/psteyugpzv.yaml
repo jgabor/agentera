@@ -5,14 +5,14 @@ record:
   target_version: 3.0.0
   title: Replan explicit-definition parser segmentation
   requirements:
-    - Replace the one-colon-per-line parser with a bounded sentence or segment model that can represent multiple same-line definitions and directional adjacent references.
-    - Reject YAML block-scalar headers and nested marker/config structures even with inline comments, blank lines, or intervening prose.
-    - Preserve complete provenance, project isolation, conflicts, retractions, exact UTF-8 spans, replay, traps, recurring mining, and formatter conformance.
+    - Preserve the finite authority-driven parser work while separating a same-line direct qualifier sentence from the preceding eligible meaning and binding the qualifier independently.
+    - Emit the loaded structural_fragment abstention for structural entry, persistence, and reject-fragment-then-exit prose before permitting a valid post-exit definition.
+    - Preserve complete provenance, project isolation, conflicts, retractions, exact UTF-8 spans, replay, all ten cues, recurring mining, and formatter conformance.
   acceptance:
-    - YAML block headers and non-immediate nested marker/config variants emit no explicit candidate.
-    - Two- and three-definition same-line records preserve all non-target cues and directional exclusions.
-    - The complete explicit cue and exclusion matrix passes repository formatting and verification gates.
-    - A replanned replacement task receives persisted PASS before this TODO resolves.
+    - The exact same-line qualifier reproducer retains only the preceding definition meaning, excludes only the authority-bound adjacent target, and preserves unrelated cues.
+    - Structural entry, persistence, and prose exit each emit structural_fragment; no config fragment leaks and a valid definition after exit still mines.
+    - Adjacent and nonadjacent direction, continuation, duplicate, conflict, structural, cue, and exclusion matrices pass repository formatting and source verification.
+    - A replanned replacement task receives persisted independent PASS before this TODO resolves.
   release_blocker: false
   severity: degraded
   status: open
@@ -26,7 +26,7 @@ record:
       order: 3
   readiness:
     capability: plan
-    reason: Replacement task guhuzevlez exhausted two evaluations; parser segmentation must be replanned before dependent candidate selection.
+    reason: Replacement task nipgzvgjzm exhausted two evaluations; same-line qualifier segmentation and structural prose-exit outcomes require replanning before dependent candidate selection.
     dependencies:
       []
     blocked: null

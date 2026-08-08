@@ -389,6 +389,161 @@ describe("deterministic explicit cue recognition", () => {
       ),
     ).toBeNull();
   });
+
+  it("mines every eligible same-line segment once in canonical lexical order", () => {
+    const text = "`zeta`: z meaning; `alpha`: a meaning; API: Application Programming Interface.";
+    const cues = discoverExplicitGlossaryCues(text);
+    expect(cues.map(({ term, meaning }) => [term, meaning])).toEqual([
+      ["API", "Application Programming Interface"],
+      ["alpha", "a meaning"],
+      ["zeta", "z meaning"],
+    ]);
+    for (const cue of cues) {
+      const source = Buffer.from(text, "utf8");
+      expect(source.subarray(cue.term_span.start, cue.term_span.end).toString("utf8")).toBe(
+        cue.term,
+      );
+      expect(source.subarray(cue.meaning_span.start, cue.meaning_span.end).toString("utf8")).toBe(
+        cue.meaning,
+      );
+    }
+    expect(
+      discoverExplicitGlossaryCues("Definition: alpha: one; Definition: beta: two").map(
+        ({ term, meaning }) => [term, meaning],
+      ),
+    ).toEqual([
+      ["alpha", "one"],
+      ["beta", "two"],
+    ]);
+    expect(discoverExplicitGlossaryCues("alpha: one; beta: two")).toEqual([]);
+  });
+
+  it("keeps equal identities once, abstains on conflicts, and retains unrelated cues", () => {
+    const text =
+      "`alpha`: one meaning; `Alpha`: one meaning; `beta`: first; `BETA`: second; `gamma`: kept.";
+    expect(discoverExplicitGlossaryCues(text).map(({ term, meaning }) => [term, meaning])).toEqual([
+      ["alpha", "one meaning"],
+      ["gamma", "kept"],
+    ]);
+    publish([record("duplicate-conflict", text)]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(result.candidates.map(({ capsule }) => capsule.term)).toEqual(["alpha", "gamma"]);
+    expect(result.abstentions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ reason: EXPLICIT_GLOSSARY_REASONS.conflictingMeaning }),
+      ]),
+    );
+  });
+
+  it("binds directional and exact references to one cue without suppressing neighbors", () => {
+    expect(
+      discoverExplicitGlossaryCues(
+        "`alpha`: first. Is the following definition an example?\n`beta`: second.\n`gamma`: third.",
+      ).map(({ term }) => term),
+    ).toEqual(["alpha", "gamma"]);
+    expect(
+      discoverExplicitGlossaryCues(
+        "`alpha`: first. Is beta correct?\n`beta`: second.\n`gamma`: third.",
+      ).map(({ term }) => term),
+    ).toEqual(["alpha", "gamma"]);
+    expect(
+      discoverExplicitGlossaryCues(
+        "`alpha`: first. Is alphabet correct?\n`beta`: second.\n`gamma`: third.",
+      ).map(({ term }) => term),
+    ).toEqual(["alpha", "beta", "gamma"]);
+    expect(
+      discoverExplicitGlossaryCues(
+        "`alpha`: first; `ALPHA`: second. Is alpha correct?\n`beta`: third.",
+      ).map(({ term }) => term),
+    ).toEqual(["beta"]);
+  });
+
+  it("does not bind following, this, or exact references across an intervening sentence", () => {
+    expect(
+      discoverExplicitGlossaryCues(
+        "`alpha`: first. Is the following definition an example? Intervening prose. `beta`: second. `gamma`: third.",
+      ).map(({ term }) => term),
+    ).toEqual(["alpha", "beta", "gamma"]);
+    expect(
+      discoverExplicitGlossaryCues(
+        "`alpha`: first. Intervening prose. This definition is an example. `beta`: second. `gamma`: third.",
+      ).map(({ term }) => term),
+    ).toEqual(["alpha", "beta", "gamma"]);
+    expect(
+      discoverExplicitGlossaryCues(
+        "`alpha`: first. Intervening prose. Is alpha correct? `beta`: second.",
+      ).map(({ term }) => term),
+    ).toEqual(["alpha", "beta"]);
+  });
+
+  it("keeps an adjacent qualifier out of an approved multiline meaning", () => {
+    const cues = discoverExplicitGlossaryCues(
+      "`alpha`: first meaning.\nIs the following definition an example?\n`beta`: second meaning.",
+    );
+    expect(cues).toEqual([expect.objectContaining({ term: "alpha", meaning: "first meaning" })]);
+    expect(cues.find(({ term }) => term === "alpha")?.meaning).not.toContain("following");
+    expect(cues.find(({ term }) => term === "alpha")?.meaning).not.toContain("example");
+  });
+
+  it("reports ambiguous missing references while retaining unrelated definitions", () => {
+    publish([record("missing-reference", "`alpha`: first. Is the following definition correct?")]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(result.candidates.map(({ capsule }) => capsule.term)).toEqual(["alpha"]);
+    expect(result.abstentions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          term: null,
+          reason: EXPLICIT_GLOSSARY_REASONS.ambiguousReference,
+        }),
+      ]),
+    );
+  });
+
+  it("keeps structural configuration fragments out until the finite prose exit", () => {
+    const text = [
+      "name: configured value",
+      "description: | # `scalar leak` means copied text",
+      "  `nested leak`: copied text",
+      "",
+      "- child:",
+      "  Definition: `marker leak`: copied text",
+      "top-level prose exits the configuration block.",
+      "`valid term`: valid meaning.",
+    ].join("\n");
+    const cues = discoverExplicitGlossaryCues(text);
+    expect(cues.map(({ term, meaning }) => [term, meaning])).toEqual([
+      ["valid term", "valid meaning"],
+    ]);
+    expect(JSON.stringify(cues)).not.toContain("leak");
+    publish([record("structural", text)]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(result.candidates.map(({ capsule }) => capsule.term)).toEqual(["valid term"]);
+    expect(result.abstentions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ reason: EXPLICIT_GLOSSARY_REASONS.structuralFragment }),
+      ]),
+    );
+    expect(result.abstentions.every(({ term }) => term === null || term === "valid term")).toBe(
+      true,
+    );
+  });
+
+  it("applies every inline continuation boundary and the inclusive UTF-8 bound", () => {
+    const positive = discoverExplicitGlossaryCues(
+      "`blank`: first line\nsecond line\n\n`next`: next meaning\nplain exit\n`structural`: structural meaning\nstatus: active\nplain exit\n`comment`: comment meaning\n# comment\nplain exit\n`list`: list meaning\n- other item",
+    );
+    expect(positive.map(({ term, meaning }) => [term, meaning])).toEqual([
+      ["blank", "first line\nsecond line"],
+      ["comment", "comment meaning"],
+      ["list", "list meaning"],
+      ["next", "next meaning\nplain exit"],
+      ["structural", "structural meaning"],
+    ]);
+    expect(
+      discoverExplicitGlossaryCues(`\`exact\`: ${"m".repeat(4096)}`).map(({ meaning }) => meaning),
+    ).toEqual(["m".repeat(4096)]);
+    expect(discoverExplicitGlossaryCues(`\`over\`: ${"m".repeat(4097)}`)).toEqual([]);
+  });
 });
 
 describe("bounded explicit evidence mining", () => {
@@ -502,7 +657,14 @@ describe("bounded explicit evidence mining", () => {
     const result = mineExplicitGlossaryCandidates({ tiersDir });
     expect(result.candidates).toEqual([]);
     expect(new Map(result.abstentions.map(({ source_id, reason }) => [source_id, reason]))).toEqual(
-      new Map(rejected.map(([id]) => [id, EXPLICIT_GLOSSARY_REASONS.unsafeSyntax])),
+      new Map(
+        rejected.map(([id]) => [
+          id,
+          id === "bad-acronym"
+            ? EXPLICIT_GLOSSARY_REASONS.unsafeSyntax
+            : EXPLICIT_GLOSSARY_REASONS.structuralFragment,
+        ]),
+      ),
     );
   });
 

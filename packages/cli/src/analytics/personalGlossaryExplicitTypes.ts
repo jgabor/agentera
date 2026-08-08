@@ -3,6 +3,7 @@ import type { EvidenceTierCompatibilityState } from "./extractCorpus/evidenceTie
 
 export const EXPLICIT_GLOSSARY_REASONS = {
   attributedQuotation: "attributed_quotation",
+  ambiguousReference: "ambiguous_reference",
   conflictingMeaning: "conflicting_meaning",
   emptyMeaning: "empty_meaning",
   emptyTerm: "empty_term",
@@ -18,6 +19,7 @@ export const EXPLICIT_GLOSSARY_REASONS = {
   retractedDefinition: "retracted_definition",
   sarcasmMarker: "sarcasm_marker",
   staleAnchor: "stale_anchor",
+  structuralFragment: "structural_fragment",
   termBoundExceeded: "term_bound_exceeded",
   unsafeSyntax: "unsafe_syntax",
   uncertainScope: "uncertain_scope",

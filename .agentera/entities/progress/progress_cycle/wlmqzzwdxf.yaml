@@ -1,0 +1,15 @@
+id: wlmqzzwdxf
+artifact: progress
+record:
+  timestamp: 2026-08-08 16:36
+  type: feat
+  phase: build
+  what: Correct audit-1 reference-window, qualifier-segmentation, and structural-reason failures.
+  context:
+    intent: Retry only the accepted audit-1 fixes for finite explicit segment grammar.
+    constraints: Preserve authority, provenance, scope, exact UTF-8 spans, canonical order, prior regressions, pending task state, blocked predecessors, open TODO, and uncommitted work; perform no downstream or release action.
+    scope: Reference-window binding, qualifier-safe continuation segmentation, structural authority reasons, paired regressions, local source verification, and typed progress only.
+  discovered: The prior parser used the complete cue set for reference binding and allowed direct qualifier sentences to enter multiline meanings; structural transition reasons also lost the loaded authority value.
+  verified: "Retry fixed audit-1 findings: following and this references now bind only to the immediately adjacent sentence, exact-term references stay within the current or one-adjacent-sentence window, direct qualifier sentences no longer contaminate approved multiline meanings, and structural abstentions emit the loaded structural_fragment reason. Paired parser regressions cover adjacent and nonadjacent following, this, exact-term, qualifier contamination, structural reason, entry, persistence, and prose exit. Targeted parser and authority checks passed 129 tests; inherited targeted mining checks passed 256 tests; full source passed 234 files and 3665 tests with 1 skip. Typecheck, local build, formatter, and compact passed. Authority YAML and loader are unchanged. Task remains pending; audit-1 provenance is preserved and no downstream gates or commit were performed."
+  next: Leave nipgzvgjzm pending for bounded re-audit; preserve audit-1, tgoaomxafw, blocked predecessors, and open TODO psteyugpzv without lifecycle mutations.
+  publication_order: 122

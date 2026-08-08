@@ -91,6 +91,17 @@ function compareCandidates(left: CandidateWithSource, right: CandidateWithSource
   );
 }
 
+function compareCandidateSource(left: CandidateWithSource, right: CandidateWithSource): number {
+  return (
+    compareText(left.sourceId, right.sourceId) ||
+    compareText(left.anchor, right.anchor) ||
+    left.cue.termStart - right.cue.termStart ||
+    left.cue.meaningStart - right.cue.meaningStart ||
+    compareText(left.candidate.capsule.term, right.candidate.capsule.term) ||
+    compareText(left.candidate.capsule.meaning, right.candidate.capsule.meaning)
+  );
+}
+
 function sameRecord(signal: SignalRecord, record: JsonObject): "valid" | "stale" {
   if (
     signal.evidence_anchor !== signal.source_id ||
@@ -246,7 +257,7 @@ function uniqueCandidateSources(candidates: readonly CandidateWithSource[]): Can
   for (const item of candidates) {
     const key = `${item.identity}:${item.meaning}:${item.anchor}`;
     const previous = unique.get(key);
-    if (!previous || compareCandidates(item, previous) < 0) unique.set(key, item);
+    if (!previous || compareCandidateSource(item, previous) < 0) unique.set(key, item);
   }
   return [...unique.values()].sort(compareCandidates);
 }
@@ -299,7 +310,7 @@ function classifyRecord(
       );
       continue;
     }
-    filtered.push([...group].sort(compareCandidates)[0]!);
+    filtered.push([...group].sort(compareCandidateSource)[0]!);
   }
   return { candidates: filtered, abstentions };
 }
@@ -390,7 +401,7 @@ export function mineExplicitGlossaryCandidates(
       }
       continue;
     }
-    globallyEligible.push(ordered[0]!);
+    globallyEligible.push([...group].sort(compareCandidateSource)[0]!);
   }
   return {
     state: assessment.state,

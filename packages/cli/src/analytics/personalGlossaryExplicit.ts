@@ -1,6 +1,7 @@
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { glossaryEntryAuthorityPath } from "../registries/glossaryEntryContract.js";
+import { loadExplicitSegmentGrammarContract } from "../registries/explicitSegmentGrammarContract.js";
 import {
   compareGlossaryUnicodeStrings,
   stableGlossaryTermIdentity,
@@ -14,6 +15,8 @@ import {
   type RawCue,
   type ValidCue,
 } from "./personalGlossaryExplicitTypes.js";
+import { segmentAndBindExplicitCues } from "./personalGlossaryExplicitSegments.js";
+import { adjacentScopeTexts, contextText } from "./personalGlossaryExplicitScope.js";
 
 export * from "./personalGlossaryExplicitTypes.js";
 
@@ -36,7 +39,6 @@ const LETTER_OR_NUMBER_RE = /[\p{L}\p{N}]/u;
 const ACRONYM_RE = /^[\p{Lu}\p{N}][\p{Lu}\p{N}._-]{1,31}$/u;
 const DEFINITION_LIST_MARKER_RE = /^(?:definition|term)$/iu;
 const DEFINITION_LIST_PREFIX_RE = /^\s*(?:[-*+]\s+)?/u;
-const EMPTY_DEFINITION_LIST_MARKER_RE = /^\s*(?:[-*+]\s+)?(?:definition|term)\s*:\s*$/iu;
 const EXAMPLE_RE = /\b(?:for\s+example|e\.g\.?|example|such\s+as)\b/iu;
 const HYPOTHETICAL_RE =
   /\b(?:if|when|unless|whenever|suppose|assuming|hypothetically|imagine|would|could|might|may)\b/iu;
@@ -57,8 +59,6 @@ const PROJECT_SCOPE_RE =
   /\b(?:in|within|for)\s+(?:this|the|our)\s+(?:repo(?:sitory)?|project|codebase)\b|\b(?:repo(?:sitory)?|project|codebase)[ -]only\b|\b(?:project|repo(?:sitory)?|codebase)\s+(?:term|meaning|definition)\b/iu;
 const DIRECT_SCOPE_REFERENCE_RE =
   /\b(?:this|that|the\s+(?:following|above|below)|following|above|below)\s+(?:term|meaning|definition|usage|entry)\b/iu;
-const FOLLOWING_CUE_REFERENCE_RE = /\b(?:the\s+)?following\s+(?:definition|term|meaning)\b/iu;
-const PREVIOUS_CUE_REFERENCE_RE = /\bthis\s+(?:definition|term|meaning)\b/iu;
 const PERSONAL_SCOPE_RE =
   /\b(?:i|we)\s+(?:use|mean|call|define)\b|\bmy\s+(?:term|meaning|definition)\b|\bfor\s+me\b|\bpersonally\b/iu;
 
@@ -175,7 +175,9 @@ function trimTerm(text: string, start: number, end: number): [number, number] {
 
 function trimMeaning(text: string, start: number, end: number): [number, number] {
   [start, end] = trimWhitespace(text, start, end);
-  while (end > start && SENTENCE_TERMINATORS.has(text[end - 1]!)) end -= 1;
+  while (end > start && (SENTENCE_TERMINATORS.has(text[end - 1]!) || text[end - 1] === ";")) {
+    end -= 1;
+  }
   return trimWhitespace(text, start, end);
 }
 
@@ -423,6 +425,35 @@ function lineRanges(text: string): Array<{ start: number; end: number }> {
   return lines;
 }
 
+function commentStart(
+  text: string,
+  line: { start: number; end: number },
+  ranges: readonly { start: number; end: number }[],
+): number {
+  const firstNonWhitespace = text.slice(line.start, line.end).search(/\S/u);
+  if (firstNonWhitespace >= 0) {
+    const index = line.start + firstNonWhitespace;
+    if (text[index] === "#" && !insideRange(index, ranges)) return index;
+  }
+  for (let index = line.start; index < line.end; index += 1) {
+    if (text[index] !== "#" || insideRange(index, ranges)) continue;
+    if (index === line.start || /\s/u.test(text[index - 1] ?? "")) return index;
+  }
+  return -1;
+}
+
+function segmentFloorBefore(
+  text: string,
+  end: number,
+  floor: number,
+  ranges: readonly { start: number; end: number }[],
+): number {
+  for (let index = end - 1; index >= floor; index -= 1) {
+    if (!insideRange(index, ranges) && /[;,.!?]/u.test(text[index]!)) return index + 1;
+  }
+  return floor;
+}
+
 function colonOutsideRanges(
   text: string,
   start: number,
@@ -515,80 +546,78 @@ function listCues(
 ): RawCue[] {
   const cues: RawCue[] = [];
   const lines = lineRanges(text);
-  for (const [lineIndex, line] of lines.entries()) {
-    const firstColon = colonOutsideRanges(text, line.start, line.end, ranges);
-    if (firstColon < 0) continue;
-    const statementStart = Math.max(line.start, previousBoundary(boundaries, firstColon));
-    const prefix = DEFINITION_LIST_PREFIX_RE.exec(text.slice(statementStart, line.end));
-    const contentStart = statementStart + (prefix?.[0].length ?? 0);
-    if (
-      /\b(?:means|refers\s+to|stands\s+for|short\s+for|to\s+mean|i\s+mean)\b/iu.test(
-        text.slice(line.start, firstColon),
-      )
-    ) {
-      continue;
+  for (const line of lines) {
+    const comment = commentStart(text, line, ranges);
+    const scanEnd = comment < 0 ? line.end : comment;
+    const prefixMatch = DEFINITION_LIST_PREFIX_RE.exec(text.slice(line.start, scanEnd));
+    const contentStart = line.start + (prefixMatch?.[0].length ?? 0);
+    const colons: number[] = [];
+    for (let index = contentStart; index < scanEnd; index += 1) {
+      if (text[index] === ":" && !insideRange(index, ranges)) colons.push(index);
     }
-    let colon = firstColon;
-    let termFloor = contentStart;
-    const [firstStart, firstEnd] = trimTerm(text, contentStart, colon);
-    const marked = DEFINITION_LIST_MARKER_RE.test(text.slice(firstStart, firstEnd));
-    if (marked) {
-      colon = colonOutsideRanges(text, colon + 1, line.end, ranges);
-      if (colon < 0) continue;
-      termFloor = firstColon + 1;
-    }
-    let [termStart, termEnd] =
-      delimitedTermBefore(text, colon, termFloor) ?? trimTerm(text, termFloor, colon);
-    const [inlineMeaningStart, inlineMeaningEnd] = unwrapMeaning(
-      text,
-      ...trimMeaning(text, colon + 1, line.end),
-    );
-    const meaningBeginsInline = LETTER_OR_NUMBER_RE.test(
-      text.slice(inlineMeaningStart, inlineMeaningEnd),
-    );
-    let meaningLineEnd = line.end;
-    let nextLineStart = line.end + 1;
-    while (meaningBeginsInline && nextLineStart <= text.length) {
-      const nextLineEnd =
-        text.indexOf("\n", nextLineStart) < 0 ? text.length : text.indexOf("\n", nextLineStart);
-      if (
-        nextLineStart >= nextLineEnd ||
-        looksLikeDefinitionLine(text, nextLineStart, nextLineEnd, ranges)
-      ) {
-        break;
+    if (colons.length === 0) continue;
+
+    for (const firstColon of colons) {
+      const segmentFloor = segmentFloorBefore(text, firstColon, contentStart, ranges);
+      const [firstStart, firstEnd] = trimTerm(text, segmentFloor, firstColon);
+      const firstValue = text.slice(firstStart, firstEnd);
+
+      if (DEFINITION_LIST_MARKER_RE.test(firstValue)) {
+        const termColon = colons.find((candidate) => candidate > firstColon);
+        if (termColon === undefined) continue;
+        const [termStart, termEnd] = trimTerm(text, firstColon + 1, termColon);
+        const [meaningStart, meaningEnd] = trimMeaning(text, termColon + 1, scanEnd);
+        const safe = safeDefinitionListTerm(
+          text,
+          line.start,
+          firstColon + 1,
+          termColon,
+          termStart,
+          termEnd,
+          meaningStart,
+          meaningEnd,
+          true,
+        );
+        cues.push({
+          kind: "definition_list",
+          termStart,
+          termEnd,
+          meaningStart: termColon + 1,
+          meaningEnd: scanEnd,
+          sentenceStart: previousBoundary(boundaries, termStart),
+          sentenceEnd: nextBoundary(text, boundaries, termColon),
+          ...(safe ? {} : { rejectionReason: EXPLICIT_GLOSSARY_REASONS.unsafeSyntax }),
+        });
+        continue;
       }
-      meaningLineEnd = nextLineEnd;
-      if (nextLineEnd >= text.length) break;
-      nextLineStart = nextLineEnd + 1;
-    }
-    const cueEnd = Math.min(meaningLineEnd, nextBoundary(text, boundaries, colon));
-    const [meaningStart, meaningEnd] = unwrapMeaning(text, ...trimMeaning(text, colon + 1, cueEnd));
-    const safe =
-      meaningBeginsInline &&
-      !EMPTY_DEFINITION_LIST_MARKER_RE.test(
-        text.slice(lines[lineIndex - 1]?.start ?? 0, lines[lineIndex - 1]?.end ?? 0),
-      ) &&
-      safeDefinitionListTerm(
+
+      const delimited = delimitedTermBefore(text, firstColon, segmentFloor);
+      const [termStart, termEnd] = delimited ?? trimTerm(text, segmentFloor, firstColon);
+      const term = text.slice(termStart, termEnd);
+      if (!delimited && !ACRONYM_RE.test(term)) continue;
+      const [meaningStart, meaningEnd] = trimMeaning(text, firstColon + 1, scanEnd);
+      const safe = safeDefinitionListTerm(
         text,
         line.start,
-        termFloor,
-        colon,
+        segmentFloor,
+        firstColon,
         termStart,
         termEnd,
         meaningStart,
         meaningEnd,
-        marked,
+        false,
       );
-    cues.push({
-      kind: "definition_list",
-      termStart,
-      termEnd,
-      meaningStart,
-      meaningEnd,
-      sentenceStart: previousBoundary(boundaries, termStart),
-      sentenceEnd: cueEnd,
-      ...(safe ? {} : { rejectionReason: EXPLICIT_GLOSSARY_REASONS.unsafeSyntax }),
-    });
+      cues.push({
+        kind: "definition_list",
+        termStart,
+        termEnd,
+        meaningStart: firstColon + 1,
+        meaningEnd: scanEnd,
+        sentenceStart: previousBoundary(boundaries, termStart),
+        sentenceEnd: nextBoundary(text, boundaries, firstColon),
+        ...(safe ? {} : { rejectionReason: EXPLICIT_GLOSSARY_REASONS.unsafeSyntax }),
+      });
+    }
   }
   return cues;
 }
@@ -681,14 +710,24 @@ function rawCueOrder(left: RawCue, right: RawCue, text: string): number {
 export function rawCues(text: string): RawCue[] {
   const ranges = delimitedRanges(text);
   const boundaries = sentenceBoundaries(text, ranges);
-  const all = [
+  const grammar = loadExplicitSegmentGrammarContract();
+  const initial = [
     ...wordCues(text, boundaries, ranges),
     ...listCues(text, ranges, boundaries),
     ...acronymCues(text, ranges, boundaries),
   ];
   const unique = new Map<string, RawCue>();
-  for (const cue of all) unique.set(rawCueKey(cue), cue);
-  return [...unique.values()].sort((left, right) => rawCueOrder(left, right, text));
+  for (const cue of initial) unique.set(rawCueKey(cue), cue);
+  return segmentAndBindExplicitCues(text, [...unique.values()], ranges, grammar, {
+    lineRanges,
+    commentStart,
+    colonOutsideRanges,
+    sentenceBoundaries,
+    rawCueOrder,
+    trimMeaning,
+    unwrapMeaning,
+    closeToOpen: CLOSE_TO_OPEN,
+  });
 }
 
 function cueValue(text: string, cue: RawCue): { term: string; meaning: string } {
@@ -698,41 +737,6 @@ function cueValue(text: string, cue: RawCue): { term: string; meaning: string } 
   };
 }
 
-function contextText(text: string, cue: RawCue): string {
-  return text.slice(cue.sentenceStart, cue.sentenceEnd);
-}
-
-function adjacentSentence(text: string, start: number, direction: -1 | 1): string {
-  if (direction === -1) {
-    const end = Math.max(0, start);
-    let boundary = -1;
-    for (let index = end - 1; index >= 0; index -= 1) {
-      if (SENTENCE_TERMINATORS.has(text[index]!)) {
-        boundary = index;
-        break;
-      }
-    }
-    const previousEnd = boundary + 1;
-    let previousBoundary = -1;
-    for (let index = previousEnd - 2; index >= 0; index -= 1) {
-      if (SENTENCE_TERMINATORS.has(text[index]!)) {
-        previousBoundary = index;
-        break;
-      }
-    }
-    return text.slice(previousBoundary + 1, previousEnd).trim();
-  }
-  const startAt = Math.min(text.length, start);
-  let end = text.length;
-  for (let index = startAt; index < text.length; index += 1) {
-    if (SENTENCE_TERMINATORS.has(text[index]!)) {
-      end = index + 1;
-      break;
-    }
-  }
-  return text.slice(startAt, end).trim();
-}
-
 function termOccurs(text: string, term: string): boolean {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   if (!escaped) return false;
@@ -740,35 +744,6 @@ function termOccurs(text: string, term: string): boolean {
     `(?<![\\p{ID_Continue}$\\u200C\\u200D])${escaped}(?![\\p{ID_Continue}$\\u200C\\u200D])`,
     "iu",
   ).test(text);
-}
-
-function adjacentScopeTexts(text: string, cue: RawCue): string[] {
-  return [
-    adjacentSentence(text, cue.sentenceStart, -1),
-    contextText(text, cue),
-    adjacentSentence(text, cue.sentenceEnd, 1),
-  ];
-}
-
-function adjacentContextReason(
-  text: string,
-  cue: RawCue,
-  term: string,
-): ExplicitGlossaryReason | null {
-  const [previous, _current, next] = adjacentScopeTexts(text, cue);
-  for (const [sentence, directReference] of [
-    [previous, FOLLOWING_CUE_REFERENCE_RE],
-    [next, PREVIOUS_CUE_REFERENCE_RE],
-  ] as const) {
-    if (!sentence || (!termOccurs(sentence, term) && !directReference.test(sentence))) continue;
-    if (EXAMPLE_RE.test(sentence)) return EXPLICIT_GLOSSARY_REASONS.exampleContext;
-    if (HYPOTHETICAL_RE.test(sentence)) return EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition;
-    if (INDIRECT_QUESTION_RE.test(sentence) || QUESTION_RE.test(sentence)) {
-      return EXPLICIT_GLOSSARY_REASONS.indirectQuestion;
-    }
-    if (FUTURE_RE.test(sentence)) return EXPLICIT_GLOSSARY_REASONS.futureDefinition;
-  }
-  return null;
 }
 
 function scopeReason(
@@ -833,8 +808,6 @@ function pureCueReason(
   if (RETRACTION_RE.test(beforeCue) && !CORRECTION_RE.test(beforeCue)) {
     return EXPLICIT_GLOSSARY_REASONS.retractedDefinition;
   }
-  const adjacent = adjacentContextReason(text, cue, value.term.trim());
-  if (adjacent) return adjacent;
   const scope = scopeReason(text, cue, record);
   if (scope) return scope;
   return null;
@@ -901,6 +874,7 @@ export function retractionInvalidatesCue(
   const nextSameTerm = otherCues.find(
     (other) =>
       other.termStart > cue.termStart &&
+      other.termEnd > other.termStart &&
       stableGlossaryTermIdentity(text.slice(other.termStart, other.termEnd).trim()) ===
         stableGlossaryTermIdentity(cue.term),
   );

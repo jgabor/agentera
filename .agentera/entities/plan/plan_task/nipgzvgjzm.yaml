@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bcpkchatfu
   name: Implement finite explicit segment grammar
-  status: pending
+  status: blocked
   depends_on:
     - uhdotliobu
   acceptance:
@@ -17,3 +17,13 @@ record:
     - Run the named targeted checks, then obtain and persist an independent Audit PASS on this task.
     - Only after PASS supersede milybqttmo and guhuzevlez with this task and resolve TODO psteyugpzv; any FAIL leaves all three open.
     - If the prerequisite cannot define one finite structural-config exit that preserves a valid post-config definition, keep this task blocked and invoke Plan again.
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Same-line direct qualifier text still contaminates an eligible meaning; structural prose exit omits the authority structural_fragment abstention; paired regressions do not cover either exact boundary.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_01e478143ffewd16MtcDroNw08 bounded re-review
+      recorded_at: 2026-08-08 16:44
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,15 @@
+id: tgoaomxafw
+artifact: progress
+record:
+  timestamp: 2026-08-08 16:10
+  type: feat
+  phase: build
+  what: Replace line-oriented explicit glossary parsing with the authority-driven finite segment grammar.
+  context:
+    intent: Implement only the finite explicit segment grammar for bounded personal glossary mining.
+    constraints: Preserve authority, provenance, personal scope, project-glossary isolation, exact UTF-8 spans, canonical lexical order, and downstream boundaries; create no commit.
+    scope: Parser segmentation, reference binding, source-span preservation, regression tests, local source verification, and typed progress only.
+  discovered: The parser needed physical-line state around structural configuration, explicit cue boundaries, and reference binding so later cues remain independent.
+  verified: The finite parser consumes the approved grammar loader for same-line cue segmentation, structural configuration persistence and prose exit, bounded inline continuation, directional reference binding, ambiguity, deduplication, and canonical order. Targeted explicit, authority, admission, recurrence, mining, and candidate-contract tests passed 254 tests; full source passed 234 files and 3663 tests with 1 skip. Typecheck, local build, formatter, and local compact passed. Provenance, agent/injected rejection, project-glossary isolation, scope, conflicts, retractions, replay, UTF-8 spans, recurring mining, and formatter boundaries remain covered. Task remains pending for independent Audit PASS; blocked predecessors and TODO remain unchanged.
+  next: Leave nipgzvgjzm pending for independent Audit PASS; do not supersede blocked predecessors or resolve TODO psteyugpzv in this cycle.
+  publication_order: 121

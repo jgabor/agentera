@@ -1,0 +1,16 @@
+id: ziuytvufoa
+artifact: progress
+record:
+  timestamp: 2026-08-08 16:47
+  type: fix
+  phase: audit
+  what: "Completed the bounded audit-2 re-review of the finite explicit segment grammar. Audit-2 remains FAIL: same-line direct qualifier text still contaminates an eligible meaning, structural prose exit omits the authority structural_fragment abstention, and paired regressions do not cover either boundary. The task remains blocked and TODO psteyugpzv remains open for replanning."
+  context:
+    intent: Record the terminal audit state accurately before finalizing the bounded parser improvement.
+    constraints: Preserve authority state, provenance, project isolation, exact UTF-8 spans, replay, and downstream boundaries; do not publish, push, or broaden scope.
+    unknowns: Acceptance is not complete. A replacement task and independent PASS are still required for the two audit-2 failures.
+    scope: Finite explicit glossary segmentation, its regression tests, and the associated Agentera plan, TODO, and progress records.
+  discovered: "The persisted audit evidence identifies two concrete follow-up boundaries: separate a same-line direct qualifier from the preceding meaning, and emit structural_fragment for structural entry, persistence, and prose exit before accepting a valid post-exit definition."
+  verified: The build-context prime succeeded. Persisted task nipgzvgjzm and TODO psteyugpzv were read, git diff --check passed, and the prior targeted/full test, typecheck, build, formatter, and compact gates passed before this finalization review.
+  next: Commit the scoped implementation, tests, and lifecycle state if the final diff remains coherent; do not resolve TODO psteyugpzv or supersede the blocked parser tasks without a replanned replacement and independent PASS.
+  publication_order: 123
