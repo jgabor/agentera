@@ -11,11 +11,18 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
-CLI="${AGENTERA_CLI:-node $REPO_ROOT/packages/cli/dist/bin/agentera.js}"
+TIER="${AGENTERA_SANDBOX_TIER:-L1}"
 
 export HOME="$SANDBOX/home"
 export XDG_CONFIG_HOME="${SANDBOX}/xdg-config"
-export AGENTERA_BOOTSTRAP_SOURCE_ROOT="${REPO_ROOT}"
+if [[ "$TIER" == "L2" ]]; then
+  PIN="${AGENTERA_NPM_PIN:?L2 assertions require AGENTERA_NPM_PIN}"
+  CLI=(npx -y "$PIN")
+  unset AGENTERA_BOOTSTRAP_SOURCE_ROOT
+else
+  CLI=(node "$REPO_ROOT/packages/cli/dist/bin/agentera.js")
+  export AGENTERA_BOOTSTRAP_SOURCE_ROOT="${REPO_ROOT}"
+fi
 
 APP_HOME="${AGENTERA_INSTALL_ROOT:-$HOME/.local/share/agentera}"
 PROJECT="${AGENTERA_PROJECT:-$SANDBOX/project}"
@@ -81,7 +88,7 @@ fi
 
 if [[ "$SCENARIO" == "stable-safety" ]]; then
   stable_out="$SANDBOX/stable-preview.json"
-  $CLI upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
+  "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
     --dry-run --format json --channel stable >"$stable_out" 2>"$SANDBOX/stable.stderr" || rc=$?
   rc="${rc:-0}"
   python3 - <<'PY' "$stable_out"
@@ -95,7 +102,7 @@ PY
 fi
 
 second_out="$SANDBOX/second-dry-run.json"
-$CLI upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
+"${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
   --dry-run --format json --channel development >"$second_out" 2>"$SANDBOX/second.stderr" || rc2=$?
 rc2="${rc2:-0}"
 python3 - <<'PY' "$second_out" "$SCENARIO" "$rc2"
@@ -114,22 +121,34 @@ PY
 
 "$SCRIPT_DIR/scan-python-leftovers.sh" "$SANDBOX"
 
-# Post-migration prime smoke: upgraded install must resolve profile and start cleanly.
+# Post-migration startup smoke: prime must start cleanly and advertise the
+# deferred profile seam; the exact profile command must then validate it.
 prime_out="$SANDBOX/prime-post-migration.json"
 prime_stderr="$SANDBOX/prime-post-migration.stderr"
+profile_out="$SANDBOX/profile-post-migration.json"
+profile_stderr="$SANDBOX/profile-post-migration.stderr"
 if [[ ! -f "$APP_HOME/PROFILE.md" ]]; then
   printf '%s\n' '<!-- Generated: 2026-06-26 -->' >"$APP_HOME/PROFILE.md"
 fi
 set +e
+prime_env=(
+  "HOME=$HOME"
+  "XDG_CONFIG_HOME=$XDG_CONFIG_HOME"
+  "PATH=${PATH:-/usr/bin:/bin}"
+  "USER=${USER:-sandbox}"
+)
+if [[ "$TIER" == "L2" ]]; then
+  prime_env+=(
+    "NPM_CONFIG_CACHE=${NPM_CONFIG_CACHE:?}"
+    "NPM_CONFIG_USERCONFIG=${NPM_CONFIG_USERCONFIG:?}"
+    "NPM_CONFIG_GLOBALCONFIG=${NPM_CONFIG_GLOBALCONFIG:?}"
+  )
+else
+  prime_env+=("AGENTERA_BOOTSTRAP_SOURCE_ROOT=$REPO_ROOT")
+fi
 (
   cd "$PROJECT"
-  env -i \
-    HOME="$HOME" \
-    XDG_CONFIG_HOME="$XDG_CONFIG_HOME" \
-    AGENTERA_BOOTSTRAP_SOURCE_ROOT="$REPO_ROOT" \
-    PATH="${PATH:-/usr/bin:/bin}" \
-    USER="${USER:-sandbox}" \
-    $CLI prime --format json
+  env -i "${prime_env[@]}" "${CLI[@]}" prime --format json
 ) >"$prime_out" 2>"$prime_stderr"
 prime_rc=$?
 set -e
@@ -143,28 +162,42 @@ fi
 python3 - <<'PY' "$prime_out"
 import json, sys
 payload = json.load(open(sys.argv[1]))
-profile = payload.get("profile") or {}
-profile_status = payload.get("profile_status") or profile.get("status")
-if profile_status != "loaded":
-    raise SystemExit(
-        f"assert_post_migration_prime: profile status is {profile_status!r}, expected 'loaded'"
-    )
-app = payload.get("app") or {}
-startup = (payload.get("source_contract") or {}).get("capability_startup") or {}
-if profile_status == "not found" or startup.get("complete_for_capability_startup") is False:
-    missing = startup.get("missing_state") or []
-    if any("profile" in str(item).lower() or "schema" in str(item).lower() for item in missing):
-        raise SystemExit(
-            "assert_post_migration_prime: capability startup incomplete due to profile/schema error"
-        )
-signals = app.get("signals") or []
-for signal in signals:
-    kind = str(signal.get("kind") or "")
-    if kind in {"schema_error", "profile_error", "profile_not_found"}:
-        raise SystemExit(
-            f"assert_post_migration_prime: app signal {kind!r} indicates profile/schema failure"
-        )
+if payload.get("outcome") != "ok":
+    raise SystemExit(f"assert_post_migration_prime: outcome is {payload.get('outcome')!r}")
+app_home = payload.get("app_home") or {}
+if app_home.get("status") != "up_to_date" or app_home.get("install_track") != "v3":
+    raise SystemExit(f"assert_post_migration_prime: invalid app home {app_home!r}")
+startup = payload.get("startup") or {}
+cutover = startup.get("state_cutover") or {}
+if startup.get("outcome") != "ok" or cutover.get("status") != "complete" or cutover.get("project_state") != "v3":
+    raise SystemExit(f"assert_post_migration_prime: invalid startup {startup!r}")
+profile = next((row for row in startup.get("availability", []) if row.get("family") == "profile"), {})
+if profile.get("availability") != "deferred" or profile.get("detail_command") != "npx -y agentera@next report profile-grounding --format json":
+    raise SystemExit(f"assert_post_migration_prime: invalid profile seam {profile!r}")
 print("assert_post_migration_prime: ok")
+PY
+
+set +e
+(
+  cd "$PROJECT"
+  env -i "${prime_env[@]}" "${CLI[@]}" report profile-grounding --format json
+) >"$profile_out" 2>"$profile_stderr"
+profile_rc=$?
+set -e
+
+if [[ "$profile_rc" -ne 0 ]]; then
+  echo "assert_post_migration_profile: profile grounding exited $profile_rc" >&2
+  cat "$profile_stderr" >&2 || true
+  exit 1
+fi
+
+python3 - <<'PY' "$profile_out"
+import json, sys
+payload = json.load(open(sys.argv[1]))
+validity = payload.get("validity") or {}
+if payload.get("status") != "ok" or validity.get("status") != "valid":
+    raise SystemExit(f"assert_post_migration_profile: invalid grounding {payload!r}")
+print("assert_post_migration_profile: ok")
 PY
 
 echo "assert-v2v3-migration: ok"

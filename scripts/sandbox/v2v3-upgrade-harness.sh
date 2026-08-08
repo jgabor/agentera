@@ -21,7 +21,6 @@ mkdir -p "$NPM_CONFIG_CACHE"
 
 export HOME="$SANDBOX/home"
 export XDG_CONFIG_HOME="$SANDBOX/xdg-config"
-export AGENTERA_BOOTSTRAP_SOURCE_ROOT="$REPO_ROOT"
 
 APP_HOME="$HOME/.local/share/agentera"
 if [[ "$SCENARIO" == "legacy-home-retirement" ]]; then
@@ -29,7 +28,19 @@ if [[ "$SCENARIO" == "legacy-home-retirement" ]]; then
 fi
 PROJECT="$SANDBOX/project"
 
+# Cross-major apply accepts only a complete v2 source tracked unchanged at
+# HEAD. Sandbox fixtures are copied into a fresh directory, so establish that
+# source authority before either the local or exact-version runtime inspects it.
+git -C "$PROJECT" init -q
+git -C "$PROJECT" add -f .
+git -C "$PROJECT" \
+  -c user.name=Agentera \
+  -c user.email=agentera@example.invalid \
+  -c commit.gpgsign=false \
+  commit --allow-empty -qm "seed v2 fixture"
+
 if [[ "$TIER" == "L2" ]]; then
+  unset AGENTERA_BOOTSTRAP_SOURCE_ROOT
   unset NPM_TOKEN NODE_AUTH_TOKEN npm_config_userconfig npm_config_globalconfig npm_config_registry NPM_CONFIG_REGISTRY
   export NPM_CONFIG_USERCONFIG="$SANDBOX/npm-user.npmrc"
   export NPM_CONFIG_GLOBALCONFIG="$SANDBOX/npm-global.npmrc"
@@ -39,6 +50,7 @@ if [[ "$TIER" == "L2" ]]; then
   PIN="${AGENTERA_NPM_PIN:-agentera@3.0.0-next.0}"
   CLI=(npx -y "$PIN")
 else
+  export AGENTERA_BOOTSTRAP_SOURCE_ROOT="$REPO_ROOT"
   CLI=(node "$REPO_ROOT/packages/cli/dist/bin/agentera.js")
 fi
 

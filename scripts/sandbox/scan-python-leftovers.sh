@@ -32,6 +32,7 @@ while IFS= read -r file; do
 done < <(find "$ROOT" -type f \
   ! -path '*/fixtures/*' \
   ! -path '*/node_modules/*' \
+  ! -path '*/.local/share/agentera/references/*' \
   ! -path '*/app/skills/*' \
   ! -path '*/app/scripts/agentera' \
   ! -path '*/backup/*' \

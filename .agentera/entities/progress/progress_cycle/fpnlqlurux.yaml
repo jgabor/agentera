@@ -1,0 +1,15 @@
+id: fpnlqlurux
+artifact: progress
+record:
+  timestamp: 2026-08-08 15:06
+  type: fix
+  phase: build
+  what: Corrected the qualified exact-version L2 sandbox after the staged dev.46 publication exposed stale migration assumptions.
+  context:
+    intent: Make the post-stage L2 barrier exercise a valid tracked v2 source and the exact staged npm package through every assertion.
+    constraints: Do not promote dev.46 after changing tracked release tooling; preserve the staged artifact and candidate tag as forward-only evidence; retain user-owned Python-leftover detection while excluding canonical retirement authorities.
+    scope: scripts/sandbox migration harness and assertions plus focused CI contract tests.
+  discovered: The sandbox copied v2 project state without establishing the Git authority now required by cross-major apply. After that was corrected, the next failures showed the leftover scanner treating canonical retirement references as live Python configuration and the prime assertion relying on a removed top-level profile field while post-apply checks silently switched to checkout dist.
+  verified: bash syntax checks passed. test/ci/sandboxL2NpmPin.test.ts passed 5 tests. A real L2 run pinned to the staged agentera@3.0.0-dev.46 passed preview, apply, app-subtree removal, idempotency, leftover scanning, prime startup, and profile-grounding checks entirely through the exact npm package.
+  next: Commit the harness correction, prepare forward-only 3.0.0-dev.47 from that source commit, qualify and approve one exact candidate, then replay qualified publication without moving the dev.46 candidate tag backward.
+  publication_order: 107
