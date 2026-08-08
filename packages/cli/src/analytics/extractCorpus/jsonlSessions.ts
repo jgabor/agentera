@@ -7,6 +7,7 @@ import {
   authorClassForRole,
   eventKind,
   eventTimestamp,
+  inspectTransportProvenance,
   isPlainObject,
   isoFromMtime,
   iterJsonl,
@@ -20,11 +21,51 @@ import {
   toolCallRecordFromItem,
 } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
+import type { InspectedTransportProvenance, TransportProvenance } from "./core.js";
 
 function pathStem(p: string): string {
   const base = path.basename(p);
   const ext = path.extname(base);
   return ext ? base.slice(0, -ext.length) : base;
+}
+
+function updateSessionProvenance(
+  current: TransportProvenance,
+  update: InspectedTransportProvenance,
+): TransportProvenance {
+  if (update.originState === "invalid") return current;
+  const originId = update.originState === "valid" ? update.originId : current.originId;
+  const originChanged = update.originState === "valid" && originId !== current.originId;
+  if (originChanged) {
+    return {
+      originId,
+      authorClass: update.authorState === "valid" ? update.authorClass : null,
+    };
+  }
+  if (originId !== null && update.authorState === "valid") {
+    return { originId, authorClass: update.authorClass };
+  }
+  return { originId, authorClass: current.authorClass };
+}
+
+function codexMessageProvenance(
+  role: string,
+  message: InspectedTransportProvenance,
+  session: TransportProvenance,
+): TransportProvenance {
+  const originId = message.originState === "valid" ? message.originId : session.originId;
+  if (message.originState === "invalid" || message.authorState === "invalid") {
+    return { originId, authorClass: null };
+  }
+  const explicitAuthorClass = message.authorState === "valid"
+    ? message.authorClass
+    : originId !== null && originId === session.originId
+      ? session.authorClass
+      : null;
+  return {
+    originId,
+    authorClass: authorClassForRole(role, explicitAuthorClass, originId),
+  };
 }
 
 export function extractCodexSessions(sessionsDir: string | null, errors: string[]): JsonObject[] {
@@ -33,7 +74,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
   for (const p of rglob(sessionsDir, "*.jsonl")) {
     const fallbackTimestamp = isoFromMtime(p);
     let sessionId = pathStem(p);
-    let sessionOriginId: string | null = null;
+    let sessionProvenance: TransportProvenance = { originId: null, authorClass: null };
     let projectPath: string | null = null;
     let previousAssistant = "";
     let index = 0;
@@ -44,7 +85,10 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
       if (kind === "session_meta") {
         const sid = payload.id || event.id;
         if (typeof sid === "string" && sid) sessionId = sid;
-        sessionOriginId = transportProvenance(event, payload).originId ?? sessionOriginId;
+        sessionProvenance = updateSessionProvenance(
+          sessionProvenance,
+          inspectTransportProvenance(event, payload),
+        );
         const cwd = payload.cwd || payload.working_directory;
         if (typeof cwd === "string" && cwd) projectPath = cwd;
         continue;
@@ -70,9 +114,11 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
       const content = textFromContent(item.content || item.text || item.message);
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
-      const transport = transportProvenance(event, item);
-      const originId = transport.originId ?? sessionOriginId;
-      const authorClass = authorClassForRole(role, transport.authorClass, originId);
+      const transport = codexMessageProvenance(
+        role,
+        inspectTransportProvenance(event, item),
+        sessionProvenance,
+      );
       const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
@@ -89,8 +135,8 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
           runtime: "codex",
           sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
           sessionId,
-          originId,
-          authorClass,
+          originId: transport.originId,
+          authorClass: transport.authorClass,
           content,
           data,
         }),
@@ -106,8 +152,8 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
               runtime: "codex",
               sourceParts: [resolvePath(p), index, "history", content.slice(0, 120)],
               sessionId,
-              originId,
-              authorClass,
+              originId: transport.originId,
+              authorClass: transport.authorClass,
               content,
               data: { prompt: content, signal_type: sig },
             }),

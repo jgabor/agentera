@@ -29,6 +29,7 @@ import {
   signalType,
   stableId,
   readSignalTier,
+  resolveEvidenceAnchor,
   evidenceTierCompatibility,
 } from "../../src/analytics/extractCorpus.js";
 
@@ -247,6 +248,236 @@ describe("bounded provenance", () => {
     });
   });
 
+  it("preserves session provenance and accepts a matching message author override", () => {
+    const sessionsDir = path.join(tmp, "codex-session-author");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    const transcript = path.join(sessionsDir, "session.jsonl");
+    fs.writeFileSync(
+      transcript,
+      [
+        JSON.stringify({
+          type: "session_meta",
+          payload: {
+            id: "s1",
+            cwd: "/project",
+            provenance: { origin: "instruction://session", author_class: "injected_instruction" },
+          },
+        }),
+        JSON.stringify({
+          type: "response_item",
+          timestamp: "2026-01-01T00:00:01.000Z",
+          payload: {
+            type: "message",
+            role: "user",
+            content: [{ type: "input_text", text: "session-bound text" }],
+          },
+        }),
+        JSON.stringify({
+          type: "response_item",
+          timestamp: "2026-01-01T00:00:02.000Z",
+          payload: {
+            type: "message",
+            role: "user",
+            provenance: { origin: "instruction://session", author_class: "user" },
+            content: [{ type: "input_text", text: "specific source wording" }],
+          },
+        }),
+      ].join("\n") + "\n",
+    );
+
+    const errors: string[] = [];
+    const records = extractCodexSessions(sessionsDir, errors);
+    expect(errors).toEqual([]);
+    expect(records).toHaveLength(2);
+    const sessionBound = records.find((record) => record.data.content === "session-bound text")!;
+    const messageOverride = records.find((record) => record.data.content === "specific source wording")!;
+    expect(sessionBound).toMatchObject({
+      origin_id: originIdentity("instruction://session"),
+      author_class: "injected_instruction",
+    });
+    expect(messageOverride).toMatchObject({
+      origin_id: sessionBound.origin_id,
+      author_class: "user",
+    });
+
+    const tiersDir = path.join(tmp, "session-author-tiers");
+    publishEvidenceTiers(records, {
+      tiersDir,
+      adapterVersion: "agentera-v3-corpus-3",
+      runtimeStatuses: [{ runtime: "codex", source_product: "codex", source_class: "active_runtime", active_runtime: true, status: "ok", reason: "records_extracted" }],
+      publishedAt: "2026-01-03T00:00:00.000Z",
+    });
+    expect(evidenceTierCompatibility(tiersDir)).toMatchObject({ state: "current" });
+    const signal = readSignalTier(tiersDir)!;
+    expect(signal.records).toHaveLength(2);
+    expect(signal.records.find((record) => record.source_id === sessionBound.source_id)).toMatchObject({
+      origin_id: sessionBound.origin_id,
+      author_class: "injected_instruction",
+    });
+    expect(signal.records.find((record) => record.source_id === messageOverride.source_id)).toMatchObject({
+      origin_id: sessionBound.origin_id,
+      author_class: "user",
+    });
+    expect(resolveEvidenceAnchor(sessionBound.source_id as string, tiersDir)).toEqual(sessionBound);
+  });
+
+  it("retains a bound author across same-origin partial session metadata", () => {
+    const sessionsDir = path.join(tmp, "codex-session-transition-same");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sessionsDir, "session.jsonl"),
+      [
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "s1", cwd: "/project", provenance: { origin: "instruction://session", author_class: "injected_instruction" } },
+        }),
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "s1", provenance: { origin: "instruction://session" } },
+        }),
+        JSON.stringify({
+          type: "response_item",
+          payload: { type: "message", role: "user", content: [{ type: "input_text", text: "retained session author" }] },
+        }),
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "s1", provenance: { author_class: "user" } },
+        }),
+        JSON.stringify({
+          type: "response_item",
+          payload: { type: "message", role: "user", content: [{ type: "input_text", text: "replacement session author" }] },
+        }),
+      ].join("\n") + "\n",
+    );
+
+    const errors: string[] = [];
+    const records = extractCodexSessions(sessionsDir, errors);
+    expect(errors).toEqual([]);
+    expect(records).toHaveLength(2);
+    expect(records.find((record) => record.data.content === "retained session author")).toMatchObject({
+      origin_id: originIdentity("instruction://session"),
+      author_class: "injected_instruction",
+    });
+    expect(records.find((record) => record.data.content === "replacement session author")).toMatchObject({
+      origin_id: originIdentity("instruction://session"),
+      author_class: "user",
+    });
+  });
+
+  it("clears a bound author when partial session metadata changes origin", () => {
+    const sessionsDir = path.join(tmp, "codex-session-transition-changed");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sessionsDir, "session.jsonl"),
+      [
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "s1", cwd: "/project", provenance: { origin: "instruction://one", author_class: "injected_instruction" } },
+        }),
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "s1", provenance: { origin: "instruction://two" } },
+        }),
+        JSON.stringify({
+          type: "response_item",
+          payload: { type: "message", role: "user", content: [{ type: "input_text", text: "changed session origin" }] },
+        }),
+      ].join("\n") + "\n",
+    );
+
+    const corpus = buildCorpus({
+      projectRoots: [],
+      codexSessionsDir: sessionsDir,
+      claudeProjectsDir: null,
+      opencodeConversationsDir: null,
+      copilotConversationsDir: null,
+      cursorProjectsDir: null,
+      cursorChatsDir: null,
+    });
+    expect(corpus.records).toHaveLength(1);
+    expect(corpus.records[0]).toMatchObject({
+      origin_id: originIdentity("instruction://two"),
+      data: { actor: "user", content: "changed session origin" },
+    });
+    expect(corpus.records[0]!.author_class).toBeUndefined();
+    expect(corpus.metadata.runtime_statuses.find((item) => item.runtime === "codex")).toMatchObject({
+      status: "degraded",
+      reason: "provenance_missing",
+      provenance_missing_fields: ["author_class"],
+      provenance_missing_records: 1,
+    });
+  });
+
+  it("distinguishes absent message origin from malformed message provenance", () => {
+    const sessionsDir = path.join(tmp, "codex-message-provenance-shapes");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    const message = (timestamp: string, text: string, provenance: Record<string, unknown>) => JSON.stringify({
+      type: "response_item",
+      timestamp,
+      payload: {
+        type: "message",
+        role: "user",
+        provenance,
+        content: [{ type: "input_text", text }],
+      },
+    });
+    fs.writeFileSync(
+      path.join(sessionsDir, "session.jsonl"),
+      [
+        JSON.stringify({
+          type: "session_meta",
+          payload: { id: "s1", cwd: "/project", provenance: { origin: "instruction://session", author_class: "injected_instruction" } },
+        }),
+        message("2026-01-01T00:00:01.000Z", "author only absent origin", { author_class: "user" }),
+        message("2026-01-01T00:00:02.000Z", "malformed origin with author", { origin: 42, author_class: "user" }),
+        message("2026-01-01T00:00:03.000Z", "malformed author with origin", { origin: "instruction://session", author_class: [] }),
+        message("2026-01-01T00:00:04.000Z", "matching origin without author", { origin: "instruction://session" }),
+        message("2026-01-01T00:00:05.000Z", "malformed author without origin", { author_class: null }),
+        message("2026-01-01T00:00:06.000Z", "malformed origin without author", { origin: "" }),
+      ].join("\n") + "\n",
+    );
+
+    const corpus = buildCorpus({
+      projectRoots: [],
+      codexSessionsDir: sessionsDir,
+      claudeProjectsDir: null,
+      opencodeConversationsDir: null,
+      copilotConversationsDir: null,
+      cursorProjectsDir: null,
+      cursorChatsDir: null,
+    });
+    expect(corpus.records).toHaveLength(6);
+    const byContent = new Map(corpus.records.map((record) => [record.data.content, record]));
+    const sessionOrigin = originIdentity("instruction://session");
+    expect(byContent.get("author only absent origin")).toMatchObject({ origin_id: sessionOrigin, author_class: "user" });
+    expect(byContent.get("matching origin without author")).toMatchObject({ origin_id: sessionOrigin, author_class: "injected_instruction" });
+    for (const text of [
+      "malformed origin with author",
+      "malformed author with origin",
+      "malformed author without origin",
+      "malformed origin without author",
+    ]) {
+      expect(byContent.get(text)).toMatchObject({ origin_id: sessionOrigin, data: { actor: "user", content: text } });
+      expect(byContent.get(text)!.author_class).toBeUndefined();
+    }
+    expect(corpus.metadata.runtime_statuses.find((item) => item.runtime === "codex")).toMatchObject({
+      status: "degraded",
+      reason: "provenance_missing",
+      provenance_missing_fields: ["author_class"],
+      provenance_missing_records: 4,
+    });
+
+    const tiersDir = path.join(tmp, "message-provenance-shape-tiers");
+    publishEvidenceTiers(corpus.records, {
+      tiersDir,
+      adapterVersion: "agentera-v3-corpus-3",
+      runtimeStatuses: corpus.metadata.runtime_statuses,
+      publishedAt: "2026-01-03T00:00:00.000Z",
+    });
+    expect(evidenceTierCompatibility(tiersDir)).toMatchObject({ state: "incomplete", reason: "provenance_missing" });
+    expect(readSignalTier(tiersDir)).toBeNull();
+  });
+
   it("degrades a transported origin when original author provenance is omitted", () => {
     const sessionsDir = path.join(tmp, "codex-author-gap");
     fs.mkdirSync(sessionsDir, { recursive: true });
@@ -273,19 +504,38 @@ describe("bounded provenance", () => {
         message("2026-01-01T00:00:03.000Z", null, "session origin without author"),
       ].join("\n") + "\n",
     );
+    fs.writeFileSync(
+      path.join(sessionsDir, "mismatch.jsonl"),
+      [
+        JSON.stringify({
+          type: "session_meta",
+          payload: {
+            id: "s2",
+            cwd: "/project",
+            provenance: { origin: "instruction://authored-session", author_class: "injected_instruction" },
+          },
+        }),
+        message("2026-01-01T00:00:04.000Z", "instruction://mismatched-message", "mismatched message origin"),
+      ].join("\n") + "\n",
+    );
 
     const errors: string[] = [];
     const records = extractCodexSessions(sessionsDir, errors);
     expect(errors).toEqual([]);
+    expect(records).toHaveLength(4);
     const withAuthor = records.find((record) => record.data.content === "transported with author")!;
     const withoutAuthor = records.find((record) => record.data.content === "transported without author")!;
     const withoutSessionAuthor = records.find((record) => record.data.content === "session origin without author")!;
+    const mismatchedMessage = records.find((record) => record.data.content === "mismatched message origin")!;
     expect(withAuthor.author_class).toBe("injected_instruction");
     expect(withoutAuthor.origin_id).toBe(originIdentity("instruction://missing-author"));
     expect(withoutAuthor.author_class).toBeUndefined();
     expect(withoutAuthor.data.actor).toBe("user");
     expect(withoutSessionAuthor.origin_id).toBe(originIdentity("instruction://session-origin"));
     expect(withoutSessionAuthor.author_class).toBeUndefined();
+    expect(mismatchedMessage.origin_id).toBe(originIdentity("instruction://mismatched-message"));
+    expect(mismatchedMessage.author_class).toBeUndefined();
+    expect(mismatchedMessage.data.actor).toBe("user");
 
     const corpus = buildCorpus({
       projectRoots: [],
@@ -299,6 +549,7 @@ describe("bounded provenance", () => {
     const status = corpus.metadata.runtime_statuses.find((item) => item.runtime === "codex")!;
     expect(status).toMatchObject({ status: "degraded", reason: "provenance_missing" });
     expect(status.provenance_missing_fields).toContain("author_class");
+    expect(status.provenance_missing_records).toBe(3);
     expect(corpus.records.find((record) => record.data.content === "transported without author")!.author_class).toBeUndefined();
 
     const tiersDir = path.join(tmp, "author-gap-tiers");

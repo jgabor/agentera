@@ -14,12 +14,16 @@ record:
     - The replacement task receives a persisted PASS before this TODO resolves.
   release_blocker: false
   severity: degraded
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Preserve Codex session-level transported author provenance"
+      status: resolved
+      order: 95
       severity: degraded
-      status: open
-      order: 3
+  lifecycle:
+    operation: resolve
+    reason: Replacement task gyksrobggo preserved Codex session-level author provenance and received persisted independent PASS.
+    date: 2026-08-08

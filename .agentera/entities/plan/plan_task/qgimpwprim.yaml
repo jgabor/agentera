@@ -4,7 +4,7 @@ record:
   name: Preserve origins in bounded evidence
   depends_on:
     - bloijvifoi
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN transported instructions WHEN evidence refreshes THEN original origin, author, source class, runtime, project, and timestamp stay distinct.
     - GIVEN repeated injections share origin and fingerprint WHEN independence is counted THEN they count once while distinct origins remain independent.
@@ -22,3 +22,6 @@ record:
       source: Audit session ses_0218ca7daffeABYVzOPgMXQdAB bounded re-review
       recorded_at: 2026-08-08 01:40
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - gyksrobggo
+  superseded_reason: Replacement preserves Codex session-level author provenance and passed bounded independent evaluation.

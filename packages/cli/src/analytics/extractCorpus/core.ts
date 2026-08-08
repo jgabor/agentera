@@ -116,6 +116,49 @@ export interface TransportProvenance {
   authorClass: string | null;
 }
 
+export type ProvenanceFieldState = "absent" | "valid" | "invalid";
+
+export interface InspectedTransportProvenance extends TransportProvenance {
+  originState: ProvenanceFieldState;
+  authorState: ProvenanceFieldState;
+}
+
+interface InspectedStringField<K extends string> {
+  state: ProvenanceFieldState;
+  key: K | null;
+  value: string | null;
+}
+
+function inspectStringField<K extends string>(sources: JsonObject[], keys: readonly K[]): InspectedStringField<K> {
+  for (const source of sources) {
+    for (const key of keys) {
+      if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
+      const value = source[key];
+      return nonEmptyString(value)
+        ? { state: "valid", key, value }
+        : { state: "invalid", key, value: null };
+    }
+  }
+  return { state: "absent", key: null, value: null };
+}
+
+function transportOriginId(key: string, value: string): string {
+  return ORIGIN_ID_RE.test(value) && key.endsWith("_id") ? value : originIdentity(value);
+}
+
+/** Inspect the first explicit transport fields without collapsing malformed values into absence. */
+export function inspectTransportProvenance(...sources: unknown[]): InspectedTransportProvenance {
+  const objects = provenanceObjects(sources);
+  const origin = inspectStringField(objects, PROVENANCE_ORIGIN_KEYS);
+  const author = inspectStringField(objects, PROVENANCE_AUTHOR_KEYS);
+  return {
+    originId: origin.state === "valid" ? transportOriginId(origin.key!, origin.value!) : null,
+    authorClass: author.state === "valid" ? author.value : null,
+    originState: origin.state,
+    authorState: author.state,
+  };
+}
+
 /**
  * Read only explicit transport metadata. Content is never inspected to infer
  * either ownership or origin. An adapter may provide an origin digest directly,
@@ -129,7 +172,7 @@ export function transportProvenance(...sources: unknown[]): TransportProvenance 
       for (const key of PROVENANCE_ORIGIN_KEYS) {
         const value = source[key];
         if (nonEmptyString(value)) {
-          origin = ORIGIN_ID_RE.test(value) && key.endsWith("_id") ? value : originIdentity(value);
+          origin = transportOriginId(key, value);
           break;
         }
       }

@@ -1,0 +1,27 @@
+id: gyksrobggo
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Preserve Codex session author provenance
+  status: complete
+  depends_on:
+    - bloijvifoi
+  acceptance:
+    - GIVEN a Codex session declares origin and author WHEN extracted THEN both survive record and tier projection.
+    - GIVEN a message supplies more specific provenance WHEN its origin matches THEN its author overrides; mismatched provenance fails closed.
+    - GIVEN session origin lacks author WHEN extracted THEN coverage degrades with provenance_missing and never becomes user-authored.
+    - GIVEN the replacement runs WHEN regressions execute THEN independence, no-consent, round-trip, and parity behavior remain intact.
+    - GIVEN each session provenance rule WHEN tested THEN one passing and one failing boundary covers it.
+  evidence:
+    - Audit-2 finding from qgimpwprim
+    - TODO rbuoixpxzp
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Same-origin partial session metadata discards a known author; explicitly malformed message origin is treated as absent and can authorize an author override; paired malformed/partial tests are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_021076a2affeCQhLQtAFfzZpuD bounded re-review
+      recorded_at: 2026-08-08 04:35
+      writer_command: agentera state plan record-evaluation

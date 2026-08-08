@@ -1,0 +1,16 @@
+id: dlsfdfqpwx
+artifact: progress
+record:
+  timestamp: 2026-08-08 03:22
+  type: fix
+  phase: build
+  what: Preserved Codex session-level author provenance without widening provenance inference.
+  context:
+    intent: Carry declared Codex session origin and author through extraction while keeping every transported-origin author decision fail-closed.
+    constraints: Change only Codex session provenance and coupled tests. Preserve no-consent, independence, tier, isolation, parity, pending evaluator state, open TODO state, and all publication boundaries.
+    unknowns: Prime evaluation remains pending; this cycle does not write evaluator or terminal task state.
+    scope: Codex JSONL session provenance resolution, paired pass and fail boundaries, and proportional regression evidence.
+  discovered: The prior implementation retained only originId from session_meta. Message extraction then consulted only message-level authorClass, so a complete session origin and author became an incomplete record. The narrow invariant is to retain the session pair, use its author only while the effective origin still matches, and prefer a coherent message author.
+  verified: Focused Codex, provenance, tier, consent, parity, mining-authority, and project-isolation command passed 6 files and 153/153 tests. Session extraction observed origin_id=d95b4558c4732d5fd94c0b2c058e311d1e51c2d04135f8e0e700761f57b2c6b7 and author_class=injected_instruction across 2 extraction records and 2 signal records; the matching message origin kept that origin and overrode author_class=user, while exact evidence-anchor resolution equaled the full record. A changed message origin observed origin_id=8960e7599d9171ad2e1aa555432b960223ab4594bb27f2b2bc46b821125353f2 with author_class absent, and a session origin without author observed origin_id=19ab4dcc16745f616fd8060603dc937318fcaeb0d1df5499df171f4f39b0bbd3 with author_class absent. Both fail boundaries produced adapter status=degraded and reason=provenance_missing; author_class was the missing field in 3/4 records, and tier state=incomplete with reason=provenance_missing. Independence remained 1 for repeated origin/fingerprint and 2 with one distinct origin. No-consent pre-scan observed readdirSync calls=0, local_history_read=false, tier_write=false, status=degraded_consent_required, and recovery=agentera report refresh --consent local-history. Full source passed 231 files with 3498 passed and 1 skipped; package passed 3 files and 34/34; dedicated parity passed 1 file and 5/5. Typecheck and build passed, generated manifest/Python parity stayed synchronized, capability-contract passed 3/3 checks, and lint completed with 177 existing warnings and 0 errors.
+  next: Keep gyksrobggo pending and rbuoixpxzp open until Prime audits and persists evaluation and lifecycle closeout.
+  publication_order: 105

@@ -1,0 +1,16 @@
+id: igjwzdvyzq
+artifact: progress
+record:
+  timestamp: 2026-08-08 04:31
+  type: fix
+  phase: build
+  what: Hardened Codex provenance transitions against partial session metadata and malformed message fields.
+  context:
+    intent: Address the accepted audit-1 transition defects while preserving the original bounded provenance correction.
+    constraints: Retain the current uncommitted task and prior progress, change only Codex transition parsing and coupled boundaries, keep gyksrobggo pending, and write no evaluator, TODO, supersession, commit, or publication state.
+    unknowns: Prime bounded re-review remains pending. Unrelated high-volume SQLite and state lifecycle tests are currently exceeding local timeouts.
+    scope: Explicit provenance field-state inspection, Codex session transition resolution, malformed message fail-closed behavior, and direct regression boundaries.
+  discovered: The retry needed field state, not another nullable pair. Null collapsed absent and malformed message fields, while replacing the whole session pair collapsed same-origin partial updates. The corrected seam retains absent, valid, and invalid states until Codex resolves session and message authority.
+  verified: Same-origin partial session metadata retained origin_id=d95b4558c4732d5fd94c0b2c058e311d1e51c2d04135f8e0e700761f57b2c6b7 and author_class=injected_instruction across 2 records; an author-only valid session update then replaced author_class=user. Changed-origin partial metadata produced origin_id=e808da8959a80212d7a84b46e76cbac6b2fb84b38f084000eb7cd80c6e87c3c5, author_class absent, adapter status=degraded, reason=provenance_missing, missing field=author_class, and missing records=1/1. Author-only message provenance with absent origin inherited the session origin and overrode author_class=user. Explicit malformed origin and malformed author retained the session origin but left author_class absent; the six-record shape matrix had 2 complete and 4 missing-author records, adapter status=degraded, reason=provenance_missing, tier state=incomplete, and tier reason=provenance_missing. The original valid session pair still projected 2 extraction and 2 signal records with exact anchor round-trip; the original missing-author matrix remained 3/4 missing. Independence remained 1 for a repeated origin/fingerprint and 2 with a distinct origin. No-consent observed readdirSync calls=0, local_history_read=false, tier_write=false, and status=degraded_consent_required. Focused transition, provenance, tier, consent, parity, authority, and isolation checks passed 147 tests across 8 files with 44 skipped. Typecheck passed; build passed with manifest/Python parity synchronized; package passed 34/34; capability-contract passed 3/3; changed-file lint passed with 0 warnings and 0 errors. Full source was attempted, but 8 unrelated decision/plan state tests exceeded timeouts before the 600-second shell limit. The final unfiltered extractor retry passed 34/35; its unrelated high-volume SQLite metadata test exceeded 180 seconds. No changed-boundary assertion failed.
+  next: Keep gyksrobggo pending and rbuoixpxzp open for Prime bounded re-review; do not write evaluator or supersession state.
+  publication_order: 106

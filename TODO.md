@@ -151,6 +151,7 @@
 - [x] [id:gxcnoplnwr] [fix:3.0.0] Keep unsafe-TODO status startup within the Prime byte budget.
 - [x] [id:qeqpefwupo] [fix:3.0.0] Make marker-absent fresh-project startup converge without legacy migration.
 - [x] [id:lkpvbgwhby] [fix:3.0.0] Restore generated-overlap package verification to its governed wall-time budget.
+- [x] [id:rbuoixpxzp] [fix:3.0.0] Preserve Codex session-level transported author provenance
 
 ## → Critical
 
@@ -159,5 +160,3 @@
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
 
 ## → Degraded
-
-- [ ] [id:rbuoixpxzp] [fix:3.0.0] Preserve Codex session-level transported author provenance
