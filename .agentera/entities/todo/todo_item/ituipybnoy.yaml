@@ -1,0 +1,34 @@
+id: ituipybnoy
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Fail closed when TODO activation would resurrect or duplicate public work.
+  requirements:
+    - "`agentera state todo activate --dry-run` must classify unmatched entity projections, duplicate legacy and managed rows, and stale entity status that would create or reopen public work as unsafe; an unsafe preview must not emit an effect digest or apply command."
+    - "`agentera state todo activate --yes` must reject the unsafe effect even if a caller supplies a previously previewed digest; explicit confirmation cannot authorize a public-state integrity violation."
+    - Prime, Doctor, and state validation must route unsafe inactive projects to a non-mutating diagnosis and safe migration recovery, never instruct the user to activate corruption and repair it afterward.
+  acceptance:
+    - An OpenEval-shaped fixture with hierarchical TODO prose and 161 stale open entities reports the bounded resurrection risk, emits no apply command, and leaves every project byte unchanged.
+    - A complete one-to-one fixture still previews and applies exactly one canonical public row per entity without duplicates or reopened work.
+    - Unsafe preview replay and direct confirmed apply both fail before effects, while inspection remains bounded, content-private, and mutation-free.
+  release_blocker: true
+  severity: normal
+  readiness:
+    capability: build
+    reason: Published activation currently authorizes an effect that would resurrect 161 OpenEval TODO entities, so activation must fail closed before project work can proceed.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 41
+    order_reason: Address the real-project regression after the earlier activation, repair, and reporting fixes were published.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Fail closed when TODO activation would resurrect or duplicate public work."
+      severity: normal
+      status: open
+      order: 30

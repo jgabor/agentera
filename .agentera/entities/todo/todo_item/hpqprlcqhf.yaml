@@ -1,0 +1,39 @@
+id: hpqprlcqhf
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Add explicit atomic plan replacement and competing-open-plan recovery.
+  requirements:
+    - Provide an explicit targeted operation that atomically replaces one named open predecessor with one named successor, plus a create-and-replace form that publishes a new successor in the same transaction.
+    - Transition the predecessor to truthful historical replacement state without claiming task completion; preserve every task, evaluator verdict, progress reference, and TODO, and record bidirectional predecessor/successor lineage.
+    - Guarantee exactly one selected execution plan after replacement, and make Plan, Orchestrate, Status, dashboard, and direct state reads resolve the successor consistently.
+    - Let projects already containing competing open plans recover by naming the predecessor and successor explicitly; ambiguity diagnostics must return an executable recovery command rather than an unsupported instruction.
+    - Keep replacement idempotent and journaled under the writer lock so validation failure or interruption restores the predecessor and removes every partial successor effect.
+  acceptance:
+    - GIVEN one open predecessor and a valid successor WHEN atomic replacement dry-run and apply execute THEN effects match, the predecessor becomes historical without false completion, lineage is complete, and the successor is the sole selected plan.
+    - GIVEN a project already has two open plans WHEN the caller explicitly names predecessor and successor THEN replacement converges and Prime Plan and Orchestrate contexts select the successor.
+    - GIVEN successor creation, validation, or publication fails WHEN the transaction recovers THEN predecessor bytes and selection are unchanged and no partial successor entities remain.
+    - GIVEN the same replacement is retried WHEN its logical input is unchanged THEN the writer returns an idempotent result; divergent retries fail before effects.
+    - GIVEN the feature ships WHEN schema, help, explain, recovery diagnostics, bundled skill guidance, source tests, package tests, and packed output are compared THEN every surface exposes the same targeted atomic contract.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: Agentera can create competing open plans but cannot select or retire one through its typed writer, leaving Plan and Orchestrate startup ambiguous; an explicit targeted transaction is required for safe recovery and future replanning.
+    dependencies:
+      - artifact: todo
+        id: zmlfggxlmq
+    blocked: null
+    gate: null
+    queue_rank: 3
+    order_reason: Implement immediately after the underlying forced archival and successor-publication transaction is restored, before other 3.0.0 startup diagnostics.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Add explicit atomic plan replacement and competing-open-plan recovery."
+      severity: critical
+      status: open
+      order: 6

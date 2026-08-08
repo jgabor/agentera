@@ -40,6 +40,7 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
+- [ ] [id:ituipybnoy] [fix:3.0.0] Fail closed when TODO activation would resurrect or duplicate public work.
 
 ## ⇢ Annoying
 
@@ -151,3 +152,4 @@
 - [ ] [id:bxqzpnnhpn] [fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted.
 - [ ] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
+- [ ] [id:hpqprlcqhf] [feat:3.0.0] Add explicit atomic plan replacement and competing-open-plan recovery.
