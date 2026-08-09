@@ -1,0 +1,16 @@
+id: wtztpigvvd
+artifact: progress
+record:
+  timestamp: 2026-08-09 09:07
+  type: fix
+  phase: build
+  what: Qualified safe plan replacement and TODO activation integration, then reconciled package source provenance.
+  context:
+    intent: Finish Task cecyfpwsti evidence and readiness without terminalizing plan xjiwyjimiv.
+    constraints: Use the rebuilt local CLI; keep cecyfpwsti in_progress for Audit; do not write health or close the plan; do not publish, tag, or push.
+    unknowns: No remaining qualification gap; independent Audit and Orchestrate own terminal health and plan actions.
+    scope: Final local qualification, TODO proof mapping, and permitted release metadata synchronization.
+  discovered: The package README and shared skill already state the shipped activation and plan-lifecycle guidance, so no duplicate changelog entry was needed. Release metadata exposed a stale source reference and now selects the final substantive integrated source without changing the development version.
+  verified: "pnpm -C packages/cli run verify:release passed all 10 conjunction gates. pnpm -C packages/cli run typecheck, pnpm -C packages/cli build, node packages/cli/dist/bin/agentera.js check compact, capability-contract validation, release-metadata validation, and pnpm -C packages/cli run pack:dry-run all passed. TODO proof map: zmlfggxlmq maps to lxcpdzxzap Audit PASS for forced lifecycle, rollback, and lineage; ituipybnoy maps to ublrpjkriq Audit PASS for unsafe activation rejection and safe one-to-one activation; hpqprlcqhf maps to zliglifsla plus mbasprkedb Audit PASS for atomic replay and recovery, successor selection, and source/package parity. All three exact TODO records are resolved and reconciliation-clean; this map points to existing task audits rather than duplicating their evidence."
+  next: Leave Task cecyfpwsti in_progress for independent Audit. Orchestrate alone may append the limited health record and transition the plan after Audit.
+  publication_order: 114

@@ -4,10 +4,20 @@ record:
   name: Integrate successor selection and recovery
   depends_on:
     - zliglifsla
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN targeted replacement completes WHEN Prime contexts for Plan, Orchestrate, and Status, the status dashboard, and plan list and get reads run THEN each selects or exposes the same successor while retaining historical retrieval.
     - GIVEN competing plans remain WHEN startup, direct read, or writer selection fails THEN diagnostics name bare canonical IDs and return the one executable targeted replacement command.
     - GIVEN public contracts and bundled output are compared WHEN qualification runs THEN schema, help, explain, guidance, source, package, and packed behavior agree.
     - GIVEN integration units are tested WHEN evidence is reviewed THEN each has at least one passing and one failing scenario.
   plan: xjiwyjimiv
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-mbasprkedb-1
+      source: audit ses_01ad8720cffeJuWLXBiZZoUYE0
+      recorded_at: 2026-08-09 08:23
+      writer_command: agentera state plan record-evaluation
