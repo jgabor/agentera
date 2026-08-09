@@ -1,0 +1,15 @@
+id: oqsvhjoarp
+artifact: progress
+record:
+  timestamp: 2026-08-09 14:19
+  type: test
+  phase: build
+  what: Gave the nested pre-commit Git-environment fixture an explicit 60-second execution allowance after repeated cold qualification timeouts.
+  context:
+    intent: Make cold source qualification evaluate the fixture correctness contract instead of failing on an unrelated generic timeout.
+    constraints: Preserve every Git-state assertion, do not weaken fixture behavior, and advance package provenance forward only.
+    scope: Nested pre-commit fixture timeout and dev.50 release recovery.
+  discovered: The fixture preserves Git head and local configuration while launching a nested upgrade test; under cold concurrent qualification it exceeded the generic 30-second suite timeout despite having no latency contract.
+  verified: The focused precommitVitest file passed 43 tests and pnpm -C packages/cli test:source passed 3,436 tests with one skip.
+  next: Commit the timeout correction, qualify the fix commit, and advance release metadata from unpublished dev.49 to dev.50.
+  publication_order: 121

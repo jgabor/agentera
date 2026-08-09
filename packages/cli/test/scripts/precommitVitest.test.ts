@@ -189,7 +189,7 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
       head: gitOutput("rev-parse", "HEAD"),
       localConfig: normalizeLocalGitConfig(gitOutput("config", "--local", "--list")),
     }).toEqual(before);
-  });
+  }, 60_000);
   it("routes broad source changes through the local source-owner policy", () => {
     expect(runPrecommitVitest("packages/cli/src/cli/prime.ts")).toEqual({
       mode: "policy", policy: "local", targets: [],
