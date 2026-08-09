@@ -82,6 +82,20 @@ export interface PersonalGlossaryReviewRecordsContract {
   queueResultStatuses: string[];
   queueMaxResultUtf8Bytes: number;
   queueNoQuestionChannel: string;
+  dispositionRequestSchemaVersion: string;
+  dispositionRequestFields: string[];
+  dispositionMaxRequestUtf8Bytes: number;
+  dispositionResultSchemaVersion: string;
+  dispositionResultStatuses: string[];
+  dispositionMaxResultUtf8Bytes: number;
+  dispositionPublicationAuthorizationDispositions: string[];
+  dispositionPublicationAuthorizationFields: string[];
+  trustedHostKeyFile: string;
+  trustedHostKeySchemaVersion: string;
+  trustedHostKeyFields: string[];
+  trustedHostKeyOwner: string;
+  trustedHostKeyAlgorithm: string;
+  trustedHostKeyMaxSerializedUtf8Bytes: number;
   storeSchemaVersion: string;
   recordSchemaVersion: string;
   storeOwner: string;
@@ -89,11 +103,25 @@ export interface PersonalGlossaryReviewRecordsContract {
   storeFields: string[];
   recordFields: string[];
   recordsMax: number;
+  replayIndexFields: string[];
+  replayEntriesMax: number;
   recordMaxSerializedUtf8Bytes: number;
   storeMaxSerializedUtf8Bytes: number;
   storeOrder: string;
   replay: string;
   conflict: string;
+  compatibilityStoreSchemaVersions: string[];
+  compatibilityRecordSchemaVersions: string[];
+  compatibilityReadMutation: string;
+  compatibilityMigrationOperation: string;
+  compatibilityScopeDerivation: string;
+  compatibilityInvalidBehavior: string;
+  compatibilityPreservedBindings: string[];
+  compatibilityLegacyDigest: string;
+  compatibilityMigratedDigest: string;
+  suppressionBinding: string[];
+  suppressionDispositions: string[];
+  reopenReasons: string[];
   forbiddenFields: string[];
   retrievalSchemaVersion: string;
   retrievalOwner: string;
@@ -124,12 +152,15 @@ export interface PersonalGlossaryOutputContract {
   command: string;
   requestSchemaVersion: string;
   requestFields: string[];
+  requestOptionalFields: string[];
   maxRequestUtf8Bytes: number;
   resultSchemaVersion: string;
   resultFields: string[];
   maxResultUtf8Bytes: number;
   sectionSchemaVersion: string;
   outputStatuses: string[];
+  reviewAuthorizationFields: string[];
+  reviewAuthorizationDispositions: string[];
 }
 
 export interface PersonalProfileGroundingContract {

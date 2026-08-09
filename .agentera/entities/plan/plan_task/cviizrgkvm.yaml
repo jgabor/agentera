@@ -5,7 +5,7 @@ record:
   depends_on:
     - zbiibnlfgd
     - uvvlfjycxk
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a current user response WHEN disposition records THEN it binds stable term, semantic fingerprint, revision, generation, and policy.
     - GIVEN only corroborating evidence changes WHEN a rejected or deferred term recurs THEN it is not repeatedly proposed.
@@ -13,3 +13,13 @@ record:
     - GIVEN accepted or corrected review WHEN publication runs THEN current-evidence and fail-before-effects checks still govern.
     - GIVEN each disposition and reopening rule WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: This change pushes four glossary source files above the 1,000-line gate; valid v1 pending review stores from the preceding task become unreadable under v2-only validation; deferred policy/scope/meaning reopening and exact-once/non-publishable pairs are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_0179181b5ffeSw1DGNvMyHon9j bounded re-review
+      recorded_at: 2026-08-10 00:49
+      writer_command: agentera state plan record-evaluation

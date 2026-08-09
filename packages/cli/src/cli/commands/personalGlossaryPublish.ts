@@ -6,7 +6,9 @@ import {
   type PersonalGlossaryEntry,
 } from "../../analytics/personalGlossaryProfile.js";
 import { readPersonalGlossaryCandidateProjection } from "../../analytics/personalGlossaryCandidateProjection.js";
+import { containsPersonalGlossarySensitiveContent } from "../../analytics/personalGlossaryCandidateProjectionExcerpts.js";
 import { decidePersonalGlossaryCandidate } from "../../analytics/personalGlossaryDecision.js";
+import { personalGlossaryReviewPublicationAuthorization } from "../../analytics/personalGlossaryReviewRecords.js";
 import { defaultProfileDir } from "../../analytics/extractCorpus/core.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import {
@@ -16,10 +18,12 @@ import {
   type GlossaryAdmissionDecision,
   type GlossaryEvidenceCapsule,
   type GlossaryHostClassificationReceipt,
+  type GlossaryReviewRecord,
 } from "../../registries/glossaryCandidateContracts.js";
 import {
   personalGlossaryOutputContract,
   type GlossaryAdmissionContext,
+  type RetainedEvidence,
 } from "../../registries/glossaryEntryContract.js";
 import type { PersonalGlossaryOutputContract } from "../../registries/personalGlossaryContracts.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
@@ -29,6 +33,7 @@ import type { Io } from "../dispatch/shared.js";
 type Mapping = Record<string, unknown>;
 
 const REQUEST_FIELDS = ["schema_version", "receipt", "decision", "as_of"];
+const REQUEST_OPTIONAL_FIELDS = ["review_authorization"];
 const RESULT_FIELDS = [
   "schema_version",
   "owner",
@@ -52,6 +57,7 @@ const RECOVERY =
 interface PublishRequest {
   receipt: Mapping;
   decision: Mapping;
+  reviewAuthorization: { reviewId: string; reviewRecordSha256: string } | null;
   asOf: string;
 }
 
@@ -99,12 +105,15 @@ function contract(): PersonalGlossaryOutputContract {
     value.command !== "agentera report personal-glossary-publish" ||
     value.requestSchemaVersion !== "agentera.personalGlossaryPublishRequest.v1" ||
     !sameStrings(value.requestFields, REQUEST_FIELDS) ||
+    !sameStrings(value.requestOptionalFields, REQUEST_OPTIONAL_FIELDS) ||
     value.maxRequestUtf8Bytes !== 16_384 ||
     value.resultSchemaVersion !== "agentera.personalGlossaryPublicationResult.v1" ||
     !sameStrings(value.resultFields, RESULT_FIELDS) ||
     value.maxResultUtf8Bytes !== 4_096 ||
     value.sectionSchemaVersion !== "agentera.personalGlossarySection.v1" ||
-    !sameStrings(value.outputStatuses, OUTPUT_STATUSES)
+    !sameStrings(value.outputStatuses, OUTPUT_STATUSES) ||
+    !sameStrings(value.reviewAuthorizationFields, ["review_id", "review_record_sha256"]) ||
+    !sameStrings(value.reviewAuthorizationDispositions, ["accept", "correct"])
   ) {
     throw new Error("personal glossary publication contract is unavailable");
   }
@@ -201,7 +210,7 @@ function validateRequest(
 ): PublishRequest | InvalidInputErrorBody {
   const keys = Object.keys(value);
   if (
-    keys.some((key) => !contractValue.requestFields.includes(key)) ||
+    keys.some((key) => !contractValue.requestFields.includes(key) && !contractValue.requestOptionalFields.includes(key)) ||
     contractValue.requestFields.some((field) => !(field in value))
   ) {
     return {
@@ -222,7 +231,30 @@ function validateRequest(
       valid_values: [contractValue.requestSchemaVersion, "receipt", "decision", "YYYY-MM-DD"],
     };
   }
-  return { receipt: value.receipt, decision: value.decision, asOf: value.as_of };
+  if (!("review_authorization" in value)) {
+    return { receipt: value.receipt, decision: value.decision, reviewAuthorization: null, asOf: value.as_of };
+  }
+  if (!mapping(value.review_authorization) ||
+    !sameStrings(Object.keys(value.review_authorization).sort(), contractValue.reviewAuthorizationFields.sort()) ||
+    typeof value.review_authorization.review_id !== "string" ||
+    typeof value.review_authorization.review_record_sha256 !== "string" ||
+    !/^[a-f0-9]{64}$/u.test(value.review_authorization.review_id) ||
+    !/^[a-f0-9]{64}$/u.test(value.review_authorization.review_record_sha256)) {
+    return {
+      class: "schema_violation",
+      message: "review_authorization requires only one review identity and canonical review record digest",
+      valid_values: contractValue.reviewAuthorizationFields,
+    };
+  }
+  return {
+    receipt: value.receipt,
+    decision: value.decision,
+    reviewAuthorization: {
+      reviewId: value.review_authorization.review_id,
+      reviewRecordSha256: value.review_authorization.review_record_sha256,
+    },
+    asOf: value.as_of,
+  };
 }
 
 function currentCandidate(receipt: Mapping): { capsule: GlossaryEvidenceCapsule; projectionSha256: string } | null {
@@ -245,6 +277,7 @@ function authorizedPublication(request: PublishRequest): {
   capsule: GlossaryEvidenceCapsule;
   receipt: GlossaryHostClassificationReceipt;
   decision: GlossaryAdmissionDecision;
+  review: GlossaryReviewRecord | null;
 } | null {
   const selected = currentCandidate(request.receipt);
   if (!selected) return null;
@@ -257,18 +290,33 @@ function authorizedPublication(request: PublishRequest): {
     return null;
   }
   const current = decidePersonalGlossaryCandidate(request.receipt);
-  if (
-    current.status !== "automatic_admission" ||
-    current.reason !== "explicit_current_authorized" ||
-    current.decision === null ||
-    current.decision.decision_sha256 !== request.decision.decision_sha256
-  ) {
+  if (current.decision === null || current.decision.decision_sha256 !== request.decision.decision_sha256) {
     return null;
   }
+  if (current.status === "automatic_admission" && current.reason === "explicit_current_authorized") {
+    if (request.reviewAuthorization !== null) return null;
+    return {
+      capsule: selected.capsule,
+      receipt: request.receipt as GlossaryHostClassificationReceipt,
+      decision: request.decision as GlossaryAdmissionDecision,
+      review: null,
+    };
+  }
+  if (current.status !== "review_required" || request.reviewAuthorization === null) return null;
+  const review = personalGlossaryReviewPublicationAuthorization({
+    review_id: request.reviewAuthorization.reviewId,
+    review_record_sha256: request.reviewAuthorization.reviewRecordSha256,
+    capsule: selected.capsule,
+    receipt: request.receipt as GlossaryHostClassificationReceipt,
+    decision: request.decision as GlossaryAdmissionDecision,
+    candidate_projection_sha256: selected.projectionSha256,
+  });
+  if (review.status !== "authorized" || review.review === null) return null;
   return {
     capsule: selected.capsule,
     receipt: request.receipt as GlossaryHostClassificationReceipt,
     decision: request.decision as GlossaryAdmissionDecision,
+    review: review.review,
   };
 }
 
@@ -276,15 +324,11 @@ function entryFor(
   capsule: GlossaryEvidenceCapsule,
   receipt: GlossaryHostClassificationReceipt,
   asOf: string,
+  review: GlossaryReviewRecord | null,
 ): { entry: PersonalGlossaryEntry; context: GlossaryAdmissionContext } | null {
   const classification = receipt.classification;
   const evidence = capsule.evidence;
   if (
-    evidence.length !== 1 ||
-    classification.term !== capsule.term ||
-    classification.meaning !== capsule.meaning ||
-    classification.scope !== "personal" ||
-    classification.consistency !== "consistent" ||
     !["stable", "durable", "situational"].includes(classification.permanence) ||
     !Number.isInteger(classification.confidence) ||
     classification.confidence < 0 ||
@@ -292,43 +336,101 @@ function entryFor(
   ) {
     return null;
   }
-  const source = evidence[0];
-  if (
-    !mapping(source) ||
-    typeof source.source_id !== "string" ||
-    typeof source.evidence_anchor !== "string" ||
-    typeof source.signal_type !== "string"
-  ) {
+  let meaning = capsule.meaning;
+  if (review === null) {
+    if (
+      evidence.length !== 1 ||
+      classification.term !== capsule.term ||
+      classification.meaning !== capsule.meaning ||
+      classification.scope !== "personal" ||
+      classification.consistency !== "consistent" ||
+      capsule.scope !== "personal"
+    ) return null;
+  } else if (review.disposition === "accept") {
+    if (capsule.scope !== "personal" || classification.scope !== "personal") return null;
+  } else if (review.disposition === "correct") {
+    if (
+      review.corrected_scope !== "personal" ||
+      !review.corrected_meaning ||
+      containsPersonalGlossarySensitiveContent(review.corrected_meaning) ||
+      capsule.scope === "project" ||
+      classification.scope === "project"
+    ) return null;
+    meaning = review.corrected_meaning;
+  } else {
+    return null;
+  }
+  const retainedHistory = new Map<string, RetainedEvidence>();
+  let provenance: PersonalGlossaryEntry["provenance"];
+  if (capsule.provenance_kind === "personal_explicit_definition") {
+    if (evidence.length !== 1 || !mapping(evidence[0]) ||
+      typeof evidence[0].source_id !== "string" || typeof evidence[0].evidence_anchor !== "string" ||
+      typeof evidence[0].signal_type !== "string") return null;
+    const source = evidence[0] as Mapping;
+    retainedHistory.set(source.evidence_anchor as string, {
+      sourceId: source.source_id as string,
+      sourceKind: "conversation_turn",
+      signalType: source.signal_type as string,
+    });
+    provenance = {
+      kind: "personal_explicit_definition",
+      evidence: [{
+        source_id: source.source_id as string,
+        evidence_anchor: source.evidence_anchor as string,
+        signal_type: source.signal_type as string,
+      }],
+    };
+  } else if (capsule.provenance_kind === "personal_inferred_usage") {
+    if (evidence.length !== 2 || evidence.some((source) => !mapping(source) ||
+      typeof source.source_id !== "string" || typeof source.evidence_anchor !== "string" || typeof source.source_kind !== "string")) return null;
+    const sources = evidence as Array<{ source_id: string; evidence_anchor: string; source_kind: string }>;
+    for (const source of sources) retainedHistory.set(source.evidence_anchor, {
+      sourceId: source.source_id,
+      sourceKind: source.source_kind,
+      signalType: "instruction",
+    });
+    provenance = {
+      kind: "personal_inferred_usage",
+      evidence: sources.map((source) => ({
+        source_id: source.source_id,
+        evidence_anchor: source.evidence_anchor,
+        source_kind: source.source_kind,
+      })),
+    };
+  } else if (capsule.provenance_kind === "personal_inferred_conversation") {
+    if (evidence.length < 3 || evidence.some((source) => !mapping(source) ||
+      ["source_id", "evidence_anchor", "source_kind", "signal_type", "session_id", "project_id", "content_fingerprint", "author_class"]
+        .some((field) => typeof source[field] !== "string"))) return null;
+    const sources = evidence as Array<{
+      source_id: string; evidence_anchor: string; source_kind: string; signal_type: string;
+      session_id: string; project_id: string; content_fingerprint: string; author_class: string;
+    }>;
+    for (const source of sources) retainedHistory.set(source.evidence_anchor, {
+      sourceId: source.source_id,
+      sourceKind: source.source_kind,
+      signalType: source.signal_type,
+      sessionId: source.session_id,
+      projectId: source.project_id,
+      contentFingerprint: source.content_fingerprint,
+      authorClass: source.author_class,
+    });
+    provenance = {
+      kind: "personal_inferred_conversation",
+      evidence: sources.map((source) => ({ ...source })),
+    };
+  } else {
     return null;
   }
   return {
     entry: {
       term: capsule.term,
-      meaning: capsule.meaning,
+      meaning,
       confidence: classification.confidence,
       permanence: classification.permanence as PersonalGlossaryEntry["permanence"],
       temporal: { observed_at: asOf, last_confirmed_at: asOf },
-      provenance: {
-        kind: "personal_explicit_definition",
-        evidence: [{
-          source_id: source.source_id,
-          evidence_anchor: source.evidence_anchor,
-          signal_type: source.signal_type,
-        }],
-      },
+      provenance,
     },
-    context: {
-      retainedHistory: new Map([
-        [
-          source.evidence_anchor,
-          {
-            sourceId: source.source_id,
-            sourceKind: "conversation_turn",
-            signalType: source.signal_type,
-          },
-        ],
-      ]),
-    },
+    context: { retainedHistory },
   };
 }
 
@@ -377,7 +479,7 @@ export function runPersonalGlossaryPublishCommand(argv: string[], io: Io): numbe
     return failure(io, contractValue, "publication_unavailable");
   }
   if (!authorized) return failure(io, contractValue, "publication_not_authorized");
-  const publication = entryFor(authorized.capsule, authorized.receipt, request.asOf);
+  const publication = entryFor(authorized.capsule, authorized.receipt, request.asOf, authorized.review);
   if (!publication) return failure(io, contractValue, "publication_not_authorized");
 
   const profileInput = {
@@ -400,7 +502,7 @@ export function runPersonalGlossaryPublishCommand(argv: string[], io: Io): numbe
         capsule: authorized.capsule,
         receipt: authorized.receipt,
         decision: authorized.decision,
-        review: null,
+        review: authorized.review,
         status: parsedArgs.dryRun
           ? "dry_run_candidate"
           : preview.changed

@@ -148,6 +148,7 @@ describe("shared glossary entry authority", () => {
       command: "agentera report personal-glossary-publish",
       requestSchemaVersion: "agentera.personalGlossaryPublishRequest.v1",
       requestFields: ["schema_version", "receipt", "decision", "as_of"],
+      requestOptionalFields: ["review_authorization"],
       maxRequestUtf8Bytes: 16_384,
       resultSchemaVersion: "agentera.personalGlossaryPublicationResult.v1",
       resultFields: [
@@ -168,6 +169,8 @@ describe("shared glossary entry authority", () => {
       maxResultUtf8Bytes: 4_096,
       sectionSchemaVersion: "agentera.personalGlossarySection.v1",
       outputStatuses: ["changed", "unchanged_replay", "dry_run_candidate"],
+      reviewAuthorizationFields: ["review_id", "review_record_sha256"],
+      reviewAuthorizationDispositions: ["accept", "correct"],
     });
   });
 

@@ -1,0 +1,15 @@
+id: pbjnrhlcgv
+artifact: progress
+record:
+  timestamp: 2026-08-10 00:42
+  type: fix
+  phase: build
+  what: Remediated the persisted review-disposition audit failures.
+  context:
+    intent: Keep private personal-glossary review dispositions current-user-bound, replay-safe, and compatible with valid v1 pending stores.
+    constraints: Do not change plan lifecycle or audit provenance; use the local built CLI for state writes.
+    scope: Review-store compatibility, source-size splits, contracts, documentation, and regression coverage.
+  discovered: The audit found oversized glossary source modules, v2-only review-store decoding, and incomplete defer/reopen and non-publication regression coverage.
+  verified: Source tests passed (3912 passed, 1 skipped), package verification passed (35 passed), typecheck and build passed, and compact passed.
+  next: Keep the plan task pending for independent evaluation.
+  publication_order: 146

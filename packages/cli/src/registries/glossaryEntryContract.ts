@@ -14,6 +14,7 @@ import {
   validatePersonalMiningAuthority,
   validateProvenanceVariants,
 } from "./glossaryMiningAuthority.js";
+import { isGlossaryIsoCalendarDate } from "./glossaryEntryTemporal.js";
 import type {
   ConfirmedVariantGuardContract,
   PersonalGlossaryAdmissionContract,
@@ -172,16 +173,20 @@ export function personalGlossaryOutputContract(
   const request = mapping(command?.request);
   const result = mapping(command?.result);
   const section = mapping(output?.section);
+  const reviewAuthorization = mapping(request?.review_authorization);
   return {
     command: projectGlossaryDevelopmentValue(command?.canonical, "profile_output.command"),
     requestSchemaVersion: typeof request?.schema_version === "string" ? request.schema_version : "",
     requestFields: strings(request?.required_fields),
+    requestOptionalFields: strings(request?.optional_fields),
     maxRequestUtf8Bytes: typeof request?.max_utf8_bytes === "number" ? request.max_utf8_bytes : 0,
     resultSchemaVersion: typeof result?.schema_version === "string" ? result.schema_version : "",
     resultFields: strings(result?.fields),
     maxResultUtf8Bytes: typeof result?.max_utf8_bytes === "number" ? result.max_utf8_bytes : 0,
     sectionSchemaVersion: typeof section?.document_schema_version === "string" ? section.document_schema_version : "",
     outputStatuses: strings(command?.output_statuses),
+    reviewAuthorizationFields: strings(reviewAuthorization?.required_fields),
+    reviewAuthorizationDispositions: strings(reviewAuthorization?.dispositions),
   };
 }
 
@@ -280,20 +285,6 @@ export function isSafeProjectSourcePath(value: unknown): value is string {
     !path.posix.isAbsolute(value) &&
     !path.win32.isAbsolute(value) &&
     !value.split(/[\\/]/).includes("..")
-  );
-}
-
-function isIsoCalendarDate(value: unknown): value is string {
-  if (typeof value !== "string") return false;
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return false;
-  const [, year, month, day] = match.map(Number);
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return (
-    !Number.isNaN(date.getTime()) &&
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() + 1 === month &&
-    date.getUTCDate() === day
   );
 }
 
@@ -476,6 +467,7 @@ export function validateGlossaryEntryContract(
   const profileOutput = mapping(personal?.profile_output), profileSection = mapping(profileOutput?.section);
   const mergeIdentity = mapping(profileOutput?.merge_identity);
   const profileCommand = mapping(profileOutput?.command), profileRequest = mapping(profileCommand?.request), profileFilesystem = mapping(profileOutput?.filesystem);
+  const reviewAuthorization = mapping(profileRequest?.review_authorization);
   if (
     profileOutput?.owner !== "personal_profile_publication" ||
     profileOutput?.lifecycle_callable !== "packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile" ||
@@ -488,10 +480,16 @@ export function validateGlossaryEntryContract(
     profileCommand?.project_checkout !== "not_required" ||
     profileRequest?.schema_version !== "agentera.personalGlossaryPublishRequest.v1" ||
     !sameStrings(profileRequest?.required_fields, ["schema_version", "receipt", "decision", "as_of"]) ||
+    !sameStrings(profileRequest?.optional_fields, ["review_authorization"]) ||
     profileRequest?.additional_fields !== "forbidden" ||
     profileRequest?.max_utf8_bytes !== 16384 ||
     !nonEmpty(profileRequest?.profile_path_rule) ||
     !nonEmpty(profileRequest?.current_decision_rule) ||
+    !sameStrings(reviewAuthorization?.required_fields, ["review_id", "review_record_sha256"]) ||
+    reviewAuthorization?.additional_fields !== "forbidden" ||
+    !sameStrings(reviewAuthorization?.dispositions, ["accept", "correct"]) ||
+    reviewAuthorization?.source !== "personal_mining_authority.review_records.disposition.publication_authorization" ||
+    !nonEmpty(reviewAuthorization?.rule) ||
     !nonEmpty(profileRequest?.date_rule) ||
     mapping(profileCommand?.result)?.schema_version !==
       "agentera.personalGlossaryPublicationResult.v1" ||
@@ -875,7 +873,7 @@ function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {
   }
   const temporal = mapping(entry.temporal);
   for (const field of strings(mapping(fields?.temporal)?.required_fields)) {
-    if (!isIsoCalendarDate(temporal?.[field])) {
+    if (!isGlossaryIsoCalendarDate(temporal?.[field])) {
       errors.push(`temporal.${field} must be an ISO date`);
     }
   }

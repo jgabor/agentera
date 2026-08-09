@@ -475,6 +475,7 @@ describe("layered personal glossary candidate contracts", () => {
       decision,
       disposition: "accept",
       corrected_meaning: null,
+      corrected_scope: null,
       disposed_at: "2026-08-08T02:00:00Z",
       expires_at: "2026-08-08T03:00:00Z",
     });

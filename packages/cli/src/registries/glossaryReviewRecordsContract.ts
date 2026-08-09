@@ -25,10 +25,17 @@ export function personalGlossaryReviewRecordsContract(
   const mining = mapping(authority.personal_mining_authority);
   const records = mapping(mining?.review_records);
   const persistence = mapping(records?.persistence);
+  const compatibility = mapping(persistence?.compatibility);
   const queue = mapping(records?.queue);
   const queueCommand = mapping(queue?.command);
   const request = mapping(queue?.request);
   const queueResult = mapping(queue?.result);
+  const disposition = mapping(records?.disposition);
+  const dispositionCommand = mapping(disposition?.command);
+  const dispositionRequest = mapping(disposition?.request);
+  const dispositionResult = mapping(disposition?.result);
+  const publicationAuthorization = mapping(disposition?.publication_authorization);
+  const trustedHostKey = mapping(records?.trusted_host_key);
   const retrieval = mapping(records?.retrieval);
   const retrievalCommand = mapping(retrieval?.command);
   const list = mapping(retrieval?.list);
@@ -47,6 +54,13 @@ export function personalGlossaryReviewRecordsContract(
   if (command !== retrievalCommandValue) {
     throw new TypeError("invalid development command projection: personal glossary review commands differ");
   }
+  const dispositionCommandValue = projectGlossaryDevelopmentValue(
+    dispositionCommand?.canonical,
+    "review_records.command",
+  );
+  if (command !== dispositionCommandValue) {
+    throw new TypeError("invalid development command projection: personal glossary review disposition commands differ");
+  }
   return {
     command,
     queueRequestSchemaVersion:
@@ -64,6 +78,29 @@ export function personalGlossaryReviewRecordsContract(
       typeof queueResult?.max_utf8_bytes === "number" ? queueResult.max_utf8_bytes : 0,
     queueNoQuestionChannel:
       typeof queue?.no_question_channel === "string" ? queue.no_question_channel : "",
+    dispositionRequestSchemaVersion:
+      typeof dispositionRequest?.schema_version === "string" ? dispositionRequest.schema_version : "",
+    dispositionRequestFields: strings(dispositionRequest?.required_fields),
+    dispositionMaxRequestUtf8Bytes:
+      typeof dispositionRequest?.max_utf8_bytes === "number" ? dispositionRequest.max_utf8_bytes : 0,
+    dispositionResultSchemaVersion:
+      typeof dispositionResult?.schema_version === "string" ? dispositionResult.schema_version : "",
+    dispositionResultStatuses: strings(dispositionResult?.statuses),
+    dispositionMaxResultUtf8Bytes:
+      typeof dispositionResult?.max_utf8_bytes === "number" ? dispositionResult.max_utf8_bytes : 0,
+    dispositionPublicationAuthorizationDispositions: strings(publicationAuthorization?.dispositions),
+    dispositionPublicationAuthorizationFields: strings(publicationAuthorization?.fields),
+    trustedHostKeyFile: typeof trustedHostKey?.file === "string" ? trustedHostKey.file : "",
+    trustedHostKeySchemaVersion:
+      typeof trustedHostKey?.schema_version === "string" ? trustedHostKey.schema_version : "",
+    trustedHostKeyFields: strings(trustedHostKey?.fields),
+    trustedHostKeyOwner: typeof trustedHostKey?.owner === "string" ? trustedHostKey.owner : "",
+    trustedHostKeyAlgorithm:
+      typeof trustedHostKey?.public_key_algorithm === "string" ? trustedHostKey.public_key_algorithm : "",
+    trustedHostKeyMaxSerializedUtf8Bytes:
+      typeof trustedHostKey?.max_serialized_utf8_bytes === "number"
+        ? trustedHostKey.max_serialized_utf8_bytes
+        : 0,
     storeSchemaVersion:
       typeof persistence?.schema_version === "string" ? persistence.schema_version : "",
     recordSchemaVersion:
@@ -73,6 +110,9 @@ export function personalGlossaryReviewRecordsContract(
     storeFields: strings(persistence?.fields),
     recordFields: strings(persistence?.record_fields),
     recordsMax: typeof persistence?.records_max === "number" ? persistence.records_max : 0,
+    replayIndexFields: strings(persistence?.replay_index_fields),
+    replayEntriesMax:
+      typeof persistence?.replay_entries_max === "number" ? persistence.replay_entries_max : 0,
     recordMaxSerializedUtf8Bytes:
       typeof persistence?.record_max_serialized_utf8_bytes === "number"
         ? persistence.record_max_serialized_utf8_bytes
@@ -84,6 +124,23 @@ export function personalGlossaryReviewRecordsContract(
     storeOrder: typeof persistence?.order === "string" ? persistence.order : "",
     replay: typeof persistence?.replay === "string" ? persistence.replay : "",
     conflict: typeof persistence?.conflict === "string" ? persistence.conflict : "",
+    compatibilityStoreSchemaVersions: strings(compatibility?.accepted_store_schema_versions),
+    compatibilityRecordSchemaVersions: strings(compatibility?.accepted_record_schema_versions),
+    compatibilityReadMutation: typeof compatibility?.read_mutation === "string" ? compatibility.read_mutation : "",
+    compatibilityMigrationOperation:
+      typeof compatibility?.migration_operation === "string" ? compatibility.migration_operation : "",
+    compatibilityScopeDerivation:
+      typeof compatibility?.scope_derivation === "string" ? compatibility.scope_derivation : "",
+    compatibilityInvalidBehavior:
+      typeof compatibility?.invalid_behavior === "string" ? compatibility.invalid_behavior : "",
+    compatibilityPreservedBindings: strings(compatibility?.preserved_bindings),
+    compatibilityLegacyDigest:
+      typeof compatibility?.legacy_digest === "string" ? compatibility.legacy_digest : "",
+    compatibilityMigratedDigest:
+      typeof compatibility?.migrated_digest === "string" ? compatibility.migrated_digest : "",
+    suppressionBinding: strings(persistence?.suppression_binding),
+    suppressionDispositions: strings(persistence?.suppression_dispositions),
+    reopenReasons: strings(persistence?.reopen_reasons),
     forbiddenFields: strings(persistence?.forbidden_fields),
     retrievalSchemaVersion:
       typeof retrieval?.schema_version === "string" ? retrieval.schema_version : "",

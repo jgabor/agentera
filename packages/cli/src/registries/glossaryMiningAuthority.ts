@@ -1,4 +1,4 @@
-import { createHash, verify as verifySignature, type KeyLike } from "node:crypto";
+import { createHash } from "node:crypto";
 
 import type {
   GlossaryAdmissionContext,
@@ -96,194 +96,19 @@ export function classifyPersonalMiningConsent(
   return "present";
 }
 
-const REVIEW_RECEIPT_FIELDS = [
-  "schema_version",
-  "issuer",
-  "subject",
-  "trusted_channel",
-  "candidate_id",
-  "candidate_revision",
-  "generation",
-  "disposition",
-  "disposed_at",
-  "expires_at",
-  "nonce",
-  "signature",
-] as const;
-
-const REVIEW_RECEIPT_SIGNED_FIELDS = REVIEW_RECEIPT_FIELDS.filter((field) => field !== "signature");
-
-export const PERSONAL_REVIEW_DISPOSITIONS = ["accept", "correct", "reject", "defer"] as const;
-export type PersonalReviewDisposition = (typeof PERSONAL_REVIEW_DISPOSITIONS)[number];
-
-export interface PersonalReviewApprovalVerification {
-  currentUserSubject: string;
-  candidateId: string;
-  candidateRevision: string;
-  generation: string;
-  now: Date;
-  trustedHostPublicKey: KeyLike;
-  consumedReceiptDigests?: ReadonlyMap<string, string>;
-}
-
-function receiptField(receipt: Mapping, field: string): string {
-  const value = receipt[field];
-  if (typeof value !== "string" || value.length === 0) {
-    throw new TypeError(`review approval receipt field ${field} must be a non-empty string`);
-  }
-  return value;
-}
-
-function signedReviewReceiptPayload(receipt: Mapping): string {
-  return JSON.stringify(
-    Object.fromEntries(
-      REVIEW_RECEIPT_SIGNED_FIELDS.map((field) => [field, receiptField(receipt, field)]),
-    ),
-  );
-}
-
-export function personalReviewApprovalReceiptDigest(receipt: Mapping): string {
-  const payload = signedReviewReceiptPayload(receipt);
-  return sha256Utf8(
-    JSON.stringify({
-      signed: JSON.parse(payload),
-      signature: receiptField(receipt, "signature"),
-    }),
-  );
-}
-
-export function personalReviewApprovalReplayStatus(
-  receipt: Mapping,
-  consumedReceiptDigests: ReadonlyMap<string, string> = new Map(),
-): "new" | "exact_replay" | "conflicting_replay" {
-  const nonce = receiptField(receipt, "nonce");
-  const consumedDigest = consumedReceiptDigests.get(nonce);
-  if (!consumedDigest) return "new";
-  return consumedDigest === personalReviewApprovalReceiptDigest(receipt)
-    ? "exact_replay"
-    : "conflicting_replay";
-}
-
-export function validatePersonalReviewApprovalReceipt(
-  receipt: Mapping,
-  expected: PersonalReviewApprovalVerification,
-): string[] {
-  const errors: string[] = [];
-  const extraFields = Object.keys(receipt).filter(
-    (field) => !REVIEW_RECEIPT_FIELDS.includes(field as (typeof REVIEW_RECEIPT_FIELDS)[number]),
-  );
-  if (extraFields.length > 0)
-    errors.push(`review approval receipt has forbidden fields: ${extraFields.join(", ")}`);
-  let payload = "";
-  let signature = "";
-  try {
-    payload = signedReviewReceiptPayload(receipt);
-    signature = receiptField(receipt, "signature");
-  } catch (error) {
-    errors.push((error as Error).message);
-  }
-  if (receipt.schema_version !== "agentera.personalGlossaryReviewApproval.v1") {
-    errors.push("review approval receipt schema_version is invalid");
-  }
-  if (receipt.issuer !== "agentera-local-host") {
-    errors.push("review approval receipt issuer is not trusted");
-  }
-  if (receipt.subject !== expected.currentUserSubject || receipt.subject === "agent") {
-    errors.push("review approval receipt subject is not the trusted current user");
-  }
-  if (receipt.trusted_channel !== "agentera-local-host-ipc") {
-    errors.push("review approval receipt trusted channel is invalid");
-  }
-  if (receipt.candidate_id !== expected.candidateId) {
-    errors.push("review approval receipt candidate binding is invalid");
-  }
-  if (receipt.candidate_revision !== expected.candidateRevision) {
-    errors.push("review approval receipt revision binding is invalid");
-  }
-  if (receipt.generation !== expected.generation) {
-    errors.push("review approval receipt generation binding is invalid");
-  }
-  if (!["accept", "correct", "reject", "defer"].includes(String(receipt.disposition))) {
-    errors.push("review approval receipt disposition is invalid");
-  }
-  const disposedAt = Date.parse(String(receipt.disposed_at));
-  const expiresAt = Date.parse(String(receipt.expires_at));
-  const now = expected.now.getTime();
-  if (!Number.isFinite(disposedAt) || !Number.isFinite(expiresAt)) {
-    errors.push("review approval receipt freshness timestamps are invalid");
-  } else {
-    if (disposedAt > now) errors.push("review approval receipt disposed_at is in the future");
-    if (now - disposedAt > 300_000) errors.push("review approval receipt is stale");
-    if (expiresAt <= now || expiresAt <= disposedAt) {
-      errors.push("review approval receipt expires_at is not current");
-    }
-    if (expiresAt - disposedAt > 300_000) {
-      errors.push("review approval receipt freshness window is too long");
-    }
-  }
-  if (!/^[A-Za-z0-9_-]+$/.test(signature)) {
-    errors.push("review approval receipt signature encoding is invalid");
-  } else if (payload) {
-    try {
-      if (
-        !verifySignature(
-          null,
-          Buffer.from(payload, "utf8"),
-          expected.trustedHostPublicKey,
-          Buffer.from(signature, "base64url"),
-        )
-      ) {
-        errors.push("review approval receipt signature is not from the trusted host");
-      }
-    } catch {
-      errors.push("review approval receipt signature verification failed");
-    }
-  }
-  try {
-    if (
-      personalReviewApprovalReplayStatus(receipt, expected.consumedReceiptDigests) ===
-      "conflicting_replay"
-    ) {
-      errors.push("review approval receipt nonce was replayed with changed content");
-    }
-  } catch (error) {
-    errors.push((error as Error).message);
-  }
-  return errors;
-}
-
-export function personalReviewDispositionLifecycle(
-  disposition: PersonalReviewDisposition,
-): "terminal" | "pending" {
-  if (["accept", "correct", "reject"].includes(disposition)) return "terminal";
-  if (disposition === "defer") return "pending";
-  throw new TypeError("review disposition is invalid");
-}
-
-export interface PersonalReviewRetentionProjection {
-  excerpt: "retained" | "expired" | "purged";
-  metadata: "retained" | "expired" | "purged";
-}
-
-export function projectPersonalReviewRetention(
-  disposition: PersonalReviewDisposition,
-  ageDays: number,
-  purgeRequested = false,
-): PersonalReviewRetentionProjection {
-  if (!Number.isFinite(ageDays) || ageDays < 0)
-    throw new TypeError("review age must be non-negative");
-  if (purgeRequested) return { excerpt: "purged", metadata: "purged" };
-  if (personalReviewDispositionLifecycle(disposition) === "pending") {
-    return {
-      excerpt: ageDays >= 30 ? "expired" : "retained",
-      metadata: "retained",
-    };
-  }
-  return {
-    excerpt: "purged",
-    metadata: ageDays >= 90 ? "expired" : "retained",
-  };
-}
+export {
+  PERSONAL_REVIEW_DISPOSITIONS,
+  personalReviewApprovalReceiptDigest,
+  personalReviewApprovalReplayStatus,
+  personalReviewDispositionLifecycle,
+  projectPersonalReviewRetention,
+  validatePersonalReviewApprovalReceipt,
+} from "./glossaryReviewRecordsAuthority.js";
+export type {
+  PersonalReviewApprovalVerification,
+  PersonalReviewDisposition,
+  PersonalReviewRetentionProjection,
+} from "./glossaryReviewRecordsAuthority.js";
 
 export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   const errors: string[] = [];
@@ -606,6 +431,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   const excerpts = mapping(privacy?.excerpts);
   const reviews = mapping(privacy?.reviews);
   const authentication = mapping(reviews?.authentication);
+  const correction = mapping(authentication?.correction);
   const signature = mapping(authentication?.signature);
   const freshness = mapping(authentication?.freshness);
   const replay = mapping(authentication?.replay);
@@ -666,7 +492,9 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     !sameStrings(reviews?.required_fields, [
       "candidate_id",
       "candidate_revision",
+      "semantic_fingerprint",
       "generation",
+      "policy_version",
       "disposition",
       "disposed_at",
     ]) ||
@@ -674,10 +502,16 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     reviews?.trusted_disposition_authority !== "current_user" ||
     !nonEmpty(authentication?.proof) ||
     !sameStrings(authentication?.binding_fields, [
+      "review_id",
       "candidate_id",
       "candidate_revision",
+      "candidate_projection_sha256",
+      "semantic_fingerprint",
       "generation",
+      "policy_version",
       "disposition",
+      "corrected_meaning",
+      "corrected_scope",
       "disposed_at",
     ]) ||
     !sameStrings(authentication?.forbidden_principals, [
@@ -695,10 +529,16 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
       "issuer",
       "subject",
       "trusted_channel",
+      "review_id",
       "candidate_id",
       "candidate_revision",
+      "candidate_projection_sha256",
+      "semantic_fingerprint",
       "generation",
+      "policy_version",
       "disposition",
+      "corrected_meaning",
+      "corrected_scope",
       "disposed_at",
       "expires_at",
       "nonce",
@@ -712,15 +552,26 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
       "issuer",
       "subject",
       "trusted_channel",
+      "review_id",
       "candidate_id",
       "candidate_revision",
+      "candidate_projection_sha256",
+      "semantic_fingerprint",
       "generation",
+      "policy_version",
       "disposition",
+      "corrected_meaning",
+      "corrected_scope",
       "disposed_at",
       "expires_at",
       "nonce",
     ]) ||
     signature?.verification !== "trusted_host_public_key_signature_check" ||
+    !sameStrings(correction?.correct_fields, ["corrected_meaning", "corrected_scope"]) ||
+    correction?.non_correct_values !== null ||
+    !sameStrings(correction?.corrected_scope_values, ["personal"]) ||
+    correction?.corrected_meaning_max_utf8_bytes !== 4_096 ||
+    !nonEmpty(correction?.rule) ||
     freshness?.max_age_seconds !== 300 ||
     freshness?.disposed_at !== "trusted_host_clock" ||
     freshness?.expires_at_required !== true ||

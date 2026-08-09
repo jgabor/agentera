@@ -1,3 +1,4 @@
+import { generateKeyPairSync, sign } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -6,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   personalGlossaryReviewRecordsPath,
+  personalGlossaryTrustedLocalHostPath,
   type PersonalGlossaryReviewRecord,
 } from "../../src/analytics/personalGlossaryReviewRecords.js";
 import {
@@ -30,6 +32,8 @@ const POLICY = "agentera.personalGlossaryMiningPolicy.v1";
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const COMMAND_SOURCE = path.join(ROOT, "packages/cli/src/cli/commands/personalGlossaryReviewRecords.ts");
+const REVIEW_SUBJECT = "user:current";
+const REVIEW_KEY_PAIR = generateKeyPairSync("ed25519");
 
 let profileDir: string;
 let previousProfileDir: string | undefined;
@@ -136,6 +140,70 @@ function queue(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCan
   return JSON.parse(result.out) as { record: PersonalGlossaryReviewRecord; status: string };
 }
 
+function writeTrustedHost(): void {
+  const pathname = personalGlossaryTrustedLocalHostPath();
+  fs.mkdirSync(path.dirname(pathname), { recursive: true, mode: 0o700 });
+  const host = {
+    owner: "current_user",
+    public_key_spki_base64url: REVIEW_KEY_PAIR.publicKey
+      .export({ format: "der", type: "spki" })
+      .toString("base64url"),
+    schema_version: "agentera.personalGlossaryTrustedLocalHost.v1",
+    subject: REVIEW_SUBJECT,
+  };
+  fs.writeFileSync(pathname, `${canonicalGlossaryJson(host)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
+function approval(
+  record: PersonalGlossaryReviewRecord,
+  disposition: "accept" | "correct" | "reject" | "defer",
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const { signature: signatureOverride, ...fields } = overrides;
+  const disposedAt = new Date(Math.max(Date.parse(record.queued_at), Date.now() - 100)).toISOString();
+  const unsigned = {
+    schema_version: "agentera.personalGlossaryReviewApproval.v1",
+    issuer: "agentera-local-host",
+    subject: REVIEW_SUBJECT,
+    trusted_channel: "agentera-local-host-ipc",
+    review_id: record.review_id,
+    candidate_id: record.candidate_id,
+    candidate_revision: record.candidate_revision,
+    candidate_projection_sha256: record.candidate_projection_sha256,
+    semantic_fingerprint: record.semantic_fingerprint,
+    generation: record.generation,
+    policy_version: record.policy_version,
+    disposition,
+    corrected_meaning: disposition === "correct" ? "A corrected private meaning." : null,
+    corrected_scope: disposition === "correct" ? "personal" : null,
+    disposed_at: disposedAt,
+    expires_at: new Date(Date.parse(disposedAt) + 299_000).toISOString(),
+    nonce: `review-cli-nonce-${record.review_id.slice(0, 12)}`,
+    ...fields,
+  };
+  return {
+    ...unsigned,
+    signature: signatureOverride ?? sign(
+      null,
+      Buffer.from(JSON.stringify(unsigned), "utf8"),
+      REVIEW_KEY_PAIR.privateKey,
+    ).toString("base64url"),
+  };
+}
+
+function dispositionRequest(
+  review: PersonalGlossaryReviewRecord,
+  hostReceipt: unknown,
+  signedApproval: unknown,
+): string {
+  return JSON.stringify({
+    schema_version: "agentera.personalGlossaryReviewDispositionRequest.v1",
+    review_id: review.review_id,
+    receipt: hostReceipt,
+    approval: signedApproval,
+  });
+}
+
 function exactArgs(record: PersonalGlossaryReviewRecord, overrides: Partial<Record<string, string>> = {}): string[] {
   const values = {
     reviewId: record.review_id,
@@ -164,24 +232,69 @@ function exactArgs(record: PersonalGlossaryReviewRecord, overrides: Partial<Reco
   ];
 }
 
+function writeLegacyStore(record: PersonalGlossaryReviewRecord): string {
+  const pending = {
+    schema_version: "agentera.personalGlossaryPendingReviewRecord.v1",
+    owner: "current_user",
+    review_id: record.review_id,
+    candidate_id: record.candidate_id,
+    candidate_revision: record.candidate_revision,
+    candidate_capsule_sha256: record.candidate_capsule_sha256,
+    candidate_projection_sha256: record.candidate_projection_sha256,
+    host_receipt_sha256: record.host_receipt_sha256,
+    cli_decision_sha256: record.cli_decision_sha256,
+    semantic_fingerprint: record.semantic_fingerprint,
+    generation: record.generation,
+    policy_version: record.policy_version,
+    reason: record.reason,
+    status: "pending",
+    queued_at: record.queued_at,
+    terminal_at: null,
+    expires_at: null,
+  };
+  const legacyRecord = { ...pending, record_sha256: glossaryCanonicalSha256(pending) };
+  const body = {
+    schema_version: "agentera.personalGlossaryReviewStore.v1",
+    owner: "current_user",
+    records: [legacyRecord],
+  };
+  const bytes = `${canonicalGlossaryJson({ ...body, store_sha256: glossaryCanonicalSha256(body) })}\n`;
+  fs.writeFileSync(personalGlossaryReviewRecordsPath(), bytes, { encoding: "utf8", mode: 0o600 });
+  return bytes;
+}
+
 describe("agentera report personal-glossary-reviews", () => {
   it("documents private queue/list/get grammar, schema, and no-cutover access", () => {
     const help = printReportHelp();
     expect(help).toContain("personal-glossary-reviews queue --input <file|-> --format json");
+    expect(help).toContain("personal-glossary-reviews disposition --input <file|-> --format json");
     expect(help).toContain("personal-glossary-reviews list [--status pending|terminal]");
-    expect(help).toContain("does not accept a user disposition");
+    expect(help).toContain("fresh signed current-user");
     expect(requiresCompletedEntityCutover(["report", "personal-glossary-reviews", "list"])).toBe(false);
     expect((buildSchemaPayload().integration as any).personal_glossary.review_records).toMatchObject({
       command: "agentera report personal-glossary-reviews",
       queue: {
         request_schema_version: "agentera.personalGlossaryReviewQueueRequest.v1",
         decision_outcome: "review_required",
-        statuses: ["queued", "unchanged_replay"],
+        statuses: ["queued", "unchanged_replay", "suppressed", "reopened"],
+      },
+      disposition: {
+        request_schema_version: "agentera.personalGlossaryReviewDispositionRequest.v1",
+        statuses: ["disposed", "unchanged_replay"],
+        publication_authorization: {
+          dispositions: ["accept", "correct"],
+          fields: ["review_id", "review_record_sha256"],
+        },
       },
       persistence: {
         owner: "current_user",
         file: "review-records.json",
         records_max: 100,
+        compatibility: {
+          accepted_store_schema_versions: ["agentera.personalGlossaryReviewStore.v1", "agentera.personalGlossaryReviewStore.v2"],
+          read_mutation: "forbidden",
+          migration_operation: "disposition_only",
+        },
       },
       retrieval: {
         owner: "current_user",
@@ -192,6 +305,24 @@ describe("agentera report personal-glossary-reviews", () => {
         forbidden_effects: ["profile_entry", "project_state", "candidate_projection", "publication"],
       },
     });
+  });
+
+  it("lists and gets a canonical v1 record without changing it", () => {
+    const capsule = candidate(3);
+    const projection = persist([capsule]);
+    const queued = queue(capsule, projection);
+    const bytes = writeLegacyStore(queued.record);
+
+    const listed = run(["report", "personal-glossary-reviews", "list", "--format", "json"]);
+    expect(listed).toMatchObject({ rc: 0, err: "" });
+    expect(JSON.parse(listed.out)).toMatchObject({
+      status: "ok",
+      entries: [{ review_id: queued.record.review_id, scope: null, disposition: null }],
+    });
+    const exact = run(exactArgs(queued.record));
+    expect(exact).toMatchObject({ rc: 0, err: "" });
+    expect(JSON.parse(exact.out)).toMatchObject({ record: { review_id: queued.record.review_id, scope: null } });
+    expect(fs.readFileSync(personalGlossaryReviewRecordsPath(), "utf8")).toBe(bytes);
   });
 
   it("queues a review-required receipt without a question channel or unrelated mutation", () => {
@@ -230,6 +361,90 @@ describe("agentera report personal-glossary-reviews", () => {
     const recordBytes = fs.readFileSync(personalGlossaryReviewRecordsPath(), "utf8");
     expect(recordBytes).not.toContain(capsule.term);
     expect(recordBytes).not.toContain(capsule.meaning);
+  });
+
+  it("accepts one current signed disposition, replays it exactly, and rejects reused nonce content", () => {
+    const capsule = candidate(8);
+    const projection = persist([capsule]);
+    const hostReceipt = receipt(capsule, projection);
+    const queued = queue(capsule, projection);
+    writeTrustedHost();
+    const signed = approval(queued.record, "accept", { nonce: "single-use-cli-review-nonce" });
+    const input = dispositionRequest(queued.record, hostReceipt, signed);
+    const pathname = personalGlossaryReviewRecordsPath();
+
+    const first = run(
+      ["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"],
+      input,
+    );
+    expect(first).toMatchObject({ rc: 0, err: "" });
+    expect(JSON.parse(first.out)).toMatchObject({
+      schemaVersion: "agentera.personalGlossaryReviewDispositionResult.v1",
+      status: "disposed",
+      record: { review_id: queued.record.review_id, disposition: "accept", status: "terminal" },
+      publication_authorization: {
+        review_id: queued.record.review_id,
+        review_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      },
+      effects: {
+        review_metadata: "changed",
+        profile_entry: "unchanged",
+        project_state: "unchanged",
+        candidate_projection: "unchanged",
+        publication: "unchanged",
+      },
+    });
+    expect(first.out).not.toContain(capsule.term);
+    expect(first.out).not.toContain(capsule.meaning);
+    const afterFirst = fs.readFileSync(pathname, "utf8");
+
+    const replay = run(
+      ["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"],
+      input,
+    );
+    expect(replay).toMatchObject({ rc: 0, err: "" });
+    expect(JSON.parse(replay.out)).toMatchObject({ status: "unchanged_replay" });
+    expect(fs.readFileSync(pathname, "utf8")).toBe(afterFirst);
+
+    const changed = run(
+      ["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"],
+      dispositionRequest(
+        queued.record,
+        hostReceipt,
+        approval(queued.record, "reject", { nonce: "single-use-cli-review-nonce" }),
+      ),
+    );
+    expect(changed).toMatchObject({ rc: 1, err: "" });
+    expect(JSON.parse(changed.out)).toMatchObject({ error: { class: "review_approval_replayed" } });
+    expect(changed.out).not.toContain("single-use-cli-review-nonce");
+    expect(fs.readFileSync(pathname, "utf8")).toBe(afterFirst);
+  });
+
+  it("rejects oversized or secret signed corrections before it changes review metadata", () => {
+    const capsule = candidate(9);
+    const projection = persist([capsule]);
+    const hostReceipt = receipt(capsule, projection);
+    const queued = queue(capsule, projection);
+    writeTrustedHost();
+    const pathname = personalGlossaryReviewRecordsPath();
+    const before = fs.readFileSync(pathname, "utf8");
+    for (const correctedMeaning of [
+      "x".repeat(4_097),
+      "Authorization: Bearer secret-review-token",
+    ]) {
+      const invalid = run(
+        ["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"],
+        dispositionRequest(
+          queued.record,
+          hostReceipt,
+          approval(queued.record, "correct", { corrected_meaning: correctedMeaning }),
+        ),
+      );
+      expect(invalid).toMatchObject({ rc: 1, err: "" });
+      expect(JSON.parse(invalid.out)).toMatchObject({ error: { class: "review_approval_invalid" } });
+      expect(invalid.out).not.toContain(correctedMeaning.slice(0, 64));
+    }
+    expect(fs.readFileSync(pathname, "utf8")).toBe(before);
   });
 
   it("rejects unsafe queue metadata without persisting or echoing it", () => {

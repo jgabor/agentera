@@ -1,3 +1,4 @@
+import { generateKeyPairSync, sign } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,6 +11,12 @@ import {
   projectPersonalGlossaryCandidates,
   type PersonalGlossaryCandidateProjection,
 } from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import {
+  dispositionPersonalGlossaryReviewRecord,
+  personalGlossaryTrustedLocalHostPath,
+  queuePersonalGlossaryReviewRecord,
+  type PersonalGlossaryReviewRecord,
+} from "../../src/analytics/personalGlossaryReviewRecords.js";
 import {
   ADAPTER_VERSION,
   contentFingerprint,
@@ -38,6 +45,8 @@ const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const AS_OF = "2026-08-10";
 const BASE_PROFILE = "# Decision Profile: Publish Test\n\n## Process\n\nKeep these bytes exactly.\n";
+const REVIEW_SUBJECT = "user:current";
+const REVIEW_KEY_PAIR = generateKeyPairSync("ed25519");
 
 let profileDir: string;
 let previousProfileDir: string | undefined;
@@ -169,6 +178,153 @@ function publicationRequest(
     receipt,
     decision,
     as_of: asOf,
+  };
+}
+
+function writeTrustedReviewHost(): void {
+  const pathname = personalGlossaryTrustedLocalHostPath();
+  fs.mkdirSync(path.dirname(pathname), { recursive: true, mode: 0o700 });
+  const host = {
+    owner: "current_user",
+    public_key_spki_base64url: REVIEW_KEY_PAIR.publicKey
+      .export({ format: "der", type: "spki" })
+      .toString("base64url"),
+    schema_version: "agentera.personalGlossaryTrustedLocalHost.v1",
+    subject: REVIEW_SUBJECT,
+  };
+  fs.writeFileSync(pathname, `${canonicalGlossaryJson(host)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
+function reviewApproval(
+  record: PersonalGlossaryReviewRecord,
+  disposition: "accept" | "correct" | "reject" | "defer",
+): Record<string, unknown> {
+  const unsigned = {
+    schema_version: "agentera.personalGlossaryReviewApproval.v1",
+    issuer: "agentera-local-host",
+    subject: REVIEW_SUBJECT,
+    trusted_channel: "agentera-local-host-ipc",
+    review_id: record.review_id,
+    candidate_id: record.candidate_id,
+    candidate_revision: record.candidate_revision,
+    candidate_projection_sha256: record.candidate_projection_sha256,
+    semantic_fingerprint: record.semantic_fingerprint,
+    generation: record.generation,
+    policy_version: record.policy_version,
+    disposition,
+    corrected_meaning: disposition === "correct" ? "A corrected review publication meaning." : null,
+    corrected_scope: disposition === "correct" ? "personal" : null,
+    disposed_at: "2026-08-11T00:01:00.000Z",
+    expires_at: "2026-08-11T00:06:00.000Z",
+    nonce: `review-publish-nonce-${record.review_id.slice(0, 12)}`,
+  };
+  return {
+    ...unsigned,
+    signature: sign(
+      null,
+      Buffer.from(JSON.stringify(unsigned), "utf8"),
+      REVIEW_KEY_PAIR.privateKey,
+    ).toString("base64url"),
+  };
+}
+
+function reviewDecision(receipt: GlossaryHostClassificationReceipt): GlossaryAdmissionDecision {
+  const result = run(
+    ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
+    JSON.stringify({ schema_version: "agentera.personalGlossaryAdmissionRequest.v1", receipt }),
+  );
+  expect(result).toMatchObject({ rc: 0, err: "" });
+  const output = JSON.parse(result.out);
+  expect(output).toMatchObject({ status: "review_required" });
+  return output.decision as GlossaryAdmissionDecision;
+}
+
+function reviewedFixture(disposition: "accept" | "correct"): {
+  capsule: GlossaryEvidenceCapsule;
+  projection: PersonalGlossaryCandidateProjection;
+  receipt: GlossaryHostClassificationReceipt;
+  decision: GlossaryAdmissionDecision;
+  authorization: { review_id: string; review_record_sha256: string };
+} {
+  writeProfile();
+  const capsule = createGlossaryEvidenceCapsule({
+    term: `reviewed inferred ${disposition}`,
+    meaning: "A reviewed inferred meaning.",
+    scope: "personal",
+    provenance_kind: "personal_inferred_usage",
+    evidence: [
+      { source_id: `reviewed-${disposition}-a`, evidence_anchor: `reviewed-${disposition}-a`, source_kind: "instruction_document" },
+      { source_id: `reviewed-${disposition}-b`, evidence_anchor: `reviewed-${disposition}-b`, source_kind: "project_config_signal" },
+    ],
+    policy_version: "agentera.personalGlossaryMiningPolicy.v1",
+    generation: `reviewed-publish-generation-${disposition}`,
+  });
+  const projection = persist([capsule]);
+  const receipt = receiptFor(capsule, projection);
+  const decision = reviewDecision(receipt);
+  const queued = queuePersonalGlossaryReviewRecord({
+    receipt,
+    now: "2026-08-11T00:00:00.000Z",
+  });
+  expect(queued).toMatchObject({ status: "queued", record: expect.any(Object) });
+  writeTrustedReviewHost();
+  const disposed = dispositionPersonalGlossaryReviewRecord({
+    review_id: queued.record!.review_id,
+    receipt,
+    approval: reviewApproval(queued.record!, disposition),
+    now: "2026-08-11T00:02:00.000Z",
+  });
+  expect(disposed).toMatchObject({
+    status: "disposed",
+    publication_authorization: expect.any(Object),
+  });
+  return {
+    capsule,
+    projection,
+    receipt,
+    decision,
+    authorization: disposed.publication_authorization!,
+  };
+}
+
+function nonPublishableReviewedFixture(disposition: "reject" | "defer"): {
+  receipt: GlossaryHostClassificationReceipt;
+  decision: GlossaryAdmissionDecision;
+  authorization: { review_id: string; review_record_sha256: string };
+} {
+  writeProfile();
+  const capsule = createGlossaryEvidenceCapsule({
+    term: `non-publishable inferred ${disposition}`,
+    meaning: "A non-publishable reviewed meaning.",
+    scope: "personal",
+    provenance_kind: "personal_inferred_usage",
+    evidence: [
+      { source_id: `non-publishable-${disposition}-a`, evidence_anchor: `non-publishable-${disposition}-a`, source_kind: "instruction_document" },
+      { source_id: `non-publishable-${disposition}-b`, evidence_anchor: `non-publishable-${disposition}-b`, source_kind: "project_config_signal" },
+    ],
+    policy_version: "agentera.personalGlossaryMiningPolicy.v1",
+    generation: `non-publishable-generation-${disposition}`,
+  });
+  const projection = persist([capsule]);
+  const receipt = receiptFor(capsule, projection);
+  const decision = reviewDecision(receipt);
+  const queued = queuePersonalGlossaryReviewRecord({ receipt, now: "2026-08-11T00:00:00.000Z" });
+  expect(queued).toMatchObject({ status: "queued", record: expect.any(Object) });
+  writeTrustedReviewHost();
+  const disposed = dispositionPersonalGlossaryReviewRecord({
+    review_id: queued.record!.review_id,
+    receipt,
+    approval: reviewApproval(queued.record!, disposition),
+    now: "2026-08-11T00:02:00.000Z",
+  });
+  expect(disposed).toMatchObject({ status: "disposed", publication_authorization: null });
+  return {
+    receipt,
+    decision,
+    authorization: {
+      review_id: disposed.record!.review_id,
+      review_record_sha256: disposed.record!.review_record!.record_sha256,
+    },
   };
 }
 
@@ -321,6 +477,68 @@ describe("agentera report personal-glossary-publish", () => {
     expect(JSON.parse(replay.out)).toMatchObject({ status: "unchanged_replay" });
     expect(fs.readFileSync(profilePath(), "utf8")).toBe(changed);
   });
+
+  it.each(["accept", "correct"] as const)(
+    "revalidates current evidence before %s review publication and leaves failures effect-free",
+    (disposition) => {
+      const reviewed = reviewedFixture(disposition);
+      const request = {
+        ...publicationRequest(reviewed.receipt, reviewed.decision),
+        review_authorization: reviewed.authorization,
+      };
+
+      const first = publishRequest(request);
+      expect(first).toMatchObject({ rc: 0, err: "" });
+      expect(JSON.parse(first.out)).toMatchObject({
+        status: "changed",
+        review_record_sha256: reviewed.authorization.review_record_sha256,
+      });
+      expect(section()).toMatchObject({
+        entries: [{
+          term: reviewed.capsule.term,
+          meaning: disposition === "correct"
+            ? "A corrected review publication meaning."
+            : reviewed.capsule.meaning,
+        }],
+      });
+
+      const corroborated = createGlossaryEvidenceCapsule({
+        term: reviewed.capsule.term,
+        meaning: reviewed.capsule.meaning,
+        scope: "personal",
+        provenance_kind: "personal_inferred_usage",
+        evidence: [
+          { source_id: `corroborated-${disposition}-a`, evidence_anchor: `corroborated-${disposition}-a`, source_kind: "instruction_document" },
+          { source_id: `corroborated-${disposition}-b`, evidence_anchor: `corroborated-${disposition}-b`, source_kind: "project_config_signal" },
+        ],
+        policy_version: reviewed.capsule.policy_version,
+        generation: `${reviewed.capsule.generation}-next`,
+      });
+      persist([corroborated]);
+      const before = noEffectSnapshot();
+      const stale = publishRequest(request);
+      expect(stale).toMatchObject({ rc: 1, err: "" });
+      expect(JSON.parse(stale.out)).toMatchObject({ error: { class: "publication_not_authorized" } });
+      expect(stale.out).not.toContain(reviewed.capsule.term);
+      expectNoEffects(before);
+    },
+  );
+
+  it.each(["reject", "defer"] as const)(
+    "does not publish a %s disposition even with its real review record digest",
+    (disposition) => {
+      const reviewed = nonPublishableReviewedFixture(disposition);
+      const before = noEffectSnapshot();
+      const result = publishRequest({
+        ...publicationRequest(reviewed.receipt, reviewed.decision),
+        review_authorization: reviewed.authorization,
+      });
+
+      expect(result).toMatchObject({ rc: 1, err: "" });
+      expect(JSON.parse(result.out)).toMatchObject({ error: { class: "publication_not_authorized" } });
+      expectNoEffects(before);
+    },
+  );
 
   it("preserves an existing restrictive profile mode across publication", () => {
     const { receipt, decision } = authorizedFixture();

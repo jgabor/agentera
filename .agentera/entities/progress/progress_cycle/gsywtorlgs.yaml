@@ -1,0 +1,16 @@
+id: gsywtorlgs
+artifact: progress
+record:
+  timestamp: 2026-08-09 23:26
+  type: feat
+  phase: build
+  what: Applied current-user personal glossary review dispositions with replay-safe persistence and revalidated publication authorization.
+  context:
+    intent: Apply cviizrgkvm without advancing plan lifecycle.
+    constraints: Keep all changes uncommitted for Audit; no project publication, Profile Full, dependency, version, registry, release, or task-status effects.
+    unknowns: The source lane remains blocked only by four existing review/glossary monolith-size violations.
+    scope: Personal review authority, user-local records, CLI/schema/help, publication guard, source/package regressions, and runtime census.
+  discovered: Disposition sealing included the prior record digest, stored review validation treated generation and policy as digests, and replay lookup compared a raw nonce with a hashed user-local nonce index. These defects rejected valid dispositions or lost exact replay identity.
+  verified: pnpm -C packages/cli run typecheck passed. Focused registry, analytics, review CLI, and publish CLI tests passed 152/152. Full verify:package passed 35/35 before the behavior-preserving authority extraction; its targeted constructed-package review test then passed 1/27. Build, vocabularyAuthority, capability-contract, current local help/schema checks, and the updated runtime inventory test passed. Full source lane otherwise ran 3899 passed, 1 skipped, with the monolith gate still failing for four pre-existing over-1000-line review/glossary files.
+  next: Leave cviizrgkvm pending and all changes uncommitted for independent Audit; audit the remaining monolith gate caveat separately.
+  publication_order: 145

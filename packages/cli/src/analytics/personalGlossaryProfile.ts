@@ -19,6 +19,16 @@ const DECAY = loadProfileDecayParameters();
 type Permanence = keyof typeof DECAY.lambdas;
 type ExplicitEvidence = { source_id: string; evidence_anchor: string; signal_type: string };
 type InferredEvidence = { source_id: string; evidence_anchor: string; source_kind: string };
+type ConversationEvidence = {
+  source_id: string;
+  evidence_anchor: string;
+  source_kind: string;
+  signal_type: string;
+  session_id: string;
+  project_id: string;
+  content_fingerprint: string;
+  author_class: string;
+};
 
 export interface PersonalGlossaryEntry {
   term: string;
@@ -28,7 +38,8 @@ export interface PersonalGlossaryEntry {
   temporal: { observed_at: string; last_confirmed_at: string };
   provenance:
     | { kind: "personal_explicit_definition"; evidence: ExplicitEvidence[] }
-    | { kind: "personal_inferred_usage"; evidence: InferredEvidence[] };
+    | { kind: "personal_inferred_usage"; evidence: InferredEvidence[] }
+    | { kind: "personal_inferred_conversation"; evidence: ConversationEvidence[] };
 }
 
 interface PersonalGlossaryDocument {

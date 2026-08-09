@@ -159,16 +159,18 @@ user-local mutation boundary:
 npx -y agentera@next report personal-glossary-publish --input publication.json --format json
 ```
 
-The bounded request contains exactly `schema_version`, `receipt`, `decision`,
-and `as_of`. It never accepts a profile or project path. Immediately before an
-atomic replacement, Agentera revalidates the current projection, candidate,
-receipt, CLI decision, evidence, scope, meaning, revision, policy, and quality
-gate. Only `explicit_current_authorized` can publish. The command changes only
-the owned `PROFILE.md` Glossary section and returns opaque bindings, not terms,
+The bounded request contains `schema_version`, `receipt`, `decision`, and
+`as_of`. It can additionally carry an opaque `review_authorization` with a
+review ID and canonical review-record digest. It never accepts a profile or
+project path. Immediately before an atomic replacement, Agentera revalidates the
+current projection, candidate, receipt, CLI decision, evidence, scope, meaning,
+revision, policy, and quality gate. An automatic publication still requires
+`explicit_current_authorized`. A review-required publication additionally needs a
+current stored `accept` or `correct` authorization. The command changes only the
+owned `PROFILE.md` Glossary section and returns opaque bindings, not terms,
 meanings, anchors, paths, or source content. Exact replay with the same date is
-an `unchanged_replay`; malformed, stale, review-required, unavailable, or
-conflicting input leaves profile bytes unchanged. Review disposition publication
-is a separate future operation.
+an `unchanged_replay`; malformed, stale, unavailable, or conflicting input leaves
+profile bytes unchanged.
 
 ## Personal glossary review records
 
@@ -178,23 +180,48 @@ revalidates it before writing private metadata.
 
 ```bash
 npx -y agentera@next report personal-glossary-reviews queue --input receipt.json --format json
+npx -y agentera@next report personal-glossary-reviews disposition --input disposition.json --format json
 npx -y agentera@next report personal-glossary-reviews list --status pending --limit 20 --format json
 npx -y agentera@next report personal-glossary-reviews get \
   --review-id ID --candidate-id ID --candidate-revision REVISION \
   --generation GENERATION --policy-version POLICY --format json
 ```
 
-Records live only under the configured user profile. They retain opaque candidate,
-receipt, decision, and semantic-fingerprint bindings, a stable reason, and
-lifecycle dates and status. They do not retain a term, meaning, excerpt, evidence,
-source, session, project, path, tool content, approval, or user disposition.
-Queue replay is idempotent. Changed bindings or reasons create a distinct record;
-the queue does not overwrite an existing record. List and exact reads are
-noninteractive, owner-restricted, cursor-bounded, and mutation-free.
+Records live only under the configured user profile. Queue metadata retains opaque
+candidate, receipt, decision, semantic-fingerprint, scope, policy, reason, and
+lifecycle bindings. A `correct` action can retain only its authority-approved
+corrected meaning in the canonical user-local review record. Records never retain
+a term, excerpt, raw evidence, source, session, project, path, tool content,
+signature, nonce, or host proof.
 
-Terminal metadata expires after 90 days through separate authenticated owner
-maintenance. That maintenance affects only review metadata. It does not modify a
-profile entry, project state, candidate projection, or publication result.
+The local host writes one canonical `trusted-local-host.json` document beside the
+review store. It contains the current-user subject and an Ed25519 SPKI public key.
+Only a fresh `agentera.personalGlossaryReviewApproval.v1` action from
+`agentera-local-host` over `agentera-local-host-ipc`, signed by that key, can
+disposition a queued review. The signed receipt binds the review ID, stable term,
+revision, projection, semantic fingerprint, generation, policy, disposition,
+correction fields, timestamps, and nonce. Exact receipt replay is idempotent;
+reusing a nonce with changed signed content fails before effects.
+
+Canonical v1 pending review stores remain readable through `list` and `get`
+without changing their bytes. Only `disposition` can migrate one valid v1 record.
+It revalidates the current receipt and projection, derives the missing scope from
+that receipt, preserves immutable review bindings, and atomically writes the v2
+lifecycle and replay state. Invalid or ambiguous v1 input leaves the store
+unchanged.
+
+Rejected and deferred records suppress a recurrence with the same stable identity,
+semantic fingerprint, scope, and policy even when only corroborating evidence,
+revision, or generation changes. A meaning, scope, or policy change creates a
+bounded reopened record with a visible reason. Accepted or corrected records return
+an opaque authorization for the separate publish command. They do not publish
+directly. List and exact reads are noninteractive, owner-restricted,
+cursor-bounded, and mutation-free.
+
+Terminal metadata expires after 90 days. The bounded receipt replay index expires
+with each approval receipt. Separate authenticated owner maintenance affects only
+review metadata and replay digests. It does not modify a profile entry, project
+state, candidate projection, or publication result.
 
 ## Contributors
 

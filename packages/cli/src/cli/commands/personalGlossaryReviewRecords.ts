@@ -1,27 +1,23 @@
 import fs from "node:fs";
 
 import {
-  currentPersonalGlossaryReviewRecords,
-  personalGlossaryReviewRecordsPath,
+  dispositionPersonalGlossaryReviewRecord,
   queuePersonalGlossaryReviewRecord,
-  readPersonalGlossaryReviewRecords,
   validPersonalGlossaryReviewMetadataBinding,
   type PersonalGlossaryReviewQueueResult,
-  type PersonalGlossaryReviewRecord,
+  type PersonalGlossaryReviewDispositionResult,
+  type PersonalGlossaryReviewReadRecord,
 } from "../../analytics/personalGlossaryReviewRecords.js";
-import type { JsonObject } from "../../core/jsonValue.js";
-import { shellQuoteArgument } from "../../core/shell.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { personalGlossaryReviewRecordsContract } from "../../registries/glossaryReviewRecordsContract.js";
-import { canonicalGlossaryJson, compareGlossaryUnicodeStrings } from "../../registries/glossaryTermIdentity.js";
-import { glossaryEntryAuthorityPath } from "../../registries/glossaryEntryContract.js";
-import { decodeListCursor, encodeListCursor, projectedListSnapshot } from "../../state/listCursor.js";
+import {
+  getPersonalGlossaryReviewRecord,
+  listPersonalGlossaryReviewRecords,
+} from "./personalGlossaryReviewRecordReads.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import { emitStructured } from "../structured.js";
 import type { Io } from "../dispatch/shared.js";
 
-const COLLECTION = "personal_glossary_review_records";
-const CURSOR_VERSION = 1;
 const SHA256 = /^[a-f0-9]{64}$/u;
 const MAX_CURSOR_UTF8_BYTES = 4_096;
 
@@ -35,6 +31,13 @@ interface ReviewRecordsCommandContract {
   queueMaxRequestUtf8Bytes: number;
   queueResultSchemaVersion: string;
   queueResultMaxUtf8Bytes: number;
+  dispositionRequestSchemaVersion: string;
+  dispositionRequestFields: string[];
+  dispositionMaxRequestUtf8Bytes: number;
+  dispositionResultSchemaVersion: string;
+  dispositionResultMaxUtf8Bytes: number;
+  dispositionPublicationAuthorizationDispositions: string[];
+  dispositionPublicationAuthorizationFields: string[];
   retrievalSchemaVersion: string;
   owner: string;
   defaultLimit: number;
@@ -72,6 +75,11 @@ interface ReviewFailure {
     | "review_not_required"
     | "review_record_capacity_exceeded"
     | "review_already_terminal"
+    | "review_not_pending"
+    | "review_approval_invalid"
+    | "review_approval_replayed"
+    | "review_approval_unavailable"
+    | "review_replay_capacity_exceeded"
     | "cursor_invalid"
     | "cursor_snapshot_unavailable"
     | "not_found"
@@ -98,8 +106,16 @@ function contract(): ReviewRecordsCommandContract {
     !sameStrings(value.queueRequestFields, ["schema_version", "receipt"]) ||
     value.queueMaxRequestUtf8Bytes !== 16_384 ||
     value.queueResultSchemaVersion !== "agentera.personalGlossaryReviewQueueResult.v1" ||
-    !sameStrings(value.queueResultStatuses, ["queued", "unchanged_replay"]) ||
+    !sameStrings(value.queueResultStatuses, ["queued", "unchanged_replay", "suppressed", "reopened"]) ||
     value.queueMaxResultUtf8Bytes !== 4_096 ||
+    value.dispositionRequestSchemaVersion !== "agentera.personalGlossaryReviewDispositionRequest.v1" ||
+    !sameStrings(value.dispositionRequestFields, ["schema_version", "review_id", "receipt", "approval"]) ||
+    value.dispositionMaxRequestUtf8Bytes !== 16_384 ||
+    value.dispositionResultSchemaVersion !== "agentera.personalGlossaryReviewDispositionResult.v1" ||
+    !sameStrings(value.dispositionResultStatuses, ["disposed", "unchanged_replay"]) ||
+    value.dispositionMaxResultUtf8Bytes !== 4_096 ||
+    !sameStrings(value.dispositionPublicationAuthorizationDispositions, ["accept", "correct"]) ||
+    !sameStrings(value.dispositionPublicationAuthorizationFields, ["review_id", "review_record_sha256"]) ||
     value.retrievalSchemaVersion !== "agentera.personalGlossaryReviewRetrieval.v1" ||
     value.retrievalOwner !== "current_user" ||
     value.listDefaultLimit !== 20 ||
@@ -132,6 +148,13 @@ function contract(): ReviewRecordsCommandContract {
     queueMaxRequestUtf8Bytes: value.queueMaxRequestUtf8Bytes,
     queueResultSchemaVersion: value.queueResultSchemaVersion,
     queueResultMaxUtf8Bytes: value.queueMaxResultUtf8Bytes,
+    dispositionRequestSchemaVersion: value.dispositionRequestSchemaVersion,
+    dispositionRequestFields: value.dispositionRequestFields,
+    dispositionMaxRequestUtf8Bytes: value.dispositionMaxRequestUtf8Bytes,
+    dispositionResultSchemaVersion: value.dispositionResultSchemaVersion,
+    dispositionResultMaxUtf8Bytes: value.dispositionMaxResultUtf8Bytes,
+    dispositionPublicationAuthorizationDispositions: value.dispositionPublicationAuthorizationDispositions,
+    dispositionPublicationAuthorizationFields: value.dispositionPublicationAuthorizationFields,
     retrievalSchemaVersion: value.retrievalSchemaVersion,
     owner: value.retrievalOwner,
     defaultLimit: value.listDefaultLimit,
@@ -151,6 +174,10 @@ function contract(): ReviewRecordsCommandContract {
 
 function queueSyntax(value: ReviewRecordsCommandContract): string {
   return `${value.command} queue --input <file|-> --format json`;
+}
+
+function dispositionSyntax(value: ReviewRecordsCommandContract): string {
+  return `${value.command} disposition --input <file|-> --format json`;
 }
 
 function listSyntax(value: ReviewRecordsCommandContract): string {
@@ -219,6 +246,30 @@ function parseQueue(argv: string[], value: ReviewRecordsCommandContract): { inpu
     input = option;
   }
   return input ? { input } : { class: "missing_argument", message: "--input is required", syntax: queueSyntax(value) };
+}
+
+function parseDisposition(argv: string[], value: ReviewRecordsCommandContract): { input: string } | InvalidInputErrorBody {
+  let input: string | undefined;
+  let format = false;
+  for (let index = 0; index < argv.length; index += 1) {
+    const { name, inline } = argvPart(argv[index]!);
+    if (name !== "--input" && name !== "--format") {
+      return { class: "unrecognized_argument", message: "unrecognized review disposition argument", syntax: dispositionSyntax(value) };
+    }
+    const option = inline ?? argv[++index];
+    if (!option || option.startsWith("--")) {
+      return { class: "missing_argument", message: `${name} requires a value`, syntax: `${name} VALUE` };
+    }
+    if (name === "--format") {
+      if (format) return { class: "mutually_exclusive", message: "--format may only be supplied once", syntax: dispositionSyntax(value) };
+      if (option !== "json") return { class: "invalid_choice", message: "personal-glossary-reviews requires --format json", valid_values: ["json"] };
+      format = true;
+      continue;
+    }
+    if (input !== undefined) return { class: "mutually_exclusive", message: "--input may only be supplied once", syntax: dispositionSyntax(value) };
+    input = option;
+  }
+  return input ? { input } : { class: "missing_argument", message: "--input is required", syntax: dispositionSyntax(value) };
 }
 
 function parseList(argv: string[], value: ReviewRecordsCommandContract): ListOptions | InvalidInputErrorBody {
@@ -383,7 +434,42 @@ function validateQueueRequest(
   return { receipt: request.receipt };
 }
 
-function reviewSummary(record: PersonalGlossaryReviewRecord): Mapping {
+function validateDispositionRequest(
+  request: Mapping,
+  value: ReviewRecordsCommandContract,
+): { reviewId: string; receipt: Mapping; approval: Mapping } | { error: InvalidInputErrorBody } {
+  const keys = Object.keys(request);
+  if (
+    keys.some((key) => !value.dispositionRequestFields.includes(key)) ||
+    value.dispositionRequestFields.some((field) => !(field in request))
+  ) {
+    return {
+      error: {
+        class: "schema_violation",
+        message: "personal glossary review disposition request fields are invalid",
+        valid_values: value.dispositionRequestFields,
+      },
+    };
+  }
+  if (
+    request.schema_version !== value.dispositionRequestSchemaVersion ||
+    typeof request.review_id !== "string" ||
+    !SHA256.test(request.review_id) ||
+    !mapping(request.receipt) ||
+    !mapping(request.approval)
+  ) {
+    return {
+      error: {
+        class: "schema_violation",
+        message: `request requires ${value.dispositionRequestSchemaVersion}, one review identity, receipt, and approval mappings`,
+        valid_values: [value.dispositionRequestSchemaVersion, "review_id", "receipt", "approval"],
+      },
+    };
+  }
+  return { reviewId: request.review_id, receipt: request.receipt, approval: request.approval };
+}
+
+function reviewSummary(record: PersonalGlossaryReviewReadRecord): Mapping {
   return {
     review_id: record.review_id,
     candidate_id: record.candidate_id,
@@ -395,8 +481,11 @@ function reviewSummary(record: PersonalGlossaryReviewRecord): Mapping {
     semantic_fingerprint: record.semantic_fingerprint,
     generation: record.generation,
     policy_version: record.policy_version,
+    scope: record.scope,
     reason: record.reason,
     status: record.status,
+    disposition: record.disposition,
+    reopen_reason: record.reopen_reason,
     queued_at: record.queued_at,
     terminal_at: record.terminal_at,
     expires_at: record.expires_at,
@@ -404,49 +493,8 @@ function reviewSummary(record: PersonalGlossaryReviewRecord): Mapping {
   };
 }
 
-function filters(options: ListOptions): Mapping {
-  return { status: options.status ?? null };
-}
-
-function reviewOrder(left: PersonalGlossaryReviewRecord, right: PersonalGlossaryReviewRecord): number {
-  return (
-    Date.parse(right.queued_at) - Date.parse(left.queued_at) ||
-    compareGlossaryUnicodeStrings(left.review_id, right.review_id)
-  );
-}
-
 function serializedBytes(value: unknown): number {
   return Buffer.byteLength(`${JSON.stringify(value, null, 2)}\n`, "utf8");
-}
-
-function listFlags(options: ListOptions): string {
-  return options.status ? ` --status ${shellQuoteArgument(options.status)}` : "";
-}
-
-function currentRecords(
-  io: Io,
-  value: ReviewRecordsCommandContract,
-  operation: "list" | "get",
-) {
-  const result = currentPersonalGlossaryReviewRecords();
-  if (result.status === "current") return result;
-  failure(
-    io,
-    value.retrievalSchemaVersion,
-    `${value.command} ${operation}`,
-    operation === "list" ? listSyntax(value) : exactSyntax(value),
-    operation === "list" ? `${value.command} list --limit ${value.defaultLimit} --format json` : exactSyntax(value),
-    {
-      class: result.status === "projection_unavailable" ? "current_binding_mismatch" : "review_records_unavailable",
-      message: result.status === "projection_unavailable"
-        ? "current review metadata cannot bind the current candidate projection"
-        : "the private current-user review records are unavailable or invalid",
-      recovery: result.status === "projection_unavailable"
-        ? "Create or repair the current candidate projection, then retry; no review metadata was changed."
-        : "Create or repair the private current-user review records, then retry; no review metadata was changed.",
-    },
-  );
-  return null;
 }
 
 function emitQueueSuccess(
@@ -459,10 +507,15 @@ function emitQueueSuccess(
     command: `${value.command} queue`,
     status: result.status,
     reason: result.reason,
+    reopen_reason: result.reopen_reason,
     owner: value.owner,
     record: reviewSummary(result.record!),
     effects: {
-      review_metadata: result.status === "queued" ? "created" : "unchanged_replay",
+      review_metadata: result.status === "queued" || result.status === "reopened"
+        ? "created"
+        : result.status === "suppressed"
+          ? "unchanged_suppressed"
+          : "unchanged_replay",
       profile_entry: "unchanged",
       project_state: "unchanged",
       candidate_projection: "unchanged",
@@ -513,10 +566,10 @@ function queueReview(io: Io, input: string, value: ReviewRecordsCommandContract)
       },
     );
   }
-  if (result.status === "queued" || result.status === "unchanged_replay") {
+  if (["queued", "unchanged_replay", "suppressed", "reopened"].includes(result.status)) {
     return emitQueueSuccess(io, value, result);
   }
-  const failures: Record<Exclude<PersonalGlossaryReviewQueueResult["status"], "queued" | "unchanged_replay">, ReviewFailure> = {
+  const failures: Record<Exclude<PersonalGlossaryReviewQueueResult["status"], "queued" | "unchanged_replay" | "suppressed" | "reopened">, ReviewFailure> = {
     decision_not_review_required: {
       class: "review_not_required",
       message: "the current deterministic decision is not review_required",
@@ -549,265 +602,40 @@ function queueReview(io: Io, input: string, value: ReviewRecordsCommandContract)
     `${value.command} queue`,
     queueSyntax(value),
     queueSyntax(value),
-    failures[result.status],
+    failures[result.status as Exclude<PersonalGlossaryReviewQueueResult["status"], "queued" | "unchanged_replay" | "suppressed" | "reopened">],
   );
 }
 
-function listReviews(io: Io, options: ListOptions, value: ReviewRecordsCommandContract): number {
-  const view = currentRecords(io, value, "list");
-  if (!view) return 1;
-  const selectedFilters = filters(options);
-  const records = view.records
-    .filter((record) => !options.status || record.status === options.status)
-    .sort(reviewOrder);
-  const snapshotId = projectedListSnapshot({
-    schemaVersion: value.retrievalSchemaVersion,
-    command: `${value.command} list`,
-    collection: COLLECTION,
-    owner: value.owner,
-    filters: selectedFilters as JsonObject,
-    order: value.order,
-    records: records.map((record) => record.record_sha256),
-  });
-  let start = 0;
-  if (options.cursor) {
-    let cursor: Mapping;
-    try {
-      cursor = decodeListCursor(options.cursor, personalGlossaryReviewRecordsPath(), glossaryEntryAuthorityPath());
-    } catch {
-      return failure(
-        io,
-        value.retrievalSchemaVersion,
-        `${value.command} list`,
-        listSyntax(value),
-        `${value.command} list --limit ${value.defaultLimit} --format json`,
-        {
-          class: "cursor_invalid",
-          message: "review-list cursor is malformed or belongs to another local profile",
-          recovery: "Copy next_cursor exactly, or omit --cursor to restart from the current private review records; no review metadata was changed.",
-        },
-      );
-    }
-    if (
-      cursor.version !== CURSOR_VERSION ||
-      cursor.collection !== COLLECTION ||
-      cursor.owner !== value.owner ||
-      cursor.limit !== options.limit ||
-      !mapping(cursor.filters) ||
-      canonicalGlossaryJson(cursor.filters) !== canonicalGlossaryJson(selectedFilters)
-    ) {
-      return failure(
-        io,
-        value.retrievalSchemaVersion,
-        `${value.command} list`,
-        listSyntax(value),
-        `${value.command} list --limit ${value.defaultLimit} --format json`,
-        {
-          class: "cursor_invalid",
-          message: "review-list cursor filters, owner, or limit do not match this request",
-          recovery: "Repeat the original status filter and limit, or omit --cursor to restart; no review metadata was changed.",
-        },
-      );
-    }
-    if (
-      cursor.order !== value.order ||
-      cursor.snapshot_id !== snapshotId ||
-      typeof cursor.after !== "string"
-    ) {
-      return failure(
-        io,
-        value.retrievalSchemaVersion,
-        `${value.command} list`,
-        listSyntax(value),
-        `${value.command} list --limit ${value.defaultLimit} --format json`,
-        {
-          class: "cursor_snapshot_unavailable",
-          message: "review-list cursor cannot resume the current private review snapshot",
-          recovery: "Omit --cursor to restart from the current private review records; no review metadata was changed.",
-        },
-      );
-    }
-    const position = records.findIndex((record) => record.review_id === cursor.after);
-    if (position < 0) {
-      return failure(
-        io,
-        value.retrievalSchemaVersion,
-        `${value.command} list`,
-        listSyntax(value),
-        `${value.command} list --limit ${value.defaultLimit} --format json`,
-        {
-          class: "cursor_snapshot_unavailable",
-          message: "review-list cursor continuation is unavailable",
-          recovery: "Omit --cursor to restart from the current private review records; no review metadata was changed.",
-        },
-      );
-    }
-    start = position + 1;
-  }
-  const entries = records.slice(start, start + options.limit);
-  const remaining = records.length - start - entries.length;
-  const nextCursor = remaining > 0 && entries.length > 0
-    ? encodeListCursor(
-      {
-        version: CURSOR_VERSION,
-        collection: COLLECTION,
-        owner: value.owner,
-        filters: selectedFilters as JsonObject,
-        limit: options.limit,
-        order: value.order,
-        snapshot_id: snapshotId,
-        after: entries.at(-1)!.review_id,
-      },
-      personalGlossaryReviewRecordsPath(),
-      glossaryEntryAuthorityPath(),
-    )
-    : undefined;
+function emitDispositionSuccess(
+  io: Io,
+  value: ReviewRecordsCommandContract,
+  result: PersonalGlossaryReviewDispositionResult,
+): number {
   const response: Mapping = {
-    schemaVersion: value.retrievalSchemaVersion,
-    command: `${value.command} list`,
-    status: view.expired_records > 0 || view.stale_records > 0 ? "degraded" : "ok",
+    schemaVersion: value.dispositionResultSchemaVersion,
+    command: `${value.command} disposition`,
+    status: result.status,
     owner: value.owner,
-    entries: entries.map(reviewSummary),
-    counts: {
-      total: records.length,
-      candidate: records.length,
-      returned: entries.length,
-      remaining,
-      omitted: remaining,
-      continuation: remaining,
-    },
-    filters: selectedFilters,
-    snapshot: {
-      id: snapshotId,
-      first_page: !options.cursor,
-      order: value.order,
-      has_more: remaining > 0,
-      candidate_count: records.length,
-    },
-    retention: {
-      expired_records: view.expired_records,
-      stale_records: view.stale_records,
-      mutation: "forbidden",
-    },
-    source: {
-      kind: "user_local_review_records",
-      owner: value.owner,
-    },
-    source_contract: {
-      authority: "references/artifacts/glossary-entry-contract.yaml",
-      cursor: value.cursorVocabulary,
-      cursor_authority: value.cursorAuthority,
-      cursor_binding: [...value.cursorBinding],
-      cursor_invalid_behavior: value.cursorInvalidBehavior,
-      cursor_unavailable_behavior: value.cursorUnavailableBehavior,
-    },
-    retrieval: {
-      get: `${value.command} get --review-id ID --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY --format json`,
-      ...(nextCursor
-        ? { continue: `${value.command} list${listFlags(options)} --limit ${options.limit} --cursor ${nextCursor} --format json` }
-        : {}),
-    },
-    ...(remaining > 0 ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: nextCursor } : {}),
-  };
-  if (serializedBytes(response) > value.listMaxSerializedUtf8Bytes) {
-    return failure(
-      io,
-      value.retrievalSchemaVersion,
-      `${value.command} list`,
-      listSyntax(value),
-      `${value.command} list --limit ${value.defaultLimit} --format json`,
-      {
-        class: "output_bound_exceeded",
-        message: `review-list response exceeds its ${value.listMaxSerializedUtf8Bytes}-byte bound`,
-        recovery: "Request fewer rows and retry; no partial review metadata was returned.",
-      },
-    );
-  }
-  emitStructured(response, "json", io.out ?? ((text) => process.stdout.write(text)));
-  return 0;
-}
-
-function exactReview(io: Io, options: ExactOptions, value: ReviewRecordsCommandContract): number {
-  const view = currentRecords(io, value, "get");
-  if (!view) return 1;
-  const stored = readPersonalGlossaryReviewRecords();
-  const raw = stored.store?.records.find((record) => record.review_id === options.reviewId);
-  if (!raw) {
-    return failure(
-      io,
-      value.retrievalSchemaVersion,
-      `${value.command} get`,
-      exactSyntax(value),
-      exactSyntax(value),
-      {
-        class: "not_found",
-        message: "review identity was not found in the current private record store",
-        recovery: "List the current private review records and retry with one returned identity; no review metadata was changed.",
-      },
-    );
-  }
-  const record = view.records.find((item) => item.review_id === options.reviewId);
-  if (!record) {
-    return failure(
-      io,
-      value.retrievalSchemaVersion,
-      `${value.command} get`,
-      exactSyntax(value),
-      exactSyntax(value),
-      {
-        class: "current_binding_mismatch",
-        message: "review identity is stale, expired, or not bound to the current candidate projection",
-        recovery: "List the current private review records and retry with one current identity; no review metadata was changed.",
-      },
-    );
-  }
-  if (
-    record.candidate_id !== options.candidateId ||
-    record.candidate_revision !== options.candidateRevision ||
-    record.generation !== options.generation ||
-    record.policy_version !== options.policyVersion
-  ) {
-    return failure(
-      io,
-      value.retrievalSchemaVersion,
-      `${value.command} get`,
-      exactSyntax(value),
-      exactSyntax(value),
-      {
-        class: "current_binding_mismatch",
-        message: "review exact-read bindings do not match the current record",
-        recovery: "List the current private review records and copy every exact binding; no review metadata was changed.",
-      },
-    );
-  }
-  const response: Mapping = {
-    schemaVersion: value.retrievalSchemaVersion,
-    command: `${value.command} get`,
-    status: "ok",
-    owner: value.owner,
-    record: reviewSummary(record),
-    source: {
-      kind: "user_local_review_records",
-      owner: value.owner,
-    },
-    source_contract: {
-      authority: "references/artifacts/glossary-entry-contract.yaml",
-      bindings: [...value.exactBindings],
-      max_serialized_utf8_bytes: value.exactMaxSerializedUtf8Bytes,
-      current_binding: "candidate_projection_sha256",
-      mutation: "forbidden",
+    record: reviewSummary(result.record!),
+    publication_authorization: result.publication_authorization,
+    effects: {
+      review_metadata: result.status === "disposed" ? "changed" : "unchanged_replay",
+      profile_entry: "unchanged",
+      project_state: "unchanged",
+      candidate_projection: "unchanged",
+      publication: "unchanged",
     },
   };
-  if (serializedBytes(response) > value.exactMaxSerializedUtf8Bytes) {
+  if (serializedBytes(response) > value.dispositionResultMaxUtf8Bytes) {
     return failure(
       io,
-      value.retrievalSchemaVersion,
-      `${value.command} get`,
-      exactSyntax(value),
-      exactSyntax(value),
+      value.dispositionResultSchemaVersion,
+      `${value.command} disposition`,
+      dispositionSyntax(value),
+      dispositionSyntax(value),
       {
         class: "output_bound_exceeded",
-        message: `review exact-read response exceeds its ${value.exactMaxSerializedUtf8Bytes}-byte bound`,
+        message: `review disposition response exceeds its ${value.dispositionResultMaxUtf8Bytes}-byte bound`,
         recovery: "Repair the private review records before retrying; no partial review metadata was returned.",
       },
     );
@@ -816,7 +644,92 @@ function exactReview(io: Io, options: ExactOptions, value: ReviewRecordsCommandC
   return 0;
 }
 
-/** Run the private, noninteractive queue and read operations for glossary review metadata. */
+function dispositionReview(io: Io, input: string, value: ReviewRecordsCommandContract): number {
+  let request: Mapping;
+  try {
+    request = readRequest(input, value.dispositionMaxRequestUtf8Bytes, io);
+  } catch {
+    return invalid(io, { class: "invalid_format", message: "--input must be one readable bounded UTF-8 YAML or JSON mapping" });
+  }
+  const validated = validateDispositionRequest(request, value);
+  if ("error" in validated) return invalid(io, validated.error);
+  let result: PersonalGlossaryReviewDispositionResult;
+  try {
+    result = dispositionPersonalGlossaryReviewRecord({
+      review_id: validated.reviewId,
+      receipt: validated.receipt,
+      approval: validated.approval,
+    });
+  } catch {
+    return failure(
+      io,
+      value.dispositionResultSchemaVersion,
+      `${value.command} disposition`,
+      dispositionSyntax(value),
+      dispositionSyntax(value),
+      {
+        class: "review_records_unavailable",
+        message: "the private current-user review records could not be read or written",
+        recovery: "Repair the configured profile path or its permissions, then retry; no profile, project, or candidate-projection bytes were changed.",
+      },
+    );
+  }
+  if (result.status === "disposed" || result.status === "unchanged_replay") {
+    return emitDispositionSuccess(io, value, result);
+  }
+  const failures: Record<Exclude<PersonalGlossaryReviewDispositionResult["status"], "disposed" | "unchanged_replay">, ReviewFailure> = {
+    review_not_found: {
+      class: "not_found",
+      message: "the requested current review record was not found",
+      recovery: "List current private review records and copy one current review identity; no review metadata was changed.",
+    },
+    review_not_pending: {
+      class: "review_not_pending",
+      message: "the requested review is terminal and cannot receive another disposition",
+      recovery: "Use its existing publication authorization or queue a current distinct review; no review metadata was changed.",
+    },
+    current_binding_mismatch: {
+      class: "current_binding_mismatch",
+      message: "the review receipt or deterministic decision no longer binds the current candidate projection",
+      recovery: "Read the current candidate, create matching host classification evidence, and retry; no review metadata was changed.",
+    },
+    approval_invalid: {
+      class: "review_approval_invalid",
+      message: "the current-user review approval is invalid or no longer fresh",
+      recovery: "Request a new signed current-user local-host approval for this current review, then retry; no review metadata was changed.",
+    },
+    approval_conflicting_replay: {
+      class: "review_approval_replayed",
+      message: "the review approval nonce was already used with different signed content",
+      recovery: "Request a new signed current-user local-host approval with a new nonce, then retry; no review metadata was changed.",
+    },
+    approval_unavailable: {
+      class: "review_approval_unavailable",
+      message: "the configured trusted local-host key is unavailable or invalid",
+      recovery: "Repair the user-local trusted host key configuration, then retry; no review metadata was changed.",
+    },
+    records_unavailable: {
+      class: "review_records_unavailable",
+      message: "the private current-user review records are unavailable or invalid",
+      recovery: "Repair the private review-record file, then retry; no profile, project, or candidate-projection bytes were changed.",
+    },
+    replay_capacity_exceeded: {
+      class: "review_replay_capacity_exceeded",
+      message: "the bounded review approval replay index is full",
+      recovery: "Run authenticated review maintenance after receipt expiry, then retry; no review metadata was changed.",
+    },
+  };
+  return failure(
+    io,
+    value.dispositionResultSchemaVersion,
+    `${value.command} disposition`,
+    dispositionSyntax(value),
+    dispositionSyntax(value),
+    failures[result.status],
+  );
+}
+
+/** Run the private, noninteractive review queue, disposition, and read operations. */
 export function runPersonalGlossaryReviewRecordsCommand(argv: string[], io: Io): number {
   let value: ReviewRecordsCommandContract;
   try {
@@ -826,7 +739,7 @@ export function runPersonalGlossaryReviewRecordsCommand(argv: string[], io: Io):
       io,
       "agentera.personalGlossaryReviewRetrieval.v1",
       "agentera report personal-glossary-reviews",
-      "agentera report personal-glossary-reviews {queue,list,get} --format json",
+      "agentera report personal-glossary-reviews {queue,disposition,list,get} --format json",
       "agentera report personal-glossary-reviews list --limit 20 --format json",
       {
         class: "unsupported_state",
@@ -836,14 +749,14 @@ export function runPersonalGlossaryReviewRecordsCommand(argv: string[], io: Io):
     );
   }
   const operation = argv[0];
-  if (operation !== "queue" && operation !== "list" && operation !== "get") {
+  if (operation !== "queue" && operation !== "disposition" && operation !== "list" && operation !== "get") {
     return invalid(io, {
       class: operation ? "unsupported_target" : "missing_argument",
       message: operation ? "unsupported personal glossary review operation" : "review operation is required",
-      valid_values: ["queue", "list", "get"],
-      syntax: `${value.command} {queue,list,get} --format json`,
+      valid_values: ["queue", "disposition", "list", "get"],
+      syntax: `${value.command} {queue,disposition,list,get} --format json`,
       example: `${value.command} list --limit ${value.defaultLimit} --format json`,
-      recovery: "Choose queue, list, or get and retry; no review metadata was changed.",
+      recovery: "Choose queue, disposition, list, or get and retry; no review metadata was changed.",
     });
   }
   if (operation === "queue") {
@@ -851,12 +764,17 @@ export function runPersonalGlossaryReviewRecordsCommand(argv: string[], io: Io):
     if ("class" in parsed) return invalid(io, { ...parsed, recovery: "Correct the bounded queue request and retry; no review metadata was changed." });
     return queueReview(io, parsed.input, value);
   }
+  if (operation === "disposition") {
+    const parsed = parseDisposition(argv.slice(1), value);
+    if ("class" in parsed) return invalid(io, { ...parsed, recovery: "Correct the bounded disposition request and retry; no review metadata was changed." });
+    return dispositionReview(io, parsed.input, value);
+  }
   if (operation === "list") {
     const parsed = parseList(argv.slice(1), value);
     if ("class" in parsed) return invalid(io, { ...parsed, recovery: "Correct the bounded list request and retry; no review metadata was changed." });
-    return listReviews(io, parsed, value);
+    return listPersonalGlossaryReviewRecords(io, parsed, value);
   }
   const parsed = parseExact(argv.slice(1), value);
   if ("class" in parsed) return invalid(io, { ...parsed, recovery: "Correct the exact review binding and retry; no review metadata was changed." });
-  return exactReview(io, parsed, value);
+  return getPersonalGlossaryReviewRecord(io, parsed, value);
 }

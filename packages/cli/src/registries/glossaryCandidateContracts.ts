@@ -1,7 +1,5 @@
-import path from "node:path";
-
 import { loadYamlMappingFile } from "../core/yaml.js";
-import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { glossaryCandidateContractsAuthorityPath } from "./glossaryCandidateContractPaths.js";
 import {
   canonicalGlossaryJson,
   compareGlossaryUnicodeStrings,
@@ -26,6 +24,7 @@ import {
 } from "./glossaryCandidateDecisionAuthority.js";
 
 export { GLOSSARY_ADMISSION_REASONS, type GlossaryAdmissionReason } from "./glossaryCandidateDecisionAuthority.js";
+export { glossaryCandidateContractsAuthorityPath } from "./glossaryCandidateContractPaths.js";
 
 export type GlossaryContractRecord = Record<string, unknown>;
 
@@ -89,7 +88,7 @@ const LAYER_REQUIRED_FIELDS = {
   review_record: [
     "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
     "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version",
-    "disposition", "corrected_meaning", "disposed_at", "expires_at", "record_sha256",
+    "disposition", "corrected_meaning", "corrected_scope", "disposed_at", "expires_at", "record_sha256",
   ],
   publication_result: [
     "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
@@ -188,6 +187,7 @@ export interface GlossaryReviewRecord extends Mapping {
   policy_version: string;
   disposition: PersonalReviewDisposition;
   corrected_meaning: string | null;
+  corrected_scope: "personal" | null;
   disposed_at: string;
   expires_at: string;
   record_sha256: string;
@@ -262,14 +262,6 @@ function timestamp(value: unknown): value is string {
 
 function utf8Within(value: unknown, maxBytes: number): value is string {
   return nonEmpty(value) && Buffer.byteLength(value, "utf8") <= maxBytes;
-}
-
-function candidateAuthorityPath(root: string = resolveSourceRoot()): string {
-  return path.join(root, "references", "artifacts", "glossary-entry-contract.yaml");
-}
-
-export function glossaryCandidateContractsAuthorityPath(root: string = resolveSourceRoot()): string {
-  return candidateAuthorityPath(root);
 }
 
 function loadAuthority(pathname: string): Mapping {
@@ -469,7 +461,7 @@ function validateCapsuleIdentity(capsule: Mapping): string[] {
 
 export function validateGlossaryEvidenceCapsule(
   capsule: Mapping,
-  pathname: string = candidateAuthorityPath(),
+  pathname: string = glossaryCandidateContractsAuthorityPath(),
 ): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
@@ -579,7 +571,7 @@ export function validateGlossaryHostClassificationReceipt(
   receipt: Mapping,
   capsule: Mapping,
   context: GlossaryHostReceiptValidationContext,
-  pathname: string = candidateAuthorityPath(),
+  pathname: string = glossaryCandidateContractsAuthorityPath(),
 ): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
@@ -655,7 +647,7 @@ export function validateGlossaryAdmissionDecision(
   decision: Mapping,
   capsule: Mapping,
   receipt: Mapping,
-  pathname: string = candidateAuthorityPath(),
+  pathname: string = glossaryCandidateContractsAuthorityPath(),
 ): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
@@ -764,7 +756,7 @@ export function validateGlossaryReviewRecord(
   capsule: Mapping,
   receipt: Mapping,
   decision: Mapping,
-  pathname: string = candidateAuthorityPath(),
+  pathname: string = glossaryCandidateContractsAuthorityPath(),
 ): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
@@ -794,8 +786,9 @@ export function validateGlossaryReviewRecord(
   const correctedMax = Number(candidateBounds(loaded.candidate).corrected_meaning_max_utf8_bytes ?? 0);
   if (record.disposition === "correct") {
     if (!utf8Within(record.corrected_meaning, correctedMax)) errors.push("review_record.corrected_meaning is required and outside its bound");
-  } else if (record.corrected_meaning !== null) {
-    errors.push("review_record.corrected_meaning must be null unless disposition is correct");
+    if (record.corrected_scope !== "personal") errors.push("review_record.corrected_scope must be personal for correct");
+  } else if (record.corrected_meaning !== null || record.corrected_scope !== null) {
+    errors.push("review_record correction fields must be null unless disposition is correct");
   }
   errors.push(...validateReviewTimeFields(record));
   if (digest(record.record_sha256) && record.record_sha256 !== glossaryCanonicalSha256(bodyWithoutDigest(record, "record_sha256"))) {
@@ -811,6 +804,7 @@ export function createGlossaryReviewRecord(input: {
   decision: GlossaryAdmissionDecision;
   disposition: PersonalReviewDisposition;
   corrected_meaning: string | null;
+  corrected_scope: "personal" | null;
   disposed_at: string;
   expires_at: string;
 }): GlossaryReviewRecord {
@@ -827,6 +821,7 @@ export function createGlossaryReviewRecord(input: {
     policy_version: input.capsule.policy_version,
     disposition: input.disposition,
     corrected_meaning: input.corrected_meaning,
+    corrected_scope: input.corrected_scope,
     disposed_at: input.disposed_at,
     expires_at: input.expires_at,
   } as GlossaryContractRecord;
@@ -842,7 +837,7 @@ export function validateGlossaryPublicationResult(
   receipt: Mapping,
   decision: Mapping,
   review: Mapping | null,
-  pathname: string = candidateAuthorityPath(),
+  pathname: string = glossaryCandidateContractsAuthorityPath(),
 ): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;

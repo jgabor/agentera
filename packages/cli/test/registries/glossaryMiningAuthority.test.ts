@@ -190,7 +190,11 @@ describe("personal glossary mining authority", () => {
           file: "review-records.json",
           owner: "current_user",
           records_max: 100,
-          record_max_serialized_utf8_bytes: 2048,
+          record_max_serialized_utf8_bytes: 8192,
+        },
+        disposition: {
+          request: { schema_version: "agentera.personalGlossaryReviewDispositionRequest.v1" },
+          publication_authorization: { dispositions: ["accept", "correct"] },
         },
         retrieval: {
           owner: "current_user",
@@ -296,11 +300,25 @@ describe("personal glossary mining authority", () => {
       command: "agentera report personal-glossary-reviews",
       queueRequestSchemaVersion: "agentera.personalGlossaryReviewQueueRequest.v1",
       queueDecisionOutcome: "review_required",
-      storeSchemaVersion: "agentera.personalGlossaryReviewStore.v1",
-      recordSchemaVersion: "agentera.personalGlossaryPendingReviewRecord.v1",
+      storeSchemaVersion: "agentera.personalGlossaryReviewStore.v2",
+      recordSchemaVersion: "agentera.personalGlossaryReviewRecord.v2",
       storeOwner: "current_user",
       storeFile: "review-records.json",
       recordsMax: 100,
+      replayEntriesMax: 100,
+      compatibilityStoreSchemaVersions: [
+        "agentera.personalGlossaryReviewStore.v1",
+        "agentera.personalGlossaryReviewStore.v2",
+      ],
+      compatibilityRecordSchemaVersions: [
+        "agentera.personalGlossaryPendingReviewRecord.v1",
+        "agentera.personalGlossaryReviewRecord.v2",
+      ],
+      compatibilityReadMutation: "forbidden",
+      compatibilityMigrationOperation: "disposition_only",
+      dispositionRequestSchemaVersion: "agentera.personalGlossaryReviewDispositionRequest.v1",
+      dispositionPublicationAuthorizationDispositions: ["accept", "correct"],
+      trustedHostKeyFile: "trusted-local-host.json",
       retrievalSchemaVersion: "agentera.personalGlossaryReviewRetrieval.v1",
       listStatuses: ["pending", "terminal"],
       terminalMetadataDays: 90,
@@ -437,6 +455,13 @@ describe("personal glossary mining authority", () => {
       "review record privacy boundary",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.review_records.persistence.record_fields.push("term");
+      },
+      "personal_mining_authority review records must remain bounded, current-user local, privacy-safe, replay-safe, and independently retained",
+    ],
+    [
+      "review record legacy compatibility",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.review_records.persistence.compatibility.migration_operation = "read_upgrade";
       },
       "personal_mining_authority review records must remain bounded, current-user local, privacy-safe, replay-safe, and independently retained",
     ],
@@ -765,24 +790,34 @@ const reviewKeyPair = generateKeyPairSync("ed25519");
 const reviewNow = new Date("2026-08-07T12:00:00.000Z");
 const reviewVerification = {
   currentUserSubject: "user:current",
+  reviewId: "a".repeat(64),
   candidateId: "candidate-a",
   candidateRevision: "revision-a",
+  candidateProjectionSha256: "b".repeat(64),
+  semanticFingerprint: "c".repeat(64),
   generation: "generation-a",
+  policyVersion: "agentera.personalGlossaryMiningPolicy.v1",
   now: reviewNow,
   trustedHostPublicKey: reviewKeyPair.publicKey,
 };
 
-function reviewReceipt(overrides: Record<string, string> = {}): Record<string, string> {
+function reviewReceipt(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const { signature: signatureOverride, ...overriddenFields } = overrides;
   const unsigned = {
     schema_version: "agentera.personalGlossaryReviewApproval.v1",
     issuer: "agentera-local-host",
     subject: "user:current",
     trusted_channel: "agentera-local-host-ipc",
+    review_id: reviewVerification.reviewId,
     candidate_id: "candidate-a",
     candidate_revision: "revision-a",
+    candidate_projection_sha256: reviewVerification.candidateProjectionSha256,
+    semantic_fingerprint: reviewVerification.semanticFingerprint,
     generation: "generation-a",
+    policy_version: reviewVerification.policyVersion,
     disposition: "accept",
+    corrected_meaning: null,
+    corrected_scope: null,
     disposed_at: "2026-08-07T11:59:00.000Z",
     expires_at: "2026-08-07T12:04:00.000Z",
     nonce: "nonce-a",
@@ -827,9 +862,29 @@ describe("personal glossary review approval receipts", () => {
       "review approval receipt revision binding is invalid",
     ],
     [
+      "review binding",
+      { review_id: "b".repeat(64) },
+      "review approval receipt review binding is invalid",
+    ],
+    [
+      "projection binding",
+      { candidate_projection_sha256: "d".repeat(64) },
+      "review approval receipt projection binding is invalid",
+    ],
+    [
+      "semantic fingerprint binding",
+      { semantic_fingerprint: "d".repeat(64) },
+      "review approval receipt semantic fingerprint binding is invalid",
+    ],
+    [
       "generation binding",
       { generation: "generation-b" },
       "review approval receipt generation binding is invalid",
+    ],
+    [
+      "policy binding",
+      { policy_version: "agentera.personalGlossaryMiningPolicy.v2" },
+      "review approval receipt policy binding is invalid",
     ],
     [
       "stale freshness",
@@ -852,6 +907,46 @@ describe("personal glossary review approval receipts", () => {
     ).toContain(expected);
   });
 
+  it.each(["agent", "model", "imported_record", "generic_consent"])(
+    "does not let %s self-assert current-user approval",
+    (subject) => {
+      expect(
+        validatePersonalReviewApprovalReceipt(reviewReceipt({ subject }), reviewVerification),
+      ).toContain("review approval receipt subject is not the trusted current user");
+    },
+  );
+
+  it("requires the exact signed receipt field set and allows only a bounded personal correction", () => {
+    const correction = reviewReceipt({
+      disposition: "correct",
+      corrected_meaning: "A corrected private meaning.",
+      corrected_scope: "personal",
+    });
+    expect(validatePersonalReviewApprovalReceipt(correction, reviewVerification)).toEqual([]);
+    expect(
+      validatePersonalReviewApprovalReceipt(
+        reviewReceipt({ unexpected: "field" }),
+        reviewVerification,
+      ),
+    ).toContain("review approval receipt has forbidden fields: unexpected");
+    expect(
+      validatePersonalReviewApprovalReceipt(
+        reviewReceipt({ disposition: "correct", corrected_meaning: null, corrected_scope: "personal" }),
+        reviewVerification,
+      ),
+    ).toContain("review approval receipt corrected_meaning is invalid");
+    expect(
+      validatePersonalReviewApprovalReceipt(
+        reviewReceipt({
+          disposition: "correct",
+          corrected_meaning: "A corrected private meaning.",
+          corrected_scope: "project",
+        }),
+        reviewVerification,
+      ),
+    ).toContain("review approval receipt corrected_scope is invalid");
+  });
+
   it("allows only an exact replay as a no-op and rejects a changed nonce replay", () => {
     const receipt = reviewReceipt();
     const consumed = new Map([[receipt.nonce, personalReviewApprovalReceiptDigest(receipt)]]);
@@ -868,6 +963,19 @@ describe("personal glossary review approval receipts", () => {
       validatePersonalReviewApprovalReceipt(changed, {
         ...reviewVerification,
         consumedReceiptDigests: consumed,
+      }),
+    ).toContain("review approval receipt nonce was replayed with changed content");
+
+    const privateReplayKey = "nonce-digest-a";
+    const privateIndex = new Map([[privateReplayKey, personalReviewApprovalReceiptDigest(receipt)]]);
+    expect(personalReviewApprovalReplayStatus(receipt, privateIndex, privateReplayKey)).toBe(
+      "exact_replay",
+    );
+    expect(
+      validatePersonalReviewApprovalReceipt(changed, {
+        ...reviewVerification,
+        consumedReceiptDigests: privateIndex,
+        replayNonceKey: privateReplayKey,
       }),
     ).toContain("review approval receipt nonce was replayed with changed content");
   });
