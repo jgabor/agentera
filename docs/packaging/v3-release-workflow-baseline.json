@@ -1,0 +1,535 @@
+{
+  "schemaVersion": "agentera.workflowBaseline.v1",
+  "recordedAt": "2026-08-09T17:48:38Z",
+  "status": "observed_with_machine_contention",
+  "purpose": "Record the current developer, package, CI, and release workflow baseline before the planned ownership and coordination changes.",
+  "authorityBoundary": "This file is observational evidence only. It does not set budgets, redefine gate ownership, qualify a candidate, grant approval, or authorize registry mutation.",
+  "source": {
+    "branch": "chore/publish-npm",
+    "head": "ce3bcf5b218b00da929ed0885679ec357434f2b0",
+    "featV3": "ce3bcf5b218b00da929ed0885679ec357434f2b0",
+    "originFeatV3": "340c3200c0a2d434288f8d17f5410332f8da8551",
+    "commitsAheadOfOriginFeatV3": 16,
+    "main": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
+    "branchBoundary": "feat/v3 remains the v3 source and main remains the frozen v2 source until the approved stable cutover.",
+    "trackedTreeAtMeasurementStart": "clean",
+    "intentionalUntrackedStateAtMeasurementStart": {
+      "plan": "lsftqiwiki",
+      "planTasks": 13,
+      "reason": "The active plan was created before measurement and must remain writer-owned and uncommitted until task evaluation."
+    }
+  },
+  "authorities": {
+    "verificationPolicy": {
+      "path": "references/analysis/verification-policy.yaml",
+      "sha256": "62665c4492fa65cfe47b25ae292f0ca85e4fe35936000c641f3dafe430efd273"
+    },
+    "ciWorkflow": {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "ed93f429650053596308279a2765245a9a0a01d330ba300ef003271e177d2e41"
+    },
+    "publicationContract": {
+      "path": "references/adapters/package-publication.json",
+      "schemaVersion": "agentera.packagePublication.v2",
+      "sha256": "841d1191b839b92f61bbcd4881f7a02a4488e6c0c3cc6b1451d5c993506ffd04"
+    }
+  },
+  "methodology": {
+    "repetitions": 3,
+    "execution": "Serial. No measured path overlapped another measured path.",
+    "wallClock": "Bash TIMEFORMAT real seconds around the public repository command.",
+    "cacheState": "Existing checkout dependencies and host caches were retained. Package timing therefore records the observed warmable developer path, not a cold-cache release candidate.",
+    "conditionSampling": "The retained load and memory samples cover the primary local, package, CI, and release measurement cycle. No dedicated load or memory snapshot was captured for the later localStagedHook repetitions; use those wall times only as functional path observations on the same identified host and toolchain.",
+    "statistics": "Minimum, median, and maximum are the ordered values from exactly three repetitions. Concurrent child durations are not summed into wall time.",
+    "logs": "Bounded command summaries and first-failure fingerprints were retained here. Raw logs were not added to the repository."
+  },
+  "machine": {
+    "os": "Arch Linux rolling",
+    "kernel": "Linux 7.1.5-2-cachyos x86_64",
+    "filesystem": "btrfs",
+    "filesystemUsePercentAtClose": 84,
+    "cpu": {
+      "model": "AMD Ryzen 7 9800X3D 8-Core Processor",
+      "physicalCores": 8,
+      "logicalCpus": 16,
+      "threadsPerCore": 2,
+      "maxMHz": 5455.9448
+    },
+    "memory": {
+      "totalBytes": 32672063488,
+      "availableBytesAtClose": 9224343552,
+      "swapTotalBytes": 32671526912,
+      "swapUsedBytesAtClose": 17631588352
+    },
+    "toolchain": {
+      "node": "22.23.2",
+      "npm": "12.0.2",
+      "pnpm": "10.30.3",
+      "corepack": "0.30.0",
+      "lefthook": "2.1.10",
+      "bun": "1.3.14",
+      "uv": "0.12.2",
+      "git": "2.55.0"
+    },
+    "loadAverageSnapshots": [
+      {
+        "label": "initial inventory",
+        "oneMinute": 33.02,
+        "fiveMinute": 28.98,
+        "fifteenMinute": 21.14
+      },
+      {
+        "label": "after local repetitions",
+        "oneMinute": 40.5,
+        "fiveMinute": 40.52,
+        "fifteenMinute": 30.79
+      },
+      {
+        "label": "measurement close",
+        "oneMinute": 22.41,
+        "fiveMinute": 27.34,
+        "fifteenMinute": 30.26
+      }
+    ],
+    "conditions": [
+      "All three retained load snapshots exceeded 16 logical CPUs. One-minute load ranged from 22.41 to 40.50.",
+      "Swap used at close was 17.63 GB.",
+      "Use timings as a contention baseline and functional fingerprint only. Do not promote them to performance budgets.",
+      "The direct pnpm 10.30.3 binary worked. The probe `corepack pnpm --version` failed before execution because Corepack 0.30.0 lacked the current pnpm signing key. This is a host toolchain defect, not a repository gate failure."
+    ]
+  },
+  "ownerInventory": {
+    "command": "node packages/cli/scripts/verify-lane.mjs inventory --json",
+    "totalPrimaryTestFiles": 235,
+    "primaryTestFiles": {
+      "source": 228,
+      "stress": 1,
+      "performance": 3,
+      "package": 3
+    },
+    "integrationRunners": {
+      "performance": 1
+    },
+    "mixedFiles": 0
+  },
+  "measurements": {
+    "local": {
+      "command": "pnpm -C packages/cli run verify:local",
+      "configuredOwners": ["source"],
+      "ownerInvocationsPerRepetition": 1,
+      "primaryTestFiles": 228,
+      "runs": [
+        {
+          "repetition": 1,
+          "wallSeconds": 372.693,
+          "exitCode": 1,
+          "passedTests": 3435,
+          "failedTests": 1,
+          "skippedTests": 1,
+          "firstFailure": "test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary"
+        },
+        {
+          "repetition": 2,
+          "wallSeconds": 464.054,
+          "exitCode": 1,
+          "passedTests": 3432,
+          "failedTests": 4,
+          "skippedTests": 1,
+          "firstFailure": "test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary",
+          "additionalFailures": [
+            "test/state/todoDocsEntities.test.ts: preserves 40, 60, and 100 realistic TODO rows across byte pressure, filters, and continuation without mutation timed out at 30 seconds",
+            "test/state/todoDocsEntities.test.ts: classifies TODO request-binding changes as cursor_invalid with current exact restart timed out at 30 seconds",
+            "test/state/todoDocsEntities.test.ts: rejects signed invalid TODO limits and preserves YAML and text cursor errors timed out at 30 seconds"
+          ]
+        },
+        {
+          "repetition": 3,
+          "wallSeconds": 433.161,
+          "exitCode": 1,
+          "passedTests": 3430,
+          "failedTests": 2,
+          "skippedTests": 5,
+          "firstFailure": "test/analytics/extractCorpusParity.test.ts beforeAll hook timed out at 30 seconds",
+          "additionalFailures": [
+            "test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary",
+            "test/state/todoDocsEntities.test.ts: rejects signed invalid TODO limits and preserves YAML and text cursor errors timed out at 30 seconds"
+          ]
+        }
+      ],
+      "wallSeconds": {
+        "minimum": 372.693,
+        "median": 433.161,
+        "maximum": 464.054
+      },
+      "outcome": "failed_repeatedly"
+    },
+    "localStagedHook": {
+      "command": "lefthook run pre-commit --file packages/cli/src/cli/prime.ts --no-stage-fixed",
+      "selectedFile": "packages/cli/src/cli/prime.ts",
+      "conditionEvidence": "No dedicated load or memory snapshot was captured for these repetitions. Their wall times are not suitable for performance-budget comparisons.",
+      "configuredOwners": ["build-and-compact", "py-ts-parity", "source"],
+      "ownerInvocationsPerRepetition": {
+        "build-and-compact": 1,
+        "py-ts-parity": 1,
+        "source": 1
+      },
+      "runs": [
+        {
+          "repetition": 1,
+          "wallSeconds": 318.037,
+          "exitCode": 1,
+          "ownerSeconds": {
+            "build-and-compact": 6.92,
+            "py-ts-parity": 0.03,
+            "source": 311.07
+          },
+          "passedTests": 3435,
+          "failedTests": 1,
+          "skippedTests": 1,
+          "firstFailure": "test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary"
+        },
+        {
+          "repetition": 2,
+          "wallSeconds": 331.598,
+          "exitCode": 1,
+          "ownerSeconds": {
+            "build-and-compact": 7.0,
+            "py-ts-parity": 0.03,
+            "source": 324.55
+          },
+          "passedTests": 3432,
+          "failedTests": 4,
+          "skippedTests": 1,
+          "firstFailure": "test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary",
+          "instrumentationEffect": "The first draft of this evidence file was temporarily under references/analysis during this repetition. That location added three retained-reference, source-inventory, and lifecycle-inventory failures. Moving observational evidence to docs/packaging removed all three before repetition 3."
+        },
+        {
+          "repetition": 3,
+          "wallSeconds": 293.906,
+          "exitCode": 1,
+          "ownerSeconds": {
+            "build-and-compact": 7.65,
+            "py-ts-parity": 0.04,
+            "source": 286.2
+          },
+          "passedTests": 3435,
+          "failedTests": 1,
+          "skippedTests": 1,
+          "firstFailure": "test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary"
+        }
+      ],
+      "wallSeconds": {
+        "minimum": 293.906,
+        "median": 318.037,
+        "maximum": 331.598
+      },
+      "outcome": "failed_repeatedly"
+    },
+    "package": {
+      "command": "pnpm -C packages/cli run verify:package",
+      "configuredOwners": ["package"],
+      "ownerInvocationsPerRepetition": 1,
+      "primaryTestFiles": 3,
+      "fixtureConstructionCyclesPerRepetition": 2,
+      "runs": [
+        {
+          "repetition": 1,
+          "wallSeconds": 611.675,
+          "exitCode": 0,
+          "passedTests": 37,
+          "failedTests": 0
+        },
+        {
+          "repetition": 2,
+          "wallSeconds": 386.578,
+          "exitCode": 0,
+          "passedTests": 37,
+          "failedTests": 0
+        },
+        {
+          "repetition": 3,
+          "wallSeconds": 307.207,
+          "exitCode": 0,
+          "passedTests": 37,
+          "failedTests": 0
+        }
+      ],
+      "wallSeconds": {
+        "minimum": 307.207,
+        "median": 386.578,
+        "maximum": 611.675
+      },
+      "outcome": "passed_repeatedly"
+    },
+    "ci": {
+      "representativeCommand": "pnpm -C packages/cli run verify:generated-overlap",
+      "generatedOverlapOriginsPerRepetition": {
+        "source": 1,
+        "package": 1,
+        "build": 1,
+        "generated-overlap": 1
+      },
+      "runs": [
+        {
+          "repetition": 1,
+          "wallSeconds": 302.428,
+          "exitCode": 1,
+          "firstFailure": "source: test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary"
+        },
+        {
+          "repetition": 2,
+          "wallSeconds": 311.201,
+          "exitCode": 1,
+          "firstFailure": "source: test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary"
+        },
+        {
+          "repetition": 3,
+          "wallSeconds": 366.599,
+          "exitCode": 1,
+          "firstFailure": "source: test/cli/repositoryNativeRetirement.test.ts rejects the required .opencode/package.json boundary"
+        }
+      ],
+      "wallSeconds": {
+        "minimum": 302.428,
+        "median": 311.201,
+        "maximum": 366.599
+      },
+      "currentWorkflowInvocationsPerJob": {
+        "source": 2,
+        "package": 2,
+        "build": 2,
+        "generated-overlap": 1,
+        "typecheck": 1,
+        "py-ts-parity": 1,
+        "compact": 1,
+        "stress": 0,
+        "performance": 0
+      },
+      "independentGateChecks": [
+        {
+          "gate": "typecheck",
+          "command": "pnpm -C packages/cli run typecheck",
+          "wallSeconds": 4.31,
+          "exitCode": 0,
+          "outcome": "pass"
+        },
+        {
+          "gate": "py-ts-parity",
+          "command": "bash packages/cli/scripts/py_ts_parity.sh --check --json",
+          "wallSeconds": 0.052,
+          "exitCode": 0,
+          "outcome": "pass",
+          "condition": "Local origin/main was already available and matched main."
+        },
+        {
+          "gate": "build",
+          "command": "pnpm -C packages/cli build",
+          "wallSeconds": 4.422,
+          "exitCode": 0,
+          "outcome": "pass"
+        },
+        {
+          "gate": "compact",
+          "command": "node packages/cli/dist/bin/agentera.js check compact",
+          "wallSeconds": 1.528,
+          "exitCode": 0,
+          "outcome": "pass"
+        }
+      ],
+      "outcome": "failed_repeatedly_in_source"
+    },
+    "release": {
+      "command": "pnpm -C packages/cli run verify:release",
+      "schemaVersion": "agentera.releaseConjunction.v1",
+      "gateIdentity": "5a5848fd40436b6e6d6cef1974e6b521ff002cc27b48b6d4646213d7e20453b7",
+      "configuredGateCount": 10,
+      "configuredGates": [
+        "source",
+        "stress",
+        "performance",
+        "package",
+        "generated-overlap",
+        "typecheck",
+        "build",
+        "compact",
+        "capability-contract",
+        "activation-conjunction"
+      ],
+      "actualInvocationsPerRepetition": {
+        "generated-overlap": 1,
+        "source": 1,
+        "package": 1,
+        "build": 1,
+        "stress": 1,
+        "typecheck": 1,
+        "performance": 0,
+        "compact": 0,
+        "capability-contract": 0,
+        "activation-conjunction": 0
+      },
+      "runs": [
+        {
+          "repetition": 1,
+          "wallSeconds": 410.74,
+          "reportedElapsedMs": 409714,
+          "exitCode": 1,
+          "firstFailure": "generated-overlap",
+          "completedPeers": ["stress", "typecheck"]
+        },
+        {
+          "repetition": 2,
+          "wallSeconds": 358.654,
+          "reportedElapsedMs": 355948,
+          "exitCode": 1,
+          "firstFailure": "generated-overlap",
+          "completedPeers": ["stress", "typecheck"]
+        },
+        {
+          "repetition": 3,
+          "wallSeconds": 318.933,
+          "reportedElapsedMs": 318158,
+          "exitCode": 1,
+          "firstFailure": "generated-overlap",
+          "completedPeers": ["stress", "typecheck"]
+        }
+      ],
+      "wallSeconds": {
+        "minimum": 318.933,
+        "median": 358.654,
+        "maximum": 410.74
+      },
+      "sideEffectsInEveryRun": {
+        "receipt": false,
+        "candidate": false,
+        "registry": false,
+        "activation": false,
+        "publication": false
+      },
+      "outcome": "failed_repeatedly_before_performance_and_reader_barriers",
+      "candidateBenchmark": {
+        "status": "not_run",
+        "reason": "The contract requires a clean committed tree. The active writer-owned plan and 13 task entities are intentionally untracked until evaluation, so a candidate benchmark in this worktree would be invalid.",
+        "substitute": "The repeated check-only release conjunction measures current release-source readiness without issuing receipts or candidates."
+      }
+    }
+  },
+  "currentCiClassification": {
+    "remoteReference": {
+      "workflowRun": 31306592778,
+      "workflow": "CI",
+      "head": "340c3200c0a2d434288f8d17f5410332f8da8551",
+      "createdAt": "2026-08-09T09:43:27Z",
+      "sourceResult": "21 failed tests in 12 of 228 files; 3417 passed; 1 skipped; 794.87 seconds",
+      "sandboxResult": "happy-path-clean failed because post-migration prime reported install_track source from the default app home",
+      "laterCliSteps": "Package, typecheck, parity, generated overlap, build, and compact were skipped after the source failure."
+    },
+    "failures": [
+      {
+        "id": "remote-source-non-todo-non-parity",
+        "classification": "resolved",
+        "scope": "13 historical assertions across doctor, lifecycle protocol, prime, profile acquisition, release qualification, pre-commit routing, plan entities, v2 compaction, and upgrade cutover/verify, plus four historical TODO assertions",
+        "evidence": "All passed in the three current full source runs. A CI-like isolated HOME rerun of the ten non-TODO, non-parity files also passed 251 of 251 tests."
+      },
+      {
+        "id": "remote-source-py-ts-parity-origin-main",
+        "classification": "present",
+        "scope": "test/scripts/pyTsParity.test.ts",
+        "evidence": "The test still requires origin/main, while .github/workflows/ci.yml still fetches main after the source suite. The local pass used a pre-existing origin/main ref and is not CI-faithful.",
+        "planCoverage": "Routine CI ownership and ordering are in scope for tasks vvkilxhcaq and tqgnmgxder."
+      },
+      {
+        "id": "remote-source-todo-capacity-timeouts",
+        "classification": "present",
+        "scope": "Three test/state/todoDocsEntities.test.ts cases: realistic 40/60/100 rows, request-binding cursor_invalid, and signed invalid limits",
+        "evidence": "The cases timed out in current full-source repetition 2; signed invalid limits also timed out in repetition 3.",
+        "planCoverage": "Capacity and machine-sensitive owner separation are in scope for task tsfaddhsrz."
+      },
+      {
+        "id": "current-source-repository-native-retirement",
+        "classification": "outside_plan",
+        "scope": "test/cli/repositoryNativeRetirement.test.ts",
+        "evidence": "Failed in all three full-source runs and all three generated-overlap runs because it rejects .opencode/package.json. AGENTS.md explicitly requires .opencode to retain a standalone npm dependency boundary.",
+        "effect": "This is the exact deterministic plan-external blocker for current source, generated-overlap, and release conjunction."
+      },
+      {
+        "id": "current-source-extract-corpus-timeout",
+        "classification": "outside_plan",
+        "scope": "test/analytics/extractCorpusParity.test.ts beforeAll hook",
+        "evidence": "Timed out only in full-source repetition 3 while host load exceeded logical CPU count and swap pressure was high.",
+        "effect": "Treat as a machine-condition failure, not as a resolved product result or a workflow budget."
+      },
+      {
+        "id": "sandbox-default-app-home",
+        "classification": "outside_plan",
+        "scope": "happy-path-clean and codex-plugin-vs-copied",
+        "evidence": "Both current L1 scenarios failed because post-migration prime reported install_track source from the default app home. The remote happy-path failure is therefore still present."
+      },
+      {
+        "id": "sandbox-noisy-app-home",
+        "classification": "outside_plan",
+        "scope": "noisy-app-home",
+        "evidence": "Current L1 failed with unrecognized notes.txt and a non-idempotent result."
+      },
+      {
+        "id": "sandbox-partial-only-runtime",
+        "classification": "outside_plan",
+        "scope": "partial-only-runtime",
+        "evidence": "Current L1 failed because apply produced no JSON after rejecting preview-only --only during apply."
+      }
+    ],
+    "passes": [
+      "Package owner passed all three repetitions.",
+      "Typecheck, top-level parity with origin/main present, build, and compact passed when run independently.",
+      "Sandbox L1 stable-safety and v1-md-blocked passed.",
+      "Stress and typecheck completed in all three release-conjunction repetitions."
+    ],
+    "unobserved": [
+      "Performance, compact, capability-contract, and activation-conjunction were correctly suppressed by release first-failure rules.",
+      "The exact three-run cold candidate benchmark was not run because intentional untracked plan state makes this worktree ineligible for candidate qualification."
+    ]
+  },
+  "contractMismatchesObserved": [
+    {
+      "classification": "present",
+      "documentation": "docs/packaging/v3-packaging.md says package verification builds, packs, extracts, and installs once.",
+      "implementation": "The current package fixture performs two build/pack/extract construction cycles for path independence and reuses checkout dependencies.",
+      "planCoverage": "Package-boundary ownership is in scope for task mpkjepcfsb."
+    },
+    {
+      "classification": "present",
+      "documentation": "docs/packaging/v3-packaging.md says source-plus-candidate qualification is under five minutes.",
+      "implementation": "The publication contract and release benchmark enforce sourceQualificationMs 420000, which is seven minutes.",
+      "planCoverage": "Qualification measurement and scheduling are in scope for task rlypnnwkub."
+    }
+  ],
+  "preservedReleaseInvariants": {
+    "interpretation": "These are bounded restatements for baseline review. references/adapters/package-publication.json remains the sole publication contract.",
+    "immutableCandidate": [
+      "Qualification starts from a clean committed tree and a new external candidate directory outside the checkout.",
+      "One regular non-symlink tarball is retained with mode 0444; immutable JSON receipts use mode 0400.",
+      "Dry-pack and retained observations must match. Candidate identity binds exact bytes, SHA-256, SHA-512 integrity, byte length, construction and exact-artifact smoke evidence, source receipt, source and metadata commits, adapter, package, version, registry, public tag, and candidate tag.",
+      "Every later phase revalidates containment, bytes, integrity, permissions, receipts, and current metadata."
+    ],
+    "approval": [
+      "Registry mutation requires immutable approval with scope registry-mutation and a bounded approving principal.",
+      "Approval binds the candidate digest, package, version, integrity, registry, and expected public tag. The candidate digest transitively binds the full artifact and provenance tuple; the CI attestation separately binds the source run ID.",
+      "Credentials, local config, branch push, source receipt, and CI success are not approval. CI also requires the exact transferred candidate and its attestation."
+    ],
+    "replay": [
+      "Absent state uploads the exact retained artifact once to the candidate tag. Matching staged or promoted state replays without upload.",
+      "Conflicting integrity, escaped or changed bytes, malformed state, a stale tag, or an already-ahead public tag fails before mutation.",
+      "Retries use the same candidate. They never rebuild, rerun source qualification, roll back, or move a tag backward. Matching replay does not require credentials."
+    ],
+    "provenance": [
+      "agentera.gitRef is an immutable 40-character source commit; candidate metadataCommit is qualification HEAD.",
+      "CI attestation binds candidate digest, source and metadata commits, repository, workflow reference, and numeric run ID.",
+      "Before protected approval, separate API-backed validation confirms the run event, conclusion, branch, head SHA, workflow identity, and candidate binding. The approved job checks out the same commit, downloads the artifact again, and rechecks the binding. OIDC provenance remains deferred."
+    ],
+    "convergence": [
+      "The ordered envelope stages retained bytes on the candidate tag, waits for exact integrity and smoke, runs independent exact-version L2 while the public tag is unchanged, promotes only forward, then waits for integrity and tag convergence plus final smoke.",
+      "Registry convergence uses six attempts with 5000 ms delay and rechecks compatibility each time.",
+      "The qualified publication envelope uses a monotonic clock, remains below 120000 ms, reconciles owner and unattributed time, retains the first failure, suppresses later phases, and records noRollback true.",
+      "The timing receipt binds candidate digest, metadata commit, package, version, artifact SHA-256 and integrity, and source run ID."
+    ]
+  }
+}

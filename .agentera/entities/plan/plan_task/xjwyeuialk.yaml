@@ -1,0 +1,25 @@
+id: xjwyeuialk
+artifact: plan
+record:
+  name: Synchronize typed project state and close the plan
+  depends_on:
+    - hqegoldrmz
+    - kfelyrckkn
+    - tsfaddhsrz
+    - mpkjepcfsb
+    - vvkilxhcaq
+    - tqgnmgxder
+    - hiealiomfd
+    - itaydxofpc
+    - rlypnnwkub
+    - tufhsqjkfe
+    - bhohnsdols
+    - vliwhnkyzk
+  status: pending
+  acceptance:
+    - GIVEN all prior tasks WHEN final state is reconciled THEN every task has retained evaluation and the plan reflects its real terminal status.
+    - GIVEN remote authorization is unavailable WHEN task 12 is attempted THEN it is recorded blocked, completed task evaluations remain durable, and the plan stays open.
+    - GIVEN overlapping TODOs WHEN outcomes are compared THEN satisfied items are resolved through typed writers and unrelated items remain unchanged.
+    - GIVEN closeout evidence WHEN project state is updated THEN only durable outcomes are recorded and attempt-level receipt data is omitted.
+    - GIVEN final validation WHEN state and artifact checks run THEN reconciliation is clean and no writer-owned entity was edited directly.
+  plan: lsftqiwiki

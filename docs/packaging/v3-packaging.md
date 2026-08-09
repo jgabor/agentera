@@ -272,6 +272,10 @@ output. The contract limits preflight to under 30 seconds and measured
 source-plus-candidate qualification to under five minutes. Do not use a timeout
 or a different cache/network state as performance evidence.
 
+The observed pre-change workflow timings and failure classifications are in
+`docs/packaging/v3-release-workflow-baseline.json`. That file is evidence only;
+it is not a budget, candidate receipt, approval, or publication authority.
+
 ## Generated-output and verification ownership
 
 `references/analysis/verification-policy.yaml` is the executable authority for

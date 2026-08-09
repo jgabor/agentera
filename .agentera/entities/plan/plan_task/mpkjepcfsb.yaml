@@ -1,0 +1,14 @@
+id: mpkjepcfsb
+artifact: plan
+record:
+  name: Refocus package verification on the distribution boundary
+  depends_on:
+    - hqegoldrmz
+    - tsfaddhsrz
+  status: pending
+  acceptance:
+    - GIVEN source/package command parity WHEN ownership changes THEN all 190 bootstrap rows, classifications, child-boundary checks, and protected roots remain covered by source integration.
+    - GIVEN package verification WHEN it runs THEN it checks construction safety, deterministic bytes, layout, integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke.
+    - GIVEN task 1 measurements WHEN the revised matrix runs THEN it meets the governed wall-time budget without weakening row-level evidence.
+    - GIVEN each moved behavior WHEN tested THEN one success and one failure path remain explicit, including rejection of a packed source map.
+  plan: lsftqiwiki

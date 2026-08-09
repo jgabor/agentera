@@ -1,0 +1,13 @@
+id: hiealiomfd
+artifact: plan
+record:
+  name: Gate prerelease preparation on source readiness
+  depends_on:
+    - hqegoldrmz
+  status: pending
+  acceptance:
+    - GIVEN no current valid source receipt WHEN development preparation is requested THEN version-bearing files remain unchanged.
+    - GIVEN a valid normalized source receipt and explicit target WHEN preparation runs THEN only governed development metadata changes.
+    - GIVEN metadata-only preparation WHEN source identity is rechecked THEN the source receipt remains reusable and volatile documentation provenance is absent.
+    - GIVEN stable preparation and invalid receipts WHEN tested THEN stable behavior remains unchanged and tampering fails before effects.
+  plan: lsftqiwiki

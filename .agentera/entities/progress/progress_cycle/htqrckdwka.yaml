@@ -1,0 +1,16 @@
+id: htqrckdwka
+artifact: progress
+record:
+  timestamp: 2026-08-09 19:43
+  type: docs
+  phase: build
+  what: Corrected the workflow baseline evidence location and precision after independent review.
+  context:
+    intent: Keep the pre-change measurements and release invariant snapshot accurate without adding observational evidence to the published runtime bundle.
+    constraints: Preserve the publication contract as sole authority, keep task hqegoldrmz in progress, and do not commit before evaluator PASS.
+    scope: docs/packaging/v3-release-workflow-baseline.json and docs/packaging/v3-packaging.md supersede the temporary references/analysis location named by progress cycle mxqjzamiyt.
+  inspiration: Independent review separated approval fields, attestation contents, API run validation, and observed machine conditions.
+  discovered: A JSON evidence file under references enters the published bundle and closed retained-reference inventory. Its temporary location caused three source failures during staged-hook repetition 2.
+  verified: Moved the evidence to docs/packaging with apply_patch. Staged-hook repetition 3 then returned to the single pre-existing .opencode/package.json failure at 293.906 seconds. JSON parse and format, Markdown lint, and diff checks passed.
+  next: Independent evaluator PASS is required before task hqegoldrmz can be completed or committed.
+  publication_order: 125

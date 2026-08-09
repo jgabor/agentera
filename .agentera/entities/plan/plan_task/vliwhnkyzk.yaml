@@ -1,0 +1,16 @@
+id: vliwhnkyzk
+artifact: plan
+record:
+  name: Activate and safely rehearse protected remote release operations
+  depends_on:
+    - rlypnnwkub
+    - tufhsqjkfe
+    - bhohnsdols
+  status: pending
+  acceptance:
+    - GIVEN explicit authorization WHEN workflows are registered THEN main remains default while qualification dispatch selects feat/v3.
+    - GIVEN benchmark scheduling is authorized WHEN its default-branch launcher runs THEN it explicitly checks out feat/v3 and remains credential-free and non-blocking.
+    - GIVEN approved reviewer and secret scope WHEN the environment is configured THEN npm credentials are available only after protected approval.
+    - GIVEN a non-publishing rehearsal WHEN qualification completes THEN branch, SHA, receipt digest, candidate bytes, and mode all match.
+    - GIVEN publication rehearsal WHEN it reaches the environment THEN it waits for review and is cancelled before npm mutation.
+  plan: lsftqiwiki

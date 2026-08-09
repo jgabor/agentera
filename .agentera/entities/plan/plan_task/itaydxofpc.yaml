@@ -1,0 +1,15 @@
+id: itaydxofpc
+artifact: plan
+record:
+  name: Coordinate release readiness with one execution per gate
+  depends_on:
+    - tsfaddhsrz
+    - mpkjepcfsb
+    - hiealiomfd
+  status: pending
+  acceptance:
+    - GIVEN a normal development release WHEN readiness runs THEN each source owner and candidate construction executes once.
+    - GIVEN valid source or candidate receipts WHEN readiness resumes THEN evidence is reused; stale or mismatched evidence fails before effects.
+    - GIVEN the metadata review boundary WHEN coordination pauses and resumes THEN no automatic commit, approval, artifact rebuild, or registry mutation occurs.
+    - GIVEN coordinator paths WHEN tested THEN fresh, reused, and rejected evidence each has an explicit result.
+  plan: lsftqiwiki

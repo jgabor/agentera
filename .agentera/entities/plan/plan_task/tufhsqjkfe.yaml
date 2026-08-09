@@ -1,0 +1,16 @@
+id: tufhsqjkfe
+artifact: plan
+record:
+  name: Preserve exact candidates through protected workflow handoff
+  depends_on:
+    - vvkilxhcaq
+    - itaydxofpc
+  status: pending
+  acceptance:
+    - GIVEN a qualified candidate WHEN transferred through GitHub artifacts THEN its bytes and required read-only mode remain unchanged and validator-proven.
+    - GIVEN a publication request WHEN source binding is checked THEN run ID, repositories, workflow name and path, event, conclusion, branch, and SHA match the governed API record.
+    - GIVEN candidate validation before approval and after protected download WHEN binding is checked THEN candidate.metadataCommit equals workflow_run.head_sha.
+    - GIVEN human approval is pending WHEN publication starts THEN credentials and registry mutation remain behind the protected environment.
+    - GIVEN normal release guidance WHEN a maintainer selects publication THEN protected remote publication is the only normal path and local publication is explicit emergency recovery.
+    - GIVEN workflow and transport rules WHEN tested THEN valid transfer passes and changed mode, bytes, run identity, branch, or SHA fail.
+  plan: lsftqiwiki

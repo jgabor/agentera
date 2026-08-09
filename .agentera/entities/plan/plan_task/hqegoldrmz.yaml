@@ -1,0 +1,22 @@
+id: hqegoldrmz
+artifact: plan
+record:
+  name: Establish workflow baselines and preserved invariants
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN representative local, package, CI, and release paths WHEN measured repeatedly THEN wall time, owner counts, and machine conditions are recorded.
+    - GIVEN current feat/v3 WHEN CI-equivalent owners run THEN each existing failure is classified as present, resolved, or outside this plan.
+    - GIVEN release contracts WHEN baselines are recorded THEN immutable candidate, approval, replay, provenance, and convergence invariants remain explicit.
+  plan: lsftqiwiki
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-hqegoldrmz-1
+      source: agentera.audit.v1|plan=lsftqiwiki|task=hqegoldrmz|evidence=docs/packaging/v3-release-workflow-baseline.json|publication-contract-sha256=841d1191b839b92f61bbcd4881f7a02a4488e6c0c3cc6b1451d5c993506ffd04|verdict=PASS
+      recorded_at: 2026-08-09 19:58
+      writer_command: agentera state plan record-evaluation

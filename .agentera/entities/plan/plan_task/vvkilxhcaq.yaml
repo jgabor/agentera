@@ -1,0 +1,14 @@
+id: vvkilxhcaq
+artifact: plan
+record:
+  name: Deduplicate routine CI and establish one owner per gate
+  depends_on:
+    - tsfaddhsrz
+    - mpkjepcfsb
+  status: pending
+  acceptance:
+    - GIVEN routine CI WHEN generated overlap runs THEN source, package, and build each execute exactly once.
+    - GIVEN the deduplicated DAG WHEN CI completes THEN typecheck, parity, compact, stress, performance, and capacity evidence retain their declared coverage.
+    - GIVEN current feat/v3 WHEN required CI runs THEN it is green or reports one exact plan-external blocker without hiding failures.
+    - GIVEN each removed duplicate WHEN workflow tests run THEN one positive and one forbidden-invocation case pass.
+  plan: lsftqiwiki

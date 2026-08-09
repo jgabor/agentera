@@ -1,0 +1,17 @@
+id: mxqjzamiyt
+artifact: progress
+record:
+  timestamp: 2026-08-09 19:23
+  type: docs
+  phase: build
+  what: Established a version-bound workflow baseline and preserved release-invariant snapshot before release and verification ownership changes.
+  context:
+    intent: Record reproducible pre-change workflow measurements, classify current CI failures, and keep immutable candidate, approval, replay, provenance, and convergence rules explicit.
+    constraints: Do not push, publish, tag, change remote settings or credentials, bypass hooks, exceed suite version 3.0.0, edit writer-owned entities directly, or start later plan tasks.
+    unknowns: Measured wall times are provisional because host load exceeded logical CPU count and swap pressure was high. Performance and reader barriers were suppressed after the required first failure, and full cold candidate qualification requires a clean committed tree.
+    scope: references/analysis/release-benchmark.json, one packaging-guide discovery link, typed progress, and task hqegoldrmz in-progress state only.
+  inspiration: Used the verification policy, current CI workflow, publication contract, latest remote CI run, and repeated current-HEAD execution as separate authorities for ownership, behavior, and observation.
+  discovered: The deterministic current blocker is the source retirement test rejecting the required .opencode package boundary. Three historical TODO timeouts remain load-sensitive, CI still fetches origin/main after the source test that requires it, and four sandbox L1 scenarios remain outside this plan. Package verification passes but performs two construction cycles. Full cold candidate benchmarking is ineligible while the intentional plan entities remain untracked.
+  verified: Repeated local source at 372.693, 464.054, and 433.161 seconds; package at 611.675, 386.578, and 307.207 seconds with 37 of 37 tests passing each time; generated overlap at 302.428, 311.201, and 366.599 seconds; and the release conjunction at 410.740, 358.654, and 318.933 seconds with one stable gate identity, the same first failure, and no effects. Typecheck, parity, build, compact, isolated-home 251-test fingerprint, JSON parsing and formatting, Markdown lint, and diff checks passed.
+  next: Independent audit must record PASS before task hqegoldrmz can be completed or the coherent task result committed.
+  publication_order: 124

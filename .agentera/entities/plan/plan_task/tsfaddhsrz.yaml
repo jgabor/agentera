@@ -1,0 +1,13 @@
+id: tsfaddhsrz
+artifact: plan
+record:
+  name: Separate source, performance, and capacity ownership
+  depends_on:
+    - hqegoldrmz
+  status: pending
+  acceptance:
+    - GIVEN correctness-shaped response-cap coverage WHEN owners run THEN it executes with deterministic source tests.
+    - GIVEN machine-sensitive performance evidence WHEN produced authoritatively THEN it runs alone with one worker on the pinned remote runner and records runner identity.
+    - GIVEN the large-capacity scenario WHEN qualification runs THEN it executes serially after performance and before reader checks.
+    - GIVEN each ownership rule WHEN tested THEN one accepted and one rejected routing case pass.
+  plan: lsftqiwiki

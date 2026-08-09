@@ -1,0 +1,45 @@
+id: lsftqiwiki
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-09
+    status: open
+    reviewed: 2026-08-09
+    critic_issues: 8 found, 8 addressed, 0 dismissed
+    revised: Strengthened provenance, scheduling authorization, local-release policy, worker limits, remote performance authority, package assertions, progress-write tests, and per-cycle state evaluation.
+    title: "Plan: Streamline release and verification workflows"
+  what: Implement the ten developer-experience improvements from the release workflow analysis across release qualification, GitHub automation, local hooks, test ownership, package verification, and durable project state.
+  why: Recover developer time and workstation responsiveness while retaining one trustworthy source qualification, one immutable candidate, explicit approval, exact-artifact publication, replay, and registry convergence.
+  constraints: Keep packages/cli as the only product surface. Preserve feat/v3 as the v3 release source, main as the default and frozen v2 branch until cutover, all candidate and registry safety boundaries, typed state writers, and existing evidence. Do not push, publish, change GitHub settings or secrets, bypass hooks, or exceed suite version 3.0.0 without explicit authorization. Add no dependency or duplicate authority without demonstrated need.
+  overall_acceptance: GIVEN the plan is complete WHEN normal local, CI, qualification, and protected release paths run THEN each authoritative gate executes once, local feedback meets its measured budget, machine-sensitive evidence is isolated, package verification owns only distribution behavior, prerelease identity is assigned only after source readiness, benchmark evidence is non-blocking, remote publication remains approval-bound, and project state records durable outcomes rather than attempts.
+  scope:
+    included:
+      - Release preparation, source and candidate qualification, benchmark policy, and maintainer guidance.
+      - Routine CI, protected qualification and publication workflows, and mode-preserving candidate transfer.
+      - Pre-commit routing and measured local budgets.
+      - Verification taxonomy, performance isolation, capacity sequencing, and package-boundary ownership.
+      - Build progress requirements, overlapping TODO reconciliation, changelog, and governed version surfaces.
+    excluded:
+      - npm publication, stable 3.0.0 cutover, default-branch replacement, or backward tag movement.
+      - Unrelated CI defects unless they block plan acceptance.
+      - Rewriting historical progress, receipts, decisions, health records, or release evidence.
+      - New runtime dependencies or a replacement CI/release platform.
+    deferred:
+      - Any broader transactional TODO work or expansion of progress production to other capabilities.
+  design: Establish measurements and invariants first. Finalize verification ownership before changing CI and local routing. Simplify preparation and qualification after the gate set is stable, then separate benchmark measurement from release authority. Preserve candidate bytes through protected remote handoff. Apply release metadata only after the completed source is ready. Finish with an authorization-gated remote rehearsal and one typed state reconciliation. Record each task evaluation with its substantive cycle; do not defer evaluation evidence to final closeout.
+  unknowns:
+    - question: What package-matrix wall-time budget is both material and stable on the intended runner?
+      affects_task: 4
+      resolve_by: Task 1 records repeated baseline timings and sets the smallest threshold with observed headroom.
+    - question: Does current feat/v3 still reproduce the remote CI failures seen on its older pushed commit?
+      affects_task: 5
+      resolve_by: Task 1 runs the current CI-equivalent owners and records either a clean baseline or the exact blocking failure.
+    - question: Will the maintainer authorize narrow default-branch workflow registration and protected environment configuration?
+      affects_task: 12
+      resolve_by: Obtain explicit authorization, reviewer identities, and secret scope before any remote mutation; otherwise leave task 12 blocked.
+    - question: Should a successful release create one minimal progress milestone when receipts already own the technical evidence?
+      affects_task: 2
+      resolve_by: Apply the durable-event rule during task 2; default to no entry unless future execution depends on the milestone.
+  surprises:
+    []

@@ -1,0 +1,21 @@
+id: bhohnsdols
+artifact: plan
+record:
+  name: Apply governed delivery metadata after readiness
+  depends_on:
+    - kfelyrckkn
+    - tsfaddhsrz
+    - mpkjepcfsb
+    - vvkilxhcaq
+    - tqgnmgxder
+    - hiealiomfd
+    - itaydxofpc
+    - rlypnnwkub
+    - tufhsqjkfe
+  status: pending
+  acceptance:
+    - GIVEN all implementation source is ready WHEN delivery metadata is prepared THEN the next registry-safe development target is explicit and assigned once.
+    - GIVEN the versioning policy WHEN surfaces are synchronized THEN suite metadata remains 3.0.0 and no unapproved stable cutover occurs.
+    - GIVEN user-facing behavior changes WHEN the changelog is updated THEN it describes outcomes without receipts, timings, internal state, or agent activity.
+    - GIVEN release metadata validation WHEN pass and stale-target fixtures run THEN the valid target passes and invalid movement fails before effects.
+  plan: lsftqiwiki

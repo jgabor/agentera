@@ -1,0 +1,14 @@
+id: tqgnmgxder
+artifact: plan
+record:
+  name: Enforce fast owner-aware local staged verification
+  depends_on:
+    - vvkilxhcaq
+  status: pending
+  acceptance:
+    - GIVEN state or documentation-only changes WHEN pre-commit runs THEN only relevant format, schema, lint, or compact checks run within 10 seconds.
+    - GIVEN ordinary source changes WHEN pre-commit runs THEN targeted deterministic feedback and typechecking finish within 60 seconds on the baseline machine.
+    - GIVEN interactive staged checks WHEN tests run THEN they use at most two workers; authoritative machine-sensitive and global owners remain CI-owned.
+    - GIVEN specialized or global owners WHEN staged THEN routing remains owner-correct and authoritative execution occurs in required CI, not a local release lane.
+    - GIVEN malformed content or a budget overrun WHEN hooks run THEN they fail without a bypass; route tests cover pass and fail cases.
+  plan: lsftqiwiki

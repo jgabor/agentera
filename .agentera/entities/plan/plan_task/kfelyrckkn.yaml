@@ -1,0 +1,13 @@
+id: kfelyrckkn
+artifact: plan
+record:
+  name: Restrict progress state to durable outcomes
+  depends_on:
+    - hqegoldrmz
+  status: pending
+  acceptance:
+    - GIVEN an ordinary build or release attempt WHEN no durable project truth changes THEN no progress append is required.
+    - GIVEN a durable implementation outcome or required glossary caveat WHEN recorded THEN the typed progress writer remains available and authoritative.
+    - GIVEN qualification or publication receipts WHEN progress is considered THEN timings, integrity, digests, retries, and replay remain receipt-owned.
+    - GIVEN release-attempt detail WHEN write guidance is validated THEN duplicate receipt content is not authorized as progress; required-progress and no-progress cases pass.
+  plan: lsftqiwiki

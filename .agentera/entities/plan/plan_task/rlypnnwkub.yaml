@@ -1,0 +1,15 @@
+id: rlypnnwkub
+artifact: plan
+record:
+  name: Make qualification benchmarking non-blocking and ready for scheduling
+  depends_on:
+    - vvkilxhcaq
+    - itaydxofpc
+  status: pending
+  acceptance:
+    - GIVEN the normal release checklist WHEN followed THEN no benchmark receipt or three-run benchmark is required.
+    - GIVEN scheduled or on-demand measurement WHEN it runs THEN exactly three cold qualifications execute against feat/v3 and retain timing trends.
+    - GIVEN benchmark automation WHEN inspected THEN it has no npm credential, approval, publication, or registry-mutation path.
+    - GIVEN default-branch authorization is absent WHEN benchmark automation is delivered THEN it remains visibly on-demand and is not claimed as scheduled.
+    - GIVEN release and benchmark contracts WHEN tested THEN required qualification passes without benchmark evidence and benchmark failure remains visible.
+  plan: lsftqiwiki
