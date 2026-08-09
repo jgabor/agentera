@@ -1,0 +1,16 @@
+id: yjnhnrynzh
+artifact: progress
+record:
+  timestamp: 2026-08-09 10:02
+  type: docs
+  phase: build
+  what: Corrected Unreleased documentation for targeted plan replacement and unsafe TODO activation.
+  context:
+    intent: Repair the cold-reader changelog gap while keeping Task cecyfpwsti in_progress for re-audit.
+    constraints: Do not rerun green implementation or full qualification; do not close the plan or write health; do not publish, tag, or push.
+    unknowns: Independent re-audit owns the final task verdict and all terminal plan actions.
+    scope: CHANGELOG.md, its bundled-authority classification, focused validation, and required release provenance.
+  discovered: The prior cycle treated package documentation as sufficient, but Unreleased did not state the targeted replacement recovery or unsafe inactive activation rejection.
+  verified: CHANGELOG.md now names agentera state plan replace targeted recovery and agentera state todo activate unsafe inactive rejection. The focused runtime authority policy passed 194 tests; markdownlint and local compact passed; release-metadata validation passed after provenance synchronization. Prior full qualification evidence remains unchanged and was not rerun.
+  next: Leave Task cecyfpwsti in_progress for bounded independent re-audit; do not alter health or the plan lifecycle.
+  publication_order: 115
