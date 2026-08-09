@@ -1,0 +1,15 @@
+id: yutmybiewq
+artifact: decisions
+record:
+  date: 2026-08-09
+  question: What writer replay-test fan-out is retained?
+  context: Task zvldjqtwpc compares public writer replay tests with scheduled stale-lock stress.
+  alternatives:
+    - name: Two simultaneous clients
+      status: chosen
+    - name: Eight simultaneous clients
+      status: rejected
+  choice: Two simultaneous clients
+  reasoning: All public writes use one exclusive per-project lock and settle as owner or replay. Two clients expose duplicate publication, incorrect replay, divergent receipts, and lost distinct writes. Eight clients add fan-out/load sensitivity without a distinct current semantic invariant. Retain the scheduled stress test’s 100 repeated two-client stale-lock reclaimers unchanged; add N-client liveness or fairness only with an explicit invariant.
+  confidence: firm
+  feeds_into: Plan task zvldjqtwpc
