@@ -146,9 +146,9 @@
   outside the contract. One bounded activation transaction rejects duplicate
   ID-less rows before requiring canonical IDs for all newly managed rows.
 - Fixed TODO cutover and activation to require a complete one-to-one inventory,
-  preserve Markdown-owned status and order, and block implicit mutation. The
-  effect-complete `agentera state todo activate --dry-run` preview now binds
-  its confirmed apply to the exact reported targets and effect digest.
+  preserve Markdown-owned status and order, and block implicit mutation. Unsafe inactive
+  `agentera state todo activate --dry-run` and confirmed activation reject
+  resurrection or duplicate effects before an effect digest, apply command, or project mutation.
 - Fixed unsafe TODO reconciliation recovery and reporting. `agentera state todo
   repair` collapses only proven duplicate or stale projections without reopening
   completed work, while `agentera prime`, `agentera doctor`, and `agentera check
@@ -213,7 +213,7 @@
 - Added persisted plan identity across active-to-archive transitions, deterministic read-only identity for legacy plans, explicit lifecycle provenance, mirrored-path reporting, and structured ambiguity failures for identity collisions.
 - Added `agentera state plan tasks list` and `agentera state plan tasks get --task N` for bounded active-plan task retrieval with declared task-number order, opaque snapshot cursors, structured not-found and compatibility errors, and exact omission recovery in text and JSON plan output.
 - Added `agentera state decisions amend --id ID --base-sha256 HASH [--question ... --context ... --alternative-chosen ... --alternative-rejected ... --choice ... --reasoning ... --confidence firm|provisional|exploratory --feeds-into ...] [--dry-run] --format json`: validates and publishes one immutable decision revision entity. Effective reads compose the base, ordered revisions, and current satisfaction entity; stale-base and same-base conflicts fail before publication, and identical retries converge.
-
+- Added `agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json` for targeted recovery of competing open plans; it atomically selects the named successor, rejects invalid requests without effects, and recovers interruptions without partial state.
 - Added an executable bounded-retrieval authority and reserved CLI grammar for plan tasks, plans, and objective-scoped experiments, including stable and legacy identity rules, experiment `0`, opaque cursors, explicit omissions, and structured compatibility errors; retrieval execution remains staged for subsequent tasks.
 - Added one shared skill at `~/.agents/skills/agentera` plus the CLI and entity-backed project state as the active integration contract; host-native plugin, hook, agent, and package surfaces are not shipped.
 - Defined native-resource cleanup evidence for supported hosts and explicit `agentera upgrade --legacy-cleanup RESOURCE_ID --dry-run|--yes` selection. Cleanup retains only ledger-proven whole resources; Codex descriptor reports preserve shared configuration keys as report-only action-required items without durable key-level ownership.

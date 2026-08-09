@@ -1047,32 +1047,32 @@ describe("retired runtime current-surface policy", () => {
       .map(({ emitted_classification }) => emitted_classification)))
       .toEqual(new Set(["producer", "non_producer"]));
     expect(inventory.census).toEqual(expect.objectContaining({
-      scanned_scalars: 14769,
-      invocation_occurrences: 543,
+      scanned_scalars: 14776,
+      invocation_occurrences: 544,
       canonical_development: 288,
       stable_pair: 2,
-      noncanonical_occurrences: 253,
-      noncanonical_scalars: 202,
+      noncanonical_occurrences: 254,
+      noncanonical_scalars: 203,
       noncanonical_categories: {
         identity_only: 10,
-        argument_bearing: 172,
+        argument_bearing: 173,
         other_vocabulary: 20,
       },
       classification_uses: {
         bounded_descriptive: 15,
-        exact_exemption: 181,
+        exact_exemption: 182,
       },
-      backticked_argument_contexts: 187,
+      backticked_argument_contexts: 188,
     }));
     const registry = YAML.parse(read(packageRegistryPath));
     const authority = registry.records[0].bootstrap_command_authority;
     const declarations = authority.scalar_classifications;
     expect(authority).not.toHaveProperty("exemptions");
-    expect(declarations).toHaveLength(196);
+    expect(declarations).toHaveLength(197);
     expect(Object.fromEntries(["identity_only", "argument_bearing", "other_vocabulary"].map((category) => [
       category,
       declarations.filter((entry: any) => entry.category === category).length,
-    ]))).toEqual({ identity_only: 10, argument_bearing: 167, other_vocabulary: 19 });
+    ]))).toEqual({ identity_only: 10, argument_bearing: 168, other_vocabulary: 19 });
     expect(Object.fromEntries(["bounded_descriptive", "exact_exemption"].map((classification) => [
       classification,
       declarations.filter((entry: any) => entry.classification === classification).length,
@@ -1136,7 +1136,7 @@ describe("retired runtime current-surface policy", () => {
       "references/cli/update-channels.yaml",
     ]);
     const added = declarations.filter((entry: any) => addedPaths.has(entry.path));
-    expect(added).toHaveLength(161);
+    expect(added).toHaveLength(162);
 
     const mutations: Array<[string, (entries: any[]) => void, string]> = [
       ["missing", (entries) => {
@@ -1157,7 +1157,7 @@ describe("retired runtime current-surface policy", () => {
         repoRoot,
         new Map([[packageRegistryPath, YAML.stringify(changed)]]),
       );
-      expect(violations.filter((entry) => entry.endsWith(`: ${violation}`)), label).toHaveLength(161);
+      expect(violations.filter((entry) => entry.endsWith(`: ${violation}`)), label).toHaveLength(162);
     }
   });
 
