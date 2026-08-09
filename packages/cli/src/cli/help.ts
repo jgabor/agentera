@@ -156,6 +156,7 @@ export function printStateHelp(sub?: string): string {
        "Only the displayed bare-ID selectors are accepted.",
        "Plan create rejects an open predecessor unless --force can archive exactly one unchanged; create --force records that predecessor's bare ID in successor.previous_plan_archived.",
        "Targeted replacement is explicit: state plan replace --predecessor ID --successor ID, or --predecessor ID --input PLAN.yaml to create the successor. It changes only the named predecessor lifecycle and derived successor lineage.",
+       "Competing open-plan diagnostics retain bounded bare IDs and require explicit roles: state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json. They never infer a role from list order.",
        "Archive completed plans normally. Archive an unfinished selected plan with --force; an implicit archive with multiple open plans rejects without effects.",
        "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
       "Legacy plan identity collisions return a structured ambiguous error.",

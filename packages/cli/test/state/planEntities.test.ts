@@ -20,6 +20,7 @@ import { entityListFamily } from "../../src/state/entityRetrievalHelp.js";
 
 const roots: string[] = [];
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
+const TARGETED_REPLACEMENT_RECOVERY = "npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json";
 const supersessionWorker = fileURLToPath(new URL("./planSupersessionWorker.mjs", import.meta.url));
 const appendWorker = fileURLToPath(new URL("./planAppendWorker.mjs", import.meta.url));
 
@@ -549,6 +550,80 @@ describe("plan and task entity authority", () => {
     expect(validateEntityState(root)).toMatchObject({ valid: true });
   });
 
+  it("selects a targeted replacement successor across prime, dashboard, and direct reads while retaining predecessor history", () => {
+    const root = project();
+    const predecessor = create(root, "selection predecessor", true);
+    const successor = openPlanFixture(root, 760, "selection successor");
+    const replaced = capture(root, ["state", "plan", "replace", "--predecessor", predecessor.id, "--successor", successor.id, "--format", "json"]);
+    expect(replaced.rc, replaced.err || replaced.out).toBe(0);
+
+    for (const capability of ["plan", "orchestrate", "status"] as const) {
+      const result = capture(root, ["prime", "--context", capability, "--format", "json"]);
+      expect(result.rc, result.err || result.out).toBe(0);
+      const context = JSON.parse(result.out).capability_context.context;
+      const selected = capability === "status" ? context.status_context.plan : context.plan;
+      expect(selected).toMatchObject({ id: successor.id, artifact: "plan", active: true, status: "open" });
+    }
+    const dashboard = capture(root, ["prime", "--dashboard", "--format", "json"]);
+    expect(dashboard.rc, dashboard.err || dashboard.out).toBe(0);
+    expect(JSON.parse(dashboard.out).capability_context.context.status_context.plan).toMatchObject({ id: successor.id, artifact: "plan", active: true, status: "open" });
+
+    const open = capture(root, ["state", "plan", "list", "--status", "open", "--limit", "100", "--format", "json"]);
+    expect(open.rc, open.err || open.out).toBe(0);
+    expect(JSON.parse(open.out).entries.map((entry: any) => entry.id)).toEqual([successor.id]);
+    const archived = capture(root, ["state", "plan", "list", "--status", "archived", "--limit", "100", "--format", "json"]);
+    expect(archived.rc, archived.err || archived.out).toBe(0);
+    expect(JSON.parse(archived.out).entries.map((entry: any) => entry.id)).toContain(predecessor.id);
+    const successorRead = capture(root, ["state", "plan", "get", "--id", successor.id, "--format", "json"]);
+    const predecessorRead = capture(root, ["state", "plan", "get", "--id", predecessor.id, "--format", "json"]);
+    expect(successorRead.rc, successorRead.err || successorRead.out).toBe(0);
+    expect(predecessorRead.rc, predecessorRead.err || predecessorRead.out).toBe(0);
+    expect(JSON.parse(successorRead.out).entry.record).toMatchObject({ previous_plan_archived: predecessor.id, header: { status: "open" } });
+    expect(JSON.parse(predecessorRead.out).entry.record.header.status).toBe("archived");
+    const currentTasks = capture(root, ["state", "plan", "tasks", "list", "--format", "json"]);
+    expect(currentTasks.rc, currentTasks.err || currentTasks.out).toBe(0);
+    expect(JSON.parse(currentTasks.out).filters).toEqual({ plan: successor.id });
+  });
+
+  it("returns one role-neutral targeted recovery command for bounded competing-open diagnostics", () => {
+    const assertDiagnostic = (
+      root: string,
+      args: string[],
+      expectedStatus: number,
+      ids: string[],
+      omitted = 0,
+    ) => {
+      const result = capture(root, args);
+      expect(result.rc, result.err || result.out).toBe(expectedStatus);
+      const error = JSON.parse(result.out).error;
+      expect(error.message).toContain("canonical state does not assign predecessor or successor roles");
+      expect(error.recovery).toBe(TARGETED_REPLACEMENT_RECOVERY);
+      expect(error.details ?? error.diagnosis).toEqual({
+        open_plan_candidates: { total: ids.length, sample_ids: ids.slice(0, 100), omitted_count: omitted },
+      });
+    };
+
+    const pair = project();
+    const left = create(pair, "diagnostic left");
+    const right = openPlanFixture(pair, 780, "diagnostic right");
+    const pairIds = [left.id, right.id].sort();
+    const input = taskInput(pair, { name: "Selection must stay explicit", depends_on: [], acceptance: [] });
+    assertDiagnostic(pair, ["prime", "--context", "plan", "--format", "json"], 1, pairIds);
+    assertDiagnostic(pair, ["state", "plan", "tasks", "list", "--format", "json"], 1, pairIds);
+    assertDiagnostic(pair, ["state", "plan", "append", "--input", input, "--format", "json"], 1, pairIds);
+    assertDiagnostic(pair, ["state", "plan", "create", "--force", "--input", planInput(pair, "blocked implicit successor"), "--format", "json"], 2, pairIds);
+
+    const overBound = project();
+    const candidates = Array.from({ length: 101 }, (_, index) => openPlanFixture(overBound, 1000 + index * 2, `over-bound ${index}`));
+    const ids = candidates.map(({ id }) => id).sort();
+    const overBoundInput = taskInput(overBound, { name: "Bounded selection failure", depends_on: [], acceptance: [] });
+    assertDiagnostic(overBound, ["prime", "--context", "status", "--format", "json"], 1, ids, 1);
+    assertDiagnostic(overBound, ["state", "plan", "tasks", "list", "--format", "json"], 1, ids, 1);
+    assertDiagnostic(overBound, ["state", "plan", "append", "--input", overBoundInput, "--format", "json"], 1, ids, 1);
+    assertDiagnostic(overBound, ["state", "plan", "create", "--force", "--input", planInput(overBound, "over-bound implicit successor"), "--format", "json"], 2, ids, 1);
+    assertDiagnostic(overBound, ["state", "plan", "replace", "--predecessor", ids[0], "--successor", ids[1], "--format", "json"], 2, ids, 1);
+  });
+
   it("creates a successor through targeted replacement and treats only logical input equality as replay", () => {
     const root = project();
     const predecessor = create(root, "create replacement predecessor", true);
@@ -686,6 +761,17 @@ finally { process.chdir(cwd); }
     const blocked = capture(root, ["state", "plan", "list", "--format", "json"]);
     expect(blocked.rc).toBe(1);
     expect(JSON.parse(blocked.out).error).toMatchObject({ class: "unsupported_state", message: expect.stringContaining("pending durable recovery") });
+    for (const args of [
+      ["state", "plan", "get", "--id", predecessor.id, "--format", "json"],
+      ["prime", "--context", "plan", "--format", "json"],
+      ["prime", "--context", "orchestrate", "--format", "json"],
+      ["prime", "--context", "status", "--format", "json"],
+      ["prime", "--dashboard", "--format", "json"],
+    ]) {
+      const read = capture(root, args);
+      expect(read.rc).toBe(1);
+      expect(JSON.parse(read.out).error).toMatchObject({ class: "unsupported_state", message: expect.stringContaining("pending durable recovery") });
+    }
     const divergent = capture(root, ["state", "plan", "replace", "--predecessor", predecessor.id, "--input", planInput(root, "divergent interrupted successor", true), "--format", "json"]);
     expect(divergent.rc).toBe(2);
     expect(JSON.parse(divergent.out).error.message).toContain("requires the exact original successor input");

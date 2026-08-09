@@ -243,6 +243,8 @@ export function buildStatusContextState(
     plan: {
       exists: plan.exists,
       active: plan.active ?? false,
+      id: plan.id ?? null,
+      artifact: plan.exists ? plan.artifact ?? "plan" : null,
       status: plan.status,
       title: plan.title ?? null,
       complete: plan.complete ?? 0,

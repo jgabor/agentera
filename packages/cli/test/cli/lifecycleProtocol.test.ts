@@ -197,7 +197,7 @@ describe("final lifecycle protocol", () => {
       expect(semanticFindings(`runtime://capability-context/${capability}`, capabilityContext)).toEqual([]);
       const context = capabilityContext.context;
       const contextPlan = capability === "status" ? context.status_context.plan : context.plan;
-      if (capability === "status") expect(contextPlan).toMatchObject({ exists: true, active: true, status: "open" });
+      if (capability === "status") expect(contextPlan).toMatchObject({ id: "dddddddddd", artifact: "plan", exists: true, active: true, status: "open" });
       else expect(contextPlan).toMatchObject({ id: "dddddddddd", artifact: "plan" });
       expect(contextPlan.first_pending).toEqual(expect.objectContaining({ id: "eeeeeeeeee", artifact: "plan" }));
       if (capability === "status") {
@@ -314,10 +314,16 @@ describe("final lifecycle protocol", () => {
     entity(root, artifact, boundary, "yyyyyyyyyb", makeRecord(status, "2026-07-16", "Second"));
     const result = capture(root, ["prime", "--format", "json"]);
     expect(result.rc).not.toBe(0);
-    expect(JSON.parse(result.out).error).toMatchObject({ class: "ambiguous", artifact });
+    const error = JSON.parse(result.out).error;
+    expect(error).toMatchObject({ class: "ambiguous", artifact });
     expect(result.out).toContain("yyyyyyyyya");
     expect(result.out).toContain("yyyyyyyyyb");
-    expect(result.out).toContain(`state ${artifact} list`);
+    if (artifact === "plan") {
+      expect(error).toMatchObject({
+        recovery: "npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json",
+        details: { open_plan_candidates: { total: 2, sample_ids: ["yyyyyyyyya", "yyyyyyyyyb"], omitted_count: 0 } },
+      });
+    } else expect(result.out).toContain(`state ${artifact} list`);
   });
 
   it("fails startup on dangling canonical relationships without consulting hostile aggregates", () => {

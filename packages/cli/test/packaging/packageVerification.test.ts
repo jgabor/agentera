@@ -231,6 +231,35 @@ function seedUnsafeInactiveTodos(project: string, count = 161): string[] {
   return ids;
 }
 
+function seedCompetingOpenPlans(project: string, count: number): string[] {
+  const planDirectory = path.join(project, ".agentera/entities/plan/plan");
+  const taskDirectory = path.join(project, ".agentera/entities/plan/plan_task");
+  fs.mkdirSync(planDirectory, { recursive: true });
+  fs.mkdirSync(taskDirectory, { recursive: true });
+  const ids: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const id = realisticTodoId(index);
+    const taskId = realisticTodoId(10_000 + index);
+    ids.push(id);
+    fs.writeFileSync(path.join(planDirectory, `${id}.yaml`), YAML.stringify({
+      id,
+      artifact: "plan",
+      record: {
+        header: { level: "light", created: "2026-08-09", status: "open", title: `Competing package plan ${index}` },
+        what: "Verify source and packed successor selection.",
+        why: "Competing plans must remain explicit.",
+        scope: { included: ["plan selection"], excluded: ["unrelated state"] },
+      },
+    }));
+    fs.writeFileSync(path.join(taskDirectory, `${taskId}.yaml`), YAML.stringify({
+      id: taskId,
+      artifact: "plan",
+      record: { plan: id, name: `Task ${index}`, status: "pending", depends_on: [], acceptance: [] },
+    }));
+  }
+  return ids.sort();
+}
+
 function projectByteSnapshot(root: string): Record<string, string> {
   const result: Record<string, string> = {};
   const walk = (directory: string): void => {
@@ -1153,6 +1182,110 @@ describe("npm distribution boundary", () => {
     expect(validation.issues).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: "todo_reconciliation_unsafe_inactive", diagnosis: expect.objectContaining({ state: "unsafe_inactive", preview_command: null, apply_command: null }) }),
     ]));
+  });
+
+  it("keeps targeted plan successor selection and bounded recovery diagnostics equal in source and packed output", () => {
+    const sourceBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
+    const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const recovery = "npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json";
+    const env = isolatedPackageEnv();
+    const project = (prefix: string, count: number) => {
+      const root = fs.mkdtempSync(path.join(fixture.root, prefix));
+      fs.mkdirSync(path.join(root, ".agentera"));
+      fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      return { root, ids: seedCompetingOpenPlans(root, count) };
+    };
+    const assertDiagnostic = (root: string, ids: string[], args: string[], status: number, omitted = 0) => {
+      const source = run(process.execPath, [sourceBin, ...args], root, env, "name: Explicit selection\ndepends_on: []\nacceptance: []\n");
+      const packaged = run(process.execPath, [packagedBin, ...args], root, env, "name: Explicit selection\ndepends_on: []\nacceptance: []\n");
+      expect(source.status, source.stderr || source.stdout).toBe(status);
+      expect(packaged.status, packaged.stderr || packaged.stdout).toBe(status);
+      expect(packaged.stderr).toBe(source.stderr);
+      expect(packaged.stdout).toBe(source.stdout);
+      const error = JSON.parse(source.stdout).error;
+      expect(error).toMatchObject({ class: status === 2 ? "conflict" : "ambiguous", recovery });
+      expect(error.details ?? error.diagnosis).toEqual({
+        open_plan_candidates: { total: ids.length, sample_ids: ids.slice(0, 100), omitted_count: omitted },
+      });
+    };
+
+    const competing = project("plan-replacement-competing-", 2);
+    assertDiagnostic(competing.root, competing.ids, ["prime", "--context", "plan", "--format", "json"], 1);
+    assertDiagnostic(competing.root, competing.ids, ["state", "plan", "tasks", "list", "--format", "json"], 1);
+    assertDiagnostic(competing.root, competing.ids, ["state", "plan", "append", "--input", "-", "--format", "json"], 1);
+    const overBound = project("plan-replacement-over-bound-", 101);
+    assertDiagnostic(overBound.root, overBound.ids, ["prime", "--context", "status", "--format", "json"], 1, 1);
+    assertDiagnostic(overBound.root, overBound.ids, ["state", "plan", "tasks", "list", "--format", "json"], 1, 1);
+    assertDiagnostic(overBound.root, overBound.ids, ["state", "plan", "replace", "--predecessor", overBound.ids[0], "--successor", overBound.ids[1], "--format", "json"], 2, 1);
+
+    const sourceSchema = run(process.execPath, [sourceBin, "schema", "--format", "json"], competing.root, env);
+    const packagedSchema = run(process.execPath, [packagedBin, "schema", "--format", "json"], competing.root, env);
+    expect(sourceSchema.status, sourceSchema.stderr).toBe(0);
+    expect(packagedSchema.status, packagedSchema.stderr).toBe(0);
+    const replaceOperation = (value: string) => JSON.parse(value).state_writer.artifacts
+      .find((artifact: any) => artifact.artifact === "plan").operations
+      .find((operation: any) => operation.verb === "replace");
+    expect(replaceOperation(packagedSchema.stdout)).toEqual(replaceOperation(sourceSchema.stdout));
+    const sourceHelp = run(process.execPath, [sourceBin, "state", "plan", "--help"], competing.root, env);
+    const packagedHelp = run(process.execPath, [packagedBin, "state", "plan", "--help"], competing.root, env);
+    expect(packagedHelp.stdout).toBe(sourceHelp.stdout);
+    expect(sourceHelp.stdout).toContain("--predecessor PREDECESSOR_ID --successor SUCCESSOR_ID");
+    const sourceExplain = run(process.execPath, [sourceBin, "state", "plan", "explain", "--verb", "replace", "--format", "json"], competing.root, env);
+    const packagedExplain = run(process.execPath, [packagedBin, "state", "plan", "explain", "--verb", "replace", "--format", "json"], competing.root, env);
+    expect(sourceExplain.status, sourceExplain.stderr).toBe(0);
+    expect(packagedExplain.status, packagedExplain.stderr).toBe(0);
+    expect(packagedExplain.stdout).toBe(sourceExplain.stdout);
+    expect(JSON.parse(sourceExplain.stdout).guidance).toEqual(expect.arrayContaining([
+      expect.stringContaining("never infer roles from list order"),
+      expect.stringContaining("pending plan replacement journals block plan reads"),
+    ]));
+
+    const sourceProject = project("plan-replacement-source-", 2);
+    const packagedProject = project("plan-replacement-package-", 2);
+    const replaceArgs = ["state", "plan", "replace", "--predecessor", sourceProject.ids[0], "--successor", sourceProject.ids[1], "--format", "json"];
+    const sourceReplace = run(process.execPath, [sourceBin, ...replaceArgs], sourceProject.root, env);
+    const packagedReplace = run(process.execPath, [packagedBin, ...replaceArgs], packagedProject.root, env);
+    expect(sourceReplace.status, sourceReplace.stderr || sourceReplace.stdout).toBe(0);
+    expect(packagedReplace.status, packagedReplace.stderr || packagedReplace.stdout).toBe(0);
+    const comparableReplacement = (value: string) => {
+      const parsed = JSON.parse(value);
+      return { id: parsed.id, artifact: parsed.artifact, record: parsed.record, operation: parsed.operation, effects: parsed.effects };
+    };
+    expect(comparableReplacement(packagedReplace.stdout)).toEqual(comparableReplacement(sourceReplace.stdout));
+
+    const observe = (bin: string, root: string, predecessor: string, successor: string) => {
+      const contexts: Record<string, any> = {};
+      for (const capability of ["plan", "orchestrate", "status"] as const) {
+        const result = run(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], root, env);
+        expect(result.status, `${capability}: ${result.stderr || result.stdout}`).toBe(0);
+        const payload = JSON.parse(result.stdout);
+        const context = payload.capability_context.context;
+        const selected = capability === "status" ? context.status_context.plan : context.plan;
+        contexts[capability] = { selected, instructions: payload.capability_context.instructions };
+      }
+      const dashboard = run(process.execPath, [bin, "prime", "--dashboard", "--format", "json"], root, env);
+      expect(dashboard.status, dashboard.stderr || dashboard.stdout).toBe(0);
+      const open = run(process.execPath, [bin, "state", "plan", "list", "--status", "open", "--limit", "100", "--format", "json"], root, env);
+      const historical = run(process.execPath, [bin, "state", "plan", "get", "--id", predecessor, "--format", "json"], root, env);
+      const currentTasks = run(process.execPath, [bin, "state", "plan", "tasks", "list", "--format", "json"], root, env);
+      return {
+        contexts,
+        dashboard: JSON.parse(dashboard.stdout).capability_context.context.status_context.plan,
+        open: JSON.parse(open.stdout).entries.map((entry: any) => entry.id),
+        historical: JSON.parse(historical.stdout).entry.record.header.status,
+        currentPlan: JSON.parse(currentTasks.stdout).filters.plan,
+        successor,
+      };
+    };
+    const sourceObserved = observe(sourceBin, sourceProject.root, sourceProject.ids[0], sourceProject.ids[1]);
+    const packagedObserved = observe(packagedBin, packagedProject.root, packagedProject.ids[0], packagedProject.ids[1]);
+    expect(packagedObserved).toEqual(sourceObserved);
+    for (const capability of ["plan", "orchestrate", "status"] as const) {
+      expect(sourceObserved.contexts[capability].selected).toMatchObject({ id: sourceProject.ids[1], artifact: "plan", active: true, status: "open" });
+      expect(sourceObserved.contexts[capability].instructions).toContain(recovery);
+    }
+    expect(sourceObserved.dashboard).toMatchObject({ id: sourceProject.ids[1], artifact: "plan", active: true, status: "open" });
+    expect(sourceObserved).toMatchObject({ open: [sourceProject.ids[1]], historical: "archived", currentPlan: sourceProject.ids[1] });
   });
 
   it("retains executable 21-task routing and mixed history in source and the extracted package", () => {

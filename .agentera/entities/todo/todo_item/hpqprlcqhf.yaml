@@ -28,12 +28,16 @@ record:
     gate: null
     queue_rank: 3
     order_reason: Implement immediately after the underlying forced archival and successor-publication transaction is restored, before other 3.0.0 startup diagnostics.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[feat:3.0.0] Add explicit atomic plan replacement and competing-open-plan recovery."
+      status: resolved
+      order: 102
       severity: critical
-      status: open
-      order: 5
+  lifecycle:
+    operation: resolve
+    reason: Shipped targeted replacement selection, bounded recovery diagnostics, and source/package parity.
+    date: 2026-08-09

@@ -11,4 +11,8 @@ export default `${instructions
 
 ### Profile validity
 
-Render the shared profile validity exactly as \`valid\`, \`absent\`, or \`repair_needed\`. Freshness is separate and may be \`current\`, \`stale\`, or \`unknown\`; only valid stale input may carry stale guidance. Repair-needed input preserves its repair recovery and MUST NOT receive refresh advice. Never render profile path or content.`;
+Render the shared profile validity exactly as \`valid\`, \`absent\`, or \`repair_needed\`. Freshness is separate and may be \`current\`, \`stale\`, or \`unknown\`; only valid stale input may carry stale guidance. Repair-needed input preserves its repair recovery and MUST NOT receive refresh advice. Never render profile path or content.
+
+### Plan selection
+
+Render \`status_context.plan.id\` as the canonical selected plan identity. If competing open plans block startup, preserve the failure and its recovery verbatim. Do not infer predecessor or successor roles from a title or list order; only run \`agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json\` after canonical evidence establishes both roles.`;

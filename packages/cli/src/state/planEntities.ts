@@ -20,6 +20,7 @@ import { mutatePlanTaskEvaluation, planTaskRecordViolations } from "./write/plan
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 import { entityListSelectorFlags, entityListSelectorKey, projectEntityList, resolveEntityListSelector, type EntityListSelectorInput } from "./entityListProjection.js";
 import { shellQuoteArgument } from "../core/shell.js";
+import { preCutoverCommand } from "../cli/preCutoverCommand.js";
 
 const ARTIFACT = "plan";
 const PLAN = "plan";
@@ -91,14 +92,28 @@ function all(root: string, sourceRoot: string, discovery?: EntityDiscoveryResult
   return relevant;
 }
 function planStatus(entity: DiscoveredEntity): string { return String(mapping(entity.record?.header) ? entity.record!.header.status ?? "" : entity.record?.status ?? ""); }
-function multipleOpenPlanConflict(open: DiscoveredEntity[], sourceRoot: string): { message: string; details: JsonObject } {
-  const allIds = open.map((entity) => entity.id!).sort();
+export interface OpenPlanConflictDiagnostic {
+  message: string;
+  details: JsonObject;
+  recovery: string;
+}
+
+/**
+ * Report competing canonical plans without inferring replacement roles from
+ * list order. The targeted replacement command remains the one recovery seam.
+ */
+export function openPlanConflictDiagnostic(openIds: readonly string[], sourceRoot = resolveSourceRoot()): OpenPlanConflictDiagnostic {
+  const allIds = [...openIds].sort();
   const sampleIds = allIds.slice(0, contract(sourceRoot).openPlanConflictLimit);
   const omittedCount = allIds.length - sampleIds.length;
   return {
-    message: `multiple open plans exist: ${sampleIds.join(", ")} (total=${allIds.length}, omitted=${omittedCount})`,
+    message: `multiple open plans exist: ${sampleIds.join(", ")} (total=${allIds.length}, omitted=${omittedCount}); canonical state does not assign predecessor or successor roles`,
     details: { open_plan_candidates: { total: allIds.length, sample_ids: sampleIds, omitted_count: omittedCount } },
+    recovery: preCutoverCommand("state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json"),
   };
+}
+function multipleOpenPlanConflict(open: DiscoveredEntity[], sourceRoot: string): OpenPlanConflictDiagnostic {
+  return openPlanConflictDiagnostic(open.map((entity) => entity.id!), sourceRoot);
 }
 function selectedPlan(entities: DiscoveredEntity[], requested?: string, sourceRoot = resolveSourceRoot()): DiscoveredEntity {
   if (requested !== undefined && !ID.test(requested)) throw failure("invalid_request", `plan ID '${requested}' must be ten lowercase letters`, "Use a bare plan ID returned by plan create or list.", requested);
@@ -112,7 +127,7 @@ function selectedPlan(entities: DiscoveredEntity[], requested?: string, sourceRo
   if (open.length === 1) return open[0];
   if (open.length === 0) throw failure("not_found", "no open plan exists", "Create a plan, or use agentera state plan get --id ID for completed plan detail.");
   const conflict = multipleOpenPlanConflict(open, sourceRoot);
-  throw failure("ambiguous", conflict.message, "List plans, then use agentera state plan get --id ID or agentera state plan tasks list PLAN_ID.", undefined, conflict.details);
+  throw failure("ambiguous", conflict.message, conflict.recovery, undefined, conflict.details);
 }
 
 interface PlanLifecycleDecision {
@@ -156,7 +171,7 @@ function planLifecycleDecision(
         class: "conflict",
         message: `${conflict.message}; implicit plan create cannot choose a predecessor`,
         diagnosis: conflict.details,
-        recovery: "List the canonical plan IDs with agentera state plan list --status open --format json and resolve the competing open plans before creating a successor.",
+        recovery: conflict.recovery,
       });
     }
     if (open.length === 1) {
@@ -392,18 +407,22 @@ function successorForPredecessor(entities: DiscoveredEntity[], predecessor: Disc
   return matches[0];
 }
 
-function assertNoUnselectedOpenPlans(entities: DiscoveredEntity[], selected: DiscoveredEntity[]): void {
+function assertNoUnselectedOpenPlans(entities: DiscoveredEntity[], selected: DiscoveredEntity[], sourceRoot: string): void {
   const selectedIds = new Set(selected.map((entity) => entity.id!));
   const unselected = entities
     .filter((entity) => entity.boundary === PLAN && planStatus(entity) === "open" && !selectedIds.has(entity.id!))
     .map((entity) => entity.id!)
     .sort();
   if (unselected.length > 0) {
+    const conflict = multipleOpenPlanConflict(
+      entities.filter((entity) => entity.boundary === PLAN && planStatus(entity) === "open"),
+      sourceRoot,
+    );
     reject({
       class: "conflict",
-      message: `targeted plan replacement would leave unnamed open plans: ${unselected.join(", ")}`,
-      diagnosis: { open_plan_candidates: { total: unselected.length, sample_ids: unselected } },
-      recovery: "Name the predecessor and existing successor only when they are the complete open-plan recovery pair; resolve other open plans separately.",
+      message: `${conflict.message}; targeted plan replacement would leave ${unselected.length} unnamed open plan${unselected.length === 1 ? "" : "s"}`,
+      diagnosis: conflict.details,
+      recovery: conflict.recovery,
     });
   }
 }
@@ -412,6 +431,7 @@ function existingReplacementDecision(
   entities: DiscoveredEntity[],
   predecessor: DiscoveredEntity,
   successor: DiscoveredEntity,
+  sourceRoot: string,
 ): PlanReplacementDecision {
   if (predecessor.id === successor.id) {
     reject({ class: "schema_violation", message: "targeted plan replacement requires distinct predecessor and successor IDs" });
@@ -442,7 +462,7 @@ function existingReplacementDecision(
   if (planStatus(successor) !== "open") {
     reject({ class: "conflict", message: `successor '${successor.id}' must be open for targeted replacement` });
   }
-  assertNoUnselectedOpenPlans(entities, [predecessor, successor]);
+  assertNoUnselectedOpenPlans(entities, [predecessor, successor], sourceRoot);
   const successorRecord = structuredClone(successor.record!);
   const inputSha256 = replacementSuccessorInputSha256(entities, successor);
   successorRecord.previous_plan_archived = predecessor.id!;
@@ -547,7 +567,7 @@ function assertReplacementInputReplay(input: Record<string, unknown>, successor:
   }
 }
 
-function createReplacementLifecycle(entities: DiscoveredEntity[], predecessor: DiscoveredEntity, inputSha256: string): { lifecycle?: PlanLifecycleDecision; replaySuccessor?: DiscoveredEntity } {
+function createReplacementLifecycle(entities: DiscoveredEntity[], predecessor: DiscoveredEntity, inputSha256: string, sourceRoot: string): { lifecycle?: PlanLifecycleDecision; replaySuccessor?: DiscoveredEntity } {
   const successor = successorForPredecessor(entities, predecessor);
   if (planStatus(predecessor) === "archived") {
     if (!successor) {
@@ -565,7 +585,7 @@ function createReplacementLifecycle(entities: DiscoveredEntity[], predecessor: D
   if (successor) {
     reject({ class: "conflict", message: `predecessor '${predecessor.id}' already has successor '${successor.id}' before archival` });
   }
-  assertNoUnselectedOpenPlans(entities, [predecessor]);
+  assertNoUnselectedOpenPlans(entities, [predecessor], sourceRoot);
   return {
     lifecycle: {
       predecessor,
@@ -653,10 +673,10 @@ function replacePlanEntitiesUnderLock(req: StateWriteRequest, options: Options &
   const predecessor = selectedPlan(entities, predecessorId, sourceRoot);
   if (typeof successorId === "string") {
     const successor = selectedPlan(entities, successorId, sourceRoot);
-    return publishExistingPlanReplacement(req, options, sourceRoot, existingReplacementDecision(entities, predecessor, successor));
+    return publishExistingPlanReplacement(req, options, sourceRoot, existingReplacementDecision(entities, predecessor, successor, sourceRoot));
   }
 
-  const lifecycle = createReplacementLifecycle(entities, predecessor, inputSha256!);
+  const lifecycle = createReplacementLifecycle(entities, predecessor, inputSha256!, sourceRoot);
   if (lifecycle.replaySuccessor) {
     assertReplacementInputReplay(input!, lifecycle.replaySuccessor);
     return envelope(command, { id: lifecycle.replaySuccessor.id!, path: lifecycle.replaySuccessor.path, replay: true }, lifecycle.replaySuccessor.record!, req.dryRun, { effects: replacementEffects(predecessor) });

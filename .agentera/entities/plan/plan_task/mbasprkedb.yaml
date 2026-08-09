@@ -4,7 +4,7 @@ record:
   name: Integrate successor selection and recovery
   depends_on:
     - zliglifsla
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN targeted replacement completes WHEN Prime contexts for Plan, Orchestrate, and Status, the status dashboard, and plan list and get reads run THEN each selects or exposes the same successor while retaining historical retrieval.
     - GIVEN competing plans remain WHEN startup, direct read, or writer selection fails THEN diagnostics name bare canonical IDs and return the one executable targeted replacement command.

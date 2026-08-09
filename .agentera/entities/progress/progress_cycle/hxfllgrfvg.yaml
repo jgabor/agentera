@@ -1,0 +1,15 @@
+id: hxfllgrfvg
+artifact: progress
+record:
+  timestamp: 2026-08-09 07:09
+  type: fix
+  phase: build
+  what: Recorded c21725fc targeted plan replacement retry verification.
+  context:
+    intent: Provide orchestration Surface 1 evidence for the c21725fc audit retry.
+    constraints: Use the rebuilt local CLI only; do not change task status, TODO state, or commit history.
+    scope: Task zliglifsla retry evidence only.
+  discovered: The retry needs one durable Surface 1 record because vwysipntqc only describes the pre-retry implementation.
+  verified: "Built local CLI 3.0.0-dev.47 verified SIGKILL interruption at visible replacement boundaries before and after predecessor rename: pending plan reads failed closed, divergent retries exited 2, exact retries recovered as idempotent replay, and no journal remained. Focused regressions verified replay after mutable task status and evaluation changes plus schema and explain optional-input parity. Observed focused plan (60), grammar (32), lifecycle (9), and runtime census (194) tests; full source 228 files, 3,436 passed, 1 skipped; package 36 passed; typecheck, build, compact, and capability-contract checks passed."
+  next: Keep zliglifsla in_progress for independent audit review; do not change its preserved audit-zliglifsla-1 failure evidence.
+  publication_order: 112

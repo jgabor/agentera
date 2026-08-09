@@ -1,0 +1,16 @@
+id: ivnbfjyhdz
+artifact: progress
+record:
+  timestamp: 2026-08-09 07:45
+  type: fix
+  phase: build
+  what: Integrated targeted plan replacement selection in packages/cli/src/state/planEntities.ts and Prime Status projection.
+  context:
+    intent: Make every active-plan consumer expose the same replacement successor without a second selector.
+    constraints: Reuse lifecycle status, derived previous_plan_archived lineage, and the established replacement journal.
+    unknowns: Existing header.status and previous_plan_archived are sufficient; no selection metadata was added.
+    scope: Task mbasprkedb only, including recovery diagnostics and package parity.
+  discovered: Status dropped the canonical plan ID from its dashboard projection, and Prime used its two-row startup page rather than the complete canonical candidate set for over-bound ambiguity diagnostics.
+  verified: Built local CLI 3.0.0-dev.47 selected one successor across Plan, Orchestrate, Status, dashboard, plan list/get, and implicit task reads; retained predecessor history; bounded 101-plan diagnostics; and failed six pending-journal reads closed. Focused source tests passed 128 tests, typecheck passed, and packed package verification passed 29 tests.
+  next: Leave mbasprkedb in_progress for independent audit; do not close the plan task in this cycle.
+  publication_order: 113

@@ -289,6 +289,12 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
     "an implicit archive rejects multiple open candidates; select an exact historical plan with its bare --plan ID",
     ...base,
   ];
+  if (entityArtifact && artifact === "plan" && verb === "replace") return [
+    "name the predecessor and successor with bare IDs from canonical evidence; never infer roles from list order",
+    "when competing open plans block selection, use npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json only after the complete recovery pair is known",
+    "pending plan replacement journals block plan reads until the exact retry completes or restores the operation",
+    ...base,
+  ];
   if (entityArtifact && artifact === "plan") return [
     "the active plan entity is selected by lifecycle state",
     ...(verb === "set-plan-status" ? ["open-to-complete requires every superseded_by replacement to be complete with latest persisted PASS; historical unevaluated complete replacements may record their allowed first PASS, then retry"] : []),

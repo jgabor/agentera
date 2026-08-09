@@ -35,7 +35,7 @@ Advice, clarification, tension, and handoff intent are transient and never write
   .replaceAll("--task N", "--id ID")
   .replace(
     "Archive completed plan entities with `agentera state plan archive --format json`.",
-    "Archive completed plan entities with `agentera state plan archive --format json`. With exactly one unfinished canonical predecessor, `agentera state plan create --force --input PATH --format json` archives it unchanged, publishes the successor, and records its bare ID in the writer-owned `previous_plan_archived` field. `agentera state plan archive --force` likewise preserves unfinished task, evaluation, and completion history; multiple implicit open candidates reject before effects.",
+    "Archive completed plan entities with `agentera state plan archive --format json`. With exactly one unfinished canonical predecessor, `agentera state plan create --force --input PATH --format json` archives it unchanged, publishes the successor, and records its bare ID in the writer-owned `previous_plan_archived` field. `agentera state plan archive --force` likewise preserves unfinished task, evaluation, and completion history; multiple implicit open candidates reject before effects. When competing open plans block selection, do not infer roles from list order: use `agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json` only after canonical evidence establishes the complete recovery pair.",
   )
   .replace(
     "served via `planning_context.profile.path` — read directly when `status: loaded`; if missing or stale, proceed without persona grounding",

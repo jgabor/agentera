@@ -146,10 +146,10 @@
 - [x] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
 - [x] [id:zmlfggxlmq] [fix:3.0.0] Restore forced plan archival and successor publication semantics.
 - [x] [id:ituipybnoy] [fix:3.0.0] Fail closed when TODO activation would resurrect or duplicate public work.
+- [x] [id:hpqprlcqhf] [feat:3.0.0] Add explicit atomic plan replacement and competing-open-plan recovery.
 
 ## → Critical
 
 - [ ] [id:bxqzpnnhpn] [fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted.
 - [ ] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
-- [ ] [id:hpqprlcqhf] [feat:3.0.0] Add explicit atomic plan replacement and competing-open-plan recovery.

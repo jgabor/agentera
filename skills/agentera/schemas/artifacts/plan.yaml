@@ -578,6 +578,7 @@ LIFECYCLE_CONTRACT:
       existing_successor: Names both bare plan IDs, archives only the named predecessor, and assigns previous_plan_archived on the named open successor.
       create_successor: Names the bare predecessor and supplies one complete plan document when no successor exists.
       selection: Reject before effects if an unnamed open plan would remain, roles are invalid, or the requested successor conflicts with canonical lineage.
+      diagnostics: Competing-open readers and implicit writers expose bounded bare candidate IDs and the state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID recovery grammar. Canonical state never infers predecessor or successor roles from list order.
       replay: The archived predecessor and unique derived successor identify an existing-successor replay; create retries compare the exact input identity retained on the successor rather than mutable task state.
       atomicity: The complete predecessor, successor, and created-task target set is durable under the private entity recovery authority before any target is visible. Pending journals block plan reads until the exact retry finishes or restores the operation.
     replacement_evidence_transition:

@@ -8,6 +8,8 @@ Plans, tasks, progress cycles, health audits, and decisions use entity authority
 
 Advance tasks with \`agentera state plan set-status --id ID\` and persist evaluator outcomes with \`agentera state plan record-evaluation --id ID\`. A superseded task is terminal, satisfies dependencies, and stays out of ready and blocked queues; record it only through \`agentera state plan supersede --id ID --by COMPLETED_ID --reason "..." --format json\`. Every replacement must be complete with latest persisted PASS before supersession.
 
+When competing open plans block startup, do not infer predecessor or successor roles from list order. Use \`agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json\` only after canonical evidence establishes the complete recovery pair.
+
 ## The orchestration loop`)
   .replaceAll("--number N", "--id ID")
   .replaceAll("--task N", "--id ID")

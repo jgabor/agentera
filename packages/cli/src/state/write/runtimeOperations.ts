@@ -202,7 +202,7 @@ const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionCo
     developmentCommand("state plan create --force --input plan.yaml --format json"),
   ),
   "plan.replace": projection(
-    "Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects.",
+    "Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects. Competing-open diagnostics retain bounded bare IDs without assigning roles and recover through npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json.",
     developmentCommand("state plan replace --predecessor abcdefghij --successor klmnopqrst --format json"),
     developmentCommand("state plan replace --predecessor abcdefghij --input plan.yaml --format json"),
   ),

@@ -4,7 +4,7 @@ import type { JsonObject, JsonValue } from "../../../core/jsonValue.js";
 import { listProgressEntities } from "../../../state/progressEntities.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
-import { listPlanEntities, listPlanTaskEntities } from "../../../state/planEntities.js";
+import { listPlanEntities, listPlanTaskEntities, openPlanConflictDiagnostic } from "../../../state/planEntities.js";
 import { listObjectiveEntities, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
 import { assertTodoReconciliationReadable, listTodoDocsEntities, projectTodoReadEntities } from "../../../state/todoDocsEntities.js";
 import { inspectTodoReconciliationState, type TodoReconciliationInspection } from "../../../state/todoReconciliationInspection.js";
@@ -135,21 +135,36 @@ function projectedHistory(
   };
 }
 
-function selected(entries: JsonObject[], artifact: "plan" | "objective"): JsonObject | undefined {
-  if (entries.length < 2) return entries[0];
-  const ids = entries.map((entry) => String(entry.id)).sort().join(", ");
+function entityPlanStatus(entry: { record?: JsonObject | null }): string {
+  const plan = entry.record ?? {};
+  const planHeader = plan.header && typeof plan.header === "object" && !Array.isArray(plan.header)
+    ? plan.header as JsonObject
+    : {};
+  return String(planHeader.status ?? plan.status ?? "");
+}
+
+function selected(
+  entries: JsonObject[],
+  artifact: "plan" | "objective",
+  candidateIds = entries.map((entry) => String(entry.id)),
+  sourceRoot?: string,
+): JsonObject | undefined {
+  if (candidateIds.length < 2) return entries[0];
+  const ids = candidateIds.slice().sort();
   const noun = artifact === "plan" ? "open plans" : "active objectives";
   const list = preCutoverCommand(`state ${artifact} list --format json`);
+  const planConflict = artifact === "plan" ? openPlanConflictDiagnostic(ids, sourceRoot) : undefined;
   throw new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
     error: {
       class: "ambiguous",
       artifact,
-      message: `multiple ${noun} require explicit selection: ${ids}`,
+      message: planConflict?.message ?? `multiple ${noun} require explicit selection: ${ids.join(", ")}`,
       syntax: preCutoverCommand(`state ${artifact} get --id ID --format json`),
       example: preCutoverCommand(`state ${artifact} get --id ${String(entries[0]?.id)} --format json`),
-      recovery: `Run ${list}, resolve the competing ${noun}, and retry prime.`,
+      recovery: planConflict?.recovery ?? `Run ${list}, resolve the competing ${noun}, and retry prime.`,
+      ...(planConflict ? { details: planConflict.details } : {}),
     },
   }, 1);
 }
@@ -223,7 +238,13 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const todoEntries = entries(todoList);
   const docsEntries = entries(docsList);
 
-  const selectedPlan = selected(planEntries, "plan");
+  // Startup detail is bounded to two plans, but ambiguous diagnostics must use
+  // the complete canonical candidate set so their ID sample and omission count
+  // match direct plan selection without creating another selector.
+  const openPlanCandidateIds = discovery.entities
+    .filter((entry) => entry.boundary === "plan" && entry.classification === "valid" && entry.id && ["open", "active"].includes(entityPlanStatus(entry)))
+    .map((entry) => entry.id!);
+  const selectedPlan = selected(planEntries, "plan", openPlanCandidateIds, sourceRoot);
   const taskPage = selectedPlan
     ? listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, { sourceRoot, format: "json", discovery })
     : null;

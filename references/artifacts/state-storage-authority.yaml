@@ -2772,7 +2772,7 @@ mutation_grammar:
         sources: [file, stdin]
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, header.id, previous_plan_archived, replacement_input_sha256, task_ids]
-      recovery: Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects.
+      recovery: Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects. Competing-open diagnostics retain bounded bare IDs without assigning roles and recover through npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json.
       examples: ['npx -y agentera@next state plan replace --predecessor abcdefghij --successor klmnopqrst --format json', 'npx -y agentera@next state plan replace --predecessor abcdefghij --input plan.yaml --format json']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
       fields:

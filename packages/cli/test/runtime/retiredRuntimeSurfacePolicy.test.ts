@@ -1047,9 +1047,9 @@ describe("retired runtime current-surface policy", () => {
       .map(({ emitted_classification }) => emitted_classification)))
       .toEqual(new Set(["producer", "non_producer"]));
     expect(inventory.census).toEqual(expect.objectContaining({
-      scanned_scalars: 14764,
-      invocation_occurrences: 541,
-      canonical_development: 286,
+      scanned_scalars: 14769,
+      invocation_occurrences: 543,
+      canonical_development: 288,
       stable_pair: 2,
       noncanonical_occurrences: 253,
       noncanonical_scalars: 202,

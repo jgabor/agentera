@@ -235,6 +235,7 @@ Common mutations:
 - `npx -y agentera@next state plan set-status --id TASK_ID --status STATUS --format json`
 - `npx -y agentera@next state plan set-plan-status [--plan PLAN_ID] --status complete --format json`
 - `npx -y agentera@next state plan archive [--plan ID] [--force] --format json`
+- `npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json`
 - `npx -y agentera@next state health append --input audit.yaml --format json`
 - `npx -y agentera@next state todo create --input todo.yaml --format json`
 - `npx -y agentera@next state todo update --id ID --input todo-patch.yaml --format json`
@@ -259,7 +260,10 @@ Without `--force`, an open plan blocks creation. With exactly one canonical open
 predecessor, forced create archives that plan without changing task, evaluation,
 or completion history, then records its bare ID in the successor's
 writer-owned `previous_plan_archived` field. Forced archive preserves the same
-history. Multiple implicit open candidates reject before effects.
+history. Multiple implicit open candidates reject before effects. When they
+block a reader or implicit writer, use the targeted replacement command only
+after canonical evidence names both roles; list order never assigns predecessor
+or successor roles.
 
 Add `--dry-run` to preview any mutation without publishing it. Artifacts not
 listed above are outside the typed writer contract and remain governed by their
