@@ -1,0 +1,15 @@
+id: ijgeitwiif
+artifact: progress
+record:
+  timestamp: 2026-08-09 17:15
+  type: feat
+  phase: build
+  what: Added private personal glossary review-record queue, bounded reads, and retention maintenance.
+  context:
+    intent: Complete Plan bcpkchatfu task uvvlfjycxk without accepting dispositions or advancing evaluator-owned lifecycle.
+    constraints: Persist only current-user opaque bindings, reasons, dates, and status. Keep profile entries, project state, candidate projection, publication, and task status unchanged.
+    scope: Review-record authority, user-local storage, report personal-glossary-reviews queue/list/get, help, schema, package parity, and regression coverage.
+  discovered: The current decision command produced review_required without durable metadata or a private review read grammar. Review records now bind the current candidate projection, receipt, decision, semantic fingerprint, generation, policy, and stable reason without storing content or approval material.
+  verified: "Targeted review, candidate, decision, authority, invocation, and runtime-inventory tests passed: 9 files, 460 tests. Package verification passed: 3 files, 35 tests, including constructed-package queue/list/get. pnpm -C packages/cli run typecheck, build, local vocabularyAuthority validation, and local compact passed. Full source was attempted three times but did not complete because unrelated Git durability/ref-race failures and a serial upgrade-cutover timeout occurred outside this change; the direct affected suites passed."
+  next: Leave uvvlfjycxk pending and all changes uncommitted for Audit. Audit should assess the review-record privacy, owner, retention, and no-effects boundaries.
+  publication_order: 139

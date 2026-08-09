@@ -94,6 +94,7 @@ const GLOSSARY_PROJECTIONS = {
   "advice.command": developmentCommand("report glossary-advice --input REQUEST --format json"),
   "candidate_retrieval.command": developmentCommand("report personal-glossary-candidates"),
   "candidate_decision.command": developmentCommand("report personal-glossary-decision"),
+  "review_records.command": developmentCommand("report personal-glossary-reviews"),
 } as const;
 
 export type GlossaryProjectionOwner = keyof typeof GLOSSARY_PROJECTIONS;

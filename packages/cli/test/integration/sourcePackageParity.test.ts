@@ -19,6 +19,14 @@ import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
 import {
+  persistPersonalGlossaryCandidateProjection,
+  projectPersonalGlossaryCandidates,
+} from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import {
+  createGlossaryEvidenceCapsule,
+  createGlossaryHostClassificationReceipt,
+} from "../../src/registries/glossaryCandidateContracts.js";
+import {
   preCutoverBootstrapGuidanceViolations,
   registryBootstrapAuthorityInventory,
   registryBootstrapAuthorityParity,
@@ -617,6 +625,7 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
       ["candidate_retrieval.command", (authority) => { authority.personal_mining_authority.candidate_retrieval.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined, true],
       ["candidate_decision.command", (authority) => { authority.candidate_contracts.layers.cli_decision.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined, true],
       ["candidate_decision.reason_pairs", (authority) => { authority.candidate_contracts.layers.cli_decision.reason_codes_by_outcome.abstain.push("classification_changed"); }, ["schema", "--format", "json"], undefined, true],
+      ["review_records.command", (authority) => { authority.personal_mining_authority.review_records.queue.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined, true],
     ];
     try {
       for (const [owner, mutate, args, input, structuredError] of mutations) {
@@ -1572,6 +1581,98 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
     expect(authority).toContain("profile_full_rendering");
     expect(authority).toContain("npx -y agentera@next report profile-glossary");
     expect(authority).toContain("npx -y agentera@next report personal-glossary-candidates");
+    expect(authority).toContain("npx -y agentera@next report personal-glossary-reviews");
+  });
+
+  it("queues and reads private glossary review metadata through the constructed package", () => {
+    const profile = fs.mkdtempSync(path.join(fixture.root, "packaged-glossary-review-"));
+    const environment = isolatedPackageEnv({ AGENTERA_PROFILE_DIR: profile });
+    const capsule = createGlossaryEvidenceCapsule({
+      term: "private packaged review term",
+      meaning: "private packaged review meaning",
+      scope: "personal",
+      provenance_kind: "personal_inferred_usage",
+      evidence: [
+        { source_id: "source-package-a", evidence_anchor: "anchor-package-a", source_kind: "instruction_document" },
+        { source_id: "source-package-b", evidence_anchor: "anchor-package-b", source_kind: "project_config_signal" },
+      ],
+      generation: "packaged-review-generation",
+      policy_version: "agentera.personalGlossaryMiningPolicy.v1",
+    });
+    const projection = projectPersonalGlossaryCandidates({
+      generation: capsule.generation,
+      policy_version: capsule.policy_version,
+      retained_at: "2026-08-10T00:00:00.000Z",
+      candidates: [{
+        capsule,
+        project_ids: ["project-package-private"],
+        excerpts: [`${capsule.term} safe context`],
+      }],
+    });
+    persistPersonalGlossaryCandidateProjection(projection, { env: { AGENTERA_PROFILE_DIR: profile } });
+    const receipt = createGlossaryHostClassificationReceipt({
+      capsule,
+      candidate_projection_sha256: projection.projection_sha256,
+      classification: {
+        term: capsule.term,
+        meaning: capsule.meaning,
+        scope: capsule.scope,
+        permanence: "durable",
+        consistency: "inconsistent",
+        confidence: 80,
+      },
+    });
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    try {
+      const queued = run(
+        process.execPath,
+        [bin, "report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"],
+        fixture.root,
+        environment,
+        JSON.stringify({ schema_version: "agentera.personalGlossaryReviewQueueRequest.v1", receipt }),
+      );
+      expect(queued.status, queued.stderr).toBe(0);
+      expect(queued.stdout).not.toContain(capsule.term);
+      expect(queued.stdout).not.toContain(capsule.meaning);
+      const record = JSON.parse(queued.stdout).record;
+
+      const listed = run(
+        process.execPath,
+        [bin, "report", "personal-glossary-reviews", "list", "--status", "pending", "--limit", "20", "--format", "json"],
+        fixture.root,
+        environment,
+      );
+      expect(listed.status, listed.stderr).toBe(0);
+      expect(JSON.parse(listed.stdout)).toMatchObject({ owner: "current_user", counts: { total: 1, returned: 1 } });
+
+      const exact = run(
+        process.execPath,
+        [
+          bin,
+          "report",
+          "personal-glossary-reviews",
+          "get",
+          "--review-id",
+          record.review_id,
+          "--candidate-id",
+          record.candidate_id,
+          "--candidate-revision",
+          record.candidate_revision,
+          "--generation",
+          record.generation,
+          "--policy-version",
+          record.policy_version,
+          "--format",
+          "json",
+        ],
+        fixture.root,
+        environment,
+      );
+      expect(exact.status, exact.stderr).toBe(0);
+      expect(JSON.parse(exact.stdout)).toMatchObject({ status: "ok", record: { review_id: record.review_id } });
+    } finally {
+      fs.rmSync(profile, { recursive: true, force: true });
+    }
   });
 
   it("matches source and extracted-package producer readiness", { timeout: 120_000 }, async () => {

@@ -71,6 +71,51 @@ export interface PersonalGlossaryCandidateDecisionContract {
   qualityGate: string;
 }
 
+export interface PersonalGlossaryReviewRecordsContract {
+  command: string;
+  queueRequestSchemaVersion: string;
+  queueRequestFields: string[];
+  queueMaxRequestUtf8Bytes: number;
+  queueDecisionOutcome: string;
+  queueCurrentBindings: string[];
+  queueResultSchemaVersion: string;
+  queueResultStatuses: string[];
+  queueMaxResultUtf8Bytes: number;
+  queueNoQuestionChannel: string;
+  storeSchemaVersion: string;
+  recordSchemaVersion: string;
+  storeOwner: string;
+  storeFile: string;
+  storeFields: string[];
+  recordFields: string[];
+  recordsMax: number;
+  recordMaxSerializedUtf8Bytes: number;
+  storeMaxSerializedUtf8Bytes: number;
+  storeOrder: string;
+  replay: string;
+  conflict: string;
+  forbiddenFields: string[];
+  retrievalSchemaVersion: string;
+  retrievalOwner: string;
+  listDefaultLimit: number;
+  listMaximumLimit: number;
+  listMaxSerializedUtf8Bytes: number;
+  listOrder: string;
+  listStatuses: string[];
+  cursorAuthority: string;
+  cursorVocabulary: string;
+  cursorBinding: string[];
+  cursorInvalidBehavior: string;
+  cursorUnavailableBehavior: string;
+  exactRequiredBindings: string[];
+  exactCurrentBindingField: string;
+  exactMaxSerializedUtf8Bytes: number;
+  terminalMetadataDays: number;
+  maintenanceExposure: string;
+  maintenancePurge: string;
+  maintenanceForbiddenEffects: string[];
+}
+
 export interface ConfirmedVariantGuardContract {
   excludedDirectories: string[];
 }

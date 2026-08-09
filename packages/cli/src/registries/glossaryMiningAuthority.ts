@@ -5,6 +5,7 @@ import type {
   GlossaryConversationEvidenceExpectation,
 } from "./glossaryEntryContract.js";
 import { validatePersonalCandidateProjectionAuthority } from "./glossaryCandidateProjectionAuthority.js";
+import { validatePersonalGlossaryReviewRecordsAuthority } from "./glossaryReviewRecordsAuthority.js";
 import { validateExplicitSegmentGrammar } from "./explicitSegmentGrammarContract.js";
 
 type Mapping = Record<string, unknown>;
@@ -620,6 +621,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     !sameStrings(storage?.records, [
       "candidate_metadata",
       "safe_excerpts",
+      "review_metadata",
       "review_dispositions",
     ]) ||
     storage?.project_state !== "unchanged" ||
@@ -738,7 +740,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     !nonEmpty(retention?.rule) ||
     purge?.authority !== "current_user" ||
     purge?.trigger !== "explicit_authenticated_user_request_or_retention_expiry" ||
-    !sameStrings(purge?.removes, ["candidate_metadata", "safe_excerpts", "review_dispositions"]) ||
+    !sameStrings(purge?.removes, ["candidate_metadata", "safe_excerpts", "review_metadata", "review_dispositions"]) ||
     purge?.behavior !== "atomic_remove_user_local_records_before_next_read" ||
     purge?.project_state !== "untouched" ||
     purge?.profile_entry !== "not_implicitly_deleted" ||
@@ -768,6 +770,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   }
 
   errors.push(...validatePersonalCandidateProjectionAuthority(authority));
+  errors.push(...validatePersonalGlossaryReviewRecordsAuthority(authority));
   return errors;
 }
 

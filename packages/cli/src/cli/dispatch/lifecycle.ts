@@ -11,6 +11,7 @@ import { runGlossaryAdviceCommand } from "../commands/glossaryAdvice.js";
 import { runPersonalGlossaryCommand } from "../commands/personalGlossary.js";
 import { runPersonalGlossaryCandidateReadsCommand } from "../commands/personalGlossaryCandidateReads.js";
 import { runPersonalGlossaryDecisionCommand } from "../commands/personalGlossaryDecision.js";
+import { runPersonalGlossaryReviewRecordsCommand } from "../commands/personalGlossaryReviewRecords.js";
 import { runProfileGroundingCommand } from "../commands/profileGrounding.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 import { usageMain } from "../../analytics/usageStats.js";
@@ -456,6 +457,20 @@ export function runReport(argv: string[], io: Io, prog: string): number {
       });
     }
     return runPersonalGlossaryCandidateReadsCommand(argv.slice(1), io);
+  }
+  if (argv[0] === "personal-glossary-reviews") {
+    if (prog !== "agentera report") {
+      return emitInvalidInput(io, {
+        format: "json",
+        body: {
+          class: "unsupported_target",
+          message: "personal-glossary-reviews has no stats alias",
+          valid_values: ["report personal-glossary-reviews"],
+          recovery: `Run ${preCutoverCommand("report personal-glossary-reviews list --limit 20 --format json")}; no review metadata was changed.`,
+        },
+      });
+    }
+    return runPersonalGlossaryReviewRecordsCommand(argv.slice(1), io);
   }
   if (argv[0] === "glossary-advice") {
     if (prog !== "agentera report") {

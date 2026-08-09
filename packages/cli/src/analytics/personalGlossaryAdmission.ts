@@ -225,3 +225,19 @@ export {
   type PersonalGlossaryAdmissionStatus,
   type PersonalGlossaryDecisionOptions,
 } from "./personalGlossaryDecision.js";
+export {
+  currentPersonalGlossaryReviewRecords,
+  maintainPersonalGlossaryReviewRecords,
+  personalGlossaryReviewRecordsPath,
+  queuePersonalGlossaryReviewRecord,
+  readPersonalGlossaryReviewRecords,
+  type PersonalGlossaryCurrentReviewRecordsResult,
+  type PersonalGlossaryReviewQueueInput,
+  type PersonalGlossaryReviewQueueResult,
+  type PersonalGlossaryReviewRecord,
+  type PersonalGlossaryReviewRecordsMaintenanceInput,
+  type PersonalGlossaryReviewRecordsMaintenanceResult,
+  type PersonalGlossaryReviewRecordsReadResult,
+  type PersonalGlossaryReviewRecordsStorageOptions,
+  type PersonalGlossaryReviewStore,
+} from "./personalGlossaryReviewRecords.js";

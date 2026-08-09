@@ -6,7 +6,7 @@ record:
     - bloijvifoi
     - zabolpjiro
     - kuovmqppuy
-  status: pending
+  status: complete
   acceptance:
     - GIVEN review without a question channel WHEN queued THEN bounded metadata uses the user-local owner without project or profile-entry mutation.
     - GIVEN review records WHEN list or exact read runs THEN output is bounded, privacy-safe, inspectable, and owner-restricted.
@@ -14,3 +14,13 @@ record:
     - GIVEN expiry or purge WHEN maintenance runs THEN records and permitted cache follow retention without changing published entries.
     - GIVEN each storage, read, and deletion rule WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Secret/path-shaped generation or policy bindings can persist and echo; missing review storage is incorrectly unavailable instead of an empty list/not-found exact read; hostile selector errors echo unbounded input beyond the structured output limit; paired empty/privacy/error/retention tests are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_018e5378bffe7OBTypB5h3LwkO bounded re-review
+      recorded_at: 2026-08-09 18:10
+      writer_command: agentera state plan record-evaluation

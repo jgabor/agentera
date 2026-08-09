@@ -28,6 +28,7 @@ import {
   type GlossaryAdmissionContext,
 } from "../../src/registries/glossaryEntryContract.js";
 import { personalGlossaryCandidateProjectionContract } from "../../src/registries/glossaryCandidateProjectionContract.js";
+import { personalGlossaryReviewRecordsContract } from "../../src/registries/glossaryReviewRecordsContract.js";
 
 function authorityFixture(mutate?: (authority: Record<string, any>) => void): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "glossary-mining-authority-"));
@@ -172,6 +173,39 @@ describe("personal glossary mining authority", () => {
           safe_context_max_utf8_bytes: 500,
         },
       },
+      review_records: {
+        status: "active",
+        owner: "user_local_review_lifecycle",
+        queue: {
+          command: {
+            canonical: "npx -y agentera@next report personal-glossary-reviews",
+            namespace: "report",
+            format: "json",
+            project_checkout: "not_required",
+          },
+          decision_outcome: "review_required",
+          no_question_channel: "queue_without_prompt_or_disposition",
+        },
+        persistence: {
+          file: "review-records.json",
+          owner: "current_user",
+          records_max: 100,
+          record_max_serialized_utf8_bytes: 2048,
+        },
+        retrieval: {
+          owner: "current_user",
+          schema_version: "agentera.personalGlossaryReviewRetrieval.v1",
+          list: {
+            default_limit: 20,
+            maximum_limit: 50,
+            order: "queued_at_desc_then_review_id_asc",
+          },
+        },
+        maintenance: {
+          terminal_metadata_days: 90,
+          purge: "current_user_authorized_review_records_only",
+        },
+      },
     });
     expect(personalGlossaryAdmissionContract()).toMatchObject({
       conversationSignalTypes: [
@@ -257,6 +291,19 @@ describe("personal glossary mining authority", () => {
       candidateReadSafeContextViewMutation: "forbidden",
       candidateReadSafeContextViewSnapshot:
         "effective_availability_bound_to_opaque_cursor_snapshot",
+    });
+    expect(personalGlossaryReviewRecordsContract()).toMatchObject({
+      command: "agentera report personal-glossary-reviews",
+      queueRequestSchemaVersion: "agentera.personalGlossaryReviewQueueRequest.v1",
+      queueDecisionOutcome: "review_required",
+      storeSchemaVersion: "agentera.personalGlossaryReviewStore.v1",
+      recordSchemaVersion: "agentera.personalGlossaryPendingReviewRecord.v1",
+      storeOwner: "current_user",
+      storeFile: "review-records.json",
+      recordsMax: 100,
+      retrievalSchemaVersion: "agentera.personalGlossaryReviewRetrieval.v1",
+      listStatuses: ["pending", "terminal"],
+      terminalMetadataDays: 90,
     });
   });
 
@@ -385,6 +432,13 @@ describe("personal glossary mining authority", () => {
           "write";
       },
       "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+    ],
+    [
+      "review record privacy boundary",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.review_records.persistence.record_fields.push("term");
+      },
+      "personal_mining_authority review records must remain bounded, current-user local, privacy-safe, replay-safe, and independently retained",
     ],
     [
       "term identity",

@@ -150,6 +150,32 @@ user-authored anchor can return `automatic_admission`. Inferred candidates stay
 not read a project glossary. File and stdin requests are limited to 16,384 UTF-8
 bytes. The machine schema lists the only allowed reason codes for each outcome.
 
+## Personal glossary review records
+
+Queue a current `review_required` decision when no question channel is available.
+The queue takes the same bounded host receipt shape as the decision command and
+revalidates it before writing private metadata.
+
+```bash
+npx -y agentera@next report personal-glossary-reviews queue --input receipt.json --format json
+npx -y agentera@next report personal-glossary-reviews list --status pending --limit 20 --format json
+npx -y agentera@next report personal-glossary-reviews get \
+  --review-id ID --candidate-id ID --candidate-revision REVISION \
+  --generation GENERATION --policy-version POLICY --format json
+```
+
+Records live only under the configured user profile. They retain opaque candidate,
+receipt, decision, and semantic-fingerprint bindings, a stable reason, and
+lifecycle dates and status. They do not retain a term, meaning, excerpt, evidence,
+source, session, project, path, tool content, approval, or user disposition.
+Queue replay is idempotent. Changed bindings or reasons create a distinct record;
+the queue does not overwrite an existing record. List and exact reads are
+noninteractive, owner-restricted, cursor-bounded, and mutation-free.
+
+Terminal metadata expires after 90 days through separate authenticated owner
+maintenance. That maintenance affects only review metadata. It does not modify a
+profile entry, project state, candidate projection, or publication result.
+
 ## Contributors
 
 Requires Node.js 22+ and pnpm 10.30.3.

@@ -1,0 +1,16 @@
+id: aznjlcxqix
+artifact: progress
+record:
+  timestamp: 2026-08-09 17:59
+  type: fix
+  phase: build
+  what: Corrected audit-1 review-record privacy, empty-read, and bounded-error findings; the evaluator-owned task remains pending for re-audit.
+  context:
+    intent: Record verified audit-1 corrections for Plan bcpkchatfu task uvvlfjycxk without changing evaluator-owned lifecycle.
+    constraints: Append one progress cycle only. Preserve ijgeitwiif and audit-1; do not change implementation, tests, task status, dispositions, publication, or commits.
+    unknowns: Independent Audit has not re-evaluated the pending task. The full source lane was not rerun because prior attempts had unrelated Git durability/ref-race failures and a serial upgrade-cutover timeout.
+    scope: Safe generation and policy metadata, no-store reads, bounded no-echo errors, authority, package, and local CLI verification.
+  discovered: Audit-1 found that secret/path-shaped generation or policy values could persist and echo, a missing review store failed instead of reading empty, and parser diagnostics could echo unbounded hostile text.
+  verified: Safe generation review-record-generation and policy agentera.personalGlossaryMiningPolicy.v1 were accepted. Unsafe /home/current-user/private-generation, api_key=review-secret-123456, and password=secret were rejected before review-record persistence and exact selector output; unsafe queue output did not echo either binding. Missing-store local CLI list returned ok with zero entries (1486 bytes) and exact get returned not_found (784 bytes). The targeted expiry test verified expired terminal metadata is omitted then removed, and the authorized-purge test verified the review-record file is removed while profile and candidate-projection bytes remain unchanged; both leave the same empty no-store read path. A 20 KB hostile option returned unrecognized_argument without echo (377 bytes); unsafe exact selector returned invalid_request without echo (461 bytes). Targeted review-record tests passed 2 files and 16 tests. Registry authority verification passed 1 file and 78 tests. Package verification passed 3 files and 35 tests. pnpm -C packages/cli run typecheck and pnpm -C packages/cli build passed. node packages/cli/dist/bin/agentera.js check compact passed. The first verify:package invocation exceeded the 120-second tool timeout; the identical command reran with a 600-second timeout and passed in 493.99 seconds.
+  next: Leave uvvlfjycxk pending with audit-1 provenance intact and changes uncommitted for independent Audit re-evaluation.
+  publication_order: 140

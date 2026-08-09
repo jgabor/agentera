@@ -202,10 +202,10 @@ describe("exact code-owned development invocation projection", () => {
 
   it("enumerates and exercises every mutation, retrieval, glossary, schema, and help projection owner", () => {
     const owners = developmentProjectionOwners();
-    expect(owners).toHaveLength(104);
+    expect(owners).toHaveLength(105);
     expect(owners.filter(({ family }) => family === "mutation")).toHaveLength(64);
     expect(owners.filter(({ family }) => family === "retrieval")).toHaveLength(33);
-    expect(owners.filter(({ family }) => family === "glossary")).toHaveLength(7);
+    expect(owners.filter(({ family }) => family === "glossary")).toHaveLength(8);
     expect(new Set(owners.map(({ owner }) => owner)).size).toBe(owners.length);
     expect(owners.every(({ runtime }) => !runtime.includes("npx -y agentera@next"))).toBe(true);
     expect(owners.every(({ consumers }) => consumers.includes("schema") || consumers.includes("runtime_contract"))).toBe(true);

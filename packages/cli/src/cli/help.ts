@@ -3,6 +3,7 @@ import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
 import { personalGlossaryCandidateProjectionContract } from "../registries/glossaryCandidateProjectionContract.js";
 import { personalGlossaryCandidateDecisionContract } from "../registries/glossaryCandidateDecisionContract.js";
+import { personalGlossaryReviewRecordsContract } from "../registries/glossaryReviewRecordsContract.js";
 import { describeRouteReceipt } from "../registries/hybridRoute.js";
 import { advertisedValidateFamilyNames } from "./commands/validate.js";
 import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
@@ -418,6 +419,7 @@ export function printReportHelp(): string {
   const profileGlossary = personalGlossaryOutputContract();
   const candidateReads = personalGlossaryCandidateProjectionContract();
   const candidateDecision = personalGlossaryCandidateDecisionContract();
+  const reviewRecords = personalGlossaryReviewRecordsContract();
   return [
     "usage: agentera report [-h] [--format {text,json}] [--project VALUE] [--sources {active,all}]",
     "                       | agentera report refresh [--dry-run|--consent local-history]",
@@ -430,7 +432,11 @@ export function printReportHelp(): string {
     "                         [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN] --format json",
     `                       | ${candidateReads.candidateReadCommand} get --candidate-id ID --candidate-revision REVISION`,
     "                         --generation GENERATION --policy-version POLICY --format json",
-    `                       | ${candidateDecision.command} --input <file|-> --format json`,
+     `                       | ${candidateDecision.command} --input <file|-> --format json`,
+     `                       | ${reviewRecords.command} queue --input <file|-> --format json`,
+     `                       | ${reviewRecords.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN] --format json`,
+     `                       | ${reviewRecords.command} get --review-id ID --candidate-id ID --candidate-revision REVISION`,
+     "                         --generation GENERATION --policy-version POLICY --format json",
     "",
     "Privacy-gated usage analytics over an existing corpus.",
     "Default analytics use --sources active and exclude historical imports.",
@@ -447,8 +453,14 @@ export function printReportHelp(): string {
     "and expiry-aware safe-context availability snapshot.",
     "Personal glossary decisions accept one host classification receipt through structured input. The CLI binds it to the",
     "current private projection, current evidence, and quality gate, then emits automatic_admission, review_required, or abstain.",
-    "It never writes a review, profile, project glossary, candidate projection, or project state. Host confidence cannot enable",
-    "inferred automatic admission.",
+     "It never writes a review, profile, project glossary, candidate projection, or project state. Host confidence cannot enable",
+     "inferred automatic admission.",
+     "Personal glossary reviews queue only a current review_required decision. Queueing is private, user-local, non-interactive,",
+     "and does not accept a user disposition or change a profile entry, project state, candidate projection, or publication.",
+     "List and exact reads emit only opaque bindings, a stable reason, lifecycle dates, and status. They require the configured",
+     "current-user owner and current candidate-projection binding, use opaque snapshot cursors, and never return terms, meanings,",
+     "evidence, source, session, project, path, tool, or approval material. Terminal review metadata expires after 90 days through",
+     "separate authenticated owner maintenance; reads never perform maintenance.",
     "",
     "Corpus extraction flags (report refresh with --consent local-history):",
     "  These flags deselect runtimes that would otherwise be included when their",

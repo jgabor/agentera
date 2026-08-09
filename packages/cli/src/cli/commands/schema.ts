@@ -19,6 +19,7 @@ import { entityListFamilies } from "../../state/entityRetrievalHelp.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
 import { personalGlossaryCandidateProjectionContract } from "../../registries/glossaryCandidateProjectionContract.js";
 import { personalGlossaryCandidateDecisionContract } from "../../registries/glossaryCandidateDecisionContract.js";
+import { personalGlossaryReviewRecordsContract } from "../../registries/glossaryReviewRecordsContract.js";
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
 import { advertisedValidateFamilyNames } from "./validate.js";
 import { SCHEMA_TOP_LEVEL_COMMANDS } from "../dispatch/projections.js";
@@ -379,6 +380,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   const profileGlossary = personalGlossaryOutputContract();
   const candidateReads = personalGlossaryCandidateProjectionContract();
   const candidateDecision = personalGlossaryCandidateDecisionContract();
+  const reviewRecords = personalGlossaryReviewRecordsContract();
 
   const authorityPath = integrationAuthorityPath();
 
@@ -480,6 +482,64 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
           },
           project_checkout: "not_required",
           effects: [],
+        },
+        review_records: {
+          command: reviewRecords.command,
+          queue: {
+            request_schema_version: reviewRecords.queueRequestSchemaVersion,
+            request_fields: reviewRecords.queueRequestFields,
+            max_request_utf8_bytes: reviewRecords.queueMaxRequestUtf8Bytes,
+            decision_outcome: reviewRecords.queueDecisionOutcome,
+            current_bindings: reviewRecords.queueCurrentBindings,
+            result_schema_version: reviewRecords.queueResultSchemaVersion,
+            statuses: reviewRecords.queueResultStatuses,
+            max_result_utf8_bytes: reviewRecords.queueMaxResultUtf8Bytes,
+            no_question_channel: reviewRecords.queueNoQuestionChannel,
+          },
+          persistence: {
+            schema_version: reviewRecords.storeSchemaVersion,
+            record_schema_version: reviewRecords.recordSchemaVersion,
+            owner: reviewRecords.storeOwner,
+            file: reviewRecords.storeFile,
+            fields: reviewRecords.storeFields,
+            record_fields: reviewRecords.recordFields,
+            records_max: reviewRecords.recordsMax,
+            record_max_serialized_utf8_bytes: reviewRecords.recordMaxSerializedUtf8Bytes,
+            max_serialized_utf8_bytes: reviewRecords.storeMaxSerializedUtf8Bytes,
+            replay: reviewRecords.replay,
+            conflict: reviewRecords.conflict,
+            forbidden_fields: reviewRecords.forbiddenFields,
+          },
+          retrieval: {
+            schema_version: reviewRecords.retrievalSchemaVersion,
+            owner: reviewRecords.retrievalOwner,
+            list: {
+              default_limit: reviewRecords.listDefaultLimit,
+              maximum_limit: reviewRecords.listMaximumLimit,
+              max_serialized_utf8_bytes: reviewRecords.listMaxSerializedUtf8Bytes,
+              order: reviewRecords.listOrder,
+              statuses: reviewRecords.listStatuses,
+              cursor: {
+                authority: reviewRecords.cursorAuthority,
+                vocabulary: reviewRecords.cursorVocabulary,
+                binding: reviewRecords.cursorBinding,
+                invalid_behavior: reviewRecords.cursorInvalidBehavior,
+                unavailable_behavior: reviewRecords.cursorUnavailableBehavior,
+              },
+            },
+            exact: {
+              required_bindings: reviewRecords.exactRequiredBindings,
+              current_binding_field: reviewRecords.exactCurrentBindingField,
+              max_serialized_utf8_bytes: reviewRecords.exactMaxSerializedUtf8Bytes,
+            },
+          },
+          maintenance: {
+            terminal_metadata_days: reviewRecords.terminalMetadataDays,
+            exposure: reviewRecords.maintenanceExposure,
+            purge: reviewRecords.maintenancePurge,
+            forbidden_effects: reviewRecords.maintenanceForbiddenEffects,
+          },
+          project_checkout: "not_required",
         },
       },
       historical_import: {
