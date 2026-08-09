@@ -1,0 +1,15 @@
+id: mfhoyzcjhg
+artifact: progress
+record:
+  timestamp: 2026-08-09 15:59
+  type: chore
+  phase: build
+  what: Published agentera@3.0.0-dev.51 through the qualified candidate transaction and promoted npm @next.
+  context:
+    intent: Merge the requested maintainer guidance and publish the next qualified Agentera development package.
+    constraints: Use forward-only provenance, immutable candidate approval, qualified publication commands, private credential injection, no push, and no tag.
+    scope: feat/v3 release metadata, cold qualification fixes, npm agentera@3.0.0-dev.51, @next, and publication closeout.
+  discovered: Concurrent merge provenance and cold correctness-fixture timeouts required forward-only advancement through unpublished dev.48, dev.49, and dev.50 candidates; all superseded evidence remains retained and no earlier candidate was published.
+  verified: Three cold full qualifications passed in 392.150, 367.545, and 361.017 seconds. Publication passed stage, exact-version L2, and promotion in 31.238 seconds. npm integrity matched sha512-6d6tB+nwCi7l1wxn7LNAU7VfNqoPa361eSwf6GwrXBW63wKXWh64HsH7m24u5CYFRAYgNSTOHb3wEv2A8SFOtA==; exact and @next npx both returned 3.0.0-dev.51; receipt digest is 5685c0e9bb23d44181978249d7e10e38beedc8ac32577cdc509e30772178edfa.
+  next: No push or Git tag was performed. The local feat/v3 commits remain ready for the separately authorized remote workflow.
+  publication_order: 123
