@@ -1,0 +1,15 @@
+id: ostxtbxgps
+artifact: progress
+record:
+  timestamp: 2026-08-09 03:55
+  type: fix
+  phase: build
+  what: Corrected audit-1 candidate projection privacy and persisted-state validation failures.
+  context:
+    intent: Repair tahegtlmco without changing its evaluator-owned pending lifecycle.
+    constraints: Keep candidates private and user-local, preserve no-public-read and no-review-write boundaries, and do not commit or advance plan state.
+    scope: Merged project caps, JSON-sensitive excerpt handling, persisted projection invariants, and unchanged replay permissions.
+  discovered: Duplicate project-key merges could exceed the 100-key cap; quoted JSON secrets bypassed excerpt sanitization; digest-valid inconsistent persisted records passed validation; unchanged replay did not restore mode 0600.
+  verified: Focused projection and authority tests passed 86 tests. Full source passed 235 files and 3721 tests with 1 skipped. Typecheck, rebuilt local CLI 3.0.0-dev.43, local schema, and compact passed. Regression tests cover merged unions of 100 and 101 keys, quoted password and sessionId values, digest-valid binding/report/order contradictions, and mode repair.
+  next: Keep tahegtlmco pending for independent re-audit; do not commit or advance plan state.
+  publication_order: 128

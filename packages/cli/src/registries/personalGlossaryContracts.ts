@@ -15,6 +15,20 @@ export interface PersonalGlossaryAdmissionContract {
   insufficientRecovery: string;
 }
 
+export interface PersonalGlossaryCandidateProjectionContract {
+  schemaVersion: string;
+  owner: string;
+  candidatesMax: number;
+  projectIdsMaxPerCandidate: number;
+  sourceExcerptMaxUtf8Bytes: number;
+  pendingExcerptDays: number;
+  sourceFamilies: Record<string, string[]>;
+  selectionAlgorithm: string;
+  tieBreak: string;
+  projectIdentitySchemaVersion: string;
+  storageFile: string;
+}
+
 export interface ConfirmedVariantGuardContract {
   excludedDirectories: string[];
 }

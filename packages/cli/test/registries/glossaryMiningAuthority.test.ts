@@ -27,6 +27,7 @@ import {
   validateGlossaryEntryContract,
   type GlossaryAdmissionContext,
 } from "../../src/registries/glossaryEntryContract.js";
+import { personalGlossaryCandidateProjectionContract } from "../../src/registries/glossaryCandidateProjectionContract.js";
 
 function authorityFixture(mutate?: (authority: Record<string, any>) => void): string {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "glossary-mining-authority-"));
@@ -140,6 +141,16 @@ describe("personal glossary mining authority", () => {
         project_publication: "ownership_contracts.project.publication",
       },
       admission: { inferred_automatic_admission: "disabled" },
+      candidate_projection: {
+        status: "active",
+        selection: {
+          candidates_max: 50,
+          source_families: {
+            explicit: ["personal_explicit_definition"],
+            recurring: ["personal_inferred_usage", "personal_inferred_conversation"],
+          },
+        },
+      },
     });
     expect(personalGlossaryAdmissionContract()).toMatchObject({
       conversationSignalTypes: [
@@ -183,6 +194,14 @@ describe("personal glossary mining authority", () => {
       conversationCompletenessAuthority: "expected_qualifying_anchor_set_exact_match",
       conversationAdmission: "review_only",
     });
+    expect(personalGlossaryCandidateProjectionContract()).toMatchObject({
+      schemaVersion: "agentera.personalGlossaryCandidateProjection.v1",
+      candidatesMax: 50,
+      projectIdsMaxPerCandidate: 100,
+      sourceExcerptMaxUtf8Bytes: 4096,
+      pendingExcerptDays: 30,
+      storageFile: "candidate-projection.json",
+    });
   });
 
   it.each([
@@ -224,6 +243,50 @@ describe("personal glossary mining authority", () => {
           "personal_mining_authority";
       },
       "personal_mining_authority replacement must preserve shared primitive, isolation, consumer precedence, and Build project publication",
+    ],
+    [
+      "candidate projection cap",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.selection.candidates_max = 51;
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+    ],
+    [
+      "candidate projection diversity",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.selection.source_families.recurring =
+          [];
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+    ],
+    [
+      "candidate projection tie break",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.selection.tie_break =
+          "source-order";
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+    ],
+    [
+      "candidate projection excerpt redaction",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.excerpts.source_max_utf8_bytes = 0;
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+    ],
+    [
+      "candidate projection retention purge",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.retention.purge = "project";
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+    ],
+    [
+      "candidate projection replay persistence",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.persistence.replay = "overwrite";
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
     ],
     [
       "term identity",

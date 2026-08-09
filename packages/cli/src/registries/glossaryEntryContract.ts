@@ -419,6 +419,7 @@ export function validateGlossaryEntryContract(
     !sameStrings(personalImplementation?.active, [
       "bounded_admission",
       "bounded_explicit_discovery",
+      "bounded_candidate_projection",
       "explicit_classification",
       "inferred_evidence_check",
       "profile_full_rendering",

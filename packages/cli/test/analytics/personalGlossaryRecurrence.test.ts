@@ -184,6 +184,7 @@ describe("recurring personal glossary mining", () => {
     ]);
     expect(candidate?.capsule).not.toHaveProperty("admission");
     expect(candidate?.capsule).not.toHaveProperty("decision");
+    expect(candidate?.project_ids).toEqual(["project-a", "project-b"]);
   });
 
   it("abstains when the instruction/configuration route has copied content", () => {

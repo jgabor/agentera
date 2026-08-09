@@ -62,9 +62,10 @@ personal_mining_authority:
   implementation_boundary: >-
     This section settles personal glossary mining identity, evidence provenance,
     consent, privacy, lifecycle, and bounded explicit-discovery authority. The
-    runtime implements only the declared bounded discovery surface. It does not
-    implement candidate reads, host classification, CLI decisions, publication
-    replacement, review storage, or Profile integration.
+     runtime implements only the declared bounded discovery and candidate
+     projection surfaces. It does not implement public candidate reads, host
+     classification, CLI decisions, publication replacement, review storage, or
+     Profile integration.
   preserved_decisions: [prmnztjytv, mcsmqqitnm, zyvgyvjnsv]
   replacement:
     shared_primitive: shared_primitive
@@ -619,6 +620,75 @@ personal_mining_authority:
       recovery: >-
         A purge is local and irreversible to the mining records. A later run
         requires fresh consent-bound evidence and creates no project-side record.
+  candidate_projection:
+    status: active
+    runtime: packages/cli/src/analytics/personalGlossaryCandidateProjection.ts#projectPersonalGlossaryCandidates
+    schema_version: agentera.personalGlossaryCandidateProjection.v1
+    owner: deterministic_discovery_projection
+    input: validated_completed_explicit_and_recurring_capsules_with_transient_source_project_ids_and_candidate_adjacent_excerpts
+    output: bounded_user_local_candidate_projection_with_safe_excerpts_and_selection_report
+    implementation_boundary: >-
+      This runtime selects and persists only bounded candidate metadata and safe
+      review context. It does not add public candidate read grammar, host
+      classification, CLI admission, review-disposition writes, profile
+      publication, project-glossary access, or project-state effects.
+    selection:
+      candidates_max: 50
+      project_ids_max_per_candidate: 100
+      source_families:
+        explicit: [personal_explicit_definition]
+        recurring: [personal_inferred_usage, personal_inferred_conversation]
+      algorithm: least_retained_source_family_then_project_then_canonical_candidate
+      tie_break: candidate_id_then_candidate_revision_then_capsule_sha256
+      project_identity:
+        schema_version: agentera.personalGlossaryProjectionProjectIdentity.v1
+        algorithm: sha256
+        input: canonical_utf8_json_of_exact_transient_project_id
+        output: lowercase_hex
+        rule: >-
+          Projection-only project labels are used transiently to allocate
+          diversity. Persisted allocation fields and reports contain only this
+          exact-byte, no-normalization project identity. The validated capsule
+          keeps its separately authority-required provenance unchanged.
+      coverage: >-
+        Each selection round prefers the represented source family with the
+        fewest retained candidates, then the candidate whose represented project
+        has the fewest retained candidates. A capped or uncovered family or
+        project reports degraded coverage with retained and dropped counts.
+    excerpts:
+      source_max_utf8_bytes: 4096
+      max_per_candidate: 1
+      authority: personal_mining_authority.privacy.excerpts
+      input_rule: candidate_adjacent_text_must_contain_the_exact_candidate_term
+      output_fields: [text, expires_at, redacted]
+      omission_reasons: [no_excerpt, unrelated_context, source_bound_exceeded, unsafe_tool_arguments, unsafe_content]
+      rule: >-
+        Sort transient excerpts canonically, redact before selection or
+        persistence, retain at most one safe excerpt, and omit unsafe or
+        unrelated text without echoing it.
+    retention:
+      authority: personal_mining_authority.privacy.retention
+      purge: personal_mining_authority.privacy.purge
+      rule: >-
+        Pending candidate excerpts expire after the authority's thirty-day
+        period. Retention maintenance may remove only expired safe excerpts;
+        a current-user-authorized purge removes the complete user-local
+        projection before the next read. Review-disposition persistence remains
+        outside this runtime.
+    persistence:
+      root: $AGENTERA_PROFILE_DIR/intermediate/personal-glossary
+      file: candidate-projection.json
+      canonicalization: candidate_contracts.canonicalization
+      fields: [schema_version, owner, generation, policy_version, retained_at, candidates, report, projection_sha256]
+      replay: byte_identical_projection_is_unchanged_replay
+      project_storage: forbidden
+      public_reads: forbidden
+      review_disposition_writes: forbidden
+      rule: >-
+        Write one private canonical projection file below the user profile
+        directory. The file contains validated capsules, hashed project
+        identities, safe excerpts, and a bounded report only. Never write a
+        project path, .agentera state, raw excerpt source, or review disposition.
   admission:
     inferred_automatic_admission: disabled
     inferred_review: allowed
@@ -979,6 +1049,7 @@ ownership_contracts:
       active:
         - bounded_admission
         - bounded_explicit_discovery
+        - bounded_candidate_projection
         - explicit_classification
         - inferred_evidence_check
         - profile_full_rendering

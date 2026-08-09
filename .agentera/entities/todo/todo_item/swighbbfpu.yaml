@@ -1,0 +1,35 @@
+id: swighbbfpu
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Replan candidate projection symlink confinement
+  requirements:
+    - Reject a symlinked candidate projection file and symlinks in the owned intermediate/personal-glossary path before read, write, replay, expiry, or purge effects.
+    - Verify the resolved owned parent remains below the configured profile root and fail closed before any external-path effect.
+    - Preserve deterministic allocation, privacy redaction, persisted-state validation, mode repair, expiry, purge, and project-state isolation.
+  acceptance:
+    - A symlinked final projection file is never read as current and exposes no external bytes.
+    - A symlink in the owned parent path blocks persistence before effects and leaves its external target unchanged.
+    - Normal owned paths retain read, write, replay, permission, expiry, and purge behavior with paired pass and fail regressions.
+    - A replanned replacement task receives persisted independent PASS before this TODO resolves.
+  release_blocker: false
+  severity: degraded
+  readiness:
+    capability: plan
+    reason: Task tahegtlmco exhausted two evaluations because projection storage can follow symlinks outside the profile root.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: This storage-authority blocker prevents candidate reads and every downstream glossary task.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Replan candidate projection symlink confinement"
+      severity: degraded
+      status: open
+      order: 3

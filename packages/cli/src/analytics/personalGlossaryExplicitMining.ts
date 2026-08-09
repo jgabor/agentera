@@ -194,6 +194,7 @@ function candidateWithSource(
       capsule,
       term_span: utf8Span(text, cue.termStart, cue.termEnd),
       meaning_span: utf8Span(text, cue.meaningStart, cue.meaningEnd),
+      project_ids: [signal.project_id],
     },
     sourceId: signal.source_id,
     anchor: signal.evidence_anchor,

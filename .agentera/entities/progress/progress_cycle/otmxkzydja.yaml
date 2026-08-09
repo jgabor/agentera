@@ -1,0 +1,16 @@
+id: otmxkzydja
+artifact: progress
+record:
+  timestamp: 2026-08-09 04:06
+  type: fix
+  phase: audit
+  what: Recorded the terminal evaluator handoff for blocked candidate projection work.
+  context:
+    intent: Preserve tahegtlmco evidence and the evaluator-owned blocked state without another implementation attempt.
+    constraints: The retry budget is exhausted; keep the projection non-public and do not change implementation, tests, authority, plan, or TODO content.
+    unknowns: Storage must reject final-file and owned-parent symlinks and prove the resolved path stays below the configured profile root.
+    scope: Audit evidence, progress, and a Plan-owned replanning handoff only.
+  discovered: Audit-1 found merged project-cap, quoted JSON secret, persisted-integrity, and replay-mode defects. Those corrections and paired regressions passed. Audit-2 then found that projection reads and effects can follow a symlinked final file or owned parent path outside the profile root.
+  verified: Deterministic allocation, project-cap, quoted password and sessionId redaction, canonical persisted-state validation, candidate order and uniqueness rejection, and mode repair passed focused tests. Source verification passed 235 files and 3721 tests with 1 skipped; typecheck, local build, schema, and compact passed. This evidence does not establish symlink confinement.
+  next: Plan must replan TODO swighbbfpu before candidate storage can read, write, replay, expire, or purge safely. tahegtlmco remains blocked; downstream candidate reads remain unimplemented and this partial projection is not a public surface.
+  publication_order: 129

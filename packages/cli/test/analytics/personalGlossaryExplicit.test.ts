@@ -835,6 +835,7 @@ describe("bounded explicit evidence mining", () => {
       start: Buffer.byteLength("Actually, `ship shape` means ", "utf8"),
       end: Buffer.byteLength("Actually, `ship shape` means the complete form: with detail", "utf8"),
     });
+    expect(candidate.project_ids).toEqual(["explicit-fixture"]);
     expect(resolved).toEqual(["explicit"]);
   });
 

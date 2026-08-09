@@ -201,3 +201,21 @@ export {
   type RecurringGlossaryMiningResult,
   type RecurringReviewReason,
 } from "./personalGlossaryRecurrence.js";
+export {
+  maintainPersonalGlossaryCandidateProjection,
+  personalGlossaryCandidateProjectionPath,
+  personalGlossaryProjectionProjectIdentity,
+  persistPersonalGlossaryCandidateProjection,
+  projectPersonalGlossaryCandidates,
+  readPersonalGlossaryCandidateProjection,
+  type PersonalGlossaryCandidateProjection,
+  type PersonalGlossaryCandidateProjectionInput,
+  type PersonalGlossaryCandidateProjectionMaintenanceInput,
+  type PersonalGlossaryCandidateProjectionMaintenanceResult,
+  type PersonalGlossaryCandidateProjectionReadResult,
+  type PersonalGlossaryCandidateProjectionReport,
+  type PersonalGlossaryCandidateProjectionStorageOptions,
+  type PersonalGlossaryProjectionCandidateInput,
+  type PersonalGlossarySafeExcerpt,
+  type ProjectedPersonalGlossaryCandidate,
+} from "./personalGlossaryCandidateProjection.js";

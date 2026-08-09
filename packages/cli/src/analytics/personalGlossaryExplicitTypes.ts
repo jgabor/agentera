@@ -47,6 +47,8 @@ export interface ExplicitGlossaryCandidate {
   capsule: GlossaryEvidenceCapsule;
   term_span: ExplicitGlossarySpan;
   meaning_span: ExplicitGlossarySpan;
+  /** Transient source labels for bounded candidate-projection diversity. */
+  project_ids: string[];
 }
 
 export interface ExplicitGlossaryAbstention {

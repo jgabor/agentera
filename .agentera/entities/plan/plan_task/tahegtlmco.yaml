@@ -6,7 +6,7 @@ record:
     - zabolpjiro
     - milybqttmo
     - ddoncnlhro
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN demand exceeds bounds WHEN selection runs THEN allocation, ties, retained and dropped counts, and degraded coverage are deterministic and visible.
     - GIVEN diverse sources and projects WHEN caps apply THEN one abundant family cannot silently consume all evidence.
@@ -14,3 +14,13 @@ record:
     - GIVEN identical candidates and policy WHEN projection repeats THEN capsule bytes, identities, order, and reports match.
     - GIVEN each cap, diversity, and privacy rule WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Projection reads follow a symlinked final file and persistence follows symlinks in the owned intermediate/personal-glossary path, allowing effects outside the configured profile root; paired symlink regressions are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_01be3d7b8ffeI7Q6RE46UUMxQP bounded re-review
+      recorded_at: 2026-08-09 04:05
+      writer_command: agentera state plan record-evaluation

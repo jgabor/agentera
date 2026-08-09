@@ -1,0 +1,15 @@
+id: nbhsxmybco
+artifact: progress
+record:
+  timestamp: 2026-08-09 03:14
+  type: feat
+  phase: build
+  what: Added bounded personal glossary candidate projection and user-local safe persistence.
+  context:
+    intent: Implement tahegtlmco projection behavior without public candidate reads or review persistence.
+    constraints: Preserve candidate identity and revision, personal and project isolation, consent, user-local privacy, and evaluator-owned task lifecycle.
+    scope: Allocation, diversity, redaction, retention, replay, contracts, miners, and regression coverage.
+  discovered: Completed explicit and recurring capsules lacked a bounded cross-family projection and project diversity metadata.
+  verified: Targeted projection, explicit, recurring, and authority tests passed 257 tests. Full source passed 235 files and 3711 tests with 1 skipped. Typecheck, rebuilt local CLI, local schema, and compact passed. Selection retains at most 50 canonical capsules, reports cap, ties, family and project coverage, hashes transient project IDs, redacts or omits excerpts, and keeps output user-local. No project glossary access, public candidate read grammar, review-disposition write, publication, version, or registry change was added.
+  next: Keep tahegtlmco pending for independent Audit PASS; do not commit or advance plan state.
+  publication_order: 127

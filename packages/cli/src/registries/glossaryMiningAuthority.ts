@@ -4,6 +4,7 @@ import type {
   GlossaryAdmissionContext,
   GlossaryConversationEvidenceExpectation,
 } from "./glossaryEntryContract.js";
+import { validatePersonalCandidateProjectionAuthority } from "./glossaryCandidateProjectionAuthority.js";
 import { validateExplicitSegmentGrammar } from "./explicitSegmentGrammarContract.js";
 
 type Mapping = Record<string, unknown>;
@@ -751,6 +752,8 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
       "personal_mining_authority must keep inferred automatic admission disabled and bind the evaluation authority",
     );
   }
+
+  errors.push(...validatePersonalCandidateProjectionAuthority(authority));
   return errors;
 }
 

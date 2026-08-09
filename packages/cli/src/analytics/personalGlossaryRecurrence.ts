@@ -74,6 +74,8 @@ export interface RecurringGlossaryCandidate {
   capsule: GlossaryEvidenceCapsule;
   outcome: "review_required";
   reason: RecurringReviewReason;
+  /** Transient source labels for bounded candidate-projection diversity. */
+  project_ids: string[];
 }
 
 export interface RecurringGlossaryAbstention {
@@ -611,6 +613,7 @@ function makeCandidate(
   term: string,
   provenanceKind: "personal_inferred_usage" | "personal_inferred_conversation",
   evidence: readonly Mapping[],
+  records: readonly ResolvedSignal[],
   generation: string,
   reason: RecurringReviewReason,
 ): RecurringGlossaryCandidate {
@@ -623,7 +626,12 @@ function makeCandidate(
     policy_version: PERSONAL_GLOSSARY_MINING_POLICY_VERSION,
     generation,
   });
-  return { capsule, outcome: "review_required", reason };
+  return {
+    capsule,
+    outcome: "review_required",
+    reason,
+    project_ids: [...new Set(records.map((record) => record.projectId))].sort(compareText),
+  };
 }
 
 function abstention(term: string, reason: RecurringAbstentionReason): RecurringGlossaryAbstention {
@@ -783,6 +791,7 @@ export function mineRecurringGlossaryCandidates(
             term,
             "personal_inferred_conversation",
             evidenceForConversation(userRecords),
+            userRecords,
             tier.manifest.generation,
             reason,
           ),
@@ -817,6 +826,7 @@ export function mineRecurringGlossaryCandidates(
             term,
             "personal_inferred_usage",
             evidenceForInstruction(independent.records),
+            independent.records,
             tier.manifest.generation,
             reviewReason(instructionGroup.occurrences),
           ),
