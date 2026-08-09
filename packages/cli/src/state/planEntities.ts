@@ -81,6 +81,108 @@ function selectedPlan(entities: DiscoveredEntity[], requested?: string): Discove
   if (open.length === 0) throw failure("not_found", "no open plan exists", "Create a plan, or use agentera state plan get --id ID for completed plan detail.");
   throw failure("ambiguous", `multiple open plans exist: ${open.map(({ id }) => id).sort().join(", ")}`, "List plans, then use agentera state plan get --id ID or agentera state plan tasks list PLAN_ID.");
 }
+
+interface PlanLifecycleDecision {
+  predecessor?: DiscoveredEntity;
+  target?: DiscoveredEntity;
+  archivedRecord?: JsonObject;
+  replay: boolean;
+  effects: JsonObject;
+}
+
+function archivedPlanRecord(plan: DiscoveredEntity): JsonObject {
+  const record = structuredClone(plan.record!);
+  const header = mapping(record.header) ? record.header : {};
+  header.status = "archived";
+  record.header = header;
+  return record;
+}
+
+function preservedPlanEffects(plan: DiscoveredEntity): JsonObject {
+  return {
+    id: plan.id!,
+    from_status: planStatus(plan),
+    to_status: "archived",
+    preserved: ["task_records", "task_evaluations", "task_completion"],
+  };
+}
+
+function planLifecycleDecision(
+  entities: DiscoveredEntity[],
+  intent: { verb: "create"; force: boolean } | { verb: "archive"; force: boolean; plan?: string },
+): PlanLifecycleDecision {
+  const plans = entities.filter((entity) => entity.boundary === PLAN);
+  const open = plans.filter((entity) => planStatus(entity) === "open");
+  const openIds = open.map((entity) => entity.id!).sort();
+
+  if (intent.verb === "create") {
+    if (open.length > 1) {
+      reject({
+        class: "conflict",
+        message: `multiple open plans exist: ${openIds.join(", ")}; implicit plan create cannot choose a predecessor`,
+        recovery: "List the canonical plan IDs with agentera state plan list --status open --format json and resolve the competing open plans before creating a successor.",
+      });
+    }
+    if (open.length === 1) {
+      const predecessor = open[0];
+      if (!intent.force) {
+        reject({
+          class: "conflict",
+          message: `open plan '${predecessor.id}' blocks plan create`,
+          recovery: `Use agentera state plan create --force --input PLAN.yaml --format json only to archive '${predecessor.id}' unchanged and publish a successor.`,
+        });
+      }
+      return {
+        predecessor,
+        archivedRecord: archivedPlanRecord(predecessor),
+        replay: false,
+        effects: {
+          lifecycle: "forced_replacement",
+          force: true,
+          archived_predecessor: preservedPlanEffects(predecessor),
+          successor_lineage: { field: "previous_plan_archived", predecessor: predecessor.id! },
+        },
+      };
+    }
+    const completed = plans.filter((entity) => planStatus(entity) === "complete");
+    const predecessor = completed.length === 1 ? completed[0] : undefined;
+    return {
+      ...(predecessor ? { predecessor, archivedRecord: archivedPlanRecord(predecessor) } : {}),
+      replay: false,
+      effects: {
+        lifecycle: predecessor ? "completed_predecessor_replacement" : "create",
+        force: intent.force,
+        ...(predecessor ? {
+          archived_predecessor: preservedPlanEffects(predecessor),
+          successor_lineage: { field: "previous_plan_archived", predecessor: predecessor.id! },
+        } : {}),
+      },
+    };
+  }
+
+  const target = selectedPlan(entities, intent.plan);
+  const status = planStatus(target);
+  if (status === "open" && !intent.force) {
+    reject({
+      class: "conflict",
+      message: `open plan '${target.id}' cannot be archived without --force`,
+      recovery: `Complete '${target.id}', or use agentera state plan archive --plan ${target.id} --force --format json to preserve unfinished task history without claiming completion.`,
+    });
+  }
+  const archivedRecord = archivedPlanRecord(target);
+  const replay = canonicalRecordJson(archivedRecord) === canonicalRecordJson(target.record);
+  return {
+    target,
+    archivedRecord,
+    replay,
+    effects: {
+      lifecycle: status === "open" ? "forced_archive" : "archive",
+      force: intent.force,
+      archived_plan: preservedPlanEffects(target),
+    },
+  };
+}
+
 function taskFor(entities: DiscoveredEntity[], id: string, plan?: string): DiscoveredEntity {
   if (!ID.test(id)) throw failure("invalid_request", `task ID '${id}' must be ten lowercase letters`, "Use a bare task ID returned by plan task append or list.", id);
   if (plan !== undefined && !ID.test(plan)) throw failure("invalid_request", `plan ID '${plan}' must be ten lowercase letters`, "Use a bare plan ID returned by plan create or list.", plan);
@@ -116,6 +218,9 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
   const input = structuredClone(req.input ?? {});
   normalizeAndValidatePlanCreateInput(input);
   validatePlanPublicationCandidate(dumpYamlMapping(input));
+  const discovery = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
+  const entities = all(options.publicationContext.pinnedPath(), sourceRoot, discovery);
+  const lifecycle = planLifecycleDecision(entities, { verb: "create", force: req.force });
   const tasks = Array.isArray(input.tasks) ? input.tasks.filter(mapping) : [];
   const reserved = new Set<string>();
   const planId = newId(options.publicationContext?.pinnedPath() ?? req.projectRoot, sourceRoot, reserved, options.candidate);
@@ -125,6 +230,7 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
   const header = mapping(planRecord.header) ? planRecord.header : {}; delete header.id; planRecord.header = header;
   if (header.status === "active") header.status = "open";
   if (header.status === "completed") header.status = "complete";
+  if (lifecycle.predecessor) planRecord.previous_plan_archived = lifecycle.predecessor.id!;
   const taskRecords = tasks.map((task, index): JsonObject => {
     const record = structuredClone(task) as JsonObject; delete record.number;
     record.plan = planId;
@@ -138,22 +244,13 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
     return record;
   });
   const publications = [{ boundary: PLAN, id: planId, record: planRecord }, ...taskRecords.map((record, index) => ({ boundary: TASK, id: taskIds[index], record }))];
-  if (req.dryRun) return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, true, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })) });
-  const discovery = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
-  const entities = all(options.publicationContext.pinnedPath(), sourceRoot, discovery);
-  const openPlans = entities.filter((entity) => entity.boundary === PLAN && planStatus(entity) === "open");
-  const completedPlans = entities.filter((entity) => entity.boundary === PLAN && planStatus(entity) === "complete");
-  const currentPredecessor = openPlans.length === 0 && completedPlans.length === 1 ? completedPlans[0] : undefined;
+  if (req.dryRun) return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, true, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
   const published: Array<{ relative: string; identity: PublishedTargetIdentity }> = [];
   let predecessor: { relative: string; archivedIdentity: PublishedTargetIdentity; bytes: string } | undefined;
   try {
-    if (currentPredecessor) {
-      const archivedRecord = structuredClone(currentPredecessor.record!);
-      const archivedHeader = mapping(archivedRecord.header) ? archivedRecord.header : {};
-      archivedHeader.status = "archived";
-      archivedRecord.header = archivedHeader;
-      const archived = replaceEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: currentPredecessor.id!, expectedRecord: currentPredecessor.record!, expectedBytes: exactDiscoveredEntityBytes(currentPredecessor), migrationProvenance: currentPredecessor.migrationProvenance, record: archivedRecord });
-      if (!archived.publishedIdentity || archived.previousBytes === undefined) throw new Error(`completed predecessor '${currentPredecessor.id}' archive did not retain its exact recovery identity and bytes`);
+    if (lifecycle.predecessor && lifecycle.archivedRecord) {
+      const archived = replaceEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: lifecycle.predecessor.id!, expectedRecord: lifecycle.predecessor.record!, expectedBytes: exactDiscoveredEntityBytes(lifecycle.predecessor), migrationProvenance: lifecycle.predecessor.migrationProvenance, record: lifecycle.archivedRecord });
+      if (!archived.publishedIdentity || archived.previousBytes === undefined) throw new Error(`predecessor '${lifecycle.predecessor.id}' archive did not retain its exact recovery identity and bytes`);
       predecessor = { relative: relative(req.projectRoot, archived.path), archivedIdentity: archived.publishedIdentity, bytes: archived.previousBytes };
     }
     for (const item of publications) {
@@ -184,7 +281,7 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
     if (recoveryFailures.length) throw new Error(`plan replacement failed: ${(error as Error).message}; recovery failed: ${recoveryFailures.join("; ")}`, { cause: error });
     throw error;
   }
-  return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })) });
+  return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
 }
 
 function taskRecord(req: StateWriteRequest, plan: string): JsonObject {
@@ -293,9 +390,18 @@ function supersedeTask(entities: DiscoveredEntity[], task: DiscoveredEntity, tas
   return record;
 }
 export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
-  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(req.projectRoot, sourceRoot);
   if (req.spec.verb === "create") return createPlanEntities(req, options);
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(req.projectRoot, sourceRoot);
   if (req.spec.verb === "set-plan-status" && req.values.id !== undefined) reject({ class: "invalid_request", message: "plan set-plan-status accepts only the --plan selector; --id is a task selector and is not valid for plan lifecycle" });
+  if (req.spec.verb === "archive") {
+    const lifecycle = planLifecycleDecision(entities, { verb: "archive", force: req.force, ...(typeof req.values.plan === "string" ? { plan: req.values.plan } : {}) });
+    const plan = lifecycle.target!;
+    const record = lifecycle.archivedRecord!;
+    if (lifecycle.replay) return envelope("state plan archive", { id: plan.id!, path: plan.path, replay: true }, record, req.dryRun, { effects: lifecycle.effects });
+    if (req.dryRun) return envelope("state plan archive", { id: plan.id!, path: plan.path, replay: false }, record, true, { effects: lifecycle.effects });
+    const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, expectedBytes: exactDiscoveredEntityBytes(plan), migrationProvenance: plan.migrationProvenance, record });
+    return envelope("state plan archive", result, record, false, { effects: lifecycle.effects });
+  }
   const plan = selectedPlan(entities, typeof req.values.plan === "string" ? req.values.plan : undefined);
   if (req.spec.verb === "append") {
     if (!OPEN.has(planStatus(plan))) reject({ class: "conflict", message: `plan '${plan.id}' is ${planStatus(plan)} and cannot accept a new task` });
@@ -308,12 +414,12 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
     const result = publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: TASK, id, record });
     return envelope("state plan append", result, record, false);
   }
-  if (req.spec.verb === "set-plan-status" || req.spec.verb === "archive") {
+  if (req.spec.verb === "set-plan-status") {
     const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === plan.id);
-    const requested = req.spec.verb === "archive" ? "archived" : String(req.values.status);
-    if (planStatus(plan) === "archived" && req.spec.verb !== "archive") reject({ class: "conflict", message: `archived plan '${plan.id}' is immutable` });
+    const requested = String(req.values.status);
+    if (planStatus(plan) === "archived") reject({ class: "conflict", message: `archived plan '${plan.id}' is immutable` });
     const record = structuredClone(plan.record!); const header = mapping(record.header) ? record.header : {}; header.status = requested; record.header = header;
-    const command = req.spec.verb === "archive" ? "state plan archive" : "state plan set-plan-status";
+    const command = "state plan set-plan-status";
     if (canonicalRecordJson(record) === canonicalRecordJson(plan.record)) return envelope(command, { id: plan.id!, path: plan.path, replay: true }, record, req.dryRun);
     if (requested === "complete" && tasks.some((task) => !["complete", "superseded"].includes(String(task.record?.status)))) reject({ class: "conflict", message: "plan cannot be completed while incomplete tasks remain" });
     if (requested === "complete") {

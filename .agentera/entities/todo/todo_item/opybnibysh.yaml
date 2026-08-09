@@ -34,4 +34,4 @@ record:
       description: "[fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch."
       severity: critical
       status: open
-      order: 5
+      order: 4

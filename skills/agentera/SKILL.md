@@ -229,12 +229,12 @@ Common mutations:
 - `npx -y agentera@next state decisions append --input <path|-> --format json`
 - `npx -y agentera@next state decisions amend --id ID --base-sha256 HASH --input <path|-> --format json`
 - `npx -y agentera@next state decisions update --id ID ... --format json`
-- `npx -y agentera@next state plan create --input plan.yaml --format json`
+- `npx -y agentera@next state plan create [--force] --input plan.yaml --format json`
 - `npx -y agentera@next state plan append [--plan PLAN_ID] --input task.yaml --format json`
 - `npx -y agentera@next state plan update --id TASK_ID [--plan PLAN_ID] --input task-patch.yaml --format json`
 - `npx -y agentera@next state plan set-status --id TASK_ID --status STATUS --format json`
 - `npx -y agentera@next state plan set-plan-status [--plan PLAN_ID] --status complete --format json`
-- `npx -y agentera@next state plan archive --format json`
+- `npx -y agentera@next state plan archive [--plan ID] [--force] --format json`
 - `npx -y agentera@next state health append --input audit.yaml --format json`
 - `npx -y agentera@next state todo create --input todo.yaml --format json`
 - `npx -y agentera@next state todo update --id ID --input todo-patch.yaml --format json`
@@ -255,6 +255,11 @@ ordinals inside one atomic input document; the writer removes them before
 publishing bare ten-letter plan and task envelope IDs. A legacy composite
 `header.id` is migration-only and is never a public selector. Post-publication
 task append/update payloads use only mutable task content and bare task IDs.
+Without `--force`, an open plan blocks creation. With exactly one canonical open
+predecessor, forced create archives that plan without changing task, evaluation,
+or completion history, then records its bare ID in the successor's
+writer-owned `previous_plan_archived` field. Forced archive preserves the same
+history. Multiple implicit open candidates reject before effects.
 
 Add `--dry-run` to preview any mutation without publishing it. Artifacts not
 listed above are outside the typed writer contract and remain governed by their

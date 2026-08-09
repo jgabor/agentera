@@ -1,0 +1,52 @@
+id: xjiwyjimiv
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-09
+    status: open
+    reviewed: 2026-08-09
+    critic_issues: 9 found, 7 addressed, 2 dismissed
+    revised: Separated implicit single-predecessor force behavior from targeted replacement, made lineage authority explicit, split retry outcomes, completed consumer and activation inventories, and named qualification gates.
+    title: "Plan: Safe plan replacement and TODO activation"
+  what: Deliver safe, truthful, and recoverable lifecycle transitions for plans and inactive TODO state. Restore forced plan archival and successor publication, add explicit atomic replacement for competing open plans, and prevent TODO activation from resurrecting or duplicating public work.
+  why: Current contracts advertise operations that the parser rejects or the writer implements inconsistently, while inactive TODO activation can authorize known integrity violations. These release blockers undermine Agentera's promise of one inspectable CLI authority that preserves project memory without fabricating completion, losing evidence, or mutating unsafe state.
+  constraints: Keep the CLI and writer-owned entity records authoritative; retain bare project-wide IDs and canonical historical evidence; derive preview and apply from the same serialized canonical-state decision; never claim incomplete work is complete; preserve bounded, content-private diagnostics; add no generic recovery subsystem or runtime dependency; build and invoke the changed local CLI before integration claims; retain suite version 3.0.0 and do not publish, tag, or push.
+  overall_acceptance: GIVEN the three TODO contracts are implemented WHEN plan lifecycle, replacement, activation, startup, package, and rollback scenarios are run through the newly built local CLI THEN safe inputs converge to one truthful canonical state, unsafe or failed inputs cause no effects, historical evidence remains intact, and every public contract surface reports the same behavior.
+  scope:
+    included:
+      - Forced plan creation and archival with truthful predecessor history
+      - Named existing-successor and create-and-replace transactions
+      - Competing-open-plan diagnosis, recovery, and successor selection
+      - Inactive TODO activation preview, confirmation, diagnosis, and recovery
+      - Prime, Plan, Orchestrate, Status, Doctor, validation, and direct state reads
+      - Schema, help, explain, bundled guidance, source, package, and packed-output parity
+      - Final state, documentation, verification, and TODO reconciliation
+    excluded:
+      - A general transaction or recovery framework for unrelated artifacts
+      - Broad state-writer redesign or unrelated TODO cleanup
+      - Changes to v2 migration beyond the required inactive-state safety boundary
+      - npm publication, Git tags, pushes, or suite versions beyond 3.0.0
+    deferred:
+      - Stable-channel cutover and removal of bounded migration compatibility
+  design: First establish one canonical plan-lifecycle decision and one independent inactive-TODO safety decision. Preview and apply must reach the same decision from the same canonical state. Then build targeted replacement on the resolved plan authority, integrate the successor and recovery contract across every reader, and finish with current-state synchronization and broad local-artifact qualification. Failures preserve the complete pre-operation state and publish no partial authority.
+  unknowns:
+    - question: Which exact selector and payload grammar should expose the one targeted replacement operation within the existing state-writer conventions?
+      affects_task: 3
+      resolve_by: Task 3 selects one discoverable grammar before changing public surfaces; re-invoke Plan if it requires a new mutation class or authority boundary.
+    - question: Does idempotent create-and-replace require durable transaction identity, or can one bounded effect identity prove exact replay and divergent retry?
+      affects_task: 3
+      resolve_by: Exercise success, interruption, exact retry, and divergent retry against the Task 1 lifecycle contract before selecting the smallest sufficient identity.
+    - question: Are canonical lifecycle status and lineage sufficient for direct reads to expose the selected successor without a new selection field?
+      affects_task: 4
+      resolve_by: Trace every direct and aggregated consumer after Task 3; add public metadata only if existing canonical fields cannot select one successor consistently.
+    - question: Can unsafe inactive TODO projects recover through diagnosis and owner correction, or is a distinct pre-activation correction operation required?
+      affects_task: 2
+      resolve_by: Compare the real hierarchical stale-state fixture with current migration contracts; re-invoke Plan if safe recovery requires another mutating lifecycle.
+  rejected:
+    - issue: The full plan must choose the exact executable replacement command grammar before autonomous orchestration can begin.
+      rationale: Plan owns the public behavioral contract and requires one discoverable targeted operation. Build owns exact selector and payload grammar under the existing state-writer conventions, with replanning if that changes authority.
+    - issue: Autonomous orchestration must not start until every planning-time unknown has been resolved before execution.
+      rationale: The plan protocol assigns each unknown to a gated task with a bounded resolution and an explicit replanning trigger. Tasks 1 and 2 are already actionable, and dependencies prevent affected downstream work from starting early.
+  surprises:
+    []

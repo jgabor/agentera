@@ -33,4 +33,4 @@ record:
       description: "[fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted."
       severity: critical
       status: open
-      order: 3
+      order: 2

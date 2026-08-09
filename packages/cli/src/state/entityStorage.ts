@@ -16,6 +16,7 @@ import { summaryMigrationProvenanceDeclaration, summaryMigrationProvenanceViolat
 import { validateCompactedSummarySourceRowAuthority } from "./summarySourceRowAuthority.js";
 import { acquireWriterLock } from "./write/lock.js";
 import { planTaskRecordViolations } from "./write/planEvaluation.js";
+import { planLineageIssues } from "./planLineageValidation.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
 import type { GlossaryCaveatContract } from "../registries/glossaryCaveatContract.js";
 import { applyGlossaryCaveatLifecycleValidation, validateProgressGlossaryCaveat } from "./progressGlossaryCaveat.js";
@@ -640,14 +641,12 @@ export function assertEntityDiscoveryOrigin(projectRoot: string, sourceRoot: str
     `supplied entity discovery origin does not match this request (expected project '${expected.projectRoot}' and source authority '${expected.sourceRoot}', received project '${actualProjectRoot}' and source authority '${actualSourceRoot}'); call discoverEntities with this request's project and source roots, then retry`,
   );
 }
-
 function relationTargets(entity: DiscoveredEntity, relation: RelationshipDefinition): string[] | null {
   const value = entity.record?.[relation.field];
-  if (relation.cardinality === "exactly_one") return typeof value === "string" ? [value] : null;
+  if (relation.cardinality === "exactly_one" || relation.cardinality === "zero_or_one") return typeof value === "string" ? [value] : relation.cardinality === "zero_or_one" && (value === undefined || value === null) ? [] : null;
   if (value === undefined || value === null) return [];
   return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : null;
 }
-
 export function validateEntityDiscovery(projectRoot: string, sourceRoot: string | undefined, discovery: EntityDiscoveryResult, boundIssues = true): EntityValidationResult {
   assertEntityDiscoveryOrigin(projectRoot, sourceRoot, discovery);
   const model = authority(sourceRoot);
@@ -729,6 +728,7 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
       });
     }
   }
+  const canonicalPlans = discovery.entities.filter((entity) => entity.boundary === "plan" && entity.classification === "valid" && entity.id && entity.record); issues.push(...planLineageIssues(canonicalPlans, (action) => recovery(projectRoot, action)));
   for (const definition of model.entities) {
     if (!definition.ownership || definition.ownership.cardinality !== "zero_or_one") continue;
     const claims = new Map<string, DiscoveredEntity[]>();

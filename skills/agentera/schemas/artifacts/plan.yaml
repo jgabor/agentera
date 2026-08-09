@@ -260,11 +260,13 @@ PLAN:
   7:
     id: PL22
     field: previous_plan_archived
-    type: string
+    type: bare_ten_letter_id
     required: false
     description: >-
-      Path to the previous active plan archived when this plan was created.
-      Preserves plan lineage without changing lifecycle status.
+      Writer-owned bare ID of the predecessor archived when this successor was
+      created. The predecessor's archived lifecycle and this successor reference
+      provide bidirectional lineage without changing task, evaluation, or
+      completion history.
 
 UNKNOWN:
   1:
@@ -545,9 +547,18 @@ LIFECYCLE_CONTRACT:
     execution:
       eligible: Only a plan at the current-plan path can supply executable work.
       archived: An archived plan is historical and non-executable regardless of status.
+    lineage:
+      field: previous_plan_archived
+      representation: bare predecessor plan entity ID
+      publication: The writer assigns the field only while atomically archiving a predecessor and publishing its successor.
+      reverse: A predecessor's successor is derived from the unique canonical plan record that names its ID in previous_plan_archived; no second mutable lineage field exists.
     forced_archive:
       unfinished_status: archived
-      effect: Move the plan to immutable history without claiming completion or changing tasks.
+      effect: Change the plan lifecycle to archived without claiming completion or changing tasks, evaluations, or completion history.
+    forced_create:
+      no_open_predecessor: Publish the successor normally.
+      one_open_predecessor: --force archives the predecessor unchanged and publishes the successor with previous_plan_archived set to the predecessor bare ID.
+      multiple_open_predecessors: Reject before effects because implicit creation cannot choose a predecessor.
     replacement_evidence_transition:
       predicate: A replacement is complete and its latest persisted evaluation.last_verdict is pass.
       supersession: Every superseded_by replacement must satisfy the predicate before a new supersession is published.

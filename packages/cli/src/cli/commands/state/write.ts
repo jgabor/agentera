@@ -348,10 +348,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
     const taskVerb = ["update", "set-status", "supersede", "record-evaluation"].includes(verb);
     const id = mappingPath(values, "id");
     if (taskVerb && id === undefined) invalid({ class: "missing_argument", message: `--id is required for plan ${verb} in entity mode` });
-    if (force) invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plans; incomplete plans remain canonical history" });
   }
-  if (artifact === "plan" && verb === "create" && force)
-    invalid({ class: "unrecognized_argument", message: "--force is unavailable for entity plan create because multiple open plans coexist" });
   return { artifact, spec, format, projectRoot, dryRun, force, values, callerPayload, inputSource };
 }
 

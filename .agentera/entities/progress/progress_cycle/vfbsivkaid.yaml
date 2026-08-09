@@ -1,0 +1,15 @@
+id: vfbsivkaid
+artifact: progress
+record:
+  timestamp: 2026-08-09 02:42
+  type: fix
+  phase: build
+  what: Restored forced plan lifecycle in packages/cli/src/state/planEntities.ts.
+  context:
+    intent: Make forced plan creation and archival truthful and recoverable.
+    constraints: Keep one CLI and writer-owned entities; preserve unfinished task and evaluation history; do not publish, tag, or push.
+    scope: Forced plan create and archive parser, storage lineage, writer, help, schema, and regression coverage.
+  discovered: The parser advertised force but rejected it before canonical discovery, and storage forbade writer-owned predecessor lineage.
+  verified: Focused lifecycle tests, full source tests, typecheck, build, package verification, capability validation, state validation, and a rebuilt local CLI lifecycle probe passed.
+  next: Complete the remaining safe plan-replacement and TODO-activation tasks before final qualification.
+  publication_order: 108

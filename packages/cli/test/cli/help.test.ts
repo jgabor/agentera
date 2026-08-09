@@ -95,6 +95,9 @@ describe("cli help", () => {
     expect(plan).toContain("agentera state plan get --id ID --format json");
     expect(plan).toContain("Plan and task reads use bare canonical IDs");
     expect(plan).toContain("Invalid historical archives remain non-fatal compatibility diagnostics unless selected");
+    expect(plan).toContain("Plan create rejects an open predecessor unless --force");
+    expect(plan).toContain("successor.previous_plan_archived");
+    expect(plan).toContain("Archive an unfinished selected plan with --force");
     expect(plan).toContain("Task list accepts an optional bare plan ID");
 
     const experiments = printStateHelp("experiments");

@@ -43,9 +43,12 @@ function capture(root: string, args: string[]): { rc: number; out: string; err: 
   try { return { rc: main(["node", "agentera", ...args], { out: (text) => { out += text; }, err: (text) => { err += text; } }), out, err }; }
   finally { process.chdir(cwd); }
 }
-function create(root: string, title: string, dependency = false): any {
+function create(root: string, title: string, dependency = false, force = false): any {
   const input = path.join(root, `${title}.yaml`); fs.writeFileSync(input, dumpYamlMapping(plan(title, dependency)));
-  const result = capture(root, ["state", "plan", "create", "--input", input, "--format", "json"]); expect(result.rc, result.err || result.out).toBe(0); return JSON.parse(result.out);
+  const result = capture(root, ["state", "plan", "create", ...(force ? ["--force"] : []), "--input", input, "--format", "json"]); expect(result.rc, result.err || result.out).toBe(0); return JSON.parse(result.out);
+}
+function planInput(root: string, title: string, dependency = false, record = plan(title, dependency)): string {
+  const input = path.join(root, `${title}.yaml`); fs.writeFileSync(input, dumpYamlMapping(record)); return input;
 }
 function taskInput(root: string, record: Record<string, unknown>): string {
   const input = path.join(root, "task-input.yaml"); fs.writeFileSync(input, dumpYamlMapping(record)); return input;
@@ -82,6 +85,16 @@ function fixtureId(index: number): string {
     return char;
   }).join("");
 }
+function openPlanFixture(root: string, index: number, title: string): { id: string; tasks: Array<{ id: string }> } {
+  const id = fixtureId(index); const taskId = fixtureId(index + 1);
+  const record = plan(title); delete record.tasks;
+  const planFile = path.join(root, `.agentera/entities/plan/plan/${id}.yaml`);
+  const taskFile = path.join(root, `.agentera/entities/plan/plan_task/${taskId}.yaml`);
+  fs.mkdirSync(path.dirname(planFile), { recursive: true }); fs.mkdirSync(path.dirname(taskFile), { recursive: true });
+  fs.writeFileSync(planFile, dumpYamlMapping({ id, artifact: "plan", record }));
+  fs.writeFileSync(taskFile, dumpYamlMapping({ id: taskId, artifact: "plan", record: { plan: id, name: "First", status: "pending", depends_on: [], acceptance: [] } }));
+  return { id, tasks: [{ id: taskId }] };
+}
 function archivedPlanFixture(root: string, index: number): { id: string } {
   const id = fixtureId(100 + index * 2); const taskId = fixtureId(101 + index * 2);
   const record = plan(`historical-${index}`); delete record.tasks; (record.header as Record<string, unknown>).status = "archived";
@@ -92,9 +105,9 @@ function archivedPlanFixture(root: string, index: number): { id: string } {
   fs.writeFileSync(taskFile, dumpYamlMapping({ id: taskId, artifact: "plan", record: { plan: id, name: "First", status: "blocked", depends_on: [], acceptance: ["GIVEN state WHEN written THEN it is canonical"] } }));
   return { id };
 }
-function request(root: string, verb: string, values: Record<string, unknown> = {}, input: Record<string, unknown> | null = null): StateWriteRequest {
+function request(root: string, verb: string, values: Record<string, unknown> = {}, input: Record<string, unknown> | null = null, force = false): StateWriteRequest {
   const spec = operationSpec("plan", verb); if (!spec) throw new Error(`missing plan ${verb}`);
-  return { artifact: "plan", spec, projectRoot: root, dryRun: false, force: false, values, callerPayload: structuredClone(input ?? values), input };
+  return { artifact: "plan", spec, projectRoot: root, dryRun: false, force, values, callerPayload: structuredClone(input ?? values), input };
 }
 function git(root: string, ...args: string[]): string {
   const env = { ...process.env }; delete env.GIT_DIR; delete env.GIT_WORK_TREE; delete env.GIT_INDEX_FILE;
@@ -165,6 +178,19 @@ describe("plan and task entity authority", () => {
       if (verb === "record-evaluation") expect(explanation.guidance).toEqual(expect.arrayContaining([
         expect.stringContaining("evaluate before completing"),
         expect.stringContaining("first PASS on an unevaluated complete replacement"),
+      ]));
+    }
+  });
+
+  it("explains locked forced plan lifecycle effects with bare lineage IDs", () => {
+    const root = project();
+    for (const verb of ["create", "archive"] as const) {
+      const result = capture(root, ["state", "plan", "explain", "--verb", verb, "--format", "json"]);
+      expect(result.rc, result.err || result.out).toBe(0);
+      const explanation = JSON.parse(result.out);
+      expect(explanation).toMatchObject({ allow_force: true, force_semantics: expect.stringContaining("--force") });
+      expect(explanation.guidance).toEqual(expect.arrayContaining([
+        expect.stringContaining(verb === "create" ? "unchanged" : "without changing"),
       ]));
     }
   });
@@ -444,6 +470,118 @@ describe("plan and task entity authority", () => {
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
   });
 
+  it("derives matching zero- and one-predecessor lifecycle effects for preview and apply", () => {
+    const zero = project();
+    const zeroInput = planInput(zero, "zero predecessor");
+    const zeroPreview = capture(zero, ["state", "plan", "create", "--input", zeroInput, "--dry-run", "--format", "json"]);
+    expect(validateEntityState(zero)).toMatchObject({ valid: true, entityCount: 0 });
+    const zeroApply = capture(zero, ["state", "plan", "create", "--input", zeroInput, "--format", "json"]);
+    expect(zeroPreview.rc, zeroPreview.err || zeroPreview.out).toBe(0);
+    expect(zeroApply.rc, zeroApply.err || zeroApply.out).toBe(0);
+    expect(JSON.parse(zeroPreview.out).effects).toEqual(JSON.parse(zeroApply.out).effects);
+    expect(JSON.parse(zeroApply.out).effects).toEqual({ lifecycle: "create", force: false });
+
+    const replacement = project();
+    const predecessor = create(replacement, "unfinished predecessor", true);
+    const predecessorPlan = path.join(replacement, `.agentera/entities/plan/plan/${predecessor.id}.yaml`);
+    const predecessorPlanBytes = fs.readFileSync(predecessorPlan, "utf8");
+    const predecessorTask = path.join(replacement, `.agentera/entities/plan/plan_task/${predecessor.tasks[0].id}.yaml`);
+    const predecessorTaskBytes = fs.readFileSync(predecessorTask, "utf8");
+    const suppliedLineage = plan("caller supplied lineage") as Record<string, unknown>;
+    suppliedLineage.previous_plan_archived = predecessor.id;
+    const suppliedLineageInput = planInput(replacement, "caller supplied lineage", false, suppliedLineage);
+    const rejectedLineage = capture(replacement, ["state", "plan", "create", "--force", "--input", suppliedLineageInput, "--format", "json"]);
+    expect(rejectedLineage.rc).toBe(2);
+    expect(JSON.parse(rejectedLineage.out).error.message).toContain("previous_plan_archived");
+    const successorInput = planInput(replacement, "forced successor");
+    const blocked = capture(replacement, ["state", "plan", "create", "--input", successorInput, "--dry-run", "--format", "json"]);
+    expect(blocked.rc, blocked.err || blocked.out).toBe(2);
+    expect(JSON.parse(blocked.out).error).toMatchObject({ class: "conflict", message: expect.stringContaining(predecessor.id) });
+
+    const preview = capture(replacement, ["state", "plan", "create", "--force", "--input", successorInput, "--dry-run", "--format", "json"]);
+    expect(fs.readFileSync(predecessorPlan, "utf8")).toBe(predecessorPlanBytes);
+    const applied = capture(replacement, ["state", "plan", "create", "--force", "--input", successorInput, "--format", "json"]);
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    expect(applied.rc, applied.err || applied.out).toBe(0);
+    const previewJson = JSON.parse(preview.out); const appliedJson = JSON.parse(applied.out);
+    expect(previewJson.effects).toEqual(appliedJson.effects);
+    expect(appliedJson).toMatchObject({
+      record: { previous_plan_archived: predecessor.id },
+      effects: {
+        lifecycle: "forced_replacement",
+        archived_predecessor: { id: predecessor.id, from_status: "open", to_status: "archived", preserved: ["task_records", "task_evaluations", "task_completion"] },
+        successor_lineage: { field: "previous_plan_archived", predecessor: predecessor.id },
+      },
+    });
+    expect(fs.readFileSync(predecessorTask, "utf8")).toBe(predecessorTaskBytes);
+    expect(JSON.parse(capture(replacement, ["state", "plan", "get", "--id", predecessor.id, "--format", "json"]).out).entry.record.header.status).toBe("archived");
+    expect(validateEntityState(replacement)).toMatchObject({ valid: true });
+
+    const forcedArchive = project();
+    const unfinished = create(forcedArchive, "archive unfinished", true);
+    const unfinishedPlan = path.join(forcedArchive, `.agentera/entities/plan/plan/${unfinished.id}.yaml`);
+    const unfinishedPlanBytes = fs.readFileSync(unfinishedPlan, "utf8");
+    const unfinishedTask = path.join(forcedArchive, `.agentera/entities/plan/plan_task/${unfinished.tasks[0].id}.yaml`);
+    const unfinishedTaskBytes = fs.readFileSync(unfinishedTask, "utf8");
+    const ordinaryArchive = capture(forcedArchive, ["state", "plan", "archive", "--dry-run", "--format", "json"]);
+    expect(ordinaryArchive.rc).toBe(2);
+    expect(JSON.parse(ordinaryArchive.out).error).toMatchObject({ class: "conflict", message: expect.stringContaining("without --force") });
+    const archivePreview = capture(forcedArchive, ["state", "plan", "archive", "--force", "--dry-run", "--format", "json"]);
+    expect(fs.readFileSync(unfinishedPlan, "utf8")).toBe(unfinishedPlanBytes);
+    const archiveApply = capture(forcedArchive, ["state", "plan", "archive", "--force", "--format", "json"]);
+    expect(archivePreview.rc, archivePreview.err || archivePreview.out).toBe(0);
+    expect(archiveApply.rc, archiveApply.err || archiveApply.out).toBe(0);
+    expect(JSON.parse(archivePreview.out).effects).toEqual(JSON.parse(archiveApply.out).effects);
+    expect(JSON.parse(archiveApply.out).effects).toMatchObject({ lifecycle: "forced_archive", archived_plan: { id: unfinished.id, from_status: "open", to_status: "archived" } });
+    expect(fs.readFileSync(unfinishedTask, "utf8")).toBe(unfinishedTaskBytes);
+  });
+
+  it("reports matching zero- and multiple-open conflicts without blocking explicit historical archive", () => {
+    const zero = project();
+    const zeroPreview = capture(zero, ["state", "plan", "archive", "--force", "--dry-run", "--format", "json"]);
+    const zeroApply = capture(zero, ["state", "plan", "archive", "--force", "--format", "json"]);
+    expect(zeroPreview.rc).toBe(1); expect(zeroApply.rc).toBe(1);
+    expect(JSON.parse(zeroPreview.out).error).toEqual(JSON.parse(zeroApply.out).error);
+
+    const root = project();
+    const historical = complete(root, "historical");
+    const left = openPlanFixture(root, 680, "left competing plan");
+    const right = openPlanFixture(root, 690, "right competing plan");
+    const successorInput = planInput(root, "ambiguous successor");
+    for (const args of [
+      ["state", "plan", "create", "--force", "--input", successorInput, "--dry-run", "--format", "json"],
+      ["state", "plan", "archive", "--force", "--dry-run", "--format", "json"],
+    ]) {
+      const preview = capture(root, args);
+      const apply = capture(root, args.filter((value) => value !== "--dry-run"));
+      const expectedExit = args[2] === "create" ? 2 : 1;
+      expect(preview.rc, preview.err || preview.out).toBe(expectedExit); expect(apply.rc, apply.err || apply.out).toBe(expectedExit);
+      expect(JSON.parse(preview.out).error).toEqual(JSON.parse(apply.out).error);
+      expect(JSON.parse(preview.out).error.message).toMatch(new RegExp(`${left.id}.*${right.id}|${right.id}.*${left.id}`));
+    }
+
+    const historicalArchive = capture(root, ["state", "plan", "archive", "--plan", historical.id, "--format", "json"]);
+    expect(historicalArchive.rc, historicalArchive.err || historicalArchive.out).toBe(0);
+    expect(JSON.parse(historicalArchive.out)).toMatchObject({ record: { header: { status: "archived" } }, operation: { idempotent_replay: false } });
+  });
+
+  it("keeps writer-owned plan lineage one-to-one in both directions", () => {
+    const root = project(); const predecessor = create(root, "lineage predecessor");
+    const successor = create(root, "lineage successor", false, true);
+    expect(successor.record.previous_plan_archived).toBe(predecessor.id);
+    const duplicate = openPlanFixture(root, 700, "duplicate lineage successor");
+    const duplicatePath = path.join(root, `.agentera/entities/plan/plan/${duplicate.id}.yaml`);
+    const duplicateEntity = loadYamlMapping(fs.readFileSync(duplicatePath, "utf8"));
+    (duplicateEntity.record as Record<string, unknown>).previous_plan_archived = predecessor.id;
+    fs.writeFileSync(duplicatePath, dumpYamlMapping(duplicateEntity));
+    expect(validateEntityState(root)).toMatchObject({
+      valid: false,
+      issues: expect.arrayContaining([
+        expect.objectContaining({ relation: "previous_plan_archived", message: expect.stringContaining("multiple successor plan records") }),
+      ]),
+    });
+  });
+
   it("requires structured task records and rejects retired, owned, and non-bare input before effects", () => {
     const root = project(); const created = create(root, "structured task input"); const taskId = created.tasks[0].id;
     const before = entityNames(root);
@@ -478,7 +616,7 @@ describe("plan and task entity authority", () => {
     expect(divergent.rc).not.toBe(0); expect(JSON.parse(divergent.out).error.class).toBe("conflict");
     const distinct = appendTask(root, created.id, { ...payload, name: "Distinct task" }); expect(distinct.id).not.toBe(first.id);
 
-    const concurrentPlan = create(root, "concurrent append replay");
+    const concurrentPlan = create(root, "concurrent append replay", false, true);
     const concurrentInput = taskInput(root, { name: "Concurrent task", depends_on: [concurrentPlan.tasks[0].id], acceptance: ["GIVEN two processes WHEN appending identical input THEN one task is published"] });
     const receipts = await concurrentAppend(root, concurrentPlan.id, concurrentInput);
     const parsed = receipts.map(({ output }) => JSON.parse(output));
@@ -518,7 +656,7 @@ describe("plan and task entity authority", () => {
   it("rejects invalid supersession targets without changing the blocked task", () => {
     const root = project(); const created = create(root, "supersession rejection"); const blocked = created.tasks[0].id;
      const pending = appendTask(root, created.id, { name: "Pending replacement", depends_on: [], acceptance: [] }).id;
-    const otherPlan = create(root, "other plan"); const crossPlan = otherPlan.tasks[0].id;
+    const otherPlan = openPlanFixture(root, 620, "other plan"); const crossPlan = otherPlan.tasks[0].id;
     expect(capture(root, ["state", "plan", "set-status", "--plan", otherPlan.id, "--id", crossPlan, "--status", "complete", "--format", "json"]).rc).toBe(0);
     expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", blocked, "--status", "blocked", "--format", "json"]).rc).toBe(0);
     const taskPath = path.join(root, `.agentera/entities/plan/plan_task/${blocked}.yaml`); const before = fs.readFileSync(taskPath, "utf8");
@@ -727,7 +865,7 @@ describe("plan and task entity authority", () => {
   it("infers one open plan and reports zero or multiple open plans actionably", () => {
     const root = project(); const first = create(root, "first");
     expect(appendTask(root, undefined, { name: "Inferred", depends_on: [], acceptance: [] }).id).toMatch(/^[a-z]{10}$/);
-    const second = create(root, "second");
+    const second = openPlanFixture(root, 640, "second");
     const ambiguous = capture(root, ["state", "plan", "append", "--input", taskInput(root, { name: "No owner", depends_on: [], acceptance: [] }), "--format", "json"]); expect(ambiguous.rc).toBe(1); expect(JSON.parse(ambiguous.out).error.message).toMatch(new RegExp(`${first.id}.*${second.id}|${second.id}.*${first.id}`));
     expect(appendTask(root, second.id, { name: "Explicit", depends_on: [], acceptance: [] }).id).toMatch(/^[a-z]{10}$/);
     const empty = project(); const missing = capture(empty, ["state", "plan", "append", "--input", taskInput(empty, { name: "Missing", depends_on: [], acceptance: [] }), "--format", "json"]); expect(missing.rc).toBe(1); expect(JSON.parse(missing.out).error.message).toMatch(/no open plan/i);
@@ -759,7 +897,7 @@ describe("plan and task entity authority", () => {
   });
 
   it("rejects missing, cross-plan, self, and cyclic dependencies without changing the task", () => {
-    const root = project(); const left = create(root, "left", true); const right = create(root, "right"); const leftFirst = left.tasks[0].id; const leftSecond = left.tasks[1].id;
+    const root = project(); const left = create(root, "left", true); const right = openPlanFixture(root, 660, "right"); const leftFirst = left.tasks[0].id; const leftSecond = left.tasks[1].id;
     for (const dependency of ["zzzzzzzzzz", right.tasks[0].id, leftSecond]) {
       const result = updateTask(root, leftFirst, { depends_on: [dependency] }, left.id); expect(result.rc).not.toBe(0);
     }
@@ -796,6 +934,53 @@ describe("plan and task entity authority", () => {
       expect(loadYamlMapping(fs.readFileSync(predecessorPath, "utf8")).record).toMatchObject({ header: { status: "archived" } });
       expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 4 });
     }
+  });
+
+  it("restores an unfinished forced predecessor byte-for-byte after successor publication failure", () => {
+    for (const failAt of [1, 2]) {
+      const root = project(); const predecessor = create(root, `unfinished predecessor-${failAt}`, true);
+      const predecessorPath = path.join(root, `.agentera/entities/plan/plan/${predecessor.id}.yaml`);
+      const predecessorTaskPath = path.join(root, `.agentera/entities/plan/plan_task/${predecessor.tasks[0].id}.yaml`);
+      const predecessorBytes = fs.readFileSync(predecessorPath, "utf8");
+      const predecessorTaskBytes = fs.readFileSync(predecessorTaskPath, "utf8");
+      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let calls = 0;
+      vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => { calls += 1; if (calls === failAt) throw new Error(`injected forced replacement publication failure ${failAt}`); return original(target, bytes); });
+      const ids = ["cccccccccc", "dddddddddd"];
+      expect(() => createPlanEntities(request(root, "create", {}, plan("forced replacement"), true), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/forced replacement publication failure/);
+      binding.publicationContext.close(); vi.restoreAllMocks();
+      expect(fs.readFileSync(predecessorPath, "utf8")).toBe(predecessorBytes);
+      expect(fs.readFileSync(predecessorTaskPath, "utf8")).toBe(predecessorTaskBytes);
+      expect(fs.existsSync(path.join(root, ".agentera/entities/plan/plan/cccccccccc.yaml"))).toBe(false);
+      expect(fs.existsSync(path.join(root, ".agentera/entities/plan/plan_task/dddddddddd.yaml"))).toBe(false);
+      const selected = capture(root, ["state", "plan", "tasks", "list", "--format", "json"]);
+      expect(selected.rc, selected.err || selected.out).toBe(0);
+      expect(JSON.parse(selected.out).filters).toEqual({ plan: predecessor.id });
+    }
+  });
+
+  it("restores unfinished forced selection after final successor validation failure", () => {
+    const root = project(); const predecessor = create(root, "unfinished validation predecessor", true);
+    const predecessorPath = path.join(root, `.agentera/entities/plan/plan/${predecessor.id}.yaml`);
+    const predecessorBytes = fs.readFileSync(predecessorPath, "utf8");
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let calls = 0;
+    vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => {
+      const result = original(target, bytes); calls += 1;
+      if (calls === 2) fs.writeFileSync(path.join(root, ".agentera/entities/plan/plan_task/eeeeeeeeee.yaml"), "invalid: residue\n");
+      return result;
+    });
+    const ids = ["cccccccccc", "dddddddddd"];
+    expect(() => createPlanEntities(request(root, "create", {}, plan("forced validation replacement"), true), { publicationContext: binding.publicationContext, candidate: () => ids.shift()! })).toThrow(/failed state validation/);
+    binding.publicationContext.close(); vi.restoreAllMocks();
+    expect(fs.readFileSync(predecessorPath, "utf8")).toBe(predecessorBytes);
+    expect(fs.existsSync(path.join(root, ".agentera/entities/plan/plan/cccccccccc.yaml"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/entities/plan/plan_task/dddddddddd.yaml"))).toBe(false);
+    fs.rmSync(path.join(root, ".agentera/entities/plan/plan_task/eeeeeeeeee.yaml"));
+    const selected = capture(root, ["state", "plan", "tasks", "list", "--format", "json"]);
+    expect(selected.rc, selected.err || selected.out).toBe(0);
+    expect(JSON.parse(selected.out).filters).toEqual({ plan: predecessor.id });
+    expect(validateEntityState(root)).toMatchObject({ valid: true });
   });
 
   it("restores the exact predecessor and removes the whole replacement graph after post-publication validation or identity failure", () => {
@@ -961,12 +1146,12 @@ describe("plan and task entity authority", () => {
   });
 
   it("provides full bounded plan/task snapshots and invalidates changed cursors", () => {
-    const root = project(); const first = create(root, "first"); create(root, "second");
+    const root = project(); const first = create(root, "first"); const second = create(root, "second", false, true);
     const listed = capture(root, ["state", "plan", "list", "--limit", "1", "--format", "json"]); expect(listed.rc).toBe(0); const page = JSON.parse(listed.out); expect(page.entries[0]).toHaveProperty("record"); expect(page.next_cursor).toBeTruthy();
     const exact = capture(root, ["state", "plan", "get", "--id", first.id, "--format", "json"]); expect(exact.rc).toBe(0); expect(JSON.parse(exact.out).tasks[0].record).toBeTruthy();
     const taskId = JSON.parse(exact.out).tasks[0].id;
     expect(capture(root, ["state", "plan", "tasks", "get", "--id", taskId, "--format", "json"]).rc).toBe(0);
-    appendTask(root, first.id, { name: "Changed snapshot", depends_on: [], acceptance: [] });
+    appendTask(root, second.id, { name: "Changed snapshot", depends_on: [], acceptance: [] });
     const stale = capture(root, ["state", "plan", "list", "--limit", "1", "--cursor", page.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(JSON.parse(stale.out).error.class).toBe("cursor_snapshot_unavailable");
   });
 

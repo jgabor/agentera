@@ -112,6 +112,14 @@ describe("plan lifecycle contract", () => {
     expect(contract.canonical.position.persisted).toBe(true);
     expect(contract.canonical.execution.archived).toContain("non-executable");
     expect(contract.canonical.forced_archive.unfinished_status).toBe("archived");
+    expect(contract.canonical.lineage).toMatchObject({
+      field: "previous_plan_archived",
+      representation: "bare predecessor plan entity ID",
+    });
+    expect(contract.canonical.forced_create).toMatchObject({
+      one_open_predecessor: expect.stringContaining("previous_plan_archived"),
+      multiple_open_predecessors: expect.stringContaining("Reject before effects"),
+    });
   });
 
   it("requires prospective replacement PASS evidence without invalidating historical state", () => {

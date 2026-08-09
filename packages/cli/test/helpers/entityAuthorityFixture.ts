@@ -94,11 +94,18 @@ export function createEntityAuthorityFixture(
     base_sha256: createHash("sha256").update(canonicalRecordJson(decisionRecord)).digest("hex"),
     changes: { choice: "E0" },
   });
+  const archivedPlan = add("plan", "plan", {
+    header: { title: "Archived plan 0", created: "2026-07-18", status: "archived" },
+    what: "W",
+    why: "Y",
+    scope: { included: ["T"], excluded: [] },
+  });
   const plan = add("plan", "plan", {
     header: { title: "Plan 0", created: "2026-07-19", status: "complete" },
     what: "W",
     why: "Y",
     scope: { included: ["T"], excluded: [] },
+    previous_plan_archived: archivedPlan,
   });
   const dependency = add("plan", "plan_task", {
     plan,

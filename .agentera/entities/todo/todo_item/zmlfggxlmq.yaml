@@ -25,12 +25,16 @@ record:
     gate: null
     queue_rank: 2
     order_reason: Repair the plan lifecycle writer before 3.0.0 so an approved incomplete-plan replacement is safe, atomic, and truthfully diagnosed.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Restore forced plan archival and successor publication semantics."
+      status: resolved
+      order: 100
       severity: critical
-      status: open
-      order: 2
+  lifecycle:
+    operation: resolve
+    reason: Forced plan create and archive now derive locked lifecycle effects, preserve unfinished history, restore failures, and expose bare predecessor lineage.
+    date: 2026-08-09

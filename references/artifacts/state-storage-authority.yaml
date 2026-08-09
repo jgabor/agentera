@@ -620,13 +620,13 @@ entity_target:
     - boundary: plan
       artifact: plan
       independently_mutable: true
-      relationships: []
+      relationships: [previous_plan_archived]
       implementation: implemented
       publication: replace_owned_entity
       record:
         required_fields: [header, what, why, scope]
         required_paths: [header.title, header.created, header.status]
-        forbidden_fields: [id, artifact, stable_id, plan_id, tasks, previous_plan_archived]
+        forbidden_fields: [id, artifact, stable_id, plan_id, tasks]
         identity: >-
           The canonical plan identity is the bare ten-letter entity envelope id.
           A composite header.id belongs only to legacy migration source and is
@@ -877,6 +877,7 @@ entity_target:
   relationships:
     representation: bare target entity ID in the named record field
     integrity: every non-null target must resolve to exactly one entity with the declared target boundary
+    plan_lineage: An optional plan.previous_plan_archived points to one distinct archived predecessor, and that predecessor has at most one successor; reverse lineage is derived from the canonical source record rather than stored in a second mutable field.
     unresolved_behavior: whole-state validation and migration cutover fail without creating a target
     declarations:
       - source: decision_satisfaction
@@ -891,6 +892,10 @@ entity_target:
         field: plan
         target: plan
         cardinality: exactly_one
+      - source: plan
+        field: previous_plan_archived
+        target: plan
+        cardinality: zero_or_one
       - source: plan_task
         field: depends_on
         target: plan_task
@@ -2713,11 +2718,11 @@ mutation_grammar:
       verb: archive
       class: simple_transition
       selectors: [--plan]
-      preconditions: [entity_mode_marker_is_valid, selected_plan_is_not_open]
+      preconditions: [entity_mode_marker_is_valid, lifecycle_effects_are_derived_from_locked_canonical_entities, selected_plan_is_complete_or_archived_or_force_archivable]
       owned_fields: [id, artifact, plan, header.status]
       input: { mode: none, sources: [], cli_owned_fields: [] }
-      recovery: Complete or preserve the selected plan, then retry archive with no content flags; no state was changed.
-      examples: ['npx -y agentera@next state plan archive --dry-run --format json']
+      recovery: Archive a complete plan normally. With --force, archive the selected open plan unchanged only after the locked canonical snapshot identifies it; multiple implicit open-plan candidates are rejected without effects.
+      examples: ['npx -y agentera@next state plan archive --dry-run --format json', 'npx -y agentera@next state plan archive --force --dry-run --format json']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
       allow_force: true
       fields: [{ flag: --plan, field: plan, kind: string }]
@@ -2726,15 +2731,15 @@ mutation_grammar:
       verb: create
       class: batch_transaction
       selectors: []
-      preconditions: [entity_mode_marker_is_valid, input_is_one_complete_plan_document, create_local_task_ordinals_are_sequential, dependency_graph_is_valid]
+      preconditions: [entity_mode_marker_is_valid, lifecycle_effects_are_derived_from_locked_canonical_entities, input_is_one_complete_plan_document, create_local_task_ordinals_are_sequential, dependency_graph_is_valid]
       owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
       input:
         mode: structured
         root: complete plan document
         sources: [file, stdin]
         cli_owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
-      recovery: Run npx -y agentera@next state plan explain --verb create --format json, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and correct the first schema or dependency violation.
-      examples: ['npx -y agentera@next state plan create --input plan.yaml --format json']
+      recovery: Run npx -y agentera@next state plan explain --verb create --format json, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and use --force only when the locked canonical snapshot has exactly one open predecessor to archive unchanged.
+      examples: ['npx -y agentera@next state plan create --input plan.yaml --format json', 'npx -y agentera@next state plan create --force --input plan.yaml --format json']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
       allow_force: true
       fields: []

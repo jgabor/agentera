@@ -1,0 +1,14 @@
+id: ublrpjkriq
+artifact: plan
+record:
+  name: Fail closed for unsafe TODO activation
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN unmatched projections, duplicate public work, or stale entity status WHEN activation is previewed THEN bounded risk is reported without a digest or apply command.
+    - GIVEN an unsafe effect, direct apply, replay, or supplied prior digest WHEN confirmed activation is attempted THEN it fails before mutation and every project byte remains unchanged.
+    - GIVEN a complete one-to-one inactive project WHEN activation is previewed and applied THEN exactly one canonical public row per entity is published.
+    - GIVEN Prime, Doctor, and validation inspect unsafe inactive state WHEN they respond THEN they provide non-mutating diagnosis and owner correction; a required mutation path triggers replanning.
+    - GIVEN each activation unit WHEN targeted verification is reviewed THEN at least one passing and one failing scenario exists.
+  plan: xjiwyjimiv

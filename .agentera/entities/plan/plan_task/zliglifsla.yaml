@@ -1,0 +1,14 @@
+id: zliglifsla
+artifact: plan
+record:
+  name: Add targeted atomic plan replacement
+  depends_on:
+    - lxcpdzxzap
+  status: pending
+  acceptance:
+    - GIVEN one CLI-owned replacement operation names an existing predecessor and successor WHEN preview and apply run THEN effects match, canonical bidirectional lineage is complete, and the successor is the sole open plan.
+    - GIVEN no successor exists WHEN the same operation creates and replaces THEN creation and predecessor transition succeed or restore the complete pre-operation state together.
+    - GIVEN competing open plans WHEN explicit recovery names both roles THEN it converges without changing tasks, evaluations, progress references, or TODO state.
+    - GIVEN completed replacement, interruption, exact replay, or divergent retry WHEN retried THEN completed state is returned without new effects, interruption restores prior state, and divergence fails before effects.
+    - GIVEN replacement evidence is reviewed WHEN Task 3 completes THEN IDs remain bare, no new mutable authority exists, and each transaction unit has a passing and failing scenario.
+  plan: xjiwyjimiv

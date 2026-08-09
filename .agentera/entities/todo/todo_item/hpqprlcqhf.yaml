@@ -36,4 +36,4 @@ record:
       description: "[feat:3.0.0] Add explicit atomic plan replacement and competing-open-plan recovery."
       severity: critical
       status: open
-      order: 6
+      order: 5

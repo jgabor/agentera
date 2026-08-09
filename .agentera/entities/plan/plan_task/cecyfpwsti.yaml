@@ -1,0 +1,16 @@
+id: cecyfpwsti
+artifact: plan
+record:
+  name: Qualify integrated state and close the plan
+  depends_on:
+    - lxcpdzxzap
+    - ublrpjkriq
+    - zliglifsla
+    - mbasprkedb
+  status: pending
+  acceptance:
+    - GIVEN all behavior tasks pass WHEN verify:release, typecheck, build, check compact, capability-contract validation, release-metadata validation, and pack:dry-run run through the authoritative local paths THEN every gate succeeds.
+    - GIVEN release-facing behavior changed WHEN documentation and metadata are reconciled THEN changes remain under Unreleased, suite metadata stays 3.0.0, and no publication action occurs.
+    - GIVEN each TODO acceptance item WHEN final evidence is mapped THEN zmlfggxlmq, hpqprlcqhf, and ituipybnoy have complete, non-duplicated proof.
+    - GIVEN final state is synchronized WHEN the substantive closeout lands THEN plan, progress, TODO, health, and related documentation are current without a standalone bookkeeping commit.
+  plan: xjiwyjimiv

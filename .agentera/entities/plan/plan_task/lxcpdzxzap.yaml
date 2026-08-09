@@ -1,0 +1,14 @@
+id: lxcpdzxzap
+artifact: plan
+record:
+  name: Establish truthful forced plan lifecycle
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN zero, one, or multiple open plans WHEN create or archive is previewed and applied THEN both paths report matching bounded effects or conflicts from one authority.
+    - GIVEN one unfinished predecessor WHEN implicit forced create or forced archive applies THEN it becomes historical without task, evaluation, or completion changes.
+    - GIVEN implicit successor validation or publication fails WHEN recovery completes THEN predecessor bytes and selection are restored and no newly created successor remains.
+    - GIVEN lifecycle and storage contracts disagree on archival or lineage WHEN Task 1 completes THEN parser, schema, storage, writer, help, explain, source, and package surfaces permit one consistent writer-owned contract with bare IDs and bidirectional lineage.
+    - GIVEN each lifecycle unit WHEN targeted verification is reviewed THEN at least one passing and one failing scenario exists.
+  plan: xjiwyjimiv

@@ -34,4 +34,4 @@ record:
       description: "[fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration."
       severity: critical
       status: open
-      order: 4
+      order: 3

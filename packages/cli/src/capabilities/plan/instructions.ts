@@ -34,6 +34,10 @@ Advice, clarification, tension, and handoff intent are transient and never write
   .replaceAll("--number N", "--id ID")
   .replaceAll("--task N", "--id ID")
   .replace(
+    "Archive completed plan entities with `agentera state plan archive --format json`.",
+    "Archive completed plan entities with `agentera state plan archive --format json`. With exactly one unfinished canonical predecessor, `agentera state plan create --force --input PATH --format json` archives it unchanged, publishes the successor, and records its bare ID in the writer-owned `previous_plan_archived` field. `agentera state plan archive --force` likewise preserves unfinished task, evaluation, and completion history; multiple implicit open candidates reject before effects.",
+  )
+  .replace(
     "served via `planning_context.profile.path` — read directly when `status: loaded`; if missing or stale, proceed without persona grounding",
     "served through `agentera report profile-grounding --format json` — use only returned `content` when shared validity is `valid`; if absent or repair_needed, proceed without persona grounding and preserve exact recovery",
   )

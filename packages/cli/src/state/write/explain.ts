@@ -129,6 +129,14 @@ export function buildExplain(
     recovery: declaration.recovery,
     examples: declaration.examples,
     bounds: declaration.bounds,
+    allow_force: spec.allowForce,
+    ...(spec.allowForce ? {
+      force_semantics: artifact === "plan" && verb === "create"
+        ? "With exactly one canonical open predecessor, --force archives it unchanged and publishes a successor whose previous_plan_archived field contains the predecessor's bare ID. Multiple open predecessors are rejected."
+        : artifact === "plan" && verb === "archive"
+          ? "--force archives an open selected plan without changing task, evaluation, or completion history. An implicit archive rejects multiple open candidates."
+          : "--force is accepted only where the operation's locked canonical-state decision permits it.",
+    } : {}),
     next: {},
     budget: schemaBudget(artifact, validator),
     fields: exposedFields(artifact, verb, spec, validator),
@@ -250,7 +258,14 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
     "the writer revalidates every cited project source line and publishes approval plus entry as one atomic document",
     ...base,
   ];
-  if (entityArtifact && artifact === "plan" && verb === "create") return ["the CLI assigns bare ten-letter envelope IDs to the plan and each task and publishes one canonical file per entity", "task numbers and dependency values in this atomic input are create-local symbolic ordinals; the writer removes them and resolves dependencies to bare task IDs", "legacy composite header.id values are migration-only and never public selectors", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "create") return [
+    "the CLI assigns bare ten-letter envelope IDs to the plan and each task and publishes one canonical file per entity",
+    "task numbers and dependency values in this atomic input are create-local symbolic ordinals; the writer removes them and resolves dependencies to bare task IDs",
+    "legacy composite header.id values are migration-only and never public selectors",
+    "without --force, an open plan blocks creation; with exactly one open predecessor, --force archives it unchanged and writes its bare ID to successor.previous_plan_archived",
+    "multiple open predecessors reject before effects; preview and apply derive the same lifecycle decision under the writer lock",
+    ...base,
+  ];
   if (entityArtifact && artifact === "plan" && verb === "record-evaluation") return [
     "select one task entity with its bare ten-letter --id; numeric and composite selectors are unavailable",
     "evaluate before completing a task during normal orchestration",
@@ -268,6 +283,11 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
   if (entityArtifact && artifact === "plan" && verb === "update") return ["select one task entity with its bare ten-letter --id; supply an omission-preserving YAML/JSON task patch through --input", "task status, supersession, evaluation, and plan lifecycle remain flag-only transitions; surprise remains plan-level content", ...base];
   if (entityArtifact && artifact === "plan" && verb === "set-status") return ["select one task entity with its bare ten-letter --id; lifecycle status is a flag-only transition", ...base];
   if (entityArtifact && artifact === "plan" && verb === "append") return ["the CLI assigns a bare ten-letter ID to the new task entity", "supply one complete YAML/JSON task record through --input; dependencies must be bare ten-letter IDs in the selected plan", ...base];
+  if (entityArtifact && artifact === "plan" && verb === "archive") return [
+    "archive a complete plan normally; --force archives an unfinished selected plan without changing task, evaluation, or completion history",
+    "an implicit archive rejects multiple open candidates; select an exact historical plan with its bare --plan ID",
+    ...base,
+  ];
   if (entityArtifact && artifact === "plan") return [
     "the active plan entity is selected by lifecycle state",
     ...(verb === "set-plan-status" ? ["open-to-complete requires every superseded_by replacement to be complete with latest persisted PASS; historical unevaluated complete replacements may record their allowed first PASS, then retry"] : []),
@@ -331,6 +351,7 @@ export function renderExplainText(explain: Record<string, unknown>): string {
   }
   const input = explain.input as Record<string, unknown> | undefined;
   if (input?.mode === "structured") lines.push("", "Required:", "  --input PATH             YAML/JSON document; use - for stdin");
+  if (explain.allow_force === true) lines.push("", "Optional:", `  --force                  ${String(explain.force_semantics ?? "Apply the operation's force contract.")}`);
   lines.push("", "Recovery:", `  ${String(explain.recovery ?? "Correct the input and retry; no state was changed.")}`, "", "Example:", `  ${String(explain.example ?? "")}`);
   return lines.join("\n") + "\n";
 }

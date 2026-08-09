@@ -190,12 +190,14 @@ const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionCo
     developmentCommand('state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report" --format json'),
   ),
   "plan.archive": projection(
-    "Complete or preserve the selected plan, then retry archive with no content flags; no state was changed.",
+    "Archive a complete plan normally. With --force, archive the selected open plan unchanged only after the locked canonical snapshot identifies it; multiple implicit open-plan candidates are rejected without effects.",
     developmentCommand("state plan archive --dry-run --format json"),
+    developmentCommand("state plan archive --force --dry-run --format json"),
   ),
   "plan.create": projection(
-    `Run ${developmentCommand("state plan explain --verb create --format json")}, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and correct the first schema or dependency violation.`,
+    `Run ${developmentCommand("state plan explain --verb create --format json")}, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and use --force only when the locked canonical snapshot has exactly one open predecessor to archive unchanged.`,
     developmentCommand("state plan create --input plan.yaml --format json"),
+    developmentCommand("state plan create --force --input plan.yaml --format json"),
   ),
   "health.append": projection(
     `Run ${developmentCommand("check validate state --format json")}, preserve audit evidence, and retry with one schema-valid audit entry.`,
