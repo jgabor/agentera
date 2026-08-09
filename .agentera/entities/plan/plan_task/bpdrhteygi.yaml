@@ -1,0 +1,15 @@
+id: bpdrhteygi
+artifact: plan
+record:
+  name: "gxcnoplnwr: Keep unsafe TODO status within Prime's startup budget"
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN the 161-risk unsafe-inactive fixture WHEN prime --context status emits JSON THEN it exits 0, remains valid UTF-8 JSON no larger than 22,500 bytes, and reports a truthful blocked unsafe-inactive outcome.
+    - GIVEN unsafe detail is omitted WHEN status is serialized THEN total and omitted counts, bounded risk IDs, and one exact correction or detail command remain without full TODO content or private paths.
+    - GIVEN fixture sentinel prose and a temporary project root WHEN source and extracted-package outputs are inspected THEN neither value appears, the full diagnosis occurs only in its designated startup location, and attention and next action do not copy its recovery prose.
+    - GIVEN cases immediately below and above the projection threshold WHEN final emitted UTF-8 bytes are measured THEN both succeed within the startup budget and omission metadata remains accurate.
+    - GIVEN healthy and small unsafe projects WHEN status runs THEN their existing semantics remain unchanged, no raw artifact read is required, and source and extracted-package commands satisfy the same contract.
+  test_proportionality: Cover each bounded projection branch, successful cases immediately below and above the threshold, explicit privacy and single-diagnosis assertions, and one source and extracted-package parity case. Do not add a machine-sensitive performance lane.
+  plan: nsabzvpqqs

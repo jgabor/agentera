@@ -45,8 +45,7 @@ function nextActionEntry(action: NextAction): Record<string, unknown> {
  *  and `alternatives` carries the cascade branches the early-return model
  *  would have skipped, each with the same `{object, capability, reason, phase}`
  *  shape. */
-function nextActionPayload(state: OrientationState): Record<string, unknown> {
-  const { recommended, alternatives } = state.next_action;
+function nextActionPayload({ recommended, alternatives }: OrientationState["next_action"]): Record<string, unknown> {
   return {
     ...nextActionEntry(recommended),
     alternatives: alternatives.map(nextActionEntry),
@@ -187,7 +186,7 @@ export function buildOrientationJsonPayload(
     attention: projectPublicOrientationAttention(state).map((item) => truncateCodePoints(item, 200, "…")),
     decision_attention: state.decision_attention,
     history: state.history,
-    next_action: nextActionPayload(state),
+    next_action: nextActionPayload(state.next_action),
     startup,
     orchestration_context: bespoke.orchestration_context,
     closeout_context: bespoke.closeout_context,
@@ -221,6 +220,30 @@ export function buildStatusContextState(
   const firstPending = plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
     ? plan.first_pending as JsonObject
     : null;
+  const risks = todoReconciliation?.risks;
+  const unsafeDetailOmitted = todoReconciliation?.state === "unsafe_inactive"
+    && Boolean(risks && typeof risks === "object" && !Array.isArray(risks) && Number(risks.omitted_count) > 0);
+  const recovery = unsafeDetailOmitted && typeof todoReconciliation.recovery_command === "string"
+    ? todoReconciliation.recovery_command
+    : null;
+  const todoAttention = unsafeDetailOmitted
+    ? new Set(state.todo_items.map((item) => `${String(item.severity)}: TODO: ${String(item.text)}`))
+    : new Set<string>();
+  const attention = projectPublicOrientationAttention(state)
+    .flatMap((item) => item === `action-required: TODO reconciliation is unsafe inactive; ${recovery}`
+      ? ["action-required: TODO reconciliation is unsafe inactive; see capability_context.startup.todo_reconciliation"]
+      : todoAttention.has(item) ? [] : [item])
+    .map((item) => truncateCodePoints(item, 200, "…"));
+  const redactRecovery = (action: NextAction): NextAction =>
+    recovery !== null && action.reason === recovery
+      ? { ...action, reason: "See capability_context.startup.todo_reconciliation for recovery." }
+      : action;
+  const nextAction = {
+    recommended: redactRecovery(state.next_action.recommended),
+    alternatives: state.next_action.alternatives
+      .filter((action) => !unsafeDetailOmitted || action.artifact !== "todo")
+      .map(redactRecovery),
+  };
   return {
     outcome: startup.outcome,
     mode: state.mode,
@@ -260,8 +283,8 @@ export function buildStatusContextState(
     progress: { exists: state.progress.exists, status: state.progress.status ?? null, latest: state.progress.latest ?? null },
     objective: { exists: state.objective.exists, active: state.objective.active ?? false, title: state.objective.title ?? null },
     state_presence: state.state_presence,
-    attention: projectPublicOrientationAttention(state).map((item) => truncateCodePoints(item, 200, "…")),
-    next_action: nextActionPayload(state),
+    attention,
+    next_action: nextActionPayload(nextAction),
   };
 }
 

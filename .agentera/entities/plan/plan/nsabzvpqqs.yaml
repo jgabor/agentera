@@ -1,0 +1,37 @@
+id: nsabzvpqqs
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-09
+    status: open
+    reviewed: 2026-08-09
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    revised: Clarified recoverable publication semantics, completed the public writer contract, made status work independent, tightened owner evidence and byte assertions, and bounded the contract decision gate.
+    title: "Plan: Recover unsafe TODO ownership within Prime bounds"
+  what: Provide a typed recovery lifecycle for TODO yrjmbhfjes that corrects marker-absent unsafe-inactive ownership without activation, then satisfy TODO gxcnoplnwr by keeping the resulting unsafe diagnosis within Prime's 22,500-byte startup contract.
+  why: Let affected projects resume safely without duplicating or reopening work, while preserving truthful bounded orientation for agents and CI.
+  constraints: TODO.md remains public authority; canonical IDs and Agentera-owned readiness, dependencies, gates, evidence, and lifecycle remain stable. Preview is read-only. Confirmed correction uses one effect-bound recoverable journal publication, and supported reads never accept mixed state. Prime remains truthful and no larger than 22,500 final UTF-8 JSON bytes without raw reads or private paths. Retain two-client public replay evidence and the existing scheduled 100x two-client stale-lock stress without new fan-out. Stay at 3.0.0 and do not publish, tag, or push.
+  overall_acceptance: GIVEN a marker-absent unsafe-inactive project with stale TODO entities WHEN an operator previews and confirms a complete one-to-one owner correction and later requests status THEN correction completes without unsafe activation, duplication, reopened work, identity loss, or mixed supported reads; state validation passes; and Prime returns truthful JSON within 22,500 UTF-8 bytes with bounded recovery detail.
+  scope:
+    included:
+      - TODO yrjmbhfjes typed owner-correction preview and apply lifecycle
+      - Markdown and entity authority preservation with baseline and activation publication
+      - TODO gxcnoplnwr bounded unsafe-status projection
+      - Source, compiled CLI, package, replay, interruption, privacy, and byte-bound evidence
+      - Same-change project-state and changelog closeout
+    excluded:
+      - Automatic resolution of owner evidence that does not form a complete one-to-one mapping
+      - Activation before correction or changes to marker-present repair behavior
+      - Unrelated TODO format redesign or Prime compaction
+      - New concurrency guarantees or increased writer fan-out
+      - Publication, tagging, pushing, or release promotion
+    deferred:
+      []
+  design: First establish one typed correction contract that binds complete ownership evidence to an exact read-only preview, then publish only those authorized effects through the existing recoverable state boundary. Independently project the unsafe diagnosis once for status consumers, preserving totals and exact recovery while omitting bounded detail as needed. Finish by exercising both behaviors at production boundaries and synchronizing project state.
+  unknowns:
+    - question: Which public correction command, owner-mapping evidence format, and preview/apply authorization form is canonical?
+      affects_task: 1
+      resolve_by: Before implementation, compare the typed writer grammar and recovery authorities and record the smallest contract that yields complete one-to-one mappings and replay-safe effect authorization. If current authority cannot determine the contract, stop for an explicit decision.
+  surprises:
+    []

@@ -222,6 +222,17 @@ function seedUnsafeInactiveTodos(project: string, count = 161): string[] {
         release_blocker: false,
         severity: "critical",
         status: "open",
+        ...(index === 0 ? {
+          readiness: {
+            capability: "build",
+            reason: `${title} private readiness.`,
+            dependencies: [],
+            blocked: null,
+            gate: null,
+            queue_rank: 1,
+            order_reason: "Exercise omitted unsafe status detail.",
+          },
+        } : {}),
       },
     }));
     rows.push(`${index % 2 ? "  " : ""}- [x] [task:3.0.0] ${title}`);
@@ -1150,7 +1161,7 @@ describe("npm distribution boundary", () => {
       expect(packaged.stderr).toBe(source.stderr);
       if (compareStdout) expect(packaged.stdout).toBe(source.stdout);
       expect(projectByteSnapshot(project)).toEqual(before);
-      return { source: JSON.parse(source.stdout), packaged: JSON.parse(packaged.stdout) };
+      return { source: JSON.parse(source.stdout), packaged: JSON.parse(packaged.stdout), sourceOutput: source.stdout, packagedOutput: packaged.stdout };
     };
 
     const preview = parity(["state", "todo", "activate", "--dry-run", "--format", "json"], 2).source;
@@ -1169,6 +1180,25 @@ describe("npm distribution boundary", () => {
     expect(prime.todo_reconciliation).toMatchObject({ state: "unsafe_inactive", preview_command: null, apply_command: null });
     expect(prime.next_action).toMatchObject({ capability: "plan", phase: "plan" });
     expect(prime.attention.join("\n")).toContain("Owner correction required");
+
+    const status = parity(["prime", "--context", "status", "--format", "json"], 0);
+    for (const [payload, output] of [[status.source, status.sourceOutput], [status.packaged, status.packagedOutput]]) {
+      const startup = payload.capability_context.startup;
+      const statusContext = payload.capability_context.context.status_context;
+      expect(Buffer.byteLength(output, "utf8")).toBeLessThanOrEqual(22500);
+      expect(output).not.toContain("PRIVATE_PACKAGED_STALE_TODO_");
+      expect(output).not.toContain(project);
+      expect(startup).toMatchObject({
+        outcome: "blocked",
+        todo_reconciliation: {
+          state: "unsafe_inactive",
+          risks: { resurrected_count: 161, resurrected_ids: ids.slice(0, 20), omitted_count: 141 },
+        },
+      });
+      expect(statusContext).not.toHaveProperty("todo_reconciliation");
+      expect(statusContext.attention.join("\n")).not.toContain("Owner correction required");
+      expect(statusContext.next_action.reason).not.toContain("Owner correction required");
+    }
 
     const doctor = parity(["doctor", "--format", "json"], 1, false);
     for (const result of [doctor.source, doctor.packaged]) expect(result.signals.find((entry: any) => entry.kind === "todo_reconciliation")).toMatchObject({

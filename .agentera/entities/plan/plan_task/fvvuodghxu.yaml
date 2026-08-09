@@ -1,0 +1,15 @@
+id: fvvuodghxu
+artifact: plan
+record:
+  name: Verify both fixes and synchronize current project state
+  depends_on:
+    - zjvdfuxhrj
+    - bpdrhteygi
+  status: pending
+  acceptance:
+    - GIVEN both behavioral tasks are complete WHEN the compiled local CLI exercises representative unsafe state THEN correction, state validation, and bounded status behavior pass through the production command boundary.
+    - GIVEN source and package surfaces changed WHEN authoritative gates run THEN focused tests, typecheck, build, package verification, compact validation, and state validation pass without weakening existing test owners.
+    - GIVEN all evidence passes WHEN closeout is published THEN TODOs yrjmbhfjes and gxcnoplnwr are closed through typed state, task evaluations and plan completion are recorded, and the changelog describes shipped user behavior without internal state bookkeeping.
+    - GIVEN the 3.0.0 cutover hold WHEN metadata and repository state are reviewed THEN no suite or release metadata advances beyond 3.0.0 and no publication, tag, or push occurs.
+  test_proportionality: Add no new matrix. Run the narrow owners from tasks 1 and 2 first, then the broad local and package gates required by their combined impact.
+  plan: nsabzvpqqs

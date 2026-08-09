@@ -84,6 +84,8 @@
 
 ### Fixed
 
+- Fixed status startup for large unsafe inactive TODO sets to stay within its
+  22,500-byte JSON limit while retaining bounded recovery details.
 - Fixed `agentera doctor --format json` to report bounded, read-only retirement
   diagnostics for stale native resources. Each candidate now names its exact ID,
   path-only evidence, and a `doctor --retired-resource ID` preview command;

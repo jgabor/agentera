@@ -17,6 +17,7 @@ import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
 import { runState } from "../../src/cli/dispatch/state.js";
 import { startupAggregation } from "../../src/cli/capabilityContext/startupAggregation.js";
+import { TODO_ACTIVATION_RISK_LIMIT, TODO_UNSAFE_INACTIVE_RECOVERY } from "../../src/state/todoReconciliationActivation.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const BUDGET_MANIFEST_PATH = path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml");
@@ -88,6 +89,45 @@ function writeTodoEntity(
   }));
 }
 
+function todoId(index: number): string {
+  let value = index;
+  return Array.from({ length: 10 }, () => {
+    const character = String.fromCharCode(97 + value % 26);
+    value = Math.floor(value / 26);
+    return character;
+  }).reverse().join("");
+}
+
+function seedUnsafeInactiveTodos(count: number, sentinel = "PRIVATE_STATUS_STARTUP_TODO"): string[] {
+  writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  const rows = ["# TODO", "", "Private fixture prose.", "", "## ⇶ Critical"];
+  const ids: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const id = todoId(index);
+    const title = `${sentinel}_${String(index).padStart(3, "0")}`;
+    ids.push(id);
+    writeProjectFile(`.agentera/entities/todo/todo_item/${id}.yaml`, YAML.stringify({
+      id,
+      artifact: "todo",
+      record: {
+        kind: "task",
+        target_version: "3.0.0",
+        title,
+        requirements: [],
+        acceptance: [],
+        release_blocker: false,
+        severity: "critical",
+        status: "open",
+        ...(index === 0 ? { readiness: readyTodo("build", `${sentinel} private readiness`, 1) } : {}),
+      },
+    }));
+    rows.push(`${index % 2 ? "  " : ""}- [x] [task:3.0.0] ${title}`);
+  }
+  rows.push("", "Private fixture closing prose.", "");
+  writeProjectFile("TODO.md", rows.join("\n"));
+  return ids;
+}
+
 function readyTodo(capability: string, reason: string, queueRank: number): Record<string, unknown> {
   return {
     capability,
@@ -100,14 +140,19 @@ function readyTodo(capability: string, reason: string, queueRank: number): Recor
   };
 }
 
-function runStatus(): { rc: number; out: string; err: string; payload: Record<string, any> } {
+function captureStatus(): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
   const rc = cmdPrime(
     { command: "prime", context: "status", format: "json", home, installRoot: appHome },
     { out: (text) => (out += text), err: (text) => (err += text) },
   );
-  return { rc, out, err, payload: JSON.parse(out) as Record<string, any> };
+  return { rc, out, err };
+}
+
+function runStatus(): { rc: number; out: string; err: string; payload: Record<string, any> } {
+  const result = captureStatus();
+  return { ...result, payload: JSON.parse(result.out) as Record<string, any> };
 }
 
 function statusState(payload: Record<string, any>): Record<string, any> {
@@ -128,6 +173,73 @@ function renderStatusDashboard(statusContext: Record<string, any>): Record<strin
 }
 
 describe("status capability self-contained startup", () => {
+  it("bounds unsafe inactive diagnosis without copying private recovery detail", () => {
+    const sentinel = "PRIVATE_STATUS_STARTUP_TODO";
+    const ids = seedUnsafeInactiveTodos(161, sentinel);
+
+    const result = captureStatus();
+
+    expect(result.rc, result.err).toBe(0);
+    expect(result.err).toBe("");
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expect(result.out).not.toContain(sentinel);
+    expect(result.out).not.toContain(project);
+
+    const payload = JSON.parse(result.out) as Record<string, any>;
+    const startup = payload.capability_context.startup;
+    const status = statusState(payload);
+    expect(startup).toMatchObject({ outcome: "blocked", raw_artifact_reads_required: false });
+    expect(startup.todo_reconciliation).toMatchObject({
+      state: "unsafe_inactive",
+      status: "action_required",
+      risks: {
+        resurrected_count: 161,
+        resurrected_ids: ids.slice(0, TODO_ACTIVATION_RISK_LIMIT),
+        omitted_count: 161 - TODO_ACTIVATION_RISK_LIMIT,
+      },
+      recovery_command: TODO_UNSAFE_INACTIVE_RECOVERY,
+    });
+    expect(startup.availability.filter((entry: Record<string, unknown>) => entry.family === "todo")).toEqual([
+      { family: "todo", availability: "included", detail_command: "npx -y agentera@next state todo list --format json" },
+    ]);
+    expect(status.outcome).toBe("blocked");
+    expect(status).not.toHaveProperty("todo_reconciliation");
+    expect(status.attention.join("\n")).not.toContain(TODO_UNSAFE_INACTIVE_RECOVERY);
+    expect(status.next_action.reason).not.toContain(TODO_UNSAFE_INACTIVE_RECOVERY);
+    expect(JSON.stringify(payload).split(TODO_UNSAFE_INACTIVE_RECOVERY)).toHaveLength(2);
+  });
+
+  it.each([
+    ["small", 1, 0],
+    ["below the risk-ID limit", TODO_ACTIVATION_RISK_LIMIT - 1, 0],
+    ["above the risk-ID limit", TODO_ACTIVATION_RISK_LIMIT + 1, 1],
+  ])("keeps unsafe inactive status within budget %s the bounded risk-ID limit", (_name, count, omitted) => {
+    const ids = seedUnsafeInactiveTodos(count);
+
+    const result = captureStatus();
+
+    expect(result.rc, result.err).toBe(0);
+    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    const payload = JSON.parse(result.out) as Record<string, any>;
+    const reconciliation = payload.capability_context.startup.todo_reconciliation;
+    expect(reconciliation).toMatchObject({
+      state: "unsafe_inactive",
+      risks: {
+        resurrected_count: count,
+        resurrected_ids: ids.slice(0, TODO_ACTIVATION_RISK_LIMIT),
+        omitted_count: omitted,
+      },
+    });
+    const status = statusState(payload);
+    if (omitted === 0) {
+      expect(status.attention.join("\n")).toContain("Owner correction required");
+      expect(status.next_action.reason).toBe(TODO_UNSAFE_INACTIVE_RECOVERY);
+    } else {
+      expect(status.attention.join("\n")).not.toContain(TODO_UNSAFE_INACTIVE_RECOVERY);
+      expect(status.next_action.reason).not.toContain(TODO_UNSAFE_INACTIVE_RECOVERY);
+    }
+  });
+
   it("delegates TODO selection to typed readiness without prose inference", () => {
     const instructions = runStatus().payload.capability_context.instructions as string;
 
