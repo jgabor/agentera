@@ -34,7 +34,7 @@ interface Options {
   candidate?: () => string;
 }
 
-interface Contract { authorityPath: string; entityRoot: string; defaultLimit: number; maximumLimit: number; maxUtf8Bytes: number }
+interface Contract { authorityPath: string; entityRoot: string; defaultLimit: number; maximumLimit: number; maxUtf8Bytes: number; openPlanConflictLimit: number }
 
 function mapping(value: unknown): value is JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function contract(sourceRoot = resolveSourceRoot()): Contract {
@@ -47,13 +47,21 @@ function contract(sourceRoot = resolveSourceRoot()): Contract {
   const number = (value: unknown, field: string): number => {
     const result = Number(value); if (!Number.isSafeInteger(result) || result < 1) throw new Error(`invalid plan entity ${field} authority`); return result;
   };
+  const grammar = mapping(authority.mutation_grammar) ? authority.mutation_grammar : {};
+  const operations = Array.isArray(grammar.operations) ? grammar.operations : [];
+  const lifecycleLimits = ["create", "archive"].map((verb) => {
+    const operation = operations.find((value) => mapping(value) && value.artifact === ARTIFACT && value.verb === verb);
+    const bounds = mapping(operation) && mapping(operation.bounds) ? operation.bounds : {};
+    return number(bounds.max_collection_items, `plan ${verb} max_collection_items`);
+  });
+  if (new Set(lifecycleLimits).size !== 1) throw new Error("invalid plan lifecycle max_collection_items authority");
   if (typeof storage.canonical_root !== "string") throw new Error(`invalid plan entity authority '${authorityPath}'`);
-  return { authorityPath, entityRoot: storage.canonical_root, defaultLimit: number(retrieval.default_limit, "default_limit"), maximumLimit: number(retrieval.maximum_limit, "maximum_limit"), maxUtf8Bytes: number(retrieval.max_utf8_bytes, "max_utf8_bytes") };
+  return { authorityPath, entityRoot: storage.canonical_root, defaultLimit: number(retrieval.default_limit, "default_limit"), maximumLimit: number(retrieval.maximum_limit, "maximum_limit"), maxUtf8Bytes: number(retrieval.max_utf8_bytes, "max_utf8_bytes"), openPlanConflictLimit: lifecycleLimits[0] };
 }
 
-function failure(kind: StateFailureClass, message: string, recovery: string, id?: string): StateRetrievalFailure {
+function failure(kind: StateFailureClass, message: string, recovery: string, id?: string, details?: JsonObject): StateRetrievalFailure {
   const exampleId = id && ID.test(id) ? id : "qjtrmnpvka";
-  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: "agentera state plan get --id ID --format json", example: `agentera state plan get --id ${exampleId} --format json`, recovery, artifact: ARTIFACT, ...(id ? { id } : {}) } }, kind === "invalid_request" ? 2 : 1);
+  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: "agentera state plan get --id ID --format json", example: `agentera state plan get --id ${exampleId} --format json`, recovery, artifact: ARTIFACT, ...(id ? { id } : {}), ...(details ? { details } : {}) } }, kind === "invalid_request" ? 2 : 1);
 }
 function relative(root: string, file: string): string { return path.relative(path.resolve(root), file).split(path.sep).join("/"); }
 function all(root: string, sourceRoot: string, discovery?: EntityDiscoveryResult): DiscoveredEntity[] {
@@ -68,7 +76,16 @@ function all(root: string, sourceRoot: string, discovery?: EntityDiscoveryResult
   return relevant;
 }
 function planStatus(entity: DiscoveredEntity): string { return String(mapping(entity.record?.header) ? entity.record!.header.status ?? "" : entity.record?.status ?? ""); }
-function selectedPlan(entities: DiscoveredEntity[], requested?: string): DiscoveredEntity {
+function multipleOpenPlanConflict(open: DiscoveredEntity[], sourceRoot: string): { message: string; details: JsonObject } {
+  const allIds = open.map((entity) => entity.id!).sort();
+  const sampleIds = allIds.slice(0, contract(sourceRoot).openPlanConflictLimit);
+  const omittedCount = allIds.length - sampleIds.length;
+  return {
+    message: `multiple open plans exist: ${sampleIds.join(", ")} (total=${allIds.length}, omitted=${omittedCount})`,
+    details: { open_plan_candidates: { total: allIds.length, sample_ids: sampleIds, omitted_count: omittedCount } },
+  };
+}
+function selectedPlan(entities: DiscoveredEntity[], requested?: string, sourceRoot = resolveSourceRoot()): DiscoveredEntity {
   if (requested !== undefined && !ID.test(requested)) throw failure("invalid_request", `plan ID '${requested}' must be ten lowercase letters`, "Use a bare plan ID returned by plan create or list.", requested);
   const plans = entities.filter((entity) => entity.boundary === PLAN);
   if (requested) {
@@ -79,7 +96,8 @@ function selectedPlan(entities: DiscoveredEntity[], requested?: string): Discove
   const open = plans.filter((entity) => OPEN.has(planStatus(entity)));
   if (open.length === 1) return open[0];
   if (open.length === 0) throw failure("not_found", "no open plan exists", "Create a plan, or use agentera state plan get --id ID for completed plan detail.");
-  throw failure("ambiguous", `multiple open plans exist: ${open.map(({ id }) => id).sort().join(", ")}`, "List plans, then use agentera state plan get --id ID or agentera state plan tasks list PLAN_ID.");
+  const conflict = multipleOpenPlanConflict(open, sourceRoot);
+  throw failure("ambiguous", conflict.message, "List plans, then use agentera state plan get --id ID or agentera state plan tasks list PLAN_ID.", undefined, conflict.details);
 }
 
 interface PlanLifecycleDecision {
@@ -110,16 +128,18 @@ function preservedPlanEffects(plan: DiscoveredEntity): JsonObject {
 function planLifecycleDecision(
   entities: DiscoveredEntity[],
   intent: { verb: "create"; force: boolean } | { verb: "archive"; force: boolean; plan?: string },
+  sourceRoot: string,
 ): PlanLifecycleDecision {
   const plans = entities.filter((entity) => entity.boundary === PLAN);
   const open = plans.filter((entity) => planStatus(entity) === "open");
-  const openIds = open.map((entity) => entity.id!).sort();
 
   if (intent.verb === "create") {
     if (open.length > 1) {
+      const conflict = multipleOpenPlanConflict(open, sourceRoot);
       reject({
         class: "conflict",
-        message: `multiple open plans exist: ${openIds.join(", ")}; implicit plan create cannot choose a predecessor`,
+        message: `${conflict.message}; implicit plan create cannot choose a predecessor`,
+        diagnosis: conflict.details,
         recovery: "List the canonical plan IDs with agentera state plan list --status open --format json and resolve the competing open plans before creating a successor.",
       });
     }
@@ -160,7 +180,7 @@ function planLifecycleDecision(
     };
   }
 
-  const target = selectedPlan(entities, intent.plan);
+  const target = selectedPlan(entities, intent.plan, sourceRoot);
   const status = planStatus(target);
   if (status === "open" && !intent.force) {
     reject({
@@ -220,7 +240,7 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
   validatePlanPublicationCandidate(dumpYamlMapping(input));
   const discovery = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
   const entities = all(options.publicationContext.pinnedPath(), sourceRoot, discovery);
-  const lifecycle = planLifecycleDecision(entities, { verb: "create", force: req.force });
+  const lifecycle = planLifecycleDecision(entities, { verb: "create", force: req.force }, sourceRoot);
   const tasks = Array.isArray(input.tasks) ? input.tasks.filter(mapping) : [];
   const reserved = new Set<string>();
   const planId = newId(options.publicationContext?.pinnedPath() ?? req.projectRoot, sourceRoot, reserved, options.candidate);
@@ -394,7 +414,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(req.projectRoot, sourceRoot);
   if (req.spec.verb === "set-plan-status" && req.values.id !== undefined) reject({ class: "invalid_request", message: "plan set-plan-status accepts only the --plan selector; --id is a task selector and is not valid for plan lifecycle" });
   if (req.spec.verb === "archive") {
-    const lifecycle = planLifecycleDecision(entities, { verb: "archive", force: req.force, ...(typeof req.values.plan === "string" ? { plan: req.values.plan } : {}) });
+    const lifecycle = planLifecycleDecision(entities, { verb: "archive", force: req.force, ...(typeof req.values.plan === "string" ? { plan: req.values.plan } : {}) }, sourceRoot);
     const plan = lifecycle.target!;
     const record = lifecycle.archivedRecord!;
     if (lifecycle.replay) return envelope("state plan archive", { id: plan.id!, path: plan.path, replay: true }, record, req.dryRun, { effects: lifecycle.effects });
@@ -402,7 +422,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
     const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: plan.id!, expectedRecord: plan.record!, expectedBytes: exactDiscoveredEntityBytes(plan), migrationProvenance: plan.migrationProvenance, record });
     return envelope("state plan archive", result, record, false, { effects: lifecycle.effects });
   }
-  const plan = selectedPlan(entities, typeof req.values.plan === "string" ? req.values.plan : undefined);
+  const plan = selectedPlan(entities, typeof req.values.plan === "string" ? req.values.plan : undefined, sourceRoot);
   if (req.spec.verb === "append") {
     if (!OPEN.has(planStatus(plan))) reject({ class: "conflict", message: `plan '${plan.id}' is ${planStatus(plan)} and cannot accept a new task` });
     const record = taskRecord(req, plan.id!); assertDependencies(req.projectRoot, sourceRoot, record);
@@ -504,15 +524,15 @@ function boundedList(root: string, sourceRoot: string, selected: DiscoveredEntit
   const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity)), counts: { total: selected.length, returned: page.length, remaining }, order, filters: filter, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, retrieval: { ...(next ? { continue: `${command.replace("state ", "agentera state ")}${familyIdentifier}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}), ...envelope };
   return projectEntityList(response, selector, projectionOptions);
 }
-export function getPlanEntity(root: string, id: string, sourceRoot = resolveSourceRoot()): JsonObject { const entities = all(root, sourceRoot); const plan = selectedPlan(entities, id); return { schemaVersion: "agentera.stateGet.v1", command: "state plan get", status: "ok", entry: entry(root, plan), tasks: entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === id).sort((a, b) => a.id!.localeCompare(b.id!)).map((entity) => entry(root, entity)), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entities" } }; }
+export function getPlanEntity(root: string, id: string, sourceRoot = resolveSourceRoot()): JsonObject { const entities = all(root, sourceRoot); const plan = selectedPlan(entities, id, sourceRoot); return { schemaVersion: "agentera.stateGet.v1", command: "state plan get", status: "ok", entry: entry(root, plan), tasks: entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === id).sort((a, b) => a.id!.localeCompare(b.id!)).map((entity) => entry(root, entity)), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entities" } }; }
 export function listPlanEntities(root: string, limit?: number, cursor?: string, options: { sourceRoot?: string; format?: string; statuses?: string[]; discovery?: EntityDiscoveryResult; selector?: EntityListSelectorInput } = {}): JsonObject { const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(root, sourceRoot, options.discovery); const statuses = options.statuses?.length ? new Set(options.statuses) : undefined; const plans = entities.filter((entity) => entity.boundary === PLAN && (!statuses || statuses.has(planStatus(entity)))).sort((a, b) => String(mapping(b.record?.header) ? b.record!.header.created ?? "" : "").localeCompare(String(mapping(a.record?.header) ? a.record!.header.created ?? "" : "")) || a.id!.localeCompare(b.id!)); return boundedList(root, sourceRoot, plans, entities, limit, cursor, ORDER, "state plan list", options.statuses ? { status: options.statuses } : {}, options.format, {}, undefined, options.selector); }
 export function getPlanTaskEntity(root: string, id: string, planId?: string, sourceRoot = resolveSourceRoot()): JsonObject { const entities = all(root, sourceRoot); const task = taskFor(entities, id, planId); return { schemaVersion: "agentera.stateGet.v1", command: "state plan tasks get", status: "ok", entry: entry(root, task), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entity" } }; }
-export function listPlanTaskEntities(root: string, planId?: string, limit?: number, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: EntityDiscoveryResult; selector?: EntityListSelectorInput } = {}): JsonObject { const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(root, sourceRoot, options.discovery); const declared = contract(sourceRoot); const decodedCursor = cursor ? decode(cursor, root, declared.authorityPath) : undefined; const cursorFilter = mapping(decodedCursor?.filter) ? decodedCursor.filter : undefined; const cursorPlan = typeof cursorFilter?.plan === "string" && ID.test(cursorFilter.plan) ? cursorFilter.plan : undefined; if (decodedCursor && !cursorPlan) throw failure("cursor_snapshot_unavailable", "plan state changed after this cursor snapshot", "Omit --cursor to restart from current state."); const plan = selectedPlan(entities, planId ?? cursorPlan); const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === plan.id).sort((a, b) => a.id!.localeCompare(b.id!)); return boundedList(root, sourceRoot, tasks, entities, limit, cursor, TASK_ORDER, "state plan tasks list", { plan: plan.id! }, options.format, {}, decodedCursor, options.selector); }
+export function listPlanTaskEntities(root: string, planId?: string, limit?: number, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: EntityDiscoveryResult; selector?: EntityListSelectorInput } = {}): JsonObject { const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(root, sourceRoot, options.discovery); const declared = contract(sourceRoot); const decodedCursor = cursor ? decode(cursor, root, declared.authorityPath) : undefined; const cursorFilter = mapping(decodedCursor?.filter) ? decodedCursor.filter : undefined; const cursorPlan = typeof cursorFilter?.plan === "string" && ID.test(cursorFilter.plan) ? cursorFilter.plan : undefined; if (decodedCursor && !cursorPlan) throw failure("cursor_snapshot_unavailable", "plan state changed after this cursor snapshot", "Omit --cursor to restart from current state."); const plan = selectedPlan(entities, planId ?? cursorPlan, sourceRoot); const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === plan.id).sort((a, b) => a.id!.localeCompare(b.id!)); return boundedList(root, sourceRoot, tasks, entities, limit, cursor, TASK_ORDER, "state plan tasks list", { plan: plan.id! }, options.format, {}, decodedCursor, options.selector); }
 
 export function currentPlanEntityView(root: string, limit?: number, cursor?: string, status?: string, options: { sourceRoot?: string; format?: string } = {}): JsonObject {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const entities = all(root, sourceRoot);
-  const plan = selectedPlan(entities);
+  const plan = selectedPlan(entities, undefined, sourceRoot);
   let tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === plan.id);
   if (status) tasks = tasks.filter((entity) => entity.record?.status === status);
   tasks.sort((a, b) => a.id!.localeCompare(b.id!));

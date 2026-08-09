@@ -1,0 +1,15 @@
+id: listokcbhh
+artifact: progress
+record:
+  timestamp: 2026-08-09 03:48
+  type: fix
+  phase: build
+  what: Bounded multiple-open-plan diagnostics in packages/cli/src/state/planEntities.ts.
+  context:
+    intent: Retry Task lxcpdzxzap after audit-lxcpdzxzap-1 found unbounded forced-plan conflict output.
+    constraints: Keep the task in_progress until the orchestrator records a second audit verdict; preserve prior lifecycle behavior.
+    scope: One shared 100-item canonical-ID sample for forced create and archive conflicts.
+  discovered: The shared lifecycle decision listed every open plan ID in conflict messages despite the declared create/archive collection bound.
+  verified: Focused lifecycle tests, a rebuilt local 101-open-plan probe, full source tests, typecheck, performance, and package verification passed.
+  next: Await the independent retry audit before completing Task lxcpdzxzap.
+  publication_order: 109

@@ -4,7 +4,7 @@ record:
   name: Establish truthful forced plan lifecycle
   depends_on:
     []
-  status: complete
+  status: in_progress
   acceptance:
     - GIVEN zero, one, or multiple open plans WHEN create or archive is previewed and applied THEN both paths report matching bounded effects or conflicts from one authority.
     - GIVEN one unfinished predecessor WHEN implicit forced create or forced archive applies THEN it becomes historical without task, evaluation, or completion changes.
@@ -12,3 +12,13 @@ record:
     - GIVEN lifecycle and storage contracts disagree on archival or lineage WHEN Task 1 completes THEN parser, schema, storage, writer, help, explain, source, and package surfaces permit one consistent writer-owned contract with bare IDs and bidirectional lineage.
     - GIVEN each lifecycle unit WHEN targeted verification is reviewed THEN at least one passing and one failing scenario exists.
   plan: xjiwyjimiv
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Multiple-open-plan conflict output emits all canonical IDs and exceeds the declared 100-item bound.
+    provenance:
+      attempt_id: audit-lxcpdzxzap-1
+      source: audit ses_01be76fffffemEiVogVSAx9TLW
+      recorded_at: 2026-08-09 03:27
+      writer_command: agentera state plan record-evaluation

@@ -565,6 +565,42 @@ describe("plan and task entity authority", () => {
     expect(JSON.parse(historicalArchive.out)).toMatchObject({ record: { header: { status: "archived" } }, operation: { idempotent_replay: false } });
   });
 
+  it("bounds forced lifecycle conflicts for more than one hundred open plans", () => {
+    const root = project();
+    const candidates = Array.from({ length: 101 }, (_, index) => openPlanFixture(root, 1000 + index * 2, `competing plan ${index}`));
+    const ids = candidates.map(({ id }) => id).sort();
+    const successorInput = planInput(root, "bounded ambiguous successor");
+    for (const { args, exit, diagnosticField } of [
+      { args: ["state", "plan", "create", "--force", "--input", successorInput, "--dry-run", "--format", "json"], exit: 2, diagnosticField: "diagnosis" },
+      { args: ["state", "plan", "archive", "--force", "--dry-run", "--format", "json"], exit: 1, diagnosticField: "details" },
+    ]) {
+      const preview = capture(root, args);
+      const apply = capture(root, args.filter((value) => value !== "--dry-run"));
+      expect(preview.rc, preview.err || preview.out).toBe(exit);
+      expect(apply.rc, apply.err || apply.out).toBe(exit);
+      const previewError = JSON.parse(preview.out).error;
+      expect(previewError).toEqual(JSON.parse(apply.out).error);
+      expect(previewError[diagnosticField]).toEqual({
+        open_plan_candidates: { total: 101, sample_ids: ids.slice(0, 100), omitted_count: 1 },
+      });
+      expect(previewError.message).toContain(ids[0]);
+      expect(previewError.message).not.toContain(ids[100]);
+      expect(previewError.message).toContain("total=101");
+      expect(previewError.message).toContain("omitted=1");
+    }
+
+    const afterFailures = capture(root, ["state", "plan", "list", "--status", "open", "--limit", "100", "--format", "json"]);
+    expect(afterFailures.rc, afterFailures.err || afterFailures.out).toBe(0);
+    expect(JSON.parse(afterFailures.out)).toMatchObject({ counts: { total: 101, returned: 100, remaining: 1 }, omitted: true, omitted_count: 1 });
+
+    const explicitPreview = capture(root, ["state", "plan", "archive", "--plan", ids[0], "--force", "--dry-run", "--format", "json"]);
+    const explicitApply = capture(root, ["state", "plan", "archive", "--plan", ids[0], "--force", "--format", "json"]);
+    expect(explicitPreview.rc, explicitPreview.err || explicitPreview.out).toBe(0);
+    expect(explicitApply.rc, explicitApply.err || explicitApply.out).toBe(0);
+    expect(JSON.parse(explicitPreview.out).effects).toEqual(JSON.parse(explicitApply.out).effects);
+    expect(JSON.parse(explicitApply.out)).toMatchObject({ record: { header: { status: "archived" } }, effects: { lifecycle: "forced_archive", archived_plan: { id: ids[0] } } });
+  });
+
   it("keeps writer-owned plan lineage one-to-one in both directions", () => {
     const root = project(); const predecessor = create(root, "lineage predecessor");
     const successor = create(root, "lineage successor", false, true);
