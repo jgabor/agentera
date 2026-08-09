@@ -499,35 +499,58 @@ personal_mining_authority:
       project_storage: forbidden
       records: [candidate_metadata, safe_excerpts, review_dispositions]
       project_state: unchanged
+      filesystem:
+        authority: host_filesystem
+        configured_path: use_as_provided
+        outcomes: ordinary_permissions_and_io
+        same_user_path_manipulation: outside_agentera_threat_model
+        symlink_confinement: not_claimed
+        rule: >-
+          Agentera uses the configured profile path as provided. The host
+          filesystem owns permissions, symlink behavior, and same-user path
+          manipulation. Agentera does not add realpath or no-follow confinement.
       rule: >-
-        Mining records live below the user data root and are never written to
-        .agentera, TODO.md, progress, the project glossary, or any project path.
+        Agentera deliberately selects only the configured user profile path for
+        mining records. It never selects .agentera, TODO.md, progress, the
+        project glossary, or another project path as projection storage. A user
+        configuration or same-user filesystem change does not become an
+        Agentera path-confinement claim.
+    content_exclusion:
+      owner: glossary_content_policy
+      classification: actual_secret_or_sensitive_value
+      conceptual_terminology: eligible
+      candidate_fields: [term, meaning]
+      candidate_action: reject_before_projection
+      candidate_reason: secret_content
+      excerpt_action: omit_complete_excerpt_before_projection
+      secret_classes:
+        - api_keys
+        - access_tokens
+        - passwords
+        - cookies
+        - private_keys
+        - authorization_headers
+        - personal_contact_data
+        - session_identifiers
+        - runtime_store_paths
+      rule: >-
+        A term or meaning containing an actual credential, session, or other
+        sensitive value is not a glossary candidate and is rejected with the
+        stable secret_content reason. Field names and ordinary conceptual
+        terminology remain eligible. If candidate-adjacent context contains an
+        actual secret or sensitive value, omit the complete excerpt. Never redact
+        and retain part of that excerpt.
     excerpts:
       purpose: bounded_review_context_only
       max_utf8_bytes: 500
-      redaction:
-        before_persistence: true
-        replacement: "[REDACTED]"
-        secret_classes:
-          - api_keys
-          - access_tokens
-          - passwords
-          - cookies
-          - private_keys
-          - authorization_headers
-          - personal_contact_data
-        rule: >-
-          Redact secret-class values before any excerpt is persisted. If a
-          high-risk value cannot be redacted deterministically, reject the
-          excerpt rather than storing it.
       forbidden_content:
         - raw_transcript
         - raw_tool_arguments
         - raw_runtime_store_paths
         - raw_session_identifiers
-        - unredacted_secret
+        - secret_or_sensitive_content
         - unrelated_conversation
-      failure: reject_before_persistence
+      failure: omit_complete_excerpt_before_persistence
     reviews:
       owner: current_user
       required_fields:
@@ -661,11 +684,15 @@ personal_mining_authority:
       authority: personal_mining_authority.privacy.excerpts
       input_rule: candidate_adjacent_text_must_contain_the_exact_candidate_term
       output_fields: [text, expires_at, redacted]
+      compatibility:
+        redacted_field: retained_for_v1_consumers
+        new_projection_value: false
       omission_reasons: [no_excerpt, unrelated_context, source_bound_exceeded, unsafe_tool_arguments, unsafe_content]
       rule: >-
-        Sort transient excerpts canonically, redact before selection or
-        persistence, retain at most one safe excerpt, and omit unsafe or
-        unrelated text without echoing it.
+        Sort transient excerpts canonically, retain at most one complete safe
+        excerpt, and omit secret-bearing, sensitive, unsafe, or unrelated text
+        without echoing it. The v1 redacted field remains for schema compatibility,
+        but new projections set it to false and never persist partial redactions.
     retention:
       authority: personal_mining_authority.privacy.retention
       purge: personal_mining_authority.privacy.purge
@@ -685,10 +712,12 @@ personal_mining_authority:
       public_reads: forbidden
       review_disposition_writes: forbidden
       rule: >-
-        Write one private canonical projection file below the user profile
-        directory. The file contains validated capsules, hashed project
-        identities, safe excerpts, and a bounded report only. Never write a
-        project path, .agentera state, raw excerpt source, or review disposition.
+        Write one private canonical projection file at the configured user
+        profile path using ordinary filesystem I/O. The file contains validated
+        capsules, hashed project identities, safe excerpts, and a bounded report
+        only. Never serialize a raw project path, .agentera state, raw excerpt
+        source, or review disposition, and never deliberately select project
+        storage.
   admission:
     inferred_automatic_admission: disabled
     inferred_review: allowed

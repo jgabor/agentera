@@ -27,6 +27,8 @@ export interface PersonalGlossaryCandidateProjectionContract {
   tieBreak: string;
   projectIdentitySchemaVersion: string;
   storageFile: string;
+  candidateSecretReason: string;
+  excerptSensitiveContentAction: string;
 }
 
 export interface ConfirmedVariantGuardContract {

@@ -19,7 +19,9 @@ export function personalGlossaryCandidateProjectionContract(
   const projection = mapping(mining?.candidate_projection);
   const selection = mapping(projection?.selection);
   const excerpts = mapping(projection?.excerpts);
-  const retention = mapping(mapping(mining?.privacy)?.retention);
+  const privacy = mapping(mining?.privacy);
+  const contentExclusion = mapping(privacy?.content_exclusion);
+  const retention = mapping(privacy?.retention);
   const projectIdentity = mapping(selection?.project_identity);
   const persistence = mapping(projection?.persistence);
   const families = mapping(selection?.source_families);
@@ -47,5 +49,11 @@ export function personalGlossaryCandidateProjectionContract(
     projectIdentitySchemaVersion:
       typeof projectIdentity?.schema_version === "string" ? projectIdentity.schema_version : "",
     storageFile: typeof persistence?.file === "string" ? persistence.file : "",
+    candidateSecretReason:
+      typeof contentExclusion?.candidate_reason === "string"
+        ? contentExclusion.candidate_reason
+        : "",
+    excerptSensitiveContentAction:
+      typeof contentExclusion?.excerpt_action === "string" ? contentExclusion.excerpt_action : "",
   };
 }

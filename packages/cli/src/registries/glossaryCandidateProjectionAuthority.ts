@@ -26,8 +26,12 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   const sourceFamilies = mapping(selection?.source_families);
   const projectIdentity = mapping(selection?.project_identity);
   const excerpts = mapping(projection?.excerpts);
+  const excerptCompatibility = mapping(excerpts?.compatibility);
   const retention = mapping(projection?.retention);
   const persistence = mapping(projection?.persistence);
+  const privacy = mapping(mining?.privacy);
+  const contentExclusion = mapping(privacy?.content_exclusion);
+  const storageFilesystem = mapping(mapping(privacy?.storage)?.filesystem);
   if (
     projection?.status !== "active" ||
     projection?.runtime !==
@@ -58,6 +62,8 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     excerpts?.authority !== "personal_mining_authority.privacy.excerpts" ||
     excerpts?.input_rule !== "candidate_adjacent_text_must_contain_the_exact_candidate_term" ||
     !sameStrings(excerpts?.output_fields, ["text", "expires_at", "redacted"]) ||
+    excerptCompatibility?.redacted_field !== "retained_for_v1_consumers" ||
+    excerptCompatibility?.new_projection_value !== false ||
     !sameStrings(excerpts?.omission_reasons, [
       "no_excerpt",
       "unrelated_context",
@@ -86,10 +92,35 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     persistence?.project_storage !== "forbidden" ||
     persistence?.public_reads !== "forbidden" ||
     persistence?.review_disposition_writes !== "forbidden" ||
+    contentExclusion?.owner !== "glossary_content_policy" ||
+    contentExclusion?.classification !== "actual_secret_or_sensitive_value" ||
+    contentExclusion?.conceptual_terminology !== "eligible" ||
+    !sameStrings(contentExclusion?.candidate_fields, ["term", "meaning"]) ||
+    contentExclusion?.candidate_action !== "reject_before_projection" ||
+    contentExclusion?.candidate_reason !== "secret_content" ||
+    contentExclusion?.excerpt_action !== "omit_complete_excerpt_before_projection" ||
+    !sameStrings(contentExclusion?.secret_classes, [
+      "api_keys",
+      "access_tokens",
+      "passwords",
+      "cookies",
+      "private_keys",
+      "authorization_headers",
+      "personal_contact_data",
+      "session_identifiers",
+      "runtime_store_paths",
+    ]) ||
+    !nonEmpty(contentExclusion?.rule) ||
+    storageFilesystem?.authority !== "host_filesystem" ||
+    storageFilesystem?.configured_path !== "use_as_provided" ||
+    storageFilesystem?.outcomes !== "ordinary_permissions_and_io" ||
+    storageFilesystem?.same_user_path_manipulation !== "outside_agentera_threat_model" ||
+    storageFilesystem?.symlink_confinement !== "not_claimed" ||
+    !nonEmpty(storageFilesystem?.rule) ||
     !nonEmpty(persistence?.rule)
   ) {
     return [
-      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ];
   }
   return [];

@@ -1,0 +1,30 @@
+id: ccylzcjujn
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Align projection privacy with filesystem ownership
+  status: complete
+  depends_on:
+    - zabolpjiro
+    - gktgrfqlyr
+    - macjwqqfap
+  acceptance:
+    - GIVEN a candidate term or meaning contains a secret-class value WHEN projection evaluates it THEN the candidate is ineligible with a stable reason and no projection or persisted bytes contain that value.
+    - GIVEN an otherwise eligible candidate has adjacent context containing secret or sensitive content WHEN excerpts project THEN the complete excerpt is omitted rather than redacted or persisted, while the safe candidate may remain without an excerpt.
+    - GIVEN projection storage uses the configured user profile path WHEN read, write, replay, expiry, or purge runs THEN ordinary filesystem permissions and I/O outcomes govern; Agentera adds no symlink or same-user path-confinement claim and never deliberately selects project storage.
+    - GIVEN identical safe candidates, policy, generation, and configured storage WHEN projection repeats THEN deterministic caps, diversity, identities, order, reports, persisted validation, private file permissions, retention, and purge behavior remain unchanged.
+    - GIVEN secret candidate, secret excerpt, safe excerpt, ordinary filesystem success and failure, cap, diversity, and replay boundaries WHEN verification runs THEN one passing and failing case protects each rule without public reads, project-glossary access, publication, package, or release changes.
+  evidence:
+    - Amend the authority to distinguish glossary-content exclusion from filesystem-owned storage security, then run targeted and source checks and obtain independent Audit PASS under that threat model.
+    - Only after PASS supersede tahegtlmco with this task and resolve TODO swighbbfpu; any FAIL leaves both open.
+    - Audit must not require Agentera symlink or same-user filesystem confinement that the revised authority assigns to the host filesystem.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Digest-valid secret-bearing projections can bypass projection-time exclusion during direct persistence; sensitive-content matching also rejects ordinary authorization and session terminology; paired persistence and conceptual-prose boundaries are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_01aab8a2affesHGKf69AVAT88Z bounded re-review
+      recorded_at: 2026-08-09 09:40
+      writer_command: agentera state plan record-evaluation

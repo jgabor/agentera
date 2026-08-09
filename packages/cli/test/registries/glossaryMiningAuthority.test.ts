@@ -249,7 +249,7 @@ describe("personal glossary mining authority", () => {
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.selection.candidates_max = 51;
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection diversity",
@@ -257,7 +257,7 @@ describe("personal glossary mining authority", () => {
         authority.personal_mining_authority.candidate_projection.selection.source_families.recurring =
           [];
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection tie break",
@@ -265,28 +265,52 @@ describe("personal glossary mining authority", () => {
         authority.personal_mining_authority.candidate_projection.selection.tie_break =
           "source-order";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
-      "candidate projection excerpt redaction",
+      "candidate projection excerpt exclusion",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.excerpts.source_max_utf8_bytes = 0;
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+    ],
+    [
+      "candidate projection secret reason",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.privacy.content_exclusion.candidate_reason =
+          "redact_secret";
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+    ],
+    [
+      "candidate projection conceptual terminology",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.privacy.content_exclusion.conceptual_terminology =
+          "reject";
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+    ],
+    [
+      "candidate projection filesystem ownership",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.privacy.storage.filesystem.symlink_confinement =
+          "agentera_enforced";
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection retention purge",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.retention.purge = "project";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection replay persistence",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.persistence.replay = "overwrite";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, diversity, safe excerpts, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "term identity",
@@ -334,14 +358,14 @@ describe("personal glossary mining authority", () => {
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.privacy.owner = "project";
       },
-      "personal_mining_authority privacy must be user-local, redacted, authenticated, retained, and purgeable",
+      "personal_mining_authority privacy must exclude sensitive content, use host-filesystem configured-path ownership, and remain authenticated, retained, and purgeable",
     ],
     [
       "trusted receipt issuer",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.privacy.reviews.authentication.issuer = "agent";
       },
-      "personal_mining_authority privacy must be user-local, redacted, authenticated, retained, and purgeable",
+      "personal_mining_authority privacy must exclude sensitive content, use host-filesystem configured-path ownership, and remain authenticated, retained, and purgeable",
     ],
     [
       "receipt replay rule",
@@ -349,7 +373,7 @@ describe("personal glossary mining authority", () => {
         authority.personal_mining_authority.privacy.reviews.authentication.replay.exact_replay =
           "always_accept";
       },
-      "personal_mining_authority privacy must be user-local, redacted, authenticated, retained, and purgeable",
+      "personal_mining_authority privacy must exclude sensitive content, use host-filesystem configured-path ownership, and remain authenticated, retained, and purgeable",
     ],
     [
       "automatic inference gate",

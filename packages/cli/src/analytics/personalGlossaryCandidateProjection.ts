@@ -14,6 +14,7 @@ import {
 import { defaultProfileDir, type Env } from "./extractCorpus/core.js";
 import {
   EXCERPT_OMISSION_REASONS,
+  containsPersonalGlossarySensitiveContent,
   personalGlossaryCandidateProjectionExcerptExpiry,
   selectPersonalGlossarySafeExcerpt,
   validPersonalGlossarySafeExcerpt,
@@ -33,7 +34,7 @@ export interface PersonalGlossaryProjectionCandidateInput {
   capsule: GlossaryEvidenceCapsule;
   /** Transient diversity labels. Projection fields persist only their hashed identities. */
   project_ids: readonly string[];
-  /** Candidate-adjacent source text. It is never retained without redaction. */
+  /** Candidate-adjacent source text. Sensitive excerpts are omitted completely. */
   excerpts?: readonly string[];
 }
 
@@ -131,6 +132,8 @@ interface ProjectionContract {
   selectionAlgorithm: string;
   tieBreak: string;
   storageFile: string;
+  candidateSecretReason: string;
+  excerptSensitiveContentAction: string;
 }
 
 interface MergedCandidate {
@@ -185,6 +188,8 @@ function projectionContract(): ProjectionContract {
     contract.tieBreak !== "candidate_id_then_candidate_revision_then_capsule_sha256" ||
     contract.projectIdentitySchemaVersion !== PROJECT_IDENTITY_SCHEMA_VERSION ||
     contract.storageFile !== "candidate-projection.json" ||
+    contract.candidateSecretReason !== "secret_content" ||
+    contract.excerptSensitiveContentAction !== "omit_complete_excerpt_before_projection" ||
     JSON.stringify(Object.keys(families)) !== JSON.stringify(["explicit", "recurring"]) ||
     JSON.stringify(families.explicit) !== JSON.stringify(["personal_explicit_definition"]) ||
     JSON.stringify(families.recurring) !==
@@ -237,6 +242,12 @@ function projectCandidate(
 ): MergedCandidate {
   const errors = validateGlossaryEvidenceCapsule(candidate.capsule);
   if (errors.length > 0) throw new TypeError("candidate capsule is invalid");
+  if (
+    containsPersonalGlossarySensitiveContent(candidate.capsule.term) ||
+    containsPersonalGlossarySensitiveContent(candidate.capsule.meaning)
+  ) {
+    throw new TypeError(`candidate content is ineligible: ${contract.candidateSecretReason}`);
+  }
   if (
     candidate.capsule.generation !== input.generation ||
     candidate.capsule.policy_version !== input.policy_version
@@ -530,13 +541,13 @@ function privateWrite(pathname: string, text: string): void {
 }
 
 function ensurePrivateProjectionMode(pathname: string): void {
-  const metadata = fs.lstatSync(pathname);
-  if (!metadata.isFile() || metadata.isSymbolicLink()) {
+  const metadata = fs.statSync(pathname);
+  if (!metadata.isFile()) {
     throw new TypeError("stored candidate projection is not a private file");
   }
   if ((metadata.mode & 0o777) === 0o600) return;
   fs.chmodSync(pathname, 0o600);
-  if ((fs.lstatSync(pathname).mode & 0o777) !== 0o600) {
+  if ((fs.statSync(pathname).mode & 0o777) !== 0o600) {
     throw new TypeError("stored candidate projection could not be made private");
   }
 }
@@ -684,6 +695,12 @@ function validProjectedCandidate(
   }
   const capsule = item.capsule as GlossaryEvidenceCapsule;
   if (validateGlossaryEvidenceCapsule(capsule).length > 0) return false;
+  if (
+    containsPersonalGlossarySensitiveContent(capsule.term) ||
+    containsPersonalGlossarySensitiveContent(capsule.meaning)
+  ) {
+    return false;
+  }
   try {
     return (
       (item.source_family === "explicit" || item.source_family === "recurring") &&

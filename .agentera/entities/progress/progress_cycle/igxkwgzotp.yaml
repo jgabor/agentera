@@ -1,0 +1,16 @@
+id: igxkwgzotp
+artifact: progress
+record:
+  timestamp: 2026-08-09 08:59
+  type: fix
+  phase: build
+  what: Aligned candidate projection privacy with configured-path filesystem ownership.
+  context:
+    intent: Resolve ccylzcjujn under the user-owned content-exclusion and ordinary-filesystem threat model.
+    constraints: Keep personal and project ownership isolated; add no symlink confinement, public candidate reads, review writes, publication, package, release, decision-satisfaction, task-lifecycle, or TODO-lifecycle changes.
+    unknowns: Independent Audit must still establish PASS before lifecycle closeout.
+    scope: Projection authority, sensitive-content classification, excerpt selection, configured-path I/O behavior, persisted compatibility, and paired regressions.
+  discovered: The blocked approach treated incomplete application-level symlink confinement as required even though the configured path is owned by the host filesystem. It also persisted partial redactions, which conflicts with whole-excerpt omission. Startup and rebuilt commands used the checkout-local artifact, so no stale-artifact authority mismatch occurred; evaluator-owned blocked and pending state remained nonterminal, so no lifecycle mismatch occurred.
+  verified: Focused projection and authority checks passed 91 tests; the related six-file projection, mining, candidate-contract, and authority set passed 350 tests; the retired-surface inventory passed 194 tests. The first full source run found only the expected scalar census drift, 16423 versus 16437; after synchronizing that closed inventory, full source passed 235 files and 3726 tests with 1 skipped. Package verification passed 3 files and 34 tests. Typecheck, rebuilt local CLI, local schema loading, root compact, and capability-contract validation passed. Paired regressions prove secret term and meaning rejection with stable secret_content and no echo or persisted value, whole sensitive-excerpt omission, complete safe-excerpt retention with redacted false, configured-path success and native ENOTDIR failure, deterministic cap and diversity, canonical replay, mode 0600 repair, persisted fail-closed validation, expiry, and authorized purge. Source and diff inspection found no public candidate read, project-glossary access, review write, publication, version, registry, package, or release surface.
+  next: Keep ccylzcjujn pending, tahegtlmco blocked, and swighbbfpu open until independent Audit PASS, then let Prime perform the authorized lifecycle closeout before one coherent commit.
+  publication_order: 130

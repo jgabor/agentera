@@ -600,8 +600,9 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
 
   const privacy = mapping(mining?.privacy);
   const storage = mapping(privacy?.storage);
+  const storageFilesystem = mapping(storage?.filesystem);
+  const contentExclusion = mapping(privacy?.content_exclusion);
   const excerpts = mapping(privacy?.excerpts);
-  const redaction = mapping(excerpts?.redaction);
   const reviews = mapping(privacy?.reviews);
   const authentication = mapping(reviews?.authentication);
   const signature = mapping(authentication?.signature);
@@ -622,12 +623,21 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
       "review_dispositions",
     ]) ||
     storage?.project_state !== "unchanged" ||
+    storageFilesystem?.authority !== "host_filesystem" ||
+    storageFilesystem?.configured_path !== "use_as_provided" ||
+    storageFilesystem?.outcomes !== "ordinary_permissions_and_io" ||
+    storageFilesystem?.same_user_path_manipulation !== "outside_agentera_threat_model" ||
+    storageFilesystem?.symlink_confinement !== "not_claimed" ||
+    !nonEmpty(storageFilesystem?.rule) ||
     !nonEmpty(storage?.rule) ||
-    excerpts?.purpose !== "bounded_review_context_only" ||
-    excerpts?.max_utf8_bytes !== 500 ||
-    redaction?.before_persistence !== true ||
-    redaction?.replacement !== "[REDACTED]" ||
-    !sameStrings(redaction?.secret_classes, [
+    contentExclusion?.owner !== "glossary_content_policy" ||
+    contentExclusion?.classification !== "actual_secret_or_sensitive_value" ||
+    contentExclusion?.conceptual_terminology !== "eligible" ||
+    !sameStrings(contentExclusion?.candidate_fields, ["term", "meaning"]) ||
+    contentExclusion?.candidate_action !== "reject_before_projection" ||
+    contentExclusion?.candidate_reason !== "secret_content" ||
+    contentExclusion?.excerpt_action !== "omit_complete_excerpt_before_projection" ||
+    !sameStrings(contentExclusion?.secret_classes, [
       "api_keys",
       "access_tokens",
       "passwords",
@@ -635,17 +645,21 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
       "private_keys",
       "authorization_headers",
       "personal_contact_data",
+      "session_identifiers",
+      "runtime_store_paths",
     ]) ||
-    !nonEmpty(redaction?.rule) ||
+    !nonEmpty(contentExclusion?.rule) ||
+    excerpts?.purpose !== "bounded_review_context_only" ||
+    excerpts?.max_utf8_bytes !== 500 ||
     !sameStrings(excerpts?.forbidden_content, [
       "raw_transcript",
       "raw_tool_arguments",
       "raw_runtime_store_paths",
       "raw_session_identifiers",
-      "unredacted_secret",
+      "secret_or_sensitive_content",
       "unrelated_conversation",
     ]) ||
-    excerpts?.failure !== "reject_before_persistence" ||
+    excerpts?.failure !== "omit_complete_excerpt_before_persistence" ||
     reviews?.owner !== "current_user" ||
     !sameStrings(reviews?.required_fields, [
       "candidate_id",
@@ -734,7 +748,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     !nonEmpty(purge?.recovery)
   ) {
     errors.push(
-      "personal_mining_authority privacy must be user-local, redacted, authenticated, retained, and purgeable",
+      "personal_mining_authority privacy must exclude sensitive content, use host-filesystem configured-path ownership, and remain authenticated, retained, and purgeable",
     );
   }
 

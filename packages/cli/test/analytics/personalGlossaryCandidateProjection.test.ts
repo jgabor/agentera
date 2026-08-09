@@ -71,6 +71,24 @@ function recurring(index: number) {
   });
 }
 
+function explicitContent(term: string, meaning: string) {
+  return createGlossaryEvidenceCapsule({
+    term,
+    meaning,
+    scope: "personal",
+    provenance_kind: "personal_explicit_definition",
+    evidence: [
+      {
+        source_id: "explicit-sensitive-source",
+        evidence_anchor: "explicit-sensitive-anchor",
+        signal_type: "decision",
+      },
+    ],
+    policy_version: POLICY,
+    generation: GENERATION,
+  });
+}
+
 function candidate(
   capsule: ReturnType<typeof explicit>,
   projectIds: readonly string[],
@@ -98,6 +116,15 @@ function storageOptions() {
 function rehashProjection<T extends Record<string, unknown>>(projection: T): T {
   const { projection_sha256: _digest, ...body } = projection;
   return { ...body, projection_sha256: glossaryCanonicalSha256(body) } as T;
+}
+
+function projectionWithCapsule(capsule: ReturnType<typeof explicit>) {
+  const projection = projectPersonalGlossaryCandidates(
+    input([candidate(explicit(124), ["persisted-validation-project"])]),
+  );
+  const changed = structuredClone(projection);
+  changed.candidates[0]!.capsule = capsule;
+  return rehashProjection(changed);
 }
 
 describe("bounded personal glossary candidate projection", () => {
@@ -155,6 +182,151 @@ describe("bounded personal glossary candidate projection", () => {
     ).toThrow("candidate project identities are outside their bound");
   });
 
+  it.each([
+    ["term", "sk_live_secretcandidate123", "safe candidate meaning"],
+    ["password meaning", "safe-candidate", "password=Secret-value-42"],
+    [
+      "authorization meaning",
+      "authorization-candidate",
+      "Authorization: Bearer AuthToken_987654321",
+    ],
+    ["session meaning", "session-candidate", "session_id=sid-987654321"],
+  ])("rejects secret-class candidate %s content without returning or persisting it", (_field, term, meaning) => {
+    const safeProjection = projectPersonalGlossaryCandidates(
+      input([candidate(explicit(125), ["safe-project"])]),
+    );
+    const persisted = persistPersonalGlossaryCandidateProjection(safeProjection, storageOptions());
+    const originalBytes = fs.readFileSync(persisted.path, "utf8");
+    const secretValue = term.startsWith("sk_live_") ? term : meaning.split(/[=:]\s*/u).at(-1)!;
+
+    let failure: unknown;
+    try {
+      projectPersonalGlossaryCandidates(
+        input([candidate(explicitContent(term, meaning), ["sensitive-project"])]),
+      );
+    } catch (error) {
+      failure = error;
+    }
+
+    expect(failure).toBeInstanceOf(TypeError);
+    expect((failure as Error).message).toBe("candidate content is ineligible: secret_content");
+    expect((failure as Error).message).not.toContain(secretValue);
+    expect(fs.readFileSync(persisted.path, "utf8")).toBe(originalBytes);
+    expect(originalBytes).not.toContain(secretValue);
+  });
+
+  it.each([
+    ["Authorization", "Authorization: a standard HTTP request header"],
+    ["session-id", "Ordinary session-id terminology for a user session identifier"],
+    ["password rotation", "The routine for changing stored credentials"],
+  ])("keeps conceptual %s candidate terminology eligible", (term, meaning) => {
+    const projection = projectPersonalGlossaryCandidates(
+      input([candidate(explicitContent(term, meaning), ["safe-project"])]),
+    );
+    const bytes = canonicalGlossaryJson(projection);
+
+    expect(projection.candidates).toHaveLength(1);
+    expect(bytes).toContain(term);
+    expect(bytes).toContain(meaning);
+    const persisted = persistPersonalGlossaryCandidateProjection(projection, storageOptions());
+    expect(fs.readFileSync(persisted.path, "utf8")).toContain(meaning);
+  });
+
+  it("rejects a digest-valid secret-bearing projection before creating a file", () => {
+    const secretValue = "AuthToken_987654321";
+    const secretProjection = projectionWithCapsule(
+      explicitContent("authorization-value", `Authorization: Bearer ${secretValue}`),
+    );
+    const pathname = personalGlossaryCandidateProjectionPath(storageOptions());
+
+    let failure: unknown;
+    try {
+      persistPersonalGlossaryCandidateProjection(secretProjection, storageOptions());
+    } catch (error) {
+      failure = error;
+    }
+
+    expect((failure as Error).message).toBe("candidate projection is invalid");
+    expect((failure as Error).message).not.toContain(secretValue);
+    expect(fs.existsSync(pathname)).toBe(false);
+  });
+
+  it("reads an existing digest-valid secret-bearing projection as corrupt without echo", () => {
+    const secretValue = "sid-987654321";
+    const secretProjection = projectionWithCapsule(
+      explicitContent("session-value", `session_id=${secretValue}`),
+    );
+    const pathname = personalGlossaryCandidateProjectionPath(storageOptions());
+    const bytes = `${canonicalGlossaryJson(secretProjection)}\n`;
+    fs.mkdirSync(path.dirname(pathname), { recursive: true });
+    fs.writeFileSync(pathname, bytes, { encoding: "utf8", mode: 0o600 });
+
+    const result = readPersonalGlossaryCandidateProjection(storageOptions());
+    expect(result).toEqual({ status: "corrupt", projection: null });
+    expect(JSON.stringify(result)).not.toContain(secretValue);
+    let failure: unknown;
+    try {
+      persistPersonalGlossaryCandidateProjection(
+        projectPersonalGlossaryCandidates(input([candidate(explicit(126), ["safe-project"])])),
+        storageOptions(),
+      );
+    } catch (error) {
+      failure = error;
+    }
+    expect((failure as Error).message).toBe("stored candidate projection is corrupt");
+    expect((failure as Error).message).not.toContain(secretValue);
+    expect(fs.readFileSync(pathname, "utf8")).toBe(bytes);
+  });
+
+  it.each([
+    [
+      "authorization",
+      "Authorization",
+      "Authorization: a standard HTTP request header",
+      "Authorization is a standard HTTP request header.",
+      "Authorization: Bearer AuthToken_987654321",
+      "AuthToken_987654321",
+    ],
+    [
+      "session",
+      "session-id",
+      "Ordinary session-id terminology for a user session identifier",
+      "session-id is ordinary terminology for a user session identifier.",
+      "session-id context includes session_id=sid-987654321",
+      "sid-987654321",
+    ],
+  ])(
+    "distinguishes actual %s values from safe candidate and excerpt terminology",
+    (_label, term, meaning, safeExcerpt, secretExcerpt, secretValue) => {
+      const capsule = explicitContent(term, meaning);
+      const omitted = projectPersonalGlossaryCandidates(
+        input([candidate(capsule, ["sensitive-boundary-project"], [secretExcerpt])]),
+      );
+      const omittedBytes = canonicalGlossaryJson(omitted);
+
+      expect(omitted.candidates[0]!.safe_excerpt).toBeNull();
+      expect(omitted.report.excerpts.omissions.unsafe_content).toBe(1);
+      expect(omittedBytes).not.toContain(secretValue);
+      const omittedPersisted = persistPersonalGlossaryCandidateProjection(
+        omitted,
+        storageOptions(),
+      );
+      expect(fs.readFileSync(omittedPersisted.path, "utf8")).not.toContain(secretValue);
+
+      const safe = projectPersonalGlossaryCandidates(
+        input([candidate(capsule, ["sensitive-boundary-project"], [safeExcerpt])]),
+      );
+      expect(safe.candidates[0]!.safe_excerpt).toEqual({
+        text: safeExcerpt,
+        expires_at: "2026-08-31T00:00:00.000Z",
+        redacted: false,
+      });
+      expect(canonicalGlossaryJson(safe)).toContain(safeExcerpt);
+      const safePersisted = persistPersonalGlossaryCandidateProjection(safe, storageOptions());
+      expect(fs.readFileSync(safePersisted.path, "utf8")).toContain(safeExcerpt);
+    },
+  );
+
   it("enforces the project cap after merging duplicate candidates", () => {
     const capsule = explicit(150);
     const projectIds = Array.from({ length: 101 }, (_, index) => `project-merged-${index}`);
@@ -177,7 +349,7 @@ describe("bounded personal glossary candidate projection", () => {
     ).toThrow("candidate project identities are outside their bound");
   });
 
-  it("redacts quoted JSON sensitive keys and omits an unsafe incomplete structure", () => {
+  it("omits actual quoted sensitive values while retaining field-name prose", () => {
     const capsule = explicit(175);
     const rawPassword = "raw-password-987";
     const rawSession = "sid987654";
@@ -193,15 +365,24 @@ describe("bounded personal glossary candidate projection", () => {
 
     expect(canonicalGlossaryJson(projection)).not.toContain(rawPassword);
     expect(canonicalGlossaryJson(projection)).not.toContain(rawSession);
+    expect(projection.candidates[0]?.safe_excerpt).toBeNull();
+    expect(projection.report.excerpts).toMatchObject({ retained: 0, redacted: 0 });
+    expect(projection.report.excerpts.omissions.unsafe_content).toBe(1);
     const persisted = persistPersonalGlossaryCandidateProjection(projection, storageOptions());
     expect(fs.readFileSync(persisted.path, "utf8")).not.toContain(rawPassword);
     expect(fs.readFileSync(persisted.path, "utf8")).not.toContain(rawSession);
 
-    const malformed = projectPersonalGlossaryCandidates(
-      input([candidate(capsule, ["project-json"], [`${capsule.term} {"password":`])]),
+    const conceptual = projectPersonalGlossaryCandidates(
+      input([
+        candidate(
+          capsule,
+          ["project-json"],
+          [`${capsule.term} documents "password": a conceptual field name.`],
+        ),
+      ]),
     );
-    expect(malformed.candidates[0]?.safe_excerpt).toBeNull();
-    expect(malformed.report.excerpts.omissions.unsafe_content).toBe(1);
+    expect(conceptual.candidates[0]?.safe_excerpt).toMatchObject({ redacted: false });
+    expect(conceptual.report.excerpts).toMatchObject({ retained: 1, redacted: 0 });
   });
 
   it.each([
@@ -309,32 +490,87 @@ describe("bounded personal glossary candidate projection", () => {
     expect(fs.statSync(persisted.path).mode & 0o777).toBe(0o600);
   });
 
-  it("redacts and persists only safe candidate-adjacent excerpts while omitting unsafe context", () => {
-    const capsule = explicit(200);
+  it("uses the configured profile path and preserves ordinary filesystem success and failure", () => {
     const projection = projectPersonalGlossaryCandidates(
+      input([candidate(explicit(198), ["configured-profile-project"])]),
+    );
+    const expectedPath = path.join(
+      profileDir,
+      "intermediate",
+      "personal-glossary",
+      "candidate-projection.json",
+    );
+    expect(personalGlossaryCandidateProjectionPath(storageOptions())).toBe(expectedPath);
+    expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions())).toEqual({
+      status: "changed",
+      path: expectedPath,
+    });
+
+    const obstructedProfile = path.join(profileDir, "not-a-directory");
+    fs.writeFileSync(obstructedProfile, "host-owned obstruction", "utf8");
+    const obstructedOptions = { env: { AGENTERA_PROFILE_DIR: obstructedProfile } };
+    expect(readPersonalGlossaryCandidateProjection(obstructedOptions)).toEqual({
+      status: "corrupt",
+      projection: null,
+    });
+    let failure: unknown;
+    try {
+      persistPersonalGlossaryCandidateProjection(projection, obstructedOptions);
+    } catch (error) {
+      failure = error;
+    }
+    expect((failure as NodeJS.ErrnoException).code).toBe("ENOTDIR");
+    expect(
+      maintainPersonalGlossaryCandidateProjection({
+        ...obstructedOptions,
+        now: "2026-08-02T00:00:00.000Z",
+        current_user_purge_authorized: true,
+      }),
+    ).toEqual({ status: "corrupt", expired_excerpts: 0 });
+    expect(fs.readFileSync(obstructedProfile, "utf8")).toBe("host-owned obstruction");
+  });
+
+  it("omits sensitive excerpts completely and persists only complete safe context", () => {
+    const capsule = explicit(200);
+    const sensitiveValue = "top-secret";
+    const sensitive = projectPersonalGlossaryCandidates(
       input([
         candidate(
           capsule,
           ["private-project"],
           [
-            `${capsule.term} uses API_KEY=top-secret for jane@example.com from /home/jane/session-abc.`,
+            `${capsule.term} uses API_KEY=${sensitiveValue} for jane@example.com from /home/jane/session-abc.`,
           ],
         ),
       ]),
     );
+    expect(sensitive.candidates[0]!.safe_excerpt).toBeNull();
+    expect(sensitive.report.excerpts).toMatchObject({ retained: 0, redacted: 0 });
+    expect(sensitive.report.excerpts.omissions.unsafe_content).toBe(1);
+    expect(canonicalGlossaryJson(sensitive)).not.toMatch(
+      /top-secret|jane@example\.com|\/home\/jane|session-abc|\[REDACTED\]/,
+    );
+
+    const projection = projectPersonalGlossaryCandidates(
+      input([
+        candidate(capsule, ["private-project"], [`${capsule.term} is complete safe context.`]),
+      ]),
+    );
     const safe = projection.candidates[0]!.safe_excerpt;
 
-    expect(safe).toMatchObject({ redacted: true, expires_at: "2026-08-31T00:00:00.000Z" });
-    expect(safe?.text).toContain("[REDACTED]");
-    expect(safe?.text).not.toMatch(/top-secret|jane@example\.com|\/home\/jane|session-abc/);
+    expect(safe).toEqual({
+      text: `${capsule.term} is complete safe context.`,
+      redacted: false,
+      expires_at: "2026-08-31T00:00:00.000Z",
+    });
     expect(canonicalGlossaryJson(projection)).not.toContain("private-project");
-    expect(projection.report.excerpts).toMatchObject({ retained: 1, redacted: 1 });
+    expect(projection.report.excerpts).toMatchObject({ retained: 1, redacted: 0 });
 
     const persisted = persistPersonalGlossaryCandidateProjection(projection, storageOptions());
     expect(persisted.status).toBe("changed");
     expect(fs.statSync(persisted.path).mode & 0o777).toBe(0o600);
     expect(fs.readFileSync(persisted.path, "utf8")).not.toMatch(
-      /top-secret|jane@example\.com|\/home\/jane|session-abc|private-project/,
+      /top-secret|jane@example\.com|\/home\/jane|session-abc|private-project|\[REDACTED\]/,
     );
     expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions()).status).toBe(
       "unchanged_replay",

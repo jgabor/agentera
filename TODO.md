@@ -154,6 +154,7 @@
 - [x] [id:rbuoixpxzp] [fix:3.0.0] Preserve Codex session-level transported author provenance
 - [x] [id:gcrflfxlxq] [fix:3.0.0] Reject recurring glossary noise classes instead of exemplars
 - [x] [id:psteyugpzv] [fix:3.0.0] Replan explicit-definition parser segmentation
+- [x] [id:swighbbfpu] [fix:3.0.0] Replan candidate projection symlink confinement
 
 ## → Critical
 
@@ -162,5 +163,3 @@
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
 
 ## → Degraded
-
-- [ ] [id:swighbbfpu] [fix:3.0.0] Replan candidate projection symlink confinement

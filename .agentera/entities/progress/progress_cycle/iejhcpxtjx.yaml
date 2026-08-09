@@ -1,0 +1,16 @@
+id: iejhcpxtjx
+artifact: progress
+record:
+  timestamp: 2026-08-09 09:33
+  type: fix
+  phase: build
+  what: Corrected ccylzcjujn audit-1 persisted-secret and conceptual-terminology boundaries.
+  context:
+    intent: Apply only the accepted audit-1 corrections to persisted candidate validation and actual-value sensitive classification.
+    constraints: Preserve host-filesystem ownership, deterministic projection, persisted invariants, mode and replay, expiry and purge, protected surfaces, audit-1 provenance, and evaluator-owned pending lifecycle. No symlink confinement, commit, release, or publication work.
+    unknowns: Independent re-audit has not run; audit-1 remains the current persisted verdict.
+    scope: Persisted candidate content validation, credential and session value-shape classification, authority wording, and paired candidate, excerpt, canonical-byte, and persistence regressions.
+  discovered: Projection-time exclusion did not protect direct persistence because validProjectedCandidate validated capsule structure and bindings but not sensitive term or meaning content. The initial classifier also treated authorization and session field names as values, rejecting conceptual glossary prose.
+  verified: Focused projection and authority tests passed 2 files and 101 tests. The related projection, explicit mining, recurrence, candidate-contract, entry-contract, and authority set passed 6 files and 360 tests; the retired-surface inventory passed 194 tests. Full source verification passed 235 files and 3736 tests with 1 skipped. Package verification passed 3 files and 34 tests. Typecheck, rebuilt local CLI, lint with 0 errors, local schema loading, root compact, capability-contract validation, and diff whitespace checks passed. Paired regressions prove a digest-valid secret-bearing object is rejected before no-file persistence, an existing digest-valid secret-bearing file reads corrupt and blocks overwrite without echo, actual password, authorization, and session values reject candidates or omit excerpts whole, and ordinary Authorization header definitions, session-id terminology, field-name prose, and password-rotation concepts remain eligible in candidate, excerpt, canonical-byte, and persisted forms. Inherited cap, diversity, order, report, canonical replay, mode 0600 repair, persisted fail-closed, expiry, purge, configured-path I/O, and no-symlink-confinement boundaries remain passing. Diff inspection found no public read, project-glossary access, review write, publication, version, registry, package metadata, release, TODO, decision, or protected lifecycle change.
+  next: Keep audit-1 as the persisted verdict, ccylzcjujn pending, tahegtlmco blocked, and swighbbfpu open for independent re-audit. Do not commit or advance lifecycle.
+  publication_order: 131

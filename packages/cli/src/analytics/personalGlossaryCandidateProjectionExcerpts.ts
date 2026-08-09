@@ -3,29 +3,32 @@ import { compareGlossaryUnicodeStrings } from "../registries/glossaryTermIdentit
 
 import type { PersonalGlossarySafeExcerpt } from "./personalGlossaryCandidateProjection.js";
 
-const REDACTED = "[REDACTED]";
 const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
 const TOOL_ARGUMENTS_RE = /\b(?:tool[ _-]?arguments?|argv)\b/iu;
 const CONTROL_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
-const PRIVATE_KEY_RE =
-  /-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----[\s\S]*?-----END(?: [A-Z]+)? PRIVATE KEY-----/gu;
-const NAMED_SECRET_RE =
-  /\b((?:api[_-]?key|access[_-]?token|password|passwd|cookie)\s*[:=]\s*)([^\s,;]+)/giu;
-const QUOTED_SENSITIVE_VALUE_RE =
-  /((?:["'])(?:api[_-]?key|access[_-]?token|password|passwd|cookie|private[_-]?key|authorization(?:[_-]?header)?|session(?:[_-]?id)?|email|phone|contact)(?:["'])\s*:\s*)(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s,}\]]+)/giu;
-const UNREDACTED_QUOTED_SENSITIVE_RE =
-  /(?:["'])(?:api[_-]?key|access[_-]?token|password|passwd|cookie|private[_-]?key|authorization(?:[_-]?header)?|session(?:[_-]?id)?|email|phone|contact)(?:["'])\s*:\s*(?!["']\[REDACTED\]["'])/iu;
-const AUTHORIZATION_RE = /\b(authorization\s*:\s*)(?:bearer\s+)?[^\s,;]+/giu;
-const BEARER_RE = /\b(bearer\s+)[A-Za-z0-9._~+/=-]{8,}/giu;
-const API_KEY_RE = /\b(?:sk|pk)_(?:live|test)_?[A-Za-z0-9_-]{8,}\b/gu;
-const AWS_KEY_RE = /\bAKIA[0-9A-Z]{16}\b/gu;
-const JWT_RE = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/gu;
-const EMAIL_RE = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/giu;
-const PHONE_RE = /(?:\+?\d[\d .()-]{7,}\d)/gu;
-const NAMED_SESSION_RE = /\b(session(?:[_-]?id)?\s*[:=]\s*)([^\s,;]+)/giu;
-const BARE_SESSION_RE = /\bsession[-_][A-Za-z0-9._-]+\b/giu;
-const UNIX_PATH_RE = /(^|[\s("'`])(?:~\/|\/)(?:[^\s/]+\/)*[^\s/]+/gu;
-const WINDOWS_PATH_RE = /\b[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+/gu;
+const PRIVATE_KEY_RE = /-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----/u;
+const ASSIGNED_SENSITIVE_VALUE_RE =
+  /(?:^|[^A-Za-z0-9_])["']?(?:api[_-]?key|access[_-]?token|password|passwd|cookie|private[_-]?key|authorization(?:[_-]?header)?|session(?:[_-]?id)?|email|phone|contact)["']?\s*[:=]\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|([^\s,;}\]]+))/giu;
+const BEARER_VALUE_RE = /\bbearer\s+([A-Za-z0-9._~+/=-]{6,})/giu;
+const BARE_SESSION_VALUE_RE = /\bsession[-_]([A-Za-z0-9._~+/=-]{6,})\b/giu;
+const API_KEY_RE = /\b(?:sk|pk)_(?:live|test)_?[A-Za-z0-9_-]{8,}\b/u;
+const AWS_KEY_RE = /\bAKIA[0-9A-Z]{16}\b/u;
+const JWT_RE = /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/u;
+const EMAIL_RE = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/iu;
+const PHONE_RE = /(?:\+?\d[\d .()-]{7,}\d)/u;
+const UNIX_PATH_RE = /(?:^|[\s("'`])(?:~\/|\/)(?:[^\s/]+\/)*[^\s/]+/u;
+const WINDOWS_PATH_RE = /\b[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+/u;
+
+const SENSITIVE_CONTENT_PATTERNS = [
+  PRIVATE_KEY_RE,
+  API_KEY_RE,
+  AWS_KEY_RE,
+  JWT_RE,
+  EMAIL_RE,
+  PHONE_RE,
+  UNIX_PATH_RE,
+  WINDOWS_PATH_RE,
+] as const;
 
 export const EXCERPT_OMISSION_REASONS = [
   "no_excerpt",
@@ -77,29 +80,32 @@ function truncateUtf8(value: string, maximum: number): { text: string; truncated
   return { text, truncated: true };
 }
 
-function redactExcerpt(value: string): { text: string; redacted: boolean } {
-  let text = value;
-  let redacted = false;
-  const replace = (pattern: RegExp, replacement: string): void => {
-    const next = text.replace(pattern, replacement);
-    if (next !== text) redacted = true;
-    text = next;
-  };
-  replace(PRIVATE_KEY_RE, REDACTED);
-  replace(QUOTED_SENSITIVE_VALUE_RE, `$1"${REDACTED}"`);
-  replace(NAMED_SECRET_RE, `$1${REDACTED}`);
-  replace(AUTHORIZATION_RE, `$1${REDACTED}`);
-  replace(BEARER_RE, `$1${REDACTED}`);
-  replace(API_KEY_RE, REDACTED);
-  replace(AWS_KEY_RE, REDACTED);
-  replace(JWT_RE, REDACTED);
-  replace(EMAIL_RE, REDACTED);
-  replace(PHONE_RE, REDACTED);
-  replace(NAMED_SESSION_RE, `$1${REDACTED}`);
-  replace(BARE_SESSION_RE, REDACTED);
-  replace(UNIX_PATH_RE, `$1${REDACTED}`);
-  replace(WINDOWS_PATH_RE, REDACTED);
-  return { text, redacted };
+/** Classify secret or sensitive values without returning or transforming them. */
+export function containsPersonalGlossarySensitiveContent(value: string): boolean {
+  if (SENSITIVE_CONTENT_PATTERNS.some((pattern) => pattern.test(value))) return true;
+  for (const match of value.matchAll(ASSIGNED_SENSITIVE_VALUE_RE)) {
+    if (credentialShapedValue(match[1] ?? match[2] ?? match[3] ?? "")) return true;
+  }
+  for (const match of value.matchAll(BEARER_VALUE_RE)) {
+    if (credentialShapedValue(match[1] ?? "")) return true;
+  }
+  for (const match of value.matchAll(BARE_SESSION_VALUE_RE)) {
+    if (credentialShapedValue(match[1] ?? "", false)) return true;
+  }
+  return false;
+}
+
+function credentialShapedValue(value: string, allowLongLetters = true): boolean {
+  const candidate = value.trim();
+  if (candidate.length === 0 || candidate === "[REDACTED]") return false;
+  const scheme = /^(?:bearer|basic)\s+(.+)$/iu.exec(candidate);
+  if (scheme) return credentialShapedValue(scheme[1] ?? "");
+  if (/\s/u.test(candidate)) return false;
+  return (
+    (candidate.length >= 6 && /[A-Za-z]/u.test(candidate) && /\d/u.test(candidate)) ||
+    (candidate.length >= 8 && /[A-Za-z]/u.test(candidate) && /[-_.=+/]/u.test(candidate)) ||
+    (allowLongLetters && candidate.length >= 16 && /^[A-Za-z]+$/u.test(candidate))
+  );
 }
 
 export function validPersonalGlossarySafeExcerpt(
@@ -119,21 +125,7 @@ export function validPersonalGlossarySafeExcerpt(
     Buffer.byteLength(excerpt.text, "utf8") <= 500 &&
     !CONTROL_RE.test(excerpt.text) &&
     !TOOL_ARGUMENTS_RE.test(excerpt.text) &&
-    !/-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----/iu.test(excerpt.text) &&
-    !/\b(?:api[_-]?key|access[_-]?token|password|passwd|cookie)\s*[:=]\s*(?!\[REDACTED\])/iu.test(
-      excerpt.text,
-    ) &&
-    !UNREDACTED_QUOTED_SENSITIVE_RE.test(excerpt.text) &&
-    !/\bauthorization\s*:\s*(?!\[REDACTED\])/iu.test(excerpt.text) &&
-    !/\bbearer\s+(?!\[REDACTED\])[A-Za-z0-9._~+/=-]{8,}/iu.test(excerpt.text) &&
-    !/\b(?:sk|pk)_(?:live|test)_?[A-Za-z0-9_-]{8,}\b/u.test(excerpt.text) &&
-    !/\bAKIA[0-9A-Z]{16}\b/u.test(excerpt.text) &&
-    !/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/u.test(excerpt.text) &&
-    !/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/iu.test(excerpt.text) &&
-    !/(?:\+?\d[\d .()-]{7,}\d)/u.test(excerpt.text) &&
-    !/\bsession[-_][A-Za-z0-9._-]+\b/iu.test(excerpt.text) &&
-    !/(?:^|[\s("'`])(?:~\/|\/)(?:[^\s/]+\/)*[^\s/]+/u.test(excerpt.text) &&
-    !/\b[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+/u.test(excerpt.text) &&
+    !containsPersonalGlossarySensitiveContent(excerpt.text) &&
     validTimestamp(excerpt.expires_at) &&
     typeof excerpt.redacted === "boolean"
   );
@@ -154,18 +146,10 @@ function safeExcerpt(
   if (CONTROL_RE.test(source) || TOOL_ARGUMENTS_RE.test(source)) {
     return { excerpt: null, omission: "unsafe_tool_arguments", provided: 1, truncated: false };
   }
-  const redacted = redactExcerpt(source);
-  if (
-    CONTROL_RE.test(redacted.text) ||
-    TOOL_ARGUMENTS_RE.test(redacted.text) ||
-    /-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----/iu.test(redacted.text) ||
-    /\b(?:api[_-]?key|access[_-]?token|password|passwd|cookie)\s*[:=]\s*(?!\[REDACTED\])/iu.test(
-      redacted.text,
-    )
-  ) {
+  if (containsPersonalGlossarySensitiveContent(source)) {
     return { excerpt: null, omission: "unsafe_content", provided: 1, truncated: false };
   }
-  const bounded = truncateUtf8(redacted.text, 500);
+  const bounded = truncateUtf8(source, 500);
   if (bounded.text.length === 0) {
     return { excerpt: null, omission: "unsafe_content", provided: 1, truncated: bounded.truncated };
   }
@@ -175,7 +159,7 @@ function safeExcerpt(
       retainedAt,
       contract.pendingExcerptDays,
     ),
-    redacted: redacted.redacted,
+    redacted: false,
   };
   if (!validPersonalGlossarySafeExcerpt(excerpt)) {
     return { excerpt: null, omission: "unsafe_content", provided: 1, truncated: bounded.truncated };
