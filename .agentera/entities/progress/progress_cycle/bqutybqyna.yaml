@@ -1,0 +1,15 @@
+id: bqutybqyna
+artifact: progress
+record:
+  timestamp: 2026-08-09 12:29
+  type: docs
+  phase: build
+  what: Reduced AGENTS.md from 396 lines to 176 and moved release, capability, state, and verification workflows into four discoverable repo-local skills.
+  context:
+    intent: Reduce always-loaded repository guidance without weakening maintainer safety or losing task-specific instructions.
+    constraints: Preserve state, release, branch, credential, verification, capability, and commit authority; do not change product behavior.
+    scope: AGENTS.md and four .opencode/skills maintainer skills.
+  discovered: Always-on safeguards must remain in AGENTS.md before skill selection; detailed workflows can load from .opencode/skills on demand.
+  verified: opencode debug skill discovered all four project skills; markdownlint-cli2 and git diff --check passed; migration review found no unresolved safety or contract loss.
+  next: Use the skill triggers during future maintainer tasks and keep detailed workflow changes in their owning skill or authority document.
+  publication_order: 117
