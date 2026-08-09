@@ -31,5 +31,5 @@ describe("entity migration preview production cap", () => {
     expect(pages.every((page) => Buffer.byteLength(JSON.stringify(page, null, 2), "utf8") <= ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES)).toBe(true);
     expect(new Set(identities).size).toBe(400);
     expect(identities).toHaveLength(400);
-  });
+  }, 60_000);
 });

@@ -1,0 +1,15 @@
+id: vwqmcoujwe
+artifact: progress
+record:
+  timestamp: 2026-08-09 12:52
+  type: test
+  phase: build
+  what: Updated the retired-runtime source census for the new plan lifecycle inventory entry after pre-commit exercised the full source suite.
+  context:
+    intent: Keep the closed source inventory exact after adding repo-local skill classification.
+    constraints: Update only the deterministic census expectation; do not bypass hooks or weaken classification checks.
+    scope: packages/cli/test/runtime/retiredRuntimeSurfacePolicy.test.ts census and pre-commit recovery evidence.
+  discovered: The added .opencode skill classification contributes one governed scalar, increasing scanned_scalars from 14,776 to 14,777.
+  verified: pnpm -C packages/cli exec vp test run test/runtime/retiredRuntimeSurfacePolicy.test.ts --config vite.config.ts passed all 194 tests.
+  next: Retry the contract-fix commit with hooks, then rerun dev.48 source qualification from a fresh external directory.
+  publication_order: 119

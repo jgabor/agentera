@@ -753,6 +753,7 @@ LIFECYCLE_CONTRACT:
     documented_external_commitments:
       - packages/cli/src/capabilities/*/instructions.ts
       - packages/cli/README.md
+      - .opencode/skills/*/SKILL.md
       - skills/agentera/SKILL.md
       - skills/agentera/references/*
       - references/**/*.md

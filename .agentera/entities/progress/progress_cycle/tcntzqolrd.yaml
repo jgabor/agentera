@@ -1,0 +1,15 @@
+id: tcntzqolrd
+artifact: progress
+record:
+  timestamp: 2026-08-09 12:47
+  type: fix
+  phase: build
+  what: Aligned plan lifecycle and cold-start guidance contracts with repo-local maintainer skills after release source qualification exposed stale AGENTS.md-only assumptions.
+  context:
+    intent: Restore source qualification while preserving the bootstrap-plus-on-demand-skill design.
+    constraints: Classify the new documented surface and validate routing ownership without moving detailed commands back into AGENTS.md.
+    scope: Plan lifecycle inventory, cold-start guidance contract test, and release retry evidence.
+  discovered: The plan lifecycle inventory did not classify .opencode skill documents, and capabilityProse.test.ts expected writer commands to remain directly in AGENTS.md.
+  verified: pnpm -C packages/cli exec vp test run test/state/planLifecycleContract.test.ts test/state/write/capabilityProse.test.ts --config vite.config.ts passed 20 tests.
+  next: Commit the contract fix, then rerun source qualification in a fresh external candidate directory for 3.0.0-dev.48.
+  publication_order: 118

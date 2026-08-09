@@ -1,0 +1,15 @@
+id: gqrxgylxft
+artifact: progress
+record:
+  timestamp: 2026-08-09 13:03
+  type: test
+  phase: build
+  what: Gave the production-scale migration preview fixture an explicit 60-second execution allowance while preserving its output-cap and cardinality assertions.
+  context:
+    intent: Make the performance owner reliably evaluate the production-scale output contract on this supported Node 22 runner.
+    constraints: Do not reduce fixture size, relax output bounds, alter cardinality, or bypass verification hooks.
+    scope: Migration preview fixture timeout and release-gate recovery evidence.
+  discovered: The fixture consistently completed in about 34 seconds alone, so the generic 30-second suite timeout did not represent its documented 32,768-byte response-cap contract.
+  verified: pnpm -C packages/cli test:performance passed all three performance-owner tests in 32.96 seconds with the 400-item and 32,768-byte assertions unchanged.
+  next: Commit the complete contract repair with hooks, then restart dev.48 source qualification from fresh external state.
+  publication_order: 120

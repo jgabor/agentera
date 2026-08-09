@@ -335,11 +335,16 @@ describe("producer capability writer integration", () => {
   it("keeps cold-start agent surfaces discoverable", () => {
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
     const agents = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
+    const stateSkill = fs.readFileSync(
+      path.join(REPO_ROOT, ".opencode/skills/agentera-state/SKILL.md"),
+      "utf8",
+    );
     expect(skill).toContain("npx -y agentera@next state decisions explain");
-    expect(agents).toContain("agentera state decisions explain");
+    expect(agents).toContain("agentera-state");
+    expect(stateSkill).toContain("npx -y agentera@next state decisions explain");
     expect(skill).toContain("--dry-run");
-    expect(agents).toContain("--dry-run");
+    expect(stateSkill).toContain("--dry-run");
     expect(skill).toContain("not edit `.agentera/entities/` directly");
-    expect(agents).toContain("instead of editing `.agentera/entities/`");
+    expect(agents).toContain("Never edit `.agentera/entities/` directly");
   });
 });
