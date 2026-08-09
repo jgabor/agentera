@@ -251,8 +251,8 @@ coverage:
   stale: 0 current documents; 1 historical gap-analysis inventory entry remains stale
   release_metadata: >
     Current v3 release surfaces keep the suite at 3.0.0 while the npm development
-    package advances independently as 3.0.0-dev.49 with immutable source reference
-    b90718e3a421b0f9c7275c4cb91f583f5d0f0543; metadata validation and package
+    package advances independently as 3.0.0-dev.50 with immutable source reference
+    6a96385b7b10a8ef74591b63a4a35218ad5c7f75; metadata validation and package
     dry-runs remain local-only.
   bounded_retrieval: >
     Public plan-task, plan, and objective-scoped experiment list/get surfaces are
