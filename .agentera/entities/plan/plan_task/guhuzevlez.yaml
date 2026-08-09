@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bcpkchatfu
   name: Harden explicit-definition boundaries
-  status: blocked
+  status: superseded
   depends_on:
     - qgimpwprim
     - zabolpjiro
@@ -26,3 +26,6 @@ record:
       source: Audit session ses_01f319c9dffeYM88QegNWIbK7i bounded re-review
       recorded_at: 2026-08-08 12:49
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - gktgrfqlyr
+  superseded_reason: Replacement closed the remaining parser boundary failures with independent PASS.

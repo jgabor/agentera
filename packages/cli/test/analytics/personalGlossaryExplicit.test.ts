@@ -9,6 +9,7 @@ import {
   classifyExplicitGlossaryLanguage,
   discoverExplicitGlossaryCues,
   mineExplicitGlossaryCandidates,
+  rawCues,
 } from "../../src/analytics/personalGlossaryExplicit.js";
 import { admitPersonalGlossaryEvidence } from "../../src/analytics/personalGlossaryAdmission.js";
 import { validateGlossaryEvidenceCapsule } from "../../src/registries/glossaryCandidateContracts.js";
@@ -65,6 +66,24 @@ function publish(records: Array<Record<string, unknown>>): void {
     adapterVersion: ADAPTER_VERSION,
     publishedAt: "2026-08-08T00:00:00.000Z",
   });
+}
+
+function exactSourceCue(text: string, term: string, meaning: string) {
+  const termStart = text.indexOf(term);
+  const meaningStart = text.indexOf(meaning, termStart + term.length);
+  if (termStart < 0 || meaningStart < 0) throw new Error("expected cue text is missing");
+  return {
+    term,
+    meaning,
+    term_span: {
+      start: Buffer.byteLength(text.slice(0, termStart), "utf8"),
+      end: Buffer.byteLength(text.slice(0, termStart + term.length), "utf8"),
+    },
+    meaning_span: {
+      start: Buffer.byteLength(text.slice(0, meaningStart), "utf8"),
+      end: Buffer.byteLength(text.slice(0, meaningStart + meaning.length), "utf8"),
+    },
+  };
 }
 
 describe("deterministic explicit cue recognition", () => {
@@ -308,6 +327,195 @@ describe("deterministic explicit cue recognition", () => {
     ],
   ] as const;
 
+  const terminalBoundaryCases = [
+    [
+      "question",
+      "Is the following definition correct?",
+      "Is this definition correct?",
+      EXPLICIT_GLOSSARY_REASONS.indirectQuestion,
+    ],
+    [
+      "example",
+      "Is the following definition an example?",
+      "Is this definition an example?",
+      EXPLICIT_GLOSSARY_REASONS.exampleContext,
+    ],
+    [
+      "future",
+      "The following meaning will apply later.",
+      "This meaning will apply later.",
+      EXPLICIT_GLOSSARY_REASONS.futureDefinition,
+    ],
+    [
+      "hypothetical",
+      "If the following definition applies, continue.",
+      "If this definition applies, continue.",
+      EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition,
+    ],
+  ] as const;
+  const lineEndings = [
+    ["LF", "\n"],
+    ["CRLF", "\r\n"],
+  ] as const;
+  const nearMissTerminalCases = [
+    ["question", "Is alphabet correct?"],
+    ["example", "For example, alphabet is illustrative."],
+    ["future", "Alphabet will apply later."],
+    ["hypothetical", "If alphabet applies, continue."],
+  ] as const;
+
+  it.each(
+    lineEndings.flatMap(([ending, eol]) =>
+      terminalBoundaryCases.map(
+        ([qualifier, reference, _thisReference, reason]) =>
+          [ending, qualifier, eol, reference, reason] as const,
+      ),
+    ),
+  )(
+    "ends a same-line meaning before a direct %s %s reference",
+    (_ending, _qualifier, eol, reference, reason) => {
+      const text = [
+        `\`café\`: retained meaning. ${reference}`,
+        "`beta`: excluded meaning.",
+        "`gamma`: unrelated meaning.",
+      ].join(eol);
+      const expected = [
+        exactSourceCue(text, "café", "retained meaning"),
+        exactSourceCue(text, "gamma", "unrelated meaning"),
+      ];
+
+      expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
+      publish([record(`same-line-${_ending}-${_qualifier}`, text)]);
+      const result = mineExplicitGlossaryCandidates({ tiersDir });
+      expect(
+        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+          term: capsule.term,
+          meaning: capsule.meaning,
+          term_span,
+          meaning_span,
+        })),
+      ).toEqual(expected);
+      expect(
+        result.abstentions.map(({ term, reason: actualReason }) => [term, actualReason]),
+      ).toEqual([["beta", reason]]);
+    },
+  );
+
+  it.each(
+    lineEndings.flatMap(([ending, eol]) =>
+      nearMissTerminalCases.map(
+        ([qualifier, nearMiss]) => [ending, qualifier, eol, nearMiss] as const,
+      ),
+    ),
+  )(
+    "terminates before a same-line %s %s near-miss without binding",
+    (_ending, _qualifier, eol, nearMiss) => {
+      const text = [
+        "Préface.",
+        `\`alpha\`: first. ${nearMiss}`,
+        "`beta`: second.",
+        "`gamma`: third.",
+      ].join(eol);
+      const expected = [
+        exactSourceCue(text, "alpha", "first"),
+        exactSourceCue(text, "beta", "second"),
+        exactSourceCue(text, "gamma", "third"),
+      ];
+
+      expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
+      publish([record(`same-line-near-miss-${_ending}-${_qualifier}`, text)]);
+      const result = mineExplicitGlossaryCandidates({ tiersDir });
+      expect(result.abstentions).toEqual([]);
+      expect(
+        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+          term: capsule.term,
+          meaning: capsule.meaning,
+          term_span,
+          meaning_span,
+        })),
+      ).toEqual(expected);
+    },
+  );
+
+  it.each(
+    lineEndings.flatMap(([ending, eol]) =>
+      terminalBoundaryCases.map(
+        ([qualifier, _followingReference, reference, reason]) =>
+          [ending, qualifier, eol, reference, reason] as const,
+      ),
+    ),
+  )(
+    "ends the target meaning before a reverse direct %s %s reference",
+    (_ending, _qualifier, eol, reference, reason) => {
+      const text = [
+        "`alpha`: unrelated first meaning.",
+        `\`café\`: excluded meaning. ${reference}`,
+        "`gamma`: unrelated last meaning.",
+      ].join(eol);
+      const expected = [
+        exactSourceCue(text, "alpha", "unrelated first meaning"),
+        exactSourceCue(text, "gamma", "unrelated last meaning"),
+      ];
+      const bound = rawCues(text).find((cue) => text.slice(cue.termStart, cue.termEnd) === "café");
+
+      expect(bound?.rejectionReason).toBe(reason);
+      expect(text.slice(bound?.meaningStart, bound?.meaningEnd)).toBe("excluded meaning");
+      expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
+      publish([record(`same-line-reverse-${_ending}-${_qualifier}`, text)]);
+      const result = mineExplicitGlossaryCandidates({ tiersDir });
+      expect(
+        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+          term: capsule.term,
+          meaning: capsule.meaning,
+          term_span,
+          meaning_span,
+        })),
+      ).toEqual(expected);
+      expect(
+        result.abstentions.map(({ term, reason: actualReason }) => [term, actualReason]),
+      ).toEqual([["café", reason]]);
+    },
+  );
+
+  it.each(
+    lineEndings.flatMap(([ending, eol]) =>
+      [
+        ["question", "Is the release ready?"],
+        ["example", "For example, the release note is illustrative."],
+        ["future", "The deployment rule will change later."],
+        ["hypothetical", "If tests pass, deploy."],
+      ].map(([qualifier, unrelated]) => [ending, qualifier, eol, unrelated] as const),
+    ),
+  )(
+    "does not truncate or bind unrelated same-line %s %s prose",
+    (_ending, _qualifier, eol, unrelated) => {
+      const retained = `retained meaning. ${unrelated.replace(/[.?!]$/u, "")}`;
+      const text = [
+        `\`café\`: retained meaning. ${unrelated}`,
+        "`beta`: adjacent meaning.",
+        "`gamma`: unrelated meaning.",
+      ].join(eol);
+      const expected = [
+        exactSourceCue(text, "beta", "adjacent meaning"),
+        exactSourceCue(text, "café", retained),
+        exactSourceCue(text, "gamma", "unrelated meaning"),
+      ];
+
+      expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
+      publish([record(`same-line-unrelated-${_ending}-${_qualifier}`, text)]);
+      const result = mineExplicitGlossaryCandidates({ tiersDir });
+      expect(result.abstentions).toEqual([]);
+      expect(
+        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+          term: capsule.term,
+          meaning: capsule.meaning,
+          term_span,
+          meaning_span,
+        })),
+      ).toEqual(expected);
+    },
+  );
+
   it.each(directionalQualifiers)(
     "binds a preceding %s following-reference only to the next cue",
     (_label, followingReference) => {
@@ -527,6 +735,59 @@ describe("deterministic explicit cue recognition", () => {
       true,
     );
   });
+
+  it.each(lineEndings)(
+    "emits every structural phase before a valid post-exit UTF-8 cue with %s",
+    (_ending, eol) => {
+      const text = [
+        "naïve: configured value",
+        "  nested: retained configuration",
+        "top-level prose exits the configuration block.",
+        "`café`: valid meaning.",
+      ].join(eol);
+      const expected = exactSourceCue(text, "café", "valid meaning");
+
+      expect(discoverExplicitGlossaryCues(text)).toEqual([expected]);
+      publish([record(`structural-exit-${_ending}`, text)]);
+      const result = mineExplicitGlossaryCandidates({ tiersDir });
+      expect(
+        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+          term: capsule.term,
+          meaning: capsule.meaning,
+          term_span,
+          meaning_span,
+        })),
+      ).toEqual([expected]);
+      expect(result.abstentions.map(({ term, reason }) => [term, reason])).toEqual([
+        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+      ]);
+    },
+  );
+
+  it.each(lineEndings)(
+    "does not exit structural state through indented prose with %s",
+    (_ending, eol) => {
+      const text = [
+        "naïve: configured value",
+        "  nested: retained configuration",
+        "  indented prose is not an exit",
+        "`blocked`: must not leak.",
+      ].join(eol);
+
+      expect(discoverExplicitGlossaryCues(text)).toEqual([]);
+      publish([record(`structural-no-exit-${_ending}`, text)]);
+      const result = mineExplicitGlossaryCandidates({ tiersDir });
+      expect(result.candidates).toEqual([]);
+      expect(result.abstentions.map(({ term, reason }) => [term, reason])).toEqual([
+        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+      ]);
+    },
+  );
 
   it("applies every inline continuation boundary and the inclusive UTF-8 bound", () => {
     const positive = discoverExplicitGlossaryCues(

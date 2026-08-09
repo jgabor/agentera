@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bcpkchatfu
   name: Implement finite explicit segment grammar
-  status: blocked
+  status: superseded
   depends_on:
     - uhdotliobu
   acceptance:
@@ -27,3 +27,6 @@ record:
       source: Audit session ses_01e478143ffewd16MtcDroNw08 bounded re-review
       recorded_at: 2026-08-08 16:44
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - gktgrfqlyr
+  superseded_reason: Replacement closed same-line qualifier, near-miss, and structural prose-exit boundaries with independent PASS.

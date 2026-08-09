@@ -1,0 +1,28 @@
+id: gktgrfqlyr
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Close explicit parser terminal boundaries
+  status: complete
+  depends_on:
+    - uhdotliobu
+  acceptance:
+    - GIVEN an eligible explicit meaning is followed on the same physical line by a direct question, example, future, or hypothetical reference sentence WHEN mined THEN the meaning ends before that sentence, the reference binds only its authority-adjacent target, unrelated cues remain, and retained spans and canonical order are exact.
+    - GIVEN following, this, or exact-term references occur in the current, immediately adjacent, or nonadjacent sentence WHEN mined THEN only current or immediate adjacency binds; unrelated intervening prose breaks binding; missing, near-miss, duplicate-target, and term-inside-meaning text produce authority outcomes without contaminating meanings.
+    - GIVEN structural configuration entry, persistence, a reject-fragment-then-exit prose line, and a valid definition after exit WHEN mined THEN every structural fragment including the exit emits structural_fragment, no config fragment leaks, and the valid post-exit definition mines.
+    - GIVEN the exact two failed Audit reproducers and their boundary variants WHEN verification runs THEN paired positive and negative cases protect each qualifier class, reference direction, structural phase, and UTF-8 boundary; LF and CRLF each assert retained meaning, bound target, abstention reason, and exact UTF-8 spans.
+    - GIVEN the inherited explicit-parser safety matrix WHEN verification runs THEN all ten cues, continuation and 4,096-byte limits, duplicate and conflict behavior, provenance, agent and injected rejection, project-glossary non-read, scope, retractions, replay, recurring mining, and formatter conformance pass while downstream selection, CLI, package, and release behavior remains unchanged.
+  evidence:
+    - Run targeted parser and source checks, then obtain and persist independent Audit PASS.
+    - Only after PASS supersede nipgzvgjzm, milybqttmo, and guhuzevlez with this task and resolve TODO psteyugpzv; any FAIL leaves all four open.
+    - Authority YAML and loader remain unchanged unless a demonstrated contradiction blocks this task and invokes Plan again.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Reference-like near-miss qualifier sentences do not bind but still contaminate the preceding meaning and span; existing near-miss tests assert only term lists, not meaning or exact spans.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_01c3ff6f9ffeJHfDC1tc164LxQ bounded re-review
+      recorded_at: 2026-08-09 02:11
+      writer_command: agentera state plan record-evaluation

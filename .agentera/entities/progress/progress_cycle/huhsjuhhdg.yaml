@@ -1,0 +1,15 @@
+id: huhsjuhhdg
+artifact: progress
+record:
+  timestamp: 2026-08-09 01:37
+  type: fix
+  phase: build
+  what: Closed the two finite explicit parser terminal boundaries without changing authority or lifecycle state.
+  context:
+    intent: Resolve only same-line direct-reference termination and structural prose-exit abstention emission.
+    constraints: Preserve exact UTF-8 spans, canonical order, provenance, consent, personal and project isolation, authority, and pending evaluator-owned lifecycle.
+    scope: Finite explicit segmentation, paired LF and CRLF parser regressions, local source verification, and one typed progress cycle.
+  discovered: The prior implementation checked direct-reference boundaries only while advancing through later physical-line plans, so the continuation loop overwrote a same-line terminal boundary. The structural prose branch applied the exit transition before recording its loaded reason.
+  verified: Same-line following and this references now terminate the preceding meaning before all four qualifier classes, bind only the adjacent target, retain unrelated cues, and preserve exact LF and CRLF UTF-8 spans and canonical order. Structural entry, persistence, prose exit, and no-exit variants emit structural_fragment without leaking configuration cues; valid post-exit definitions mine with exact LF and CRLF spans. Targeted parser and authority checks passed 157 tests; inherited explicit, authority, admission, recurrence, and candidate checks passed 284 tests; full source passed 234 files and 3693 tests with 1 skip. Typecheck, targeted formatter, rebuilt local CLI, and local compact passed. Authority YAML and loader remain unchanged.
+  next: Leave gktgrfqlyr pending for independent Audit PASS; keep blocked predecessors and TODO psteyugpzv open; create no commit or downstream state.
+  publication_order: 124

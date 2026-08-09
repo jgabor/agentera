@@ -1,0 +1,15 @@
+id: uheprebpet
+artifact: progress
+record:
+  timestamp: 2026-08-09 02:03
+  type: fix
+  phase: build
+  what: Corrected audit-1 near-miss qualifier terminal contamination without changing target binding.
+  context:
+    intent: Retry only the accepted gktgrfqlyr audit-1 finding.
+    constraints: Preserve authority, exact UTF-8 spans, direct binding, structural behavior, inherited safety, uncommitted work, and evaluator-owned lifecycle.
+    scope: Near-miss qualifier termination, paired LF and CRLF regression oracles, proportional local-source verification, and one typed progress cycle.
+  discovered: Terminal recognition required a successful following, this, or caseless-exact term reference, so qualifier sentences containing a lexical near miss remained inside the preceding meaning.
+  verified: "The initial LF and CRLF near-miss matrix reproduced 8 failures with 129 passes. Final near-miss parser verification passed 137 tests: question, example, future, and hypothetical alphabet near misses terminate alpha at exact meaning first, preserve exact UTF-8 spans and alpha-beta-gamma canonical order, and emit no abstention. Paired unrelated prose remains untruncated. Parser and authority checks passed 165 tests; inherited explicit, authority, admission, recurrence, and candidate checks passed 292 tests; full source passed 234 files and 3701 tests with 1 skip. Typecheck, scoped formatter, rebuilt local CLI, and compact passed. Authority YAML, loader, and protected surfaces remain unchanged."
+  next: Keep gktgrfqlyr pending for one bounded re-audit; preserve audit-1 provenance, huhsjuhhdg, blocked predecessors, and open TODO psteyugpzv; create no commit or downstream state.
+  publication_order: 125

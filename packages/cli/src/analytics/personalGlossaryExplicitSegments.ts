@@ -184,6 +184,7 @@ function segmentRawCues(
     if (state === "structural_config") {
       const transition = explicitSegmentTransition(grammar, state, plan.input);
       if (plan.kind === "prose") {
+        accepted.push(structuralRejection(plan, loadedStructuralReason(transition)));
         state = transition.to;
         continue;
       }
@@ -265,7 +266,17 @@ function sentenceRanges(
   }));
 }
 
-function directReferenceStart(
+function nearMissTermOccurs(text: string, term: string, start: number, end: number): boolean {
+  const literal = escapedTerm(term);
+  if (!literal) return false;
+  const identifierContinue = "\\p{ID_Continue}$\\u200C\\u200D";
+  return new RegExp(
+    `(?:(?<![${identifierContinue}])${literal}(?=[${identifierContinue}])|(?<=[${identifierContinue}])${literal}(?![${identifierContinue}]))`,
+    "iu",
+  ).test(text.slice(start, end));
+}
+
+function referenceLikeQualifierStart(
   text: string,
   line: Line,
   raws: readonly RawCue[],
@@ -293,7 +304,12 @@ function directReferenceStart(
       if (raw.rejectionReason !== undefined || raw.termEnd <= raw.termStart) continue;
       const term = text.slice(raw.termStart, raw.termEnd).trim();
       const occurrence = exactTermOccurrences(text, term, sentence.start, sentence.end)[0];
-      if (occurrence !== undefined) return Math.max(sentence.start, line.start);
+      if (
+        occurrence !== undefined ||
+        nearMissTermOccurs(text, term, sentence.start, sentence.end)
+      ) {
+        return Math.max(sentence.start, line.start);
+      }
     }
   }
   return null;
@@ -332,6 +348,12 @@ function boundedSegmentCues(
     const line = plans[lineIndex]!;
     const nextOnLine = firstRawAfter(line, raw.termStart, text, deps);
     let end = nextOnLine ? cueBoundaryStart(text, nextOnLine, deps.closeToOpen) : line.scanEnd;
+    const referenceStart = referenceLikeQualifierStart(text, line, raws, ranges, deps);
+    const sameLineReference =
+      referenceStart !== null && referenceStart > raw.meaningStart ? referenceStart : null;
+    if (sameLineReference !== null) {
+      end = Math.min(end, sameLineReference);
+    }
     let state: ExplicitSegmentState = "cue";
     const inline = deps.trimMeaning(text, raw.meaningStart, end);
     const inlineNonEmpty = LETTER_OR_NUMBER_RE.test(text.slice(...inline));
@@ -352,7 +374,11 @@ function boundedSegmentCues(
     }
     state = cueTransition.to;
     let lastIncludedEnd = end;
-    for (let index = lineIndex + 1; index < plans.length; index += 1) {
+    for (
+      let index = lineIndex + 1;
+      sameLineReference === null && index < plans.length;
+      index += 1
+    ) {
       const nextPlan = plans[index]!;
       const nextCue = nextPlan.raws.find((candidate) => candidate.termStart > raw.termStart);
       const transition = explicitSegmentTransition(grammar, state, nextPlan.input);
@@ -364,7 +390,7 @@ function boundedSegmentCues(
         end = cueBoundaryStart(text, nextCue, deps.closeToOpen);
         break;
       }
-      const referenceStart = directReferenceStart(text, nextPlan, raws, ranges, deps);
+      const referenceStart = referenceLikeQualifierStart(text, nextPlan, raws, ranges, deps);
       if (referenceStart !== null) {
         end = referenceStart;
         break;

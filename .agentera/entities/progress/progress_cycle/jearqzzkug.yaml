@@ -1,0 +1,15 @@
+id: jearqzzkug
+artifact: progress
+record:
+  timestamp: 2026-08-09 02:13
+  type: fix
+  phase: build
+  what: Closed gktgrfqlyr after independent audit-2 PASS and reconciled its replacement lifecycle.
+  context:
+    intent: Finalize only the evaluated explicit parser cycle.
+    constraints: Preserve authority and protected downstream surfaces; make one coherent commit without release, publication, or additional implementation work.
+    scope: Terminal audit evidence, parser task completion, predecessor supersession, TODO reconciliation, and handoff to the next dependency-ready plan task.
+  discovered: Audit-1 found that reference-like alphabet near misses did not bind but remained in the preceding meaning. The correction separated qualifier-terminal recognition from exact target binding, retained true unrelated prose, and added exact LF and CRLF oracles.
+  verified: Independent bounded re-review in Audit session ses_01c3ff6f9ffeJHfDC1tc164LxQ passed all five acceptance criteria and the evidence audit. Persisted gktgrfqlyr evaluation is attempt_count 2, failure_count 1, last_verdict pass, and status complete. nipgzvgjzm, milybqttmo, and guhuzevlez are superseded by gktgrfqlyr; TODO psteyugpzv is resolved dated 2026-08-09. Final near-miss parser verification passed 137 tests, parser and authority checks passed 165 tests, inherited explicit safety checks passed 292 tests, and full source passed 234 files and 3701 tests with 1 skip. Typecheck, scoped formatter, rebuilt local CLI, compact, authority diff, loader diff, and protected-surface diff passed.
+  next: Proceed to dependency-ready task tahegtlmco, Select safe bounded candidate projections, in a new cycle.
+  publication_order: 126

@@ -153,6 +153,7 @@
 - [x] [id:lkpvbgwhby] [fix:3.0.0] Restore generated-overlap package verification to its governed wall-time budget.
 - [x] [id:rbuoixpxzp] [fix:3.0.0] Preserve Codex session-level transported author provenance
 - [x] [id:gcrflfxlxq] [fix:3.0.0] Reject recurring glossary noise classes instead of exemplars
+- [x] [id:psteyugpzv] [fix:3.0.0] Replan explicit-definition parser segmentation
 
 ## → Critical
 
@@ -161,5 +162,3 @@
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
 
 ## → Degraded
-
-- [ ] [id:psteyugpzv] [fix:3.0.0] Replan explicit-definition parser segmentation
