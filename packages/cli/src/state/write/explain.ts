@@ -83,6 +83,7 @@ function inputProjection(spec: NonNullable<ReturnType<typeof operationSpec>>): R
   return {
     mode: spec.inputMode,
     ...(spec.inputRoot ? { root: spec.inputRoot } : {}),
+    ...(spec.inputOptional ? { optional: true } : {}),
     sources: spec.inputSources,
     structured_sources: spec.structuredInputSources,
     cli_owned_fields: spec.cliOwnedFields,

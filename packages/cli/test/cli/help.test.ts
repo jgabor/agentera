@@ -97,6 +97,8 @@ describe("cli help", () => {
     expect(plan).toContain("Invalid historical archives remain non-fatal compatibility diagnostics unless selected");
     expect(plan).toContain("Plan create rejects an open predecessor unless --force");
     expect(plan).toContain("successor.previous_plan_archived");
+    expect(plan).toContain("state plan replace --predecessor ID --successor ID");
+    expect(plan).toContain("--predecessor ID --input PLAN.yaml");
     expect(plan).toContain("Archive an unfinished selected plan with --force");
     expect(plan).toContain("Task list accepts an optional bare plan ID");
 

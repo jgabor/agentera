@@ -332,7 +332,7 @@ function validateOperationExample(spec: RuntimeOperationSpec, template: RuntimeO
     if (issue) invalid(`${spec.artifact}.${spec.verb} example has ${issue} for ${flag}`);
   }
   if (!format) invalid(`${spec.artifact}.${spec.verb} example omits --format`);
-  if (spec.inputMode === "structured" && !input) invalid(`${spec.artifact}.${spec.verb} example omits --input`);
+  if (spec.inputMode === "structured" && !spec.inputOptional && !input) invalid(`${spec.artifact}.${spec.verb} example omits --input`);
   for (const field of spec.fields) {
     if (field.required && !seen.has(field.flag)) invalid(`${spec.artifact}.${spec.verb} example omits ${field.flag}`);
   }

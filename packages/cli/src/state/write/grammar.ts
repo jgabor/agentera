@@ -45,6 +45,7 @@ export interface MutationFieldDeclaration {
 export interface MutationInputDeclaration {
   mode: MutationInputMode;
   root?: string;
+  optional?: boolean;
   sources: string[];
   structuredSources?: string[];
   cliOwnedFields: string[];
@@ -164,12 +165,15 @@ function parseOperation(raw: unknown, index: number): MutationOperationDeclarati
   const input: MutationInputDeclaration = {
     mode: inputMode,
     ...(raw.input.root === undefined ? {} : { root: requiredString(raw.input.root, `${p}.input.root`) }),
+    ...(raw.input.optional === true ? { optional: true } : {}),
     sources: strings(raw.input.sources, `${p}.input.sources`),
     ...(raw.input.structured_sources === undefined
       ? (inputMode === "structured" ? { structuredSources: strings(raw.input.sources, `${p}.input.sources`) } : {})
       : { structuredSources: strings(raw.input.structured_sources, `${p}.input.structured_sources`) }),
     cliOwnedFields: strings(raw.input.cli_owned_fields, `${p}.input.cli_owned_fields`),
   };
+  if (raw.input.optional !== undefined && raw.input.optional !== true)
+    throw new Error(`invalid mutation grammar: ${p}.input.optional must be true when present`);
   if (inputMode === "structured" && (!input.root || input.sources.length === 0))
     throw new Error(`invalid mutation grammar: ${p} structured input needs a root and source`);
   if (inputMode === "none" && (input.sources.length > 0 || input.root !== undefined))
@@ -225,6 +229,7 @@ function operationParityProjection(operation: MutationOperationDeclaration): Rec
     input: {
       mode: operation.input.mode,
       ...(operation.input.root ? { root: operation.input.root } : {}),
+      ...(operation.input.optional ? { optional: true } : {}),
       sources: operation.input.sources,
       structured_sources: operation.input.structuredSources ?? [],
       cli_owned_fields: operation.input.cliOwnedFields,
@@ -250,6 +255,7 @@ function runtimeParityProjection(operation: RuntimeOperationSpec): Record<string
     input: {
       mode: operation.inputMode,
       ...(operation.inputRoot ? { root: operation.inputRoot } : {}),
+      ...(operation.inputOptional ? { optional: true } : {}),
       sources: operation.inputSources,
       structured_sources: operation.structuredInputSources,
       cli_owned_fields: operation.cliOwnedFields,

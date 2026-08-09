@@ -32,6 +32,8 @@ interface Options {
   sourceRoot?: string;
   publicationContext?: EntityPublicationContext;
   candidate?: () => string;
+  lifecycle?: PlanLifecycleDecision;
+  command?: string;
 }
 
 interface Contract { authorityPath: string; entityRoot: string; defaultLimit: number; maximumLimit: number; maxUtf8Bytes: number; openPlanConflictLimit: number }
@@ -223,6 +225,13 @@ function newId(root: string, sourceRoot: string, reserved: Set<string>, candidat
   throw new Error("could not allocate unique plan entity IDs");
 }
 
+function preparedPlanCreateInput(req: StateWriteRequest): Record<string, unknown> {
+  const input = structuredClone(req.input ?? {});
+  normalizeAndValidatePlanCreateInput(input);
+  validatePlanPublicationCandidate(dumpYamlMapping(input));
+  return input;
+}
+
 export function createPlanEntities(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   if (!options.publicationContext) {
     const binding = detectStateModeBinding(req.projectRoot, options.sourceRoot);
@@ -235,12 +244,11 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
 
 function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & { publicationContext: EntityPublicationContext }): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
-  const input = structuredClone(req.input ?? {});
-  normalizeAndValidatePlanCreateInput(input);
-  validatePlanPublicationCandidate(dumpYamlMapping(input));
+  const input = preparedPlanCreateInput(req);
   const discovery = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
   const entities = all(options.publicationContext.pinnedPath(), sourceRoot, discovery);
-  const lifecycle = planLifecycleDecision(entities, { verb: "create", force: req.force }, sourceRoot);
+  const lifecycle = options.lifecycle ?? planLifecycleDecision(entities, { verb: "create", force: req.force }, sourceRoot);
+  const command = options.command ?? "state plan create";
   const tasks = Array.isArray(input.tasks) ? input.tasks.filter(mapping) : [];
   const reserved = new Set<string>();
   const planId = newId(options.publicationContext?.pinnedPath() ?? req.projectRoot, sourceRoot, reserved, options.candidate);
@@ -264,7 +272,7 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
     return record;
   });
   const publications = [{ boundary: PLAN, id: planId, record: planRecord }, ...taskRecords.map((record, index) => ({ boundary: TASK, id: taskIds[index], record }))];
-  if (req.dryRun) return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, true, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
+  if (req.dryRun) return envelope(command, { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, true, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
   const published: Array<{ relative: string; identity: PublishedTargetIdentity }> = [];
   let predecessor: { relative: string; archivedIdentity: PublishedTargetIdentity; bytes: string } | undefined;
   try {
@@ -301,7 +309,284 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
     if (recoveryFailures.length) throw new Error(`plan replacement failed: ${(error as Error).message}; recovery failed: ${recoveryFailures.join("; ")}`, { cause: error });
     throw error;
   }
-  return envelope("state plan create", { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
+  return envelope(command, { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
+}
+
+interface PlanReplacementDecision {
+  predecessor: DiscoveredEntity;
+  successor: DiscoveredEntity;
+  archivedRecord?: JsonObject;
+  successorRecord: JsonObject;
+  replay: boolean;
+  effects: JsonObject;
+}
+
+function replacementEffects(predecessor: DiscoveredEntity, successor?: DiscoveredEntity): JsonObject {
+  return {
+    lifecycle: "targeted_replacement",
+    predecessor: {
+      id: predecessor.id!,
+      transition: "archived",
+      preserved: ["task_records", "task_evaluations", "task_completion"],
+    },
+    successor: {
+      ...(successor ? { id: successor.id! } : {}),
+      created: !successor,
+      lineage: { field: "previous_plan_archived", predecessor: predecessor.id! },
+    },
+  };
+}
+
+function successorForPredecessor(entities: DiscoveredEntity[], predecessor: DiscoveredEntity): DiscoveredEntity | undefined {
+  const matches = entities.filter((entity) => entity.boundary === PLAN && entity.record?.previous_plan_archived === predecessor.id);
+  if (matches.length > 1) {
+    reject({
+      class: "conflict",
+      message: `archived predecessor '${predecessor.id}' has multiple canonical successor plans`,
+      recovery: "Repair canonical plan lineage so one archived predecessor has one successor before retrying targeted replacement.",
+    });
+  }
+  return matches[0];
+}
+
+function assertNoUnselectedOpenPlans(entities: DiscoveredEntity[], selected: DiscoveredEntity[]): void {
+  const selectedIds = new Set(selected.map((entity) => entity.id!));
+  const unselected = entities
+    .filter((entity) => entity.boundary === PLAN && planStatus(entity) === "open" && !selectedIds.has(entity.id!))
+    .map((entity) => entity.id!)
+    .sort();
+  if (unselected.length > 0) {
+    reject({
+      class: "conflict",
+      message: `targeted plan replacement would leave unnamed open plans: ${unselected.join(", ")}`,
+      diagnosis: { open_plan_candidates: { total: unselected.length, sample_ids: unselected } },
+      recovery: "Name the predecessor and existing successor only when they are the complete open-plan recovery pair; resolve other open plans separately.",
+    });
+  }
+}
+
+function existingReplacementDecision(
+  entities: DiscoveredEntity[],
+  predecessor: DiscoveredEntity,
+  successor: DiscoveredEntity,
+): PlanReplacementDecision {
+  if (predecessor.id === successor.id) {
+    reject({ class: "schema_violation", message: "targeted plan replacement requires distinct predecessor and successor IDs" });
+  }
+  const derived = successorForPredecessor(entities, predecessor);
+  if (planStatus(predecessor) === "archived") {
+    if (!derived || derived.id !== successor.id) {
+      reject({
+        class: "conflict",
+        message: `archived predecessor '${predecessor.id}' is already replaced by '${derived?.id ?? "no canonical successor"}', not '${successor.id}'`,
+        recovery: "Retry with the derived bare successor ID, or correct the divergent replacement request before any lifecycle mutation.",
+      });
+    }
+    return {
+      predecessor,
+      successor,
+      successorRecord: structuredClone(successor.record!),
+      replay: true,
+      effects: replacementEffects(predecessor, successor),
+    };
+  }
+  if (!new Set(["open", "complete"]).has(planStatus(predecessor))) {
+    reject({ class: "conflict", message: `plan '${predecessor.id}' is ${planStatus(predecessor)} and cannot be a replacement predecessor` });
+  }
+  if (derived || successor.record?.previous_plan_archived !== undefined) {
+    reject({ class: "conflict", message: `successor '${successor.id}' already has canonical plan lineage and cannot be reassigned` });
+  }
+  if (planStatus(successor) !== "open") {
+    reject({ class: "conflict", message: `successor '${successor.id}' must be open for targeted replacement` });
+  }
+  assertNoUnselectedOpenPlans(entities, [predecessor, successor]);
+  const successorRecord = structuredClone(successor.record!);
+  successorRecord.previous_plan_archived = predecessor.id!;
+  return {
+    predecessor,
+    successor,
+    archivedRecord: archivedPlanRecord(predecessor),
+    successorRecord,
+    replay: false,
+    effects: replacementEffects(predecessor, successor),
+  };
+}
+
+function replacementPlanRecord(input: Record<string, unknown>): JsonObject {
+  const record = structuredClone(input) as JsonObject;
+  delete record.tasks;
+  delete record.previous_plan_archived;
+  const header = mapping(record.header) ? record.header : {};
+  delete header.id;
+  if (header.status === "active") header.status = "open";
+  if (header.status === "completed") header.status = "complete";
+  record.header = header;
+  return record;
+}
+
+function uniqueReplacementTaskNames(tasks: JsonObject[], context: string, failureClass: "schema_violation" | "conflict"): Map<string, JsonObject> {
+  const names = new Map<string, JsonObject>();
+  for (const task of tasks) {
+    const name = task.name;
+    if (typeof name !== "string" || name.length === 0) {
+      reject({ class: failureClass, message: `${context} contains a task without a non-empty name` });
+    }
+    if (names.has(name)) {
+      reject({ class: failureClass, message: `${context} contains duplicate task name '${name}', so replacement replay cannot identify a task` });
+    }
+    names.set(name, task);
+  }
+  return names;
+}
+
+function replacementInputFingerprint(input: Record<string, unknown>): JsonObject {
+  const tasks = Array.isArray(input.tasks) ? input.tasks.filter(mapping) : [];
+  const names = uniqueReplacementTaskNames(tasks, "replacement input", "schema_violation");
+  const byOrdinal = new Map(tasks.map((task, index) => [String(index + 1), String(task.name)]));
+  const logicalTasks = [...names.entries()].map(([name, task]) => {
+    const record = structuredClone(task);
+    delete record.number;
+    delete record.plan;
+    const dependencies = Array.isArray(record.depends_on) ? record.depends_on : [];
+    record.depends_on = dependencies.map((dependency) => {
+      const target = byOrdinal.get(String(dependency));
+      if (!target) throw new Error(`replacement input dependency '${String(dependency)}' was not normalized before replay comparison`);
+      return target;
+    });
+    if (!Array.isArray(record.acceptance)) record.acceptance = [];
+    return [name, record] as const;
+  });
+  return { plan: replacementPlanRecord(input), tasks: Object.fromEntries(logicalTasks.sort(([left], [right]) => left.localeCompare(right))) };
+}
+
+function replacementSuccessorFingerprint(entities: DiscoveredEntity[], successor: DiscoveredEntity): JsonObject {
+  const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === successor.id);
+  const records = tasks.map((task) => structuredClone(task.record!));
+  const names = uniqueReplacementTaskNames(records, `successor '${successor.id}'`, "conflict");
+  const namesById = new Map(tasks.map((task) => [task.id!, String(task.record!.name)]));
+  const logicalTasks = [...names.entries()].map(([name, task]) => {
+    const record = structuredClone(task);
+    delete record.plan;
+    const dependencies = Array.isArray(record.depends_on) ? record.depends_on : [];
+    record.depends_on = dependencies.map((dependency) => {
+      const target = typeof dependency === "string" ? namesById.get(dependency) : undefined;
+      if (!target) throw new Error(`successor '${successor.id}' has a task dependency outside its canonical task graph`);
+      return target;
+    });
+    return [name, record] as const;
+  });
+  return { plan: replacementPlanRecord(successor.record!), tasks: Object.fromEntries(logicalTasks.sort(([left], [right]) => left.localeCompare(right))) };
+}
+
+function assertReplacementInputReplay(input: Record<string, unknown>, entities: DiscoveredEntity[], successor: DiscoveredEntity): void {
+  if (canonicalRecordJson(replacementInputFingerprint(input)) !== canonicalRecordJson(replacementSuccessorFingerprint(entities, successor))) {
+    reject({
+      class: "conflict",
+      message: `replacement input diverges from persisted successor '${successor.id}'`,
+      recovery: "Retry the exact logical successor plan input, or start a new targeted replacement from an open predecessor; no state was changed.",
+    });
+  }
+}
+
+function createReplacementLifecycle(entities: DiscoveredEntity[], predecessor: DiscoveredEntity): { lifecycle?: PlanLifecycleDecision; replaySuccessor?: DiscoveredEntity } {
+  const successor = successorForPredecessor(entities, predecessor);
+  if (planStatus(predecessor) === "archived") {
+    if (!successor) {
+      reject({
+        class: "conflict",
+        message: `archived predecessor '${predecessor.id}' has no canonical successor to replay`,
+        recovery: "Do not create a second successor for an archived predecessor. Select an open predecessor or repair canonical lineage first.",
+      });
+    }
+    return { replaySuccessor: successor };
+  }
+  if (!new Set(["open", "complete"]).has(planStatus(predecessor))) {
+    reject({ class: "conflict", message: `plan '${predecessor.id}' is ${planStatus(predecessor)} and cannot be a replacement predecessor` });
+  }
+  if (successor) {
+    reject({ class: "conflict", message: `predecessor '${predecessor.id}' already has successor '${successor.id}' before archival` });
+  }
+  assertNoUnselectedOpenPlans(entities, [predecessor]);
+  return {
+    lifecycle: {
+      predecessor,
+      archivedRecord: archivedPlanRecord(predecessor),
+      replay: false,
+      effects: replacementEffects(predecessor),
+    },
+  };
+}
+
+function publishExistingPlanReplacement(
+  req: StateWriteRequest,
+  options: Options & { publicationContext: EntityPublicationContext },
+  sourceRoot: string,
+  decision: PlanReplacementDecision,
+): StateWriteEnvelope {
+  const command = "state plan replace";
+  if (decision.replay) return envelope(command, { id: decision.successor.id!, path: decision.successor.path, replay: true }, decision.successorRecord, req.dryRun, { effects: decision.effects });
+  if (req.dryRun) return envelope(command, { id: decision.successor.id!, path: decision.successor.path, replay: false }, decision.successorRecord, true, { effects: decision.effects });
+  let predecessor: { relative: string; identity: PublishedTargetIdentity; bytes: string } | undefined;
+  let successor: { relative: string; identity: PublishedTargetIdentity; bytes: string } | undefined;
+  try {
+    const archived = replaceEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: decision.predecessor.id!, expectedRecord: decision.predecessor.record!, expectedBytes: exactDiscoveredEntityBytes(decision.predecessor), migrationProvenance: decision.predecessor.migrationProvenance, record: decision.archivedRecord! });
+    if (!archived.publishedIdentity || archived.previousBytes === undefined) throw new Error(`predecessor '${decision.predecessor.id}' archive did not retain its exact recovery identity and bytes`);
+    predecessor = { relative: relative(req.projectRoot, archived.path), identity: archived.publishedIdentity, bytes: archived.previousBytes };
+    const lineaged = replaceEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: decision.successor.id!, expectedRecord: decision.successor.record!, expectedBytes: exactDiscoveredEntityBytes(decision.successor), migrationProvenance: decision.successor.migrationProvenance, record: decision.successorRecord });
+    if (!lineaged.publishedIdentity || lineaged.previousBytes === undefined) throw new Error(`successor '${decision.successor.id}' lineage update did not retain its exact recovery identity and bytes`);
+    successor = { relative: relative(req.projectRoot, lineaged.path), identity: lineaged.publishedIdentity, bytes: lineaged.previousBytes };
+    options.publicationContext.assertValid();
+    const validation = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
+    if (!validation.valid) throw new Error(`targeted plan replacement graph failed state validation: ${validation.issues.map(({ message }) => message).join("; ")}`);
+    options.publicationContext.assertValid();
+  } catch (error) {
+    const recoveryFailures: string[] = [];
+    for (const item of [successor, predecessor]) {
+      if (!item) continue;
+      try { options.publicationContext.restoreExact(item.relative, item.identity, item.bytes, entityExactGetMaxBytes(sourceRoot)); }
+      catch (restoreError) { recoveryFailures.push(`restoration failed for '${item.relative}': ${(restoreError as Error).message}`); }
+    }
+    if (recoveryFailures.length) throw new Error(`targeted plan replacement failed: ${(error as Error).message}; recovery failed: ${recoveryFailures.join("; ")}`, { cause: error });
+    throw error;
+  }
+  return envelope(command, { id: decision.successor.id!, path: decision.successor.path, replay: false }, decision.successorRecord, false, { effects: decision.effects });
+}
+
+export function replacePlanEntities(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
+  if (!options.publicationContext) {
+    const binding = detectStateModeBinding(req.projectRoot, options.sourceRoot);
+    if (binding.mode !== "entities") throw new Error("plan entity replacement requires the durable entity-mode marker");
+    try { return replacePlanEntities(req, { ...options, publicationContext: binding.publicationContext }); }
+    finally { binding.publicationContext.close(); }
+  }
+  return withEntityWriterLock(options.publicationContext, () => replacePlanEntitiesUnderLock(req, options as Options & { publicationContext: EntityPublicationContext }));
+}
+
+function replacePlanEntitiesUnderLock(req: StateWriteRequest, options: Options & { publicationContext: EntityPublicationContext }): StateWriteEnvelope {
+  const command = "state plan replace";
+  const predecessorId = req.values.predecessor;
+  const successorId = req.values.successor;
+  if (typeof predecessorId !== "string") reject({ class: "missing_argument", message: "--predecessor is required for plan replace" });
+  if (successorId !== undefined && typeof successorId !== "string") reject({ class: "schema_violation", message: "--successor must be a bare plan ID when present" });
+  if (successorId !== undefined && req.input !== null) reject({ class: "mutually_exclusive", message: "plan replace accepts either --successor or --input, not both" });
+  if (successorId === undefined && req.input === null) reject({ class: "missing_argument", message: "plan replace requires either --successor ID or --input PLAN.yaml" });
+
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  const discovery = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
+  const entities = all(options.publicationContext.pinnedPath(), sourceRoot, discovery);
+  const predecessor = selectedPlan(entities, predecessorId, sourceRoot);
+  if (typeof successorId === "string") {
+    const successor = selectedPlan(entities, successorId, sourceRoot);
+    return publishExistingPlanReplacement(req, options, sourceRoot, existingReplacementDecision(entities, predecessor, successor));
+  }
+
+  const input = preparedPlanCreateInput(req);
+  const lifecycle = createReplacementLifecycle(entities, predecessor);
+  if (lifecycle.replaySuccessor) {
+    assertReplacementInputReplay(input, entities, lifecycle.replaySuccessor);
+    return envelope(command, { id: lifecycle.replaySuccessor.id!, path: lifecycle.replaySuccessor.path, replay: true }, lifecycle.replaySuccessor.record!, req.dryRun, { effects: replacementEffects(predecessor) });
+  }
+  return createPlanEntitiesUnderLock(req, { ...options, lifecycle: lifecycle.lifecycle!, command });
 }
 
 function taskRecord(req: StateWriteRequest, plan: string): JsonObject {
@@ -411,6 +696,7 @@ function supersedeTask(entities: DiscoveredEntity[], task: DiscoveredEntity, tas
 }
 export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   if (req.spec.verb === "create") return createPlanEntities(req, options);
+  if (req.spec.verb === "replace") return replacePlanEntities(req, options);
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const entities = all(req.projectRoot, sourceRoot);
   if (req.spec.verb === "set-plan-status" && req.values.id !== undefined) reject({ class: "invalid_request", message: "plan set-plan-status accepts only the --plan selector; --id is a task selector and is not valid for plan lifecycle" });
   if (req.spec.verb === "archive") {

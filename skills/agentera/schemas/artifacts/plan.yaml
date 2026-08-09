@@ -559,6 +559,13 @@ LIFECYCLE_CONTRACT:
       no_open_predecessor: Publish the successor normally.
       one_open_predecessor: --force archives the predecessor unchanged and publishes the successor with previous_plan_archived set to the predecessor bare ID.
       multiple_open_predecessors: Reject before effects because implicit creation cannot choose a predecessor.
+    targeted_replacement:
+      command: state plan replace --predecessor PREDECESSOR (--successor SUCCESSOR | --input PLAN.yaml)
+      existing_successor: Names both bare plan IDs, archives only the named predecessor, and assigns previous_plan_archived on the named open successor.
+      create_successor: Names the bare predecessor and supplies one complete plan document when no successor exists.
+      selection: Reject before effects if an unnamed open plan would remain, roles are invalid, or the requested successor conflicts with canonical lineage.
+      replay: The archived predecessor and unique derived successor identify an existing-successor replay; create retries also require logical equality with the persisted successor plan and tasks.
+      atomicity: Predecessor archival, successor lineage or publication, and final graph validation restore complete prior bytes on interruption.
     replacement_evidence_transition:
       predicate: A replacement is complete and its latest persisted evaluation.last_verdict is pass.
       supersession: Every superseded_by replacement must satisfy the predicate before a new supersession is published.

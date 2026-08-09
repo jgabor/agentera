@@ -38,6 +38,7 @@ export interface RuntimeOperationSpec {
   ownedFields: string[];
   inputMode: "none" | "structured" | "flags_until_conversion";
   inputRoot?: string;
+  inputOptional?: boolean;
   inputSources: string[];
   structuredInputSources: string[];
   cliOwnedFields: string[];
@@ -50,7 +51,7 @@ export interface RuntimeOperationSpec {
 
 export const RUNTIME_WRITE_VERBS = [
   "append", "update", "amend", "set-status", "supersede", "set-plan-status",
-  "record-evaluation", "archive", "create", "publish", "activate", "repair", "set-severity", "resolve", "reopen", "explain",
+  "record-evaluation", "archive", "create", "replace", "publish", "activate", "repair", "set-severity", "resolve", "reopen", "explain",
 ] as const;
 export type RuntimeWriteVerb = (typeof RUNTIME_WRITE_VERBS)[number];
 
@@ -107,6 +108,7 @@ const RUNTIME_OPERATION_CORES: RuntimeOperationCoreSpec[] = [
   op("plan", "record-evaluation", planEvaluationFields, { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan", "evaluation"] }),
   op("plan", "archive", [f("--plan", "plan", "string")], { selectors: ["--plan"], ownedFields: ["id", "artifact", "plan", "header.status"], allowForce: true }),
   op("plan", "create", [], { ownedFields: ["id", "artifact", "header.id", "previous_plan_archived", "task_ids"], inputMode: "structured", inputRoot: "complete plan document", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id", "previous_plan_archived", "task_ids"], inputMaxBytes: 32768, allowForce: true }),
+  op("plan", "replace", [f("--predecessor", "predecessor", "string", { required: true, description: "Bare plan ID to archive as the explicit predecessor." }), f("--successor", "successor", "string", { description: "Existing bare open plan ID to retain as the explicit successor." })], { selectors: ["--predecessor", "--successor"], ownedFields: ["id", "artifact", "header.status", "header.id", "previous_plan_archived", "task_ids"], inputMode: "structured", inputRoot: "complete plan document when creating a successor", inputOptional: true, inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id", "previous_plan_archived", "task_ids"], inputMaxBytes: 32768 }),
   op("health", "append", [], { ownedFields: ["id", "artifact", "appended_at"], inputMode: "structured", inputRoot: "one audit entry", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "appended_at"], inputMaxBytes: 32768, compacts: true, recoveryCommand: ["check", "validate", "state", "--format", "json"] }),
   op("objective", "create", [], { ownedFields: ["id", "artifact", "header.id"], inputMode: "structured", inputRoot: "one objective document", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id"], inputMaxBytes: 32768 }),
   op("objective", "update", [f("--id", "id", "string", { required: true })], { selectors: ["--id"], ownedFields: ["id", "artifact", "header.id"], inputMode: "structured", inputRoot: "one objective document", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "header.id"], inputMaxBytes: 32768 }),
@@ -198,6 +200,11 @@ const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionCo
     `Run ${developmentCommand("state plan explain --verb create --format json")}, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and use --force only when the locked canonical snapshot has exactly one open predecessor to archive unchanged.`,
     developmentCommand("state plan create --input plan.yaml --format json"),
     developmentCommand("state plan create --force --input plan.yaml --format json"),
+  ),
+  "plan.replace": projection(
+    "Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects.",
+    developmentCommand("state plan replace --predecessor abcdefghij --successor klmnopqrst --format json"),
+    developmentCommand("state plan replace --predecessor abcdefghij --input plan.yaml --format json"),
   ),
   "health.append": projection(
     `Run ${developmentCommand("check validate state --format json")}, preserve audit evidence, and retry with one schema-valid audit entry.`,

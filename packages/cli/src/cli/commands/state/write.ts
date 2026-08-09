@@ -312,7 +312,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       message: `${artifact} ${verb} accepts field flags, not --input`,
       example: exampleFor(artifact, verb),
     });
-  if (spec.inputRoot && !inputSource)
+  if (spec.inputRoot && !inputSource && !spec.inputOptional)
     invalid({
       class: "missing_argument",
       message: `--input is required for ${artifact} ${verb}`,

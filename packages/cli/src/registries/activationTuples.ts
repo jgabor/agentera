@@ -87,6 +87,7 @@ const decodedCatalog = gunzipSync(Buffer.from(CATALOG, "base64")).toString("utf8
 const emittedReasons = JSON.parse(gunzipSync(Buffer.from(EMITTED_REASON_CATALOG, "base64")).toString("utf8")) as Record<string, string>;
 const rawTuples = JSON.parse(decodedCatalog.slice(decodedCatalog.indexOf("[", 2)).replace(/,\s*]$/, "]")) as ActivationCanonicalTuple[];
 const addedTuples: ActivationCanonicalTuple[] = [
+  { class: "state", surface_id: "write:plan.replace", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "plan.replace", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
   { class: "state", surface_id: "write:todo.activate", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.activate", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
   { class: "state", surface_id: "write:todo.repair", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.repair", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
   { class: "package", surface_id: "emitted:packages/cli/src/cli/commands/doctor.ts", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: "packages/cli/src/cli/commands/doctor.ts", semantic_selector_if_any: JSON.stringify({ path: "packages/cli/src/cli/commands/doctor.ts", selector: null, format: null, classification: null, reason: "Doctor project-state signals publish bounded reconciliation preview and apply guidance." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
@@ -108,11 +109,11 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
     capability: { count: 12, sha256: "892e6e5e2a57b41064bc44fa2946453225f1b1195aff77aad05365fd0a1071c2" },
     runtime: { count: 81, sha256: "99b2abff3ebff889b54b1781c563ab4b32609a479c4e90d6aad854f48fba7edc" },
     reference: { count: 22, sha256: "243fd3c317553f8924c56a52c61af90ccf2793b7b0018af1373b73c69b6c3afb" },
-    state: { count: 36, sha256: "c3366cd6d538a47b5554f2e142eb255ac371bfc77e89128aceb59dfd8376c20a" },
+    state: { count: 37, sha256: "210bd831c5d62beac149efd888ee4a99af49a9469cf373031f8db9893904d0c1" },
     package: { count: 66, sha256: "83e6971af7f7564e42369aaccc445b32a0793bfffade843d149b6abd4fd3dbbc" },
     bootstrap: { count: 34, sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc" },
   },
-  total: { count: 278, sha256: "52a349aa3901626cba0bef4e06d380067722d73d3039fea95f2d806a8018fe54" },
+  total: { count: 279, sha256: "c2d7a66bc9af04a5511348825995317a5968357c6cacbfd87eb2cc4fbe77156c" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string { return JSON.stringify(value); }
 export function digestCanonicalTuples(values: readonly ActivationCanonicalTuple[]): string {

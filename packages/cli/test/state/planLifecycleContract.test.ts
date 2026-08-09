@@ -120,6 +120,13 @@ describe("plan lifecycle contract", () => {
       one_open_predecessor: expect.stringContaining("previous_plan_archived"),
       multiple_open_predecessors: expect.stringContaining("Reject before effects"),
     });
+    expect(contract.canonical.targeted_replacement).toMatchObject({
+      command: expect.stringContaining("--predecessor PREDECESSOR"),
+      existing_successor: expect.stringContaining("previous_plan_archived"),
+      create_successor: expect.stringContaining("complete plan document"),
+      replay: expect.stringContaining("logical equality"),
+      atomicity: expect.stringContaining("restore complete prior bytes"),
+    });
   });
 
   it("requires prospective replacement PASS evidence without invalidating historical state", () => {

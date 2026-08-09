@@ -1,0 +1,16 @@
+id: vwysipntqc
+artifact: progress
+record:
+  timestamp: 2026-08-09 05:42
+  type: feat
+  phase: build
+  what: Added state plan replace in packages/cli/src/state/planEntities.ts for explicit existing-successor and create-successor replacement.
+  context:
+    intent: Add targeted atomic plan replacement.
+    constraints: Preserve task, evaluation, progress, and TODO state; use bare IDs only.
+    unknowns: Resolved selector grammar as --predecessor with --successor or --input; lineage plus persisted logical content is sufficient for replay.
+    scope: Task zliglifsla only; consumer integration remains deferred to mbasprkedb.
+  discovered: Canonical predecessor/successor lineage and logical persisted successor content identify replay without a transaction record.
+  verified: Focused transaction tests passed; pnpm -C packages/cli test passed 3,433 tests with one skip; built local CLI fixtures covered apply, replay, divergence, and rollback.
+  next: Leave zliglifsla in_progress for independent orchestration audit.
+  publication_order: 111

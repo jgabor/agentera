@@ -2754,6 +2754,26 @@ mutation_grammar:
       allow_force: true
       fields: []
 
+    - artifact: plan
+      verb: replace
+      class: batch_transaction
+      selectors: [--predecessor, --successor]
+      preconditions: [entity_mode_marker_is_valid, lifecycle_effects_are_derived_from_locked_canonical_entities, predecessor_and_existing_successor_are_explicit_or_one_complete_successor_input_is_supplied, named_roles_are_distinct_bare_plan_ids, replacement_leaves_no_unnamed_open_plan, exact_lineage_or_logical_create_input_replay_matches]
+      owned_fields: [id, artifact, header.status, header.id, previous_plan_archived, task_ids]
+      input:
+        mode: structured
+        root: complete plan document when creating a successor
+        optional: true
+        sources: [file, stdin]
+        structured_sources: [file, stdin]
+        cli_owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
+      recovery: Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects.
+      examples: ['npx -y agentera@next state plan replace --predecessor abcdefghij --successor klmnopqrst --format json', 'npx -y agentera@next state plan replace --predecessor abcdefghij --input plan.yaml --format json']
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
+      fields:
+        - { flag: --predecessor, field: predecessor, kind: string, required: true, description: Bare plan ID to archive as the explicit predecessor. }
+        - { flag: --successor, field: successor, kind: string, description: Existing bare open plan ID to retain as the explicit successor. }
+
     - artifact: health
       verb: append
       class: record_payload
