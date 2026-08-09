@@ -1,0 +1,34 @@
+id: gxcnoplnwr
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Keep unsafe-TODO status startup within the Prime byte budget.
+  requirements:
+    - Bound unsafe TODO diagnosis in `prime --context status --format json` before final serialization so the complete response never exceeds the declared 22500-byte startup limit.
+    - Project only bounded counts, risk IDs, omission metadata, and exact typed recovery or detail commands; do not duplicate the same diagnosis across startup, attention, and next-action prose.
+    - Measure the final UTF-8 JSON bytes at the production command boundary and preserve truthful blocked status for large unsafe-inactive projects without falling back to raw artifact reads.
+  acceptance:
+    - The OpenEval fixture with 161 resurrection risks returns exit 0, valid JSON no larger than 22500 UTF-8 bytes, and a truthful `unsafe_inactive` blocked outcome.
+    - The bounded response preserves total and omitted counts plus an exact recovery or detail command without exposing full TODO content or local private paths.
+    - Boundary tests cover the byte immediately below and above the projection threshold, while healthy and small unsafe projects retain their existing semantics.
+  release_blocker: true
+  severity: normal
+  readiness:
+    capability: build
+    reason: Published Prime exceeds its own startup budget by one byte on OpenEval, preventing status from delivering the safe reconciliation diagnosis.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 43
+    order_reason: Restore bounded orientation independently of the owner-correction implementation.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Keep unsafe-TODO status startup within the Prime byte budget."
+      severity: normal
+      status: open
+      order: 31

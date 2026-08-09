@@ -40,6 +40,8 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
+- [ ] [id:yrjmbhfjes] [fix:3.0.0] Provide effect-bound owner correction for unsafe-inactive TODO projects.
+- [ ] [id:gxcnoplnwr] [fix:3.0.0] Keep unsafe-TODO status startup within the Prime byte budget.
 
 ## ⇢ Annoying
 

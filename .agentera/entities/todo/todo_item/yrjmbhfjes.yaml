@@ -1,0 +1,34 @@
+id: yrjmbhfjes
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Provide effect-bound owner correction for unsafe-inactive TODO projects.
+  requirements:
+    - Extend the typed TODO recovery surface so a marker-absent `unsafe_inactive` project can preview a correction without first activating the unsafe projection.
+    - Use current `TODO.md` as public authority and preserve canonical entity IDs plus Agentera-owned readiness, dependencies, gates, and evidence; require complete one-to-one evidence and explicit owner mapping for ambiguous rows.
+    - Publish the corrected public rows, entity baselines, and activation state through one effect-bound recoverable transaction; reject duplicates, reopened completed work, unmatched entities, and unpreviewed effects before writes.
+  acceptance:
+    - The OpenEval fixture with hierarchical TODO prose and 161 stale open entities returns a bounded correction preview instead of an activate-or-stop dead end, and the preview changes no bytes.
+    - A confirmed correction leaves exactly one public row per entity, preserves completed Markdown status and unrelated prose, and makes `agentera check validate state` pass without an intermediate unsafe activation.
+    - Ambiguous owner mappings fail before effects, while interruption and replay converge to the same IDs, public bytes, activation record, and baselines.
+  release_blocker: true
+  severity: normal
+  readiness:
+    capability: build
+    reason: Fail-closed activation protects OpenEval but leaves no supported path to reconcile its 161 stale entities, so owner correction is required before project work can resume.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 42
+    order_reason: Add the safe recovery path after unsafe activation was correctly blocked.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Provide effect-bound owner correction for unsafe-inactive TODO projects."
+      severity: normal
+      status: open
+      order: 30
