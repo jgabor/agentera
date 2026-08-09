@@ -204,6 +204,7 @@ describe("agentera report personal-glossary-candidates", () => {
         maximum_limit: 50,
         max_serialized_utf8_bytes: 32768,
         order: "candidate_id_then_candidate_revision_then_capsule_sha256",
+        projection_binding_field: "candidate_projection_sha256",
         source_families: ["explicit", "recurring"],
         provenance_kinds: [
           "personal_explicit_definition",
@@ -230,6 +231,7 @@ describe("agentera report personal-glossary-candidates", () => {
       },
       exact: {
         required_bindings: ["candidate_id", "candidate_revision", "generation", "policy_version"],
+        projection_binding_field: "candidate_projection_sha256",
         occurrences_max: 100,
         safe_context_max_utf8_bytes: 500,
         max_serialized_utf8_bytes: 32768,
@@ -263,6 +265,7 @@ describe("agentera report personal-glossary-candidates", () => {
       status: "degraded",
       generation: GENERATION,
       policy_version: POLICY,
+      candidate_projection_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       counts: { total: 2, candidate: 2, returned: 1, remaining: 1, omitted: 1, continuation: 1 },
       filters: {
         source_family: "explicit",
@@ -517,6 +520,7 @@ describe("agentera report personal-glossary-candidates", () => {
       status: "ok",
       generation: GENERATION,
       policy_version: POLICY,
+      candidate_projection_sha256: projection.projection_sha256,
       entry: {
         occurrence_count: 3,
         safe_context: {

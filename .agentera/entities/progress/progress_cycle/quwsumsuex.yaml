@@ -1,0 +1,15 @@
+id: quwsumsuex
+artifact: progress
+record:
+  timestamp: 2026-08-09 14:55
+  type: fix
+  phase: audit
+  what: Audit PASS finalized Plan bcpkchatfu task kuovmqppuy; deterministic personal glossary decisions are complete and ready for dependent work.
+  context:
+    intent: Record the persisted Audit PASS and complete lifecycle for kuovmqppuy in its substantive glossary decision commit.
+    constraints: Keep audit-1 and prior progress qrbhmyglom and nyvszlxrsk. Do not add implementation changes, alter unrelated state, publish, tag, push, or release.
+    scope: Audit provenance, terminal progress, completed task evaluation/status, and verified personal glossary decision implementation.
+  discovered: Initial audit ses_019b9b577ffeiYoVRRsA161J2O found contradictory outcome/reason pairs, post-read 16 KiB enforcement, and missing unavailable, conflicting, validation-failure, and input-bound regressions. The implementation now binds reason codes to outcomes, uses max-plus-one file and stdin reads, and covers every result branch without effects.
+  verified: Audit session ses_019b9b577ffeiYoVRRsA161J2O bounded re-review recorded PASS and task status complete. pnpm -C packages/cli run typecheck passed; focused tests passed 3 files and 284 tests; pnpm -C packages/cli test passed 237 files, 3,834 passed, 1 skipped; pnpm -C packages/cli build passed; local dist 3.0.0-dev.43 check compact passed; pnpm -C packages/cli run verify:package passed 3 files and 34 tests.
+  next: "Ready dependent tasks: zbiibnlfgd Replace personal direct publication grammar, and uvvlfjycxk Persist review records and bounded reads."
+  publication_order: 138

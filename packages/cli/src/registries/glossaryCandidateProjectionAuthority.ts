@@ -99,7 +99,7 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     persistence?.replay !== "byte_identical_projection_is_unchanged_replay" ||
     persistence?.project_storage !== "forbidden" ||
     persistence?.public_reads !== "forbidden" ||
-    persistence?.private_machine_reads !== "candidate_retrieval" ||
+    !sameStrings(persistence?.private_machine_reads, ["candidate_retrieval", "cli_decision"]) ||
     persistence?.review_disposition_writes !== "forbidden" ||
     retrieval?.status !== "active" ||
     retrieval?.owner !== "private_user_local_candidate_retrieval" ||
@@ -117,6 +117,7 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     list?.maximum_limit !== 50 ||
     list?.max_serialized_utf8_bytes !== 32768 ||
     list?.order !== "candidate_id_then_candidate_revision_then_capsule_sha256" ||
+    list?.projection_binding_field !== "candidate_projection_sha256" ||
     !sameStrings(filters?.source_family, ["explicit", "recurring"]) ||
     filters?.provenance_kind_from !== "candidate_projection.selection.source_families" ||
     !sameStrings(filters?.scope, ["personal", "ambiguous"]) ||
@@ -150,6 +151,7 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
       "generation",
       "policy_version",
     ]) ||
+    exact?.projection_binding_field !== "candidate_projection_sha256" ||
     exact?.occurrences_max !== 100 ||
     exact?.safe_context_max_utf8_bytes !== 500 ||
     exact?.max_serialized_utf8_bytes !== 32768 ||

@@ -93,6 +93,7 @@ const GLOSSARY_PROJECTIONS = {
   "profile_grounding.absent": `Use the Profile capability to generate PROFILE.md, then retry ${profileGroundingCommand}.`,
   "advice.command": developmentCommand("report glossary-advice --input REQUEST --format json"),
   "candidate_retrieval.command": developmentCommand("report personal-glossary-candidates"),
+  "candidate_decision.command": developmentCommand("report personal-glossary-decision"),
 } as const;
 
 export type GlossaryProjectionOwner = keyof typeof GLOSSARY_PROJECTIONS;

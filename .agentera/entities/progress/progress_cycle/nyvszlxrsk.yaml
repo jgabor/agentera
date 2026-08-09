@@ -1,0 +1,15 @@
+id: nyvszlxrsk
+artifact: progress
+record:
+  timestamp: 2026-08-09 14:44
+  type: fix
+  phase: build
+  what: Hardened the personal glossary decision boundary after audit-1 without changing host evidence-only authority or admission scope.
+  context:
+    intent: Retry Plan bcpkchatfu task kuovmqppuy after persisted audit-1 failure.
+    constraints: Keep audit-1 and qrbhmyglom, leave the task pending, make no commit, lifecycle transition, release, publication, tag, push, project read, or mutation.
+    scope: Outcome/reason pairing, bounded receipt input, table-driven result branches, structured schema, and no-effect regression coverage.
+  discovered: Audit-1 found digest-valid contradictory outcome/reason decisions, post-read request-size checks, and missing branch coverage. The fix adds authority-owned reason pairs, max-plus-one descriptor reads, and a complete no-effect branch matrix.
+  verified: "pnpm -C packages/cli run typecheck passed. Focused vp tests passed: 3 files, 284 tests. pnpm -C packages/cli test passed: 237 files, 3,834 passed, 1 skipped. pnpm -C packages/cli build passed. Local dist 3.0.0-dev.43 check compact passed. pnpm -C packages/cli run verify:package passed: 3 files, 34 tests. Local CLI smoke returned projection_unavailable with effects: []."
+  next: Keep kuovmqppuy pending for independent re-audit and coordinator-managed lifecycle transition.
+  publication_order: 137

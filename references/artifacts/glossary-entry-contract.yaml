@@ -60,11 +60,12 @@ term_occurrence:
 personal_mining_authority:
   status: active_partial
   implementation_boundary: >-
-    This section settles personal glossary mining identity, evidence provenance,
-    consent, privacy, lifecycle, and bounded explicit-discovery authority. The
-     runtime implements only the declared bounded discovery, candidate projection,
-     and private candidate-retrieval surfaces. It does not implement project or
-     public-state candidate reads, host classification, CLI decisions, publication
+     This section settles personal glossary mining identity, evidence provenance,
+     consent, privacy, lifecycle, bounded explicit-discovery, receipt validation,
+     and deterministic decision authority. The runtime performs bounded discovery,
+     candidate projection, private candidate retrieval, and deterministic CLI
+     validation of host semantic evidence. It does not perform host semantic
+     classification, project or public-state candidate reads, publication
      replacement, review storage, or Profile integration.
   preserved_decisions: [prmnztjytv, mcsmqqitnm, zyvgyvjnsv]
   replacement:
@@ -712,7 +713,7 @@ personal_mining_authority:
       replay: byte_identical_projection_is_unchanged_replay
       project_storage: forbidden
       public_reads: forbidden
-      private_machine_reads: candidate_retrieval
+      private_machine_reads: [candidate_retrieval, cli_decision]
       review_disposition_writes: forbidden
       rule: >-
         Write one private canonical projection file at the configured user
@@ -737,6 +738,7 @@ personal_mining_authority:
       maximum_limit: 50
       max_serialized_utf8_bytes: 32768
       order: candidate_id_then_candidate_revision_then_capsule_sha256
+      projection_binding_field: candidate_projection_sha256
       filters:
         source_family: [explicit, recurring]
         provenance_kind_from: candidate_projection.selection.source_families
@@ -775,6 +777,7 @@ personal_mining_authority:
     exact:
       schema_version: agentera.personalGlossaryCandidateRetrieval.v1
       required_bindings: [candidate_id, candidate_revision, generation, policy_version]
+      projection_binding_field: candidate_projection_sha256
       occurrences_max: 100
       safe_context_max_utf8_bytes: 500
       max_serialized_utf8_bytes: 32768
@@ -785,7 +788,8 @@ personal_mining_authority:
       rule: >-
         Exact read first validates the current projection and every requested
         candidate binding. It returns only the bounded validated occurrence
-        projection and a currently available validated safe excerpt context.
+        projection, its candidate_projection_sha256 binding, and a currently
+        available validated safe excerpt context.
         Raw source, anchor, session, project, fingerprint, project-key, and
         filesystem values are never emitted.
     rule: >-
@@ -808,8 +812,8 @@ personal_mining_authority:
 
 candidate_contracts:
   schema_version: agentera.personalGlossaryCandidateContracts.v1
-  status: authority_only
-  implementation_boundary: contracts_only_no_candidate_runtime
+  status: active_partial
+  implementation_boundary: receipt_validation_and_deterministic_decision_runtime_only
   purpose: >-
     Define five distinct, content-addressed boundaries for one personal glossary
     candidate. Discovery and projection own evidence, the semantic host owns only
@@ -896,6 +900,7 @@ candidate_contracts:
         - candidate_id
         - candidate_revision
         - candidate_capsule_sha256
+        - candidate_projection_sha256
         - generation
         - policy_version
         - classification
@@ -906,6 +911,7 @@ candidate_contracts:
         - candidate_id
         - candidate_revision
         - candidate_capsule_sha256
+        - candidate_projection_sha256
         - generation
         - policy_version
       body_digest: receipt_sha256
@@ -928,9 +934,9 @@ candidate_contracts:
         - project_publication
       rule: >-
         The host may classify only term, meaning, scope, permanence, consistency,
-        and confidence. The receipt binds the exact capsule, revision, generation,
-        and policy. It cannot choose admission, authorize mutation, bypass review,
-        or supply a trusted publication effect.
+        and confidence. The receipt binds the exact capsule, current projection,
+        revision, generation, and policy. It cannot choose admission, authorize
+        mutation, bypass review, or supply a trusted publication effect.
     cli_decision:
       owner: deterministic_cli_admission_validation
       schema_version: agentera.personalGlossaryAdmissionDecision.v1
@@ -940,7 +946,10 @@ candidate_contracts:
         - candidate_id
         - candidate_revision
         - candidate_capsule_sha256
+        - candidate_projection_sha256
         - host_receipt_sha256
+        - classification_contract_version
+        - semantic_fingerprint
         - generation
         - policy_version
         - outcome
@@ -951,15 +960,72 @@ candidate_contracts:
         - candidate_id
         - candidate_revision
         - candidate_capsule_sha256
+        - candidate_projection_sha256
         - host_receipt_sha256
+        - classification_contract_version
+        - semantic_fingerprint
         - generation
         - policy_version
       body_digest: decision_sha256
       outcomes: [automatic_admission, review_required, abstain]
+      reason_codes:
+        - explicit_current_authorized
+        - inferred_requires_review
+        - scope_ambiguous
+        - classification_inconsistent
+        - classification_changed
+        - entry_conflict
+        - evidence_retracted_or_conflicted
+        - quality_gate_not_authorizing
+        - scope_project
+        - evidence_unavailable
+        - evidence_changed
+      reason_codes_by_outcome:
+        automatic_admission: [explicit_current_authorized]
+        review_required:
+          - inferred_requires_review
+          - scope_ambiguous
+          - classification_inconsistent
+          - classification_changed
+          - entry_conflict
+          - evidence_retracted_or_conflicted
+          - quality_gate_not_authorizing
+        abstain: [scope_project, evidence_unavailable, evidence_changed]
       automatic_admission:
         owner: deterministic_cli_admission_validation
         allowed_provenance: provenance_variants.personal_explicit_definition
         inferred_automatic_admission: disabled
+        required_classification:
+          scope: personal
+          consistency: consistent
+          term: exact_capsule_term
+          meaning: exact_capsule_meaning
+        current_evidence: required
+        quality_gate: personal_mining_authority.admission.quality_threshold
+      command:
+        canonical: npx -y agentera@next report personal-glossary-decision
+        namespace: report
+        input_flag: --input
+        stdin_value: '-'
+        format: json
+        project_checkout: not_required
+        request:
+          schema_version: agentera.personalGlossaryAdmissionRequest.v1
+          required_fields: [schema_version, receipt]
+          additional_fields: forbidden
+          max_utf8_bytes: 16384
+        result:
+          schema_version: agentera.personalGlossaryAdmissionResult.v1
+          fields: [schemaVersion, command, status, decision, reason, effects]
+          statuses: [automatic_admission, review_required, abstain]
+          max_utf8_bytes: 4096
+          effects: []
+        rule: >-
+          The command accepts one host receipt only through a bounded structured
+          file or stdin request. It reads the current private projection, validates
+          every receipt binding and semantic fingerprint, computes one deterministic
+          outcome, and emits JSON without changing a projection, review record,
+          profile, project glossary, or project state.
       forbidden_fields: [host_authority, host_override, mutation, publication]
       rule: >-
         Only the deterministic CLI validator may emit an admission outcome. It
@@ -1159,6 +1225,8 @@ ownership_contracts:
         - bounded_explicit_discovery
         - bounded_candidate_projection
         - bounded_candidate_retrieval
+        - host_classification_receipt_validation
+        - deterministic_cli_admission_decision
         - explicit_classification
         - inferred_evidence_check
         - profile_full_rendering

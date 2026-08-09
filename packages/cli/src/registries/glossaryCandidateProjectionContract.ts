@@ -81,6 +81,8 @@ export function personalGlossaryCandidateProjectionContract(
     candidateReadMaximumLimit:
       typeof list?.maximum_limit === "number" ? list.maximum_limit : 0,
     candidateReadOrder: typeof list?.order === "string" ? list.order : "",
+    candidateReadListProjectionBindingField:
+      typeof list?.projection_binding_field === "string" ? list.projection_binding_field : "",
     candidateReadSourceFamilies: Object.keys(sourceFamilies),
     candidateReadProvenanceKinds: [
       ...new Set(Object.values(sourceFamilies).flat()),
@@ -100,6 +102,8 @@ export function personalGlossaryCandidateProjectionContract(
         ? cursor.unavailable_behavior
         : "",
     candidateReadExactRequiredBindings: strings(exact?.required_bindings),
+    candidateReadExactProjectionBindingField:
+      typeof exact?.projection_binding_field === "string" ? exact.projection_binding_field : "",
     candidateReadExactOccurrencesMax:
       typeof exact?.occurrences_max === "number" ? exact.occurrences_max : 0,
     candidateReadSafeContextMaxUtf8Bytes:

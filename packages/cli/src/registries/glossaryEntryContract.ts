@@ -421,6 +421,8 @@ export function validateGlossaryEntryContract(
       "bounded_explicit_discovery",
       "bounded_candidate_projection",
       "bounded_candidate_retrieval",
+      "host_classification_receipt_validation",
+      "deterministic_cli_admission_decision",
       "explicit_classification",
       "inferred_evidence_check",
       "profile_full_rendering",

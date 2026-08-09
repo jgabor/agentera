@@ -1,0 +1,15 @@
+id: qrbhmyglom
+artifact: progress
+record:
+  timestamp: 2026-08-09 13:24
+  type: feat
+  phase: build
+  what: Implemented deterministic personal glossary admission decisions with host classification receipts treated as semantic evidence only.
+  context:
+    intent: "Plan bcpkchatfu task kuovmqppuy: validate host classification receipts and compute deterministic personal glossary admission decisions."
+    constraints: Host output remains semantic evidence only. No commit, lifecycle transition, publication, tag, push, or registry mutation.
+    scope: Receipt-to-projection binding, decision validation, read-only report command, authority/schema/help/docs, and regressions.
+  discovered: The source verification lane initially failed only because glossaryCandidateContracts.ts exceeded the 1,000-line monolith limit; moved CLI decision authority validation into a focused registry module without changing its contract.
+  verified: Typecheck passed; targeted decision tests passed (18); source lane passed (237 files, 3,776 passed, 1 skipped); package lane passed (3 files, 34 tests); local build, compact check, schema, and no-projection read-only CLI smoke passed.
+  next: Keep task kuovmqppuy pending for independent evaluation and coordinator-managed lifecycle transition.
+  publication_order: 136

@@ -18,6 +18,7 @@ import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityListFamilies } from "../../state/entityRetrievalHelp.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
 import { personalGlossaryCandidateProjectionContract } from "../../registries/glossaryCandidateProjectionContract.js";
+import { personalGlossaryCandidateDecisionContract } from "../../registries/glossaryCandidateDecisionContract.js";
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
 import { advertisedValidateFamilyNames } from "./validate.js";
 import { SCHEMA_TOP_LEVEL_COMMANDS } from "../dispatch/projections.js";
@@ -377,6 +378,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   const retrievalAuthority = loadStateRetrievalAuthority();
   const profileGlossary = personalGlossaryOutputContract();
   const candidateReads = personalGlossaryCandidateProjectionContract();
+  const candidateDecision = personalGlossaryCandidateDecisionContract();
 
   const authorityPath = integrationAuthorityPath();
 
@@ -433,6 +435,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
             maximum_limit: candidateReads.candidateReadMaximumLimit,
             max_serialized_utf8_bytes: candidateReads.candidateReadMaxSerializedUtf8Bytes,
             order: candidateReads.candidateReadOrder,
+            projection_binding_field: candidateReads.candidateReadListProjectionBindingField,
             source_families: candidateReads.candidateReadSourceFamilies,
             provenance_kinds: candidateReads.candidateReadProvenanceKinds,
             scopes: candidateReads.candidateReadScopes,
@@ -446,6 +449,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
           },
           exact: {
             required_bindings: candidateReads.candidateReadExactRequiredBindings,
+            projection_binding_field: candidateReads.candidateReadExactProjectionBindingField,
             occurrences_max: candidateReads.candidateReadExactOccurrencesMax,
             safe_context_max_utf8_bytes: candidateReads.candidateReadSafeContextMaxUtf8Bytes,
             max_serialized_utf8_bytes: candidateReads.candidateReadExactMaxSerializedUtf8Bytes,
@@ -458,6 +462,24 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
             snapshot: candidateReads.candidateReadSafeContextViewSnapshot,
           },
           project_checkout: "not_required",
+        },
+        candidate_decision: {
+          command: candidateDecision.command,
+          request_schema_version: candidateDecision.requestSchemaVersion,
+          request_fields: candidateDecision.requestFields,
+          max_request_utf8_bytes: candidateDecision.maxRequestUtf8Bytes,
+          result_schema_version: candidateDecision.resultSchemaVersion,
+          result_fields: candidateDecision.resultFields,
+          statuses: candidateDecision.resultStatuses,
+          reason_codes_by_outcome: candidateDecision.reasonCodesByOutcome,
+          max_result_utf8_bytes: candidateDecision.maxResultUtf8Bytes,
+          automatic_admission: {
+            allowed_provenance: candidateDecision.automaticProvenance,
+            inferred_automatic_admission: candidateDecision.inferredAutomaticAdmission,
+            quality_gate: candidateDecision.qualityGate,
+          },
+          project_checkout: "not_required",
+          effects: [],
         },
       },
       historical_import: {

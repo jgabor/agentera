@@ -132,6 +132,24 @@ opaque validated occurrence identities and a currently available safe context,
 not raw source, anchor, session, project, or filesystem values. Both commands
 are non-interactive and mutation-free.
 
+## Personal glossary decisions
+
+Submit one host semantic classification receipt through the private, read-only
+decision boundary. Copy the current `candidate_projection_sha256` from the
+candidate read into the receipt. The CLI validates the receipt against the
+current projection and evidence, then returns an admission outcome without
+writing a review, profile entry, or project state.
+
+```bash
+npx -y agentera@next report personal-glossary-decision --input receipt.json --format json
+```
+
+Only a current explicit personal definition with a complete resolved
+user-authored anchor can return `automatic_admission`. Inferred candidates stay
+`review_required` or `abstain`, regardless of host confidence. The command does
+not read a project glossary. File and stdin requests are limited to 16,384 UTF-8
+bytes. The machine schema lists the only allowed reason codes for each outcome.
+
 ## Contributors
 
 Requires Node.js 22+ and pnpm 10.30.3.

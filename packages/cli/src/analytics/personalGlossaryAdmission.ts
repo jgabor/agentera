@@ -219,3 +219,9 @@ export {
   type PersonalGlossarySafeExcerpt,
   type ProjectedPersonalGlossaryCandidate,
 } from "./personalGlossaryCandidateProjection.js";
+export {
+  decidePersonalGlossaryCandidate,
+  type PersonalGlossaryAdmissionResult as PersonalGlossaryDecisionResult,
+  type PersonalGlossaryAdmissionStatus,
+  type PersonalGlossaryDecisionOptions,
+} from "./personalGlossaryDecision.js";

@@ -17,6 +17,15 @@ import {
   PERSONAL_REVIEW_DISPOSITIONS,
   type PersonalReviewDisposition,
 } from "./glossaryMiningAuthority.js";
+import {
+  GLOSSARY_ADMISSION_OUTCOMES,
+  GLOSSARY_ADMISSION_REASONS,
+  hasGlossaryAdmissionReasonCodesByOutcome,
+  validateGlossaryCandidateDecisionAuthority,
+  type GlossaryAdmissionReason,
+} from "./glossaryCandidateDecisionAuthority.js";
+
+export { GLOSSARY_ADMISSION_REASONS, type GlossaryAdmissionReason } from "./glossaryCandidateDecisionAuthority.js";
 
 export type GlossaryContractRecord = Record<string, unknown>;
 
@@ -70,11 +79,12 @@ const LAYER_REQUIRED_FIELDS = {
   ],
   host_classification_receipt: [
     "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
-    "generation", "policy_version", "classification", "semantic_fingerprint", "receipt_sha256",
+    "candidate_projection_sha256", "generation", "policy_version", "classification", "semantic_fingerprint", "receipt_sha256",
   ],
   cli_decision: [
     "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
-    "host_receipt_sha256", "generation", "policy_version", "outcome", "reason", "decision_sha256",
+    "candidate_projection_sha256", "host_receipt_sha256", "classification_contract_version", "semantic_fingerprint",
+    "generation", "policy_version", "outcome", "reason", "decision_sha256",
   ],
   review_record: [
     "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
@@ -90,8 +100,8 @@ const LAYER_REQUIRED_FIELDS = {
 
 const LAYER_BINDING_FIELDS = {
   evidence_capsule: ["candidate_id", "candidate_revision", "generation", "policy_version"],
-  host_classification_receipt: ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "generation", "policy_version"],
-  cli_decision: ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "host_receipt_sha256", "generation", "policy_version"],
+  host_classification_receipt: ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "generation", "policy_version"],
+  cli_decision: ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "classification_contract_version", "semantic_fingerprint", "generation", "policy_version"],
   review_record: ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version"],
   publication_result: ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "decision_sha256", "generation", "policy_version"],
 } as const;
@@ -105,7 +115,7 @@ const HOST_CLASSIFICATION_FIELDS = [
   "confidence",
 ] as const;
 
-const ADMISSION_OUTCOMES = ["automatic_admission", "review_required", "abstain"] as const;
+const ADMISSION_OUTCOMES = GLOSSARY_ADMISSION_OUTCOMES;
 const CONSISTENCY_VALUES = ["consistent", "inconsistent", "uncertain"] as const;
 
 export interface GlossaryEvidenceCapsule extends Mapping {
@@ -140,6 +150,7 @@ export interface GlossaryHostClassificationReceipt extends Mapping {
   candidate_id: string;
   candidate_revision: string;
   candidate_capsule_sha256: string;
+  candidate_projection_sha256: string;
   generation: string;
   policy_version: string;
   classification: GlossaryHostClassification;
@@ -153,11 +164,14 @@ export interface GlossaryAdmissionDecision extends Mapping {
   candidate_id: string;
   candidate_revision: string;
   candidate_capsule_sha256: string;
+  candidate_projection_sha256: string;
   host_receipt_sha256: string;
+  classification_contract_version: string;
+  semantic_fingerprint: string;
   generation: string;
   policy_version: string;
   outcome: (typeof ADMISSION_OUTCOMES)[number];
-  reason: string;
+  reason: GlossaryAdmissionReason;
   decision_sha256: string;
 }
 
@@ -529,17 +543,30 @@ export function createGlossaryEvidenceCapsule(input: {
   return capsule as GlossaryEvidenceCapsule;
 }
 
+export interface GlossaryHostReceiptValidationContext {
+  candidateProjectionSha256: string;
+}
+
 function validateHostBindings(
   receipt: Mapping,
   capsule: Mapping,
   layerAuthority: Mapping,
+  context: GlossaryHostReceiptValidationContext,
 ): string[] {
   const errors: string[] = [];
   for (const field of strings(layerAuthority.binding_fields)) {
     const expected = field === "candidate_capsule_sha256"
       ? capsule.capsule_sha256
-      : capsule[field];
-    if (receipt[field] !== expected) errors.push(`host_classification_receipt.${field} does not match the capsule`);
+      : field === "candidate_projection_sha256"
+        ? context.candidateProjectionSha256
+        : capsule[field];
+    if (receipt[field] !== expected) {
+      errors.push(
+        field === "candidate_projection_sha256"
+          ? "host_classification_receipt.candidate_projection_sha256 does not match the current projection"
+          : `host_classification_receipt.${field} does not match the capsule`,
+      );
+    }
   }
   return errors;
 }
@@ -551,6 +578,7 @@ export function glossaryHostSemanticFingerprint(classification: Mapping): string
 export function validateGlossaryHostClassificationReceipt(
   receipt: Mapping,
   capsule: Mapping,
+  context: GlossaryHostReceiptValidationContext,
   pathname: string = candidateAuthorityPath(),
 ): string[] {
   const loaded = loadedContract(pathname);
@@ -559,7 +587,19 @@ export function validateGlossaryHostClassificationReceipt(
   const layerAuthority = contractLayer(loaded.candidate, "host_classification_receipt");
   if (!layerAuthority) return [...errors, "candidate_contracts.layers.host_classification_receipt is missing"];
   errors.push(...validateLayerEnvelope(receipt, layerAuthority, "host_classification_receipt"));
-  errors.push(...validateHostBindings(receipt, capsule, layerAuthority));
+  if (receipt.schema_version !== LAYER_SCHEMAS.host_classification_receipt) {
+    errors.push("host_classification_receipt.schema_version is invalid");
+  }
+  if (receipt.owner !== LAYER_OWNERS.host_classification_receipt) {
+    errors.push("host_classification_receipt.owner is invalid");
+  }
+  if (!digest(context.candidateProjectionSha256)) {
+    errors.push("host_classification_receipt validation requires a current candidate projection SHA-256");
+  }
+  errors.push(...validateHostBindings(receipt, capsule, layerAuthority, context));
+  if (!digest(receipt.candidate_projection_sha256)) {
+    errors.push("host_classification_receipt.candidate_projection_sha256 must be lowercase SHA-256");
+  }
   const classification = mapping(receipt.classification);
   if (!classification) {
     errors.push("host_classification_receipt.classification must be an object");
@@ -588,6 +628,7 @@ export function validateGlossaryHostClassificationReceipt(
 
 export function createGlossaryHostClassificationReceipt(input: {
   capsule: GlossaryEvidenceCapsule;
+  candidate_projection_sha256: string;
   classification: GlossaryHostClassification;
 }): GlossaryHostClassificationReceipt {
   const receipt = {
@@ -596,13 +637,16 @@ export function createGlossaryHostClassificationReceipt(input: {
     candidate_id: input.capsule.candidate_id,
     candidate_revision: input.capsule.candidate_revision,
     candidate_capsule_sha256: input.capsule.capsule_sha256,
+    candidate_projection_sha256: input.candidate_projection_sha256,
     generation: input.capsule.generation,
     policy_version: input.capsule.policy_version,
     classification: { ...input.classification },
     semantic_fingerprint: glossaryHostSemanticFingerprint(input.classification),
   } as GlossaryContractRecord;
   receipt.receipt_sha256 = glossaryCanonicalSha256(receipt);
-  const errors = validateGlossaryHostClassificationReceipt(receipt, input.capsule);
+  const errors = validateGlossaryHostClassificationReceipt(receipt, input.capsule, {
+    candidateProjectionSha256: input.candidate_projection_sha256,
+  });
   if (errors.length > 0) throw new TypeError(errors.join("; "));
   return receipt as GlossaryHostClassificationReceipt;
 }
@@ -617,11 +661,19 @@ export function validateGlossaryAdmissionDecision(
   if (loaded.errors.length > 0) return loaded.errors;
   const errors = [
     ...validateGlossaryEvidenceCapsule(capsule, pathname),
-    ...validateGlossaryHostClassificationReceipt(receipt, capsule, pathname),
+    ...validateGlossaryHostClassificationReceipt(receipt, capsule, {
+      candidateProjectionSha256: String(decision.candidate_projection_sha256),
+    }, pathname),
   ];
   const layerAuthority = contractLayer(loaded.candidate, "cli_decision");
   if (!layerAuthority) return [...errors, "candidate_contracts.layers.cli_decision is missing"];
   errors.push(...validateLayerEnvelope(decision, layerAuthority, "cli_decision"));
+  if (decision.schema_version !== LAYER_SCHEMAS.cli_decision) {
+    errors.push("cli_decision.schema_version is invalid");
+  }
+  if (decision.owner !== LAYER_OWNERS.cli_decision) {
+    errors.push("cli_decision.owner is invalid");
+  }
   if (!exactStrings(layerAuthority.outcomes, ADMISSION_OUTCOMES)) errors.push("cli_decision.outcomes are not the approved vocabulary");
   if (!ADMISSION_OUTCOMES.includes(decision.outcome as (typeof ADMISSION_OUTCOMES)[number])) {
     errors.push("cli_decision.outcome is invalid");
@@ -629,13 +681,37 @@ export function validateGlossaryAdmissionDecision(
   if (!utf8Within(decision.reason, Number(candidateBounds(loaded.candidate).reason_max_utf8_bytes ?? 0))) {
     errors.push("cli_decision.reason is outside its bound");
   }
+  if (!exactStrings(layerAuthority.reason_codes, GLOSSARY_ADMISSION_REASONS)) errors.push("cli_decision.reason_codes are not the approved vocabulary");
+  if (!hasGlossaryAdmissionReasonCodesByOutcome(layerAuthority.reason_codes_by_outcome)) errors.push("cli_decision.reason_codes_by_outcome is not authoritative");
+  if (!strings(mapping(layerAuthority.reason_codes_by_outcome)?.[String(decision.outcome)]).includes(String(decision.reason))) errors.push("cli_decision.reason is not allowed for cli_decision.outcome");
   if (decision.candidate_id !== capsule.candidate_id || decision.candidate_revision !== capsule.candidate_revision || decision.candidate_capsule_sha256 !== capsule.capsule_sha256 || decision.generation !== capsule.generation || decision.policy_version !== capsule.policy_version) {
     errors.push("cli_decision bindings do not match the capsule");
   }
+  if (decision.candidate_projection_sha256 !== receipt.candidate_projection_sha256) {
+    errors.push("cli_decision.candidate_projection_sha256 does not match the host receipt");
+  }
   if (decision.host_receipt_sha256 !== receipt.receipt_sha256) errors.push("cli_decision.host_receipt_sha256 does not match the host receipt");
+  if (decision.classification_contract_version !== receipt.schema_version) {
+    errors.push("cli_decision.classification_contract_version does not match the host receipt");
+  }
+  if (decision.semantic_fingerprint !== receipt.semantic_fingerprint) {
+    errors.push("cli_decision.semantic_fingerprint does not match the host receipt");
+  }
   const automatic = mapping(layerAuthority.automatic_admission);
-  if (decision.outcome === "automatic_admission" && capsule.provenance_kind !== automatic?.allowed_provenance?.toString().replace("provenance_variants.", "")) {
-    errors.push("cli_decision automatic_admission is disabled for inferred provenance");
+  const automaticClassification = mapping(automatic?.required_classification);
+  if (decision.outcome === "automatic_admission") {
+    if (capsule.provenance_kind !== automatic?.allowed_provenance?.toString().replace("provenance_variants.", "")) {
+      errors.push("cli_decision automatic_admission is disabled for inferred provenance");
+    }
+    const classification = mapping(receipt.classification);
+    if (
+      classification?.scope !== automaticClassification?.scope ||
+      classification?.consistency !== automaticClassification?.consistency ||
+      classification?.term !== capsule.term ||
+      classification?.meaning !== capsule.meaning
+    ) {
+      errors.push("cli_decision automatic_admission requires the exact personal consistent capsule classification");
+    }
   }
   const miningAdmission = mapping(mapping(loaded.authority.personal_mining_authority)?.admission);
   if (miningAdmission?.inferred_automatic_admission !== "disabled") errors.push("inferred automatic admission must remain disabled");
@@ -650,7 +726,7 @@ export function createGlossaryAdmissionDecision(input: {
   capsule: GlossaryEvidenceCapsule;
   receipt: GlossaryHostClassificationReceipt;
   outcome: (typeof ADMISSION_OUTCOMES)[number];
-  reason: string;
+  reason: GlossaryAdmissionReason;
 }): GlossaryAdmissionDecision {
   const decision = {
     schema_version: LAYER_SCHEMAS.cli_decision,
@@ -658,7 +734,10 @@ export function createGlossaryAdmissionDecision(input: {
     candidate_id: input.capsule.candidate_id,
     candidate_revision: input.capsule.candidate_revision,
     candidate_capsule_sha256: input.capsule.capsule_sha256,
+    candidate_projection_sha256: input.receipt.candidate_projection_sha256,
     host_receipt_sha256: input.receipt.receipt_sha256,
+    classification_contract_version: input.receipt.schema_version,
+    semantic_fingerprint: input.receipt.semantic_fingerprint,
     generation: input.capsule.generation,
     policy_version: input.capsule.policy_version,
     outcome: input.outcome,
@@ -845,8 +924,10 @@ export function validatePersonalCandidateContracts(authority: Mapping): string[]
   const candidate = mapping(authority.candidate_contracts);
   if (!candidate) return ["candidate_contracts is required"];
   if (candidate.schema_version !== CANDIDATE_CONTRACTS_SCHEMA) errors.push("candidate_contracts.schema_version is invalid");
-  if (candidate.status !== "authority_only") errors.push("candidate_contracts.status must be authority_only");
-  if (candidate.implementation_boundary !== "contracts_only_no_candidate_runtime") errors.push("candidate_contracts must remain contracts-only");
+  if (candidate.status !== "active_partial") errors.push("candidate_contracts.status must be active_partial");
+  if (candidate.implementation_boundary !== "receipt_validation_and_deterministic_decision_runtime_only") {
+    errors.push("candidate_contracts must scope runtime to receipt validation and deterministic decisions");
+  }
   if (!exactStrings(candidate.layers && Object.keys(mapping(candidate.layers) ?? {}), LAYERS)) errors.push("candidate_contracts.layers must contain exactly the five candidate layers");
   const owners = LAYERS.map((name) => mapping(candidate.layers)?.[name]).map(mapping).map((item) => String(item?.owner ?? ""));
   if (new Set(owners).size !== LAYERS.length || LAYERS.some((name, index) => owners[index] !== LAYER_OWNERS[name])) errors.push("candidate contract layer owners must be distinct and authoritative");
@@ -886,12 +967,7 @@ export function validatePersonalCandidateContracts(authority: Mapping): string[]
   if (!exactStrings(classification?.fields, HOST_CLASSIFICATION_FIELDS) || classification?.term !== "shared_primitive.fields.term" || classification?.meaning !== "shared_primitive.fields.meaning" || classification?.scope !== "packages/cli/src/registries/glossaryTermIdentity.ts#GlossaryCandidateScope" || !exactStrings(classification?.consistency_values, CONSISTENCY_VALUES)) {
     errors.push("host classification must expose only the approved semantic fields and consistency vocabulary");
   }
-  const decisionLayer = mapping(layers?.cli_decision);
-  if (!exactStrings(decisionLayer?.outcomes, ADMISSION_OUTCOMES)) errors.push("CLI decision outcomes must use the approved vocabulary");
-  const automatic = mapping(decisionLayer?.automatic_admission);
-  if (automatic?.allowed_provenance !== "provenance_variants.personal_explicit_definition" || automatic?.inferred_automatic_admission !== "disabled") {
-    errors.push("CLI automatic admission must be explicit-only and inferred automatic admission disabled");
-  }
+  errors.push(...validateGlossaryCandidateDecisionAuthority(authority));
   const reviews = mapping(mapping(mapping(authority.personal_mining_authority)?.privacy)?.reviews);
   const reviewLayer = mapping(layers?.review_record);
   if (!exactStrings(reviewLayer?.dispositions_from, ["personal_mining_authority.privacy.reviews.dispositions"]) || !exactStrings(reviews?.dispositions, PERSONAL_REVIEW_DISPOSITIONS)) {

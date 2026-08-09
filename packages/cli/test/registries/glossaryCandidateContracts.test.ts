@@ -30,9 +30,24 @@ import {
   stableGlossaryTermIdentity,
 } from "../../src/registries/glossaryTermIdentity.js";
 import { glossaryEvidenceSetDigest } from "../../src/registries/glossaryMiningAuthority.js";
+import {
+  GLOSSARY_ADMISSION_OUTCOMES,
+  GLOSSARY_ADMISSION_REASONS_BY_OUTCOME,
+  type GlossaryAdmissionOutcome,
+  type GlossaryAdmissionReason,
+} from "../../src/registries/glossaryCandidateDecisionAuthority.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const AUTHORITY_PATH = path.join(ROOT, "references/artifacts/glossary-entry-contract.yaml");
+const PROJECTION_SHA256 = "a".repeat(64);
+const ADMISSION_REASON_PAIRS = GLOSSARY_ADMISSION_OUTCOMES.flatMap((outcome) =>
+  GLOSSARY_ADMISSION_REASONS_BY_OUTCOME[outcome].map((reason) => ({ outcome, reason })),
+) as Array<{ outcome: GlossaryAdmissionOutcome; reason: GlossaryAdmissionReason }>;
+const CONTRADICTORY_REASON_PAIRS = ADMISSION_REASON_PAIRS.flatMap(({ outcome, reason }) =>
+  GLOSSARY_ADMISSION_OUTCOMES
+    .filter((rejectedOutcome) => rejectedOutcome !== outcome)
+    .map((rejectedOutcome) => ({ outcome, reason, rejectedOutcome })),
+);
 
 function authority(): Record<string, any> {
   return YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8")) as Record<string, any>;
@@ -114,6 +129,7 @@ function capsule(overrides: Partial<Parameters<typeof createGlossaryEvidenceCaps
 function receiptFor(candidate: GlossaryEvidenceCapsule = capsule()): GlossaryHostClassificationReceipt {
   return createGlossaryHostClassificationReceipt({
     capsule: candidate,
+    candidate_projection_sha256: PROJECTION_SHA256,
     classification: {
       term: candidate.term,
       meaning: candidate.meaning,
@@ -123,6 +139,11 @@ function receiptFor(candidate: GlossaryEvidenceCapsule = capsule()): GlossaryHos
       confidence: 78,
     },
   });
+}
+
+function resealDecision(value: Record<string, unknown>): Record<string, unknown> {
+  const { decision_sha256: _decisionSha256, ...body } = value;
+  return { ...body, decision_sha256: glossaryCanonicalSha256(body) };
 }
 
 function personalEntry() {
@@ -182,6 +203,9 @@ describe("layered personal glossary candidate contracts", () => {
     ["missing inferred distinctness", (model: Record<string, any>) => {
       delete model.provenance_variants.personal_inferred_usage.distinctness;
     }, "personal_inferred_usage must require two distinct source IDs and evidence anchors"],
+    ["contradictory outcome reason", (model: Record<string, any>) => {
+      model.candidate_contracts.layers.cli_decision.reason_codes_by_outcome.abstain.push("classification_changed");
+    }, "CLI decision reasons must declare the approved outcome/reason pairs"],
   ])("rejects %s authority boundary", (_name, mutate, expected) => {
     const model = authority();
     mutate(model);
@@ -311,10 +335,11 @@ describe("layered personal glossary candidate contracts", () => {
   it("keeps host classification semantic and rejects admission or mutation authority", () => {
     const candidate = capsule();
     const receipt = receiptFor(candidate);
-    expect(validateGlossaryHostClassificationReceipt(receipt, candidate)).toEqual([]);
+    const context = { candidateProjectionSha256: receipt.candidate_projection_sha256 };
+    expect(validateGlossaryHostClassificationReceipt(receipt, candidate, context)).toEqual([]);
 
     const forbidden = { ...receipt, admission: "automatic_admission" };
-    expect(validateGlossaryHostClassificationReceipt(forbidden, candidate)).toContain(
+    expect(validateGlossaryHostClassificationReceipt(forbidden, candidate, context)).toContain(
       "candidate_contracts.layers.host_classification_receipt contains fields outside its contract: admission",
     );
 
@@ -322,7 +347,7 @@ describe("layered personal glossary candidate contracts", () => {
       ...receipt,
       classification: { ...receipt.classification, mutation: "write" },
     };
-    expect(validateGlossaryHostClassificationReceipt(nested, candidate)).toContain(
+    expect(validateGlossaryHostClassificationReceipt(nested, candidate, context)).toContain(
       "host_classification_receipt.classification contains fields outside its contract: mutation",
     );
 
@@ -330,7 +355,7 @@ describe("layered personal glossary candidate contracts", () => {
       ...receipt,
       classification: { ...receipt.classification, confidence: 101 },
     };
-    expect(validateGlossaryHostClassificationReceipt(badConfidence, candidate)).toContain(
+    expect(validateGlossaryHostClassificationReceipt(badConfidence, candidate, context)).toContain(
       "host_classification_receipt.classification.confidence must be an integer from shared_primitive.fields.confidence",
     );
 
@@ -338,13 +363,18 @@ describe("layered personal glossary candidate contracts", () => {
       ...receipt,
       classification: { ...receipt.classification, consistency: "made-up" },
     };
-    expect(validateGlossaryHostClassificationReceipt(badConsistency, candidate)).toContain(
+    expect(validateGlossaryHostClassificationReceipt(badConsistency, candidate, context)).toContain(
       "host_classification_receipt.classification.consistency is invalid",
     );
 
     const mismatch = { ...receipt, candidate_revision: "f".repeat(64) };
-    expect(validateGlossaryHostClassificationReceipt(mismatch, candidate)).toContain(
+    expect(validateGlossaryHostClassificationReceipt(mismatch, candidate, context)).toContain(
       "host_classification_receipt.candidate_revision does not match the capsule",
+    );
+
+    const staleProjection = { ...receipt, candidate_projection_sha256: "b".repeat(64) };
+    expect(validateGlossaryHostClassificationReceipt(staleProjection, candidate, context)).toContain(
+      "host_classification_receipt.candidate_projection_sha256 does not match the current projection",
     );
   });
 
@@ -355,9 +385,30 @@ describe("layered personal glossary candidate contracts", () => {
       capsule: candidate,
       receipt,
       outcome: "automatic_admission",
-      reason: "one explicit definition with one resolved anchor",
+      reason: "explicit_current_authorized",
     });
     expect(validateGlossaryAdmissionDecision(decision, candidate, receipt)).toEqual([]);
+
+    const changedClassification = createGlossaryHostClassificationReceipt({
+      capsule: candidate,
+      candidate_projection_sha256: PROJECTION_SHA256,
+      classification: {
+        term: candidate.term,
+        meaning: "a different semantic meaning",
+        scope: "ambiguous",
+        permanence: "durable",
+        consistency: "consistent",
+        confidence: 100,
+      },
+    });
+    expect(() =>
+      createGlossaryAdmissionDecision({
+        capsule: candidate,
+        receipt: changedClassification,
+        outcome: "automatic_admission",
+        reason: "explicit_current_authorized",
+      }),
+    ).toThrow("cli_decision automatic_admission requires the exact personal consistent capsule classification");
 
     const inferred = capsule({
       provenance_kind: "personal_inferred_usage",
@@ -369,7 +420,10 @@ describe("layered personal glossary candidate contracts", () => {
       candidate_id: inferred.candidate_id,
       candidate_revision: inferred.candidate_revision,
       candidate_capsule_sha256: inferred.capsule_sha256,
+      candidate_projection_sha256: inferredReceipt.candidate_projection_sha256,
       host_receipt_sha256: inferredReceipt.receipt_sha256,
+      classification_contract_version: inferredReceipt.schema_version,
+      semantic_fingerprint: inferredReceipt.semantic_fingerprint,
       generation: inferred.generation,
       policy_version: inferred.policy_version,
       decision_sha256: "0".repeat(64),
@@ -389,6 +443,23 @@ describe("layered personal glossary candidate contracts", () => {
     );
   });
 
+  it.each(ADMISSION_REASON_PAIRS)("accepts the authority-owned $outcome/$reason pair", ({ outcome, reason }) => {
+    const candidate = capsule();
+    const receipt = receiptFor(candidate);
+    const decision = createGlossaryAdmissionDecision({ capsule: candidate, receipt, outcome, reason });
+    expect(validateGlossaryAdmissionDecision(decision, candidate, receipt)).toEqual([]);
+  });
+
+  it.each(CONTRADICTORY_REASON_PAIRS)("rejects digest-valid $rejectedOutcome/$reason for $outcome", ({ outcome, reason, rejectedOutcome }) => {
+    const candidate = capsule();
+    const receipt = receiptFor(candidate);
+    const valid = createGlossaryAdmissionDecision({ capsule: candidate, receipt, outcome, reason });
+    const contradictory = resealDecision({ ...valid, outcome: rejectedOutcome });
+    expect(validateGlossaryAdmissionDecision(contradictory, candidate, receipt)).toContain(
+      "cli_decision.reason is not allowed for cli_decision.outcome",
+    );
+  });
+
   it("binds review lifecycle and personal publication without changing the shared entry contract", () => {
     const candidate = capsule();
     const receipt = receiptFor(candidate);
@@ -396,7 +467,7 @@ describe("layered personal glossary candidate contracts", () => {
       capsule: candidate,
       receipt,
       outcome: "review_required",
-      reason: "host classification needs user meaning review",
+      reason: "classification_changed",
     });
     const review = createGlossaryReviewRecord({
       capsule: candidate,

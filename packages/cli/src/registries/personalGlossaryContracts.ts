@@ -34,6 +34,7 @@ export interface PersonalGlossaryCandidateProjectionContract {
   candidateReadDefaultLimit: number;
   candidateReadMaximumLimit: number;
   candidateReadOrder: string;
+  candidateReadListProjectionBindingField: string;
   candidateReadSourceFamilies: string[];
   candidateReadProvenanceKinds: string[];
   candidateReadScopes: string[];
@@ -43,6 +44,7 @@ export interface PersonalGlossaryCandidateProjectionContract {
   candidateReadCursorInvalidBehavior: string;
   candidateReadCursorUnavailableBehavior: string;
   candidateReadExactRequiredBindings: string[];
+  candidateReadExactProjectionBindingField: string;
   candidateReadExactOccurrencesMax: number;
   candidateReadSafeContextMaxUtf8Bytes: number;
   candidateReadExactMaxSerializedUtf8Bytes: number;
@@ -52,6 +54,21 @@ export interface PersonalGlossaryCandidateProjectionContract {
   candidateReadSafeContextViewExpiry: string;
   candidateReadSafeContextViewMutation: string;
   candidateReadSafeContextViewSnapshot: string;
+}
+
+export interface PersonalGlossaryCandidateDecisionContract {
+  command: string;
+  requestSchemaVersion: string;
+  requestFields: string[];
+  maxRequestUtf8Bytes: number;
+  resultSchemaVersion: string;
+  resultFields: string[];
+  resultStatuses: string[];
+  reasonCodesByOutcome: Record<string, string[]>;
+  maxResultUtf8Bytes: number;
+  automaticProvenance: string;
+  inferredAutomaticAdmission: string;
+  qualityGate: string;
 }
 
 export interface ConfirmedVariantGuardContract {

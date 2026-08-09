@@ -2,6 +2,7 @@ import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.js";
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
 import { personalGlossaryCandidateProjectionContract } from "../registries/glossaryCandidateProjectionContract.js";
+import { personalGlossaryCandidateDecisionContract } from "../registries/glossaryCandidateDecisionContract.js";
 import { describeRouteReceipt } from "../registries/hybridRoute.js";
 import { advertisedValidateFamilyNames } from "./commands/validate.js";
 import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
@@ -416,6 +417,7 @@ export function printCheckHelp(sub?: string): string {
 export function printReportHelp(): string {
   const profileGlossary = personalGlossaryOutputContract();
   const candidateReads = personalGlossaryCandidateProjectionContract();
+  const candidateDecision = personalGlossaryCandidateDecisionContract();
   return [
     "usage: agentera report [-h] [--format {text,json}] [--project VALUE] [--sources {active,all}]",
     "                       | agentera report refresh [--dry-run|--consent local-history]",
@@ -428,6 +430,7 @@ export function printReportHelp(): string {
     "                         [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN] --format json",
     `                       | ${candidateReads.candidateReadCommand} get --candidate-id ID --candidate-revision REVISION`,
     "                         --generation GENERATION --policy-version POLICY --format json",
+    `                       | ${candidateDecision.command} --input <file|-> --format json`,
     "",
     "Privacy-gated usage analytics over an existing corpus.",
     "Default analytics use --sources active and exclude historical imports.",
@@ -442,6 +445,10 @@ export function printReportHelp(): string {
     "Both forms emit JSON on stdout. Exit 0 reports a current page or exact candidate, exit 1 reports unavailable/stale state, and exit 2",
     "reports malformed arguments. Copy a returned next_cursor exactly; it binds the collection, generation, policy, filters, limit, order,",
     "and expiry-aware safe-context availability snapshot.",
+    "Personal glossary decisions accept one host classification receipt through structured input. The CLI binds it to the",
+    "current private projection, current evidence, and quality gate, then emits automatic_admission, review_required, or abstain.",
+    "It never writes a review, profile, project glossary, candidate projection, or project state. Host confidence cannot enable",
+    "inferred automatic admission.",
     "",
     "Corpus extraction flags (report refresh with --consent local-history):",
     "  These flags deselect runtimes that would otherwise be included when their",

@@ -615,6 +615,8 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
       ["profile_grounding.absent", (authority) => { authority.consumer_boundary.profile_grounding.recovery.absent = `x${authority.consumer_boundary.profile_grounding.recovery.absent}`; }, ["report", "profile-grounding", "--format", "json"], undefined],
       ["advice.command", (authority) => { authority.consumer_boundary.advice_resolution.invocation.command = "npx -y agentera@latest report glossary-advice --input REQUEST --format json"; }, ["report", "glossary-advice", "--input", "-", "--format", "json"], JSON.stringify({ schema_version: "agentera.glossaryAdviceRequest.v1", requested_term: "test", host_review: null })],
       ["candidate_retrieval.command", (authority) => { authority.personal_mining_authority.candidate_retrieval.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined, true],
+      ["candidate_decision.command", (authority) => { authority.candidate_contracts.layers.cli_decision.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined, true],
+      ["candidate_decision.reason_pairs", (authority) => { authority.candidate_contracts.layers.cli_decision.reason_codes_by_outcome.abstain.push("classification_changed"); }, ["schema", "--format", "json"], undefined, true],
     ];
     try {
       for (const [owner, mutate, args, input, structuredError] of mutations) {

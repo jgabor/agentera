@@ -107,6 +107,7 @@ function contract(): CandidateReadContract {
     value.candidateReadDefaultLimit !== 20 ||
     value.candidateReadMaximumLimit !== 50 ||
     value.candidateReadOrder !== "candidate_id_then_candidate_revision_then_capsule_sha256" ||
+    value.candidateReadListProjectionBindingField !== "candidate_projection_sha256" ||
     JSON.stringify(sourceFamilies) !== JSON.stringify(["explicit", "recurring"]) ||
     JSON.stringify(provenanceKinds) !==
       JSON.stringify([
@@ -131,6 +132,7 @@ function contract(): CandidateReadContract {
     value.candidateReadCursorUnavailableBehavior !== "cursor_snapshot_unavailable" ||
     JSON.stringify(value.candidateReadExactRequiredBindings) !==
       JSON.stringify(["candidate_id", "candidate_revision", "generation", "policy_version"]) ||
+    value.candidateReadExactProjectionBindingField !== "candidate_projection_sha256" ||
     value.candidateReadExactOccurrencesMax !== 100 ||
     value.candidateReadSafeContextMaxUtf8Bytes !== 500 ||
     value.candidateReadExactMaxSerializedUtf8Bytes !== 32_768 ||
@@ -724,6 +726,7 @@ function listCandidates(io: Io, options: ListOptions, value: CandidateReadContra
       remaining > 0 || projection.report.coverage.status === "degraded" ? "degraded" : "ok",
     generation: projection.generation,
     policy_version: projection.policy_version,
+    candidate_projection_sha256: projection.projection_sha256,
     entries: entries.map(candidateSummary),
     counts: {
       total: candidates.length,
@@ -885,6 +888,7 @@ function exactCandidate(io: Io, options: ExactOptions, value: CandidateReadContr
     status: "ok",
     generation: projection.generation,
     policy_version: projection.policy_version,
+    candidate_projection_sha256: projection.projection_sha256,
     entry: {
       candidate_id: candidate.capsule.candidate_id,
       candidate_revision: candidate.capsule.candidate_revision,
