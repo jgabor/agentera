@@ -1,0 +1,15 @@
+id: bbkdappvwh
+artifact: progress
+record:
+  timestamp: 2026-08-09 11:52
+  type: fix
+  phase: build
+  what: Correct audit-1 expiry-safe private candidate read and machine-schema findings.
+  context:
+    intent: Record the verified audit-1 correction without changing implementation, tests, task lifecycle, or evaluator provenance.
+    constraints: Use the local typed progress writer and preserve qzpxczzzzt plus audit-1.
+    scope: One progress-cycle evidence record for private personal glossary candidate reads.
+  discovered: Audit-1 found expired safe excerpts still visible in list and exact reads, stale safe-context counts, and incomplete candidate-retrieval schema automation fields.
+  verified: "Expiry-boundary regression passed: list changed safe_context_available to false, exact returned safe_context null, and neither output contained the expired safe-context text. List safe-context counts reconciled available 0 plus count 2 to retained_count 2, reported expired 2, and a pre-expiry next_cursor failed after expiry with cursor_snapshot_unavailable. Persisted projection bytes were unchanged. The rebuilt local schema exposed source-family, provenance-kind, and scope vocabularies; cursor authority, vocabulary, bindings, and behaviors; order, default and maximum limits; and list and exact 32768-byte output bounds. Targeted source tests passed 2 files and 97 tests. Full source tests passed 236 files, 3758 tests, and 1 skipped. Package verification passed 3 files and 34 tests. Typecheck, build, rebuilt local schema smoke, and compact passed."
+  next: Task tlholqmvtn remains pending for independent evaluator review; audit-1 remains recorded and no commit was created.
+  publication_order: 134

@@ -420,6 +420,7 @@ export function validateGlossaryEntryContract(
       "bounded_admission",
       "bounded_explicit_discovery",
       "bounded_candidate_projection",
+      "bounded_candidate_retrieval",
       "explicit_classification",
       "inferred_evidence_check",
       "profile_full_rendering",
@@ -428,7 +429,7 @@ export function validateGlossaryEntryContract(
     !sameStrings(personalImplementation?.inactive, ["lookup"])
   ) {
     errors.push(
-      "personal rendering and persistence must be active_partial while lookup remains inactive",
+      "personal implementation must be active_partial while lookup remains inactive",
     );
   }
   if (

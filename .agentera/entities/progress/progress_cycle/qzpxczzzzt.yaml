@@ -1,0 +1,16 @@
+id: qzpxczzzzt
+artifact: progress
+record:
+  timestamp: 2026-08-09 10:53
+  type: feat
+  phase: build
+  what: Expose private bounded personal glossary candidate list and exact revision reads.
+  context:
+    intent: Expose mutation-free machine-readable personal glossary candidate reads.
+    constraints: Keep user-local privacy, content exclusion, project isolation, host filesystem ownership, opaque cursor binding, and no prompts.
+    unknowns: Upstream individual abstentions are not persisted by the current projection and are not reconstructed.
+    scope: Private report list and exact read, authority, help, schema, package surface, tests, and census.
+  discovered: The current projection retains candidates and report counts, not upstream abstention rows. The list reports only validated projection-local selection and safe-context omission counts.
+  verified: pnpm -C packages/cli test passed 236 files and 3,756 tests with 1 skipped. pnpm -C packages/cli run verify:package passed 3 files and 34 tests. Typecheck and build passed. The rebuilt local CLI smoke returned a page, continuation, exact read, and fail-closed stale revision with no stderr and unchanged projection bytes. node packages/cli/dist/bin/agentera.js check compact passed.
+  next: Evaluator must audit this uncommitted task before task status or commit changes.
+  publication_order: 133

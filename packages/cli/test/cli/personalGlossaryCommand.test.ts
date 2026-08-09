@@ -63,7 +63,7 @@ function run(args: string[], stdin = ""): { rc: number; out: string; err: string
 describe("agentera report profile-glossary", () => {
   it("discovers one authority-backed command contract through report help and schema", () => {
     expect(printReportHelp()).toContain("agentera report profile-glossary --input <file|-> [--dry-run] --format json");
-    expect((buildSchemaPayload().integration as any).personal_glossary).toEqual({
+    expect((buildSchemaPayload().integration as any).personal_glossary).toMatchObject({
       command: "agentera report profile-glossary",
       request_schema_version: "agentera.personalGlossaryUpdateRequest.v1",
       output_statuses: ["changed", "unchanged_replay", "dry_run_candidate"],

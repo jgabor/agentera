@@ -17,6 +17,7 @@ import { CANONICAL_SHARED_SKILL_PATH } from "../../setup/sharedSkill.js";
 import { loadStateRetrievalAuthority } from "../../state/retrievalAuthority.js";
 import { entityListFamilies } from "../../state/entityRetrievalHelp.js";
 import { personalGlossaryOutputContract } from "../../registries/glossaryEntryContract.js";
+import { personalGlossaryCandidateProjectionContract } from "../../registries/glossaryCandidateProjectionContract.js";
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
 import { advertisedValidateFamilyNames } from "./validate.js";
 import { SCHEMA_TOP_LEVEL_COMMANDS } from "../dispatch/projections.js";
@@ -375,6 +376,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   gaps.push(...schemaGaps);
   const retrievalAuthority = loadStateRetrievalAuthority();
   const profileGlossary = personalGlossaryOutputContract();
+  const candidateReads = personalGlossaryCandidateProjectionContract();
 
   const authorityPath = integrationAuthorityPath();
 
@@ -423,6 +425,40 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
         request_schema_version: profileGlossary.requestSchemaVersion,
         output_statuses: profileGlossary.outputStatuses,
         project_checkout: "not_required",
+        candidate_retrieval: {
+          command: candidateReads.candidateReadCommand,
+          schema_version: candidateReads.candidateReadSchemaVersion,
+          list: {
+            default_limit: candidateReads.candidateReadDefaultLimit,
+            maximum_limit: candidateReads.candidateReadMaximumLimit,
+            max_serialized_utf8_bytes: candidateReads.candidateReadMaxSerializedUtf8Bytes,
+            order: candidateReads.candidateReadOrder,
+            source_families: candidateReads.candidateReadSourceFamilies,
+            provenance_kinds: candidateReads.candidateReadProvenanceKinds,
+            scopes: candidateReads.candidateReadScopes,
+            cursor: {
+              authority: candidateReads.candidateReadCursorAuthority,
+              vocabulary: candidateReads.candidateReadCursorVocabulary,
+              binding: candidateReads.candidateReadCursorBinding,
+              invalid_behavior: candidateReads.candidateReadCursorInvalidBehavior,
+              unavailable_behavior: candidateReads.candidateReadCursorUnavailableBehavior,
+            },
+          },
+          exact: {
+            required_bindings: candidateReads.candidateReadExactRequiredBindings,
+            occurrences_max: candidateReads.candidateReadExactOccurrencesMax,
+            safe_context_max_utf8_bytes: candidateReads.candidateReadSafeContextMaxUtf8Bytes,
+            max_serialized_utf8_bytes: candidateReads.candidateReadExactMaxSerializedUtf8Bytes,
+          },
+          safe_context_view: {
+            authority: candidateReads.candidateReadSafeContextViewAuthority,
+            retention_days: candidateReads.candidateReadSafeContextRetentionDays,
+            expiry: candidateReads.candidateReadSafeContextViewExpiry,
+            mutation: candidateReads.candidateReadSafeContextViewMutation,
+            snapshot: candidateReads.candidateReadSafeContextViewSnapshot,
+          },
+          project_checkout: "not_required",
+        },
       },
       historical_import: {
         source: "claude",

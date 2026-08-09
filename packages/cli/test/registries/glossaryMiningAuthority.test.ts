@@ -151,6 +151,25 @@ describe("personal glossary mining authority", () => {
           },
         },
       },
+      candidate_retrieval: {
+        status: "active",
+        command: {
+          canonical: "npx -y agentera@next report personal-glossary-candidates",
+          namespace: "report",
+          format: "json",
+          project_checkout: "not_required",
+        },
+        list: {
+          default_limit: 20,
+          maximum_limit: 50,
+          order: "candidate_id_then_candidate_revision_then_capsule_sha256",
+        },
+        exact: {
+          required_bindings: ["candidate_id", "candidate_revision", "generation", "policy_version"],
+          occurrences_max: 100,
+          safe_context_max_utf8_bytes: 500,
+        },
+      },
     });
     expect(personalGlossaryAdmissionContract()).toMatchObject({
       conversationSignalTypes: [
@@ -201,6 +220,39 @@ describe("personal glossary mining authority", () => {
       sourceExcerptMaxUtf8Bytes: 4096,
       pendingExcerptDays: 30,
       storageFile: "candidate-projection.json",
+      candidateReadCommand: "agentera report personal-glossary-candidates",
+      candidateReadDefaultLimit: 20,
+      candidateReadMaximumLimit: 50,
+      candidateReadSourceFamilies: ["explicit", "recurring"],
+      candidateReadProvenanceKinds: [
+        "personal_explicit_definition",
+        "personal_inferred_conversation",
+        "personal_inferred_usage",
+      ],
+      candidateReadCursorVocabulary: "opaque_snapshot_cursor",
+      candidateReadCursorBinding: [
+        "collection",
+        "generation",
+        "policy_version",
+        "filters",
+        "limit",
+        "order",
+        "snapshot",
+      ],
+      candidateReadExactRequiredBindings: [
+        "candidate_id",
+        "candidate_revision",
+        "generation",
+        "policy_version",
+      ],
+      candidateReadMaxSerializedUtf8Bytes: 32768,
+      candidateReadExactMaxSerializedUtf8Bytes: 32768,
+      candidateReadSafeContextViewAuthority: "personal_mining_authority.privacy.retention",
+      candidateReadSafeContextRetentionDays: 30,
+      candidateReadSafeContextViewExpiry: "expires_at_lte_read_time_is_unavailable",
+      candidateReadSafeContextViewMutation: "forbidden",
+      candidateReadSafeContextViewSnapshot:
+        "effective_availability_bound_to_opaque_cursor_snapshot",
     });
   });
 
@@ -249,7 +301,7 @@ describe("personal glossary mining authority", () => {
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.selection.candidates_max = 51;
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection diversity",
@@ -257,7 +309,7 @@ describe("personal glossary mining authority", () => {
         authority.personal_mining_authority.candidate_projection.selection.source_families.recurring =
           [];
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection tie break",
@@ -265,14 +317,14 @@ describe("personal glossary mining authority", () => {
         authority.personal_mining_authority.candidate_projection.selection.tie_break =
           "source-order";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection excerpt exclusion",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.excerpts.source_max_utf8_bytes = 0;
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection secret reason",
@@ -280,7 +332,7 @@ describe("personal glossary mining authority", () => {
         authority.personal_mining_authority.privacy.content_exclusion.candidate_reason =
           "redact_secret";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection conceptual terminology",
@@ -288,7 +340,7 @@ describe("personal glossary mining authority", () => {
         authority.personal_mining_authority.privacy.content_exclusion.conceptual_terminology =
           "reject";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection filesystem ownership",
@@ -296,21 +348,39 @@ describe("personal glossary mining authority", () => {
         authority.personal_mining_authority.privacy.storage.filesystem.symlink_confinement =
           "agentera_enforced";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection retention purge",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.retention.purge = "project";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "candidate projection replay persistence",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.persistence.replay = "overwrite";
       },
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+    ],
+    [
+      "candidate retrieval cursor binding",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_retrieval.list.cursor.binding = [
+          "collection",
+          "snapshot",
+        ];
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+    ],
+    [
+      "candidate retrieval expiry read view",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_retrieval.safe_context_view.mutation =
+          "write";
+      },
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ],
     [
       "term identity",

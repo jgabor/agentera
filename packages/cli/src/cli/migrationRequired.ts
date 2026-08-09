@@ -25,7 +25,10 @@ export function requestedMigrationFailureFormat(argv: string[]): Format {
 export function requiresCompletedEntityCutover(argv: string[]): boolean {
   const [command, subcommand, verb] = argv;
   if (["--version", "version", "app-home", "doctor", "schema", "route", "upgrade"].includes(command)) return false;
-  if (command === "report" && ["profile-glossary", "profile-grounding"].includes(subcommand)) return false;
+  if (
+    command === "report" &&
+    ["profile-glossary", "profile-grounding", "personal-glossary-candidates"].includes(subcommand)
+  ) return false;
   if (command === "prime" && (argv.includes("--guidance") || !argv.includes("--context") || value(argv, "--context") === "status")) return false;
   if (command === "query") return !argv.includes("--list-artifacts");
   if (command === "state" && subcommand === "query" && argv.includes("--list-artifacts")) return false;

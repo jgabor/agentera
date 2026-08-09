@@ -29,6 +29,14 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   const excerptCompatibility = mapping(excerpts?.compatibility);
   const retention = mapping(projection?.retention);
   const persistence = mapping(projection?.persistence);
+  const retrieval = mapping(mining?.candidate_retrieval);
+  const retrievalCommand = mapping(retrieval?.command);
+  const list = mapping(retrieval?.list);
+  const filters = mapping(list?.filters);
+  const cursor = mapping(list?.cursor);
+  const safeContextView = mapping(retrieval?.safe_context_view);
+  const exact = mapping(retrieval?.exact);
+  const occurrence = mapping(exact?.occurrence);
   const privacy = mapping(mining?.privacy);
   const contentExclusion = mapping(privacy?.content_exclusion);
   const storageFilesystem = mapping(mapping(privacy?.storage)?.filesystem);
@@ -91,7 +99,69 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     persistence?.replay !== "byte_identical_projection_is_unchanged_replay" ||
     persistence?.project_storage !== "forbidden" ||
     persistence?.public_reads !== "forbidden" ||
+    persistence?.private_machine_reads !== "candidate_retrieval" ||
     persistence?.review_disposition_writes !== "forbidden" ||
+    retrieval?.status !== "active" ||
+    retrieval?.owner !== "private_user_local_candidate_retrieval" ||
+    retrieval?.runtime !==
+      "packages/cli/src/cli/commands/personalGlossaryCandidateReads.ts#runPersonalGlossaryCandidateReadsCommand" ||
+    !nonEmpty(retrieval?.input) ||
+    !nonEmpty(retrieval?.rule) ||
+    retrievalCommand?.canonical !==
+      "npx -y agentera@next report personal-glossary-candidates" ||
+    retrievalCommand?.namespace !== "report" ||
+    retrievalCommand?.format !== "json" ||
+    retrievalCommand?.project_checkout !== "not_required" ||
+    list?.schema_version !== "agentera.personalGlossaryCandidateRetrieval.v1" ||
+    list?.default_limit !== 20 ||
+    list?.maximum_limit !== 50 ||
+    list?.max_serialized_utf8_bytes !== 32768 ||
+    list?.order !== "candidate_id_then_candidate_revision_then_capsule_sha256" ||
+    !sameStrings(filters?.source_family, ["explicit", "recurring"]) ||
+    filters?.provenance_kind_from !== "candidate_projection.selection.source_families" ||
+    !sameStrings(filters?.scope, ["personal", "ambiguous"]) ||
+    cursor?.authority !==
+      "references/artifacts/state-storage-authority.yaml#entity_target.public_retrieval.policy.cursor" ||
+    cursor?.vocabulary !== "opaque_snapshot_cursor" ||
+    !sameStrings(cursor?.binding, [
+      "collection",
+      "generation",
+      "policy_version",
+      "filters",
+      "limit",
+      "order",
+      "snapshot",
+    ]) ||
+    cursor?.invalid_behavior !== "cursor_invalid" ||
+    cursor?.unavailable_behavior !== "cursor_snapshot_unavailable" ||
+    !nonEmpty(list?.summaries) ||
+    !nonEmpty(list?.abstentions) ||
+    !nonEmpty(list?.coverage) ||
+    safeContextView?.authority !== "personal_mining_authority.privacy.retention" ||
+    safeContextView?.retention_days !== 30 ||
+    safeContextView?.expiry !== "expires_at_lte_read_time_is_unavailable" ||
+    safeContextView?.mutation !== "forbidden" ||
+    safeContextView?.snapshot !== "effective_availability_bound_to_opaque_cursor_snapshot" ||
+    !nonEmpty(safeContextView?.rule) ||
+    exact?.schema_version !== "agentera.personalGlossaryCandidateRetrieval.v1" ||
+    !sameStrings(exact?.required_bindings, [
+      "candidate_id",
+      "candidate_revision",
+      "generation",
+      "policy_version",
+    ]) ||
+    exact?.occurrences_max !== 100 ||
+    exact?.safe_context_max_utf8_bytes !== 500 ||
+    exact?.max_serialized_utf8_bytes !== 32768 ||
+    occurrence?.schema_version !== "agentera.personalGlossaryCandidateOccurrence.v1" ||
+    occurrence?.identity !== "opaque_sha256_of_validated_evidence_and_candidate_binding" ||
+    !sameStrings(occurrence?.allowed_fields, [
+      "occurrence_id",
+      "source_kind",
+      "signal_type",
+      "author_class",
+    ]) ||
+    !nonEmpty(exact?.rule) ||
     contentExclusion?.owner !== "glossary_content_policy" ||
     contentExclusion?.classification !== "actual_secret_or_sensitive_value" ||
     contentExclusion?.conceptual_terminology !== "eligible" ||
@@ -120,7 +190,7 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     !nonEmpty(persistence?.rule)
   ) {
     return [
-      "personal_mining_authority candidate projection must bound deterministic allocation, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
+      "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
     ];
   }
   return [];

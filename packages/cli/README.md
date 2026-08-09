@@ -112,6 +112,26 @@ reports full, summary-only, or unavailable detail without fabricating archives.
 See [UPGRADE.md](../../UPGRADE.md) for ownership, recovery, and migration
 details.
 
+## Private personal glossary candidate reads
+
+The user-local candidate projection has a separate read-only surface. It does
+not need a project checkout and never reads a project glossary.
+
+```bash
+npx -y agentera@next report personal-glossary-candidates list --limit 20 --format json
+npx -y agentera@next report personal-glossary-candidates get \
+  --candidate-id ID --candidate-revision REVISION \
+  --generation GENERATION --policy-version POLICY --format json
+```
+
+List cursors bind the current generation, policy, filters, limit, order, and
+expiry-aware safe-context availability snapshot. Safe context becomes
+unavailable at its 30-day expiry without changing persisted projection bytes;
+a cursor from an earlier availability view cannot resume. Exact reads return
+opaque validated occurrence identities and a currently available safe context,
+not raw source, anchor, session, project, or filesystem values. Both commands
+are non-interactive and mutation-free.
+
 ## Contributors
 
 Requires Node.js 22+ and pnpm 10.30.3.

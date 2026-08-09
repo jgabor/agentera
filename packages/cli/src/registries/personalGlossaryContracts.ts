@@ -29,6 +29,29 @@ export interface PersonalGlossaryCandidateProjectionContract {
   storageFile: string;
   candidateSecretReason: string;
   excerptSensitiveContentAction: string;
+  candidateReadCommand: string;
+  candidateReadSchemaVersion: string;
+  candidateReadDefaultLimit: number;
+  candidateReadMaximumLimit: number;
+  candidateReadOrder: string;
+  candidateReadSourceFamilies: string[];
+  candidateReadProvenanceKinds: string[];
+  candidateReadScopes: string[];
+  candidateReadMaxSerializedUtf8Bytes: number;
+  candidateReadCursorVocabulary: string;
+  candidateReadCursorBinding: string[];
+  candidateReadCursorInvalidBehavior: string;
+  candidateReadCursorUnavailableBehavior: string;
+  candidateReadExactRequiredBindings: string[];
+  candidateReadExactOccurrencesMax: number;
+  candidateReadSafeContextMaxUtf8Bytes: number;
+  candidateReadExactMaxSerializedUtf8Bytes: number;
+  candidateReadCursorAuthority: string;
+  candidateReadSafeContextViewAuthority: string;
+  candidateReadSafeContextRetentionDays: number;
+  candidateReadSafeContextViewExpiry: string;
+  candidateReadSafeContextViewMutation: string;
+  candidateReadSafeContextViewSnapshot: string;
 }
 
 export interface ConfirmedVariantGuardContract {

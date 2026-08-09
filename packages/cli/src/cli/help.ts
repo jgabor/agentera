@@ -1,6 +1,7 @@
 import { CAPABILITY_ROUTING_NAMES } from "./commands/capability.js";
 import { verbsForArtifact, WRITABLE_ARTIFACTS } from "../state/write/operations.js";
 import { personalGlossaryOutputContract } from "../registries/glossaryEntryContract.js";
+import { personalGlossaryCandidateProjectionContract } from "../registries/glossaryCandidateProjectionContract.js";
 import { describeRouteReceipt } from "../registries/hybridRoute.js";
 import { advertisedValidateFamilyNames } from "./commands/validate.js";
 import { entityListFamilies, entityRetrievalFamilyForHelpArgs, type EntityListFamilyHelp } from "../state/entityRetrievalHelp.js";
@@ -414,6 +415,7 @@ export function printCheckHelp(sub?: string): string {
 
 export function printReportHelp(): string {
   const profileGlossary = personalGlossaryOutputContract();
+  const candidateReads = personalGlossaryCandidateProjectionContract();
   return [
     "usage: agentera report [-h] [--format {text,json}] [--project VALUE] [--sources {active,all}]",
     "                       | agentera report refresh [--dry-run|--consent local-history]",
@@ -422,6 +424,10 @@ export function printReportHelp(): string {
     `                       | ${profileGlossary.command} --input <file|-> [--dry-run] --format json`,
     "                       | agentera report glossary-advice --input <file|-> --format json",
     "                       | agentera report profile-grounding --format json",
+    `                       | ${candidateReads.candidateReadCommand} list [--source-family explicit|recurring]`,
+    "                         [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN] --format json",
+    `                       | ${candidateReads.candidateReadCommand} get --candidate-id ID --candidate-revision REVISION`,
+    "                         --generation GENERATION --policy-version POLICY --format json",
     "",
     "Privacy-gated usage analytics over an existing corpus.",
     "Default analytics use --sources active and exclude historical imports.",
@@ -429,6 +435,13 @@ export function printReportHelp(): string {
     `Profile Full sends ${profileGlossary.requestSchemaVersion} to the exact profile path returned by prime; this subcommand requires no project checkout.`,
     "Profile grounding reports one bounded validity object (valid, absent, or repair_needed); only valid responses include non-glossary content.",
     "Build requests bounded glossary advice through structured input; the command is read-only and does not publish or refresh state.",
+    "Personal glossary candidate reads are private, user-local, non-interactive, and read-only. They never read a project glossary,",
+    "refresh evidence, acquire consent, record review state, or alter the candidate projection. List emits only summaries and bounded",
+    "projection-local abstention and coverage counts. Safe context becomes unavailable at its 30-day expiry without changing projection bytes.",
+    "Exact read returns only opaque validated occurrences and a currently available safe context.",
+    "Both forms emit JSON on stdout. Exit 0 reports a current page or exact candidate, exit 1 reports unavailable/stale state, and exit 2",
+    "reports malformed arguments. Copy a returned next_cursor exactly; it binds the collection, generation, policy, filters, limit, order,",
+    "and expiry-aware safe-context availability snapshot.",
     "",
     "Corpus extraction flags (report refresh with --consent local-history):",
     "  These flags deselect runtimes that would otherwise be included when their",

@@ -608,22 +608,28 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
     const original = fs.readFileSync(authorityPath, "utf8");
     const authoritative = YAML.parse(original);
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-    const mutations: Array<[string, (authority: any) => void, string[], string | undefined]> = [
+    const mutations: Array<[string, (authority: any) => void, string[], string | undefined, boolean?]> = [
       ["profile_output.command", (authority) => { authority.ownership_contracts.personal.profile_output.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined],
       ["profile_grounding.command", (authority) => { authority.consumer_boundary.profile_grounding.command += " garbage"; }, ["report", "profile-grounding", "--format", "json"], undefined],
       ["profile_grounding.repair", (authority) => { authority.consumer_boundary.profile_grounding.recovery.repair = authority.consumer_boundary.profile_grounding.recovery.repair.replace("--format json", "--format invalid"); }, ["report", "profile-grounding", "--format", "json"], undefined],
       ["profile_grounding.absent", (authority) => { authority.consumer_boundary.profile_grounding.recovery.absent = `x${authority.consumer_boundary.profile_grounding.recovery.absent}`; }, ["report", "profile-grounding", "--format", "json"], undefined],
       ["advice.command", (authority) => { authority.consumer_boundary.advice_resolution.invocation.command = "npx -y agentera@latest report glossary-advice --input REQUEST --format json"; }, ["report", "glossary-advice", "--input", "-", "--format", "json"], JSON.stringify({ schema_version: "agentera.glossaryAdviceRequest.v1", requested_term: "test", host_review: null })],
+      ["candidate_retrieval.command", (authority) => { authority.personal_mining_authority.candidate_retrieval.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined, true],
     ];
     try {
-      for (const [owner, mutate, args, input] of mutations) {
+      for (const [owner, mutate, args, input, structuredError] of mutations) {
         const authority = structuredClone(authoritative);
         mutate(authority);
         fs.writeFileSync(authorityPath, YAML.stringify(authority));
         const result = run(process.execPath, [bin, ...args], fixture.root, isolatedPackageEnv(), input);
         expect(result.status, owner).not.toBe(0);
-        expect(result.stdout).toBe("");
-        expect(result.stderr).toContain("invalid development command projection");
+        if (structuredError) {
+          expect(result.stderr).toBe("");
+          expect(JSON.parse(result.stdout).error.message).toContain("invalid development command projection");
+        } else {
+          expect(result.stdout).toBe("");
+          expect(result.stderr).toContain("invalid development command projection");
+        }
       }
     } finally {
       fs.writeFileSync(authorityPath, original);
@@ -1563,6 +1569,7 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
     );
     expect(authority).toContain("profile_full_rendering");
     expect(authority).toContain("npx -y agentera@next report profile-glossary");
+    expect(authority).toContain("npx -y agentera@next report personal-glossary-candidates");
   });
 
   it("matches source and extracted-package producer readiness", { timeout: 120_000 }, async () => {

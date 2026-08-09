@@ -9,6 +9,7 @@ import { cmdGate } from "../commands/compact.js";
 import { cmdReport, ReportArgs } from "../commands/report.js";
 import { runGlossaryAdviceCommand } from "../commands/glossaryAdvice.js";
 import { runPersonalGlossaryCommand } from "../commands/personalGlossary.js";
+import { runPersonalGlossaryCandidateReadsCommand } from "../commands/personalGlossaryCandidateReads.js";
 import { runProfileGroundingCommand } from "../commands/profileGrounding.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 import { usageMain } from "../../analytics/usageStats.js";
@@ -427,6 +428,20 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
 }
 
 export function runReport(argv: string[], io: Io, prog: string): number {
+  if (argv[0] === "personal-glossary-candidates") {
+    if (prog !== "agentera report") {
+      return emitInvalidInput(io, {
+        format: "json",
+        body: {
+          class: "unsupported_target",
+          message: "personal-glossary-candidates has no stats alias",
+          valid_values: ["report personal-glossary-candidates"],
+          recovery: `Run ${preCutoverCommand("report personal-glossary-candidates list --limit 20 --format json")}; no projection bytes were changed.`,
+        },
+      });
+    }
+    return runPersonalGlossaryCandidateReadsCommand(argv.slice(1), io);
+  }
   if (argv[0] === "glossary-advice") {
     if (prog !== "agentera report") {
       return emitInvalidInput(io, {

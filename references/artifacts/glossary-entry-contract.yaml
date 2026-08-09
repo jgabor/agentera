@@ -62,10 +62,10 @@ personal_mining_authority:
   implementation_boundary: >-
     This section settles personal glossary mining identity, evidence provenance,
     consent, privacy, lifecycle, and bounded explicit-discovery authority. The
-     runtime implements only the declared bounded discovery and candidate
-     projection surfaces. It does not implement public candidate reads, host
-     classification, CLI decisions, publication replacement, review storage, or
-     Profile integration.
+     runtime implements only the declared bounded discovery, candidate projection,
+     and private candidate-retrieval surfaces. It does not implement project or
+     public-state candidate reads, host classification, CLI decisions, publication
+     replacement, review storage, or Profile integration.
   preserved_decisions: [prmnztjytv, mcsmqqitnm, zyvgyvjnsv]
   replacement:
     shared_primitive: shared_primitive
@@ -651,10 +651,12 @@ personal_mining_authority:
     input: validated_completed_explicit_and_recurring_capsules_with_transient_source_project_ids_and_candidate_adjacent_excerpts
     output: bounded_user_local_candidate_projection_with_safe_excerpts_and_selection_report
     implementation_boundary: >-
-      This runtime selects and persists only bounded candidate metadata and safe
-      review context. It does not add public candidate read grammar, host
-      classification, CLI admission, review-disposition writes, profile
-      publication, project-glossary access, or project-state effects.
+       This runtime selects and persists only bounded candidate metadata and safe
+       review context. Candidate retrieval is the separate private
+       candidate_retrieval operation. It does not add project or public-state
+       candidate reads, host classification, CLI admission, review-disposition
+       writes, profile publication, project-glossary access, or project-state
+       effects.
     selection:
       candidates_max: 50
       project_ids_max_per_candidate: 100
@@ -710,14 +712,90 @@ personal_mining_authority:
       replay: byte_identical_projection_is_unchanged_replay
       project_storage: forbidden
       public_reads: forbidden
+      private_machine_reads: candidate_retrieval
       review_disposition_writes: forbidden
       rule: >-
         Write one private canonical projection file at the configured user
         profile path using ordinary filesystem I/O. The file contains validated
         capsules, hashed project identities, safe excerpts, and a bounded report
         only. Never serialize a raw project path, .agentera state, raw excerpt
-        source, or review disposition, and never deliberately select project
-        storage.
+         source, or review disposition, and never deliberately select project
+         storage.
+  candidate_retrieval:
+    status: active
+    owner: private_user_local_candidate_retrieval
+    runtime: packages/cli/src/cli/commands/personalGlossaryCandidateReads.ts#runPersonalGlossaryCandidateReadsCommand
+    input: current_validated_user_local_candidate_projection_only
+    command:
+      canonical: npx -y agentera@next report personal-glossary-candidates
+      namespace: report
+      format: json
+      project_checkout: not_required
+    list:
+      schema_version: agentera.personalGlossaryCandidateRetrieval.v1
+      default_limit: 20
+      maximum_limit: 50
+      max_serialized_utf8_bytes: 32768
+      order: candidate_id_then_candidate_revision_then_capsule_sha256
+      filters:
+        source_family: [explicit, recurring]
+        provenance_kind_from: candidate_projection.selection.source_families
+        scope: [personal, ambiguous]
+      cursor:
+        authority: references/artifacts/state-storage-authority.yaml#entity_target.public_retrieval.policy.cursor
+        vocabulary: opaque_snapshot_cursor
+        binding: [collection, generation, policy_version, filters, limit, order, snapshot]
+        invalid_behavior: cursor_invalid
+        unavailable_behavior: cursor_snapshot_unavailable
+      summaries: >-
+        List returns only bounded candidate summaries, projection-local selection
+        abstention counts, derived safe-context availability and omission or
+        expiry counts, and the current coverage report. It never returns a
+        meaning, project label, project key, raw evidence identity, excerpt text,
+        or a per-row expanded command.
+      abstentions: >-
+        Upstream mining abstentions are not retained in a candidate projection and
+        are never reconstructed. This read reports only bounded projection-local
+        candidate-selection and safe-context omission counts.
+      coverage: >-
+        Coverage remains the validated current projection report and is not
+        recomputed from a list filter or page.
+    safe_context_view:
+      authority: personal_mining_authority.privacy.retention
+      retention_days: 30
+      expiry: expires_at_lte_read_time_is_unavailable
+      mutation: forbidden
+      snapshot: effective_availability_bound_to_opaque_cursor_snapshot
+      rule: >-
+        Candidate retrieval derives current safe-context availability from the
+        persisted projection at read time. An excerpt at or after its expiry is
+        omitted from list and exact output without writing the projection. The
+        derived availability contributes to the opaque cursor snapshot, so a
+        continuation from a prior availability view is unavailable.
+    exact:
+      schema_version: agentera.personalGlossaryCandidateRetrieval.v1
+      required_bindings: [candidate_id, candidate_revision, generation, policy_version]
+      occurrences_max: 100
+      safe_context_max_utf8_bytes: 500
+      max_serialized_utf8_bytes: 32768
+      occurrence:
+        schema_version: agentera.personalGlossaryCandidateOccurrence.v1
+        identity: opaque_sha256_of_validated_evidence_and_candidate_binding
+        allowed_fields: [occurrence_id, source_kind, signal_type, author_class]
+      rule: >-
+        Exact read first validates the current projection and every requested
+        candidate binding. It returns only the bounded validated occurrence
+        projection and a currently available validated safe excerpt context.
+        Raw source, anchor, session, project, fingerprint, project-key, and
+        filesystem values are never emitted.
+    rule: >-
+      Candidate retrieval is read-only, non-interactive, and user-local. It never
+      refreshes or purges evidence, acquires consent, records review state, reads
+      a project glossary, selects project storage, or changes the persisted
+      projection. It derives an expiry-aware safe-context read view, reuses the
+      canonical opaque snapshot cursor construction, and fails closed before
+      emitting candidate data when a continuation or exact binding is stale,
+      malformed, unavailable, or mismatched.
   admission:
     inferred_automatic_admission: disabled
     inferred_review: allowed
@@ -737,8 +815,9 @@ candidate_contracts:
     candidate. Discovery and projection own evidence, the semantic host owns only
     bounded classification, the CLI owns deterministic admission validation, the
     user owns review lifecycle, and Profile Full owns personal publication result.
-    No layer discovers candidates, exposes candidate reads, publishes entries, or
-    replaces the shared consumer and project publication contracts.
+     No layer other than the separate private candidate_retrieval operation
+     exposes candidate reads, publishes entries, or replaces the shared consumer
+     and project publication contracts.
   canonicalization:
     algorithm: sha256
     encoding: lowercase_hex
@@ -1079,6 +1158,7 @@ ownership_contracts:
         - bounded_admission
         - bounded_explicit_discovery
         - bounded_candidate_projection
+        - bounded_candidate_retrieval
         - explicit_classification
         - inferred_evidence_check
         - profile_full_rendering

@@ -1,0 +1,15 @@
+id: kukrzizolj
+artifact: progress
+record:
+  timestamp: 2026-08-09 12:01
+  type: fix
+  phase: audit
+  what: Record audit-2 PASS for the private personal glossary candidate-read correction.
+  context:
+    intent: Record the completed audit correction and hand off the next ready plan task.
+    constraints: Preserve the persisted audit-2 evaluation, complete task status, earlier progress cycles, and implementation diff.
+    scope: Terminal progress evidence for private personal glossary candidate reads.
+  discovered: Audit-1 initially failed because list and exact reads exposed expired safe context, counts were stale, and the machine schema omitted filter vocabularies, cursor contract fields, and serialized-output bounds. The correction added an expiry-derived read view, reconciled counts, cursor snapshot invalidation, and the complete schema contract.
+  verified: Audit session ses_01a441d3fffe7sIDZC4uQl9i0H recorded PASS as audit-2, and tlholqmvtn is complete. The expiry-boundary regression proved list omits expired safe context, exact returns safe_context null, list counts reconcile, and a pre-expiry cursor continuation fails with cursor_snapshot_unavailable; projection bytes remain unchanged. Targeted source tests passed 2 files and 97 tests; full source tests passed 236 files, 3758 tests, and 1 skipped; package verification passed 3 files and 34 tests; typecheck, build, rebuilt local schema smoke, and compact passed.
+  next: "Next ready task: kuovmqppuy, Validate classifications and compute decisions; its dependencies are terminal."
+  publication_order: 135

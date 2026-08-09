@@ -4,7 +4,7 @@ record:
   name: Expose candidate list and exact reads
   depends_on:
     - tahegtlmco
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a current generation WHEN list runs THEN filters, limit, continuation, summaries, abstentions, and coverage remain bounded and mutation-free.
     - GIVEN one current revision WHEN exact read runs THEN only bounded validated occurrences and safe context return.
@@ -12,3 +12,13 @@ record:
     - GIVEN a stale, unknown, malformed, or mismatched revision WHEN exact read runs THEN it fails closed without effects.
     - GIVEN each read and pagination rule WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: List and exact reads expose safe context after its retention expiry and report stale context counts; machine schema omits source/provenance filter vocabularies, cursor binding, and serialized output bounds; paired expiry/schema tests are missing.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_01a441d3fffe7sIDZC4uQl9i0H bounded re-review
+      recorded_at: 2026-08-09 11:58
+      writer_command: agentera state plan record-evaluation
