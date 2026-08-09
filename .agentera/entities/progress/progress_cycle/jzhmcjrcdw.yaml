@@ -1,0 +1,15 @@
+id: jzhmcjrcdw
+artifact: progress
+record:
+  timestamp: 2026-08-09 15:13
+  type: test
+  phase: build
+  what: Gave the exhaustive pinned v2 compaction migration fixture an explicit 60-second execution allowance after cold Batch A exceeded the generic timeout.
+  context:
+    intent: Let cold qualification evaluate the exhaustive v2 correctness contract without relaxing any behavior assertion.
+    constraints: Do not reduce fixture cases, alter counts, change migration behavior, or bypass release gates.
+    scope: Pinned v2 compaction fixture timeout and dev.51 release recovery.
+  discovered: The test runs many complete migration plans to verify summaries, inherited labels, corruption, provenance, and aliases; it has no latency contract and passed in 23.72 seconds without cold contention.
+  verified: pnpm -C packages/cli exec vp test run test/state/v2CompactionEvidence.test.ts --config vite.config.ts passed all five tests with every assertion unchanged.
+  next: Commit the timeout correction, then advance unpublished release metadata and qualification forward to dev.51.
+  publication_order: 122

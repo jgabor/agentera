@@ -236,7 +236,7 @@ describe("pinned v2.7.11 compaction evidence", () => {
     delete additionalDecisions.decisions.find((entry: any) => entry.number === 6).reasoning;
     fs.writeFileSync(additionalPath, YAML.stringify(additionalDecisions));
     expect(planEntityMigration(additionalViolation, REPO_ROOT).entries.find((entry) => entry.source_identity === "decisions:6")).toMatchObject({ classification: "corrupt", proposed_target: null });
-  });
+  }, 60_000);
 
   it("removes every authority-prohibited persisted alias from canonical migration records", () => {
     const forbiddenAliases = entityForbiddenCanonicalAliases(REPO_ROOT);
