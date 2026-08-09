@@ -1,4 +1,4 @@
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
-import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
+import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
@@ -117,6 +117,10 @@ function git(root: string, ...args: string[]): string {
 function entityNames(root: string): string[] {
   const entities = path.join(root, ".agentera/entities");
   return fs.existsSync(entities) ? fs.readdirSync(entities, { recursive: true, encoding: "utf8" }) : [];
+}
+function replacementJournals(root: string): string[] {
+  const directory = path.join(root, ".agentera/.entity-recovery/plan-replacement");
+  return fs.existsSync(directory) ? fs.readdirSync(directory).filter((name) => name.endsWith(".json")).sort() : [];
 }
 async function concurrentLifecycle(root: string, planId: string, blocked: string, replacement: string, action: "reopen" | "archive"): Promise<Array<{ ok: boolean; error?: string }>> {
   const start = path.join(root, `race-${action}.start`); const ready = ["supersede", action].map((name) => path.join(root, `race-${action}-${name}.ready`)); const results = ["supersede", action].map((name) => path.join(root, `race-${action}-${name}.json`));
@@ -517,7 +521,7 @@ describe("plan and task entity authority", () => {
     expect(previewJson.effects).toEqual(appliedJson.effects);
     expect(appliedJson).toMatchObject({
       id: successor.id,
-      record: { previous_plan_archived: predecessor.id },
+      record: { previous_plan_archived: predecessor.id, replacement_input_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
       effects: {
         lifecycle: "targeted_replacement",
         predecessor: { id: predecessor.id, transition: "archived", preserved: ["task_records", "task_evaluations", "task_completion"] },
@@ -581,6 +585,27 @@ describe("plan and task entity authority", () => {
     expect(validateEntityState(root)).toMatchObject({ valid: true });
   });
 
+  it("replays created replacement from immutable input identity after task lifecycle and evaluation changes", () => {
+    const root = project();
+    const predecessor = create(root, "immutable replay predecessor", true);
+    const input = planInput(root, "immutable replay successor", true);
+    const args = ["state", "plan", "replace", "--predecessor", predecessor.id, "--input", input, "--format", "json"];
+    const applied = capture(root, args);
+    expect(applied.rc, applied.err || applied.out).toBe(0);
+    const successor = JSON.parse(applied.out);
+    const successorPlan = path.join(root, `.agentera/entities/plan/plan/${successor.id}.yaml`);
+    const identity = (loadYamlMapping(fs.readFileSync(successorPlan, "utf8")).record as Record<string, unknown>).replacement_input_sha256;
+    expect(identity).toMatch(/^[a-f0-9]{64}$/);
+    const taskId = successor.tasks[0].id;
+    expect(capture(root, ["state", "plan", "set-status", "--plan", successor.id, "--id", taskId, "--status", "in_progress", "--format", "json"]).rc).toBe(0);
+    expect(capture(root, ["state", "plan", "record-evaluation", "--plan", successor.id, "--id", taskId, "--attempt-id", "immutable-replay-1", "--verdict", "pass", "--provenance", "test", "--format", "json"]).rc).toBe(0);
+    expect(capture(root, ["state", "plan", "set-status", "--plan", successor.id, "--id", taskId, "--status", "complete", "--format", "json"]).rc).toBe(0);
+    const replay = capture(root, args);
+    expect(replay.rc, replay.err || replay.out).toBe(0);
+    expect(JSON.parse(replay.out)).toMatchObject({ id: successor.id, operation: { idempotent_replay: true } });
+    expect((loadYamlMapping(fs.readFileSync(successorPlan, "utf8")).record as Record<string, unknown>).replacement_input_sha256).toBe(identity);
+  });
+
   it("restores complete prior state when either targeted replacement transaction is interrupted", () => {
     const existingRoot = project();
     const existingPredecessor = create(existingRoot, "interrupted existing predecessor", true);
@@ -627,6 +652,49 @@ describe("plan and task entity authority", () => {
     expect(fs.existsSync(path.join(createRoot, ".agentera/entities/plan/plan/cccccccccc.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(createRoot, ".agentera/entities/plan/plan_task/dddddddddd.yaml"))).toBe(false);
     expect(validateEntityState(createRoot)).toMatchObject({ valid: true });
+  });
+
+  it("recovers a real SIGKILL through the exact durable plan replacement journal", () => {
+    const root = project();
+    const predecessor = create(root, "hard interrupted predecessor", true);
+    const input = planInput(root, "hard interrupted successor", true);
+    const script = path.join(root, "kill-plan-replacement.mjs");
+    fs.writeFileSync(script, `import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+const [root, build, predecessor, input] = process.argv.slice(2);
+const { main } = await import(pathToFileURL(path.join(build, "cli/dispatch/index.js")).href);
+const rename = fs.renameSync.bind(fs);
+fs.renameSync = (from, to) => {
+  const result = rename(from, to);
+  if (String(from).endsWith("/replacement.tmp") && String(to).endsWith("/" + predecessor + ".yaml")) process.kill(process.pid, "SIGKILL");
+  return result;
+};
+const cwd = process.cwd();
+process.chdir(root);
+try { main(["node", "agentera", "state", "plan", "replace", "--predecessor", predecessor, "--input", input, "--format", "json"]); }
+finally { process.chdir(cwd); }
+`);
+    const killed = spawnSync(process.execPath, [script, root, sourceBuildOutputRoot(), predecessor.id, input], {
+      cwd: path.resolve(import.meta.dirname, "../.."),
+      env: { ...sourceSubprocessEnv(), AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../..") },
+      encoding: "utf8",
+    });
+    expect(killed.status, killed.stderr || killed.stdout).toBeNull();
+    expect(killed.signal).toBe("SIGKILL");
+    expect(replacementJournals(root)).toHaveLength(1);
+    const blocked = capture(root, ["state", "plan", "list", "--format", "json"]);
+    expect(blocked.rc).toBe(1);
+    expect(JSON.parse(blocked.out).error).toMatchObject({ class: "unsupported_state", message: expect.stringContaining("pending durable recovery") });
+    const divergent = capture(root, ["state", "plan", "replace", "--predecessor", predecessor.id, "--input", planInput(root, "divergent interrupted successor", true), "--format", "json"]);
+    expect(divergent.rc).toBe(2);
+    expect(JSON.parse(divergent.out).error.message).toContain("requires the exact original successor input");
+    expect(replacementJournals(root)).toHaveLength(1);
+    const retry = capture(root, ["state", "plan", "replace", "--predecessor", predecessor.id, "--input", input, "--format", "json"]);
+    expect(retry.rc, retry.err || retry.out).toBe(0);
+    expect(JSON.parse(retry.out).operation).toMatchObject({ idempotent_replay: true });
+    expect(replacementJournals(root)).toEqual([]);
+    expect(validateEntityState(root)).toMatchObject({ valid: true });
   });
 
   it("derives matching zero- and one-predecessor lifecycle effects for preview and apply", () => {

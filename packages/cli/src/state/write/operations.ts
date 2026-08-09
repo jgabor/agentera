@@ -97,6 +97,7 @@ function operationProjection(operation: MutationOperationDeclaration): JsonObjec
     input: {
       mode: operation.input.mode,
       ...(operation.input.root ? { root: operation.input.root } : {}),
+      ...(operation.input.optional ? { optional: true } : {}),
       sources: operation.input.sources,
       structured_sources: operation.input.structuredSources ?? [],
       cli_owned_fields: operation.input.cliOwnedFields,

@@ -115,6 +115,9 @@ describe("plan lifecycle contract", () => {
     expect(contract.canonical.lineage).toMatchObject({
       field: "previous_plan_archived",
       representation: "bare predecessor plan entity ID",
+      replacement_input_identity: {
+        field: "replacement_input_sha256",
+      },
     });
     expect(contract.canonical.forced_create).toMatchObject({
       one_open_predecessor: expect.stringContaining("previous_plan_archived"),
@@ -124,8 +127,8 @@ describe("plan lifecycle contract", () => {
       command: expect.stringContaining("--predecessor PREDECESSOR"),
       existing_successor: expect.stringContaining("previous_plan_archived"),
       create_successor: expect.stringContaining("complete plan document"),
-      replay: expect.stringContaining("logical equality"),
-      atomicity: expect.stringContaining("restore complete prior bytes"),
+      replay: expect.stringContaining("exact input identity"),
+      atomicity: expect.stringContaining("complete predecessor, successor, and created-task target set"),
     });
   });
 

@@ -622,7 +622,12 @@ entity_target:
       independently_mutable: true
       relationships: [previous_plan_archived]
       implementation: implemented
-      publication: replace_owned_entity
+      publication: replace_owned_entity_with_targeted_replacement_journal
+      targeted_replacement_journal:
+        path: .agentera/.entity-recovery/plan-replacement/<content-digest>.json
+        identity: canonical_operation_identity_and_complete_target_before_after_bytes
+        visibility: pending_journal_blocks_plan_reads_until_exact_retry_recovers_or_finishes
+        replay: exact_existing_roles_or_create_input_sha256_only
       record:
         required_fields: [header, what, why, scope]
         required_paths: [header.title, header.created, header.status]
@@ -2759,14 +2764,14 @@ mutation_grammar:
       class: batch_transaction
       selectors: [--predecessor, --successor]
       preconditions: [entity_mode_marker_is_valid, lifecycle_effects_are_derived_from_locked_canonical_entities, predecessor_and_existing_successor_are_explicit_or_one_complete_successor_input_is_supplied, named_roles_are_distinct_bare_plan_ids, replacement_leaves_no_unnamed_open_plan, exact_lineage_or_logical_create_input_replay_matches]
-      owned_fields: [id, artifact, header.status, header.id, previous_plan_archived, task_ids]
+      owned_fields: [id, artifact, header.status, header.id, previous_plan_archived, replacement_input_sha256, task_ids]
       input:
         mode: structured
         root: complete plan document when creating a successor
         optional: true
         sources: [file, stdin]
         structured_sources: [file, stdin]
-        cli_owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
+        cli_owned_fields: [id, artifact, header.id, previous_plan_archived, replacement_input_sha256, task_ids]
       recovery: Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects.
       examples: ['npx -y agentera@next state plan replace --predecessor abcdefghij --successor klmnopqrst --format json', 'npx -y agentera@next state plan replace --predecessor abcdefghij --input plan.yaml --format json']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }

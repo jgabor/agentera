@@ -226,6 +226,22 @@ describe("declarative state mutation grammar", () => {
     }
   });
 
+  it("projects optional plan replacement input consistently into schema and explain", () => {
+    const root = project();
+    const schema = runCli(root, ["schema", "--format", "json"], "", false);
+    const explain = run(root, ["plan", "explain", "--verb", "replace", "--format", "json"]);
+    const all = run(root, ["plan", "explain", "--all", "--format", "json"]);
+    expect(schema.rc, schema.err).toBe(0);
+    expect(explain.rc, explain.err).toBe(0);
+    expect(all.rc, all.err).toBe(0);
+    const plan = schema.json.state_writer.artifacts.find((artifact: any) => artifact.artifact === "plan");
+    const operation = plan.operations.find((candidate: any) => candidate.verb === "replace");
+    const allOperation = all.json.operations.find((candidate: any) => candidate.requested_verb === "replace");
+    expect(operation.input).toMatchObject({ mode: "structured", optional: true, root: "complete plan document when creating a successor" });
+    expect(explain.json.input).toMatchObject({ mode: "structured", optional: true, root: "complete plan document when creating a successor" });
+    expect(allOperation.input).toEqual(explain.json.input);
+  });
+
   it("preserves optional selector inference and rejects mandatory decision omissions before effects", () => {
     const root = project();
     const planInput = dumpYamlMapping({

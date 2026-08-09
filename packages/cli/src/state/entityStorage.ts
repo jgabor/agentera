@@ -170,7 +170,7 @@ function canonicalEntityEnvelopeAgainstModel(
   if (expected.boundary === "health_audit") violations.push(...healthEntityViolations(record));
   if (expected.boundary === "plan") {
     const header = mapping(record.header) ? record.header : {};
-    if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete", "archived"].includes(String(header.status))) violations.push("invalid plan lifecycle fields");
+    if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete", "archived"].includes(String(header.status)) || (record.replacement_input_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(String(record.replacement_input_sha256)))) violations.push("invalid plan lifecycle or replacement identity fields");
   }
   if (expected.boundary === "plan_task") violations.push(...planTaskRecordViolations(record));
   if (expected.boundary === "experiment" && (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.date ?? "")) || !["baseline", "kept", "discarded"].includes(String(record.status)))) violations.push("invalid experiment date or status");
@@ -534,9 +534,9 @@ function discoverFile(
   }
   if (!malformed && boundary === "plan" && record) {
     const header = mapping(record.header) ? record.header : {};
-    if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete", "archived"].includes(String(header.status))) {
+    if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete", "archived"].includes(String(header.status)) || (record.replacement_input_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(String(record.replacement_input_sha256)))) {
       malformed = true;
-      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid plan lifecycle fields`, recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan header schema and open|complete|archived lifecycle`) });
+      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid plan lifecycle or replacement identity fields`, recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan header schema, open|complete|archived lifecycle, and lowercase SHA-256 replacement identity`) });
     }
   }
   if (!malformed && boundary === "plan_task" && record) {

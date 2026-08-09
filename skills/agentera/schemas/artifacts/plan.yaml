@@ -264,9 +264,18 @@ PLAN:
     required: false
     description: >-
       Writer-owned bare ID of the predecessor archived when this successor was
-      created. The predecessor's archived lifecycle and this successor reference
-      provide bidirectional lineage without changing task, evaluation, or
-      completion history.
+       created. The predecessor's archived lifecycle and this successor reference
+       provide bidirectional lineage without changing task, evaluation, or
+       completion history.
+  8:
+    id: PL23
+    field: replacement_input_sha256
+    type: lowercase_sha256_hex
+    required: false
+    description: >-
+      Writer-owned immutable logical identity for a targeted replacement
+      successor. It excludes mutable task lifecycle and evaluation fields, so an
+      exact replacement input can replay after task execution changes.
 
 UNKNOWN:
   1:
@@ -552,6 +561,11 @@ LIFECYCLE_CONTRACT:
       representation: bare predecessor plan entity ID
       publication: The writer assigns the field only while atomically archiving a predecessor and publishing its successor.
       reverse: A predecessor's successor is derived from the unique canonical plan record that names its ID in previous_plan_archived; no second mutable lineage field exists.
+      replacement_input_identity:
+        field: replacement_input_sha256
+        representation: lowercase SHA-256 of the normalized logical replacement input
+        ownership: Writer-owned at targeted replacement publication and immutable afterward.
+        exclusions: [task.status, task.evaluation, task.superseded_by, task.superseded_reason]
     forced_archive:
       unfinished_status: archived
       effect: Change the plan lifecycle to archived without claiming completion or changing tasks, evaluations, or completion history.
@@ -564,8 +578,8 @@ LIFECYCLE_CONTRACT:
       existing_successor: Names both bare plan IDs, archives only the named predecessor, and assigns previous_plan_archived on the named open successor.
       create_successor: Names the bare predecessor and supplies one complete plan document when no successor exists.
       selection: Reject before effects if an unnamed open plan would remain, roles are invalid, or the requested successor conflicts with canonical lineage.
-      replay: The archived predecessor and unique derived successor identify an existing-successor replay; create retries also require logical equality with the persisted successor plan and tasks.
-      atomicity: Predecessor archival, successor lineage or publication, and final graph validation restore complete prior bytes on interruption.
+      replay: The archived predecessor and unique derived successor identify an existing-successor replay; create retries compare the exact input identity retained on the successor rather than mutable task state.
+      atomicity: The complete predecessor, successor, and created-task target set is durable under the private entity recovery authority before any target is visible. Pending journals block plan reads until the exact retry finishes or restores the operation.
     replacement_evidence_transition:
       predicate: A replacement is complete and its latest persisted evaluation.last_verdict is pass.
       supersession: Every superseded_by replacement must satisfy the predicate before a new supersession is published.
