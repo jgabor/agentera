@@ -123,6 +123,11 @@ export interface ConfirmedVariantGuardContract {
 export interface PersonalGlossaryOutputContract {
   command: string;
   requestSchemaVersion: string;
+  requestFields: string[];
+  maxRequestUtf8Bytes: number;
+  resultSchemaVersion: string;
+  resultFields: string[];
+  maxResultUtf8Bytes: number;
   sectionSchemaVersion: string;
   outputStatuses: string[];
 }

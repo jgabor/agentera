@@ -87,15 +87,17 @@ VALIDATION:
     id: V7
     rule: personal_glossary_output
     description: >-
-      Profile Full MUST render and persist exactly one owned Glossary section
-      through `npx -y agentera@next report profile-glossary`. Entries use only the shared
-      primitive and personal provenance variants. Replacement preserves every
-      non-glossary byte, malformed or ambiguous boundaries fail before effects,
-      and personal production never reads a project glossary.
+      The explicit personal publication operation MUST render and persist exactly
+      one owned Glossary section only after current decision revalidation. Profile
+      Full preserves a valid existing section but does not invoke publication.
+      Entries use only the shared primitive and personal provenance variants.
+      Replacement preserves every non-glossary byte, malformed or ambiguous
+      boundaries fail before effects, and personal production never reads a
+      project glossary.
     severity: critical
     checks:
-      - "Explicit entries retain exactly one evidence anchor"
-      - "Inferred entries retain exactly two pairwise-distinct evidence anchors"
+      - "Explicit publication retains exactly one current user-authored evidence anchor"
+      - "Inferred entries cannot receive automatic publication"
       - "Non-glossary PROFILE.md bytes and decision-pattern confidence are unchanged"
       - "No project glossary identity, path, parameter, import, or read is used"
   8:

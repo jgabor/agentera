@@ -42,6 +42,17 @@ describe("writeFileAtomic", () => {
     expect(entries).toEqual(["replace.txt"]);
   });
 
+  it("preserves an existing target mode when requested", () => {
+    const target = path.join(tmp, "private.txt");
+    fs.writeFileSync(target, "old content");
+    fs.chmodSync(target, 0o600);
+
+    writeFileAtomic(target, "new content", "utf8", { preserveTargetMode: true });
+
+    expect(fs.readFileSync(target, "utf8")).toBe("new content");
+    expect(fs.statSync(target).mode & 0o777).toBe(0o600);
+  });
+
   it("honours an explicit encoding for string data", () => {
     const target = path.join(tmp, "latin1.txt");
     writeFileAtomic(target, "café", "latin1");

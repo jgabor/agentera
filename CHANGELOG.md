@@ -177,8 +177,8 @@
 
 ### Added
 
-- Added `agentera report profile-glossary --input <file|->` for Profile Full
-  personal glossary output in `PROFILE.md`, with bounded
+- Added `npx -y agentera@next report personal-glossary-publish --input <file|-> [--dry-run] --format json`
+  for authorized personal glossary publication in `PROFILE.md`, with bounded
   personal provenance, byte-preserving section replacement, deterministic
   confidence decay and refresh, retained permanence, and no project-glossary
   reads. Discuss, Plan, and Build consume it only through bounded glossary

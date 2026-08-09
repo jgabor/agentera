@@ -1,0 +1,16 @@
+id: ugsvkmiazh
+artifact: progress
+record:
+  timestamp: 2026-08-09 21:16
+  type: fix
+  phase: build
+  what: Corrected audit-1 personal glossary publication findings.
+  context:
+    intent: Preserve an existing private PROFILE.md mode while retaining canonical publication behavior.
+    constraints: Leave zbiibnlfgd pending, preserve project publication behavior, and do not commit or change evaluation state.
+    unknowns: The complete package owner exceeded 360 seconds without a result; the focused cold-package regression passed.
+    scope: Atomic profile replacement, current changelog grammar, and source and packaged publication regressions.
+  discovered: Atomic rename replaced a 0600 PROFILE.md with the temporary file default mode.
+  verified: Focused source publication and atomic-writer tests passed 39/39; related profile, acquisition, advice, and atomicity tests passed 46/46; typecheck, build, capability validation, capability-contract validation, compact, Markdown lint, local help, and focused cold-package publication tests passed. The cold-package test covers stale, malformed, unauthorized, no-effects, and 0600 preservation paths.
+  next: Leave zbiibnlfgd pending for independent Audit re-evaluation. Do not commit or change task lifecycle state.
+  publication_order: 143

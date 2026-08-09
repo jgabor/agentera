@@ -23,6 +23,14 @@ import {
   projectPersonalGlossaryCandidates,
 } from "../../src/analytics/personalGlossaryCandidateProjection.js";
 import {
+  ADAPTER_VERSION,
+  contentFingerprint,
+  originIdentity,
+} from "../../src/analytics/extractCorpus/core.js";
+import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlossaryExplicitMining.js";
+import {
+  createGlossaryAdmissionDecision,
   createGlossaryEvidenceCapsule,
   createGlossaryHostClassificationReceipt,
 } from "../../src/registries/glossaryCandidateContracts.js";
@@ -1562,24 +1570,150 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
     }
   });
 
-  it("runs packaged personal glossary rendering and restart-safe regeneration as new processes", () => {
+  it("runs packaged personal glossary publication and Profile Full preservation as new processes", () => {
     expect(fixture.manifest.files.some((entry) => entry.path === "dist/analytics/personalGlossaryProfile.js")).toBe(true);
     const root = fs.mkdtempSync(path.join(fixture.root, "personal-profile-"));
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const observation = runServedProfileFullWorkflow(bin, root);
     expect(observation).toMatchObject({
-      firstStatus: "changed",
-      replayStatus: "unchanged_replay",
-      laterStatus: "changed",
-      laterConfidence: 49,
+      initialBaseHasNoGlossary: true,
+      preservedOwnedSection: true,
       malformedCasesRejected: 4,
     });
+
+    const profile = fs.mkdtempSync(path.join(fixture.root, "packaged-glossary-publish-"));
+    const environment = isolatedPackageEnv({ AGENTERA_PROFILE_DIR: profile });
+    const profilePath = path.join(profile, "PROFILE.md");
+    fs.writeFileSync(profilePath, "# Decision Profile: Package\n\n## Process\n\nkeep\n");
+    const tiersDir = path.join(profile, "intermediate", "tiers");
+    const text = "Actually, `packaged term` means the package publication value.";
+    publishEvidenceTiers([{
+      source_id: "packaged-source",
+      source_kind: "conversation_turn",
+      timestamp: "2026-08-10T00:00:00.000Z",
+      project_id: "private-package-project",
+      runtime: "opencode",
+      source_class: "active_runtime",
+      source_product: "opencode",
+      active_runtime: true,
+      adapter_version: ADAPTER_VERSION,
+      data: { actor: "user", signal_type: "correction", text },
+      origin_id: originIdentity("packaged-source"),
+      content_fingerprint: contentFingerprint(text),
+      session_id: "packaged-session",
+      conversation_key: "packaged-session",
+      author_class: "user",
+    }], { tiersDir, adapterVersion: ADAPTER_VERSION, publishedAt: "2026-08-10T00:00:00.000Z" });
+    const mined = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(mined).toMatchObject({ state: "current" });
+    const capsule = mined.candidates[0]!.capsule;
+    const projection = projectPersonalGlossaryCandidates({
+      generation: capsule.generation,
+      policy_version: capsule.policy_version,
+      retained_at: "2026-08-10T00:00:00.000Z",
+      candidates: [{ capsule, project_ids: ["private-package-project"] }],
+    });
+    const projectionPath = persistPersonalGlossaryCandidateProjection(projection, { env: environment }).path;
+    const receipt = createGlossaryHostClassificationReceipt({
+      capsule,
+      candidate_projection_sha256: projection.projection_sha256,
+      classification: {
+        term: capsule.term,
+        meaning: capsule.meaning,
+        scope: "personal",
+        permanence: "durable",
+        consistency: "consistent",
+        confidence: 80,
+      },
+    });
+    const decisionResult = run(
+      process.execPath,
+      [bin, "report", "personal-glossary-decision", "--input", "-", "--format", "json"],
+      root,
+      environment,
+      JSON.stringify({ schema_version: "agentera.personalGlossaryAdmissionRequest.v1", receipt }),
+    );
+    expect(decisionResult.status, decisionResult.stderr || decisionResult.stdout).toBe(0);
+    const decision = JSON.parse(decisionResult.stdout).decision;
+    const request = JSON.stringify({
+      schema_version: "agentera.personalGlossaryPublishRequest.v1",
+      receipt,
+      decision,
+      as_of: "2026-08-10",
+    });
+    fs.chmodSync(profilePath, 0o600);
+    const profileBeforeFailures = fs.readFileSync(profilePath);
+    const projectionBeforeFailures = fs.readFileSync(projectionPath);
+    const staleReceipt = createGlossaryHostClassificationReceipt({
+      capsule,
+      candidate_projection_sha256: "0".repeat(64),
+      classification: receipt.classification,
+    });
+    const staleDecision = createGlossaryAdmissionDecision({
+      capsule,
+      receipt: staleReceipt,
+      outcome: "automatic_admission",
+      reason: "explicit_current_authorized",
+    });
+    const unauthorizedReceipt = createGlossaryHostClassificationReceipt({
+      capsule,
+      candidate_projection_sha256: projection.projection_sha256,
+      classification: { ...receipt.classification, scope: "project" },
+    });
+    const unauthorizedDecision = createGlossaryAdmissionDecision({
+      capsule,
+      receipt: unauthorizedReceipt,
+      outcome: "abstain",
+      reason: "scope_project",
+    });
+    for (const [name, input, status] of [
+      ["stale", JSON.stringify({ schema_version: "agentera.personalGlossaryPublishRequest.v1", receipt: staleReceipt, decision: staleDecision, as_of: "2026-08-10" }), 1],
+      ["malformed", "[", 2],
+      ["unauthorized", JSON.stringify({ schema_version: "agentera.personalGlossaryPublishRequest.v1", receipt: unauthorizedReceipt, decision: unauthorizedDecision, as_of: "2026-08-10" }), 1],
+    ] as const) {
+      const failed = run(
+        process.execPath,
+        [bin, "report", "personal-glossary-publish", "--input", "-", "--format", "json"],
+        root,
+        environment,
+        input,
+      );
+      expect(failed.status, `${name}\n${failed.stderr || failed.stdout}`).toBe(status);
+      expect(fs.readFileSync(profilePath)).toEqual(profileBeforeFailures);
+      expect(fs.statSync(profilePath).mode & 0o777).toBe(0o600);
+      expect(fs.readFileSync(projectionPath)).toEqual(projectionBeforeFailures);
+    }
+    const first = run(
+      process.execPath,
+      [bin, "report", "personal-glossary-publish", "--input", "-", "--format", "json"],
+      root,
+      environment,
+      request,
+    );
+    expect(first.status, first.stderr || first.stdout).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({ status: "changed" });
+    expect(first.stdout).not.toContain("packaged term");
+    expect(fs.statSync(profilePath).mode & 0o777).toBe(0o600);
+    const publishedBytes = fs.readFileSync(profilePath, "utf8");
+    const replay = run(
+      process.execPath,
+      [bin, "report", "personal-glossary-publish", "--input", "-", "--format", "json"],
+      root,
+      environment,
+      request,
+    );
+    expect(replay.status, replay.stderr || replay.stdout).toBe(0);
+    expect(JSON.parse(replay.stdout)).toMatchObject({ status: "unchanged_replay" });
+    expect(fs.readFileSync(profilePath, "utf8")).toBe(publishedBytes);
+    expect(fs.statSync(profilePath).mode & 0o777).toBe(0o600);
+
     const authority = fs.readFileSync(
       path.join(fixture.packageRoot, "bundle/references/artifacts/glossary-entry-contract.yaml"),
       "utf8",
     );
-    expect(authority).toContain("profile_full_rendering");
-    expect(authority).toContain("npx -y agentera@next report profile-glossary");
+    expect(authority).toContain("authorized_personal_publication");
+    expect(authority).toContain("npx -y agentera@next report personal-glossary-publish");
+    expect(authority).not.toContain("report profile-glossary");
     expect(authority).toContain("npx -y agentera@next report personal-glossary-candidates");
     expect(authority).toContain("npx -y agentera@next report personal-glossary-reviews");
   });

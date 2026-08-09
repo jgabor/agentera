@@ -87,7 +87,7 @@ function developmentCommand(argumentsText: string): string {
 
 const profileGroundingCommand = developmentCommand("report profile-grounding --format json");
 const GLOSSARY_PROJECTIONS = {
-  "profile_output.command": developmentCommand("report profile-glossary"),
+  "profile_output.command": developmentCommand("report personal-glossary-publish"),
   "profile_grounding.command": profileGroundingCommand,
   "profile_grounding.repair": `Use the Profile capability to repair or regenerate PROFILE.md, then retry \`${profileGroundingCommand}\`; no profile bytes were changed.`,
   "profile_grounding.absent": `Use the Profile capability to generate PROFILE.md, then retry ${profileGroundingCommand}.`,

@@ -25,10 +25,8 @@ it("drives Profile Full behavior from a transient local executable's served inst
 
     const observation = runServedProfileFullWorkflow(executable, path.join(root, "workflow"));
     expect(observation).toMatchObject({
-      firstStatus: "changed",
-      replayStatus: "unchanged_replay",
-      laterStatus: "changed",
-      laterConfidence: 49,
+      initialBaseHasNoGlossary: true,
+      preservedOwnedSection: true,
       malformedCasesRejected: 4,
     });
   } finally {

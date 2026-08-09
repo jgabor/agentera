@@ -925,8 +925,8 @@ export function validatePersonalCandidateContracts(authority: Mapping): string[]
   if (!candidate) return ["candidate_contracts is required"];
   if (candidate.schema_version !== CANDIDATE_CONTRACTS_SCHEMA) errors.push("candidate_contracts.schema_version is invalid");
   if (candidate.status !== "active_partial") errors.push("candidate_contracts.status must be active_partial");
-  if (candidate.implementation_boundary !== "receipt_validation_and_deterministic_decision_runtime_only") {
-    errors.push("candidate_contracts must scope runtime to receipt validation and deterministic decisions");
+  if (candidate.implementation_boundary !== "receipt_validation_deterministic_decision_and_explicit_personal_publication_runtime") {
+    errors.push("candidate_contracts must scope runtime to validation, deterministic decisions, and explicit personal publication");
   }
   if (!exactStrings(candidate.layers && Object.keys(mapping(candidate.layers) ?? {}), LAYERS)) errors.push("candidate_contracts.layers must contain exactly the five candidate layers");
   const owners = LAYERS.map((name) => mapping(candidate.layers)?.[name]).map(mapping).map((item) => String(item?.owner ?? ""));
@@ -975,7 +975,7 @@ export function validatePersonalCandidateContracts(authority: Mapping): string[]
   }
   const profileOutput = mapping(mapping(mapping(authority.ownership_contracts)?.personal)?.profile_output);
   const publicationLayer = mapping(layers?.publication_result);
-  if (publicationLayer?.owner !== "personal_profile_publication" || !exactStrings(publicationLayer?.status_values_from, ["ownership_contracts.personal.profile_output.command.output_statuses"]) || !exactStrings(mapping(profileOutput?.command)?.output_statuses, ["changed", "unchanged_replay", "dry_run_candidate"])) {
+  if (publicationLayer?.owner !== "personal_profile_publication" || publicationLayer?.command !== "ownership_contracts.personal.profile_output.command.canonical" || !exactStrings(publicationLayer?.status_values_from, ["ownership_contracts.personal.profile_output.command.output_statuses"]) || !exactStrings(mapping(profileOutput?.command)?.output_statuses, ["changed", "unchanged_replay", "dry_run_candidate"])) {
     errors.push("publication results must reuse the personal Profile output contract");
   }
   const invariance = mapping(candidate.shared_invariance);

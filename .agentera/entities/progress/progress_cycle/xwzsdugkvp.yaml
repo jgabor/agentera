@@ -1,0 +1,16 @@
+id: xwzsdugkvp
+artifact: progress
+record:
+  timestamp: 2026-08-09 21:25
+  type: fix
+  phase: audit
+  what: Closed packages/cli/src/cli/commands/personalGlossaryPublish.ts after the independent Audit PASS.
+  context:
+    intent: Record the terminal audit outcome and the verified publication boundary.
+    constraints: Preserve the persisted complete lifecycle, make no implementation changes, and commit all related state with the runtime change.
+    unknowns: The complete package owner exceeded 360 seconds without a result; the focused cold-package publication regression passed.
+    scope: Personal publication runtime, authority, CLI surface, atomic mode preservation, documentation, regressions, and audit state.
+  discovered: Audit-1 found 0600 PROFILE.md replacement widened to 0644, stale Unreleased profile-glossary grammar, and missing cold-package stale, malformed, unauthorized, no-effects, and mode cases. The scoped atomic-writer opt-in preserves the existing profile mode; the changelog and regressions now match the canonical publisher.
+  verified: Audit ses_0182e0502ffenUReGcXlC00X2r PASS persisted as audit-2, and zbiibnlfgd is complete. Focused source tests passed 39/39, related tests 46/46, typecheck, build, Profile capability validation, capability-contract validation, root compact, Markdown lint, local help/schema checks, and the focused cold-package publication test passed.
+  next: cviizrgkvm, Apply review dispositions, is the next dependency-ready pending plan task.
+  publication_order: 144

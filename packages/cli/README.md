@@ -150,6 +150,26 @@ user-authored anchor can return `automatic_admission`. Inferred candidates stay
 not read a project glossary. File and stdin requests are limited to 16,384 UTF-8
 bytes. The machine schema lists the only allowed reason codes for each outcome.
 
+## Personal glossary publication
+
+Publish one current explicit automatic admission through the separate,
+user-local mutation boundary:
+
+```bash
+npx -y agentera@next report personal-glossary-publish --input publication.json --format json
+```
+
+The bounded request contains exactly `schema_version`, `receipt`, `decision`,
+and `as_of`. It never accepts a profile or project path. Immediately before an
+atomic replacement, Agentera revalidates the current projection, candidate,
+receipt, CLI decision, evidence, scope, meaning, revision, policy, and quality
+gate. Only `explicit_current_authorized` can publish. The command changes only
+the owned `PROFILE.md` Glossary section and returns opaque bindings, not terms,
+meanings, anchors, paths, or source content. Exact replay with the same date is
+an `unchanged_replay`; malformed, stale, review-required, unavailable, or
+conflicting input leaves profile bytes unchanged. Review disposition publication
+is a separate future operation.
+
 ## Personal glossary review records
 
 Queue a current `review_required` decision when no question channel is available.

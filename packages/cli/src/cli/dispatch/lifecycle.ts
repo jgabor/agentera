@@ -8,7 +8,7 @@ import { cmdVerify, VerifyArgs } from "../commands/verify.js";
 import { cmdGate } from "../commands/compact.js";
 import { cmdReport, ReportArgs } from "../commands/report.js";
 import { runGlossaryAdviceCommand } from "../commands/glossaryAdvice.js";
-import { runPersonalGlossaryCommand } from "../commands/personalGlossary.js";
+import { runPersonalGlossaryPublishCommand } from "../commands/personalGlossaryPublish.js";
 import { runPersonalGlossaryCandidateReadsCommand } from "../commands/personalGlossaryCandidateReads.js";
 import { runPersonalGlossaryDecisionCommand } from "../commands/personalGlossaryDecision.js";
 import { runPersonalGlossaryReviewRecordsCommand } from "../commands/personalGlossaryReviewRecords.js";
@@ -500,19 +500,19 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     }
     return runProfileGroundingCommand(argv.slice(1), io);
   }
-  if (argv[0] === "profile-glossary") {
+  if (argv[0] === "personal-glossary-publish") {
     if (prog !== "agentera report") {
       return emitInvalidInput(io, {
         format: "json",
         body: {
           class: "unsupported_target",
-          message: "profile-glossary has no stats alias",
-          valid_values: ["report profile-glossary"],
-          recovery: `Run ${preCutoverCommand("report profile-glossary --input PATH --format json")} with the same input; no profile bytes were changed.`,
+          message: "personal-glossary-publish has no stats alias",
+          valid_values: ["report personal-glossary-publish"],
+          recovery: `Run ${preCutoverCommand("report personal-glossary-publish --input - --format json")}; no profile bytes were changed.`,
         },
       });
     }
-    return runPersonalGlossaryCommand(argv.slice(1), io);
+    return runPersonalGlossaryPublishCommand(argv.slice(1), io);
   }
   const args: ReportArgs = {
     action: null,

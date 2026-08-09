@@ -63,10 +63,10 @@ personal_mining_authority:
      This section settles personal glossary mining identity, evidence provenance,
      consent, privacy, lifecycle, bounded explicit-discovery, receipt validation,
      and deterministic decision authority. The runtime performs bounded discovery,
-     candidate projection, private candidate retrieval, and deterministic CLI
-     validation of host semantic evidence. It does not perform host semantic
-     classification, project or public-state candidate reads, publication
-     replacement, review storage, or Profile integration.
+      candidate projection, private candidate retrieval, deterministic CLI
+      validation of host semantic evidence, and explicit authorized personal
+      publication. It does not perform host semantic classification, project or
+      public-state candidate reads, review storage, or Profile Full integration.
   preserved_decisions: [prmnztjytv, mcsmqqitnm, zyvgyvjnsv]
   replacement:
     shared_primitive: shared_primitive
@@ -969,15 +969,15 @@ personal_mining_authority:
 candidate_contracts:
   schema_version: agentera.personalGlossaryCandidateContracts.v1
   status: active_partial
-  implementation_boundary: receipt_validation_and_deterministic_decision_runtime_only
+  implementation_boundary: receipt_validation_deterministic_decision_and_explicit_personal_publication_runtime
   purpose: >-
-    Define five distinct, content-addressed boundaries for one personal glossary
-    candidate. Discovery and projection own evidence, the semantic host owns only
-    bounded classification, the CLI owns deterministic admission validation, the
-    user owns review lifecycle, and Profile Full owns personal publication result.
-     No layer other than the separate private candidate_retrieval operation
-     exposes candidate reads, publishes entries, or replaces the shared consumer
-     and project publication contracts.
+      Define five distinct, content-addressed boundaries for one personal glossary
+      candidate. Discovery and projection own evidence, the semantic host owns only
+      bounded classification, the CLI owns deterministic admission validation, the
+      user owns review lifecycle, and one explicit personal publication operation
+      owns the personal publication result. Candidate retrieval alone exposes
+      private reads; personal publication alone changes the owned profile section.
+      Neither replaces shared consumer or project publication contracts.
   canonicalization:
     algorithm: sha256
     encoding: lowercase_hex
@@ -1264,7 +1264,7 @@ candidate_contracts:
         - consumer_precedence
         - review_authorization
       rule: >-
-        This is the bounded result of personal Profile publication only. It binds
+        This is the bounded result of explicit personal-profile publication only. It binds
         the validated decision and optional review record, reports the existing
         personal output status, and never changes Build-owned project publication.
   shared_invariance:
@@ -1385,8 +1385,8 @@ ownership_contracts:
         - deterministic_cli_admission_decision
         - explicit_classification
         - inferred_evidence_check
-        - profile_full_rendering
-        - profile_persistence
+        - authorized_personal_publication
+        - profile_section_persistence
       inactive: [lookup]
     allowed_provenance:
       - personal_explicit_definition
@@ -1443,10 +1443,10 @@ ownership_contracts:
       permanence: Remains independently classified and is not changed by evidence age or confidence decay.
       authority: packages/cli/src/capabilities/profile/instructions.ts#Profile-format
     profile_output:
-      owner: profile_full
+      owner: personal_profile_publication
       lifecycle_callable: packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile
       command:
-        canonical: npx -y agentera@next report profile-glossary
+        canonical: npx -y agentera@next report personal-glossary-publish
         namespace: report
         input_flag: --input
         stdin_value: "-"
@@ -1454,25 +1454,40 @@ ownership_contracts:
         dry_run_flag: --dry-run
         project_checkout: not_required
         request:
-          schema_version: agentera.personalGlossaryUpdateRequest.v1
-          required_fields: [schema_version, profile_path, as_of, fresh_entries, retained_history]
+          schema_version: agentera.personalGlossaryPublishRequest.v1
+          required_fields: [schema_version, receipt, decision, as_of]
           additional_fields: forbidden
+          max_utf8_bytes: 16384
           profile_path_rule: >-
-            Pass exactly profile_context.profile.path returned by
-            npx -y agentera@next prime --context profile --format json. The command never
-            discovers a profile, project root, or project glossary.
-          retained_history_shape: >-
-            A list of source_id, evidence_anchor, source_kind, and signal_type
-            records sufficient to validate fresh admitted entries. It may be
-            empty when regeneration supplies no fresh entries because retained
-            entries carry persisted provenance.
+            Resolve only $AGENTERA_PROFILE_DIR/PROFILE.md through the canonical
+            user-profile authority. The request cannot select a path, project
+            root, project glossary, or other artifact.
+          current_decision_rule: >-
+            Accept only a complete CLI-owned automatic_admission decision with
+            explicit_current_authorized reason and its exact host receipt. Before
+            effects, revalidate the current projection, capsule, receipt,
+            generation, policy, semantic fingerprint, one resolved user-authored
+            anchor, personal scope, current meaning and revision, no conflict,
+            retraction, or secret content, disabled inferred admission, and the
+            quality authority. A later review publication must carry its separate
+            current-user proof and is not implemented by this operation.
+          date_rule: >-
+            as_of is one injected ISO calendar date. Use it for lifecycle
+            rendering and derive published_at as UTC midnight of that exact date;
+            never read the wall clock for publication content or replay.
+        result:
+          schema_version: agentera.personalGlossaryPublicationResult.v1
+          fields: [schema_version, owner, candidate_id, candidate_revision, candidate_capsule_sha256, decision_sha256, review_record_sha256, generation, policy_version, status, profile_section_sha256, published_at, result_sha256]
+          max_utf8_bytes: 4096
         output_statuses: [changed, unchanged_replay, dry_run_candidate]
         rule: >-
-          The packaged headless command validates the complete request before
-          effects and invokes the lifecycle_callable without duplicating merge,
-          decay, replacement, or persistence behavior. JSON is written to
-          stdout; diagnostics use the shared invalid-input envelope. Dry-run
-          computes the candidate without writing PROFILE.md.
+          The packaged headless command accepts only one bounded structured
+          receipt and CLI decision, revalidates authorization immediately before
+          effects, and invokes the lifecycle_callable without duplicating merge,
+          decay, replacement, or persistence behavior. It changes only the owned
+          PROFILE.md Glossary section. JSON output contains opaque bindings only;
+          diagnostics use stable generic envelopes. Dry-run computes a candidate
+          without writing PROFILE.md.
       section:
         heading: "## Glossary"
         start_marker: "<!-- agentera:personal-glossary:start -->"
@@ -1511,10 +1526,19 @@ ownership_contracts:
         repeated compounding from already-decayed confidence. Age alone never
         removes an entry.
       isolation_rule: >-
-        The command and callable accept only a PROFILE.md path, fresh personal
-        entries, retained personal-history evidence, and an injected ISO date.
-        They have no project root, project glossary parameter, artifact lookup,
-        or project file read.
+        The command accepts only one receipt, one CLI decision, and an injected
+        ISO date. It resolves the canonical user PROFILE.md path itself and has
+        no project root, project glossary parameter, artifact lookup, or project
+        file read.
+      filesystem:
+        authority: host_filesystem
+        configured_path: canonical_user_profile_authority
+        outcomes: ordinary_permissions_and_io
+        same_user_path_manipulation: outside_agentera_threat_model
+        symlink_confinement: not_claimed
+        rule: >-
+          Profile storage uses ordinary current-user filesystem permissions and
+          atomic replacement. This contract does not claim symlink confinement.
   project:
     scope: repository
     implementation:
@@ -2472,9 +2496,10 @@ consumer_boundary:
   rule: >-
     Audit remains mutation-free and Build project-glossary publication is active.
     Build, Discuss, Plan, and prime bounded glossary consumption are active, and
-    Build progress caveat publication is active. Personal Profile Full rendering
-    and persistence are active. Project-driven personal-profile mutation and
-    docs-mapping mutation remain deferred.
+    Build progress caveat publication and explicit personal publication are active.
+    Profile Full preserves an existing owned section but does not invoke personal
+    publication. Project-driven personal-profile mutation and docs-mapping mutation
+    remain deferred.
 
 deferred_capability_contracts:
   profile:
@@ -2483,14 +2508,13 @@ deferred_capability_contracts:
     intended_behavior: personal_glossary_synthesis
     active_behavior:
       - ownership_contracts.personal.admission
-      - ownership_contracts.personal.profile_output
-    inactive_behavior: [lookup]
+    inactive_behavior: [lookup, personal_profile_publication]
     contracts:
       admission: ownership_contracts.personal.input
       provenance: ownership_contracts.personal.allowed_provenance
       confidence: shared_primitive.fields.confidence
       retention_and_decay: ownership_contracts.personal.retention_and_decay
-    forbidden_current_claims: [lookup, project_glossary_consumption]
+    forbidden_current_claims: [lookup, project_glossary_consumption, personal_glossary_publication]
   audit:
     capabilities: [audit]
     implementation: active_partial

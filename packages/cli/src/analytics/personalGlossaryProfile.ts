@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 
 import { loadProfileDecayParameters } from "../capabilities/profile/instructions.js";
 import { writeFileAtomic } from "../core/atomicWriter.js";
@@ -48,6 +49,7 @@ export interface UpdatePersonalGlossaryProfileInput {
 export interface UpdatePersonalGlossaryProfileResult {
   changed: boolean;
   profilePath: string;
+  profileSectionSha256: string;
   entries: PersonalGlossaryEntry[];
 }
 
@@ -190,6 +192,10 @@ function render(document: PersonalGlossaryDocument): string {
   return `${START}\n${HEADING}\n\n\`\`\`json\n${JSON.stringify(document, null, 2)}\n\`\`\`\n${END}`;
 }
 
+function sectionSha256(section: string): string {
+  return createHash("sha256").update(section, "utf8").digest("hex");
+}
+
 export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfileInput): UpdatePersonalGlossaryProfileResult {
   calendarDate(input.asOf);
   const original = fs.readFileSync(input.profilePath, "utf8");
@@ -255,6 +261,13 @@ export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfi
     ? `${original.slice(0, section.start)}${rendered}${original.slice(section.end)}`
     : `${original}${original.endsWith("\n") ? "\n" : "\n\n"}${rendered}\n`;
   const changed = candidate !== original;
-  if (changed && !input.dryRun) writeFileAtomic(input.profilePath, candidate);
-  return { changed, profilePath: input.profilePath, entries: merged };
+  if (changed && !input.dryRun) {
+    writeFileAtomic(input.profilePath, candidate, "utf8", { preserveTargetMode: true });
+  }
+  return {
+    changed,
+    profilePath: input.profilePath,
+    profileSectionSha256: sectionSha256(rendered),
+    entries: merged,
+  };
 }

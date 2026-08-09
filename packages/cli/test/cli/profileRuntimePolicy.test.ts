@@ -16,15 +16,18 @@ describe("served profile runtime policy", () => {
     expect(profile).not.toContain("--no-claude");
   });
 
-  it("serves active personal glossary output without claiming consumer lookup", () => {
+  it("keeps personal publication outside Profile Full without claiming consumer lookup", () => {
     const profile = CAPABILITY_INSTRUCTIONS.profile;
     expect(profile).toContain("### Personal Glossary section");
-    expect(profile).toContain("npx -y agentera@next report profile-glossary --input - --format json");
-    expect(profile).toContain("agentera.personalGlossaryUpdateRequest.v1");
+    expect(profile).toContain("npx -y agentera@next report personal-glossary-publish");
+    expect(profile).toContain("agentera.personalGlossaryPublishRequest.v1");
+    expect(profile).toContain("does not publish entries");
+    expect(profile).toContain("Profile Full does not invoke");
+    expect(profile).not.toContain("report profile-glossary");
     expect(profile).not.toContain("Invoke `updatePersonalGlossaryProfile`");
     expect(profile).toContain("agentera.personalGlossarySection.v1");
     expect(profile).toContain("It never reads a project glossary");
     expect(profile).toContain("Profile itself performs no consumer lookup");
-    expect(profile).toContain("Discuss, Plan, and Build obtain that active behavior separately");
+    expect(profile).toContain("Discuss, Plan, and Build obtain active consumer behavior separately");
   });
 });

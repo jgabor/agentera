@@ -26,8 +26,8 @@ export interface ProducerReadinessObservation {
   personal: {
     explicitEvidence: number;
     inferredEvidence: number;
-    profileStatuses: string[];
-    decayedConfidence: number;
+    initialBaseHasNoGlossary: boolean;
+    preservedOwnedSection: boolean;
     malformedOutputCasesRejected: number;
   };
   project: {
@@ -618,8 +618,8 @@ export async function runProducerReadinessWorkflow(
     personal: {
       explicitEvidence: explicit.evidence.length,
       inferredEvidence: inferred.evidence.length,
-      profileStatuses: [profile.firstStatus, profile.replayStatus, profile.laterStatus],
-      decayedConfidence: profile.laterConfidence,
+      initialBaseHasNoGlossary: profile.initialBaseHasNoGlossary,
+      preservedOwnedSection: profile.preservedOwnedSection,
       malformedOutputCasesRejected: profile.malformedCasesRejected,
     },
     project: {
@@ -652,8 +652,8 @@ export const EXPECTED_PRODUCER_READINESS: ProducerReadinessObservation = {
   personal: {
     explicitEvidence: 1,
     inferredEvidence: 2,
-    profileStatuses: ["changed", "unchanged_replay", "changed"],
-    decayedConfidence: 49,
+    initialBaseHasNoGlossary: true,
+    preservedOwnedSection: true,
     malformedOutputCasesRejected: 4,
   },
   project: {

@@ -170,12 +170,17 @@ export function personalGlossaryOutputContract(
   const output = mapping(personal?.profile_output);
   const command = mapping(output?.command);
   const request = mapping(command?.request);
+  const result = mapping(command?.result);
   const section = mapping(output?.section);
   return {
     command: projectGlossaryDevelopmentValue(command?.canonical, "profile_output.command"),
     requestSchemaVersion: typeof request?.schema_version === "string" ? request.schema_version : "",
-    sectionSchemaVersion:
-      typeof section?.document_schema_version === "string" ? section.document_schema_version : "",
+    requestFields: strings(request?.required_fields),
+    maxRequestUtf8Bytes: typeof request?.max_utf8_bytes === "number" ? request.max_utf8_bytes : 0,
+    resultSchemaVersion: typeof result?.schema_version === "string" ? result.schema_version : "",
+    resultFields: strings(result?.fields),
+    maxResultUtf8Bytes: typeof result?.max_utf8_bytes === "number" ? result.max_utf8_bytes : 0,
+    sectionSchemaVersion: typeof section?.document_schema_version === "string" ? section.document_schema_version : "",
     outputStatuses: strings(command?.output_statuses),
   };
 }
@@ -425,8 +430,8 @@ export function validateGlossaryEntryContract(
       "deterministic_cli_admission_decision",
       "explicit_classification",
       "inferred_evidence_check",
-      "profile_full_rendering",
-      "profile_persistence",
+      "authorized_personal_publication",
+      "profile_section_persistence",
     ]) ||
     !sameStrings(personalImplementation?.inactive, ["lookup"])
   ) {
@@ -468,38 +473,30 @@ export function validateGlossaryEntryContract(
   for (const field of ["retention", "confidence", "permanence"]) {
     if (!nonEmpty(decay?.[field])) errors.push(`personal retention_and_decay.${field} is required`);
   }
-  const profileOutput = mapping(personal?.profile_output);
-  const profileSection = mapping(profileOutput?.section);
+  const profileOutput = mapping(personal?.profile_output), profileSection = mapping(profileOutput?.section);
   const mergeIdentity = mapping(profileOutput?.merge_identity);
-  const profileCommand = mapping(profileOutput?.command);
-  const profileRequest = mapping(profileCommand?.request);
+  const profileCommand = mapping(profileOutput?.command), profileRequest = mapping(profileCommand?.request), profileFilesystem = mapping(profileOutput?.filesystem);
   if (
-    profileOutput?.owner !== "profile_full" ||
-    profileOutput?.lifecycle_callable !==
-      "packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile" ||
-    profileCommand?.canonical !== "npx -y agentera@next report profile-glossary" ||
+    profileOutput?.owner !== "personal_profile_publication" ||
+    profileOutput?.lifecycle_callable !== "packages/cli/src/analytics/personalGlossaryProfile.ts#updatePersonalGlossaryProfile" ||
+    profileCommand?.canonical !== "npx -y agentera@next report personal-glossary-publish" ||
     profileCommand?.namespace !== "report" ||
     profileCommand?.input_flag !== "--input" ||
     profileCommand?.stdin_value !== "-" ||
     profileCommand?.format !== "json" ||
     profileCommand?.dry_run_flag !== "--dry-run" ||
     profileCommand?.project_checkout !== "not_required" ||
-    profileRequest?.schema_version !== "agentera.personalGlossaryUpdateRequest.v1" ||
-    !sameStrings(profileRequest?.required_fields, [
-      "schema_version",
-      "profile_path",
-      "as_of",
-      "fresh_entries",
-      "retained_history",
-    ]) ||
+    profileRequest?.schema_version !== "agentera.personalGlossaryPublishRequest.v1" ||
+    !sameStrings(profileRequest?.required_fields, ["schema_version", "receipt", "decision", "as_of"]) ||
     profileRequest?.additional_fields !== "forbidden" ||
+    profileRequest?.max_utf8_bytes !== 16384 ||
     !nonEmpty(profileRequest?.profile_path_rule) ||
-    !nonEmpty(profileRequest?.retained_history_shape) ||
-    !sameStrings(profileCommand?.output_statuses, [
-      "changed",
-      "unchanged_replay",
-      "dry_run_candidate",
-    ]) ||
+    !nonEmpty(profileRequest?.current_decision_rule) ||
+    !nonEmpty(profileRequest?.date_rule) ||
+    mapping(profileCommand?.result)?.schema_version !==
+      "agentera.personalGlossaryPublicationResult.v1" ||
+    mapping(profileCommand?.result)?.max_utf8_bytes !== 4096 ||
+    !sameStrings(profileCommand?.output_statuses, ["changed", "unchanged_replay", "dry_run_candidate"]) ||
     !nonEmpty(profileCommand?.rule) ||
     profileSection?.heading !== "## Glossary" ||
     profileSection?.start_marker !== "<!-- agentera:personal-glossary:start -->" ||
@@ -513,11 +510,15 @@ export function validateGlossaryEntryContract(
     !nonEmpty(mergeIdentity?.rule) ||
     !nonEmpty(profileOutput?.refresh_rule) ||
     !nonEmpty(profileOutput?.decay_rule) ||
-    !nonEmpty(profileOutput?.isolation_rule)
+    !nonEmpty(profileOutput?.isolation_rule) ||
+    profileFilesystem?.authority !== "host_filesystem" ||
+    profileFilesystem?.configured_path !== "canonical_user_profile_authority" ||
+    profileFilesystem?.outcomes !== "ordinary_permissions_and_io" ||
+    profileFilesystem?.same_user_path_manipulation !== "outside_agentera_threat_model" ||
+    profileFilesystem?.symlink_confinement !== "not_claimed" ||
+    !nonEmpty(profileFilesystem?.rule)
   ) {
-    errors.push(
-      "personal profile output must define deterministic isolated rendering and lifecycle rules",
-    );
+    errors.push("personal profile output must define deterministic isolated rendering and lifecycle rules");
   }
 
   const project = mapping(ownership?.project);
@@ -738,19 +739,20 @@ export function validateGlossaryEntryContract(
   if (
     profile?.implementation !== "active_partial" ||
     !sameStrings(profile?.capabilities, ["profile"]) ||
-    !sameStrings(profile?.active_behavior, [
-      "ownership_contracts.personal.admission",
-      "ownership_contracts.personal.profile_output",
-    ]) ||
-    !sameStrings(profile?.inactive_behavior, ["lookup"]) ||
+    !sameStrings(profile?.active_behavior, ["ownership_contracts.personal.admission"]) ||
+    !sameStrings(profile?.inactive_behavior, ["lookup", "personal_profile_publication"]) ||
     profileContracts?.admission !== "ownership_contracts.personal.input" ||
     profileContracts?.provenance !== "ownership_contracts.personal.allowed_provenance" ||
     profileContracts?.confidence !== "shared_primitive.fields.confidence" ||
     profileContracts?.retention_and_decay !== "ownership_contracts.personal.retention_and_decay" ||
-    !sameStrings(profile?.forbidden_current_claims, ["lookup", "project_glossary_consumption"])
+    !sameStrings(profile?.forbidden_current_claims, [
+      "lookup",
+      "project_glossary_consumption",
+      "personal_glossary_publication",
+    ])
   ) {
     errors.push(
-      "profile glossary rendering and persistence must be active while Profile itself performs no consumer lookup",
+      "profile glossary synthesis must remain separate from authorized personal publication",
     );
   }
   const audit = mapping(capabilities?.audit);

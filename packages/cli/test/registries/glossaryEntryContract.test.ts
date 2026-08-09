@@ -85,7 +85,7 @@ function malformedAuthority(mutate: (authority: Record<string, any>) => void): s
 
 describe("shared glossary entry authority", () => {
   it("projects every glossary owner only from its exact code-owned source value", () => {
-    expect(personalGlossaryOutputContract().command).toBe("agentera report profile-glossary");
+    expect(personalGlossaryOutputContract().command).toBe("agentera report personal-glossary-publish");
     expect(personalProfileGroundingContract()).toMatchObject({
       command: "agentera report profile-grounding --format json",
       repairRecovery: "Use the Profile capability to repair or regenerate PROFILE.md, then retry `agentera report profile-grounding --format json`; no profile bytes were changed.",
@@ -136,17 +136,36 @@ describe("shared glossary entry authority", () => {
     const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8"));
     expect(authority.ownership_contracts.personal.implementation).toMatchObject({
       status: "active_partial",
-      active: expect.arrayContaining(["profile_full_rendering", "profile_persistence"]),
+      active: expect.arrayContaining(["authorized_personal_publication", "profile_section_persistence"]),
       inactive: ["lookup"],
     });
     expect(authority.deferred_capability_contracts.profile).toMatchObject({
       implementation: "active_partial",
-      inactive_behavior: ["lookup"],
-      forbidden_current_claims: ["lookup", "project_glossary_consumption"],
+      inactive_behavior: ["lookup", "personal_profile_publication"],
+      forbidden_current_claims: ["lookup", "project_glossary_consumption", "personal_glossary_publication"],
     });
     expect(personalGlossaryOutputContract()).toEqual({
-      command: "agentera report profile-glossary",
-      requestSchemaVersion: "agentera.personalGlossaryUpdateRequest.v1",
+      command: "agentera report personal-glossary-publish",
+      requestSchemaVersion: "agentera.personalGlossaryPublishRequest.v1",
+      requestFields: ["schema_version", "receipt", "decision", "as_of"],
+      maxRequestUtf8Bytes: 16_384,
+      resultSchemaVersion: "agentera.personalGlossaryPublicationResult.v1",
+      resultFields: [
+        "schema_version",
+        "owner",
+        "candidate_id",
+        "candidate_revision",
+        "candidate_capsule_sha256",
+        "decision_sha256",
+        "review_record_sha256",
+        "generation",
+        "policy_version",
+        "status",
+        "profile_section_sha256",
+        "published_at",
+        "result_sha256",
+      ],
+      maxResultUtf8Bytes: 4_096,
       sectionSchemaVersion: "agentera.personalGlossarySection.v1",
       outputStatuses: ["changed", "unchanged_replay", "dry_run_candidate"],
     });
@@ -439,7 +458,7 @@ describe("shared glossary entry authority", () => {
           "lookup",
         ];
       },
-      "profile glossary rendering and persistence must be active while Profile itself performs no consumer lookup",
+      "profile glossary synthesis must remain separate from authorized personal publication",
     ],
     [
       "mutable audit proposal",

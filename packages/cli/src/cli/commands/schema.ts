@@ -427,6 +427,11 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       personal_glossary: {
         command: profileGlossary.command,
         request_schema_version: profileGlossary.requestSchemaVersion,
+        request_fields: profileGlossary.requestFields,
+        max_request_utf8_bytes: profileGlossary.maxRequestUtf8Bytes,
+        result_schema_version: profileGlossary.resultSchemaVersion,
+        result_fields: profileGlossary.resultFields,
+        max_result_utf8_bytes: profileGlossary.maxResultUtf8Bytes,
         output_statuses: profileGlossary.outputStatuses,
         project_checkout: "not_required",
         candidate_retrieval: {

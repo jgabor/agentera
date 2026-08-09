@@ -1,0 +1,15 @@
+id: bbkgsogwen
+artifact: progress
+record:
+  timestamp: 2026-08-09 20:23
+  type: feat
+  phase: build
+  what: Replaced direct personal glossary grammar with current-decision publication.
+  context:
+    intent: Publish only a current explicit CLI automatic admission into the owned personal Glossary section.
+    constraints: No review disposition or project publication change. Profile Full preserves sections but does not invoke publication. Leave task pending and all work uncommitted for independent Audit.
+    unknowns: "Firm decisions control with satisfaction null. Decision listing was degraded; vision and profile detail stayed deferred. Retry state: not_recorded attempt 0."
+    scope: Personal publish command, authority, profile section lifecycle, help, schema, README, source/package regressions.
+  verified: Focused publication source tests passed 34/34; registry/profile tests, typecheck, build, vocabulary authority, profile capability, and capability-contract validation passed. Package verification passed 35/35, including a cold published-package publish/replay smoke. Local rebuilt executable showed automatic decision, changed publish, unchanged replay, and stale rejection with unchanged profile bytes. Full source lane ran twice with 238/239 files, 3873 passed, and 1 skipped; only unrelated upgradeEntityCutover timed out at its 60-second limit both times. Its standalone run passed 25/25 in 67.91 seconds.
+  next: Independent Audit reviews the uncommitted implementation, contracts, tests, census, and progress. Do not mark zbiibnlfgd complete or commit.
+  publication_order: 142

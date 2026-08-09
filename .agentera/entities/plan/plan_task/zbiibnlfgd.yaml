@@ -4,7 +4,7 @@ record:
   name: Replace personal direct publication grammar
   depends_on:
     - kuovmqppuy
-  status: pending
+  status: complete
   acceptance:
     - GIVEN an authorized personal decision WHEN publish runs THEN current provenance revalidates before only the owned profile section changes.
     - GIVEN identical receipt, profile, policy, generation, and date WHEN publish repeats THEN bytes match and unchanged replay reports.
@@ -12,3 +12,13 @@ record:
     - GIVEN replacement ships WHEN help and schema are inspected THEN explicit personal publish is canonical, old personal grammar is absent, and project publication is unchanged.
     - GIVEN each publication rule WHEN source and package regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Atomic publication widens existing PROFILE.md mode from 0600 to 0644; Unreleased changelog still advertises removed report profile-glossary grammar; package regression covers only success/replay, not stale/malformed/unauthorized/no-effects/permission failures.
+    provenance:
+      attempt_id: audit-2
+      source: Audit session ses_0182e0502ffenUReGcXlC00X2r bounded re-review
+      recorded_at: 2026-08-09 21:23
+      writer_command: agentera state plan record-evaluation
