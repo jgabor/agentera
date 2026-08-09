@@ -13,3 +13,13 @@ record:
     - GIVEN interruption, exact replay, or two simultaneous matching clients WHEN correction recovery settles THEN public bytes, entity baselines, activation state, canonical IDs, and results converge; one client owns the transaction, the other replays it, duplicate effects are absent, and supported reads never accept mixed state.
   test_proportionality: At least one pass and one fail per correction decision branch, the 161-row fixture, one interruption and replay proof, and exactly two simultaneous clients. Retain the existing scheduled 100x two-client stale-lock stress without expanding fan-out.
   plan: nsabzvpqqs
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: The authoritative performance owner failed exact_get repetition 2 at 1007.316 ms against the 1000 ms ceiling on a path importing the changed TODO state reader.
+    provenance:
+      attempt_id: zjvdfuxhrj-audit-1
+      source: Agentera Orchestrate Audit evaluation 1
+      recorded_at: 2026-08-09 20:45
+      writer_command: agentera state plan record-evaluation

@@ -79,7 +79,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
   fs.mkdirSync(bin);
   const record = path.join(root, "runs.jsonl");
   const vp = path.join(bin, "vp");
-  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
+  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s","maxWorkers":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" "$VITEST_MAX_WORKERS" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
   fs.chmodSync(vp, 0o755);
   return { root, contractPath, record, bin };
 }
@@ -215,6 +215,15 @@ describe("verification lane ownership", () => {
     expect(runs[0].args).toContain("--no-color");
     expect(runs[0].args).toContain("test/performance.test.ts");
     expect(runs[0].args).not.toContain("test/source.test.ts");
+  });
+
+  it("runs performance-owned files serially inside the isolated owner", () => {
+    const { result, runs } = run(["performance"], fixture(), { VITEST_MAX_WORKERS: "8" });
+    expect(result.status, result.stderr).toBe(0);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ owner: "performance", maxWorkers: "1" });
+    expect(runs[0].args).toContain("test/performance-analytics.test.ts");
+    expect(runs[0].args).toContain("test/performance.test.ts");
   });
 
   it.each(Object.entries(PERFORMANCE_FORWARDING.forbidden_options))("rejects forbidden option %s before runner execution", (option, risk) => {

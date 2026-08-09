@@ -266,6 +266,7 @@ function runOwner(owner, state, forwarded = []) {
     : [];
   const captureEvidence = definition.evidence !== undefined;
   const runnerEnv = { ...process.env, AGENTERA_VERIFICATION_OWNER: owner };
+  if (owner === "performance") runnerEnv.VITEST_MAX_WORKERS = "1";
   delete runnerEnv.AGENTERA_VERIFICATION_RESULT;
   const result = spawnSync("vp", ["test", "run", "--config", config, ...selection.argv, ...reporter], {
     cwd: packageRoot,
