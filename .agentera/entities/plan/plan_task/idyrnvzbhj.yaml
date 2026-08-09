@@ -1,0 +1,16 @@
+id: idyrnvzbhj
+artifact: plan
+record:
+  name: Synchronize current project state
+  depends_on:
+    - cligdtsyyi
+    - zxlgnsiwnn
+    - zvldjqtwpc
+    - vignmtmzdq
+  status: pending
+  acceptance:
+    - GIVEN all prior tasks are complete WHEN closeout runs THEN related plan, progress, TODO, documentation, and health or decision state is coherent with the substantive change.
+    - GIVEN verification runs WHEN targeted and full checks complete THEN source, stress, typecheck, local build, local `check compact`, and diff checks pass.
+    - GIVEN evidence is reported WHEN the plan closes THEN logic, execution, integration, and release-readiness claims remain distinct.
+    - GIVEN no publication was requested WHEN closeout completes THEN no push, tag, publish, or release action occurred.
+  plan: buohwdlkyl

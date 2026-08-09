@@ -103,6 +103,7 @@ mutable agent session state.
 | Registry & packaging | `registries/packageRegistry.test.ts` (registry.json paths), `upgrade/appModel.test.ts`, `cli/npxBundle.test.ts` | `registry.json`, `packages/cli/**`, `scripts/**` |
 | Install-root models | `state/installRoot.test.ts` | `.agentera/install_root_interface_model.yaml`, `.agentera/install_root_behavior_inventory.yaml` (checked-in contract fixtures) |
 | Upgrade / doctor bootstrap | `upgrade/*.test.ts`, `cli/doctorUpgradeParity.test.ts`, `cli/primeAppWording.test.ts`, `cli/primeChannels.test.ts`, `cli/primeProjectIntegration.test.ts`, `cli/prime.test.ts`, `setup/copilot.test.ts` | `sourceRoot` / `AGENTERA_BOOTSTRAP_SOURCE_ROOT` → `references/`, `registry.json` (tests use tmp project trees for `.agentera/` writes) |
+| Source-compiled CLI gate | `cli/compactTodoReferenceGate.test.ts` | `AGENTERA_BOOTSTRAP_SOURCE_ROOT` → checked-in source contracts; compact runs only against tmp project state |
 | Package-surface retirement | `cli/repositoryNativeRetirement.test.ts` | canonical `skills/` and `references/`; deleted native descriptor paths |
 | Repo hygiene scans | `cli/v1LegacyCruft.test.ts` | Whole-tree scan for post-3.0 cruft plus validated confirmed glossary variants; generated, vendor/cache, and historical Agentera state remain excluded |
 | Analytics parity | `analytics/extractCorpusParity.test.ts` | `scripts/extract_corpus.py`, `packages/cli` (one shared seeded TS probe plus an independently implemented Python oracle process); generated-surface no-drift is package-owned through its build setup |

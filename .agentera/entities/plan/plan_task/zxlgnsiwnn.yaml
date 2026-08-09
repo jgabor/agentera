@@ -1,0 +1,13 @@
+id: zxlgnsiwnn
+artifact: plan
+record:
+  name: Preserve compaction parity with minimal fixtures
+  depends_on:
+    - cligdtsyyi
+  status: pending
+  acceptance:
+    - GIVEN entity authority and an over-budget aggregate projection WHEN check and apply run THEN both ignore the projection and preserve its exact bytes.
+    - GIVEN parity fixtures are prepared WHEN the cases run THEN they create no authority data that the behavior does not read.
+    - GIVEN forbidden output is classified WHEN parity runs THEN one owning oracle supplies that evidence.
+    - GIVEN compaction-family closure is checked WHEN registry tests run THEN one owning suite supplies that assertion.
+  plan: buohwdlkyl

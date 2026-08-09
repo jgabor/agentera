@@ -1,0 +1,14 @@
+id: vignmtmzdq
+artifact: plan
+record:
+  name: Align development version metadata
+  depends_on:
+    - cligdtsyyi
+    - zxlgnsiwnn
+    - zvldjqtwpc
+  status: pending
+  acceptance:
+    - GIVEN the repository-gate correction is delivered WHEN version policy is applied THEN it is classified as a fix.
+    - GIVEN the 3.0.0 cutover hold WHEN metadata changes THEN only the permitted development package version advances and suite metadata remains 3.0.0.
+    - GIVEN no release was requested WHEN change notes are updated THEN they remain unreleased and no registry or tag changes occur.
+  plan: buohwdlkyl
