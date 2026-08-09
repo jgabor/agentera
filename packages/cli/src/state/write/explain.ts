@@ -164,8 +164,8 @@ export function buildExplain(
              ? ["AUDIT", "DIMENSION", "FINDING", "TRENDS"]
              : artifact === "experiments"
                ? ["EXPERIMENT"]
-               : artifact === "todo"
-                 ? ["TODO_PUBLIC", "TODO_OPERATIONAL"]
+                : artifact === "todo"
+                  ? verb === "correct-owners" ? ["OWNER_MAPPING"] : ["TODO_PUBLIC", "TODO_OPERATIONAL"]
                  : artifact === "progress"
                    ? ["CYCLE", "CONTEXT", "GLOSSARY_CAVEAT"]
                    : artifact === "decisions"
@@ -203,7 +203,12 @@ export function buildExplain(
       result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["name", "depends_on", "acceptance", "evidence", "blocked_reason"] };
     if (artifact === "plan" && verb === "update")
       result.input_schema = { ...(result.input_schema as Record<string, unknown>), record_fields: ["name", "depends_on", "acceptance", "evidence", "blocked_reason", "surprise"], clearable_patch_fields: ["depends_on", "acceptance", "evidence", "blocked_reason"] };
-    if (artifact === "todo") {
+    if (artifact === "todo" && verb === "correct-owners") {
+      result.input_schema = {
+        ...(result.input_schema as Record<string, unknown>),
+        record_fields: ["schema_version", "owners", "owners.id", "owners.source_line"],
+      };
+    } else if (artifact === "todo") {
       result.input_schema = {
         ...(result.input_schema as Record<string, unknown>),
         typed_fields: ["kind", "target_version", "title", "requirements", "acceptance", "release_blocker", "severity", "readiness"],
@@ -312,6 +317,12 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
   if (entityArtifact && artifact === "todo" && ["set-severity", "supersede", "resolve", "reopen"].includes(verb)) return [
     "select one TODO item with its bare ten-letter --id; lifecycle transitions are flag-only and accept no --input record",
     "supply a reason and YYYY-MM-DD date; supersede additionally requires a distinct existing replacement ID",
+    ...base,
+  ];
+  if (entityArtifact && artifact === "todo" && verb === "correct-owners") return [
+    "supply every canonical TODO ID with one current one-based Markdown source_line through --input",
+    "preview is read-only; apply requires the same owner mapping, its exact effect SHA-256, and --yes",
+    "the correction is available only for marker-absent unsafe-inactive state; exact replay validates the stored owner-mapping authorization",
     ...base,
   ];
   if (entityArtifact && artifact === "todo") return [

@@ -4,7 +4,7 @@ record:
   name: "yrjmbhfjes: Provide effect-bound unsafe TODO owner correction"
   depends_on:
     []
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the correction operation is exposed WHEN its grammar, explain, schema, help, source, and extracted-package surfaces are inspected THEN they describe one compatible preview/apply contract and malformed or missing owner or effect input rejects before effects.
     - GIVEN the hierarchical marker-absent fixture with 161 stale open entities WHEN correction is previewed THEN a bounded exact effect manifest is returned without changing bytes or activating unsafe state.

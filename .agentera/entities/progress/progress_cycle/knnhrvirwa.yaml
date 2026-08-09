@@ -1,0 +1,13 @@
+id: knnhrvirwa
+artifact: progress
+record:
+  timestamp: 2026-08-09 19:52
+  type: fix
+  phase: build
+  what: Added effect-bound owner correction for unsafe-inactive TODO state.
+  context:
+    intent: Recover complete stale TODO ownership without unsafe activation.
+    constraints: Preserve canonical IDs and Agentera-owned fields; leave the TODO open and task in progress for closeout.
+    scope: TODO owner correction, package parity, and activation census.
+  verified: Focused correction coverage, typecheck, build, activation conjunction, state validation, compact, capability contract, and package verification passed.
+  publication_order: 126

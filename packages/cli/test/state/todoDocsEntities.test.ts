@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -14,7 +14,7 @@ import { FILE_REPLACEMENT_RECOVERY_VERSION } from "../../src/state/entityPublica
 import { ExactReplacementConflictError } from "../../src/state/exactReplacementRecovery.js";
 import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
-import { todoLegacyRowFingerprint, todoReconciliationActivationBytes, todoRepairEffect, TODO_ACTIVATION_APPLY_COMMAND, TODO_ACTIVATION_PREVIEW_COMMAND, TODO_REPAIR_APPLY_COMMAND, TODO_REPAIR_PREVIEW_COMMAND, TODO_RECONCILIATION_ACTIVATION_PATH } from "../../src/state/todoReconciliationActivation.js";
+import { todoLegacyRowFingerprint, todoReconciliationActivationBytes, todoRepairEffect, TODO_ACTIVATION_APPLY_COMMAND, TODO_ACTIVATION_PREVIEW_COMMAND, TODO_OWNER_CORRECTION_APPLY_COMMAND, TODO_OWNER_CORRECTION_INPUT_VERSION, TODO_OWNER_CORRECTION_PREVIEW_COMMAND, TODO_REPAIR_APPLY_COMMAND, TODO_REPAIR_PREVIEW_COMMAND, TODO_RECONCILIATION_ACTIVATION_PATH } from "../../src/state/todoReconciliationActivation.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
@@ -24,6 +24,7 @@ import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
 import { loadStateStorageAuthority } from "../../src/state/stateStorageAuthority.js";
 import { resolveSourceRoot } from "../../src/core/sourceRoot.js";
+import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 const roots: string[] = [];
 const MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
@@ -169,6 +170,31 @@ function unsafeInactiveStaleProject(count = 161): { root: string; ids: string[] 
   rows.push("", "Unrelated closing note.", "");
   fs.writeFileSync(path.join(root, "TODO.md"), rows.join("\n"));
   return { root, ids };
+}
+
+function ownerCorrectionInput(root: string, ids: readonly string[]): Record<string, unknown> {
+  const sourceLines = fs.readFileSync(path.join(root, "TODO.md"), "utf8").split(/\r?\n/)
+    .flatMap((line, index) => line.trimStart().startsWith("- [") ? [index + 1] : []);
+  expect(sourceLines).toHaveLength(ids.length);
+  return {
+    schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,
+    owners: ids.map((id, index) => ({ id, source_line: sourceLines[index] })),
+  };
+}
+
+function runOwnerCorrectionClient(root: string, input: Record<string, unknown>, effect: string): Promise<{ code: number | null; stdout: string; stderr: string }> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [path.join(sourceBuildOutputRoot(), "bin/agentera.js"), "state", "todo", "correct-owners", "--input", "-", "--effect-sha256", effect, "--yes", "--format", "json"], {
+      cwd: root,
+      env: sourceSubprocessEnv({ ...process.env, AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../..") }),
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => { stdout += String(chunk); });
+    child.stderr.on("data", (chunk) => { stderr += String(chunk); });
+    child.on("close", (code) => resolve({ code, stdout, stderr }));
+    child.stdin.end(JSON.stringify(input));
+  });
 }
 
 function readinessInput(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -1599,7 +1625,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
         counts: { converted: 1, conflicting: 0 },
         risks: { resurrected_count: 1, resurrected_ids: ["abcdefghij"], omitted_count: 0 },
       },
-      recovery: expect.stringMatching(/Owner correction required.*Do not activate or repair.*request replanning/i),
+      recovery: expect.stringMatching(/Owner correction required.*exact apply_command/i),
     });
     expect(preview.json.error).not.toHaveProperty("effect_sha256");
     expect(preview.json).not.toHaveProperty("apply_command");
@@ -1638,6 +1664,175 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
       expect(apply.json.error).toEqual(preview.json.error);
       expect(files(root)).toEqual(before);
     }
+  });
+
+  it("previews and applies a complete owner correction for 161 stale hierarchical rows", () => {
+    const { root, ids } = unsafeInactiveStaleProject();
+    const input = ownerCorrectionInput(root, ids);
+    const firstEntity = path.join(root, `.agentera/entities/todo/todo_item/${ids[0]}.yaml`);
+    const firstEnvelope = loadYamlMapping(fs.readFileSync(firstEntity, "utf8"));
+    (firstEnvelope.record as any).readiness = readinessInput({ queue_rank: 7 });
+    fs.writeFileSync(firstEntity, dumpYamlMapping(firstEnvelope));
+    const operational = structuredClone((firstEnvelope.record as any).readiness);
+    const before = files(root);
+
+    const help = capture(root, ["state", "todo", "--help"]);
+    const explain = capture(root, ["state", "todo", "explain", "--verb", "correct-owners", "--format", "json"]);
+    const schema = capture(root, ["schema", "--format", "json"]);
+    const missingInput = capture(root, ["state", "todo", "correct-owners", "--dry-run", "--format", "json"]);
+    const malformed = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], {
+      schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,
+      owners: [{ id: ids[0], source_line: 6 }, { id: ids[0], source_line: 7 }],
+    });
+    const bounded = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], {
+      schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,
+      owners: Array.from({ length: 21 }, () => ({ id: "invalid", source_line: 0 })),
+    });
+
+    expect(help.rc).toBe(0);
+    expect(help.out).toContain("state todo correct-owners --input OWNER_MAPPING.yaml");
+    expect(explain.rc).toBe(0);
+    expect(explain.json).toMatchObject({
+      requested_verb: "correct-owners",
+      mutation_class: "batch_transaction",
+      input: { mode: "structured", root: "one unsafe TODO owner mapping" },
+      input_schema: { record_fields: ["schema_version", "owners", "owners.id", "owners.source_line"] },
+    });
+    expect(schema.rc).toBe(0);
+    expect(JSON.stringify(schema.json)).toContain("correct-owners");
+    expect(missingInput.rc).toBe(2);
+    expect(malformed.rc).toBe(2);
+    expect(malformed.json.error).toMatchObject({ class: "schema_violation", message: expect.stringContaining("duplicates another owner claim") });
+    expect(bounded.rc).toBe(2);
+    expect(bounded.json.error.violations).toHaveLength(21);
+    expect(bounded.json.error.violations.at(-1)).toBe("22 additional input violations omitted");
+    expect(files(root)).toEqual(before);
+
+    const preview = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], input);
+
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    expect(preview.json).toMatchObject({
+      command: "state todo correct-owners",
+      operation: { verb: "correct-owners", dry_run: true, idempotent_replay: false },
+      correction: {
+        diagnosis: { counts: { matched: 161, converted: 161, retained: 0, conflicting: 0 }, items: expect.any(Array), omitted_count: 141 },
+        owner_mapping_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        targets: expect.arrayContaining([
+          expect.objectContaining({ path: `.agentera/entities/todo/todo_item/${ids[0]}.yaml` }),
+          expect.objectContaining({ path: TODO_RECONCILIATION_ACTIVATION_PATH }),
+          expect.objectContaining({ path: "TODO.md" }),
+        ]),
+        effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      },
+      apply_command: expect.stringMatching(/state todo correct-owners --input OWNER_MAPPING\.yaml --effect-sha256 [a-f0-9]{64} --yes --format json/),
+    });
+    expect(preview.json.correction.targets).toHaveLength(163);
+    expect(preview.json.correction.diagnosis.items).toHaveLength(20);
+    expect(files(root)).toEqual(before);
+
+    const applied = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], input);
+
+    expect(applied.rc, applied.err || applied.out).toBe(0);
+    expect(applied.json.correction).toEqual(preview.json.correction);
+    const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+    expect(markdown).toContain("Unrelated project note.");
+    expect(markdown).toContain("## Client-specific work");
+    expect(markdown).toContain("Unrelated closing note.");
+    for (const id of ids) expect(markdown.match(new RegExp(`\\[id:${id}\\]`, "g"))).toHaveLength(1);
+    expect(markdown.split("\n").filter((line) => line.includes("PRIVATE_STALE_TODO_")).every((line) => line.includes("[x]"))).toBe(true);
+    const correctedRecord = loadYamlMapping(fs.readFileSync(firstEntity, "utf8")).record as any;
+    expect(correctedRecord).toMatchObject({ status: "resolved", readiness: operational, reconciliation: { public: { present: true, status: "resolved" } } });
+    const activation = JSON.parse(fs.readFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), "utf8"));
+    expect(activation).toMatchObject({ effect_operation: "correct-owners", effect_sha256: preview.json.correction.effect_sha256, owner_mapping_sha256: preview.json.correction.owner_mapping_sha256 });
+    expect(capture(root, ["check", "validate", "state", "--format", "json"]).rc).toBe(0);
+    const stable = files(root);
+    const replay = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], input);
+    expect(replay.rc, replay.err || replay.out).toBe(0);
+    expect(replay.json).toMatchObject({ correction: { effect_sha256: preview.json.correction.effect_sha256 }, operation: { idempotent_replay: true } });
+    expect(files(root)).toEqual(stable);
+  });
+
+  it("rejects invalid correction states, evidence, reopened work, and stale effects before writes", () => {
+    const safe = preactivationProject();
+    const safeInput = { schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION, owners: [{ id: safe.id, source_line: 4 }] };
+    const safeBefore = files(safe.root);
+    const safeRejected = capture(safe.root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], safeInput);
+    expect(safeRejected.rc).toBe(2);
+    expect(safeRejected.json.error.message).toContain("marker-absent unsafe-inactive");
+    expect(files(safe.root)).toEqual(safeBefore);
+
+    const { root, ids } = unsafeInactiveStaleProject(2);
+    const input = ownerCorrectionInput(root, ids);
+    const before = files(root);
+    const missingOwner = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], { ...input, owners: (input.owners as any[]).slice(0, 1) });
+    const unmatchedOwner = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], { ...input, owners: (input.owners as any[]).map((owner, index) => index === 1 ? { ...owner, id: "zzzzzzzzzz" } : owner) });
+    expect(missingOwner.rc).toBe(2);
+    expect(unmatchedOwner.rc).toBe(2);
+    expect(missingOwner.json.error.message).toContain("complete one-to-one evidence");
+    expect(unmatchedOwner.json.error.message).toContain("complete one-to-one evidence");
+    expect(files(root)).toEqual(before);
+
+    const reopened = unsafeInactiveStaleProject(1);
+    fs.writeFileSync(path.join(reopened.root, "TODO.md"), fs.readFileSync(path.join(reopened.root, "TODO.md"), "utf8").replace("- [x]", "- [ ]"));
+    const reopenedEntity = path.join(reopened.root, `.agentera/entities/todo/todo_item/${reopened.ids[0]}.yaml`);
+    const reopenedEnvelope = loadYamlMapping(fs.readFileSync(reopenedEntity, "utf8"));
+    (reopenedEnvelope.record as any).status = "resolved";
+    fs.writeFileSync(reopenedEntity, dumpYamlMapping(reopenedEnvelope));
+    const reopenedBefore = files(reopened.root);
+    const reopenRejected = capture(reopened.root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], ownerCorrectionInput(reopened.root, reopened.ids));
+    expect(reopenRejected.rc).toBe(2);
+    expect(reopenRejected.json.error.violations.join("\n")).toContain("would reopen completed TODO");
+    expect(files(reopened.root)).toEqual(reopenedBefore);
+
+    const preview = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], input);
+    fs.appendFileSync(path.join(root, "TODO.md"), "\nChanged after preview.\n");
+    const changed = files(root);
+    const stale = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], input);
+    expect(stale.rc).toBe(2);
+    expect(stale.json.error.message).toContain("effects changed after preview");
+    expect(files(root)).toEqual(changed);
+  });
+
+  it("recovers interrupted owner correction without exposing mixed reads", () => {
+    const { root, ids } = unsafeInactiveStaleProject();
+    const input = ownerCorrectionInput(root, ids);
+    const preview = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], input);
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "correct-owners")!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.correction.effect_sha256 }, callerPayload: { confirmed: true, effect_sha256: preview.json.correction.effect_sha256 }, input };
+    expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/);
+    binding.publicationContext.close();
+    const pending = files(root);
+    const blocked = capture(root, ["state", "todo", "list", "--format", "json"]);
+    const changedOwners = (input.owners as any[]).map((owner) => ({ ...owner }));
+    [changedOwners[0].source_line, changedOwners[1].source_line] = [changedOwners[1].source_line, changedOwners[0].source_line];
+    const changedInput = { ...input, owners: changedOwners };
+    const wrongEvidence = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], changedInput);
+    expect(blocked.rc).toBe(1);
+    expect(blocked.json.error).toMatchObject({ class: "unsupported_state", message: expect.stringContaining("no mixed TODO state is readable") });
+    expect(wrongEvidence.rc).toBe(2);
+    expect(wrongEvidence.json.error.message).toContain("owner mapping");
+    expect(files(root)).toEqual(pending);
+    const retry = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], input);
+    expect(retry.rc, retry.err || retry.out).toBe(0);
+    expect(retry.json.reconciliation.recovered).toHaveLength(1);
+    expect(capture(root, ["check", "validate", "state", "--format", "json"]).rc).toBe(0);
+  });
+
+  it("converges exactly two simultaneous owner-correction clients", async () => {
+    const { root, ids } = unsafeInactiveStaleProject(2);
+    const input = ownerCorrectionInput(root, ids);
+    const preview = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], input);
+    const results = await Promise.all([
+      runOwnerCorrectionClient(root, input, preview.json.correction.effect_sha256),
+      runOwnerCorrectionClient(root, input, preview.json.correction.effect_sha256),
+    ]);
+    expect(results.map(({ code }) => code), JSON.stringify(results)).toEqual([0, 0]);
+    const payloads = results.map(({ stdout }) => JSON.parse(stdout));
+    expect(payloads.filter(({ operation }: any) => operation.idempotent_replay)).toHaveLength(1);
+    expect(payloads.filter(({ operation }: any) => !operation.idempotent_replay)).toHaveLength(1);
+    const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+    for (const id of ids) expect(markdown.match(new RegExp(`\\[id:${id}\\]`, "g"))).toHaveLength(1);
+    expect(capture(root, ["check", "validate", "state", "--format", "json"]).rc).toBe(0);
   });
 
   it("fails closed when an explicitly managed inactive row has a stale entity status", () => {
@@ -2229,8 +2424,8 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
         name: "unsafe-inactive",
         make: () => unsafeInactiveStaleProject().root,
         state: "unsafe_inactive",
-        preview: null,
-        apply: null,
+        preview: TODO_OWNER_CORRECTION_PREVIEW_COMMAND,
+        apply: TODO_OWNER_CORRECTION_APPLY_COMMAND,
         validationCode: "todo_reconciliation_unsafe_inactive",
       },
       {
@@ -2254,9 +2449,9 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       expect(prime.json.todo_reconciliation).toMatchObject({ state: testCase.state, status: "action_required", preview_command: testCase.preview, apply_command: testCase.apply });
       expect(prime.json.attention.join("\n")).toContain(testCase.preview ?? "Owner correction required");
       const primeText = capture(root, ["prime"]);
-      expect(primeText.out).toContain(testCase.apply ?? "Owner correction required");
+      expect(primeText.out).toContain(testCase.state === "unsafe_inactive" ? testCase.preview! : testCase.apply ?? "Owner correction required");
       if (testCase.state === "unsafe_inactive") {
-        expect(prime.json.next_action).toMatchObject({ capability: "plan", phase: "plan" });
+        expect(prime.json.next_action).toMatchObject({ capability: "build", phase: "build" });
         expect(primeText.out).not.toContain("state todo activate");
         expect(primeText.out).not.toContain("state todo repair");
       }
@@ -2273,7 +2468,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       const issue = validation.json.issues.find((entry: any) => entry.code === testCase.validationCode);
       expect(issue).toMatchObject({ diagnosis: { state: testCase.state, preview_command: testCase.preview, apply_command: testCase.apply } });
       const validationText = capture(root, ["check", "validate", "state"]);
-      expect(validationText.out + validationText.err).toContain(testCase.apply ?? "Owner correction required");
+      expect(validationText.out + validationText.err).toContain(testCase.state === "unsafe_inactive" ? testCase.preview! : testCase.apply ?? "Owner correction required");
       expect(files(root), testCase.name).toEqual(before);
     }
   });

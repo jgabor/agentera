@@ -25,7 +25,6 @@ const RETIRED_PACKAGE_SURFACES = [
   ".codex-plugin/plugin.json",
   ".cursor-plugin/plugin.json",
   ".github/plugin/plugin.json",
-  ".opencode/package.json",
   ".opencode/plugins/agentera.js",
   "agents/openai.yaml",
   "plugin.json",

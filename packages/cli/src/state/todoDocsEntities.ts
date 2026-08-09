@@ -8,21 +8,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import {
-  allocateEntityId,
-  assertEntityDiscoveryOrigin,
-  canonicalEntityEnvelopeBytes,
-  canonicalEntityRecordViolations,
-  discoverEntities,
-  entityExactGetMaxBytes,
-  exactDiscoveredEntityBytes,
-  publishEntityUnderLock,
-  replaceEntityUnderLock,
-  validateEntityState,
-  withEntityWriterLock,
-  type DiscoveredEntity,
-  type EntityDiscoveryResult,
-} from "./entityStorage.js";
+import { allocateEntityId, assertEntityDiscoveryOrigin, canonicalEntityEnvelopeBytes, canonicalEntityRecordViolations, discoverEntities, entityExactGetMaxBytes, exactDiscoveredEntityBytes, publishEntityUnderLock, replaceEntityUnderLock, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
 import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
 import type { MigrationSourceBindingContext } from "./migrationSourceBinding.js";
 import { detectStateModeBinding } from "./stateMode.js";
@@ -39,17 +25,8 @@ import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMa
 import { evaluateTodoReadinessQueue, type TodoReadinessEvaluation } from "../cli/todoReadinessSelection.js";
 import { artifactSchemasDir, loadArtifactRecord, registryModelPath, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { inspectTodoReconciliation, publishTodoReconciliation, recoverTodoReconciliation, todoCreateRequestSha256, type TodoReconciliationBinding, type TodoReconciliationTarget } from "./todoReconciliationTransaction.js";
-import {
-  loadTodoReconciliationActivation,
-  todoLegacyRowFingerprint,
-  todoReconciliationActivationBytes,
-  TODO_RECONCILIATION_ACTIVATION_PATH,
-  TODO_RECONCILIATION_ITEM_LIMIT,
-  TODO_ACTIVATION_APPLY_COMMAND, TODO_ACTIVATION_PREVIEW_COMMAND, TODO_ACTIVATION_RISK_LIMIT, TODO_REPAIR_APPLY_COMMAND, TODO_REPAIR_PREVIEW_COMMAND,
-  todoActivationEffect, todoRepairEffect, unchangedTodoActivationEffect,
-  type TodoReconciliationActivation,
-} from "./todoReconciliationActivation.js";
-import { planTodoRepair } from "./todoReconciliationRepair.js";
+import { loadTodoReconciliationActivation, todoLegacyRowFingerprint, todoReconciliationActivationBytes, TODO_RECONCILIATION_ACTIVATION_PATH, TODO_RECONCILIATION_ITEM_LIMIT, TODO_ACTIVATION_APPLY_COMMAND, TODO_ACTIVATION_PREVIEW_COMMAND, TODO_ACTIVATION_RISK_LIMIT, TODO_OWNER_CORRECTION_APPLY_COMMAND, TODO_OWNER_CORRECTION_PREVIEW_COMMAND, TODO_REPAIR_APPLY_COMMAND, TODO_REPAIR_PREVIEW_COMMAND, todoActivationEffect, todoOwnerCorrectionEffect, todoRepairEffect, unchangedTodoActivationEffect, type TodoReconciliationActivation } from "./todoReconciliationActivation.js";
+import { normalizeTodoOwnerCorrectionEvidence, planTodoOwnerCorrection, planTodoRepair } from "./todoReconciliationRepair.js";
 import { readTodoMarkdown, renderManagedMarkdown } from "./todoMarkdownProjection.js";
 import { inactiveTodoActivationSafety, rejectUnsafeInactiveTodoActivation, unsafeInactiveDuplicateDiagnosis } from "./todoActivationSafety.js";
 
@@ -473,6 +450,7 @@ function withBaseline(record: JsonObject, value: TodoPublicSnapshot): JsonObject
 function inactiveTodoMutation(): never { reject({ class: "conflict", message: "TODO reconciliation is inactive; ordinary TODO mutations cannot activate it implicitly", syntax: TODO_ACTIVATION_PREVIEW_COMMAND, example: TODO_ACTIVATION_APPLY_COMMAND, recovery: `Run exactly '${TODO_ACTIVATION_PREVIEW_COMMAND}', review every reported effect, then run exactly '${TODO_ACTIVATION_APPLY_COMMAND}'; no state was changed.` }); }
 function activationEnvelope(effect: JsonObject, dryRun: boolean, replay: boolean, transactionId: string | null, targets: number, recovered: string[]): StateWriteEnvelope { return { schemaVersion: "agentera.stateWrite.v1", command: "state todo activate", status: "pass", path: TODO_RECONCILIATION_ACTIVATION_PATH, artifact: "todo", operation: { verb: "activate", dry_run: dryRun, idempotent_replay: replay }, validation: { status: "pass", violations: [] }, activation: effect, apply_command: TODO_ACTIVATION_APPLY_COMMAND.replace("EFFECT_SHA256", String(effect.effect_sha256)), reconciliation: { transaction_id: transactionId, targets, recovered } }; }
 function repairEnvelope(effect: JsonObject, dryRun: boolean, replay: boolean, transactionId: string | null, targets: number, recovered: string[]): StateWriteEnvelope { return { schemaVersion: "agentera.stateWrite.v1", command: "state todo repair", status: "pass", path: TODO_RECONCILIATION_ACTIVATION_PATH, artifact: "todo", operation: { verb: "repair", dry_run: dryRun, idempotent_replay: replay }, validation: { status: "pass", violations: [] }, repair: effect, apply_command: TODO_REPAIR_APPLY_COMMAND.replace("EFFECT_SHA256", String(effect.effect_sha256)), reconciliation: { transaction_id: transactionId, targets, recovered } }; }
+function ownerCorrectionEnvelope(effect: JsonObject, dryRun: boolean, replay: boolean, transactionId: string | null, targets: number, recovered: string[]): StateWriteEnvelope { return { schemaVersion: "agentera.stateWrite.v1", command: "state todo correct-owners", status: "pass", path: TODO_RECONCILIATION_ACTIVATION_PATH, artifact: "todo", operation: { verb: "correct-owners", dry_run: dryRun, idempotent_replay: replay }, validation: { status: "pass", violations: [] }, correction: effect, apply_command: TODO_OWNER_CORRECTION_APPLY_COMMAND.replace("EFFECT_SHA256", String(effect.effect_sha256)), reconciliation: { transaction_id: transactionId, targets, recovered } }; }
 function envelope(command: string, entity: { id: string; path: string; replay: boolean }, artifact: "todo" | "docs", record: JsonObject, dryRun: boolean): StateWriteEnvelope { return { schemaVersion: "agentera.stateWrite.v1", command, status: "pass", path: entity.path, id: entity.id, artifact, record, operation: { verb: command.split(" ").at(-1), dry_run: dryRun, idempotent_replay: entity.replay }, validation: { status: "pass", violations: [] } }; }
 function targetPath(root: string, sourceRoot: string, artifact: "todo" | "docs", id: string): string {
   const model = definition(artifact); return path.join(root, contract(model.boundary, sourceRoot).entityRoot, artifact, model.boundary, `${id}.yaml`);
@@ -695,12 +673,14 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const sourceBinding = { kind: "project", projectRoot: context.validatedRoot } as const;
     context.assertValid();
     const todoBinding = artifact === "todo" ? todoReconciliationBinding(req.projectRoot, sourceRoot) : null;
+    const correctingOwners = artifact === "todo" && req.spec.verb === "correct-owners";
+    const ownerEvidence = correctingOwners ? normalizeTodoOwnerCorrectionEvidence(req.input ?? {}) : null;
     const pending = todoBinding ? inspectTodoReconciliation(pinnedRoot, todoBinding) : [];
     const initialActivation = artifact === "todo" ? loadTodoReconciliationActivation(pinnedRoot) : null;
-    if (artifact === "todo" && ["activate", "repair"].includes(req.spec.verb)) {
+    if (artifact === "todo" && ["activate", "repair", "correct-owners"].includes(req.spec.verb)) {
       const repairing = req.spec.verb === "repair";
-      const previewCommand = repairing ? TODO_REPAIR_PREVIEW_COMMAND : TODO_ACTIVATION_PREVIEW_COMMAND;
-      const applyCommand = repairing ? TODO_REPAIR_APPLY_COMMAND : TODO_ACTIVATION_APPLY_COMMAND;
+      const previewCommand = correctingOwners ? TODO_OWNER_CORRECTION_PREVIEW_COMMAND : repairing ? TODO_REPAIR_PREVIEW_COMMAND : TODO_ACTIVATION_PREVIEW_COMMAND;
+      const applyCommand = correctingOwners ? TODO_OWNER_CORRECTION_APPLY_COMMAND : repairing ? TODO_REPAIR_APPLY_COMMAND : TODO_ACTIVATION_APPLY_COMMAND;
       if (repairing && !initialActivation) reject({ class: "conflict", message: "TODO repair requires an existing reconciliation activation marker", recovery: `Use '${TODO_ACTIVATION_PREVIEW_COMMAND}' for an inactive project; no state was changed.` });
       if (req.dryRun && (req.values.confirmed === true || req.values.effect_sha256 !== undefined)) reject({ class: "mutually_exclusive", message: `TODO ${req.spec.verb} --dry-run cannot include apply confirmation`, recovery: `Run exactly '${previewCommand}' or the preview's exact apply_command; no state was changed.` });
       if (!req.dryRun && (req.values.confirmed !== true || !SHA256.test(String(req.values.effect_sha256 ?? "")))) reject({ class: "missing_argument", message: `TODO ${req.spec.verb} apply requires the preview effect SHA-256 and explicit --yes confirmation`, syntax: previewCommand, example: applyCommand, recovery: `Run exactly '${previewCommand}', review every reported effect, then run its exact apply_command; no state was changed.` });
@@ -711,7 +691,8 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const recoveryReceipts = todoBinding && !req.dryRun
       ? recoverTodoReconciliation(context, sourceRoot, todoBinding, {
           createRequestSha256,
-          ...(["activate", "repair"].includes(req.spec.verb) ? { activationEffectSha256: String(req.values.effect_sha256) } : {}),
+          ...(["activate", "repair", "correct-owners"].includes(req.spec.verb) ? { activationEffectSha256: String(req.values.effect_sha256) } : {}),
+          ...(correctingOwners ? { ownerMappingSha256: ownerEvidence!.sha256 } : {}),
           beforeCommit: () => assertState(pinnedRoot, sourceRoot, sourceBinding),
         })
       : [];
@@ -770,6 +751,24 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
           },
         });
         context.assertValid(); return activationEnvelope(effect, false, false, transaction.id, transaction.targetCount, recovered);
+      }
+      if (req.spec.verb === "correct-owners") { if (activation) {
+        if (!req.dryRun && activation.effect_operation === "correct-owners" && activation.effect_sha256 === req.values.effect_sha256 && activation.owner_mapping_sha256 === ownerEvidence!.sha256) {
+          const replayEffect = todoOwnerCorrectionEffect({ counts: { matched: 0, converted: 0, retained: 0, duplicate: 0, stale: 0, conflicting: 0 }, items: [], omitted_count: 0 }, ownerEvidence!.sha256, [], publicRelative, markdownBefore, markdown); replayEffect.effect_sha256 = activation.effect_sha256!; return ownerCorrectionEnvelope(replayEffect, false, true, null, 0, recovered);
+        }
+        reject({ class: "conflict", message: "TODO owner correction requires marker-absent unsafe-inactive state", recovery: "Use state todo repair only for an unsafe active reconciliation, or retry the exact owner-correction apply command when its stored effect and owner mapping match; no state was changed." });
+      }
+        let unsafe = true; try { unsafe = !inactiveTodoActivationSafety(managedRows(markdown, null, todoEntities), todoEntities).safe; } catch { unsafe = true; }
+        if (!unsafe) reject({ class: "conflict", message: "TODO owner correction requires marker-absent unsafe-inactive state", recovery: `Use '${TODO_ACTIVATION_PREVIEW_COMMAND}' for a safe inactive project; no state was changed.` }); const plan = planTodoOwnerCorrection(markdown, todoEntities, ownerEvidence!);
+        for (const [todoId, record] of plan.records) { const violations = recordViolations("todo", record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: "todo entity input is invalid", violations }); if (record.readiness !== undefined) assertTodoReferences(todoId, record, [...plan.records].map(([entityId, entityRecord]) => ({ boundary: TODO.boundary, id: entityId, record: entityRecord }))); }
+        let activationBytesAfter = todoReconciliationActivationBytes([], "0".repeat(64), "correct-owners", ownerEvidence!.sha256); const activationAfter = JSON.parse(activationBytesAfter) as TodoReconciliationActivation; const finalRows = managedRows(plan.rendered, activationAfter, todoEntities).rows;
+        for (const [todoId, record] of plan.records) { const row = finalRows.get(todoId); plan.records.set(todoId, withBaseline(record, row ? rowSnapshot(row, record) : { present: false })); }
+        const targets: TodoReconciliationTarget[] = todoEntities.map((entity) => ({ path: entity.relativePath, before: exactDiscoveredEntityBytes(entity), after: canonicalEntityEnvelopeBytes({ id: entity.id!, artifact: "todo", record: plan.records.get(entity.id!)!, migrationProvenance: entity.migrationProvenance ?? undefined }) })); targets.push({ path: TODO_RECONCILIATION_ACTIVATION_PATH, before: null, after: activationBytesAfter }); targets.push({ path: publicRelative, before: publicExists ? markdownBefore : null, after: plan.rendered });
+        const preliminaryEffect = todoOwnerCorrectionEffect(plan.diagnosis, ownerEvidence!.sha256, targets, publicRelative, markdownBefore, plan.rendered); activationBytesAfter = todoReconciliationActivationBytes([], String(preliminaryEffect.effect_sha256), "correct-owners", ownerEvidence!.sha256); targets.find((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH)!.after = activationBytesAfter;
+        const effect = todoOwnerCorrectionEffect(plan.diagnosis, ownerEvidence!.sha256, targets, publicRelative, markdownBefore, plan.rendered); if (effect.effect_sha256 !== preliminaryEffect.effect_sha256) throw new Error("TODO owner correction effect authorization is not self-consistent");
+        if (req.dryRun) return ownerCorrectionEnvelope(effect, true, false, null, (effect.targets as unknown[]).length, recovered); if (req.values.effect_sha256 !== effect.effect_sha256) reject({ class: "conflict", message: "TODO owner correction effects changed after preview", syntax: TODO_OWNER_CORRECTION_PREVIEW_COMMAND, example: TODO_OWNER_CORRECTION_APPLY_COMMAND, recovery: `Rerun exactly '${TODO_OWNER_CORRECTION_PREVIEW_COMMAND}', review the changed bounded effects, then run its new exact apply_command; no state was changed.` });
+        const transaction = publishTodoReconciliation(context, sourceRoot, todoBinding!, targets, { activationEffectSha256: String(effect.effect_sha256), ownerMappingSha256: ownerEvidence!.sha256, interruptAfterTarget: options.interruptAfterTarget, beforeCommit: () => { assertState(pinnedRoot, sourceRoot, sourceBinding); const currentBinding = todoReconciliationBinding(req.projectRoot, sourceRoot); if (currentBinding.publicPath !== todoBinding!.publicPath || currentBinding.mappingSha256 !== todoBinding!.mappingSha256) reject({ class: "conflict", message: "TODO reconciliation mapping changed during owner correction publication", recovery: "Preserve the changed docs mapping and retry owner correction after every transaction target is restored; no mapping bytes were overwritten." }); } });
+        context.assertValid(); return ownerCorrectionEnvelope(effect, false, false, transaction.id, transaction.targetCount, recovered);
       }
       if (req.spec.verb === "repair") {
         if (!activation || !loadedActivation) throw new Error("TODO repair lost its required activation marker");

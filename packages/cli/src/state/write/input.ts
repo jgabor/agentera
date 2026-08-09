@@ -2,8 +2,9 @@ import fs from "node:fs";
 
 import { loadYamlMapping } from "../../core/yaml.js";
 import { glossaryCaveatContract } from "../../registries/glossaryCaveatContract.js";
+import { todoOwnerCorrectionInputViolations } from "../todoReconciliationRepair.js";
 
-export type StructuredInputFieldType = "string" | "date" | "datetime" | "mapping" | "list";
+export type StructuredInputFieldType = "string" | "integer" | "date" | "datetime" | "mapping" | "list";
 
 export interface StructuredInputFieldDescriptor {
   path: string;
@@ -157,12 +158,32 @@ const PLAN_TASK_UPDATE_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   examples: ["agentera state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml --format json"],
 };
 
+const TODO_OWNER_CORRECTION_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
+  root: "one unsafe TODO owner mapping",
+  fields: [
+    field("schema_version", "string", "Exact owner-correction input schema version.", { required: true, enum: ["agentera.todoOwnerCorrection.v1"], update: "replace" }),
+    field("owners", "list", "Complete one-to-one canonical TODO ID to current Markdown source-line mapping.", { required: true, itemType: "mapping", shape: "id:string, source_line:integer", update: "replace" }),
+    field("owners.id", "string", "Canonical bare ten-letter TODO ID claimed by this row.", { required: true, update: "replace" }),
+    field("owners.source_line", "integer", "Current one-based Markdown line claimed by this TODO ID.", { required: true, update: "replace" }),
+  ],
+  semantics: {
+    mode: "exact_owner_mapping",
+    owners: "every canonical TODO entity and every managed TODO checkbox row must appear exactly once; input order is normalized by ID before effect authorization",
+    public_authority: "the current mapped Markdown row supplies public description, severity, status, and order; entity operational fields remain unchanged",
+  },
+  ownedFields: ["reconciliation", "public_document", "activation"],
+  immutableFields: ["id", "artifact", "readiness", "dependencies", "gates", "evidence", "lifecycle"],
+  bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256 },
+  examples: ["agentera state todo correct-owners --input owner-mapping.yaml --dry-run --format json"],
+};
+
 const STRUCTURED_INPUT_SCHEMAS: Record<string, StructuredInputSchemaDescriptor> = {
   "progress.append": PROGRESS_INPUT_SCHEMA,
   "decisions.append": DECISION_APPEND_INPUT_SCHEMA,
   "decisions.amend": DECISION_AMEND_INPUT_SCHEMA,
   "plan.append": PLAN_TASK_APPEND_INPUT_SCHEMA,
   "plan.update": PLAN_TASK_UPDATE_INPUT_SCHEMA,
+  "todo.correct-owners": TODO_OWNER_CORRECTION_INPUT_SCHEMA,
 };
 
 export function structuredInputDescriptor(artifact: string, verb: string): StructuredInputSchemaDescriptor | null {
@@ -367,12 +388,13 @@ export function structuredRecordInputViolations(
   verb: string,
   input: Record<string, unknown> | null,
 ): string[] {
-  if (!input || (artifact !== "progress" && artifact !== "decisions" && artifact !== "plan")) return [];
+  if (!input || (artifact !== "progress" && artifact !== "decisions" && artifact !== "plan" && artifact !== "todo")) return [];
   if (artifact === "progress" && verb === "append") return progressInputViolations(input);
   if (artifact === "decisions" && (verb === "append" || verb === "amend"))
     return decisionInputViolations(input, verb);
   if (artifact === "plan" && (verb === "append" || verb === "update"))
     return planTaskInputViolations(input, verb);
+  if (artifact === "todo" && verb === "correct-owners") return todoOwnerCorrectionInputViolations(input);
   return [];
 }
 
