@@ -1,0 +1,14 @@
+id: cyuouoauqk
+artifact: progress
+record:
+  timestamp: 2026-08-09 11:49
+  type: test
+  phase: build
+  what: Bounded writer replay scenarios to two simultaneous clients.
+  context:
+    intent: Resolve task zvldjqtwpc writer concurrency evidence.
+    constraints: Retain stress ownership and leave the task in progress pending audit.
+    scope: packages/cli/test/state/write/concurrency.test.ts; decision yutmybiewq.
+  verified: Source concurrency 6/6 passed in 6.682s. Scheduled stress 2/2 passed in 25.046s, including 100 stale-lock races.
+  next: Independent audit must pass before evaluator provenance and terminal task state.
+  publication_order: 110

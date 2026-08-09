@@ -1,0 +1,23 @@
+id: cligdtsyyi
+artifact: plan
+record:
+  name: Enforce stable TODO references at the repository boundary
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an active top-level state YAML value or canonical entity value contains `TODO line N` or `TODO.md:N` WHEN `check compact` runs THEN it exits 1 with path-sorted diagnostics capped at 20 and an omitted count.
+    - GIVEN active state has no violation WHEN the gate runs THEN its successful output remains compatible and no file changes.
+    - GIVEN matching text exists only in archive or migration history WHEN the gate runs THEN history does not cause failure.
+    - GIVEN temporary fixtures for each active authority class WHEN source verification runs THEN pass and fail cases cover the rule without reading checkout state.
+  plan: buohwdlkyl
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Raw YAML text scanning treats comments as state values; parse YAML and scan string values only, then add comment and key regressions.
+    provenance:
+      attempt_id: cligdtsyyi-audit-2
+      source: Audit ses_01a3045c8ffeCtn5abX5srQ4XN bounded re-review
+      recorded_at: 2026-08-09 11:32
+      writer_command: agentera state plan record-evaluation

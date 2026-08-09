@@ -1,0 +1,38 @@
+id: buohwdlkyl
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-09
+    status: complete
+    reviewed: 2026-08-09
+    critic_issues: 4 found, 3 addressed, 1 dismissed
+    revised: Defined failure-only gate compatibility, byte-level parity evidence, and an explicit contention-evidence decision.
+    title: "Plan: Simplify high-cost test evidence"
+  what: Move mutable-state hygiene into the repository content gate, remove irrelevant compaction setup and duplicate assertions, and reduce deterministic writer-concurrency fan-out while preserving distinct evidence layers.
+  why: Keep normal verification cheaper and clearer without weakening project-state hygiene, compaction parity, or real-process concurrency guarantees.
+  constraints: Keep source tests independent of live mutable state; keep successful compaction output compatible; keep diagnostics bounded and read-only; use the transient locally compiled CLI; retain scheduled stress ownership; obey the 3.0.0 cutover hold.
+  overall_acceptance: GIVEN the remediation is complete WHEN source verification, scheduled stress, and repository gates run THEN live-state hygiene is enforced outside Vitest, compaction parity uses minimal byte-preserving fixtures, writer concurrency retains deterministic and stress evidence with lower normal fan-out, and every affected check passes through the authoritative local executable.
+  scope:
+    included:
+      - Active project-state reference hygiene and repository-gate diagnostics
+      - Entity-authority compaction parity fixtures and assertion ownership
+      - Public writer concurrency evidence in source and stress verification lanes
+      - Development version metadata and same-change project-state closeout
+    excluded:
+      - New state-reference syntax beyond the two reviewed volatile forms
+      - Historical archive or migration cleanup
+      - New concurrency guarantees or public operations not covered today
+      - Publication, tagging, pushing, or release promotion
+    deferred:
+      []
+  design: First transfer mutable-state hygiene to the explicit repository boundary without changing successful output. Then simplify parity evidence around unchanged observable behavior. Separately compare concurrency failure modes before reducing normal fan-out, preserving only evidence that proves a distinct invariant. Finish with policy-aligned metadata and one current-state synchronization.
+  unknowns:
+    - question: Does eight-contender public replay prove an invariant not covered by the two-contender operation matrix and the existing repeated stale-lock stress owner?
+      affects_task: 3
+      resolve_by: Compare asserted invariants and observed failure modes before changing fan-out; retain at most one scheduled high-fanout case only when it adds distinct evidence.
+  rejected:
+    - issue: Add distinct-payload decision append coverage while reducing concurrency fan-out.
+      rationale: The current suite has no such evidence to preserve, and the shared distinct-write invariant is already covered by progress append; adding it would expand scope and cost.
+  surprises:
+    []

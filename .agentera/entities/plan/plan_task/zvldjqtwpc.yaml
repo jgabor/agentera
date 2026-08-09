@@ -1,0 +1,23 @@
+id: zvldjqtwpc
+artifact: plan
+record:
+  name: Resolve and bound writer concurrency evidence
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN current source and stress assertions WHEN their invariants are compared THEN the retained fan-out decision is recorded before test changes.
+    - GIVEN two simultaneous clients invoke each covered replay operation WHEN both settle THEN one owner remains and exactly one receipt is a replay.
+    - GIVEN two distinct progress appends run together WHEN both settle THEN both semantic records survive under distinct identities.
+    - GIVEN source verification runs WHEN concurrency scenarios execute THEN no scenario starts more than two clients and scheduled stress retains repeated race evidence.
+  plan: buohwdlkyl
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: zvldjqtwpc-audit-1
+      source: Audit ses_01a10a4daffefbf0i63uD1jcJI
+      recorded_at: 2026-08-09 11:57
+      writer_command: agentera state plan record-evaluation

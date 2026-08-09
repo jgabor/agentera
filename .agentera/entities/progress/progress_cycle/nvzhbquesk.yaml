@@ -1,0 +1,15 @@
+id: nvzhbquesk
+artifact: progress
+record:
+  timestamp: 2026-08-09 12:27
+  type: fix
+  phase: build
+  what: Aligned development version metadata for the repository-gate fix.
+  context:
+    intent: Advance only permitted development metadata for the completed repository-gate fix.
+    constraints: Keep suite metadata at 3.0.0; no qualification, publication, tag, push, task completion, or commit.
+    scope: packages/cli/package.json version and agentera.gitRef only.
+  discovered: A new unreleased changelog entry would make gitRef provenance fail before an allowed substantive commit, so no change note was required for this metadata-only task.
+  verified: Prepared 3.0.0-dev.48 with the repository-owned command; preparation --check returned noop; local release-metadata and compact checks passed; 3 targeted release files with 113 tests, typecheck, and build passed.
+  next: Await audit. Do not complete or commit this task.
+  publication_order: 112

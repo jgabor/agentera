@@ -1,0 +1,12 @@
+id: svhneymddq
+artifact: progress
+record:
+  timestamp: 2026-08-09 11:12
+  type: fix
+  phase: build
+  what: Added a read-only compact gate for volatile active-state TODO line references.
+  context:
+    intent: Enforce stable TODO references at active-state repository boundaries.
+    constraints: Scans only top-level .agentera YAML and canonical entity YAML; archive and migration history are excluded. Task cligdtsyyi remains in progress pending audit.
+  verified: Passed pnpm -C packages/cli test:source (228 files, 3420 passed, 1 skipped), pnpm -C packages/cli build, and node packages/cli/dist/bin/agentera.js check compact --format json.
+  publication_order: 108

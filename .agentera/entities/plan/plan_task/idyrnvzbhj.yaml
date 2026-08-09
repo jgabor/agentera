@@ -1,0 +1,26 @@
+id: idyrnvzbhj
+artifact: plan
+record:
+  name: Synchronize current project state
+  depends_on:
+    - cligdtsyyi
+    - zxlgnsiwnn
+    - zvldjqtwpc
+    - vignmtmzdq
+  status: complete
+  acceptance:
+    - GIVEN all prior tasks are complete WHEN closeout runs THEN related plan, progress, TODO, documentation, and health or decision state is coherent with the substantive change.
+    - GIVEN verification runs WHEN targeted and full checks complete THEN source, stress, typecheck, local build, local `check compact`, and diff checks pass.
+    - GIVEN evidence is reported WHEN the plan closes THEN logic, execution, integration, and release-readiness claims remain distinct.
+    - GIVEN no publication was requested WHEN closeout completes THEN no push, tag, publish, or release action occurred.
+  plan: buohwdlkyl
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Current docs release_metadata summary reports 3.0.0-dev.38 at a8af87d while package metadata is 3.0.0-dev.48 at 4ce4eafa; update the document-owned summary and append corrective progress.
+    provenance:
+      attempt_id: idyrnvzbhj-audit-2
+      source: Audit ses_019ccd478ffeg8xdWbJULbMC2R bounded re-review
+      recorded_at: 2026-08-09 13:24
+      writer_command: agentera state plan record-evaluation

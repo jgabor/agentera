@@ -1,0 +1,12 @@
+id: ehxxozgkwb
+artifact: progress
+record:
+  timestamp: 2026-08-09 11:28
+  type: fix
+  phase: build
+  what: Corrected compact TODO-reference scanning to inspect parsed YAML string scalar values only.
+  context:
+    intent: Prevent active-state comments and YAML keys from triggering the TODO-reference hygiene gate.
+    constraints: Retained active scopes, history exclusions, capped diagnostics, and read-only apply behavior. Task cligdtsyyi remains in progress after audit attempt cligdtsyyi-audit-1; evaluation state was preserved.
+  verified: Passed pnpm -C packages/cli test:source -- test/cli/compactTodoReferenceGate.test.ts (2 tests), pnpm -C packages/cli test:source -- test/cli/compact.test.ts test/cli/compactTodoReferenceGate.test.ts (11 tests), pnpm -C packages/cli build, and node packages/cli/dist/bin/agentera.js check compact --format json.
+  publication_order: 109
