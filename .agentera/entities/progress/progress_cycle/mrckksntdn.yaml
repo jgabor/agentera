@@ -1,0 +1,14 @@
+id: mrckksntdn
+artifact: progress
+record:
+  timestamp: 2026-08-09 12:07
+  type: test
+  phase: build
+  what: Simplified compaction parity fixtures without changing production behavior.
+  context:
+    intent: Preserve compaction parity with minimal fixtures.
+    constraints: No production or version metadata changes; task remains in progress.
+    scope: packages/cli/test/cli/compactParity.test.ts only.
+  verified: "packages/cli/test/cli/compactParity.test.ts: compactParity 4 passed, parityOracle 26 passed, gapRegistry 10 passed, and compaction hooks 16 passed; typecheck, build, and local check compact passed."
+  next: Await independent audit before evaluator provenance or task completion.
+  publication_order: 111
