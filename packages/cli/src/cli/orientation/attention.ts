@@ -19,10 +19,10 @@ export function buildOrientationAttention(state: OrientationState): string[] {
 
   const attention: string[] = [];
   if (todoReconciliation?.status === "action_required") {
-    const label = todoReconciliation.state === "inactive" ? "inactive" : todoReconciliation.state === "unsafe_active" ? "unsafe active" : "invalid lifecycle";
-    attention.push(
-      `action-required: TODO reconciliation is ${label}; preview \`${todoReconciliation.preview_command ?? "n/a"}\`; apply \`${todoReconciliation.apply_command ?? "n/a"}\``,
-    );
+    const label = todoReconciliation.state === "inactive" ? "inactive" : todoReconciliation.state === "unsafe_inactive" ? "unsafe inactive" : todoReconciliation.state === "unsafe_active" ? "unsafe active" : "invalid lifecycle";
+    attention.push(todoReconciliation.state === "unsafe_inactive"
+      ? `action-required: TODO reconciliation is ${label}; ${todoReconciliation.recovery_command}`
+      : `action-required: TODO reconciliation is ${label}; preview \`${todoReconciliation.preview_command ?? "n/a"}\`; apply \`${todoReconciliation.apply_command ?? "n/a"}\``);
   }
   const skillDivergenceSignals = (state.app.signals ?? []).filter(
     (s) => s.kind === "skill_root_divergence",

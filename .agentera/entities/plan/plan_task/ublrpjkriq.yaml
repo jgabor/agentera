@@ -4,7 +4,7 @@ record:
   name: Fail closed for unsafe TODO activation
   depends_on:
     []
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN unmatched projections, duplicate public work, or stale entity status WHEN activation is previewed THEN bounded risk is reported without a digest or apply command.
     - GIVEN an unsafe effect, direct apply, replay, or supplied prior digest WHEN confirmed activation is attempted THEN it fails before mutation and every project byte remains unchanged.

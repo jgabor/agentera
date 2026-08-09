@@ -775,6 +775,16 @@ entity_target:
             canonical ten-letter ID; each retained legacy exemption admits at
             most one exact row occurrence per reconciliation and cannot
             authorize a changed or duplicate row.
+          unsafe_inactive: >-
+            One read-only pre-publication decision gates both activation preview
+            and confirmed apply. Every canonical entity must have one exact
+            public projection. Unmatched projections, duplicate public work,
+            stale entity public fields, or a prospective resurrection reject
+            before effects with bounded, content-private risk. Unsafe inactive
+            state emits neither an effect digest nor an apply command. Repair
+            requires an activation marker and is not pre-activation recovery;
+            owners must correct their source data, and any required mutation
+            must be replanned.
         managed_row_identity: every_activated_managed_checkbox_row_has_one_ten_letter_id
         unmanaged_regions: checkbox_rows_outside_managed_headings_remain_ordinary_markdown
         public_path_binding: exact_docs_mapped_relative_path_plus_docs_yaml_snapshot_sha256
@@ -2816,10 +2826,10 @@ mutation_grammar:
       verb: activate
       class: batch_transaction
       selectors: []
-      preconditions: [entity_mode_marker_is_valid, activation_is_absent_or_replay, todo_reconciliation_is_valid, confirmed_effect_sha256_is_authorized_for_preview_or_replay]
+      preconditions: [entity_mode_marker_is_valid, activation_is_absent_or_replay, todo_reconciliation_is_valid, inactive_projection_is_complete_one_to_one_and_safe, confirmed_effect_sha256_is_authorized_for_preview_or_replay]
       owned_fields: [reconciliation, public_document, activation]
       input: { mode: none, sources: [], cli_owned_fields: [] }
-      recovery: Preview and review every reported activation effect before explicit confirmed apply; use the returned examples without modification.
+      recovery: Preview and review every reported safe activation effect before explicit confirmed apply; unsafe inactive evidence requires non-mutating owner correction and replanning.
       examples: ['npx -y agentera@next state todo activate --dry-run --format json', 'npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 256 }
       compacts: true

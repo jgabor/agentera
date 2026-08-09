@@ -18,7 +18,8 @@ export const TODO_ACTIVATION_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} sta
 export const TODO_ACTIVATION_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json`;
 export const TODO_REPAIR_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo repair --dry-run --format json`;
 export const TODO_REPAIR_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json`;
-const CHANGE_LIMIT = 20;
+export const TODO_UNSAFE_INACTIVE_RECOVERY = "Owner correction required: restore Markdown-owned public rows and Agentera-owned entity status to exact one-to-one pre-activation evidence. Do not activate or repair. If a correction needs a mutation, stop and request replanning; no state was changed.";
+export const TODO_ACTIVATION_RISK_LIMIT = 20;
 
 export interface TodoReconciliationActivation {
   schema_version: typeof TODO_RECONCILIATION_ACTIVATION_VERSION;
@@ -96,11 +97,18 @@ export function loadTodoReconciliationActivation(
 }
 
 function sha256(bytes: Buffer | string): string { return createHash("sha256").update(bytes).digest("hex"); }
+export function todoActivationRisks(resurrectedIds: readonly string[]): JsonObject {
+  return {
+    resurrected_count: resurrectedIds.length,
+    resurrected_ids: resurrectedIds.slice(0, TODO_ACTIVATION_RISK_LIMIT),
+    omitted_count: Math.max(0, resurrectedIds.length - TODO_ACTIVATION_RISK_LIMIT),
+  };
+}
 function boundedPublicChanges(before: string, after: string): JsonObject {
   const beforeLines = before.split(/\r?\n/); const afterLines = after.split(/\r?\n/); const changes: JsonObject[] = []; let count = 0;
   for (let index = 0; index < Math.max(beforeLines.length, afterLines.length); index += 1) {
     if (beforeLines[index] === afterLines[index]) continue; count += 1;
-    if (changes.length < CHANGE_LIMIT) changes.push({ line: index + 1, before: (beforeLines[index] ?? "").slice(0, 240), after: (afterLines[index] ?? "").slice(0, 240) });
+    if (changes.length < TODO_ACTIVATION_RISK_LIMIT) changes.push({ line: index + 1, before: (beforeLines[index] ?? "").slice(0, 240), after: (afterLines[index] ?? "").slice(0, 240) });
   }
   return { count, items: changes, omitted_count: count - changes.length };
 }
@@ -109,13 +117,13 @@ export function todoActivationEffect(scan: { matchedRows: number; convertedRows:
   const evidence: JsonObject = {
     counts: { matched: scan.matchedRows, converted: scan.convertedRows, retained: scan.retainedLegacyRows.length, conflicting: 0 }, targets: changedTargets,
     public_document: { path: publicPath, changed: !markdownBefore.equals(Buffer.from(rendered)), before_bytes: markdownBefore.length, after_bytes: Buffer.byteLength(rendered), before_sha256: sha256(markdownBefore), after_sha256: sha256(rendered), changed_lines: boundedPublicChanges(markdownBefore.toString("utf8"), rendered) },
-    risks: { resurrected_count: resurrectedIds.length, resurrected_ids: resurrectedIds.slice(0, CHANGE_LIMIT), omitted_count: Math.max(0, resurrectedIds.length - CHANGE_LIMIT) },
+    risks: todoActivationRisks(resurrectedIds),
   };
   const authorizedTargets = changedTargets.map((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH ? { ...target, after_sha256: "activation_effect_authorization" } : target);
   return { ...evidence, effect_sha256: sha256(canonicalRecordJson({ ...evidence, targets: authorizedTargets })) };
 }
 export function unchangedTodoActivationEffect(publicPath: string, markdown: Buffer, retained: number, authorizedEffectSha256?: string): JsonObject {
-  const evidence: JsonObject = { counts: { matched: 0, converted: 0, retained, conflicting: 0 }, targets: [], public_document: { path: publicPath, changed: false, before_bytes: markdown.length, after_bytes: markdown.length, before_sha256: sha256(markdown), after_sha256: sha256(markdown), changed_lines: { count: 0, items: [], omitted_count: 0 } }, risks: { resurrected_count: 0, resurrected_ids: [], omitted_count: 0 } };
+  const evidence: JsonObject = { counts: { matched: 0, converted: 0, retained, conflicting: 0 }, targets: [], public_document: { path: publicPath, changed: false, before_bytes: markdown.length, after_bytes: markdown.length, before_sha256: sha256(markdown), after_sha256: sha256(markdown), changed_lines: { count: 0, items: [], omitted_count: 0 } }, risks: todoActivationRisks([]) };
   return { ...evidence, effect_sha256: authorizedEffectSha256 ?? sha256(canonicalRecordJson(evidence)) };
 }
 

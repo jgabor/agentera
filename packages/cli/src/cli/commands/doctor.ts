@@ -125,11 +125,13 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
         }
         if (signal.previewCommand) lines.push(`    Preview: ${signal.previewCommand}`);
         if (signal.applyCommand) lines.push(`    Apply: ${signal.applyCommand}`);
+        if (signal.reconciliationState === "unsafe_inactive" && signal.recoveryCommand) lines.push(`    Recovery: ${signal.recoveryCommand}`);
       }
     }
   }
   const resources = Array.isArray(retiredResources?.resources) ? retiredResources.resources as Array<Record<string, unknown>> : [];
   const todoReconciliation = status.signals?.some((signal) => signal.kind === "todo_reconciliation") ?? false;
+  const unsafeInactiveTodo = status.signals?.some((signal) => signal.kind === "todo_reconciliation" && signal.reconciliationState === "unsafe_inactive") ?? false;
   if (resources.length > 0) {
     lines.push("");
     lines.push("Retired native resources:");
@@ -153,6 +155,9 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
         "  3. Then retry Agentera once a retry command is available.",
       );
     }
+  } else if (unsafeInactiveTodo) {
+    lines.push("");
+    lines.push("Next: complete the owner correction and replan before any TODO mutation.");
   } else if (todoReconciliation) {
     lines.push("");
     lines.push("Next: run the reported TODO reconciliation preview, review its bounded effect, then use its exact apply_command.");
@@ -220,7 +225,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     status.signals.push({
       status: APP_MANUAL_REVIEW_NEEDED,
       kind: "todo_reconciliation",
-      message: `action-required: TODO reconciliation is ${todoReconciliation.state === "inactive" ? "inactive" : todoReconciliation.state === "unsafe_active" ? "unsafe active" : "in an invalid lifecycle state"}`,
+      message: `action-required: TODO reconciliation is ${todoReconciliation.state === "inactive" ? "inactive" : todoReconciliation.state === "unsafe_inactive" ? "unsafe inactive" : todoReconciliation.state === "unsafe_active" ? "unsafe active" : "in an invalid lifecycle state"}`,
       reconciliationState: todoReconciliation.state,
       reconciliationCounts: todoReconciliation.counts,
       reconciliationOmittedCount: todoReconciliation.omitted_count,

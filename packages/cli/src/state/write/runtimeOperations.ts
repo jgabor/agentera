@@ -216,7 +216,7 @@ const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionCo
     developmentCommand("state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json"),
   ),
   "todo.activate": projection(
-    "Preview and review every reported activation effect before explicit confirmed apply; use the returned examples without modification.",
+    "Preview and review every reported safe activation effect before explicit confirmed apply; unsafe inactive evidence requires non-mutating owner correction and replanning.",
     developmentCommand("state todo activate --dry-run --format json"),
     developmentCommand("state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json"),
   ),

@@ -153,6 +153,24 @@ function preactivationProject(id = "abcdefghij", title = "Legacy matched row"): 
   return { root, id, entity };
 }
 
+function unsafeInactiveStaleProject(count = 161): { root: string; ids: string[] } {
+  const root = project();
+  fs.unlinkSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH));
+  const rows = ["# TODO", "", "Unrelated project note.", "", "## ⇶ Critical"];
+  const ids: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    if (index === 2) rows.push("", "## Client-specific work");
+    const id = indexedId(index);
+    const title = `PRIVATE_STALE_TODO_${String(index).padStart(3, "0")}`;
+    ids.push(id);
+    seedTodoEntity(root, id, title, "critical");
+    rows.push(`${index % 2 ? "  " : ""}- [x] [task:3.0.0] ${title}`);
+  }
+  rows.push("", "Unrelated closing note.", "");
+  fs.writeFileSync(path.join(root, "TODO.md"), rows.join("\n"));
+  return { root, ids };
+}
+
 function readinessInput(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const values = {
     capability: "build",
@@ -1361,6 +1379,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(applied.json.reconciliation.targets).toBe(preview.json.reconciliation.targets);
     expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain(`- [ ] [id:${id}] [task:3.0.0] Legacy matched row`);
     expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("- [ ] [note] Retained pre-activation note");
+    expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8").match(new RegExp(`\\[id:${id}\\]`, "g"))).toHaveLength(1);
     const activationRecord = JSON.parse(fs.readFileSync(activation, "utf8"));
     expect(activationRecord).toMatchObject({
       schema_version: "agentera.todoReconciliationActivation.v1",
@@ -1562,7 +1581,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     }
   });
 
-  it("reports resolved-row resurrection risk in a mutation-free activation preview", () => {
+  it("fails closed on resolved-row resurrection risk before activation effects", () => {
     const { root, entity } = preactivationProject("abcdefghij", "Resolved legacy row");
     const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8"));
     (envelope.record as any).status = "resolved";
@@ -1572,8 +1591,68 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
 
     const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
 
-    expect(preview.rc, preview.err || preview.out).toBe(0);
-    expect(preview.json.activation).toMatchObject({ counts: { converted: 1, conflicting: 0 }, risks: { resurrected_count: 1, resurrected_ids: ["abcdefghij"], omitted_count: 0 } });
+    expect(preview.rc, preview.err || preview.out).toBe(2);
+    expect(preview.json.error).toMatchObject({
+      class: "conflict",
+      message: "TODO activation requires complete one-to-one inactive public projections",
+      diagnosis: {
+        counts: { converted: 1, conflicting: 0 },
+        risks: { resurrected_count: 1, resurrected_ids: ["abcdefghij"], omitted_count: 0 },
+      },
+      recovery: expect.stringMatching(/Owner correction required.*Do not activate or repair.*request replanning/i),
+    });
+    expect(preview.json.error).not.toHaveProperty("effect_sha256");
+    expect(preview.json).not.toHaveProperty("apply_command");
+    expect(files(root)).toEqual(before);
+
+    const suppliedDigest = capture(root, ["state", "todo", "activate", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"]);
+    expect(suppliedDigest.rc).toBe(2);
+    expect(suppliedDigest.json.error).toEqual(preview.json.error);
+    expect(files(root)).toEqual(before);
+  });
+
+  it("bounds 161 stale inactive projections without exposing public content or authorizing replay", () => {
+    const { root, ids } = unsafeInactiveStaleProject();
+    const before = files(root);
+
+    const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
+
+    expect(preview.rc, preview.err || preview.out).toBe(2);
+    expect(preview.json.error).toMatchObject({
+      class: "conflict",
+      diagnosis: {
+        counts: { matched: 0, converted: 0, retained: 161, stale: 0, conflicting: 161 },
+        risks: { resurrected_count: 161, omitted_count: 141 },
+      },
+    });
+    expect(preview.json.error.diagnosis.risks.resurrected_ids).toHaveLength(20);
+    expect(preview.json.error.diagnosis.risks.resurrected_ids).toEqual(ids.slice(0, 20));
+    expect(JSON.stringify(preview.json)).not.toContain("PRIVATE_STALE_TODO_");
+    expect(preview.json.error).not.toHaveProperty("effect_sha256");
+    expect(preview.json).not.toHaveProperty("apply_command");
+    expect(files(root)).toEqual(before);
+
+    for (const digest of ["a".repeat(64), "b".repeat(64)]) {
+      const apply = capture(root, ["state", "todo", "activate", "--effect-sha256", digest, "--yes", "--format", "json"]);
+      expect(apply.rc).toBe(2);
+      expect(apply.json.error).toEqual(preview.json.error);
+      expect(files(root)).toEqual(before);
+    }
+  });
+
+  it("fails closed when an explicitly managed inactive row has a stale entity status", () => {
+    const { root, id } = preactivationProject();
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [x] [id:${id}] [task:3.0.0] Legacy matched row\n`);
+    const before = files(root);
+
+    const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
+
+    expect(preview.rc).toBe(2);
+    expect(preview.json.error).toMatchObject({
+      class: "conflict",
+      diagnosis: { counts: { stale: 1, conflicting: 0 }, risks: { resurrected_count: 0, resurrected_ids: [], omitted_count: 0 } },
+    });
+    expect(preview.json).not.toHaveProperty("apply_command");
     expect(files(root)).toEqual(before);
   });
 
@@ -1588,9 +1667,9 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
   });
 
   it("exposes duplicate activation risk without assigning either row an entity ID", () => {
-    const { root, id } = preactivationProject();
+    const { root } = preactivationProject();
     const markdown = path.join(root, "TODO.md");
-    fs.writeFileSync(markdown, `# TODO\n\n## → Normal\n- [ ] [task:3.0.0] Legacy matched row\n- [ ] [task:3.0.0] Legacy matched row\n`);
+    fs.writeFileSync(markdown, `# TODO\n\n## → Normal\n- [ ] [task:3.0.0] Legacy matched row\n  - [ ] [task:3.0.0] Legacy matched row\n`);
     const before = files(root);
 
     const rejected = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
@@ -1598,9 +1677,12 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     expect(rejected.rc).toBe(2);
     expect(rejected.json.error).toMatchObject({
       class: "conflict",
-      message: expect.stringMatching(/identical ID-less managed rows.*lines/i),
-      recovery: expect.stringContaining("distinct canonical '[id:abcdefghij]'"),
+      message: expect.stringMatching(/duplicates canonical public work/i),
+      diagnosis: { counts: { duplicate: 1 }, risks: { resurrected_count: 0, resurrected_ids: [], omitted_count: 0 } },
+      recovery: expect.stringContaining("exactly one public row"),
     });
+    expect(rejected.json.error).not.toHaveProperty("effect_sha256");
+    expect(rejected.json).not.toHaveProperty("apply_command");
     expect(files(root)).toEqual(before);
     expect(fs.existsSync(path.join(root, ".agentera/todo-reconciliation-activation.json"))).toBe(false);
     const apply = capture(root, ["state", "todo", "activate", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"]);
@@ -2133,7 +2215,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
     }
   });
 
-  it("routes inactive, unsafe-active, healthy-active, and invalid lifecycle states on every inspection surface", () => {
+  it("routes inactive, unsafe-inactive, unsafe-active, healthy-active, and invalid lifecycle states on every inspection surface", () => {
     const cases = [
       {
         name: "inactive",
@@ -2142,6 +2224,14 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
         preview: TODO_ACTIVATION_PREVIEW_COMMAND,
         apply: TODO_ACTIVATION_APPLY_COMMAND,
         validationCode: "todo_reconciliation_inactive",
+      },
+      {
+        name: "unsafe-inactive",
+        make: () => unsafeInactiveStaleProject().root,
+        state: "unsafe_inactive",
+        preview: null,
+        apply: null,
+        validationCode: "todo_reconciliation_unsafe_inactive",
       },
       {
         name: "unsafe-active",
@@ -2162,19 +2252,28 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       expect(prime.rc, `${testCase.name} prime: ${prime.err}`).toBe(0);
       expect(prime.json.outcome).toBe("blocked");
       expect(prime.json.todo_reconciliation).toMatchObject({ state: testCase.state, status: "action_required", preview_command: testCase.preview, apply_command: testCase.apply });
-      expect(prime.json.attention.join("\n")).toContain(testCase.preview);
+      expect(prime.json.attention.join("\n")).toContain(testCase.preview ?? "Owner correction required");
       const primeText = capture(root, ["prime"]);
-      expect(primeText.out).toContain(testCase.apply);
+      expect(primeText.out).toContain(testCase.apply ?? "Owner correction required");
+      if (testCase.state === "unsafe_inactive") {
+        expect(prime.json.next_action).toMatchObject({ capability: "plan", phase: "plan" });
+        expect(primeText.out).not.toContain("state todo activate");
+        expect(primeText.out).not.toContain("state todo repair");
+      }
       expect(doctor.rc, `${testCase.name} doctor: ${doctor.err}`).toBe(1);
       const signal = doctor.json.signals.find((entry: any) => entry.kind === "todo_reconciliation");
       expect(signal).toMatchObject({ reconciliationState: testCase.state, previewCommand: testCase.preview, applyCommand: testCase.apply });
       const doctorText = capture(root, ["doctor"]);
-      expect(doctorText.out).toContain(testCase.apply);
+      expect(doctorText.out).toContain(testCase.apply ?? "Owner correction required");
+      if (testCase.state === "unsafe_inactive") {
+        expect(doctorText.out).not.toContain("state todo activate");
+        expect(doctorText.out).not.toContain("state todo repair");
+      }
       expect(validation.rc, `${testCase.name} validation: ${validation.err}`).toBe(1);
       const issue = validation.json.issues.find((entry: any) => entry.code === testCase.validationCode);
       expect(issue).toMatchObject({ diagnosis: { state: testCase.state, preview_command: testCase.preview, apply_command: testCase.apply } });
       const validationText = capture(root, ["check", "validate", "state"]);
-      expect(validationText.out + validationText.err).toContain(testCase.apply);
+      expect(validationText.out + validationText.err).toContain(testCase.apply ?? "Owner correction required");
       expect(files(root), testCase.name).toEqual(before);
     }
   });

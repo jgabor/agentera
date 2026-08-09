@@ -200,6 +200,37 @@ function seedRealisticTodos(project: string, count = 120): { orderedIds: string[
   return { orderedIds: [...criticalOpenIds, ...criticalResolvedIds, ...normalOpenIds], criticalOpenIds };
 }
 
+function seedUnsafeInactiveTodos(project: string, count = 161): string[] {
+  const directory = path.join(project, ".agentera/entities/todo/todo_item");
+  fs.mkdirSync(directory, { recursive: true });
+  const rows = ["# TODO", "", "Unrelated package fixture note.", "", "## ⇶ Critical"];
+  const ids: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    if (index === 2) rows.push("", "## Client-specific work");
+    const id = realisticTodoId(index);
+    const title = `PRIVATE_PACKAGED_STALE_TODO_${String(index).padStart(3, "0")}`;
+    ids.push(id);
+    fs.writeFileSync(path.join(directory, `${id}.yaml`), YAML.stringify({
+      id,
+      artifact: "todo",
+      record: {
+        kind: "task",
+        target_version: "3.0.0",
+        title,
+        requirements: [],
+        acceptance: [],
+        release_blocker: false,
+        severity: "critical",
+        status: "open",
+      },
+    }));
+    rows.push(`${index % 2 ? "  " : ""}- [x] [task:3.0.0] ${title}`);
+  }
+  rows.push("", "Unrelated package fixture closing note.", "");
+  fs.writeFileSync(path.join(project, "TODO.md"), rows.join("\n"));
+  return ids;
+}
+
 function projectByteSnapshot(root: string): Record<string, string> {
   const result: Record<string, string> = {};
   const walk = (directory: string): void => {
@@ -1071,6 +1102,57 @@ describe("npm distribution boundary", () => {
       expect(exact.entry).toMatchObject({ id: entry.id, artifact: "todo" });
     }
     expect(projectByteSnapshot(project)).toEqual(before);
+  });
+
+  it("keeps unsafe inactive TODO activation closed in constructed and extracted package output", () => {
+    const sourceBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
+    const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const project = fs.mkdtempSync(path.join(fixture.root, "unsafe-inactive-todo-"));
+    fs.mkdirSync(path.join(project, ".agentera"));
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const ids = seedUnsafeInactiveTodos(project);
+    const before = projectByteSnapshot(project);
+    const env = isolatedPackageEnv();
+    const parity = (args: string[], status: number, compareStdout = true) => {
+      const source = run(process.execPath, [sourceBin, ...args], project, env);
+      const packaged = run(process.execPath, [packagedBin, ...args], project, env);
+      expect(source.status, source.stderr || source.stdout).toBe(status);
+      expect(packaged.status, packaged.stderr || packaged.stdout).toBe(status);
+      expect(packaged.stderr).toBe(source.stderr);
+      if (compareStdout) expect(packaged.stdout).toBe(source.stdout);
+      expect(projectByteSnapshot(project)).toEqual(before);
+      return { source: JSON.parse(source.stdout), packaged: JSON.parse(packaged.stdout) };
+    };
+
+    const preview = parity(["state", "todo", "activate", "--dry-run", "--format", "json"], 2).source;
+    expect(preview.error).toMatchObject({
+      class: "conflict",
+      diagnosis: { counts: { conflicting: 161 }, risks: { resurrected_count: 161, omitted_count: 141 } },
+    });
+    expect(preview.error.diagnosis.risks.resurrected_ids).toEqual(ids.slice(0, 20));
+    expect(JSON.stringify(preview)).not.toContain("PRIVATE_PACKAGED_STALE_TODO_");
+    expect(preview).not.toHaveProperty("apply_command");
+
+    const replay = parity(["state", "todo", "activate", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"], 2).source;
+    expect(replay.error).toEqual(preview.error);
+
+    const prime = parity(["prime", "--format", "json"], 0).source;
+    expect(prime.todo_reconciliation).toMatchObject({ state: "unsafe_inactive", preview_command: null, apply_command: null });
+    expect(prime.next_action).toMatchObject({ capability: "plan", phase: "plan" });
+    expect(prime.attention.join("\n")).toContain("Owner correction required");
+
+    const doctor = parity(["doctor", "--format", "json"], 1, false);
+    for (const result of [doctor.source, doctor.packaged]) expect(result.signals.find((entry: any) => entry.kind === "todo_reconciliation")).toMatchObject({
+      reconciliationState: "unsafe_inactive",
+      previewCommand: null,
+      applyCommand: null,
+      recoveryCommand: expect.stringContaining("Owner correction required"),
+    });
+
+    const validation = parity(["check", "validate", "state", "--format", "json"], 1).source;
+    expect(validation.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "todo_reconciliation_unsafe_inactive", diagnosis: expect.objectContaining({ state: "unsafe_inactive", preview_command: null, apply_command: null }) }),
+    ]));
   });
 
   it("retains executable 21-task routing and mixed history in source and the extracted package", () => {

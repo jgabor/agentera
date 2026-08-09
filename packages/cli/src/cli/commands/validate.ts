@@ -524,7 +524,7 @@ export function cmdValidateState(
 }
 
 function todoReconciliationValidationIssue(diagnosis: TodoReconciliationInspection): JsonObject {
-  const label = diagnosis.state === "inactive" ? "inactive" : diagnosis.state === "unsafe_active" ? "unsafe active" : "invalid lifecycle";
+  const label = diagnosis.state === "inactive" ? "inactive" : diagnosis.state === "unsafe_inactive" ? "unsafe inactive" : diagnosis.state === "unsafe_active" ? "unsafe active" : "invalid lifecycle";
   return {
     code: `todo_reconciliation_${diagnosis.state}`,
     path: "TODO.md",

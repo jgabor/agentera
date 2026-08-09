@@ -40,7 +40,6 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
-- [ ] [id:ituipybnoy] [fix:3.0.0] Fail closed when TODO activation would resurrect or duplicate public work.
 
 ## ⇢ Annoying
 
@@ -146,6 +145,7 @@
 - [x] [id:rnhnurigbf] [fix:3.0.0] Report inactive or unsafe TODO reconciliation as action-required.
 - [x] [id:frrkzalfwa] [fix:3.0.0] Keep each self-contained npm CLI bound to its version-matched bundled app data.
 - [x] [id:zmlfggxlmq] [fix:3.0.0] Restore forced plan archival and successor publication semantics.
+- [x] [id:ituipybnoy] [fix:3.0.0] Fail closed when TODO activation would resurrect or duplicate public work.
 
 ## → Critical
 

@@ -14,14 +14,16 @@ import {
   TODO_RECONCILIATION_ACTIVATION_PATH,
   TODO_REPAIR_APPLY_COMMAND,
   TODO_REPAIR_PREVIEW_COMMAND,
+  TODO_UNSAFE_INACTIVE_RECOVERY,
   loadTodoReconciliationActivation,
   todoReconciliationActivationBytes,
 } from "./todoReconciliationActivation.js";
 import { planTodoRepair } from "./todoReconciliationRepair.js";
 import { readTodoMarkdown } from "./todoMarkdownProjection.js";
+import { inactiveTodoActivationSafety } from "./todoActivationSafety.js";
 import { managedRows, relevant, todoPublicPath, type ManagedRow } from "./todoDocsEntities.js";
 
-export type TodoReconciliationState = "inactive" | "healthy_active" | "unsafe_active" | "invalid_lifecycle";
+export type TodoReconciliationState = "inactive" | "unsafe_inactive" | "healthy_active" | "unsafe_active" | "invalid_lifecycle";
 
 export interface TodoReconciliationInspection {
   state: TodoReconciliationState;
@@ -35,6 +37,7 @@ export interface TodoReconciliationInspection {
     conflicting: number;
   };
   omitted_count: number;
+  risks?: JsonObject;
   preview_command: string | null;
   apply_command: string | null;
   recovery_command: string;
@@ -85,7 +88,7 @@ function invalidLifecycle(): TodoReconciliationInspection {
   };
 }
 
-function inspection(state: TodoReconciliationState, rawCounts: JsonObject): TodoReconciliationInspection {
+function inspection(state: TodoReconciliationState, rawCounts: JsonObject, risks?: JsonObject): TodoReconciliationInspection {
   const bounded = boundedCounts(rawCounts);
   const active = state === "healthy_active" || state === "unsafe_active";
   const preview = state === "inactive" ? TODO_ACTIVATION_PREVIEW_COMMAND : active ? TODO_REPAIR_PREVIEW_COMMAND : null;
@@ -102,9 +105,10 @@ function inspection(state: TodoReconciliationState, rawCounts: JsonObject): Todo
       conflicting: bounded.conflicting,
     },
     omitted_count: bounded.omitted,
+    ...(risks === undefined ? {} : { risks }),
     preview_command: preview,
     apply_command: apply,
-    recovery_command: preview && apply ? recovery(preview, apply) : "",
+    recovery_command: state === "unsafe_inactive" ? TODO_UNSAFE_INACTIVE_RECOVERY : preview && apply ? recovery(preview, apply) : "",
   };
 }
 
@@ -146,16 +150,10 @@ export function inspectTodoReconciliationState(
   if (!activation) {
     try {
       const scan = managedRows(readTodoMarkdown(todoPublicPath(root, sourceRoot)).text, null, entities);
-      const entityIds = new Set(entities.map(({ id }) => id));
-      const orphaned = [...scan.rows.keys()].filter((id) => !entityIds.has(id)).length;
-      return inspection("inactive", {
-        matched: scan.matchedRows,
-        converted: scan.convertedRows,
-        retained: scan.retainedLegacyRows.length,
-        conflicting: orphaned,
-      });
+      const safety = inactiveTodoActivationSafety(scan, entities);
+      return inspection(safety.safe ? "inactive" : "unsafe_inactive", safety.counts, safety.safe ? undefined : safety.risks);
     } catch (error) {
-      return inspection("inactive", errorCounts(error));
+      return inspection("unsafe_inactive", errorCounts(error));
     }
   }
   try {

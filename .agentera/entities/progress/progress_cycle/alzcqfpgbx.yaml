@@ -1,0 +1,14 @@
+id: alzcqfpgbx
+artifact: progress
+record:
+  timestamp: 2026-08-09 04:45
+  type: fix
+  phase: build
+  what: Failed closed unsafe inactive TODO activation in state/todoDocsEntities.ts before any effect digest or apply command.
+  context:
+    intent: Prevent unsafe TODO activation from publishing resurrected or duplicate public work.
+    constraints: Use one read-only safety decision and no pre-activation repair path.
+    scope: TODO activation, inspection routing, and package parity.
+  verified: Source suite passed 3429 tests, package boundary passed 36 tests, and local dist probes rejected a 161-row unsafe project unchanged while a one-to-one project published one canonical row.
+  next: Leave Task ublrpjkriq in progress for independent audit.
+  publication_order: 110

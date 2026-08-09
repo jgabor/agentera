@@ -38,18 +38,29 @@ bytes). Status startup returns
 bytes). Omitted detail names its authoritative recovery command. `doctor`
 returns detailed read-only evidence and exact user actions. Entity-mode projects
 with an absent or unsafe TODO reconciliation marker return `action_required`
-instead of `ok` or `up_to_date`; use the reported preview command, then the
-preview's exact effect-bound apply command:
+instead of `ok` or `up_to_date`. A safe inactive project reports an activation
+preview and its exact effect-bound apply command:
 
 ```bash
 npx -y agentera@next state todo activate --dry-run --format json
 npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json
+```
+
+An unsafe active project with an existing marker reports the separate repair
+preview and effect-bound apply path:
+
+```bash
 npx -y agentera@next state todo repair --dry-run --format json
 npx -y agentera@next state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json
 ```
 
-`check validate state` reports the same bounded, read-only diagnosis. Healthy
-active TODO projections keep the existing output.
+Unsafe inactive evidence (unmatched projections, duplicate public work, stale
+entity status, or prospective resurrection) reports a bounded, content-private
+diagnosis but no effect digest or apply command. It has no repair path before
+activation. Correct the Markdown-owned public rows and Agentera-owned entity
+state, then replan any required mutation. `check validate state` reports the
+same read-only diagnosis. Healthy active TODO projections keep the existing
+output.
 
 ## Shared-skill integration
 

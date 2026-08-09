@@ -23,12 +23,16 @@ record:
     gate: null
     queue_rank: 41
     order_reason: Address the real-project regression after the earlier activation, repair, and reporting fixes were published.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Fail closed when TODO activation would resurrect or duplicate public work."
+      status: resolved
+      order: 101
       severity: normal
-      status: open
-      order: 30
+  lifecycle:
+    operation: resolve
+    reason: packages/cli/src/state/todoDocsEntities.ts now fails closed before unsafe activation effects.
+    date: 2026-08-09
