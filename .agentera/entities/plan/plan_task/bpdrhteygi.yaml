@@ -13,3 +13,13 @@ record:
     - GIVEN healthy and small unsafe projects WHEN status runs THEN their existing semantics remain unchanged, no raw artifact read is required, and source and extracted-package commands satisfy the same contract.
   test_proportionality: Cover each bounded projection branch, successful cases immediately below and above the threshold, explicit privacy and single-diagnosis assertions, and one source and extracted-package parity case. Do not add a machine-sensitive performance lane.
   plan: nsabzvpqqs
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Package authority checks fail because the changelog insertion shifted line-owned scalar declarations without updating their canonical line references.
+    provenance:
+      attempt_id: bpdrhteygi-audit-1
+      source: Agentera Orchestrate Audit evaluation 1
+      recorded_at: 2026-08-09 17:51
+      writer_command: agentera state plan record-evaluation

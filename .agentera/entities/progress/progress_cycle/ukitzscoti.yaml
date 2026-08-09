@@ -1,0 +1,15 @@
+id: ukitzscoti
+artifact: progress
+record:
+  timestamp: 2026-08-09 18:25
+  type: fix
+  phase: build
+  what: Resynchronized CHANGELOG.md scalar classifications in references/adapters/package-registry.yaml after the status startup changelog insertion.
+  context:
+    intent: Repair the Audit-reported package authority drift without changing status behavior.
+    constraints: Update only shifted CHANGELOG.md scalar references, preserve user-local ignored files, and do not change task evaluation or lifecycle state.
+    scope: Package registry scalar declarations, their exact source-contract count, and one correction progress record.
+  discovered: Two inserted changelog lines shifted 135 line-owned scalar declarations, leaving their exact source regions and digests stale.
+  verified: pnpm -C packages/cli exec vp test run test/runtime/retiredRuntimeSurfacePolicy.test.ts --config vite.config.ts passed 194 tests; the exact packaged bootstrap-authority test passed; pnpm -C packages/cli run typecheck and build passed; pnpm -C packages/cli run verify:package passed 37 tests. pnpm -C packages/cli test:source passed 3,435 tests but failed on ignored .opencode/package.json and four unrelated TODO cursor timeouts.
+  next: Keep the task in progress for Audit; preserve the failed evaluation and leave the TODO and plan open.
+  publication_order: 125
