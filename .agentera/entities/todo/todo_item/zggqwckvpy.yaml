@@ -1,0 +1,38 @@
+id: zggqwckvpy
+artifact: todo
+record:
+  kind: chore
+  target_version: 3.0.0
+  title: Refresh final qualification evidence after governed documentation changes.
+  requirements:
+    - Run the canonical verify:release and pack:dry-run gates against the current governed changelog, package-registry authority, and release provenance tree.
+    - Preserve the blocked final-task evaluations, append current progress evidence, and replan one replacement closeout task rather than bypassing the exhausted retry budget.
+    - After independent PASS evaluation, let Orchestrate publish the limited closure health record and complete the open plan without archiving or publication.
+  acceptance:
+    - GIVEN the current tracked tree WHEN verify:release and pack:dry-run run THEN both pass and their evidence identity includes the governed changelog and reference changes.
+    - GIVEN the prior final task is blocked WHEN Plan creates a replacement closeout task THEN the blocked evidence remains intact and the replacement has explicit dependencies and acceptance criteria.
+    - GIVEN the replacement task passes Audit WHEN Orchestrate performs terminal closure THEN health records the limited artifact-freshness result and Plan xjiwyjimiv becomes complete.
+  release_blocker: true
+  severity: degraded
+  readiness:
+    capability: plan
+    reason: The final qualification task exhausted its evaluation retry budget after governed documentation changes made earlier release and pack evidence stale.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: Replan the terminal qualification task before any publication or further feature work.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore:3.0.0] Refresh final qualification evidence after governed documentation changes."
+      status: resolved
+      order: 103
+      severity: degraded
+  lifecycle:
+    operation: resolve
+    reason: Current governed qualification passed; independent Audit and Orchestrate retain terminal closure.
+    date: 2026-08-09

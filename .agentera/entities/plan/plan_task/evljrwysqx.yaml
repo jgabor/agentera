@@ -1,0 +1,18 @@
+id: evljrwysqx
+artifact: plan
+record:
+  plan: xjiwyjimiv
+  name: Refresh governed qualification and close plan
+  status: in_progress
+  depends_on:
+    - lxcpdzxzap
+    - ublrpjkriq
+    - zliglifsla
+    - mbasprkedb
+  acceptance:
+    - GIVEN the current governed tree WHEN verify:release and pack:dry-run run THEN both pass and their evidence binds the current tree.
+    - GIVEN current qualification evidence WHEN release metadata and package surfaces are compared THEN development and suite versions remain valid and no publication action occurs.
+    - GIVEN blocked task cecyfpwsti and a PASS replacement WHEN supersession runs THEN the blocked failure history remains intact and the replacement is terminal.
+    - GIVEN all plan work is terminal by completion or supersession WHEN Orchestrate closes the plan THEN it publishes limited artifact-freshness health and sets the plan complete without archiving.
+    - GIVEN gate evidence is audited WHEN prior stale failure and current qualification are compared THEN both failing and passing outcomes are represented.
+  evidence: Replacement closeout for TODO zggqwckvpy and blocked task cecyfpwsti.

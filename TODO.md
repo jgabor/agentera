@@ -147,9 +147,12 @@
 - [x] [id:zmlfggxlmq] [fix:3.0.0] Restore forced plan archival and successor publication semantics.
 - [x] [id:ituipybnoy] [fix:3.0.0] Fail closed when TODO activation would resurrect or duplicate public work.
 - [x] [id:hpqprlcqhf] [feat:3.0.0] Add explicit atomic plan replacement and competing-open-plan recovery.
+- [x] [id:zggqwckvpy] [chore:3.0.0] Refresh final qualification evidence after governed documentation changes.
 
 ## → Critical
 
 - [ ] [id:bxqzpnnhpn] [fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted.
 - [ ] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
+
+## → Degraded
