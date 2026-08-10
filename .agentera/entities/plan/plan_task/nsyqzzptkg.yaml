@@ -1,0 +1,25 @@
+id: nsyqzzptkg
+artifact: plan
+record:
+  plan: nsabzvpqqs
+  name: Attribute and remove the exact-get regression
+  status: complete
+  depends_on:
+    - bpdrhteygi
+  acceptance:
+    - GIVEN the final owner-correction tree and its pre-feature baseline WHEN exact-get is measured under the same serial performance owner and controlled host conditions THEN evidence distinguishes product-path cost from runner or host contention before a correction is chosen.
+    - GIVEN the attributed root cause WHEN the smallest correction is applied THEN it changes only the implicated product-loading or performance-isolation boundary and leaves suite membership, five repetitions, fixture size, assertions, and the 1000 ms ceiling unchanged.
+    - GIVEN the corrected final tree WHEN the authoritative performance owner runs THEN every exact-get repetition is no greater than 1000 ms and the complete owner exits successfully without hook bypass.
+    - GIVEN owner-correction grammar, preview, apply, rejection, interruption, replay, and two-client checks WHEN focused and package verification run THEN the accepted functional contract remains unchanged.
+    - GIVEN final verification WHEN progress is published THEN it records the A/B attribution, all exact timings, functional and package results, and any residual host caveat without treating a transient pass as proof.
+  evidence: Use one baseline/current attribution experiment, the unchanged five-repetition performance owner, focused owner-correction pass/fail coverage, and source/extracted-package parity. Do not raise limits or add retries.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: nsyqzzptkg-audit-1
+      source: Agentera Orchestrate Audit evaluation 1
+      recorded_at: 2026-08-10 10:49
+      writer_command: agentera state plan record-evaluation

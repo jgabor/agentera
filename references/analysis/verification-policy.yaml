@@ -48,7 +48,7 @@ release_qualification:
     overlap stops new work at the contract cleanup margin, settles owned children,
     removes its generated state on failure, and returns before the contract parent margin
   isolation: distinct_home_cache_user_global_config_and_report_per_child
-  resource_isolation: performance_runs_alone_after_batch_a_settles_and_owned_files_execute_serially
+  resource_isolation: performance_runs_alone_after_batch_a_settles_owned_files_execute_serially_and_other_marked_owners_block_sampling
   failure:
     first_observed_owner: preserved
     cancellable_process_groups: cancel

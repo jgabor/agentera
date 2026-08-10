@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-08-09
-    status: open
+    status: complete
     reviewed: 2026-08-09
     critic_issues: 7 found, 7 addressed, 0 dismissed
     revised: Clarified recoverable publication semantics, completed the public writer contract, made status work independent, tightened owner evidence and byte assertions, and bounded the contract decision gate.

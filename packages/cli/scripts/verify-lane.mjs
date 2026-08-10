@@ -27,6 +27,25 @@ function relative(file) {
   return path.relative(root, file).split(path.sep).join("/");
 }
 
+function activeVerificationOwners() {
+  if (process.platform !== "linux" || !fs.existsSync("/proc")) return [];
+  const active = [];
+  for (const entry of fs.readdirSync("/proc", { withFileTypes: true })) {
+    if (!entry.isDirectory() || !/^\d+$/.test(entry.name) || Number(entry.name) === process.pid) continue;
+    try {
+      const owner = fs.readFileSync(path.join("/proc", entry.name, "environ"))
+        .toString("utf8")
+        .split("\0")
+        .find((value) => value.startsWith("AGENTERA_VERIFICATION_OWNER="))
+        ?.slice("AGENTERA_VERIFICATION_OWNER=".length);
+      if (OWNER_NAMES.includes(owner)) active.push({ owner, pid: Number(entry.name) });
+    } catch {
+      // Processes can exit or become unreadable while /proc is inspected.
+    }
+  }
+  return active.sort((left, right) => left.pid - right.pid);
+}
+
 function runnerPath(file) {
   return path.relative(inventoryPackageRoot, path.join(root, file)).split(path.sep).join("/");
 }
@@ -253,6 +272,16 @@ function runOwner(owner, state, forwarded = []) {
   }
   const selection = validateForwardedSelection(owner, state, forwarded);
   if (selection === undefined) return 2;
+  if (owner === "performance" && definition.evidence !== undefined) {
+    const active = activeVerificationOwners();
+    if (active.length > 0) {
+      const shown = active.slice(0, 10).map(({ owner: activeOwner, pid }) => `${activeOwner}:${pid}`);
+      console.error(`${owner} owner rejected contended host; active Agentera verification processes: ${shown.join(", ")}${active.length > shown.length ? `; ${active.length - shown.length} additional processes omitted` : ""}`);
+      console.error("ownership risk: machine-sensitive samples cannot share the host with another marked verification owner");
+      console.error(`correction: wait for the reported owner to settle, then run the supported performance owner once; ${definition.correction}`);
+      return 1;
+    }
+  }
   if (owner === "performance" && process.env.AGENTERA_VERIFICATION_RESULT) {
     console.error(`${owner} owner rejected environment output override AGENTERA_VERIFICATION_RESULT`);
     console.error(`ownership risk: reporter redirection can suppress the required evidence line`);
