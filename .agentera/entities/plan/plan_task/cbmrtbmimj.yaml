@@ -13,3 +13,13 @@ record:
     - GIVEN comparable before-and-after sampled runs WHEN results are reviewed THEN wall time, aggregate test time, and remaining hotspots are recorded without becoming machine-sensitive gates.
     - GIVEN verified completion WHEN project state is synchronized THEN plan, progress, and any related findings accurately reflect the delivered work.
   plan: uqqfojmzbv
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: pnpm -C packages/cli test fails repositoryNativeRetirement because ignored .opencode/package.json exists; implementation range does not touch either surface
+    provenance:
+      attempt_id: audit-cbmrtbmimj-1
+      source: orchestrate evaluator for task cbmrtbmimj
+      recorded_at: 2026-08-10 12:05
+      writer_command: agentera state plan record-evaluation

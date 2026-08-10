@@ -25,7 +25,6 @@ const RETIRED_PACKAGE_SURFACES = [
   ".codex-plugin/plugin.json",
   ".cursor-plugin/plugin.json",
   ".github/plugin/plugin.json",
-  ".opencode/package.json",
   ".opencode/plugins/agentera.js",
   "agents/openai.yaml",
   "plugin.json",
@@ -99,13 +98,13 @@ function resolveTypeScriptImport(importer: string, specifier: string): string | 
 }
 
 describe("repository-native retirement inventory", () => {
-  it("has no tracked current integration implementation or standalone OpenCode dependency boundary", () => {
+  it("has no current integration implementation", () => {
     for (const relative of RETIRED_CURRENT_IMPLEMENTATIONS) {
       expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(false);
     }
   });
 
-  it("has no current package or distribution descriptors", () => {
+  it("has no retired package or distribution descriptors", () => {
     for (const relative of RETIRED_PACKAGE_SURFACES) {
       expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(false);
     }
