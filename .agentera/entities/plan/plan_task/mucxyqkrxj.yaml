@@ -12,3 +12,13 @@ record:
     - GIVEN fresh initialization runs WHEN its effects are inspected THEN it neither reads nor changes global runtime resources and no other state writer gains an initialization path.
   plan: ijkzofxryi
   evidence: Implemented Plan-create-only initialization with a dry-run marker, plan, and task preview; marker-last publication; and rollback. Verified by fresh Plan source tests and built-CLI dry-run and apply.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: fresh-init-audit-1
+      source: independent implementation audit
+      recorded_at: 2026-08-10 13:10
+      writer_command: agentera state plan record-evaluation

@@ -12,3 +12,13 @@ record:
     - GIVEN Plan startup identifies fresh_uninitialized WHEN it returns guidance THEN it does not recommend or expose an upgrade --yes apply command.
   plan: ijkzofxryi
   evidence: Implemented fresh_uninitialized classification for exact Git worktree roots without .agentera, preserving ordinary root documents, table TODOs, and reports while rejecting legacy, partial, corrupt, unknown, and .git-shaped non-worktree state. Verified by targeted source tests, migration and upgrade contract tests, and built-CLI startup.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: fresh-init-audit-1
+      source: independent implementation audit
+      recorded_at: 2026-08-10 13:10
+      writer_command: agentera state plan record-evaluation
