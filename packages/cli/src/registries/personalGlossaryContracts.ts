@@ -54,6 +54,10 @@ export interface PersonalGlossaryCandidateProjectionContract {
   candidateReadSafeContextViewExpiry: string;
   candidateReadSafeContextViewMutation: string;
   candidateReadSafeContextViewSnapshot: string;
+  candidateReadCurrentGenerationSource: string;
+  candidateReadCurrentGenerationProjectionBinding: string;
+  candidateReadCurrentGenerationUnavailableBehavior: string;
+  candidateReadCurrentGenerationStaleProjectionBehavior: string;
 }
 
 export interface PersonalGlossaryCandidateDecisionContract {
@@ -66,6 +70,13 @@ export interface PersonalGlossaryCandidateDecisionContract {
   resultStatuses: string[];
   reasonCodesByOutcome: Record<string, string[]>;
   maxResultUtf8Bytes: number;
+  receiptConstructionRequestSchemaVersion: string;
+  receiptConstructionRequestFields: string[];
+  receiptConstructionMaxRequestUtf8Bytes: number;
+  receiptConstructionResultSchemaVersion: string;
+  receiptConstructionResultFields: string[];
+  receiptConstructionResultStatuses: string[];
+  receiptConstructionMaxResultUtf8Bytes: number;
   automaticProvenance: string;
   inferredAutomaticAdmission: string;
   qualityGate: string;

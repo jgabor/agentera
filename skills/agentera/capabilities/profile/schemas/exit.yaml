@@ -4,8 +4,10 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       PROFILE.md was written (Full mode) or updated (Validate mode).
-      In Full mode its owned personal Glossary section was rendered and persisted,
-      metadata changes were applied, prediction accuracy was assessed, and
+      In Full mode the base profile was written first, then any existing personal
+      glossary generation produced only current authorized explicit publication;
+      remaining review work was queued or bounded for a question channel.
+      Metadata changes were applied, prediction accuracy was assessed, and
       changes were summarized.
     exit_signal: complete
   2:
@@ -16,7 +18,8 @@ EXIT_CONDITIONS:
       issues: available runtime history was skipped without explicit
       acceptance, extraction failed for one or more sources, prediction
       accuracy was below 3/5, or significant unresolved tensions were
-      found.
+      found. Full mode is also flagged when its existing consent-bound personal
+      glossary generation is unavailable, stale, degraded, or review-only.
     exit_signal: flagged
   3:
     id: E3

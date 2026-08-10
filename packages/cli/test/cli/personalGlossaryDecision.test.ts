@@ -45,6 +45,7 @@ const ADMISSION_REASON_PAIRS = Object.entries(GLOSSARY_ADMISSION_REASONS_BY_OUTC
 );
 
 let profileDir: string;
+let currentGeneration: string;
 let previousProfileDir: string | undefined;
 let previousProfileraProfileDir: string | undefined;
 
@@ -54,6 +55,7 @@ beforeEach(() => {
   previousProfileraProfileDir = process.env.PROFILERA_PROFILE_DIR;
   process.env.AGENTERA_PROFILE_DIR = profileDir;
   delete process.env.PROFILERA_PROFILE_DIR;
+  currentGeneration = publish([]).generation;
 });
 
 afterEach(() => {
@@ -92,8 +94,8 @@ function record(
   };
 }
 
-function publish(records: Array<Record<string, unknown>>): void {
-  publishEvidenceTiers(records, {
+function publish(records: Array<Record<string, unknown>>) {
+  return publishEvidenceTiers(records, {
     tiersDir: tiersDir(),
     adapterVersion: ADAPTER_VERSION,
     publishedAt: RETAINED_AT,
@@ -173,6 +175,31 @@ function request(receipt: unknown): string {
   });
 }
 
+function receiptConstructionRequest(
+  capsule: GlossaryEvidenceCapsule,
+  projection: PersonalGlossaryCandidateProjection,
+  classification: Partial<GlossaryHostClassification> = {},
+): string {
+  return JSON.stringify({
+    schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
+    candidate_id: capsule.candidate_id,
+    candidate_revision: capsule.candidate_revision,
+    candidate_capsule_sha256: capsule.capsule_sha256,
+    candidate_projection_sha256: projection.projection_sha256,
+    generation: capsule.generation,
+    policy_version: capsule.policy_version,
+    classification: {
+      term: capsule.term,
+      meaning: capsule.meaning,
+      scope: capsule.scope,
+      permanence: "durable",
+      consistency: "consistent",
+      confidence: 100,
+      ...classification,
+    },
+  });
+}
+
 function fileBytesOrNull(file: string): string | null {
   return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
 }
@@ -213,7 +240,7 @@ function inferredFixture(): { capsule: GlossaryEvidenceCapsule; projection: Pers
       { source_id: "source-b", evidence_anchor: "anchor-b", source_kind: "project_config_signal" },
     ],
     policy_version: PERSONAL_GLOSSARY_MINING_POLICY_VERSION,
-    generation: "inferred-generation",
+    generation: currentGeneration,
   });
   return { capsule, projection: persist([capsule]) };
 }
@@ -226,7 +253,7 @@ function unavailableExplicitFixture(): { capsule: GlossaryEvidenceCapsule; proje
     provenance_kind: "personal_explicit_definition",
     evidence: [{ source_id: "unavailable-source", evidence_anchor: "unavailable-anchor", signal_type: "correction" }],
     policy_version: PERSONAL_GLOSSARY_MINING_POLICY_VERSION,
-    generation: "unavailable-generation",
+    generation: currentGeneration,
   });
   return { capsule, projection: persist([capsule]) };
 }
@@ -281,6 +308,21 @@ describe("agentera report personal-glossary-decision", () => {
         allowed_provenance: "provenance_variants.personal_explicit_definition",
         inferred_automatic_admission: "disabled",
       },
+      receipt_construction: {
+        request_schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
+        request_fields: [
+          "schema_version",
+          "candidate_id",
+          "candidate_revision",
+          "candidate_capsule_sha256",
+          "candidate_projection_sha256",
+          "generation",
+          "policy_version",
+          "classification",
+        ],
+        result_schema_version: "agentera.personalGlossaryAdmissionResult.v2",
+        result_fields: ["schemaVersion", "command", "status", "receipt", "decision", "reason", "effects"],
+      },
     });
 
     const { capsule, projection } = explicitFixture();
@@ -319,6 +361,66 @@ describe("agentera report personal-glossary-decision", () => {
     expect(fs.readFileSync(path.join(tiersDir(), "current.json"), "utf8")).toBe(tiersBefore);
     expect(fs.existsSync(path.join(profileDir, "PROFILE.md"))).toBe(false);
     expect(fs.existsSync(path.join(profileDir, "intermediate", "personal-glossary", "reviews"))).toBe(false);
+  });
+
+  it("constructs a sealed receipt from a bounded classification and exact current bindings", () => {
+    const { capsule, projection } = explicitFixture();
+    const before = noEffectSnapshot();
+    const first = run(
+      ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
+      receiptConstructionRequest(capsule, projection),
+    );
+    const replay = run(
+      ["report", "personal-glossary-decision", "--input=-", "--format=json"],
+      receiptConstructionRequest(capsule, projection),
+    );
+
+    expect(first).toMatchObject({ rc: 0, err: "" });
+    expect(replay).toEqual(first);
+    const body = JSON.parse(first.out);
+    expect(body).toMatchObject({
+      schemaVersion: "agentera.personalGlossaryAdmissionResult.v2",
+      status: "automatic_admission",
+      reason: "explicit_current_authorized",
+      effects: [],
+      receipt: {
+        candidate_id: capsule.candidate_id,
+        candidate_revision: capsule.candidate_revision,
+        candidate_capsule_sha256: capsule.capsule_sha256,
+        candidate_projection_sha256: projection.projection_sha256,
+        semantic_fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        receipt_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      },
+      decision: {
+        host_receipt_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        semantic_fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      },
+    });
+    expect(body.decision.host_receipt_sha256).toBe(body.receipt.receipt_sha256);
+    expect(body.decision.semantic_fingerprint).toBe(body.receipt.semantic_fingerprint);
+    expectNoEffects(before);
+  });
+
+  it("does not construct a receipt for a stale exact candidate binding", () => {
+    const { capsule, projection } = explicitFixture();
+    const before = noEffectSnapshot();
+    const request = JSON.parse(receiptConstructionRequest(capsule, projection));
+    request.candidate_projection_sha256 = "f".repeat(64);
+    const result = run(
+      ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
+      JSON.stringify(request),
+    );
+
+    expect(result).toMatchObject({ rc: 0, err: "" });
+    expect(JSON.parse(result.out)).toMatchObject({
+      schemaVersion: "agentera.personalGlossaryAdmissionResult.v2",
+      status: "abstain",
+      reason: "candidate_unavailable",
+      receipt: null,
+      decision: null,
+      effects: [],
+    });
+    expectNoEffects(before);
   });
 
   it("loads only the authority-owned outcome/reason pairs", () => {
@@ -515,9 +617,9 @@ describe("agentera report personal-glossary-decision", () => {
       },
     },
     {
-      name: "unavailable explicit evidence",
+      name: "missing explicit evidence",
       status: "abstain",
-      reason: "evidence_unavailable",
+      reason: "evidence_changed",
       hasDecision: true,
       execute: () => {
         const { capsule, projection } = unavailableExplicitFixture();
@@ -528,8 +630,8 @@ describe("agentera report personal-glossary-decision", () => {
     {
       name: "changed explicit evidence",
       status: "abstain",
-      reason: "evidence_changed",
-      hasDecision: true,
+      reason: "projection_stale",
+      hasDecision: false,
       execute: () => {
         const { capsule, projection } = explicitFixture();
         publish([record("changed-source", "Actually, `ship shape` means a changed form.")]);
@@ -654,8 +756,8 @@ describe("agentera report personal-glossary-decision", () => {
     publish([record("changed-source", "Actually, `ship shape` means a changed form.")]);
     expect(decidePersonalGlossaryCandidate(receiptFor(changedEvidence.capsule, changedEvidence.projection))).toMatchObject({
       status: "abstain",
-      reason: "evidence_changed",
-      decision: { outcome: "abstain" },
+      reason: "projection_stale",
+      decision: null,
     });
 
     const retractedText = "Actually, `ship shape` means the complete form. That definition is no longer valid for ship shape.";

@@ -40,6 +40,7 @@ export function personalGlossaryCandidateProjectionContract(
     ),
   );
   const retrieval = mapping(mining?.candidate_retrieval);
+  const currentGeneration = mapping(retrieval?.current_generation);
   const retrievalCommand = mapping(retrieval?.command);
   const list = mapping(retrieval?.list);
   const filters = mapping(list?.filters);
@@ -128,5 +129,19 @@ export function personalGlossaryCandidateProjectionContract(
       typeof safeContextView?.mutation === "string" ? safeContextView.mutation : "",
     candidateReadSafeContextViewSnapshot:
       typeof safeContextView?.snapshot === "string" ? safeContextView.snapshot : "",
+    candidateReadCurrentGenerationSource:
+      typeof currentGeneration?.source === "string" ? currentGeneration.source : "",
+    candidateReadCurrentGenerationProjectionBinding:
+      typeof currentGeneration?.projection_generation === "string"
+        ? currentGeneration.projection_generation
+        : "",
+    candidateReadCurrentGenerationUnavailableBehavior:
+      typeof currentGeneration?.unavailable_behavior === "string"
+        ? currentGeneration.unavailable_behavior
+        : "",
+    candidateReadCurrentGenerationStaleProjectionBehavior:
+      typeof currentGeneration?.stale_projection_behavior === "string"
+        ? currentGeneration.stale_projection_behavior
+        : "",
   };
 }

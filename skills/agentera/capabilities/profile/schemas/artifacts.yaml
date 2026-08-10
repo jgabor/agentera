@@ -5,13 +5,17 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Decision profile with per-entry confidence scoring, permanence
-      classification, and temporal metadata. Profile Full also owns one
-      deterministic personal Glossary section containing shared glossary entries
-      and lifecycle metadata; rendering and persistence are active while lookup
-      remains deferred. Profile writes this in both Full and Validate modes,
-      then reads it for validation and update context. Prime exposes its
-      canonical resolved path only inside `prime --context profile`; no other
-      Prime context or profile-grounding failure may serialize that path.
+      classification, and temporal metadata. After writing the base profile,
+      Profile Full consumes one existing consent-bound user-local personal
+       glossary generation. Only complete current coverage reaches bounded
+       classification and current explicit CLI decisions can replace its
+       deterministic owned Glossary section; inferred or ambiguous candidates
+       use the bounded review lifecycle. Unavailable, stale, or degraded coverage
+       preserves the base and owned section and requires explicit refresh. Lookup remains deferred. Profile writes
+      this in both Full and Validate modes, then reads it for validation and
+      update context. Prime exposes its canonical resolved path only inside
+      `prime --context profile`; no other Prime context or profile-grounding
+      failure may serialize that path.
   2:
     id: A2
     artifact: decisions

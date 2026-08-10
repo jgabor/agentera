@@ -87,9 +87,10 @@ VALIDATION:
     id: V7
     rule: personal_glossary_output
     description: >-
-      The explicit personal publication operation MUST render and persist exactly
-      one owned Glossary section only after current decision revalidation. Profile
-      Full preserves a valid existing section but does not invoke publication.
+      After writing the base profile, Profile Full MUST consume only one existing
+      consent-bound user-local generation. The canonical publication operation
+      may render and persist exactly one owned Glossary section only after current
+      decision revalidation, and only for an explicit automatic admission.
       Entries use only the shared primitive and personal provenance variants.
       Replacement preserves every non-glossary byte, malformed or ambiguous
       boundaries fail before effects, and personal production never reads a
@@ -100,6 +101,8 @@ VALIDATION:
       - "Inferred entries cannot receive automatic publication"
       - "Non-glossary PROFILE.md bytes and decision-pattern confidence are unchanged"
       - "No project glossary identity, path, parameter, import, or read is used"
+      - "Missing, failed, empty, degraded, or review-only mining preserves the base and owned section"
+      - "Degraded coverage performs no candidate classification, decision, review queue, or publication"
   8:
     id: V8
     rule: personal_glossary_lifecycle
@@ -115,3 +118,4 @@ VALIDATION:
       - "Stable, durable, and situational classes use their existing lambdas and floor"
       - "Fresh evidence refreshes only matching meaning and provenance kind"
       - "Glossary confidence never mutates decision-pattern confidence"
+      - "Question-capable hosts present only a bounded queued review set; other hosts use the durable queue"

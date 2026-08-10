@@ -5,7 +5,7 @@ record:
   depends_on:
     - tlholqmvtn
     - cviizrgkvm
-  status: pending
+  status: complete
   acceptance:
     - GIVEN Profile Full creates a base profile WHEN mining begins THEN the base and owned glossary remain until authorized replacement.
     - GIVEN mixed candidate outcomes WHEN workflow completes THEN only authorized explicit entries auto-publish and other outcomes stay explainable.
@@ -13,3 +13,18 @@ record:
     - GIVEN project glossary trap state WHEN Profile Full runs THEN mining avoids it while consumer checks preserve precedence, proven-gap fallback, and equivalence review.
     - GIVEN each workflow and compatibility rule WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evidence:
+    - Served Profile Full action order captures the owned Glossary, writes the base, reads one current-generation candidate list, then routes decision, review, and authorized publication; base and owned section survive missing, corrupt, empty, degraded, per-candidate read/decision, publisher-failure, and replay cases.
+    - The public V2 decision CLI constructs receipts and enforces current evidence-tier generation binding through candidate reads, decisions, review queue and disposition, and publication.
+    - Mixed explicit, review-required, and abstain routing preserves bounded question fallback and project-glossary trap isolation.
+    - "Verified typecheck/build; full source: 239 files, 3,921 passed, 1 skipped; package: 35 passed; local capability, contract, vocabulary, and compact gates; independent Audit PASS."
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Audit session ses_0170c658fffe3oe7JQhGjIp184 final targeted verification
+      recorded_at: 2026-08-10 04:57
+      writer_command: agentera state plan record-evaluation

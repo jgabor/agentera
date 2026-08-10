@@ -21,14 +21,12 @@ import type {
   PersonalGlossaryOutputContract,
   PersonalProfileGroundingContract,
 } from "./personalGlossaryContracts.js";
-
 export type {
   ConfirmedVariantGuardContract,
   PersonalGlossaryAdmissionContract,
   PersonalGlossaryOutputContract,
   PersonalProfileGroundingContract,
 };
-
 type Mapping = Record<string, unknown>;
 
 export type GlossaryOwner = "personal" | "project";
@@ -417,6 +415,7 @@ export function validateGlossaryEntryContract(
       "bounded_explicit_discovery",
       "bounded_candidate_projection",
       "bounded_candidate_retrieval",
+      "public_receipt_construction",
       "host_classification_receipt_validation",
       "deterministic_cli_admission_decision",
       "explicit_classification",
@@ -737,20 +736,23 @@ export function validateGlossaryEntryContract(
   if (
     profile?.implementation !== "active_partial" ||
     !sameStrings(profile?.capabilities, ["profile"]) ||
-    !sameStrings(profile?.active_behavior, ["ownership_contracts.personal.admission"]) ||
-    !sameStrings(profile?.inactive_behavior, ["lookup", "personal_profile_publication"]) ||
+    !sameStrings(profile?.active_behavior, [
+      "ownership_contracts.personal.admission",
+      "personal_mining_authority.profile_full",
+    ]) ||
+    !sameStrings(profile?.inactive_behavior, ["lookup"]) ||
     profileContracts?.admission !== "ownership_contracts.personal.input" ||
     profileContracts?.provenance !== "ownership_contracts.personal.allowed_provenance" ||
     profileContracts?.confidence !== "shared_primitive.fields.confidence" ||
     profileContracts?.retention_and_decay !== "ownership_contracts.personal.retention_and_decay" ||
+    profileContracts?.profile_full !== "personal_mining_authority.profile_full" ||
     !sameStrings(profile?.forbidden_current_claims, [
       "lookup",
       "project_glossary_consumption",
-      "personal_glossary_publication",
     ])
   ) {
     errors.push(
-      "profile glossary synthesis must remain separate from authorized personal publication",
+      "profile glossary synthesis must reuse existing consented input and only canonical authorized personal publication",
     );
   }
   const audit = mapping(capabilities?.audit);

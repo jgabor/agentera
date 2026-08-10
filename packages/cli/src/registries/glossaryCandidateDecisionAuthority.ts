@@ -86,6 +86,8 @@ export function validateGlossaryCandidateDecisionAuthority(authority: Mapping): 
   const command = mapping(decisionLayer?.command);
   const request = mapping(command?.request);
   const result = mapping(command?.result);
+  const receiptConstruction = mapping(command?.receipt_construction);
+  const receiptConstructionResult = mapping(receiptConstruction?.result);
   if (
     command?.canonical !== "npx -y agentera@next report personal-glossary-decision" ||
     command?.namespace !== "report" ||
@@ -102,6 +104,32 @@ export function validateGlossaryCandidateDecisionAuthority(authority: Mapping): 
     !exactStrings(result?.statuses, GLOSSARY_ADMISSION_OUTCOMES) ||
     result?.max_utf8_bytes !== 4096 ||
     !exactStrings(result?.effects, []) ||
+    receiptConstruction?.schema_version !== "agentera.personalGlossaryAdmissionRequest.v2" ||
+    !exactStrings(receiptConstruction?.required_fields, [
+      "schema_version",
+      "candidate_id",
+      "candidate_revision",
+      "candidate_capsule_sha256",
+      "candidate_projection_sha256",
+      "generation",
+      "policy_version",
+      "classification",
+    ]) ||
+    receiptConstruction?.additional_fields !== "forbidden" ||
+    receiptConstruction?.max_utf8_bytes !== 16384 ||
+    receiptConstructionResult?.schema_version !== "agentera.personalGlossaryAdmissionResult.v2" ||
+    !exactStrings(receiptConstructionResult?.fields, [
+      "schemaVersion",
+      "command",
+      "status",
+      "receipt",
+      "decision",
+      "reason",
+      "effects",
+    ]) ||
+    !exactStrings(receiptConstructionResult?.statuses, GLOSSARY_ADMISSION_OUTCOMES) ||
+    receiptConstructionResult?.max_utf8_bytes !== 16384 ||
+    !exactStrings(receiptConstructionResult?.effects, []) ||
     !nonEmpty(command?.rule)
   ) {
     errors.push("CLI decision command must remain bounded, structured, read-only, and current-projection bound");

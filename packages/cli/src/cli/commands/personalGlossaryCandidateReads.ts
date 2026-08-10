@@ -1,9 +1,12 @@
 import {
   personalGlossaryCandidateProjectionPath,
-  readPersonalGlossaryCandidateProjection,
-  type PersonalGlossaryCandidateProjection,
   type ProjectedPersonalGlossaryCandidate,
 } from "../../analytics/personalGlossaryCandidateProjection.js";
+import { readCurrentPersonalGlossaryCandidateProjection } from "../../analytics/personalGlossaryCurrentGeneration.js";
+import {
+  currentPersonalGlossaryCandidateReadView,
+  type PersonalGlossaryCandidateReadView as CandidateReadView,
+} from "../../analytics/personalGlossaryCandidateReadView.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { shellQuoteArgument } from "../../core/shell.js";
 import {
@@ -58,13 +61,6 @@ interface CandidateReadContract {
   safeContextViewSnapshot: string;
 }
 
-interface CandidateReadView {
-  projection: PersonalGlossaryCandidateProjection;
-  candidates: ProjectedPersonalGlossaryCandidate[];
-  expiredSafeContexts: number;
-  safeContextViewSha256: string;
-}
-
 interface ListOptions {
   limit: number;
   cursor?: string;
@@ -83,6 +79,8 @@ interface ExactOptions {
 interface CandidateReadFailure {
   class:
     | "projection_unavailable"
+    | "current_generation_unavailable"
+    | "projection_stale"
     | "cursor_invalid"
     | "cursor_snapshot_unavailable"
     | "not_found"
@@ -143,7 +141,13 @@ function contract(): CandidateReadContract {
     value.candidateReadSafeContextViewExpiry !== "expires_at_lte_read_time_is_unavailable" ||
     value.candidateReadSafeContextViewMutation !== "forbidden" ||
     value.candidateReadSafeContextViewSnapshot !==
-      "effective_availability_bound_to_opaque_cursor_snapshot"
+      "effective_availability_bound_to_opaque_cursor_snapshot" ||
+    value.candidateReadCurrentGenerationSource !==
+      "current.json_readable_bounded_evidence_tier_generation" ||
+    value.candidateReadCurrentGenerationProjectionBinding !== "exact_match_required" ||
+    value.candidateReadCurrentGenerationUnavailableBehavior !==
+      "current_generation_unavailable" ||
+    value.candidateReadCurrentGenerationStaleProjectionBehavior !== "projection_stale"
   ) {
     throw new TypeError("personal glossary candidate retrieval contract is invalid");
   }
@@ -481,31 +485,6 @@ function candidateSummary(candidate: ProjectedPersonalGlossaryCandidate): Mappin
   };
 }
 
-function currentReadView(projection: PersonalGlossaryCandidateProjection): CandidateReadView {
-  const readTime = Date.now();
-  let expiredSafeContexts = 0;
-  const candidates = projection.candidates.map((candidate) => {
-    if (
-      candidate.safe_excerpt !== null &&
-      Date.parse(candidate.safe_excerpt.expires_at) <= readTime
-    ) {
-      expiredSafeContexts += 1;
-      return { ...candidate, safe_excerpt: null };
-    }
-    return candidate;
-  });
-  const safeContextViewSha256 = glossaryCanonicalSha256({
-    schema_version: "agentera.personalGlossaryCandidateSafeContextView.v1",
-    candidates: candidates.map((candidate) => ({
-      candidate_id: candidate.capsule.candidate_id,
-      candidate_revision: candidate.capsule.candidate_revision,
-      capsule_sha256: candidate.capsule.capsule_sha256,
-      safe_context_available: candidate.safe_excerpt !== null,
-    })),
-  });
-  return { projection, candidates, expiredSafeContexts, safeContextViewSha256 };
-}
-
 function projectionSummary(view: CandidateReadView): Mapping {
   const report = view.projection.report;
   const safeContextOmissions = Object.values(report.excerpts.omissions).reduce(
@@ -577,14 +556,31 @@ function currentProjection(
   value: CandidateReadContract,
   operation: "list" | "get",
 ): CandidateReadView | null {
-  const result = readPersonalGlossaryCandidateProjection();
+  const result = readCurrentPersonalGlossaryCandidateProjection();
   if (result.status === "current" && result.projection) {
     try {
-      return currentReadView(result.projection);
+      return currentPersonalGlossaryCandidateReadView(result.projection);
     } catch {
       // Do not return a partially reconciled read view.
     }
   }
+  const unavailable = result.status === "current_generation_unavailable"
+    ? {
+      class: "current_generation_unavailable" as const,
+      message: "the current bounded evidence tier generation is unavailable",
+      recovery: "Run `npx -y agentera@next report refresh --consent local-history`, then retry; no projection bytes were changed.",
+    }
+    : result.status === "projection_stale"
+      ? {
+        class: "projection_stale" as const,
+        message: "the candidate projection is stale for the current bounded evidence tier generation",
+        recovery: "Run `npx -y agentera@next report refresh --consent local-history`, then retry; no projection bytes were changed.",
+      }
+      : {
+        class: "projection_unavailable" as const,
+        message: "the current personal glossary candidate projection is unavailable or invalid",
+        recovery: "Create or repair a current bounded candidate projection, then retry; no projection bytes were changed.",
+      };
   failure(
     io,
     `${value.command} ${operation}`,
@@ -592,11 +588,7 @@ function currentProjection(
     operation === "list"
       ? `${value.command} list --limit ${value.defaultLimit} --format json`
       : exactSyntax(value),
-    {
-      class: "projection_unavailable",
-      message: "the current personal glossary candidate projection is unavailable or invalid",
-      recovery: "Create or repair a current bounded candidate projection, then retry; no projection bytes were changed.",
-    },
+    unavailable,
   );
   return null;
 }

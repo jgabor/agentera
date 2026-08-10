@@ -20,6 +20,7 @@ import {
   validateGlossaryCapabilityImplementationClaim,
   type GlossaryAdmissionContext,
 } from "../../src/registries/glossaryEntryContract.js";
+import { personalGlossaryProfileFullContract } from "../../src/registries/glossaryProfileFullContract.js";
 
 const retainedHistory: GlossaryAdmissionContext = {
   retainedHistory: new Map([
@@ -136,13 +137,25 @@ describe("shared glossary entry authority", () => {
     const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8"));
     expect(authority.ownership_contracts.personal.implementation).toMatchObject({
       status: "active_partial",
-      active: expect.arrayContaining(["authorized_personal_publication", "profile_section_persistence"]),
+      active: expect.arrayContaining([
+        "public_receipt_construction",
+        "authorized_personal_publication",
+        "profile_section_persistence",
+      ]),
       inactive: ["lookup"],
     });
     expect(authority.deferred_capability_contracts.profile).toMatchObject({
       implementation: "active_partial",
-      inactive_behavior: ["lookup", "personal_profile_publication"],
-      forbidden_current_claims: ["lookup", "project_glossary_consumption", "personal_glossary_publication"],
+      active_behavior: [
+        "ownership_contracts.personal.admission",
+        "personal_mining_authority.profile_full",
+      ],
+      inactive_behavior: ["lookup"],
+      forbidden_current_claims: ["lookup", "project_glossary_consumption"],
+    });
+    expect(personalGlossaryProfileFullContract()).toEqual({
+      candidateListLimit: 20,
+      questionReviewMaximum: 3,
     });
     expect(personalGlossaryOutputContract()).toEqual({
       command: "agentera report personal-glossary-publish",
@@ -225,6 +238,27 @@ describe("shared glossary entry authority", () => {
       normalization: "unicode_caseless_exact_no_normalization",
       uniqueness: "global_across_complete_document",
     });
+  });
+
+  it.each([
+    [
+      "a non-positive candidate-list limit",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.profile_full.existing_generation.list_limit = 0;
+      },
+    ],
+    [
+      "an arbitrary question-review limit",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.profile_full.review.question_channel_maximum = 4;
+      },
+    ],
+  ])("fails closed when Profile Full authority has %s", (_name, mutate) => {
+    const pathname = malformedAuthority(mutate);
+    expect(() => personalGlossaryProfileFullContract(pathname)).toThrow(
+      "personal glossary Profile Full contract is unavailable",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
 
   it("aligns active Build, Discuss, Plan, and prime consumption with mutation-free Audit", () => {
@@ -453,7 +487,7 @@ describe("shared glossary entry authority", () => {
 
   it.each([
     [
-      "inactive profile output",
+      "inactive Profile Full integration",
       (authority: Record<string, any>) => {
         authority.deferred_capability_contracts.profile.inactive_behavior = [
           "rendering",
@@ -461,7 +495,14 @@ describe("shared glossary entry authority", () => {
           "lookup",
         ];
       },
-      "profile glossary synthesis must remain separate from authorized personal publication",
+      "profile glossary synthesis must reuse existing consented input and only canonical authorized personal publication",
+    ],
+    [
+      "unbounded Profile Full questions",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.profile_full.review.question_channel_maximum = 4;
+      },
+      "personal_mining_authority Profile Full integration must reuse one existing consent-bound generation, preserve base output, bound review, and publish only explicit authorization",
     ],
     [
       "mutable audit proposal",

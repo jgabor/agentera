@@ -167,10 +167,19 @@ function boundedText(value: unknown, maximum: number): value is string {
   return typeof value === "string" && value.length > 0 && Buffer.byteLength(value, "utf8") <= maximum;
 }
 
+const CONTENT_ADDRESSED_TIER_GENERATION = /^[a-f0-9]{24}$/u;
+
 /** Keep review binding metadata opaque and safe to persist or return. */
 export function validPersonalGlossaryReviewMetadataBinding(value: unknown): value is string {
   return boundedText(value, 256) && !/[\\/]/u.test(value) &&
     !SENSITIVE_REVIEW_METADATA_ASSIGNMENT.test(value) && !containsPersonalGlossarySensitiveContent(value);
+}
+
+/** A current evidence-tier generation is a bounded opaque digest, not secret content. */
+export function validPersonalGlossaryReviewGenerationBinding(value: unknown): value is string {
+  return (
+    typeof value === "string" && CONTENT_ADDRESSED_TIER_GENERATION.test(value)
+  ) || validPersonalGlossaryReviewMetadataBinding(value);
 }
 
 function validCorrectedMeaning(value: unknown): value is string {
@@ -302,7 +311,7 @@ function validStoredReviewRecord(
   if (
     value.schema_version !== "agentera.personalGlossaryReviewRecord.v1" || value.owner !== "user_local_review_lifecycle" ||
     ![value.candidate_id, value.candidate_revision, value.candidate_capsule_sha256, value.host_receipt_sha256, value.cli_decision_sha256, value.semantic_fingerprint, value.record_sha256].every(digest) ||
-    !validPersonalGlossaryReviewMetadataBinding(value.generation) || !validPersonalGlossaryReviewMetadataBinding(value.policy_version) ||
+    !validPersonalGlossaryReviewGenerationBinding(value.generation) || !validPersonalGlossaryReviewMetadataBinding(value.policy_version) ||
     value.candidate_id !== record.candidate_id || value.candidate_revision !== record.candidate_revision ||
     value.candidate_capsule_sha256 !== record.candidate_capsule_sha256 || value.host_receipt_sha256 !== record.host_receipt_sha256 ||
     value.cli_decision_sha256 !== record.cli_decision_sha256 || value.semantic_fingerprint !== record.semantic_fingerprint ||
@@ -319,7 +328,7 @@ function validStoredReviewRecord(
 function commonRecordIsValid(value: Mapping): value is Mapping & ReviewIdentityBinding {
   return value.owner === REVIEW_OWNER &&
     [value.review_id, value.candidate_id, value.candidate_revision, value.candidate_capsule_sha256, value.candidate_projection_sha256, value.host_receipt_sha256, value.cli_decision_sha256, value.semantic_fingerprint, value.record_sha256].every(digest) &&
-    validPersonalGlossaryReviewMetadataBinding(value.generation) && validPersonalGlossaryReviewMetadataBinding(value.policy_version) &&
+    validPersonalGlossaryReviewGenerationBinding(value.generation) && validPersonalGlossaryReviewMetadataBinding(value.policy_version) &&
     boundedText(value.reason, 512) &&
     (GLOSSARY_ADMISSION_REASONS_BY_OUTCOME.review_required as readonly string[]).includes(value.reason as string) &&
     timestamp(value.queued_at) && (value.status === "pending" || value.status === "terminal");

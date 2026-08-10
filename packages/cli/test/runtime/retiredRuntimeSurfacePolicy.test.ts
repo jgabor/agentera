@@ -217,7 +217,10 @@ describe("retired runtime current-surface policy", () => {
       const modulePath = capabilityInstructionModulePath(capability);
       const raw = decodeRawCapabilityModule(modulePath);
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
-      const canonical = typeof module.default === "string" ? module.default : raw;
+      const staticInstructions = typeof module.default === "string" ? module.default : raw;
+      const canonical = typeof module.servedInstructions === "function"
+        ? module.servedInstructions()
+        : staticInstructions;
       const expected = preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical);
       surfaces.push([`${modulePath} raw instructions`, raw]);
       surfaces.push([`${modulePath} served instructions`, expected]);
@@ -1344,11 +1347,13 @@ describe("retired runtime current-surface policy", () => {
     for (const [capability, served] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
       const modulePath = capabilityInstructionModulePath(capability);
       const raw = decodeRawCapabilityModule(modulePath);
-      // Status keeps one canonical instruction vocabulary but publishes its
-      // one-call startup wording through the same deterministic adapter used
-      // by the runtime. Other capabilities remain raw and unchanged.
+      // Status and Profile publish served instruction adapters while retaining
+      // their static module exports for consumers that do not serve a context.
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
-      const canonical = typeof module.default === "string" ? module.default : raw;
+      const staticInstructions = typeof module.default === "string" ? module.default : raw;
+      const canonical = typeof module.servedInstructions === "function"
+        ? module.servedInstructions()
+        : staticInstructions;
       const expected = preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical);
       expect(expected, `${capability} expected instructions`).toBe(served);
       expect(currentSupportViolations(raw), `${modulePath} raw instructions`).toEqual([]);

@@ -1,7 +1,12 @@
 import fs from "node:fs";
 
+import { readCurrentPersonalGlossaryCandidateProjection } from "../../analytics/personalGlossaryCurrentGeneration.js";
 import { decidePersonalGlossaryCandidate } from "../../analytics/personalGlossaryDecision.js";
 import { loadYamlMapping } from "../../core/yaml.js";
+import {
+  createGlossaryHostClassificationReceipt,
+  type GlossaryHostClassification,
+} from "../../registries/glossaryCandidateContracts.js";
 import { personalGlossaryCandidateDecisionContract } from "../../registries/glossaryCandidateDecisionContract.js";
 import type { PersonalGlossaryCandidateDecisionContract } from "../../registries/personalGlossaryContracts.js";
 import type { Io } from "../dispatch/shared.js";
@@ -12,6 +17,8 @@ type Mapping = Record<string, unknown>;
 const COMMAND = "agentera report personal-glossary-decision --input <file|-> --format json";
 const RECOVERY =
   "Correct the bounded decision request and retry; no projection, review, profile, or project bytes were changed.";
+const SHA256 = /^[a-f0-9]{64}$/u;
+const MAX_BINDING_UTF8_BYTES = 256;
 
 function mapping(value: unknown): Mapping | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -36,6 +43,25 @@ function contract(): PersonalGlossaryCandidateDecisionContract {
     JSON.stringify(value.resultStatuses) !==
       JSON.stringify(["automatic_admission", "review_required", "abstain"]) ||
     value.maxResultUtf8Bytes !== 4_096 ||
+    value.receiptConstructionRequestSchemaVersion !== "agentera.personalGlossaryAdmissionRequest.v2" ||
+    JSON.stringify(value.receiptConstructionRequestFields) !==
+      JSON.stringify([
+        "schema_version",
+        "candidate_id",
+        "candidate_revision",
+        "candidate_capsule_sha256",
+        "candidate_projection_sha256",
+        "generation",
+        "policy_version",
+        "classification",
+      ]) ||
+    value.receiptConstructionMaxRequestUtf8Bytes !== 16_384 ||
+    value.receiptConstructionResultSchemaVersion !== "agentera.personalGlossaryAdmissionResult.v2" ||
+    JSON.stringify(value.receiptConstructionResultFields) !==
+      JSON.stringify(["schemaVersion", "command", "status", "receipt", "decision", "reason", "effects"]) ||
+    JSON.stringify(value.receiptConstructionResultStatuses) !==
+      JSON.stringify(["automatic_admission", "review_required", "abstain"]) ||
+    value.receiptConstructionMaxResultUtf8Bytes !== 16_384 ||
     value.automaticProvenance !== "provenance_variants.personal_explicit_definition" ||
     value.inferredAutomaticAdmission !== "disabled" ||
     value.qualityGate !== "personal_mining_authority.admission.quality_threshold"
@@ -126,49 +152,192 @@ function readRequest(source: string, maxBytes: number, io: Io): Mapping {
   return value;
 }
 
+interface ReceiptConstructionRequest {
+  candidateId: string;
+  candidateRevision: string;
+  candidateCapsuleSha256: string;
+  candidateProjectionSha256: string;
+  generation: string;
+  policyVersion: string;
+  classification: Mapping;
+}
+
+type ValidatedRequest =
+  | { kind: "receipt"; receipt: Mapping }
+  | { kind: "receipt_construction"; request: ReceiptConstructionRequest };
+
+function exactFields(request: Mapping, fields: readonly string[]): boolean {
+  const keys = Object.keys(request);
+  return keys.length === fields.length &&
+    keys.every((key) => fields.includes(key)) &&
+    fields.every((field) => field in request);
+}
+
+function boundedBinding(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 &&
+    Buffer.byteLength(value, "utf8") <= MAX_BINDING_UTF8_BYTES;
+}
+
 function validateRequest(
   request: Mapping,
   value: PersonalGlossaryCandidateDecisionContract,
-): { receipt: Mapping } | { error: InvalidInputErrorBody } {
-  const keys = Object.keys(request);
+): ValidatedRequest | { error: InvalidInputErrorBody } {
+  if (request.schema_version === value.requestSchemaVersion) {
+    if (!exactFields(request, value.requestFields)) {
+      return {
+        error: {
+          class: "schema_violation",
+          message: "personal glossary decision request fields are invalid",
+          valid_values: value.requestFields,
+        },
+      };
+    }
+    if (!mapping(request.receipt)) {
+      return {
+        error: {
+          class: "schema_violation",
+          message: `request requires ${value.requestSchemaVersion} and one receipt mapping`,
+          valid_values: [value.requestSchemaVersion, "receipt"],
+        },
+      };
+    }
+    return { kind: "receipt", receipt: request.receipt as Mapping };
+  }
+
+  if (request.schema_version !== value.receiptConstructionRequestSchemaVersion) {
+    return {
+      error: {
+        class: "schema_violation",
+        message: "personal glossary decision request schema is invalid",
+        valid_values: [
+          value.requestSchemaVersion,
+          value.receiptConstructionRequestSchemaVersion,
+        ],
+      },
+    };
+  }
+  if (!exactFields(request, value.receiptConstructionRequestFields)) {
+    return {
+      error: {
+        class: "schema_violation",
+        message: "personal glossary receipt-construction request fields are invalid",
+        valid_values: value.receiptConstructionRequestFields,
+      },
+    };
+  }
   if (
-    keys.some((key) => !value.requestFields.includes(key)) ||
-    value.requestFields.some((field) => !(field in request))
+    !SHA256.test(String(request.candidate_id)) ||
+    !SHA256.test(String(request.candidate_revision)) ||
+    !SHA256.test(String(request.candidate_capsule_sha256)) ||
+    !SHA256.test(String(request.candidate_projection_sha256)) ||
+    !boundedBinding(request.generation) ||
+    !boundedBinding(request.policy_version) ||
+    !mapping(request.classification)
   ) {
     return {
       error: {
         class: "schema_violation",
-        message: "personal glossary decision request fields are invalid",
-        valid_values: value.requestFields,
+        message: "receipt construction requires exact candidate bindings and one classification mapping",
+        valid_values: value.receiptConstructionRequestFields,
       },
     };
   }
-  if (request.schema_version !== value.requestSchemaVersion || !mapping(request.receipt)) {
-    return {
-      error: {
-        class: "schema_violation",
-        message: `request requires ${value.requestSchemaVersion} and one receipt mapping`,
-        valid_values: [value.requestSchemaVersion, "receipt"],
-      },
-    };
-  }
-  return { receipt: request.receipt as Mapping };
+  return {
+    kind: "receipt_construction",
+    request: {
+      candidateId: request.candidate_id as string,
+      candidateRevision: request.candidate_revision as string,
+      candidateCapsuleSha256: request.candidate_capsule_sha256 as string,
+      candidateProjectionSha256: request.candidate_projection_sha256 as string,
+      generation: request.generation,
+      policyVersion: request.policy_version,
+      classification: request.classification as Mapping,
+    },
+  };
 }
 
 function emitResult(
-  value: ReturnType<typeof decidePersonalGlossaryCandidate>,
-  contractValue: PersonalGlossaryCandidateDecisionContract,
+  value: unknown,
+  maxResultUtf8Bytes: number,
   io: Io,
 ): number {
   const text = `${JSON.stringify(value, null, 2)}\n`;
-  if (Buffer.byteLength(text, "utf8") > contractValue.maxResultUtf8Bytes) {
+  if (Buffer.byteLength(text, "utf8") > maxResultUtf8Bytes) {
     return invalid(io, {
       class: "invalid_request",
-      message: `personal glossary decision result exceeds ${contractValue.maxResultUtf8Bytes} UTF-8 bytes`,
+      message: `personal glossary decision result exceeds ${maxResultUtf8Bytes} UTF-8 bytes`,
     });
   }
   (io.out ?? ((line) => process.stdout.write(line)))(text);
   return 0;
+}
+
+type ReceiptConstruction =
+  | { kind: "created"; receipt: Mapping }
+  | { kind: "unavailable"; reason: string }
+  | { kind: "invalid"; error: InvalidInputErrorBody };
+
+function constructReceipt(request: ReceiptConstructionRequest): ReceiptConstruction {
+  let current;
+  try {
+    current = readCurrentPersonalGlossaryCandidateProjection();
+  } catch {
+    return { kind: "unavailable", reason: "current_generation_unavailable" };
+  }
+  if (current.status !== "current" || current.projection === null) {
+    return {
+      kind: "unavailable",
+      reason: current.status === "projection_stale"
+        ? "projection_stale"
+        : current.status === "current_generation_unavailable"
+          ? "current_generation_unavailable"
+          : "projection_unavailable",
+    };
+  }
+  const candidate = current.projection.candidates.find(({ capsule }) =>
+    capsule.candidate_id === request.candidateId &&
+    capsule.candidate_revision === request.candidateRevision &&
+    capsule.capsule_sha256 === request.candidateCapsuleSha256 &&
+    capsule.generation === request.generation &&
+    capsule.policy_version === request.policyVersion &&
+    current.projection!.projection_sha256 === request.candidateProjectionSha256,
+  );
+  if (!candidate) return { kind: "unavailable", reason: "candidate_unavailable" };
+  try {
+    return {
+      kind: "created",
+      receipt: createGlossaryHostClassificationReceipt({
+        capsule: candidate.capsule,
+        candidate_projection_sha256: current.projection.projection_sha256,
+        classification: request.classification as GlossaryHostClassification,
+      }),
+    };
+  } catch {
+    return {
+      kind: "invalid",
+      error: {
+        class: "schema_violation",
+        message: "receipt construction classification is invalid for the exact current candidate",
+      },
+    };
+  }
+}
+
+function receiptConstructionResult(
+  receipt: Mapping | null,
+  decision: ReturnType<typeof decidePersonalGlossaryCandidate> | null,
+  reason: string | null,
+  contractValue: PersonalGlossaryCandidateDecisionContract,
+): Mapping {
+  return {
+    schemaVersion: contractValue.receiptConstructionResultSchemaVersion,
+    command: "report personal-glossary-decision",
+    status: decision?.status ?? "abstain",
+    receipt,
+    decision: decision?.decision ?? null,
+    reason: decision?.reason ?? reason,
+    effects: [],
+  };
 }
 
 /** Run the read-only host-receipt validation and deterministic decision boundary. */
@@ -196,5 +365,26 @@ export function runPersonalGlossaryDecisionCommand(argv: string[], io: Io): numb
   }
   const validated = validateRequest(request, contractValue);
   if ("error" in validated) return invalid(io, validated.error);
-  return emitResult(decidePersonalGlossaryCandidate(validated.receipt), contractValue, io);
+  if (validated.kind === "receipt") {
+    return emitResult(
+      decidePersonalGlossaryCandidate(validated.receipt),
+      contractValue.maxResultUtf8Bytes,
+      io,
+    );
+  }
+  const constructed = constructReceipt(validated.request);
+  if (constructed.kind === "invalid") return invalid(io, constructed.error);
+  if (constructed.kind === "unavailable") {
+    return emitResult(
+      receiptConstructionResult(null, null, constructed.reason, contractValue),
+      contractValue.receiptConstructionMaxResultUtf8Bytes,
+      io,
+    );
+  }
+  const decision = decidePersonalGlossaryCandidate(constructed.receipt);
+  return emitResult(
+    receiptConstructionResult(constructed.receipt, decision, null, contractValue),
+    contractValue.receiptConstructionMaxResultUtf8Bytes,
+    io,
+  );
 }

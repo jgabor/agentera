@@ -49,6 +49,7 @@ const REVIEW_SUBJECT = "user:current";
 const REVIEW_KEY_PAIR = generateKeyPairSync("ed25519");
 
 let profileDir: string;
+let currentGeneration: string;
 let previousProfileDir: string | undefined;
 let previousProfileraProfileDir: string | undefined;
 
@@ -58,6 +59,7 @@ beforeEach(() => {
   previousProfileraProfileDir = process.env.PROFILERA_PROFILE_DIR;
   process.env.AGENTERA_PROFILE_DIR = profileDir;
   delete process.env.PROFILERA_PROFILE_DIR;
+  currentGeneration = publishEvidence([]).generation;
 });
 
 afterEach(() => {
@@ -104,8 +106,8 @@ function record(sourceId: string, text: string, authorClass = "user"): Record<st
   };
 }
 
-function publishEvidence(records: Array<Record<string, unknown>>): void {
-  publishEvidenceTiers(records, {
+function publishEvidence(records: Array<Record<string, unknown>>) {
+  return publishEvidenceTiers(records, {
     tiersDir: tiersDir(),
     adapterVersion: ADAPTER_VERSION,
     publishedAt: RETAINED_AT,
@@ -257,7 +259,7 @@ function reviewedFixture(disposition: "accept" | "correct"): {
       { source_id: `reviewed-${disposition}-b`, evidence_anchor: `reviewed-${disposition}-b`, source_kind: "project_config_signal" },
     ],
     policy_version: "agentera.personalGlossaryMiningPolicy.v1",
-    generation: `reviewed-publish-generation-${disposition}`,
+    generation: currentGeneration,
   });
   const projection = persist([capsule]);
   const receipt = receiptFor(capsule, projection);
@@ -303,7 +305,7 @@ function nonPublishableReviewedFixture(disposition: "reject" | "defer"): {
       { source_id: `non-publishable-${disposition}-b`, evidence_anchor: `non-publishable-${disposition}-b`, source_kind: "project_config_signal" },
     ],
     policy_version: "agentera.personalGlossaryMiningPolicy.v1",
-    generation: `non-publishable-generation-${disposition}`,
+    generation: currentGeneration,
   });
   const projection = persist([capsule]);
   const receipt = receiptFor(capsule, projection);

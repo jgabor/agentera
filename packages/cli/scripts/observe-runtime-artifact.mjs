@@ -23,7 +23,11 @@ const capabilityIds = tuples.ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple
 const modules = {};
 for (const capability of capabilityIds) {
   const module = await import(pathToFileURL(path.join(runtimeRoot, `dist/capabilities/${capability}/instructions.js`)).href);
-  const body = capability === "status" ? statusStartup.statusStartupInstructions(module.default) : module.default;
+  const instructionBody = typeof module.servedInstructions === "function"
+    ? module.servedInstructions()
+    : module.default;
+  if (typeof instructionBody !== "string") throw new Error(`runtime capability '${capability}' has no default instruction body`);
+  const body = capability === "status" ? statusStartup.statusStartupInstructions(instructionBody) : instructionBody;
   modules[capability] = preCutover.preCutoverInstructionBody(body);
 }
 

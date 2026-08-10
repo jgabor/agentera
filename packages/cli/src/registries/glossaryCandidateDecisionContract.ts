@@ -29,6 +29,8 @@ export function personalGlossaryCandidateDecisionContract(
   const command = mapping(decision?.command);
   const request = mapping(command?.request);
   const result = mapping(command?.result);
+  const receiptConstruction = mapping(command?.receipt_construction);
+  const receiptConstructionResult = mapping(receiptConstruction?.result);
   const automatic = mapping(decision?.automatic_admission);
   const reasonCodesByOutcome = mapping(decision?.reason_codes_by_outcome);
   if (!reasonCodesByOutcome || !hasGlossaryAdmissionReasonCodesByOutcome(reasonCodesByOutcome)) {
@@ -53,6 +55,25 @@ export function personalGlossaryCandidateDecisionContract(
     ),
     maxResultUtf8Bytes:
       typeof result?.max_utf8_bytes === "number" ? result.max_utf8_bytes : 0,
+    receiptConstructionRequestSchemaVersion:
+      typeof receiptConstruction?.schema_version === "string"
+        ? receiptConstruction.schema_version
+        : "",
+    receiptConstructionRequestFields: strings(receiptConstruction?.required_fields),
+    receiptConstructionMaxRequestUtf8Bytes:
+      typeof receiptConstruction?.max_utf8_bytes === "number"
+        ? receiptConstruction.max_utf8_bytes
+        : 0,
+    receiptConstructionResultSchemaVersion:
+      typeof receiptConstructionResult?.schema_version === "string"
+        ? receiptConstructionResult.schema_version
+        : "",
+    receiptConstructionResultFields: strings(receiptConstructionResult?.fields),
+    receiptConstructionResultStatuses: strings(receiptConstructionResult?.statuses),
+    receiptConstructionMaxResultUtf8Bytes:
+      typeof receiptConstructionResult?.max_utf8_bytes === "number"
+        ? receiptConstructionResult.max_utf8_bytes
+        : 0,
     automaticProvenance:
       typeof automatic?.allowed_provenance === "string" ? automatic.allowed_provenance : "",
     inferredAutomaticAdmission:

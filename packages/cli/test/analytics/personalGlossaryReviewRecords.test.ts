@@ -14,6 +14,7 @@ import {
   queuePersonalGlossaryReviewRecord,
   readPersonalGlossaryReviewRecords,
   validPersonalGlossaryReviewMetadataBinding,
+  validPersonalGlossaryReviewGenerationBinding,
   type PersonalGlossaryReviewRecord,
 } from "../../src/analytics/personalGlossaryReviewRecords.js";
 import {
@@ -22,6 +23,8 @@ import {
   projectPersonalGlossaryCandidates,
   type PersonalGlossaryCandidateProjection,
 } from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
+import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import {
   createGlossaryReviewRecord,
   createGlossaryEvidenceCapsule,
@@ -32,7 +35,6 @@ import { validatePersonalReviewApprovalReceipt } from "../../src/registries/glos
 import { decidePersonalGlossaryCandidate } from "../../src/analytics/personalGlossaryDecision.js";
 import { canonicalGlossaryJson, glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
 
-const GENERATION = "review-record-generation";
 const POLICY = "agentera.personalGlossaryMiningPolicy.v1";
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const QUEUED_AT = "2026-08-11T00:00:00.000Z";
@@ -40,12 +42,39 @@ const REVIEW_SUBJECT = "user:current";
 const REVIEW_KEY_PAIR = generateKeyPairSync("ed25519");
 
 let profileDir: string;
+let generation: string;
 let extraPaths: string[];
 
 beforeEach(() => {
   profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "personal-glossary-review-records-"));
   extraPaths = [];
+  generation = publishCurrentTier(profileDir, "initial");
 });
+
+function publishCurrentTier(root: string, seed: string): string {
+  const text = `review record tier generation ${seed}`;
+  return publishEvidenceTiers([{
+    source_id: `review-record-tier-source-${seed}`,
+    source_kind: "conversation_turn",
+    timestamp: RETAINED_AT,
+    project_id: "private-review-record-tier",
+    runtime: "opencode",
+    source_class: "active_runtime",
+    source_product: "opencode",
+    active_runtime: true,
+    adapter_version: ADAPTER_VERSION,
+    data: { actor: "user", signal_type: "decision", text },
+    origin_id: originIdentity(`review-record-tier-source-${seed}`),
+    content_fingerprint: contentFingerprint(text),
+    session_id: `review-record-tier-session-${seed}`,
+    conversation_key: `review-record-tier-session-${seed}`,
+    author_class: "user",
+  }], {
+    tiersDir: path.join(root, "intermediate", "tiers"),
+    adapterVersion: ADAPTER_VERSION,
+    publishedAt: RETAINED_AT,
+  }).generation;
+}
 
 afterEach(() => {
   for (const pathname of extraPaths) fs.rmSync(pathname, { recursive: true, force: true });
@@ -58,7 +87,7 @@ function storage(root = profileDir) {
 
 function candidate(
   index: number,
-  generation = GENERATION,
+  candidateGeneration = generation,
   policyVersion = POLICY,
   evidenceVariant = "",
 ): GlossaryEvidenceCapsule {
@@ -80,7 +109,7 @@ function candidate(
         source_kind: "project_config_signal",
       },
     ],
-    generation,
+    generation: candidateGeneration,
     policy_version: policyVersion,
   });
 }
@@ -505,7 +534,12 @@ describe("personal glossary review-record persistence", () => {
         record: { disposition },
       });
 
-      const corroborated = candidate(11, "review-record-generation-next", POLICY, "corroborated");
+      const corroborated = candidate(
+        11,
+        publishCurrentTier(profileDir, "corroborated"),
+        POLICY,
+        "corroborated",
+      );
       const corroboratedProjection = persist([corroborated]);
       const recurrence = queue(corroborated, corroboratedProjection, storage(), "2026-08-11T00:03:00.000Z");
       expect(corroborated.candidate_id).toBe(initial.candidate_id);
@@ -545,7 +579,7 @@ describe("personal glossary review-record persistence", () => {
     expect(dispositionPersonalGlossaryReviewRecord(input)).toMatchObject({ status: "unchanged_replay" });
 
     if (change === "policy") {
-      const changed = candidate(12, GENERATION, "agentera.personalGlossaryMiningPolicy.v2", "policy");
+      const changed = candidate(12, generation, "agentera.personalGlossaryMiningPolicy.v2", "policy");
       const changedProjection = persist([changed]);
       expect(queue(changed, changedProjection, storage(), "2026-08-11T00:03:00.000Z")).toMatchObject({
         status: "reopened",
@@ -600,19 +634,29 @@ describe("personal glossary review-record persistence", () => {
 
   it("rejects secret or path-shaped binding metadata before it persists review records", () => {
     const unsafeBindings = [
-      ["/home/current-user/private-generation", POLICY],
-      [GENERATION, "api_key=review-secret-123456"],
+      [
+        "/home/current-user/private-generation",
+        POLICY,
+        "decision_not_review_required",
+        "projection_stale",
+      ],
+      [
+        generation,
+        "api_key=review-secret-123456",
+        "current_binding_mismatch",
+        "record_binding_mismatch",
+      ],
     ] as const;
 
-    for (const [generation, policyVersion] of unsafeBindings) {
-      const capsule = candidate(7, generation, policyVersion);
+    for (const [unsafeGeneration, policyVersion, status, reason] of unsafeBindings) {
+      const capsule = candidate(7, unsafeGeneration, policyVersion);
       const projection = persist([capsule]);
       const projectionPath = personalGlossaryCandidateProjectionPath(storage());
       const projectionBefore = fs.readFileSync(projectionPath, "utf8");
 
       expect(queue(capsule, projection)).toMatchObject({
-        status: "current_binding_mismatch",
-        reason: "record_binding_mismatch",
+        status,
+        reason,
         record: null,
       });
       expect(fs.existsSync(personalGlossaryReviewRecordsPath(storage()))).toBe(false);
@@ -620,7 +664,8 @@ describe("personal glossary review-record persistence", () => {
       expect(fs.readFileSync(projectionPath, "utf8")).toBe(projectionBefore);
     }
 
-    expect(validPersonalGlossaryReviewMetadataBinding(GENERATION)).toBe(true);
+    expect(validPersonalGlossaryReviewMetadataBinding(generation)).toBe(true);
+    expect(validPersonalGlossaryReviewGenerationBinding(generation)).toBe(true);
     expect(validPersonalGlossaryReviewMetadataBinding("agentera.personalGlossaryMiningPolicy.v1")).toBe(true);
     expect(validPersonalGlossaryReviewMetadataBinding("/home/current-user/private-generation")).toBe(false);
     expect(validPersonalGlossaryReviewMetadataBinding("api_key=review-secret-123456")).toBe(false);
@@ -749,7 +794,7 @@ describe("personal glossary review-record persistence", () => {
     const link = `${target}-link`;
     extraPaths.push(target, link);
     fs.symlinkSync(target, link, "dir");
-    const capsule = candidate(6);
+    const capsule = candidate(6, publishCurrentTier(link, "symlink"));
     const projection = persist([capsule], link);
     const result = queue(capsule, projection, storage(link));
     const pathname = personalGlossaryReviewRecordsPath(storage(link));

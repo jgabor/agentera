@@ -409,7 +409,7 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     degraded?.condition !== "valid_current_actual_cap_truncation_or_flagged_incomplete" ||
     degraded?.action !== "reuse_only_as_degraded_evidence_without_automatic_admission" ||
     degraded?.result !== "degraded_coverage" ||
-    recovery?.command !== "npx -y agentera@next stats refresh --consent local-history" ||
+    recovery?.command !== "npx -y agentera@next report refresh --consent local-history" ||
     recovery?.explicit_consent !== "required" ||
     recovery?.after_refresh !== "retry_profile_full_with_the_new_generation" ||
     !sameStrings(recovery?.forbidden, [
@@ -421,6 +421,58 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   ) {
     errors.push(
       "personal_mining_authority consent lifecycle must reuse existing generations and define present, absent, stale, and degraded recovery",
+    );
+  }
+
+  const profileFull = mapping(mining?.profile_full);
+  const existingGeneration = mapping(profileFull?.existing_generation);
+  const deterministicAdmission = mapping(profileFull?.deterministic_admission);
+  const review = mapping(profileFull?.review);
+  const publication = mapping(profileFull?.publication);
+  const output = mapping(profileFull?.output);
+  const candidateRetrieval = mapping(mining?.candidate_retrieval);
+  const candidateList = mapping(candidateRetrieval?.list);
+  if (
+    profileFull?.status !== "active" ||
+    profileFull?.entrypoint !== "Profile_Full" ||
+    profileFull?.base_profile_order !== "write_base_profile_before_personal_glossary" ||
+    existingGeneration?.source !== "existing_consent_bound_user_local_candidate_projection" ||
+    existingGeneration?.generation_count !== 1 ||
+    !sameStrings(existingGeneration?.binding_fields, [
+      "generation",
+      "policy_version",
+      "candidate_projection_sha256",
+    ]) ||
+    existingGeneration?.list_limit !== candidateList?.default_limit ||
+    existingGeneration?.continuation !== "forbidden" ||
+    existingGeneration?.degraded !==
+      "explicit_refresh_required_without_candidate_classification_or_publication" ||
+    !sameStrings(existingGeneration?.forbidden_effects, [
+      "history_refresh",
+      "history_collection",
+      "candidate_discovery",
+      "candidate_projection_write",
+      "new_generation",
+      "project_glossary_read",
+    ]) ||
+    existingGeneration?.unavailable !== "preserve_base_profile_and_owned_section" ||
+    deterministicAdmission?.host_classification !== "semantic_evidence_not_admission_authority" ||
+    deterministicAdmission?.command !== "candidate_contracts.layers.cli_decision" ||
+    deterministicAdmission?.automatic !== "explicit_current_authorized_only" ||
+    deterministicAdmission?.inferred !== "review_or_abstain" ||
+    review?.queue_before_question !== true ||
+    review?.question_channel_maximum !== 3 ||
+    review?.no_question_channel !== "durable_queue" ||
+    review?.output !== "bounded_review_cards_and_summary" ||
+    publication?.command !== "ownership_contracts.personal.profile_output" ||
+    publication?.automatic !== "explicit_current_authorized_only" ||
+    publication?.no_decision_synthesis !== true ||
+    publication?.failure !== "preserve_base_profile_and_owned_section" ||
+    output?.profile_path !== "canonical_user_profile_authority" ||
+    output?.terminal !== "compact_bounded_summary"
+  ) {
+    errors.push(
+      "personal_mining_authority Profile Full integration must reuse one existing consent-bound generation, preserve base output, bound review, and publish only explicit authorization",
     );
   }
 

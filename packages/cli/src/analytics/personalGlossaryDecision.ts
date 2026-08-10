@@ -11,10 +11,10 @@ import {
   type GlossaryHostClassificationReceipt,
 } from "../registries/glossaryCandidateContracts.js";
 import {
-  readPersonalGlossaryCandidateProjection,
   type PersonalGlossaryCandidateProjectionStorageOptions,
   type ProjectedPersonalGlossaryCandidate,
 } from "./personalGlossaryCandidateProjection.js";
+import { readCurrentPersonalGlossaryCandidateProjection } from "./personalGlossaryCurrentGeneration.js";
 import { defaultTiersDir } from "./extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "./personalGlossaryExplicitMining.js";
 
@@ -177,12 +177,19 @@ export function decidePersonalGlossaryCandidate(
 ): PersonalGlossaryAdmissionResult {
   let read;
   try {
-    read = readPersonalGlossaryCandidateProjection(options);
+    read = readCurrentPersonalGlossaryCandidateProjection(options);
   } catch {
     return result("abstain", "projection_unavailable");
   }
   if (read.status !== "current" || read.projection === null) {
-    return result("abstain", "projection_unavailable");
+    return result(
+      "abstain",
+      read.status === "current_generation_unavailable"
+        ? "current_generation_unavailable"
+        : read.status === "projection_stale"
+          ? "projection_stale"
+          : "projection_unavailable",
+    );
   }
   const receipt = mapping(receiptInput);
   if (!receipt) return result("abstain", "receipt_invalid");

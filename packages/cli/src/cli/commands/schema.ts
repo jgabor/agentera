@@ -473,6 +473,13 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
             mutation: candidateReads.candidateReadSafeContextViewMutation,
             snapshot: candidateReads.candidateReadSafeContextViewSnapshot,
           },
+          current_generation: {
+            source: candidateReads.candidateReadCurrentGenerationSource,
+            projection_generation: candidateReads.candidateReadCurrentGenerationProjectionBinding,
+            unavailable_behavior: candidateReads.candidateReadCurrentGenerationUnavailableBehavior,
+            stale_projection_behavior:
+              candidateReads.candidateReadCurrentGenerationStaleProjectionBehavior,
+          },
           project_checkout: "not_required",
         },
         candidate_decision: {
@@ -485,6 +492,15 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
           statuses: candidateDecision.resultStatuses,
           reason_codes_by_outcome: candidateDecision.reasonCodesByOutcome,
           max_result_utf8_bytes: candidateDecision.maxResultUtf8Bytes,
+          receipt_construction: {
+            request_schema_version: candidateDecision.receiptConstructionRequestSchemaVersion,
+            request_fields: candidateDecision.receiptConstructionRequestFields,
+            max_request_utf8_bytes: candidateDecision.receiptConstructionMaxRequestUtf8Bytes,
+            result_schema_version: candidateDecision.receiptConstructionResultSchemaVersion,
+            result_fields: candidateDecision.receiptConstructionResultFields,
+            statuses: candidateDecision.receiptConstructionResultStatuses,
+            max_result_utf8_bytes: candidateDecision.receiptConstructionMaxResultUtf8Bytes,
+          },
           automatic_admission: {
             allowed_provenance: candidateDecision.automaticProvenance,
             inferred_automatic_admission: candidateDecision.inferredAutomaticAdmission,

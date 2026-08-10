@@ -16,6 +16,8 @@ import {
   projectPersonalGlossaryCandidates,
   type PersonalGlossaryCandidateProjection,
 } from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
+import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { main } from "../../src/cli/dispatch.js";
 import { printReportHelp } from "../../src/cli/help.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
@@ -27,7 +29,6 @@ import {
 } from "../../src/registries/glossaryCandidateContracts.js";
 import { canonicalGlossaryJson, glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
 
-const GENERATION = "review-cli-generation";
 const POLICY = "agentera.personalGlossaryMiningPolicy.v1";
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -36,6 +37,7 @@ const REVIEW_SUBJECT = "user:current";
 const REVIEW_KEY_PAIR = generateKeyPairSync("ed25519");
 
 let profileDir: string;
+let generation: string;
 let previousProfileDir: string | undefined;
 let previousProfileraProfileDir: string | undefined;
 
@@ -45,7 +47,33 @@ beforeEach(() => {
   previousProfileraProfileDir = process.env.PROFILERA_PROFILE_DIR;
   process.env.AGENTERA_PROFILE_DIR = profileDir;
   delete process.env.PROFILERA_PROFILE_DIR;
+  generation = publishCurrentTier();
 });
+
+function publishCurrentTier(seed = "initial"): string {
+  const text = `review tier generation ${seed}`;
+  return publishEvidenceTiers([{
+    source_id: `review-tier-source-${seed}`,
+    source_kind: "conversation_turn",
+    timestamp: RETAINED_AT,
+    project_id: "private-review-tier",
+    runtime: "opencode",
+    source_class: "active_runtime",
+    source_product: "opencode",
+    active_runtime: true,
+    adapter_version: ADAPTER_VERSION,
+    data: { actor: "user", signal_type: "decision", text },
+    origin_id: originIdentity(`review-tier-source-${seed}`),
+    content_fingerprint: contentFingerprint(text),
+    session_id: `review-tier-session-${seed}`,
+    conversation_key: `review-tier-session-${seed}`,
+    author_class: "user",
+  }], {
+    tiersDir: path.join(profileDir, "intermediate", "tiers"),
+    adapterVersion: ADAPTER_VERSION,
+    publishedAt: RETAINED_AT,
+  }).generation;
+}
 
 afterEach(() => {
   if (previousProfileDir === undefined) delete process.env.AGENTERA_PROFILE_DIR;
@@ -57,7 +85,7 @@ afterEach(() => {
 
 function candidate(
   index: number,
-  generation = GENERATION,
+  candidateGeneration = generation,
   policyVersion = POLICY,
 ): GlossaryEvidenceCapsule {
   return createGlossaryEvidenceCapsule({
@@ -77,7 +105,7 @@ function candidate(
         source_kind: "project_config_signal",
       },
     ],
-    generation,
+    generation: candidateGeneration,
     policy_version: policyVersion,
   });
 }
@@ -135,7 +163,7 @@ function queue(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCan
     ["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"],
     request(receipt(capsule, projection)),
   );
-  expect(result).toMatchObject({ rc: 0, err: "" });
+  expect(result, result.out).toMatchObject({ rc: 0, err: "" });
   expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(4_096);
   return JSON.parse(result.out) as { record: PersonalGlossaryReviewRecord; status: string };
 }
@@ -449,12 +477,12 @@ describe("agentera report personal-glossary-reviews", () => {
 
   it("rejects unsafe queue metadata without persisting or echoing it", () => {
     const unsafeBindings = [
-      ["/home/current-user/private-generation", POLICY],
-      [GENERATION, "api_key=review-secret-123456"],
+      ["/home/current-user/private-generation", POLICY, "review_not_required"],
+      [generation, "api_key=review-secret-123456", "current_binding_mismatch"],
     ] as const;
 
-    for (const [generation, policyVersion] of unsafeBindings) {
-      const capsule = candidate(7, generation, policyVersion);
+    for (const [unsafeGeneration, policyVersion, errorClass] of unsafeBindings) {
+      const capsule = candidate(7, unsafeGeneration, policyVersion);
       const projection = persist([capsule]);
       const projectionPath = personalGlossaryCandidateProjectionPath();
       const projectionBefore = fs.readFileSync(projectionPath, "utf8");
@@ -464,9 +492,9 @@ describe("agentera report personal-glossary-reviews", () => {
       );
 
       expect(result).toMatchObject({ rc: 1, err: "" });
-      expect(JSON.parse(result.out)).toMatchObject({ error: { class: "current_binding_mismatch" } });
+      expect(JSON.parse(result.out)).toMatchObject({ error: { class: errorClass } });
       expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(4_096);
-      expect(result.out).not.toContain(generation);
+      expect(result.out).not.toContain(unsafeGeneration);
       expect(result.out).not.toContain(policyVersion);
       expect(fs.existsSync(personalGlossaryReviewRecordsPath())).toBe(false);
       expect(fs.readFileSync(projectionPath, "utf8")).toBe(projectionBefore);
@@ -495,7 +523,7 @@ describe("agentera report personal-glossary-reviews", () => {
       "--candidate-revision",
       "c".repeat(64),
       "--generation",
-      GENERATION,
+      generation,
       "--policy-version",
       POLICY,
       "--format",
@@ -572,6 +600,33 @@ describe("agentera report personal-glossary-reviews", () => {
         status: "pending",
       },
     });
+  });
+
+  it("does not present G1 review metadata after the current tier advances to G2", () => {
+    const capsule = candidate(6);
+    const projection = persist([capsule]);
+    const queued = queue(capsule, projection);
+    const projectionPath = personalGlossaryCandidateProjectionPath();
+    const reviewPath = personalGlossaryReviewRecordsPath();
+    const projectionBefore = fs.readFileSync(projectionPath, "utf8");
+    const reviewsBefore = fs.readFileSync(reviewPath, "utf8");
+
+    const nextGeneration = publishCurrentTier("g2");
+    expect(nextGeneration).not.toBe(generation);
+
+    const listed = run(["report", "personal-glossary-reviews", "list", "--format", "json"]);
+    expect(listed).toMatchObject({ rc: 0, err: "" });
+    expect(JSON.parse(listed.out)).toMatchObject({
+      status: "degraded",
+      entries: [],
+      retention: { stale_records: 1, mutation: "forbidden" },
+    });
+
+    const exact = run(exactArgs(queued.record));
+    expect(exact).toMatchObject({ rc: 1, err: "" });
+    expect(JSON.parse(exact.out)).toMatchObject({ error: { class: "current_binding_mismatch" } });
+    expect(fs.readFileSync(projectionPath, "utf8")).toBe(projectionBefore);
+    expect(fs.readFileSync(reviewPath, "utf8")).toBe(reviewsBefore);
   });
 
   it("rejects malformed requests, owner mismatches, and cursor changes without effects", () => {

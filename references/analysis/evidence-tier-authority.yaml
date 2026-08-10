@@ -481,7 +481,7 @@ compatibility_states:
       reason: oversized
       outcome: degrade
       recovery: >-
-        Refresh bounded tiers with `npx -y agentera@next stats refresh --consent
+        Refresh bounded tiers with `npx -y agentera@next report refresh --consent
         local-history` or read the signal tier, which is bounded to fit. Do not
         attempt to load the oversized artifact whole.
       determinism: >-
@@ -495,7 +495,7 @@ compatibility_states:
       reason: legacy_monolithic_state
       outcome: degrade
       recovery: >-
-        Emit deterministic refresh guidance: run `npx -y agentera@next stats refresh
+        Emit deterministic refresh guidance: run `npx -y agentera@next report refresh
         --consent local-history` to publish bounded tiers. Legacy monolithic
         state receives refresh guidance rather than indefinite read
         compatibility.
@@ -508,7 +508,7 @@ compatibility_states:
       reason: no_evidence
       outcome: degrade
       recovery: >-
-        Report `npx -y agentera@next stats refresh --consent local-history` and the
+        Report `npx -y agentera@next report refresh --consent local-history` and the
         `--corpus PATH` override. Must not auto-build, scan home directories, or
         run live extraction without consent.
       determinism: >-

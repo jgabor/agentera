@@ -1,0 +1,14 @@
+id: ggrldrqlyx
+artifact: progress
+record:
+  timestamp: 2026-08-10 04:56
+  type: feat
+  phase: build
+  what: consent-bound personal glossary mining integrated into Profile Full with CLI-owned receipt construction and current-generation enforcement.
+  context:
+    intent: complete plan task wjzgtphdwk without weakening base profile, admission authority, bounded review, privacy, or project isolation.
+    constraints: one existing consented generation; explicit automatic publication only; no project glossary read; no implicit refresh; filesystem threat model unchanged.
+    scope: Profile served workflow, personal candidate/decision/review/publication generation binding, contracts, schemas, and regressions.
+  verified: "pnpm run typecheck and pnpm run build passed; full source: 239 files, 3,921 passed, 1 skipped; package: 35 passed; local v3.0.0-dev.43 schema and Build Prime, Profile capability, capability-contract, vocabulary-authority, and compact gates passed; independent Audit PASS."
+  next: evaluator PASS persistence and consumer compatibility task.
+  publication_order: 148

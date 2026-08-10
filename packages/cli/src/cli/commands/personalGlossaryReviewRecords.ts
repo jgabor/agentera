@@ -3,6 +3,7 @@ import fs from "node:fs";
 import {
   dispositionPersonalGlossaryReviewRecord,
   queuePersonalGlossaryReviewRecord,
+  validPersonalGlossaryReviewGenerationBinding,
   validPersonalGlossaryReviewMetadataBinding,
   type PersonalGlossaryReviewQueueResult,
   type PersonalGlossaryReviewDispositionResult,
@@ -350,11 +351,11 @@ function parseExact(argv: string[], value: ReviewRecordsCommandContract): ExactO
       return { class: "invalid_request", message: `${flag} must be a lowercase SHA-256 identity`, valid_values: ["64 lowercase hexadecimal characters"], syntax: exactSyntax(value) };
     }
   }
-  for (const [flag, field] of [
-    ["--generation", "generation"],
-    ["--policy-version", "policyVersion"],
+  for (const [flag, field, valid] of [
+    ["--generation", "generation", validPersonalGlossaryReviewGenerationBinding],
+    ["--policy-version", "policyVersion", validPersonalGlossaryReviewMetadataBinding],
   ] as const) {
-    if (!validPersonalGlossaryReviewMetadataBinding(fields[field]!)) {
+    if (!valid(fields[field]!)) {
       return {
         class: "invalid_request",
         message: `${flag} must be a non-secret, non-path value within 256 UTF-8 bytes`,

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 
-import { readPersonalGlossaryCandidateProjection, type ProjectedPersonalGlossaryCandidate } from "./personalGlossaryCandidateProjection.js";
+import { type ProjectedPersonalGlossaryCandidate } from "./personalGlossaryCandidateProjection.js";
+import { readCurrentPersonalGlossaryCandidateProjection } from "./personalGlossaryCurrentGeneration.js";
 import { decidePersonalGlossaryCandidate } from "./personalGlossaryDecision.js";
 import {
   createGlossaryReviewRecord,
@@ -45,6 +46,7 @@ import {
   reviewScope,
   sealPersonalGlossaryReviewRecord,
   terminalReviewRecordExpired,
+  validPersonalGlossaryReviewGenerationBinding,
   validPersonalGlossaryReviewMetadataBinding,
   type PersonalGlossaryLegacyReviewRecord,
   type PersonalGlossaryReviewReadRecord,
@@ -63,6 +65,7 @@ export {
   personalGlossaryReviewRecordsPath,
   personalGlossaryTrustedLocalHostPath,
   readPersonalGlossaryReviewRecords,
+  validPersonalGlossaryReviewGenerationBinding,
   validPersonalGlossaryReviewMetadataBinding,
 };
 export type {
@@ -265,7 +268,16 @@ export function currentPersonalGlossaryReviewRecords(
   const current = readPersonalGlossaryReviewRecords(options);
   if (current.status === "missing") return { status: "current", records: [], expired_records: 0, stale_records: 0 };
   if (current.status !== "current" || current.store === null) return { status: current.status, records: [], expired_records: 0, stale_records: 0 };
-  const projection = readPersonalGlossaryCandidateProjection(options);
+  const projection = readCurrentPersonalGlossaryCandidateProjection(options);
+  // Keep stale metadata observable only through the existing degraded count.
+  if (projection.status === "projection_stale") {
+    return {
+      status: "current",
+      records: [],
+      expired_records: 0,
+      stale_records: current.store.records.length,
+    };
+  }
   if (projection.status !== "current" || projection.projection === null) return { status: "projection_unavailable", records: [], expired_records: 0, stale_records: 0 };
   let expiredRecords = 0;
   let staleRecords = 0;
@@ -286,11 +298,11 @@ export function queuePersonalGlossaryReviewRecord(input: PersonalGlossaryReviewQ
   const decisionResult = decidePersonalGlossaryCandidate(input.receipt, options);
   if (decisionResult.status !== "review_required" || decisionResult.decision === null) return { status: "decision_not_review_required", reason: decisionResult.reason, record: null, reopen_reason: null };
   const decision = decisionResult.decision;
-  const projection = readPersonalGlossaryCandidateProjection(options);
+  const projection = readCurrentPersonalGlossaryCandidateProjection(options);
   if (projection.status !== "current" || projection.projection === null || projection.projection.projection_sha256 !== decision.candidate_projection_sha256) return { status: "current_binding_mismatch", reason: "projection_unavailable", record: null, reopen_reason: null };
   const candidate = exactCandidate(projection.projection.candidates, decision);
   const scope = reviewScope(input.receipt);
-  if (!validPersonalGlossaryReviewMetadataBinding(decision.generation) || !validPersonalGlossaryReviewMetadataBinding(decision.policy_version)) return { status: "current_binding_mismatch", reason: "record_binding_mismatch", record: null, reopen_reason: null };
+  if (!validPersonalGlossaryReviewGenerationBinding(decision.generation) || !validPersonalGlossaryReviewMetadataBinding(decision.policy_version)) return { status: "current_binding_mismatch", reason: "record_binding_mismatch", record: null, reopen_reason: null };
   if (candidate === null || scope === null || validateGlossaryHostClassificationReceipt(input.receipt, candidate.capsule, { candidateProjectionSha256: projection.projection.projection_sha256 }).length > 0 || validateGlossaryAdmissionDecision(decision, candidate.capsule, input.receipt).length > 0) return { status: "current_binding_mismatch", reason: "candidate_binding_mismatch", record: null, reopen_reason: null };
   const current = readPersonalGlossaryReviewRecords(options);
   if (current.status === "corrupt" || (current.store !== null && isLegacyReviewStore(current.store))) return { status: "records_unavailable", reason: "review_records_unavailable", record: null, reopen_reason: null };
@@ -347,7 +359,7 @@ export function dispositionPersonalGlossaryReviewRecord(
   const decisionResult = decidePersonalGlossaryCandidate(input.receipt, options);
   if (decisionResult.status !== "review_required" || decisionResult.decision === null) return { status: "current_binding_mismatch", record: null, publication_authorization: null };
   const decision = decisionResult.decision;
-  const projection = readPersonalGlossaryCandidateProjection(options);
+  const projection = readCurrentPersonalGlossaryCandidateProjection(options);
   if (projection.status !== "current" || projection.projection === null || !recordMatchesProjection(storedRecord, projection.projection)) return { status: "current_binding_mismatch", record: null, publication_authorization: null };
   const candidate = exactCandidate(projection.projection.candidates, decision);
   if (candidate === null || decision.candidate_id !== storedRecord.candidate_id || decision.candidate_revision !== storedRecord.candidate_revision || decision.candidate_capsule_sha256 !== storedRecord.candidate_capsule_sha256 || decision.candidate_projection_sha256 !== storedRecord.candidate_projection_sha256 || decision.host_receipt_sha256 !== storedRecord.host_receipt_sha256 || decision.decision_sha256 !== storedRecord.cli_decision_sha256 || decision.semantic_fingerprint !== storedRecord.semantic_fingerprint || decision.generation !== storedRecord.generation || decision.policy_version !== storedRecord.policy_version || validateGlossaryHostClassificationReceipt(input.receipt, candidate.capsule, { candidateProjectionSha256: projection.projection.projection_sha256 }).length > 0 || validateGlossaryAdmissionDecision(decision, candidate.capsule, input.receipt).length > 0) return { status: "current_binding_mismatch", record: null, publication_authorization: null };
@@ -427,9 +439,11 @@ export function personalGlossaryReviewPublicationAuthorization(
   if (!timestamp(now) || !digest(input.review_id) || !digest(input.review_record_sha256)) return { status: "binding_mismatch", review: null };
   const current = readPersonalGlossaryReviewRecords({ env: input.env, platform: input.platform });
   if (current.status !== "current" || current.store === null) return { status: "unavailable", review: null };
+  const projection = readCurrentPersonalGlossaryCandidateProjection({ env: input.env, platform: input.platform });
+  if (projection.status !== "current" || projection.projection === null) return { status: "unavailable", review: null };
   const storedRecord = current.store.records.find((record) => record.review_id === input.review_id);
   if (!storedRecord || !isCurrentReviewRecord(storedRecord) || terminalReviewRecordExpired(storedRecord, now) || !storedRecord.review_record || storedRecord.status !== "terminal") return { status: "not_publishable", review: null };
-  if (storedRecord.review_record.record_sha256 !== input.review_record_sha256 || !["accept", "correct"].includes(String(storedRecord.disposition)) || storedRecord.candidate_projection_sha256 !== input.candidate_projection_sha256 || storedRecord.candidate_id !== input.capsule.candidate_id || storedRecord.candidate_revision !== input.capsule.candidate_revision || storedRecord.candidate_capsule_sha256 !== input.capsule.capsule_sha256 || storedRecord.host_receipt_sha256 !== input.receipt.receipt_sha256 || storedRecord.cli_decision_sha256 !== input.decision.decision_sha256 || storedRecord.semantic_fingerprint !== input.receipt.semantic_fingerprint || storedRecord.generation !== input.capsule.generation || storedRecord.policy_version !== input.capsule.policy_version || validateGlossaryReviewRecord(storedRecord.review_record, input.capsule, input.receipt, input.decision).length > 0) return { status: "binding_mismatch", review: null };
+  if (storedRecord.review_record.record_sha256 !== input.review_record_sha256 || !["accept", "correct"].includes(String(storedRecord.disposition)) || !recordMatchesProjection(storedRecord, projection.projection) || storedRecord.candidate_projection_sha256 !== input.candidate_projection_sha256 || storedRecord.candidate_id !== input.capsule.candidate_id || storedRecord.candidate_revision !== input.capsule.candidate_revision || storedRecord.candidate_capsule_sha256 !== input.capsule.capsule_sha256 || storedRecord.host_receipt_sha256 !== input.receipt.receipt_sha256 || storedRecord.cli_decision_sha256 !== input.decision.decision_sha256 || storedRecord.semantic_fingerprint !== input.receipt.semantic_fingerprint || storedRecord.generation !== input.capsule.generation || storedRecord.policy_version !== input.capsule.policy_version || validateGlossaryReviewRecord(storedRecord.review_record, input.capsule, input.receipt, input.decision).length > 0) return { status: "binding_mismatch", review: null };
   return { status: "authorized", review: storedRecord.review_record };
 }
 

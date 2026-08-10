@@ -61,12 +61,13 @@ personal_mining_authority:
   status: active_partial
   implementation_boundary: >-
      This section settles personal glossary mining identity, evidence provenance,
-     consent, privacy, lifecycle, bounded explicit-discovery, receipt validation,
+      consent, privacy, lifecycle, bounded explicit-discovery, public receipt construction,
      and deterministic decision authority. The runtime performs bounded discovery,
-      candidate projection, private candidate retrieval, deterministic CLI
-      validation of host semantic evidence, and explicit authorized personal
-      publication. It does not perform host semantic classification, project or
-      public-state candidate reads, review storage, or Profile Full integration.
+       candidate projection, private candidate retrieval, deterministic CLI
+       validation of host semantic evidence, explicit authorized personal
+       publication, and Profile Full integration. It does not perform host
+       semantic classification, project or public-state candidate reads, or
+       project glossary integration.
   preserved_decisions: [prmnztjytv, mcsmqqitnm, zyvgyvjnsv]
   replacement:
     shared_primitive: shared_primitive
@@ -484,7 +485,7 @@ personal_mining_authority:
         action: reuse_only_as_degraded_evidence_without_automatic_admission
         result: degraded_coverage
     recovery:
-      command: npx -y agentera@next stats refresh --consent local-history
+      command: npx -y agentera@next report refresh --consent local-history
       explicit_consent: required
       after_refresh: retry_profile_full_with_the_new_generation
       forbidden: [live_extraction_without_consent, silent_refresh, stale_generation_reuse]
@@ -492,6 +493,43 @@ personal_mining_authority:
         Absent, stale, and degraded states expose the same explicit refresh
         recovery without inspecting raw history. Recovery never changes project
         state or project glossary publication.
+  profile_full:
+    status: active
+    entrypoint: Profile_Full
+    base_profile_order: write_base_profile_before_personal_glossary
+    existing_generation:
+      source: existing_consent_bound_user_local_candidate_projection
+      generation_count: 1
+      binding_fields: [generation, policy_version, candidate_projection_sha256]
+      list_limit: 20
+      continuation: forbidden
+      degraded: explicit_refresh_required_without_candidate_classification_or_publication
+      forbidden_effects:
+        - history_refresh
+        - history_collection
+        - candidate_discovery
+        - candidate_projection_write
+        - new_generation
+        - project_glossary_read
+      unavailable: preserve_base_profile_and_owned_section
+    deterministic_admission:
+      host_classification: semantic_evidence_not_admission_authority
+      command: candidate_contracts.layers.cli_decision
+      automatic: explicit_current_authorized_only
+      inferred: review_or_abstain
+    review:
+      queue_before_question: true
+      question_channel_maximum: 3
+      no_question_channel: durable_queue
+      output: bounded_review_cards_and_summary
+    publication:
+      command: ownership_contracts.personal.profile_output
+      automatic: explicit_current_authorized_only
+      no_decision_synthesis: true
+      failure: preserve_base_profile_and_owned_section
+    output:
+      profile_path: canonical_user_profile_authority
+      terminal: compact_bounded_summary
   privacy:
     owner: current_user
     scope: user_local
@@ -750,7 +788,12 @@ personal_mining_authority:
     status: active
     owner: private_user_local_candidate_retrieval
     runtime: packages/cli/src/cli/commands/personalGlossaryCandidateReads.ts#runPersonalGlossaryCandidateReadsCommand
-    input: current_validated_user_local_candidate_projection_only
+    input: current_validated_user_local_candidate_projection_bound_to_current_tier_generation
+    current_generation:
+      source: current.json_readable_bounded_evidence_tier_generation
+      projection_generation: exact_match_required
+      unavailable_behavior: current_generation_unavailable
+      stale_projection_behavior: projection_stale
     command:
       canonical: npx -y agentera@next report personal-glossary-candidates
       namespace: report
@@ -810,8 +853,9 @@ personal_mining_authority:
         identity: opaque_sha256_of_validated_evidence_and_candidate_binding
         allowed_fields: [occurrence_id, source_kind, signal_type, author_class]
       rule: >-
-        Exact read first validates the current projection and every requested
-        candidate binding. It returns only the bounded validated occurrence
+        Exact read first validates the readable current tier generation, the
+        projection's exact generation binding, and every requested candidate
+        binding. It returns only the bounded validated occurrence
         projection, its candidate_projection_sha256 binding, and a currently
         available validated safe excerpt context.
         Raw source, anchor, session, project, fingerprint, project-key, and
@@ -822,8 +866,9 @@ personal_mining_authority:
       a project glossary, selects project storage, or changes the persisted
       projection. It derives an expiry-aware safe-context read view, reuses the
       canonical opaque snapshot cursor construction, and fails closed before
-      emitting candidate data when a continuation or exact binding is stale,
-      malformed, unavailable, or mismatched.
+        emitting candidate data when the current generation is unavailable, the
+        projection is stale, or a continuation or exact binding is malformed,
+        unavailable, or mismatched.
   review_records:
     status: active
     owner: user_local_review_lifecycle
@@ -900,7 +945,8 @@ personal_mining_authority:
         - nonce
       rule: >-
         Persist only bounded current-user review metadata. Generation and policy
-        bindings must be non-secret, non-path metadata identifiers. A record contains
+        bindings must be non-secret, non-path metadata identifiers; the current
+        content-addressed tier generation is an allowed opaque digest. A record contains
         opaque candidate and receipt bindings, a safe scope, deterministic review
         reason, lifecycle status, disposition, optional canonical review record,
         visible reopening reason, and canonical digests. Only a correct canonical
@@ -1037,8 +1083,9 @@ personal_mining_authority:
         current_binding_field: candidate_projection_sha256
         max_serialized_utf8_bytes: 8192
         rule: >-
-          Exact retrieval validates every selector, including non-secret, non-path
-          generation and policy metadata bindings, the record digest, the current
+          Exact retrieval validates every selector, including a current
+          content-addressed generation or non-secret, non-path generation and policy
+          metadata bindings, the record digest, the current
           store owner, and the record's current candidate projection binding before
           emitting one private metadata record.
       rule: >-
@@ -1283,12 +1330,25 @@ candidate_contracts:
           statuses: [automatic_admission, review_required, abstain]
           max_utf8_bytes: 4096
           effects: []
+        receipt_construction:
+          schema_version: agentera.personalGlossaryAdmissionRequest.v2
+          required_fields: [schema_version, candidate_id, candidate_revision, candidate_capsule_sha256, candidate_projection_sha256, generation, policy_version, classification]
+          additional_fields: forbidden
+          max_utf8_bytes: 16384
+          result:
+            schema_version: agentera.personalGlossaryAdmissionResult.v2
+            fields: [schemaVersion, command, status, receipt, decision, reason, effects]
+            statuses: [automatic_admission, review_required, abstain]
+            max_utf8_bytes: 16384
+            effects: []
         rule: >-
-          The command accepts one host receipt only through a bounded structured
-          file or stdin request. It reads the current private projection, validates
-          every receipt binding and semantic fingerprint, computes one deterministic
-          outcome, and emits JSON without changing a projection, review record,
-          profile, project glossary, or project state.
+          The command accepts either one existing host receipt or one bounded host
+          classification with every exact candidate binding through a structured
+          file or stdin request. For the classification request, the CLI reads the
+          current private projection, constructs the receipt including its semantic
+          fingerprint and receipt digest, computes one deterministic outcome, and
+          returns both receipt and decision. It emits JSON without changing a
+          projection, review record, profile, project glossary, or project state.
       forbidden_fields: [host_authority, host_override, mutation, publication]
       rule: >-
         Only the deterministic CLI validator may emit an admission outcome. It
@@ -1489,6 +1549,7 @@ ownership_contracts:
         - bounded_explicit_discovery
         - bounded_candidate_projection
         - bounded_candidate_retrieval
+        - public_receipt_construction
         - host_classification_receipt_validation
         - deterministic_cli_admission_decision
         - explicit_classification
@@ -2618,9 +2679,9 @@ consumer_boundary:
     Audit remains mutation-free and Build project-glossary publication is active.
     Build, Discuss, Plan, and prime bounded glossary consumption are active, and
     Build progress caveat publication and explicit personal publication are active.
-    Profile Full preserves an existing owned section but does not invoke personal
-    publication. Project-driven personal-profile mutation and docs-mapping mutation
-    remain deferred.
+    Profile Full preserves an existing owned section, then uses only the current
+    consent-bound personal generation and canonical authorized personal publication.
+    Project-driven personal-profile mutation and docs-mapping mutation remain deferred.
 
 deferred_capability_contracts:
   profile:
@@ -2629,13 +2690,15 @@ deferred_capability_contracts:
     intended_behavior: personal_glossary_synthesis
     active_behavior:
       - ownership_contracts.personal.admission
-    inactive_behavior: [lookup, personal_profile_publication]
+      - personal_mining_authority.profile_full
+    inactive_behavior: [lookup]
     contracts:
       admission: ownership_contracts.personal.input
       provenance: ownership_contracts.personal.allowed_provenance
       confidence: shared_primitive.fields.confidence
       retention_and_decay: ownership_contracts.personal.retention_and_decay
-    forbidden_current_claims: [lookup, project_glossary_consumption, personal_glossary_publication]
+      profile_full: personal_mining_authority.profile_full
+    forbidden_current_claims: [lookup, project_glossary_consumption]
   audit:
     capabilities: [audit]
     implementation: active_partial

@@ -5,7 +5,7 @@ import {
   updatePersonalGlossaryProfile,
   type PersonalGlossaryEntry,
 } from "../../analytics/personalGlossaryProfile.js";
-import { readPersonalGlossaryCandidateProjection } from "../../analytics/personalGlossaryCandidateProjection.js";
+import { readCurrentPersonalGlossaryCandidateProjection } from "../../analytics/personalGlossaryCurrentGeneration.js";
 import { containsPersonalGlossarySensitiveContent } from "../../analytics/personalGlossaryCandidateProjectionExcerpts.js";
 import { decidePersonalGlossaryCandidate } from "../../analytics/personalGlossaryDecision.js";
 import { personalGlossaryReviewPublicationAuthorization } from "../../analytics/personalGlossaryReviewRecords.js";
@@ -258,7 +258,7 @@ function validateRequest(
 }
 
 function currentCandidate(receipt: Mapping): { capsule: GlossaryEvidenceCapsule; projectionSha256: string } | null {
-  const current = readPersonalGlossaryCandidateProjection();
+  const current = readCurrentPersonalGlossaryCandidateProjection();
   if (current.status !== "current" || current.projection === null) return null;
   const candidates = current.projection.candidates.filter(
     ({ capsule }) =>

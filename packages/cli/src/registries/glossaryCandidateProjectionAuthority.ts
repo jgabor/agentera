@@ -30,6 +30,7 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   const retention = mapping(projection?.retention);
   const persistence = mapping(projection?.persistence);
   const retrieval = mapping(mining?.candidate_retrieval);
+  const currentGeneration = mapping(retrieval?.current_generation);
   const retrievalCommand = mapping(retrieval?.command);
   const list = mapping(retrieval?.list);
   const filters = mapping(list?.filters);
@@ -105,7 +106,12 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     retrieval?.owner !== "private_user_local_candidate_retrieval" ||
     retrieval?.runtime !==
       "packages/cli/src/cli/commands/personalGlossaryCandidateReads.ts#runPersonalGlossaryCandidateReadsCommand" ||
-    !nonEmpty(retrieval?.input) ||
+    retrieval?.input !==
+      "current_validated_user_local_candidate_projection_bound_to_current_tier_generation" ||
+    currentGeneration?.source !== "current.json_readable_bounded_evidence_tier_generation" ||
+    currentGeneration?.projection_generation !== "exact_match_required" ||
+    currentGeneration?.unavailable_behavior !== "current_generation_unavailable" ||
+    currentGeneration?.stale_projection_behavior !== "projection_stale" ||
     !nonEmpty(retrieval?.rule) ||
     retrievalCommand?.canonical !==
       "npx -y agentera@next report personal-glossary-candidates" ||
