@@ -47,7 +47,12 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
 - Source tests prove CLI logic from temporary directories and pinned fixtures.
 - Package verification proves the packed and extracted production boundary.
 - Stress owns probabilistic repeated evidence.
-- Performance owns machine-sensitive budgets and runs without competing owners.
+- Performance owns machine-sensitive budgets, runs without competing owners,
+  uses one worker on the policy-pinned remote runner, and records runner
+  identity in its structured evidence. Local runs are diagnostic, not
+  authoritative qualification evidence.
+- Capacity owns large deterministic scale evidence and runs serially after
+  performance before source-qualification readers.
 - Generated overlap is the sole source, package, and build execution origin in
   release source qualification.
 

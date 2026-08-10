@@ -1,0 +1,17 @@
+id: rigavfzhng
+artifact: progress
+record:
+  timestamp: 2026-08-10 11:06
+  type: refactor
+  phase: build
+  what: Separated deterministic source correctness, machine-sensitive performance, and large deterministic capacity ownership, then inserted capacity after performance and before qualification readers.
+  context:
+    intent: Make test ownership and release qualification resource order explicit without weakening correctness or release invariants.
+    constraints: Do not serialize the whole suite, retry machine-sensitive failures, publish, push, tag, mutate remote settings, complete the task, or commit before evaluator approval.
+    unknowns: The pinned GitHub-hosted Ubuntu 24.04 qualification run was not dispatched because remote actions are outside this task authority.
+    scope: Plan lsftqiwiki task tsfaddhsrz only.
+  inspiration: The verification policy is lane authority and the package-publication contract is qualification-order authority.
+  discovered: New source-receipt authority also needed the contracted GitHub workflow identity and committed checkout SHA so workstation performance could remain diagnostic only.
+  verified: Full source lane passed 229 files and 3459 tests with one governed skip; capacity passed 2 files and 2 tests; focused release and routing coverage passed 9 files and 164 tests; source response-cap slice passed 2 files and 76 tests; the isolated local performance owner passed 1 test with workers 1 and recorded authoritative false and provider unmanaged; typecheck and final build passed; package boundary passed 3 files and 37 tests; compact and all 3 capability-contract checks passed; policy inventory is source 229, stress 1, performance 1, capacity 2, package 3. A later workstation performance-integration diagnostic exceeded exact_get once at 1311 ms versus 1000 ms; it was not retried or treated as authoritative evidence.
+  next: Obtain an external evaluator PASS before completing the task; keep the implementation and state changes uncommitted.
+  publication_order: 130

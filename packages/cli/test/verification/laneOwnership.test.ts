@@ -12,15 +12,15 @@ const RUNNER = path.join(PACKAGE_ROOT, "scripts/verify-lane.mjs");
 const PRODUCTION_POLICY = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
 const PERFORMANCE_FORWARDING = PRODUCTION_POLICY.owners.performance.forwarding;
 const FIXTURE_OVERLAP = PRODUCTION_POLICY.overlap;
-const OWNER_NAMES = ["source", "stress", "performance", "package"] as const;
+const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"] as const;
 const POLICY_OWNERS = {
   targeted: ["source"],
   precommit: ["source"],
   fast: ["source"],
   local: ["source"],
   merge: ["source", "package"],
-  scheduled: ["source", "stress", "performance"],
-  release: ["source", "stress", "performance", "package"],
+  scheduled: ["source", "stress", "performance", "capacity"],
+  release: ["source", "stress", "performance", "capacity", "package"],
 } as const;
 
 function fixture(overrides: Record<string, unknown> = {}) {
@@ -31,6 +31,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
     "packages/cli/test/stress.test.ts",
     "packages/cli/test/performance-analytics.test.ts",
     "packages/cli/test/performance.test.ts",
+    "packages/cli/test/capacity/capacity.test.ts",
     "packages/cli/test/packaging/package.test.ts",
   ]) {
     const file = path.join(root, relative);
@@ -54,12 +55,14 @@ function fixture(overrides: Record<string, unknown> = {}) {
         { owner: "stress", path: "packages/cli/test/stress.test.ts" },
         { owner: "performance", path: "packages/cli/test/performance-analytics.test.ts" },
         { owner: "performance", path: "packages/cli/test/performance.test.ts", evidence_producer: true },
+        { owner: "capacity", prefix: "packages/cli/test/capacity/" },
         { owner: "package", prefix: "packages/cli/test/packaging/" },
       ],
     },
     owners: Object.fromEntries(OWNER_NAMES.map((owner) => [owner, {
       config: `packages/cli/${owner}.config.ts`,
       correction: `run ${owner} correction`,
+      ...(["performance", "capacity"].includes(owner) ? { execution: { workers: 1 } } : {}),
       ...(owner === "performance" ? {
         forwarding: {
           safe_options: PERFORMANCE_FORWARDING.safe_options,
@@ -79,7 +82,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
   fs.mkdirSync(bin);
   const record = path.join(root, "runs.jsonl");
   const vp = path.join(bin, "vp");
-  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s","maxWorkers":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" "$VITEST_MAX_WORKERS" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
+  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s","maxWorkers":"%s","workers":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" "$VITEST_MAX_WORKERS" "$AGENTERA_VERIFICATION_WORKERS" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
   fs.chmodSync(vp, 0o755);
   return { root, contractPath, record, bin };
 }
@@ -149,7 +152,11 @@ describe("verification lane ownership", () => {
     expect(runs).toHaveLength(1);
     expect(runs[0]).toMatchObject({ owner });
     expect(runs[0].args).toContain(`${owner}.config.ts`);
-    expect(runs[0].args).toContain(owner === "package" ? "test/packaging/package.test.ts" : `test/${owner}.test.ts`);
+    expect(runs[0].args).toContain(owner === "package"
+      ? "test/packaging/package.test.ts"
+      : owner === "capacity"
+        ? "test/capacity/capacity.test.ts"
+        : `test/${owner}.test.ts`);
   });
 
   it("emits a structured full-owner result without replacing the owned inventory", () => {
@@ -172,7 +179,31 @@ describe("verification lane ownership", () => {
   it("composes scheduled performance through its explicit integration surface", () => {
     const { result, runs } = run(["policy", "scheduled"], fixtureWithPerformanceIntegration());
     expect(result.status, result.stderr).toBe(0);
-    expect(runs.map(({ owner }) => owner)).toEqual(["source", "stress", "performance-integration"]);
+    expect(runs.map(({ owner }) => owner)).toEqual(["source", "stress", "performance-integration", "capacity"]);
+  });
+
+  it.each([
+    ["default source", "source", "test/source.test.ts", "performance"],
+    ["stress path", "stress", "test/stress.test.ts", "source"],
+    ["performance path", "performance", "test/performance.test.ts", "capacity"],
+    ["capacity prefix", "capacity", "test/capacity/capacity.test.ts", "performance"],
+    ["package prefix", "package", "test/packaging/package.test.ts", "source"],
+  ])("accepts the %s owner and rejects a foreign owner", (_, owner, file, foreignOwner) => {
+    const accepted = run([owner, file]);
+    expect(accepted.result.status, accepted.result.stderr).toBe(0);
+    expect(accepted.runs).toHaveLength(1);
+    expect(accepted.runs[0]).toMatchObject({ owner });
+
+    const rejected = run([foreignOwner, file]);
+    expect(rejected.result.status).toBe(2);
+    expect(rejected.runs).toHaveLength(0);
+    expect(rejected.result.stderr).toContain(`owner ${owner}`);
+  });
+
+  it("forces one worker for performance and capacity without serializing source", () => {
+    expect(run(["performance"]).runs[0].workers).toBe("1");
+    expect(run(["capacity"]).runs[0].workers).toBe("1");
+    expect(run(["source"]).runs[0].workers).toBe("");
   });
 
   it("forwards targeted filters only to the source owner", () => {
@@ -378,7 +409,7 @@ describe("verification lane ownership", () => {
     expect(result.status, result.stderr).toBe(0);
     const inventory = JSON.parse(result.stdout);
     expect(inventory.counts.total).toBeGreaterThan(190);
-    expect(inventory.counts).toMatchObject({ stress: 1, performance: 3 });
+    expect(inventory.counts).toMatchObject({ stress: 1, performance: 1, capacity: 2 });
     expect(inventory.files.source).toHaveLength(inventory.counts.source);
     expect(inventory.files.package).toEqual([
       "packages/cli/test/packaging/copyBundleSafety.test.ts",
@@ -404,9 +435,9 @@ describe("verification lane ownership", () => {
     const shimReadme = fs.readFileSync(path.join(PACKAGE_ROOT, "shim/README.md"), "utf8");
     const packageJson = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"));
     expect(authority).toContain("canonical authority for checkout generated output");
-    expect(authority).toContain("The four test owners are");
+    expect(authority).toContain("The five test owners are");
     expect(authority).toContain("| Performance | `pnpm -C packages/cli run test:performance`");
-    expect(authority).toContain("| `release` | Source, stress, performance, package |");
+    expect(authority).toContain("| `release` | Source, stress, performance, capacity, package |");
     expect(authority).toContain("Conservative authority and verification surfaces route to `release`");
     expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
     expect(authority).toContain("generated:cleanup -- --force --json");
@@ -433,19 +464,19 @@ describe("verification lane ownership", () => {
     const performanceIntegration = fs.readFileSync(path.join(PACKAGE_ROOT, "test/integration/performanceOwner.integration.mjs"), "utf8");
     expect(packageJson.scripts.test).toBe("pnpm run test:source");
     expect(packageJson.scripts["test:performance:integration"]).toBe("node test/integration/performanceOwner.integration.mjs");
+    expect(packageJson.scripts["test:capacity"]).toBe("node scripts/verify-lane.mjs capacity");
     expect(packageJson.scripts["verify:package"]).toBe("node scripts/verify-lane.mjs package");
     expect(PRODUCTION_POLICY.policies).toEqual(POLICY_OWNERS);
     expect(contract).toContain("fast: [source]");
-    expect(contract).toContain("path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts");
-    expect(contract).toContain("path: packages/cli/test/performance/entityMigrationPreviewCap.test.ts");
+    expect(contract).toContain("prefix: packages/cli/test/capacity/");
     expect(contract).toContain("path: packages/cli/test/performance/entityAuthorityPerformance.test.ts");
     expect(contract).toContain("authority: references/artifacts/state-storage-authority.yaml#entity_target.measurement_contract");
     expect(contract).toContain("stdout_format: newline_delimited_json_record_amid_runner_output");
     expect(contract).toContain("path: packages/cli/test/integration/performanceOwner.integration.mjs");
     expect(contract).toContain("path: packages/cli/test/stress/entityStorageStress.test.ts");
     expect(contract).toContain("merge: [source, package]");
-    expect(contract).toContain("scheduled: [source, stress, performance]");
-    expect(contract).toContain("release: [source, stress, performance, package]");
+    expect(contract).toContain("scheduled: [source, stress, performance, capacity]");
+    expect(contract).toContain("release: [source, stress, performance, capacity, package]");
     expect(contract).not.toMatch(/^  fast:\n/m);
     expect(performanceIntegration).toContain('spawnSync("pnpm", ["run", "test:performance"]');
     expect(performanceIntegration).not.toContain('"test:performance:integration"');

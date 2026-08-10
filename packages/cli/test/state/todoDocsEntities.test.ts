@@ -880,65 +880,6 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(capture(root, ["state", "docs", "get", "--id", secondDoc.id, "--format", "json"]).json.entry.record).toEqual({ document: "Alpha", path: "a.md", last_updated: "2026-07-17", status: "current" });
   });
 
-  it("preserves 40, 60, and 100 realistic TODO rows across byte pressure, filters, and continuation without mutation", () => {
-    const { root, orderedIds, criticalOpenIds } = realisticTodoProject();
-    const before = files(root);
-
-    for (const limit of [40, 60, 100]) {
-      const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", String(limit), "--format", "json"]);
-      expect(result.rc, result.err || result.out).toBe(0);
-      expect(Buffer.byteLength(result.out)).toBeLessThanOrEqual(32_768);
-      expect(result.json).toMatchObject({
-        counts: { total: 120, candidate: 120, returned: limit, remaining: 120 - limit, omitted: 120 - limit, continuation: 120 - limit },
-        projection: { selector: "ids_only", detail: "identity", cardinality: "requested_rows" },
-      });
-      expect(result.json.entries).toHaveLength(limit);
-      expect(result.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, limit));
-      expect(result.json.entries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: limit }, (_, index) => index + 1));
-      for (const entry of result.json.entries) {
-        expect(Object.keys(entry).sort()).toEqual(["artifact", "id", "queue_rank", "retrieval"]);
-        expect(entry.retrieval.get).toBe(`agentera state todo get --id ${entry.id} --format json`);
-      }
-    }
-
-    const first = capture(root, ["state", "todo", "list", "--severity", "critical", "--status", "open", "--ids-only", "--limit", "40", "--format", "json"]);
-    expect(first.rc, first.err || first.out).toBe(0);
-    expect(first.json).toMatchObject({ counts: { total: 70, candidate: 70, returned: 40, remaining: 30, omitted: 30, continuation: 30 } });
-    const second = capture(root, shellCommandArgs(first.json.retrieval.continue));
-    expect(second.rc, second.err || second.out).toBe(0);
-    expect(second.json).toMatchObject({ counts: { total: 70, candidate: 70, returned: 30, remaining: 0, omitted: 0, continuation: 0 } });
-    const paged = [...first.json.entries, ...second.json.entries];
-    expect(paged.map((entry: any) => entry.id)).toEqual(criticalOpenIds);
-    expect(new Set(paged.map((entry: any) => entry.id)).size).toBe(70);
-    expect(paged.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 70 }, (_, index) => index + 1));
-
-    const selected = capture(root, ["state", "todo", "list", "--fields", "status,target_version", "--limit", "100", "--format", "json"]);
-    expect(selected.rc, selected.err || selected.out).toBe(0);
-    expect(selected.json.entries).toHaveLength(100);
-    expect(selected.json.projection).toMatchObject({ selector: "fields", fields: ["status", "target_version"], cardinality: "requested_rows" });
-    expect(selected.json.entries.every((entry: any) => entry.record.status && entry.record.target_version === "3.0.0")).toBe(true);
-
-    const degraded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]);
-    expect(degraded.rc, degraded.err || degraded.out).toBe(0);
-    expect(Buffer.byteLength(degraded.out)).toBeLessThanOrEqual(32_768);
-    expect(degraded.json).toMatchObject({
-      status: "degraded",
-      counts: { candidate: 120, returned: 100, omitted: 20, continuation: 20 },
-      degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 100, omitted_fields: expect.arrayContaining(["record", "provenance"]) },
-    });
-
-    const rejected = capture(root, ["state", "todo", "list", "--fields", "title", "--limit", "100", "--format", "json"]);
-    expect(rejected.rc).toBe(1);
-    expect(rejected.json).toMatchObject({ status: "fail", error: { class: "unsupported_state", message: expect.stringContaining("selected fields cannot fit") } });
-
-    for (const entry of [first.json.entries[0], second.json.entries.at(-1), degraded.json.entries.at(-1)]) {
-      const exact = capture(root, shellCommandArgs(entry.retrieval.get));
-      expect(exact.rc, exact.err || exact.out).toBe(0);
-      expect(exact.json.entry).toMatchObject({ id: entry.id, artifact: "todo" });
-    }
-    expect(files(root)).toEqual(before);
-  });
-
   it("binds TODO cursors to normalized limit and preserves exact unfiltered continuation", () => {
     const { root, orderedIds } = realisticTodoProject();
     const before = files(root);
@@ -1003,7 +944,7 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("classifies TODO request-binding changes as cursor_invalid with current exact restart", () => {
-    const { root, orderedIds } = realisticTodoProject();
+    const { root, orderedIds } = realisticTodoProject(40);
     const before = files(root);
     const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
     const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
@@ -1090,7 +1031,7 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("rejects signed invalid TODO limits and preserves YAML and text cursor errors", () => {
-    const { root } = realisticTodoProject();
+    const { root } = realisticTodoProject(20);
     const before = files(root);
     const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
     const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);

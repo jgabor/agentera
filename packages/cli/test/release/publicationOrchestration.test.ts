@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+import YAML from "yaml";
 
 import {
   canonicalJson,
@@ -29,6 +30,9 @@ const stablePackage = JSON.parse(
 );
 const publicationContract = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"),
+);
+const verificationPolicy = YAML.parse(
+  fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"),
 );
 
 describe("candidate publication orchestration", () => {
@@ -95,6 +99,9 @@ describe("candidate publication orchestration", () => {
     expect(qualificationYaml).toContain("release-qualification.mjs attest");
     expect(qualificationYaml).toContain("release-candidate-${{ github.run_id }}");
     expect(qualificationYaml).toContain("retention-days: 30");
+    expect(qualificationYaml).toContain(`runs-on: ${verificationPolicy.owners.performance.execution.authoritative_runner.runs_on}`);
+    expect(qualificationYaml).toContain("AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04");
+    expect(qualificationYaml).toContain("AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}");
     expect(qualificationYaml).not.toContain("NPM_TOKEN");
   });
 

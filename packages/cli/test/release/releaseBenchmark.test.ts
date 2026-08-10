@@ -124,31 +124,34 @@ describe("release qualification benchmark coordinator", () => {
     });
   });
 
-  it("reconciles parallel batch A plus the ordered solo performance barrier", async () => {
+  it("reconciles parallel batch A plus ordered performance and capacity barriers", async () => {
     const report = await runQualificationBenchmark({
       runPreflight: () => ({ elapsedMs: 1, owners: [{ name: "preflight", elapsedMs: 1 }] }),
       runSource: () => ({
-        elapsedMs: 60,
-        ownerElapsedMs: 60,
+        elapsedMs: 70,
+        ownerElapsedMs: 70,
         owners: [
           { name: "generated-overlap", phase: "batch-a", elapsedMs: 40 },
           { name: "stress", phase: "batch-a", elapsedMs: 40 },
           { name: "typecheck", phase: "batch-a", elapsedMs: 40 },
           { name: "performance", phase: "performance-barrier", elapsedMs: 20 },
+          { name: "capacity", phase: "capacity-barrier", elapsedMs: 10 },
         ],
       }),
       runCandidate: () => ({ elapsedMs: 10, owners: [{ name: "candidate", elapsedMs: 10 }] }),
     });
 
     expect(report.repetitions[0].source).toMatchObject({
-      elapsedMs: 60,
-      ownerDurationTotalMs: 140,
-      ownerElapsedMs: 60,
+      elapsedMs: 70,
+      ownerDurationTotalMs: 150,
+      ownerElapsedMs: 70,
       unattributedElapsedMs: 0,
       reconciled: true,
     });
     expect(report.repetitions[0].source.owners.find(({ name }) => name === "performance"))
       .toMatchObject({ phase: "performance-barrier", elapsedMs: 20 });
+    expect(report.repetitions[0].source.owners.find(({ name }) => name === "capacity"))
+      .toMatchObject({ phase: "capacity-barrier", elapsedMs: 10 });
   });
 
   it("fails closed on a full qualification budget overrun", async () => {

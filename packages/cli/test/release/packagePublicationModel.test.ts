@@ -15,9 +15,12 @@ const mutate = (change: (copy: any) => void) => {
 };
 
 describe("strict package publication model", () => {
-  it("owns exactly ten ordered gates, seven classes, six dimensions, and 42 checks", () => {
+  it("owns exactly eleven ordered gates with capacity after performance and before readers", () => {
     const model = validatePackagePublicationDocument(authority);
     expect(model.sourceGates.map(({ name }) => name)).toEqual(SOURCE_GATE_IDS);
+    expect(model.sourceDag.performanceBarrier).toEqual(["performance"]);
+    expect(model.sourceDag.capacityBarrier).toEqual(["capacity"]);
+    expect(model.sourceDag.barrierB).toEqual(["compact", "capability-contract", "activation-conjunction"]);
     expect(model.activationConjunction.classes).toHaveLength(7);
     expect(model.activationConjunction.dimensions).toHaveLength(6);
     expect(model.activationConjunction.checkIds).toHaveLength(42);
@@ -31,6 +34,11 @@ describe("strict package publication model", () => {
     ["gate order", (copy: any) => { copy.qualification.source.gates.reverse(); }],
     ["duplicate phase entry", (copy: any) => { copy.qualification.source.dag.batchA[1] = copy.qualification.source.dag.batchA[0]; }],
     ["wrong phase membership", (copy: any) => { copy.qualification.source.dag.barrierB[0] = "stress"; }],
+    ["capacity before performance", (copy: any) => {
+      copy.qualification.source.dag.performanceBarrier = ["capacity"];
+      copy.qualification.source.dag.capacityBarrier = ["performance"];
+    }],
+    ["omitted capacity barrier", (copy: any) => { delete copy.qualification.source.dag.capacityBarrier; }],
     ["unknown class", (copy: any) => { copy.qualification.source.activationConjunction.classes[0] = "unknown"; }],
     ["omitted dimension", (copy: any) => { copy.qualification.source.activationConjunction.dimensions.pop(); }],
     ["duplicate check", (copy: any) => { copy.qualification.source.activationConjunction.checkIds[1] = copy.qualification.source.activationConjunction.checkIds[0]; }],

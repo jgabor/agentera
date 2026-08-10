@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { main } from "../../src/cli/dispatch/index.js";
 import { measureColdCli } from "../helpers/coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
+import { performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
@@ -270,6 +271,10 @@ describe("entity authority performance", () => {
         effectiveChildFlags: runtime?.effectiveChildFlags,
         logicalCpus: os.cpus().length,
         coldProcessPerSample: true,
+        authority: performanceRunnerAuthority(process.env, policy.owners.performance, {
+          platform: process.platform,
+          architecture: process.arch,
+        }),
       },
       measurement: {
         authority:

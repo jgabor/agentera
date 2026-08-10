@@ -5,10 +5,20 @@ record:
   depends_on:
     - hqegoldrmz
     - pgpsnjzvuq
-  status: pending
+  status: complete
   acceptance:
     - GIVEN correctness-shaped response-cap coverage WHEN owners run THEN it executes with deterministic source tests.
     - GIVEN machine-sensitive performance evidence WHEN produced authoritatively THEN it runs alone with one worker on the pinned remote runner and records runner identity.
     - GIVEN the large-capacity scenario WHEN qualification runs THEN it executes serially after performance and before reader checks.
     - GIVEN each ownership rule WHEN tested THEN one accepted and one rejected routing case pass.
   plan: lsftqiwiki
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-tsfaddhsrz-1
+      source: audit:tsfaddhsrz:criteria=4/4-pass:evidence=pass:diff=db533c9310085eb52c6654b93243f6f41e40c66ceae6eec542db2b33fbb674d6:progress=6cdc152e9721e2e36183f596ca6d1c24c01fd58383f971a15d2f85d1f5630f51:local-perf-caveat=1311ms:overall=pass
+      recorded_at: 2026-08-10 11:20
+      writer_command: agentera state plan record-evaluation

@@ -92,12 +92,13 @@ export const ACTIVATION_EVIDENCE_SOURCES: Readonly<Record<ActivationClassId, Rea
 export const ACTIVATION_CHECK_IDS = Object.freeze(ACTIVATION_CLASSES.flatMap((classId) =>
   ACTIVATION_DIMENSIONS.map((dimension) => `${classId}.${dimension}`)));
 export const SOURCE_GATE_IDS = [
-  "source", "stress", "performance", "package", "generated-overlap", "typecheck", "build",
+  "source", "stress", "performance", "capacity", "package", "generated-overlap", "typecheck", "build",
   "compact", "capability-contract", "activation-conjunction",
 ] as const;
 export const SOURCE_DAG_PHASES = {
   batchA: ["generated-overlap", "stress", "typecheck"],
   performanceBarrier: ["performance"],
+  capacityBarrier: ["capacity"],
   barrierB: ["compact", "capability-contract", "activation-conjunction"],
   generatedOverlapOrigins: ["source", "package", "build", "generated-overlap"],
 } as const;
@@ -146,6 +147,7 @@ export interface PackagePublicationModel {
   sourceDag: {
     batchA: string[];
     performanceBarrier: string[];
+    capacityBarrier: string[];
     barrierB: string[];
     generatedOverlapOrigins: string[];
     overlapCleanupMarginMs: number;
@@ -160,6 +162,7 @@ const EXACT_COMMANDS: Record<string, readonly string[]> = {
   source: ["pnpm", "-C", "packages/cli", "run", "test:source"],
   stress: ["pnpm", "-C", "packages/cli", "run", "test:stress"],
   performance: ["pnpm", "-C", "packages/cli", "run", "test:performance"],
+  capacity: ["pnpm", "-C", "packages/cli", "run", "test:capacity"],
   package: ["pnpm", "-C", "packages/cli", "run", "verify:package"],
   "generated-overlap": ["pnpm", "-C", "packages/cli", "run", "verify:generated-overlap"],
   typecheck: ["pnpm", "-C", "packages/cli", "run", "typecheck"],
@@ -206,7 +209,7 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
   const activation = source?.activationConjunction;
   if (!source || !activation || activation.gateIdentity !== "agentera.activationConjunction.v1") fail("source activation conjunction is missing or invalid");
 
-  if (!Array.isArray(source.gates) || source.gates.length !== SOURCE_GATE_IDS.length) fail("source gates must contain exactly ten entries");
+  if (!Array.isArray(source.gates) || source.gates.length !== SOURCE_GATE_IDS.length) fail(`source gates must contain exactly ${SOURCE_GATE_IDS.length} entries`);
   const sourceGates = source.gates.map((gate: any, index: number): SourceGateContract => {
     const name = SOURCE_GATE_IDS[index];
     if (!gate || gate.name !== name) fail(`source gate ${index} must be '${name}'`);
@@ -220,9 +223,10 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
   const dag = source.dag;
   const batchA = exactList(dag?.batchA, SOURCE_DAG_PHASES.batchA, "source batch A");
   const performanceBarrier = exactList(dag?.performanceBarrier, SOURCE_DAG_PHASES.performanceBarrier, "source performance barrier");
+  const capacityBarrier = exactList(dag?.capacityBarrier, SOURCE_DAG_PHASES.capacityBarrier, "source capacity barrier");
   const barrierB = exactList(dag?.barrierB, SOURCE_DAG_PHASES.barrierB, "source barrier B");
   const generatedOverlapOrigins = exactList(dag?.generatedOverlapOrigins, SOURCE_DAG_PHASES.generatedOverlapOrigins, "generated overlap origins");
-  const phases = [...batchA, ...performanceBarrier, ...barrierB];
+  const phases = [...batchA, ...performanceBarrier, ...capacityBarrier, ...barrierB];
   if (phases.length !== new Set(phases).size) fail("source execution phases must be disjoint");
   const scheduled = new Set([...phases, ...generatedOverlapOrigins]);
   if (scheduled.size !== SOURCE_GATE_IDS.length || SOURCE_GATE_IDS.some((name) => !scheduled.has(name))) fail("source schedule must cover every gate exactly through its declared origin");
@@ -271,7 +275,7 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
   return {
     sourceGates,
     sourceDag: {
-      batchA, performanceBarrier, barrierB, generatedOverlapOrigins,
+      batchA, performanceBarrier, capacityBarrier, barrierB, generatedOverlapOrigins,
       overlapCleanupMarginMs: positiveInteger(dag.overlapCleanupMarginMs, "overlap cleanup margin", 60_000),
       overlapParentReconciliationMarginMs: positiveInteger(dag.overlapParentReconciliationMarginMs, "parent reconciliation margin", 60_000),
       minimumExecutionWindowMs,

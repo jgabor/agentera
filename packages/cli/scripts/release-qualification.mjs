@@ -306,13 +306,14 @@ function validReceiptDigest(receipt, label) {
 const SOURCE_DAG = RELEASE_MODEL.sourceDag;
 const SOURCE_BATCH_A = SOURCE_DAG.batchA;
 const SOURCE_PERFORMANCE_BARRIER = SOURCE_DAG.performanceBarrier;
+const SOURCE_CAPACITY_BARRIER = SOURCE_DAG.capacityBarrier;
 const SOURCE_BARRIER_B = SOURCE_DAG.barrierB;
 const GENERATED_OVERLAP_ORIGINS = SOURCE_DAG.generatedOverlapOrigins;
 const OVERLAP_PARTICIPANTS = GENERATED_OVERLAP_ORIGINS.filter((name) => name !== "generated-overlap");
 
 function sourceGateMap(gates) {
   const required = sourceGateSet();
-  if (!Array.isArray(gates) || gates.length !== required.length) throw new Error("source qualification gate set must contain exactly the ten governed gates");
+  if (!Array.isArray(gates) || gates.length !== required.length) throw new Error(`source qualification gate set must contain exactly the ${required.length} governed gates`);
   const entries = new Map();
   for (let index = 0; index < required.length; index += 1) {
     const expected = required[index];
@@ -515,7 +516,7 @@ function validateOverlapEvidence(evidence, gates) {
     || !/^package-identity-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.packageIdentity?.path ?? "")
     || !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.generated?.digest ?? "")
     || evidence.activation_evidence?.child_evidence?.generated?.path !== "embedded:generated-owner"
-    || !["source", "package", "stress", "performance"].every(
+    || !["source", "package", "stress", "performance", "capacity"].every(
       (name) => Number.isInteger(evidence.inventory?.[name]) && evidence.inventory[name] >= 0,
     )
   ) {
@@ -599,12 +600,15 @@ function validateSourceGateRecords(records) {
   const overlapOrigins = new Set(GENERATED_OVERLAP_ORIGINS);
   const barrierOwners = new Set(SOURCE_BARRIER_B);
   const performanceOwners = new Set(SOURCE_PERFORMANCE_BARRIER);
+  const capacityOwners = new Set(SOURCE_CAPACITY_BARRIER);
   for (const record of records) {
     const expectedOrigin = overlapOrigins.has(record.name) ? "generated-overlap" : record.name;
     const expectedPhase = barrierOwners.has(record.name)
       ? "barrier-b"
       : performanceOwners.has(record.name)
         ? "performance-barrier"
+        : capacityOwners.has(record.name)
+          ? "capacity-barrier"
         : "batch-a";
     const expectedExecuted = OVERLAP_PARTICIPANTS.includes(record.name)
       ? "generated-overlap participant"
@@ -656,6 +660,9 @@ function validateSourceGateRecords(records) {
         || observation.evidence.samples < 0
         || !observation.evidence?.maxima
         || !observation.evidence?.runner
+        || observation.evidence.runner.authority?.authoritative !== true
+        || typeof observation.evidence.runner.authority?.identity !== "string"
+        || observation.evidence.runner.authority.identity.length === 0
       ) {
         throw new Error("source receipt performance observation is incomplete");
       }
@@ -663,8 +670,8 @@ function validateSourceGateRecords(records) {
       if (!isOutputObservation(observation)) {
         throw new Error(`source receipt gate '${record.name}' output observation is incomplete`);
       }
-      if (record.name === "stress" && (!Number.isInteger(observation.inventoryFiles) || observation.inventoryFiles < 0)) {
-        throw new Error("source receipt stress inventory observation is incomplete");
+      if (["stress", "capacity"].includes(record.name) && (!Number.isInteger(observation.inventoryFiles) || observation.inventoryFiles < 0)) {
+        throw new Error(`source receipt ${record.name} inventory observation is incomplete`);
       }
       if (barrierOwners.has(record.name) && (typeof observation.generation !== "string" || observation.generation.length === 0)) {
         throw new Error(`source receipt gate '${record.name}' generation observation is incomplete`);
@@ -682,13 +689,20 @@ function validateSourceReceiptSemantics(receipt) {
   }
 }
 
-function performanceObservation(result, inventoryFiles) {
+function performanceObservation(result, inventoryFiles, requireAuthoritative) {
   const schema = RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema;
   const records = performanceEvidenceRecords(result.stdout, schema);
   if (records.length !== 1 || records[0].status !== "pass") {
     throw sourceProcessFailure("performance", "performance owner returned no unique passing evidence record", "failed");
   }
   const record = records[0];
+  if (requireAuthoritative && record.runner?.authority?.authoritative !== true) {
+    throw sourceProcessFailure(
+      "performance",
+      "authoritative performance evidence requires the pinned remote runner identity declared by verification policy",
+      "failed",
+    );
+  }
   return {
     inventoryFiles,
     evidence: {
@@ -760,10 +774,32 @@ export async function runSourceQualificationDag(options = {}) {
     environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
   })), common)).performance;
   const performanceElapsedMs = Math.max(0, Math.round(clock() - performanceStarted));
-  const performanceEvidence = performanceObservation(performanceResult, overlap.inventory.performance);
-  const beforeBarrier = readState(repo);
-  if (beforeBarrier.generation !== afterBatch.generation || beforeBarrier.leases.length !== 0) {
+  const performanceEvidence = performanceObservation(
+    performanceResult,
+    overlap.inventory.performance,
+    options.requireAuthoritativePerformance === true,
+  );
+  const afterPerformance = readState(repo);
+  if (afterPerformance.generation !== afterBatch.generation || afterPerformance.leases.length !== 0) {
     throw sourceProcessFailure("performance", "performance barrier changed the settled generation or retained leases", "failed");
+  }
+  const capacityStarted = clock();
+  const capacityRemaining = remaining();
+  if (capacityRemaining <= reconciliationMarginMs) {
+    throw sourceProcessFailure("capacity", "source qualification has no safe capacity execution window before reconciliation", "failed");
+  }
+  const capacityResult = (await runConcurrent(SOURCE_CAPACITY_BARRIER.map((name) => ({
+    name,
+    command: gates.get(name).command,
+    repo,
+    timeoutMs: capacityRemaining - reconciliationMarginMs,
+    cancellable: true,
+    environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
+  })), common)).capacity;
+  const capacityElapsedMs = Math.max(0, Math.round(clock() - capacityStarted));
+  const beforeBarrier = readState(repo);
+  if (beforeBarrier.generation !== afterPerformance.generation || beforeBarrier.leases.length !== 0) {
+    throw sourceProcessFailure("capacity", "capacity barrier changed the settled generation or retained leases", "failed");
   }
   const barrierStarted = clock();
   const barrierTimeout = remaining();
@@ -814,7 +850,7 @@ export async function runSourceQualificationDag(options = {}) {
   if (elapsedMs >= deadlineMs) {
     throw sourceProcessFailure("full-qualification", `source qualification exceeded its ${deadlineMs}ms budget`, "failed");
   }
-  const unattributedElapsedMs = elapsedMs - batchElapsedMs - performanceElapsedMs - barrierElapsedMs;
+  const unattributedElapsedMs = elapsedMs - batchElapsedMs - performanceElapsedMs - capacityElapsedMs - barrierElapsedMs;
   if (unattributedElapsedMs < 0) {
     throw sourceProcessFailure("full-qualification", "source qualification phase timings do not reconcile", "failed");
   }
@@ -871,6 +907,16 @@ export async function runSourceQualificationDag(options = {}) {
       reused: false,
       observation: performanceEvidence,
     },
+    capacity: {
+      name: "capacity",
+      origin: "capacity",
+      phase: "capacity-barrier",
+      outcome: "passed",
+      elapsedMs: capacityResult.elapsedMs,
+      executed: "command",
+      reused: false,
+      observation: { inventoryFiles: overlap.inventory.capacity, ...outputObservation(capacityResult) },
+    },
     typecheck: {
       name: "typecheck",
       origin: "typecheck",
@@ -922,9 +968,10 @@ export async function runSourceQualificationDag(options = {}) {
       elapsedMs,
       batchAElapsedMs: batchElapsedMs,
       performanceElapsedMs,
+      capacityElapsedMs,
       barrierBElapsedMs: barrierElapsedMs,
       unattributedElapsedMs,
-      reconciled: batchElapsedMs + performanceElapsedMs + barrierElapsedMs + unattributedElapsedMs === elapsedMs,
+      reconciled: batchElapsedMs + performanceElapsedMs + capacityElapsedMs + barrierElapsedMs + unattributedElapsedMs === elapsedMs,
       generation: afterBarrier.generation,
       leasesAfterBarrier: afterBarrier.leases.length,
       activationEvidence: overlap.activation_evidence,
@@ -954,11 +1001,13 @@ export async function issueSourceReceipt(options = {}) {
     }
     return { receipt: existing, reused: true, gates: [] };
   }
+  assertSourceQualificationWorkflowAuthority(repo, options.environment ?? process.env);
   const qualification = await (options.runDag ?? runSourceQualificationDag)({
     ...options,
     repo,
     gates,
     startedAt: started,
+    requireAuthoritativePerformance: true,
   });
   const receipt = {
     schemaVersion: RECEIPT_SCHEMA,
@@ -979,6 +1028,7 @@ export function sourceQualificationGateIdentity() {
     dag: {
       batchA: SOURCE_BATCH_A,
       performanceBarrier: SOURCE_PERFORMANCE_BARRIER,
+      capacityBarrier: SOURCE_CAPACITY_BARRIER,
       barrierB: SOURCE_BARRIER_B,
       generatedOverlapOrigins: GENERATED_OVERLAP_ORIGINS,
     },
@@ -1653,6 +1703,16 @@ function assertQualificationWorkflowEnvironment(environment) {
     throw new Error("CI attestation must originate from the contracted qualification repository, workflow, workflow ref, and run identity");
   }
   return expected;
+}
+
+function assertSourceQualificationWorkflowAuthority(repo, environment) {
+  if (environment.GITHUB_ACTIONS !== "true") {
+    throw new Error("source receipt authority requires the contracted GitHub Actions qualification workflow");
+  }
+  assertQualificationWorkflowEnvironment(environment);
+  if (environment.GITHUB_SHA !== git(["rev-parse", "HEAD"], repo)) {
+    throw new Error("source receipt checkout SHA does not match the committed qualification source");
+  }
 }
 
 export function issueCiAttestation(options = {}) {

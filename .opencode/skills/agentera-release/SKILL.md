@@ -78,6 +78,11 @@ It is pure, registry-independent, and changes only package version and
 stale, skipped, malformed, or out-of-policy targets fail before effects. Stable
 preparation retains its separate source-provenance behavior without this receipt.
 
+The contracted GitHub Actions qualification workflow runs the first command on
+the pinned remote runner and uploads the candidate directory. A workstation can
+run performance diagnostics, but cannot issue a new source receipt. Download
+the workflow candidate before running preparation locally.
+
 ```bash
 pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
 pnpm cli:prepare:dev -- \
@@ -102,8 +107,11 @@ Never infer a version, source commit, candidate directory, approval, or receipt.
 
 Source qualification runs the contract-owned evidence DAG. Generated overlap
 is the sole source, package, and build execution origin beside isolated stress
-and typecheck owners. Performance runs alone after that batch settles. Compact
-and capability-contract validation consume the lease-free generation.
+and typecheck owners. Performance runs alone with one worker on the pinned
+remote runner after that batch settles, and records runner identity. Capacity
+then runs serially before compact and capability-contract validation consume the
+lease-free generation. New source authority is bound to the contracted workflow
+identity and committed checkout SHA.
 
 On failure, correct the first reported owner and rerun the same source command.
 Do not run omitted owners separately, force-kill overlap, construct a candidate,
@@ -167,8 +175,9 @@ node packages/cli/dist/bin/agentera.js check validate \
 pnpm -C packages/cli run pack:dry-run
 ```
 
-`verify:release` is the canonical source, stress, performance, and package
-conjunction. Do not bypass a failing gate or substitute direct package commands.
+`verify:release` is the canonical source, stress, performance, capacity, and
+package conjunction. Do not bypass a failing gate or substitute direct package
+commands.
 
 ## Changelog and commit boundary
 

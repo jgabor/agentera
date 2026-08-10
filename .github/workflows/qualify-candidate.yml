@@ -15,7 +15,7 @@ permissions:
 jobs:
   qualify:
     name: Source and candidate qualification
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,6 +26,9 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - name: Qualify committed source
+        env:
+          AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
+          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
         run: pnpm cli:qualify:source -- --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
       - name: Qualify exact development candidate
         if: inputs.adapter == 'development'

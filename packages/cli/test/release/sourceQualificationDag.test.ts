@@ -37,7 +37,7 @@ function overlapEvidence() {
   return {
     schemaVersion: "agentera.generatedOverlapEvidence.v1",
     status: "pass",
-    inventory: { source: 10, package: 4, stress: 1, performance: 3 },
+    inventory: { source: 10, package: 4, stress: 1, performance: 1, capacity: 2 },
     participants: {
       source: { command: gate("source").command, elapsedMs: 80, files: 10, tests: 40, pending: [] },
       package: { command: gate("package").command, elapsedMs: 70, files: 4, tests: 12, pending: [] },
@@ -76,7 +76,17 @@ function performanceStdout() {
   return `${JSON.stringify({
     schemaVersion: "agentera.entityAuthorityPerformanceEvidence.v1",
     status: "pass",
-    runner: { node: process.version },
+    runner: {
+      node: process.version,
+      authority: {
+        authoritative: true,
+        provider: "github_actions",
+        class: "github-hosted-ubuntu-24.04",
+        identity: "GitHub Actions 1",
+        actions: true,
+        workers: 1,
+      },
+    },
     samples: [{ status: "pass" }],
     maxima: { exact_get: { maxElapsedMs: 1 } },
   })}\n`;
@@ -103,7 +113,7 @@ function ownerError(name: string, detail: string, status = "failed") {
 }
 
 describe("source qualification DAG", () => {
-  it("runs performance alone after overlap batch A and before the parallel reader barrier", async () => {
+  it("runs one-worker performance alone, then capacity serially, before the parallel reader barrier", async () => {
     const started: Array<{ name: string; environment: NodeJS.ProcessEnv; reportFile: string; concurrentWith: string[] }> = [];
     const cleaned: string[] = [];
     const active = new Set<string>();
@@ -113,6 +123,7 @@ describe("source qualification DAG", () => {
       gates: GATES,
       clock: () => 0,
       wallClock: () => 1_000,
+      requireAuthoritativePerformance: true,
       createState: (name: string) => ({
         root: `/isolated/${name}`,
         environment: {
@@ -141,6 +152,7 @@ describe("source qualification DAG", () => {
 
     expect(started.map(({ name }) => name)).toEqual([
       "generated-overlap", "stress", "typecheck", "performance",
+      "capacity",
       "compact", "capability-contract", "activation-conjunction",
     ]);
     expect(started.map(({ name }) => name)).not.toEqual(expect.arrayContaining(["source", "package", "build"]));
@@ -159,6 +171,11 @@ describe("source qualification DAG", () => {
       concurrentWith: [],
       environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "421000" },
     });
+    expect(started.find(({ name }) => name === "capacity")).toMatchObject({
+      timeoutMs: 416_000,
+      concurrentWith: [],
+      environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "421000" },
+    });
     expect(started.filter(({ name }) => ["compact", "capability-contract", "activation-conjunction"].includes(name)).map(({ name, timeoutMs }) => ({ name, timeoutMs }))).toEqual([
       { name: "compact", timeoutMs: 416_000 },
       { name: "capability-contract", timeoutMs: 416_000 },
@@ -169,13 +186,13 @@ describe("source qualification DAG", () => {
       AGENTERA_ACTIVATION_EVIDENCE_DIGEST: "a".repeat(64),
       AGENTERA_ACTIVATION_PACKAGE_IDENTITY: JSON.stringify(packageIdentity()),
     });
-    expect(new Set(started.map(({ environment }) => environment.HOME)).size).toBe(7);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_CACHE)).size).toBe(7);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_USERCONFIG)).size).toBe(7);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_GLOBALCONFIG)).size).toBe(7);
-    expect(new Set(started.map(({ reportFile }) => reportFile)).size).toBe(7);
-    expect(cleaned).toHaveLength(7);
-    expect(stateReads).toBe(3);
+    expect(new Set(started.map(({ environment }) => environment.HOME)).size).toBe(8);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_CACHE)).size).toBe(8);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_USERCONFIG)).size).toBe(8);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_GLOBALCONFIG)).size).toBe(8);
+    expect(new Set(started.map(({ reportFile }) => reportFile)).size).toBe(8);
+    expect(cleaned).toHaveLength(8);
+    expect(stateReads).toBe(4);
     expect(qualification.gates.map((entry: any) => entry.name)).toEqual(GATES.map((entry: any) => entry.name));
     expect(qualification.gates.every((entry: any) => entry.outcome === "passed")).toBe(true);
     expect(qualification.gates.filter((entry: any) => entry.origin === "generated-overlap").map((entry: any) => entry.name))
@@ -183,9 +200,13 @@ describe("source qualification DAG", () => {
     expect(qualification.gates.find((entry: any) => entry.name === "source").observation)
       .toMatchObject({ command: gate("source").command, files: 10, tests: 40, pending: [] });
     expect(qualification.gates.find((entry: any) => entry.name === "performance").observation)
-      .toMatchObject({ inventoryFiles: 3, evidence: { status: "pass", samples: 1 } });
+      .toMatchObject({ inventoryFiles: 1, evidence: { status: "pass", samples: 1, runner: { authority: { identity: "GitHub Actions 1" } } } });
     expect(qualification.gates.find((entry: any) => entry.name === "performance").phase)
       .toBe("performance-barrier");
+    expect(qualification.gates.find((entry: any) => entry.name === "capacity")).toMatchObject({
+      phase: "capacity-barrier",
+      observation: { inventoryFiles: 2 },
+    });
     expect(qualification.gates.filter((entry: any) => entry.phase === "barrier-b").map((entry: any) => entry.name))
       .toEqual(["compact", "capability-contract", "activation-conjunction"]);
     expect(qualification.execution).toMatchObject({
@@ -251,7 +272,7 @@ describe("source qualification DAG", () => {
     expect(overlapSettled).toBe(true);
     expect(cancelled).toContain("typecheck");
     expect(cancelled).not.toContain("generated-overlap");
-    expect(started).not.toEqual(expect.arrayContaining(["performance", "compact", "capability-contract"]));
+    expect(started).not.toEqual(expect.arrayContaining(["performance", "capacity", "compact", "capability-contract"]));
   });
 
   it("blocks readers when the solo performance barrier times out", async () => {
@@ -292,6 +313,31 @@ describe("source qualification DAG", () => {
     expect(cleaned).toEqual(expect.arrayContaining(["generated-overlap", "stress", "typecheck", "performance"]));
     expect(new Set(cleaned).size).toBe(4);
     expect(stateReads).toBe(1);
+  });
+
+  it("blocks reader checks when the serial capacity barrier fails", async () => {
+    const started: string[] = [];
+    await expect(runSourceQualificationDag({
+      repo: REPO_ROOT,
+      gates: GATES,
+      createState: (name: string) => ({ root: `/isolated/${name}`, environment: {}, cleanup: () => undefined }),
+      startOwner: (specification: any) => {
+        started.push(specification.name);
+        return {
+          name: specification.name,
+          cancellable: specification.cancellable,
+          promise: specification.name === "capacity"
+            ? Promise.reject(ownerError("capacity", "capacity fixture failed"))
+            : Promise.resolve(result(specification.name)),
+          cancel: () => undefined,
+        };
+      },
+      readGeneratedState: () => ({ generation: "generation-a", leases: [] }),
+    })).rejects.toMatchObject({
+      owner: "capacity",
+      firstFailure: { name: "capacity", detail: "capacity fixture failed" },
+    });
+    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "performance", "capacity"]);
   });
 
   it("blocks receipt completion when a post-build reader fails and cancels its peer", async () => {
@@ -344,7 +390,7 @@ describe("source qualification DAG", () => {
         promise: Promise.resolve(result(specification.name)),
         cancel: () => undefined,
       }),
-      readGeneratedState: () => reads++ < 2
+      readGeneratedState: () => reads++ < 3
         ? { generation: "generation-a", leases: [] }
         : { generation: "generation-b", leases: ["reader.lease"] },
     })).rejects.toMatchObject({
@@ -382,7 +428,7 @@ describe("source qualification DAG", () => {
         owner: "reader-barrier",
         message: "source qualification requires 6000ms for barrier B plus 4000ms reconciliation; 9999ms remain",
       });
-      expect(phases).toHaveLength(2);
+      expect(phases).toHaveLength(3);
     }
   });
 
@@ -508,7 +554,7 @@ describe("source qualification DAG", () => {
     const started: string[] = [];
     const cleanupAt: number[] = [];
     const inventory = {
-      counts: { source: 1, package: 1, stress: 1, performance: 1 },
+      counts: { source: 1, package: 1, stress: 1, performance: 1, capacity: 1 },
       files: { source: ["source.test.ts"], package: ["package.test.ts"] },
     };
     try {

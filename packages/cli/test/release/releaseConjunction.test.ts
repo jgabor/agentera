@@ -7,16 +7,28 @@ import {
 } from "../../scripts/release-qualification.mjs";
 
 describe("no-receipt release conjunction", () => {
-  it("shares the exact ten-gate DAG identity and reports no authority side effects", async () => {
+  it("shares the exact eleven-gate DAG identity and reports no authority side effects", async () => {
     const gates = RELEASE_CONTRACT.qualification.source.gates;
     const result = await runSourceConjunction({
       gates,
       runDag: async () => ({
-        gates: gates.map(({ name }: any) => ({ name, phase: RELEASE_CONTRACT.qualification.source.dag.barrierB.includes(name) ? "barrier-b" : name === "performance" ? "performance-barrier" : "batch-a", outcome: "passed", elapsedMs: 1, origin: name })),
+        gates: gates.map(({ name }: any) => ({
+          name,
+          phase: RELEASE_CONTRACT.qualification.source.dag.barrierB.includes(name)
+            ? "barrier-b"
+            : name === "performance"
+              ? "performance-barrier"
+              : name === "capacity"
+                ? "capacity-barrier"
+                : "batch-a",
+          outcome: "passed",
+          elapsedMs: 1,
+          origin: name,
+        })),
         execution: { generation: "fresh", elapsedMs: 10, reconciled: true },
       }),
     });
-    expect(gates).toHaveLength(10);
+    expect(gates).toHaveLength(11);
     expect(result.gate_identity).toBe(sourceQualificationGateIdentity());
     expect(result.gates.map(({ name }: any) => name)).toEqual(gates.map(({ name }: any) => name));
     expect(result.side_effects).toEqual({ receipt: false, candidate: false, registry: false, activation: false, publication: false });

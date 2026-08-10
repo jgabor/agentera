@@ -12,7 +12,8 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | Layer | Proves | Entry point |
 | ----- | ------ | ----------- |
 | Source Vitest | Detailed hook/CLI behavior from fixtures and tmp project trees; no checkout generated-output writes. A source test may compare a settled bundled schema when that checkout generation already exists. | `pnpm -C packages/cli test` |
-| Performance owner | Authority-declared production scales and cold-process budgets, including one bounded evidence record | `pnpm -C packages/cli test:performance` |
+| Performance owner | Machine-sensitive cold-process budgets on one worker, including one bounded evidence record with runner authority | `pnpm -C packages/cli test:performance` |
+| Capacity owner | Large deterministic scale coverage that is too heavy for source correctness or performance timing | `pnpm -C packages/cli test:capacity` |
 | Performance integration | Real supported owner command plus independent stdout-contract validation; scheduled/release policy surface | `pnpm -C packages/cli test:performance:integration` |
 | Package boundary | Focused bundle safety plus one tarball build, generated-surface no-drift checks, authority-derived inventory, extraction, install, and minimum isolated invocation conjunctions | `pnpm -C packages/cli run verify:package` |
 | Repo-state fixtures | Pinned `.agentera/` + `TODO.md` variants via `useFixtureProject(name)` | `packages/cli/test/fixtures/repo-state/` |
@@ -25,7 +26,7 @@ once in the [v3 packaging authority](../../../docs/packaging/v3-packaging.md).
 Performance stdout is not JSON-only: normal Vitest text surrounds exactly one
 whole-line `agentera.entityAuthorityPerformanceEvidence.v1` JSON record. Consumers
 extract newline-delimited records by `schemaVersion`; the owner command validates
-the record against the authority before returning success.
+the record and its runner authority against the policy before returning success.
 The integration surface is owned by the performance owner in
 `verification-policy.yaml`; it invokes `test:performance` once, so policy proof
 does not recurse or duplicate the 25-sample matrix.
@@ -48,11 +49,14 @@ Release source qualification uses the policy-owned DAG. One generated-overlap
 process is the sole origin for source, package, build, and overlap evidence. It
 runs beside isolated stress and typecheck owners. After those three batch owners
 pass and the generated generation settles without leases, performance runs alone
-in fresh state so CPU contention cannot invalidate its machine-sensitive
-evidence. Compact and capability-contract then run together as readers. Every
-child has a separate HOME, cache, npm configs, and report. A peer failure cancels
-only cancellable groups; generated-overlap settles without forced termination,
-and no reader barrier or receipt follows a batch or performance failure.
+with one worker in fresh state on the pinned remote runner, and records runner
+identity so CPU contention cannot invalidate its machine-sensitive evidence.
+Local performance runs are diagnostic, not authoritative qualification evidence.
+Capacity then runs alone with one worker for large deterministic scale evidence.
+Compact and capability-contract then run together as readers. Every child has a
+separate HOME, cache, npm configs, and report. A peer failure cancels only
+cancellable groups; generated-overlap settles without forced termination, and no
+reader barrier or receipt follows a batch, performance, or capacity failure.
 
 Pre-commit source-policy reuse is explicit. When
 `AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR` names an external candidate,

@@ -65,7 +65,7 @@ function overlapObservation() {
   return {
     schemaVersion: RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema,
     status: "pass",
-    inventory: { source: 1, package: 1, stress: 1, performance: 1 },
+    inventory: { source: 1, package: 1, stress: 1, performance: 1, capacity: 1 },
     participants: {
       source: { command: command("source"), elapsedMs: 1, files: 1, tests: 1, pending: [] },
       package: { command: command("package"), elapsedMs: 1, files: 1, tests: 1, pending: [] },
@@ -104,6 +104,7 @@ function gateRecord(gate: { name: string; command: string[] }) {
   const overlapParticipant = ["source", "package", "build"].includes(gate.name);
   const barrier = ["compact", "capability-contract", "activation-conjunction"].includes(gate.name);
   const performanceBarrier = gate.name === "performance";
+  const capacityBarrier = gate.name === "capacity";
   let observation: any;
   if (["source", "package"].includes(gate.name)) {
     observation = { command: gate.command, files: 1, tests: 1, pending: [] };
@@ -121,12 +122,21 @@ function gateRecord(gate: { name: string; command: string[] }) {
         bytes: 1,
         samples: 1,
         maxima: {},
-        runner: {},
+        runner: {
+          authority: {
+            authoritative: true,
+            provider: "github_actions",
+            class: "github-hosted-ubuntu-24.04",
+            identity: "GitHub Actions 1",
+            actions: true,
+            workers: 1,
+          },
+        },
       },
     };
   } else {
     observation = {
-      ...(gate.name === "stress" ? { inventoryFiles: 1 } : {}),
+      ...(["stress", "capacity"].includes(gate.name) ? { inventoryFiles: 1 } : {}),
       ...(barrier ? { generation: "generation-a" } : {}),
       ...outputObservation(),
     };
@@ -136,7 +146,13 @@ function gateRecord(gate: { name: string; command: string[] }) {
     origin: [...RELEASE_CONTRACT.qualification.source.dag.generatedOverlapOrigins].includes(gate.name)
       ? "generated-overlap"
       : gate.name,
-    phase: barrier ? "barrier-b" : performanceBarrier ? "performance-barrier" : "batch-a",
+    phase: barrier
+      ? "barrier-b"
+      : performanceBarrier
+        ? "performance-barrier"
+        : capacityBarrier
+          ? "capacity-barrier"
+          : "batch-a",
     outcome: "passed",
     elapsedMs: 1,
     executed: overlapParticipant ? "generated-overlap participant" : "command",
@@ -153,6 +169,17 @@ function git(root: string, ...args: string[]): string {
   const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
   expect(result.status, result.stderr).toBe(0);
   return result.stdout.trim();
+}
+
+function sourceQualificationEnvironment(repo: string) {
+  return {
+    GITHUB_ACTIONS: "true",
+    GITHUB_SHA: git(repo, "rev-parse", "HEAD"),
+    GITHUB_REPOSITORY: "jgabor/agentera",
+    GITHUB_WORKFLOW: "Qualify release candidate",
+    GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/qualify-candidate.yml@refs/heads/feat/v3",
+    GITHUB_RUN_ID: "123",
+  };
 }
 
 function write(root: string, relative: string, contents: string): void {
@@ -226,6 +253,7 @@ async function sourceReceipt(repo: string, candidateDirectory: string) {
   return issueSourceReceipt({
     repo,
     candidateDirectory,
+    environment: sourceQualificationEnvironment(repo),
     gates: GOVERNED_GATES,
     runDag: async ({ gates }: { gates: Array<{ name: string; command: string[] }> }) => ({
       gates: gates.map(gateRecord),
@@ -436,6 +464,7 @@ describe("release qualification receipts", () => {
     await expect(issueSourceReceipt({
       repo,
       candidateDirectory,
+      environment: sourceQualificationEnvironment(repo),
       gates: GOVERNED_GATES,
       runDag: async () => {
         const error = new Error("performance exceeded its remaining source deadline") as Error & { owner?: string };
@@ -446,12 +475,39 @@ describe("release qualification receipts", () => {
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
 
-  it("seals all ten governed DAG gates and execution evidence in one source receipt", async () => {
+  it("rejects workstation and stale-checkout source authority before running the DAG", async () => {
+    const { repo, candidateDirectory } = fixture();
+    let invocations = 0;
+    const runDag = async () => {
+      invocations += 1;
+      return { gates: GOVERNED_GATES.map(gateRecord), execution: { strategy: "stub", elapsedMs: 1 } };
+    };
+
+    await expect(issueSourceReceipt({
+      repo,
+      candidateDirectory,
+      gates: GOVERNED_GATES,
+      environment: {},
+      runDag,
+    })).rejects.toThrow("source receipt authority requires the contracted GitHub Actions qualification workflow");
+    await expect(issueSourceReceipt({
+      repo,
+      candidateDirectory,
+      gates: GOVERNED_GATES,
+      environment: { ...sourceQualificationEnvironment(repo), GITHUB_SHA: "0".repeat(40) },
+      runDag,
+    })).rejects.toThrow("source receipt checkout SHA does not match the committed qualification source");
+    expect(invocations).toBe(0);
+    expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
+  });
+
+  it("seals all eleven governed DAG gates and execution evidence in one source receipt", async () => {
     const { repo, candidateDirectory } = fixture();
     const governed = GOVERNED_GATES;
     const issued = await issueSourceReceipt({
       repo,
       candidateDirectory,
+      environment: sourceQualificationEnvironment(repo),
       gates: governed,
       runDag: async () => ({
         gates: governed.map(gateRecord),
@@ -466,7 +522,7 @@ describe("release qualification receipts", () => {
 
     expect(issued.receipt.gates.map((gate: { name: string }) => gate.name))
       .toEqual(governed.map((gate: { name: string }) => gate.name));
-    expect(issued.receipt.gates).toHaveLength(10);
+    expect(issued.receipt.gates).toHaveLength(11);
     expect(issued.receipt.gates.every((gate: { outcome: string }) => gate.outcome === "passed")).toBe(true);
     expect(issued.receipt.execution).toMatchObject({
       strategy: "parallel-overlap-dag",
@@ -475,6 +531,30 @@ describe("release qualification receipts", () => {
     });
     expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "source-receipt.json"), "utf8")))
       .toEqual(issued.receipt);
+  });
+
+  it("rejects source authority from a non-pinned performance runner identity", async () => {
+    const { repo, candidateDirectory } = fixture();
+    await expect(issueSourceReceipt({
+      repo,
+      candidateDirectory,
+      environment: sourceQualificationEnvironment(repo),
+      gates: GOVERNED_GATES,
+      runDag: async () => {
+        const gates = GOVERNED_GATES.map(gateRecord);
+        const performanceGate = gates.find((entry: any) => entry.name === "performance");
+        performanceGate.observation.evidence.runner.authority = {
+          authoritative: false,
+          provider: "unmanaged",
+          class: null,
+          identity: null,
+          actions: false,
+          workers: 1,
+        };
+        return { gates, execution: { strategy: "stub", elapsedMs: 1 } };
+      },
+    })).rejects.toThrow("source receipt performance observation is incomplete");
+    expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
 
   it("rejects one-field digest tampering and semantic tampering for every governed gate", async () => {

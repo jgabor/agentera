@@ -13,7 +13,7 @@ import {
 } from "./overlap-pending.mjs";
 import { validatePerformanceEvidence } from "./performance-evidence.mjs";
 
-const OWNER_NAMES = ["source", "stress", "performance", "package"];
+const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"];
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRoot = path.resolve(packageRoot, "../..");
 const root = path.resolve(process.env.AGENTERA_VERIFICATION_ROOT ?? defaultRoot);
@@ -143,6 +143,11 @@ function inventory(contract, policyBytes) {
   }
 
   for (const [owner, definition] of Object.entries(contract.owners ?? {})) {
+    if (definition.execution !== undefined) {
+      if (!Number.isInteger(definition.execution.workers) || definition.execution.workers < 1) {
+        errors.push(`${owner} execution workers must be a positive integer`);
+      }
+    }
     if (!definition.integration) continue;
     const integrationPath = definition.integration.path;
     if (!fs.existsSync(path.join(root, integrationPath))) errors.push(`${owner} integration is missing: ${integrationPath}`);
@@ -295,7 +300,10 @@ function runOwner(owner, state, forwarded = []) {
     : [];
   const captureEvidence = definition.evidence !== undefined;
   const runnerEnv = { ...process.env, AGENTERA_VERIFICATION_OWNER: owner };
-  if (owner === "performance") runnerEnv.VITEST_MAX_WORKERS = "1";
+  if (definition.execution?.workers !== undefined) {
+    runnerEnv.VITEST_MAX_WORKERS = String(definition.execution.workers);
+    runnerEnv.AGENTERA_VERIFICATION_WORKERS = String(definition.execution.workers);
+  }
   delete runnerEnv.AGENTERA_VERIFICATION_RESULT;
   const result = spawnSync("vp", ["test", "run", "--config", config, ...selection.argv, ...reporter], {
     cwd: packageRoot,

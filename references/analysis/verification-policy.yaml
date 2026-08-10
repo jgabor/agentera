@@ -11,12 +11,10 @@ inventory:
     - owner: stress
       path: packages/cli/test/stress/entityStorageStress.test.ts
     - owner: performance
-      path: packages/cli/test/performance/analyticsEvidenceTierCap.test.ts
-    - owner: performance
-      path: packages/cli/test/performance/entityMigrationPreviewCap.test.ts
-    - owner: performance
       path: packages/cli/test/performance/entityAuthorityPerformance.test.ts
       evidence_producer: true
+    - owner: capacity
+      prefix: packages/cli/test/capacity/
     - owner: package
       prefix: packages/cli/test/packaging/
 
@@ -48,12 +46,14 @@ release_qualification:
     overlap stops new work at the contract cleanup margin, settles owned children,
     removes its generated state on failure, and returns before the contract parent margin
   isolation: distinct_home_cache_user_global_config_and_report_per_child
-  resource_isolation: performance_runs_alone_after_batch_a_settles_owned_files_execute_serially_and_other_marked_owners_block_sampling
+  resource_isolation: performance_runs_alone_after_batch_a_settles_with_one_worker_and_no_other_marked_owner_then_capacity_runs_serially_before_readers
   failure:
     first_observed_owner: preserved
     cancellable_process_groups: cancel
     generated_overlap: cooperative_stop_settle_and_cleanup_without_parent_force_kill
     performance_after_batch_failure: forbidden
+    capacity_after_performance_failure: forbidden
+    barrier_b_after_capacity_failure: forbidden
     barrier_b_after_performance_failure: forbidden
     barrier_b_after_batch_failure: forbidden
     receipt_after_any_failure: forbidden
@@ -74,6 +74,17 @@ owners:
   performance:
     config: packages/cli/vite.config.ts
     correction: Run `pnpm -C packages/cli test:performance`; check runner conditions and fix the named budget regression.
+    execution:
+      workers: 1
+      authoritative_runner:
+        provider: github_actions
+        runs_on: ubuntu-24.04
+        runner_class: github-hosted-ubuntu-24.04
+        runner_class_environment: AGENTERA_PERFORMANCE_RUNNER_CLASS
+        runner_identity_environment: AGENTERA_PERFORMANCE_RUNNER_IDENTITY
+        actions_environment: GITHUB_ACTIONS
+        platform: linux
+        architecture: x64
     integration:
       path: packages/cli/test/integration/performanceOwner.integration.mjs
       command: [pnpm, run, test:performance:integration]
@@ -109,6 +120,11 @@ owners:
         --outputFile: output redirection can suppress the evidence line
         --silent: output suppression can hide the evidence line
         --hideSkippedTests: output filtering can hide owner diagnostics
+  capacity:
+    config: packages/cli/vite.config.ts
+    correction: Run `pnpm -C packages/cli test:capacity`; fix the named production-capacity invariant or its fixture.
+    execution:
+      workers: 1
   package:
     config: packages/cli/vite.package.config.ts
     correction: Run `pnpm -C packages/cli verify:package`; fix package construction or the extracted-package assertion.
@@ -116,9 +132,9 @@ owners:
 # Deterministic simultaneous-publication and stale-lock recovery evidence remains
 # source-owned. The independent 100-repetition stale-lock race is stress-owned.
 mixed_files: []
-# Production-cap analytics, entity authority, and migration-preview wiring are intentionally
-# separate from proportional source fixtures and run through performance in
-# scheduled/release.
+# Deterministic response-cap behavior remains source-owned. Production-scale
+# capacity and machine-sensitive performance have separate owners and run in
+# that order during scheduled/release verification.
 
 policies:
   targeted: [source]
@@ -126,8 +142,8 @@ policies:
   fast: [source]
   local: [source]
   merge: [source, package]
-  scheduled: [source, stress, performance]
-  release: [source, stress, performance, package]
+  scheduled: [source, stress, performance, capacity]
+  release: [source, stress, performance, capacity, package]
 
 # Task 1 classified probabilistic stale-lock repetition as scheduled/release
 # evidence after proportional deterministic lock correctness remained in source.
@@ -185,6 +201,7 @@ conservative_routing:
     - scripts/precommit-vitest.sh
   prefixes:
     - .github/workflows/
+    - packages/cli/test/capacity/
     - packages/cli/test/packaging/
     - references/adapters/
     - references/artifacts/

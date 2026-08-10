@@ -46,9 +46,12 @@ It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
 Development preparation is pure. It does not read npm, rerun source gates, or
-create a package. Qualify the completed source into a new external candidate
-directory first, then supply that directory, the next allowed target version,
-and the immutable source commit:
+create a package. The contracted GitHub Actions qualification workflow issues
+the source receipt on the pinned remote runner and uploads the external
+candidate directory. A workstation can run performance diagnostics, but cannot
+issue new source authority. Download that candidate directory, then supply it,
+the next allowed target version, and the immutable source commit. The first
+command below is the exact workflow-owned source command:
 
 ```bash
 pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
@@ -75,13 +78,16 @@ generated-output writer. It invokes the exact public source, package, and build
 commands once and returns their inventory, pending-test, build, generation, and
 continuous-reader evidence. Source, package, and build are not spawned again.
 After every batch owner passes and overlap settles one lease-free generation,
-performance runs alone in fresh isolated state. This ordered barrier provides
-resource isolation for machine-sensitive timing evidence; separate HOME and npm
-state provide output isolation but cannot prevent CPU contention. Performance
-receives the same absolute source deadline. After it passes, compact,
-capability-contract, and the source-only activation conjunction run together as
-reader barrier B. All three use the newly built CLI from that exact lease-free
-generation.
+performance runs alone with one worker in fresh isolated state on the pinned
+remote runner declared by the policy, and records the runner identity. Local
+performance runs are diagnostic, not authoritative qualification evidence. This
+ordered barrier provides resource isolation for machine-sensitive timing
+evidence; separate HOME and npm state provide output isolation but cannot
+prevent CPU contention. Performance receives the same absolute source deadline.
+After it passes, capacity runs alone with one worker for large deterministic
+scale evidence. After capacity passes, compact, capability-contract, and the
+source-only activation conjunction run together as reader barrier B. All three
+use the newly built CLI from that exact lease-free generation.
 
 Before it returns, generated-overlap gives the source and package owners separate
 isolated evidence directories under its report root. The source owner atomically
@@ -140,9 +146,9 @@ stop with `SIGTERM`; it never force-kills the overlap owner during publication.
 The parent starts reader barrier B only when at least 6,000 ms of concurrent
 child execution plus the 4,000 ms reconciliation reserve remain. The 420,000 ms
 source envelope retains headroom over the observed 373,281 ms dirty-tree,
-offline, cold-isolation run that passed all ten gates.
+offline, cold-isolation run that passed all eleven gates.
 
-The content-addressed `source-receipt.json` contains all ten named gates with
+The content-addressed `source-receipt.json` contains all eleven named gates with
 their execution origin, `outcome: "passed"`, observations, finite durations, and
 executed/reused state. Validation requires the exact gate order, governed origin
 and phase, successful outcome, execution shape, and gate-relevant observations;
@@ -292,14 +298,15 @@ it is not a budget, candidate receipt, approval, or publication authority.
 ## Generated-output and verification ownership
 
 `references/analysis/verification-policy.yaml` is the executable authority for
-test inventory ownership and policy composition. The four test owners are
+test inventory ownership and policy composition. The five test owners are
 independent:
 
 | Owner | Entry point | Owns |
 | ----- | ----------- | ---- |
-| Source | `pnpm -C packages/cli test` (`test:source`) | Every source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
+| Source | `pnpm -C packages/cli test` (`test:source`) | Deterministic correctness, including response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
 | Stress | `pnpm -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
-| Performance | `pnpm -C packages/cli run test:performance` | Machine-sensitive budget evidence, including its required structured evidence producer and integration check. |
+| Performance | `pnpm -C packages/cli run test:performance` | Machine-sensitive budget evidence, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
+| Capacity | `pnpm -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
 | Package | `pnpm -C packages/cli run verify:package` | Every package-assigned test against one genuinely packed, extracted, production-installed regular tree constructed independently of checkout output. |
 
 Build is a separate generated-output participant, not a test owner.
@@ -324,17 +331,17 @@ The canonical policy compositions are:
 | `fast` | Source |
 | `local` | Source |
 | `merge` | Source, package |
-| `scheduled` | Source, stress, performance |
-| `release` | Source, stress, performance, package |
+| `scheduled` | Source, stress, performance, capacity |
+| `release` | Source, stress, performance, capacity, package |
 
 Pre-commit delegates composition to `verify-lane.mjs`. Ordinary source paths
 run targeted source files or the `local`/`precommit` source composition.
 Conservative authority and verification surfaces route to `release`, so all
-four owners run before those changes can commit. CI explicitly runs source and
+five owners run before those changes can commit. CI explicitly runs source and
 package, generated-output overlap, typecheck, build, and repository gates.
-Release gates add the stress and performance owners plus metadata and dry-run
-publication checks, while using the same package construction path rather than
-adding another extracted-package matrix.
+Release gates add the stress, performance, and capacity owners plus metadata and
+dry-run publication checks, while using the same package construction path
+rather than adding another extracted-package matrix.
 
 Run the complete non-publishing release-readiness conjunction from the
 repository root:
@@ -351,7 +358,7 @@ node packages/cli/dist/bin/agentera.js check validate \
 pnpm -C packages/cli run pack:dry-run
 ```
 
-`verify:release` runs that same ten-gate source-qualification DAG against the
+`verify:release` runs that same eleven-gate source-qualification DAG against the
 current source tree, including dirty or staged work, in check-only mode. It
 emits one bounded result and creates no source receipt, candidate, registry
 request, activation, or publication action. Receipt qualification retains its
