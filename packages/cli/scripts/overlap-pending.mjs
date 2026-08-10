@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { isUtf8 } from "node:buffer";
 import path from "node:path";
 
-import ts from "typescript";
+import ts from "@typescript/typescript6";
 import YAML from "yaml";
 
 const MAX_DIAGNOSTIC_BYTES = 8192;
