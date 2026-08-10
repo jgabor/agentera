@@ -1,0 +1,13 @@
+id: opphhvqohs
+artifact: plan
+record:
+  name: Make focused tests decisive and nonredundant
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN repeated false-positive evidence WHEN threshold classification runs THEN the exact intended recommendation and repeated-category count are asserted.
+    - GIVEN passing and failing verification results WHEN summaries render THEN JSON and text output are tested without unrelated verification work.
+    - GIVEN duplicate scenario or function invocations WHEN the focused tests run THEN each independent behavior is exercised once with equivalent assertions.
+    - GIVEN each changed testable unit WHEN coverage is reviewed THEN it retains one passing and one failing case unless one side is not meaningful and the task records why.
+  plan: uqqfojmzbv

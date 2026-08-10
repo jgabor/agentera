@@ -217,7 +217,6 @@ describe("bounded personal evidence admission", () => {
     delete manifest.signal;
     fs.writeFileSync(manifestPath, JSON.stringify(manifest), "utf8");
 
-    expect(() => admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] })).not.toThrow();
     const result = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] });
     expect(result).toMatchObject({ state: "corrupt", status: "unavailable", candidates: [] });
     expect(result.recovery).toBeTruthy();

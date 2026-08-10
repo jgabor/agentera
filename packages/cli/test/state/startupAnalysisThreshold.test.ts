@@ -11,7 +11,7 @@ function corpusFixture(): any {
   return {
     metadata: {
       version: "x",
-      runtime_statuses: [{ runtime: "codex", status: "ok", reason: "records_extracted", record_count: 3 }],
+      runtime_statuses: [{ runtime: "codex", status: "ok", reason: "records_extracted", record_count: 4 }],
     },
     records: [
       {
@@ -30,6 +30,16 @@ function corpusFixture(): any {
           actor: "assistant",
           content:
             "verbosity mismatch: 600 words exceeds 500 budget in `scripts/agentera` at src/foo.py:42 abstraction creep",
+        },
+      },
+      {
+        source_kind: "conversation_turn",
+        source_id: "a2",
+        session_id: "c1",
+        timestamp: "2026-01-01T00:00:01.500Z",
+        data: {
+          actor: "assistant",
+          content: "verbosity mismatch: 600 words exceeds 500 budget in `scripts/agentera` at src/foo.py:42",
         },
       },
       {
@@ -75,8 +85,8 @@ describe("scanThresholdEvidence", () => {
   it("detects warnings, pairs detail loss with implementation boundary, and stays redacted", () => {
     const scan = scanThresholdEvidence(corpusFixture(), { salt: "SALT" });
     expect(scan.output_envelope).toBe("threshold_evidence_scan_v1");
-    expect(scan.counts.warning_events).toBe(1);
-    expect(scan.counts.by_warning["self_audit.verbosity"]).toBe(1);
+    expect(scan.counts.warning_events).toBe(2);
+    expect(scan.counts.by_warning["self_audit.verbosity"]).toBe(2);
     expect(scan.counts.by_warning["self_audit.abstraction"]).toBe(1);
     const event = scan.warning_events[0];
     expect(event.capability).toBe("build");
@@ -89,10 +99,31 @@ describe("scanThresholdEvidence", () => {
     const scan = scanThresholdEvidence(corpusFixture(), { salt: "SALT" });
     const cls = classifyThresholdEvidence(scan);
     expect(cls.output_envelope).toBe("threshold_evidence_classification_v1");
-    expect(cls.categories.length).toBeGreaterThan(0);
-    expect(["no_threshold_change_yet", "consider_minimal_threshold_or_diagnostic_change"]).toContain(
-      cls.recommendation.action,
+    expect(cls.categories).toContainEqual(
+      expect.objectContaining({
+        warning: "self_audit.verbosity",
+        classification: "likely_false_positive",
+        event_count: 2,
+      }),
     );
+    expect(cls.counts.repeated_false_positive_categories).toBe(1);
+    expect(cls.recommendation.action).toBe("consider_minimal_threshold_or_diagnostic_change");
+  });
+
+  it("does not recommend a threshold change for a single false positive", () => {
+    const cls = classifyThresholdEvidence({
+      output_envelope: "threshold_evidence_scan_v1",
+      warning_events: [
+        {
+          warnings: [{ family: "self_audit", category: "verbosity" }],
+          detail_loss_status: "possible_useful_detail_removed",
+        },
+      ],
+      coverage_caveats: [],
+    });
+
+    expect(cls.counts.repeated_false_positive_categories).toBe(0);
+    expect(cls.recommendation.action).toBe("no_threshold_change_yet");
   });
 });
 
