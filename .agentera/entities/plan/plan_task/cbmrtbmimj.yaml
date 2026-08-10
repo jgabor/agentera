@@ -6,7 +6,7 @@ record:
     - opphhvqohs
     - ypdtaatnyq
     - yehvffmpqd
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN all changed areas WHEN targeted verification runs THEN every affected test passes.
     - GIVEN the complete source suite and type checker WHEN authoritative commands run THEN both pass without weakened policy.
