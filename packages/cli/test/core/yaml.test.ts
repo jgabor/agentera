@@ -1,6 +1,16 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
+import {
+  dumpYamlMapping,
+  loadYamlMapping,
+  loadYamlMappingFile,
+  withReadOnlyYamlMappingCache,
+  withYamlMappingCache,
+} from "../../src/core/yaml.js";
 
 describe("loadYamlMapping", () => {
   it("returns an empty object for empty and whitespace documents", () => {
@@ -14,6 +24,44 @@ describe("loadYamlMapping", () => {
 
   it("parses a mapping root", () => {
     expect(loadYamlMapping("a: 1\nb: two\n")).toEqual({ a: 1, b: "two" });
+  });
+
+  it("invalidates file mappings by content and does not expose cached objects", () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-yaml-"));
+    const pathname = path.join(directory, "mapping.yaml");
+    try {
+      withYamlMappingCache(() => {
+        fs.writeFileSync(pathname, "value: first\n", "utf8");
+        const first = loadYamlMappingFile(pathname);
+        first.value = "mutated";
+        expect(loadYamlMappingFile(pathname)).toEqual({ value: "first" });
+
+        fs.writeFileSync(pathname, "value: second\n", "utf8");
+        expect(loadYamlMappingFile(pathname)).toEqual({ value: "second" });
+      });
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("shares frozen mappings only within a read-only cache scope", () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-yaml-read-only-"));
+    const pathname = path.join(directory, "mapping.yaml");
+    try {
+      fs.writeFileSync(pathname, "value: first\n", "utf8");
+      withReadOnlyYamlMappingCache(() => {
+        const first = loadYamlMappingFile(pathname);
+        expect(loadYamlMappingFile(pathname)).toBe(first);
+        expect(Object.isFrozen(first)).toBe(true);
+        expect(() => {
+          first.value = "mutated";
+        }).toThrow();
+      });
+      fs.writeFileSync(pathname, "value: second\n", "utf8");
+      expect(withReadOnlyYamlMappingCache(() => loadYamlMappingFile(pathname))).toEqual({ value: "second" });
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
   });
 });
 

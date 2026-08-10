@@ -113,10 +113,10 @@ const addedTuples: ActivationCanonicalTuple[] = [
   },
   {
     class: "reference",
-    surface_id: "references/analysis/personal-glossary-observations.yaml",
+    surface_id: "references/analysis/personal-glossary-evaluation-corpus.yaml",
     owner_path: "packages/cli/src/eval/glossaryEvaluation.ts",
-    owner_symbol_or_selector: "glossaryEvaluationObservationsPath",
-    owner_selector: "references/analysis/personal-glossary-observations.yaml",
+    owner_symbol_or_selector: "loadGlossaryEvaluationBehaviorFixture",
+    owner_selector: "references/analysis/personal-glossary-evaluation-corpus.yaml",
     semantic_selector_if_any: null,
     canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
   },
@@ -136,12 +136,12 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
     cli: { count: 27, sha256: "9d0db6cafe592da30ea3469c91dc514bdd1b3b22e8229a0519e680cbcb01c2fa" },
     capability: { count: 12, sha256: "892e6e5e2a57b41064bc44fa2946453225f1b1195aff77aad05365fd0a1071c2" },
     runtime: { count: 81, sha256: "99b2abff3ebff889b54b1781c563ab4b32609a479c4e90d6aad854f48fba7edc" },
-    reference: { count: 25, sha256: "d0d110b452390dc88542f4f770937f2affa1bed9e77a05b8486209f09d4b0ee0" },
+    reference: { count: 25, sha256: "2a40b8a8585933417a6e66a350c9ad68050288600cdac1e7f44b914e7022565c" },
     state: { count: 38, sha256: "697de8dcd13ac521124c35058ba222aa5cb6cae546f00bb54652ceaca4b662aa" },
     package: { count: 66, sha256: "83e6971af7f7564e42369aaccc445b32a0793bfffade843d149b6abd4fd3dbbc" },
     bootstrap: { count: 34, sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc" },
   },
-  total: { count: 283, sha256: "271b8f7d3dc5e09f055521ca586963ccd2ea17b2937284d24cf6abc31ef50395" },
+  total: { count: 283, sha256: "9fd0ebfcfad818d36dc4f9ac5f96c777be1bac79c55a570e5014dc3ae90bdbf7" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string { return JSON.stringify(value); }
 export function digestCanonicalTuples(values: readonly ActivationCanonicalTuple[]): string {

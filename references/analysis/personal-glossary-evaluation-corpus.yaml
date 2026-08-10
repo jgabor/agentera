@@ -1,0 +1,291 @@
+schema_version: agentera.personalGlossaryEvaluationBehaviorFixture.v1
+fixture_id: personal-glossary-synthetic-behavior-v1
+status: frozen
+provenance:
+  record_class: synthetic
+  source: hand_authored_deterministic_synthetic_product_inputs
+  source_ref: references/analysis/personal-glossary-evaluation-authority.yaml
+  consent: not_required_synthetic
+  contains_personal_history: false
+  owner: evaluation_authority
+  frozen_at: 2026-08-10
+  privacy_rule: no_raw_personal_history_or_transcript_content
+
+synthetic_record_provenance: &synthetic_record_provenance
+  record_class: synthetic
+  source_namespace: synthetic://personal-glossary-evaluation/
+  consent: not_required_synthetic
+  contains_personal_history: false
+
+discovery:
+  - { id: discovery-01, text: "Actually, `discovery term 01` means synthetic discoverable meaning 01.", provenance: *synthetic_record_provenance }
+  - { id: discovery-02, text: "Actually, `discovery term 02` means synthetic discoverable meaning 02.", provenance: *synthetic_record_provenance }
+  - { id: discovery-03, text: "Actually, `discovery term 03` means synthetic discoverable meaning 03.", provenance: *synthetic_record_provenance }
+  - { id: discovery-04, text: "Actually, `discovery term 04` means synthetic discoverable meaning 04.", provenance: *synthetic_record_provenance }
+  - { id: discovery-05, text: "Actually, `discovery term 05` means synthetic discoverable meaning 05.", provenance: *synthetic_record_provenance }
+  - { id: discovery-06, text: "Actually, `discovery term 06` means synthetic discoverable meaning 06.", provenance: *synthetic_record_provenance }
+  - { id: discovery-07, text: "Actually, `discovery term 07` means synthetic discoverable meaning 07.", provenance: *synthetic_record_provenance }
+  - { id: discovery-08, text: "Actually, `discovery term 08` means synthetic discoverable meaning 08.", provenance: *synthetic_record_provenance }
+  - { id: discovery-09, text: "Actually, `discovery term 09` means synthetic discoverable meaning 09.", provenance: *synthetic_record_provenance }
+  - { id: discovery-10, text: "Actually, `discovery term 10` means synthetic discoverable meaning 10.", provenance: *synthetic_record_provenance }
+  - { id: discovery-11, text: "Actually, `discovery term 11` means synthetic discoverable meaning 11.", provenance: *synthetic_record_provenance }
+  - { id: discovery-12, text: "Actually, `discovery term 12` means synthetic discoverable meaning 12.", provenance: *synthetic_record_provenance }
+  - { id: discovery-13, text: "Actually, `discovery term 13` means synthetic discoverable meaning 13.", provenance: *synthetic_record_provenance }
+  - { id: discovery-14, text: "Actually, `discovery term 14` means synthetic discoverable meaning 14.", provenance: *synthetic_record_provenance }
+  - { id: discovery-15, text: "Actually, `discovery term 15` means synthetic discoverable meaning 15.", provenance: *synthetic_record_provenance }
+  - { id: discovery-16, text: "Actually, `discovery term 16` means synthetic discoverable meaning 16.", provenance: *synthetic_record_provenance }
+  - { id: discovery-17, text: "Actually, `discovery term 17` means synthetic discoverable meaning 17.", provenance: *synthetic_record_provenance }
+  - { id: discovery-18, text: "Actually, `discovery term 18` means synthetic discoverable meaning 18.", provenance: *synthetic_record_provenance }
+  - { id: discovery-19, text: "Actually, `discovery term 19` means synthetic discoverable meaning 19.", provenance: *synthetic_record_provenance }
+  - { id: discovery-20, text: "Actually, `discovery term 20` means synthetic discoverable meaning 20.", provenance: *synthetic_record_provenance }
+
+scope:
+  - { id: scope-01, text: "For me, `scope personal 01` means a synthetic personal meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-02, text: "In this repository, `scope project 02` means a synthetic project meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-03, text: "Is `scope neither 03` a synthetic meaning?", provenance: *synthetic_record_provenance }
+  - { id: scope-04, text: "I use `scope personal 04` to mean a synthetic personal meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-05, text: "In this project, `scope project 05` means a synthetic project meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-06, text: "For example, `scope neither 06` means a synthetic example meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-07, text: "Personally, `scope personal 07` means a synthetic personal meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-08, text: "For this codebase, `scope project 08` means a synthetic project meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-09, text: "If `scope neither 09` means a synthetic hypothetical meaning, continue.", provenance: *synthetic_record_provenance }
+  - { id: scope-10, text: "For me, `scope personal 10` means a synthetic personal meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-11, text: "Within our project, `scope project 11` means a synthetic project meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-12, text: "I will use `scope neither 12` to mean a synthetic future meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-13, text: "For me, `scope personal 13` means a synthetic personal meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-14, text: "In this repository, `scope project 14` means a synthetic project meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-15, text: "`scope neither 15` means an agent-authored synthetic meaning.", actor: agent, provenance: *synthetic_record_provenance }
+  - { id: scope-16, text: "Personally, `scope personal 16` means a synthetic personal meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-17, text: "Project-only `scope project 17` means a synthetic project meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-18, text: "`scope neither 18` means .", provenance: *synthetic_record_provenance }
+  - { id: scope-19, text: "For me, `scope personal 19` means a synthetic personal meaning.", provenance: *synthetic_record_provenance }
+  - { id: scope-20, text: "In this project, `scope project 20` means a synthetic project meaning.", provenance: *synthetic_record_provenance }
+
+inferred_review:
+  - id: review-01
+    term: synthetic-review-01
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-01 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-01 }
+    provenance: *synthetic_record_provenance
+  - id: review-02
+    term: synthetic-review-02
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-02 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-02 }
+    provenance: *synthetic_record_provenance
+  - id: review-03
+    term: synthetic-review-03
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-03 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-03 }
+    provenance: *synthetic_record_provenance
+  - id: review-04
+    term: synthetic-review-04
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-04 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-04 }
+    provenance: *synthetic_record_provenance
+  - id: review-05
+    term: synthetic-review-05
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-05 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-05 }
+    provenance: *synthetic_record_provenance
+  - id: review-06
+    term: synthetic-review-06
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-06 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-06 }
+    provenance: *synthetic_record_provenance
+  - id: review-07
+    term: synthetic-review-07
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-07 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-07 }
+    provenance: *synthetic_record_provenance
+  - id: review-08
+    term: synthetic-review-08
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-08 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-08 }
+    provenance: *synthetic_record_provenance
+  - id: review-09
+    term: synthetic-review-09
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-09 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-09 }
+    provenance: *synthetic_record_provenance
+  - id: review-10
+    term: synthetic-review-10
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-10 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-10 }
+    provenance: *synthetic_record_provenance
+  - id: review-11
+    term: synthetic-review-11
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-11 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-11 }
+    provenance: *synthetic_record_provenance
+  - id: review-12
+    term: synthetic-review-12
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-12 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-12 }
+    provenance: *synthetic_record_provenance
+  - id: review-13
+    term: synthetic-review-13
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-13 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-13 }
+    provenance: *synthetic_record_provenance
+  - id: review-14
+    term: synthetic-review-14
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-14 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-14 }
+    provenance: *synthetic_record_provenance
+  - id: review-15
+    term: synthetic-review-15
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-15 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-15 }
+    provenance: *synthetic_record_provenance
+  - id: review-16
+    term: synthetic-review-16
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-16 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-16 }
+    provenance: *synthetic_record_provenance
+  - id: review-17
+    term: synthetic-review-17
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-17 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-17 }
+    provenance: *synthetic_record_provenance
+  - id: review-18
+    term: synthetic-review-18
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-18 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-18 }
+    provenance: *synthetic_record_provenance
+  - id: review-19
+    term: synthetic-review-19
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-19 explicit." }
+      - { source_kind: project_config_signal, text: synthetic-review-19 }
+    provenance: *synthetic_record_provenance
+  - id: review-20
+    term: synthetic-review-20
+    sources:
+      - { source_kind: instruction_document, text: "Do not use synthetic-review-20; it is a deprecated compatibility marker." }
+      - { source_kind: project_config_signal, text: "synthetic-review-20 is deprecated; remove this compatibility marker." }
+    provenance: *synthetic_record_provenance
+  - id: review-21
+    term: synthetic-review-21
+    sources:
+      - { source_kind: instruction_document, text: "Keep synthetic-review-21 explicit." }
+    provenance: *synthetic_record_provenance
+
+explicit_admission:
+  - { id: admission-01, text: "Actually, `admission term 001` means a synthetic automatic meaning 001.", provenance: *synthetic_record_provenance }
+  - { id: admission-02, text: "Actually, `admission term 002` means a synthetic automatic meaning 002.", provenance: *synthetic_record_provenance }
+  - { id: admission-03, text: "Actually, `admission term 003` means a synthetic automatic meaning 003.", provenance: *synthetic_record_provenance }
+  - { id: admission-04, text: "Actually, `admission term 004` means a synthetic automatic meaning 004.", provenance: *synthetic_record_provenance }
+  - { id: admission-05, text: "Actually, `admission term 005` means a synthetic automatic meaning 005.", provenance: *synthetic_record_provenance }
+  - { id: admission-06, text: "Actually, `admission term 006` means a synthetic automatic meaning 006.", provenance: *synthetic_record_provenance }
+  - { id: admission-07, text: "Actually, `admission term 007` means a synthetic automatic meaning 007.", provenance: *synthetic_record_provenance }
+  - { id: admission-08, text: "Actually, `admission term 008` means a synthetic automatic meaning 008.", provenance: *synthetic_record_provenance }
+  - { id: admission-09, text: "Actually, `admission term 009` means a synthetic automatic meaning 009.", provenance: *synthetic_record_provenance }
+  - { id: admission-10, text: "Actually, `admission term 010` means a synthetic automatic meaning 010.", provenance: *synthetic_record_provenance }
+  - { id: admission-11, text: "Actually, `admission term 011` means a synthetic automatic meaning 011.", provenance: *synthetic_record_provenance }
+  - { id: admission-12, text: "Actually, `admission term 012` means a synthetic automatic meaning 012.", provenance: *synthetic_record_provenance }
+  - { id: admission-13, text: "Actually, `admission term 013` means a synthetic automatic meaning 013.", provenance: *synthetic_record_provenance }
+  - { id: admission-14, text: "Actually, `admission term 014` means a synthetic automatic meaning 014.", provenance: *synthetic_record_provenance }
+  - { id: admission-15, text: "Actually, `admission term 015` means a synthetic automatic meaning 015.", provenance: *synthetic_record_provenance }
+  - { id: admission-16, text: "Actually, `admission term 016` means a synthetic automatic meaning 016.", provenance: *synthetic_record_provenance }
+  - { id: admission-17, text: "Actually, `admission term 017` means a synthetic automatic meaning 017.", provenance: *synthetic_record_provenance }
+  - { id: admission-18, text: "Actually, `admission term 018` means a synthetic automatic meaning 018.", provenance: *synthetic_record_provenance }
+  - { id: admission-19, text: "Actually, `admission term 019` means a synthetic automatic meaning 019.", provenance: *synthetic_record_provenance }
+  - { id: admission-20, text: "Actually, `admission term 020` means a synthetic automatic meaning 020.", provenance: *synthetic_record_provenance }
+  - { id: admission-21, text: "Actually, `admission term 021` means a synthetic automatic meaning 021.", provenance: *synthetic_record_provenance }
+  - { id: admission-22, text: "Actually, `admission term 022` means a synthetic automatic meaning 022.", provenance: *synthetic_record_provenance }
+  - { id: admission-23, text: "Actually, `admission term 023` means a synthetic automatic meaning 023.", provenance: *synthetic_record_provenance }
+  - { id: admission-24, text: "Actually, `admission term 024` means a synthetic automatic meaning 024.", provenance: *synthetic_record_provenance }
+  - { id: admission-25, text: "Actually, `admission term 025` means a synthetic automatic meaning 025.", provenance: *synthetic_record_provenance }
+  - { id: admission-26, text: "Actually, `admission term 026` means a synthetic automatic meaning 026.", provenance: *synthetic_record_provenance }
+  - { id: admission-27, text: "Actually, `admission term 027` means a synthetic automatic meaning 027.", provenance: *synthetic_record_provenance }
+  - { id: admission-28, text: "Actually, `admission term 028` means a synthetic automatic meaning 028.", provenance: *synthetic_record_provenance }
+  - { id: admission-29, text: "Actually, `admission term 029` means a synthetic automatic meaning 029.", provenance: *synthetic_record_provenance }
+  - { id: admission-30, text: "Actually, `admission term 030` means a synthetic automatic meaning 030.", provenance: *synthetic_record_provenance }
+  - { id: admission-31, text: "Actually, `admission term 031` means a synthetic automatic meaning 031.", provenance: *synthetic_record_provenance }
+  - { id: admission-32, text: "Actually, `admission term 032` means a synthetic automatic meaning 032.", provenance: *synthetic_record_provenance }
+  - { id: admission-33, text: "Actually, `admission term 033` means a synthetic automatic meaning 033.", provenance: *synthetic_record_provenance }
+  - { id: admission-34, text: "Actually, `admission term 034` means a synthetic automatic meaning 034.", provenance: *synthetic_record_provenance }
+  - { id: admission-35, text: "Actually, `admission term 035` means a synthetic automatic meaning 035.", provenance: *synthetic_record_provenance }
+  - { id: admission-36, text: "Actually, `admission term 036` means a synthetic automatic meaning 036.", provenance: *synthetic_record_provenance }
+  - { id: admission-37, text: "Actually, `admission term 037` means a synthetic automatic meaning 037.", provenance: *synthetic_record_provenance }
+  - { id: admission-38, text: "Actually, `admission term 038` means a synthetic automatic meaning 038.", provenance: *synthetic_record_provenance }
+  - { id: admission-39, text: "Actually, `admission term 039` means a synthetic automatic meaning 039.", provenance: *synthetic_record_provenance }
+  - { id: admission-40, text: "Actually, `admission term 040` means a synthetic automatic meaning 040.", provenance: *synthetic_record_provenance }
+  - { id: admission-41, text: "Actually, `admission term 041` means a synthetic automatic meaning 041.", provenance: *synthetic_record_provenance }
+  - { id: admission-42, text: "Actually, `admission term 042` means a synthetic automatic meaning 042.", provenance: *synthetic_record_provenance }
+  - { id: admission-43, text: "Actually, `admission term 043` means a synthetic automatic meaning 043.", provenance: *synthetic_record_provenance }
+  - { id: admission-44, text: "Actually, `admission term 044` means a synthetic automatic meaning 044.", provenance: *synthetic_record_provenance }
+  - { id: admission-45, text: "Actually, `admission term 045` means a synthetic automatic meaning 045.", provenance: *synthetic_record_provenance }
+  - { id: admission-46, text: "Actually, `admission term 046` means a synthetic automatic meaning 046.", provenance: *synthetic_record_provenance }
+  - { id: admission-47, text: "Actually, `admission term 047` means a synthetic automatic meaning 047.", provenance: *synthetic_record_provenance }
+  - { id: admission-48, text: "Actually, `admission term 048` means a synthetic automatic meaning 048.", provenance: *synthetic_record_provenance }
+  - { id: admission-49, text: "Actually, `admission term 049` means a synthetic automatic meaning 049.", provenance: *synthetic_record_provenance }
+  - { id: admission-50, text: "Actually, `admission term 050` means a synthetic automatic meaning 050.", provenance: *synthetic_record_provenance }
+  - { id: admission-51, text: "Actually, `admission term 051` means a synthetic automatic meaning 051.", provenance: *synthetic_record_provenance }
+  - { id: admission-52, text: "Actually, `admission term 052` means a synthetic automatic meaning 052.", provenance: *synthetic_record_provenance }
+  - { id: admission-53, text: "Actually, `admission term 053` means a synthetic automatic meaning 053.", provenance: *synthetic_record_provenance }
+  - { id: admission-54, text: "Actually, `admission term 054` means a synthetic automatic meaning 054.", provenance: *synthetic_record_provenance }
+  - { id: admission-55, text: "Actually, `admission term 055` means a synthetic automatic meaning 055.", provenance: *synthetic_record_provenance }
+  - { id: admission-56, text: "Actually, `admission term 056` means a synthetic automatic meaning 056.", provenance: *synthetic_record_provenance }
+  - { id: admission-57, text: "Actually, `admission term 057` means a synthetic automatic meaning 057.", provenance: *synthetic_record_provenance }
+  - { id: admission-58, text: "Actually, `admission term 058` means a synthetic automatic meaning 058.", provenance: *synthetic_record_provenance }
+  - { id: admission-59, text: "Actually, `admission term 059` means a synthetic automatic meaning 059.", provenance: *synthetic_record_provenance }
+  - { id: admission-60, text: "Actually, `admission term 060` means a synthetic automatic meaning 060.", provenance: *synthetic_record_provenance }
+  - { id: admission-61, text: "Actually, `admission term 061` means a synthetic automatic meaning 061.", provenance: *synthetic_record_provenance }
+  - { id: admission-62, text: "Actually, `admission term 062` means a synthetic automatic meaning 062.", provenance: *synthetic_record_provenance }
+  - { id: admission-63, text: "Actually, `admission term 063` means a synthetic automatic meaning 063.", provenance: *synthetic_record_provenance }
+  - { id: admission-64, text: "Actually, `admission term 064` means a synthetic automatic meaning 064.", provenance: *synthetic_record_provenance }
+  - { id: admission-65, text: "Actually, `admission term 065` means a synthetic automatic meaning 065.", provenance: *synthetic_record_provenance }
+  - { id: admission-66, text: "Actually, `admission term 066` means a synthetic automatic meaning 066.", provenance: *synthetic_record_provenance }
+  - { id: admission-67, text: "Actually, `admission term 067` means a synthetic automatic meaning 067.", provenance: *synthetic_record_provenance }
+  - { id: admission-68, text: "Actually, `admission term 068` means a synthetic automatic meaning 068.", provenance: *synthetic_record_provenance }
+  - { id: admission-69, text: "Actually, `admission term 069` means a synthetic automatic meaning 069.", provenance: *synthetic_record_provenance }
+  - { id: admission-70, text: "Actually, `admission term 070` means a synthetic automatic meaning 070.", provenance: *synthetic_record_provenance }
+  - { id: admission-71, text: "Actually, `admission term 071` means a synthetic automatic meaning 071.", provenance: *synthetic_record_provenance }
+  - { id: admission-72, text: "Actually, `admission term 072` means a synthetic automatic meaning 072.", provenance: *synthetic_record_provenance }
+  - { id: admission-73, text: "Actually, `admission term 073` means a synthetic automatic meaning 073.", provenance: *synthetic_record_provenance }
+  - { id: admission-74, text: "Actually, `admission term 074` means a synthetic automatic meaning 074.", provenance: *synthetic_record_provenance }
+  - { id: admission-75, text: "Actually, `admission term 075` means a synthetic automatic meaning 075.", provenance: *synthetic_record_provenance }
+  - { id: admission-76, text: "Actually, `admission term 076` means a synthetic automatic meaning 076.", provenance: *synthetic_record_provenance }
+  - { id: admission-77, text: "Actually, `admission term 077` means a synthetic automatic meaning 077.", provenance: *synthetic_record_provenance }
+  - { id: admission-78, text: "Actually, `admission term 078` means a synthetic automatic meaning 078.", provenance: *synthetic_record_provenance }
+  - { id: admission-79, text: "Actually, `admission term 079` means a synthetic automatic meaning 079.", provenance: *synthetic_record_provenance }
+  - { id: admission-80, text: "Actually, `admission term 080` means a synthetic automatic meaning 080.", provenance: *synthetic_record_provenance }
+  - { id: admission-81, text: "Actually, `admission term 081` means a synthetic automatic meaning 081.", provenance: *synthetic_record_provenance }
+  - { id: admission-82, text: "Actually, `admission term 082` means a synthetic automatic meaning 082.", provenance: *synthetic_record_provenance }
+  - { id: admission-83, text: "Actually, `admission term 083` means a synthetic automatic meaning 083.", provenance: *synthetic_record_provenance }
+  - { id: admission-84, text: "Actually, `admission term 084` means a synthetic automatic meaning 084.", provenance: *synthetic_record_provenance }
+  - { id: admission-85, text: "Actually, `admission term 085` means a synthetic automatic meaning 085.", provenance: *synthetic_record_provenance }
+  - { id: admission-86, text: "Actually, `admission term 086` means a synthetic automatic meaning 086.", provenance: *synthetic_record_provenance }
+  - { id: admission-87, text: "Actually, `admission term 087` means a synthetic automatic meaning 087.", provenance: *synthetic_record_provenance }
+  - { id: admission-88, text: "Actually, `admission term 088` means a synthetic automatic meaning 088.", provenance: *synthetic_record_provenance }
+  - { id: admission-89, text: "Actually, `admission term 089` means a synthetic automatic meaning 089.", provenance: *synthetic_record_provenance }
+  - { id: admission-90, text: "Actually, `admission term 090` means a synthetic automatic meaning 090.", provenance: *synthetic_record_provenance }
+  - { id: admission-91, text: "Actually, `admission term 091` means a synthetic automatic meaning 091.", provenance: *synthetic_record_provenance }
+  - { id: admission-92, text: "Actually, `admission term 092` means a synthetic automatic meaning 092.", provenance: *synthetic_record_provenance }
+  - { id: admission-93, text: "Actually, `admission term 093` means a synthetic automatic meaning 093.", provenance: *synthetic_record_provenance }
+  - { id: admission-94, text: "Actually, `admission term 094` means a synthetic automatic meaning 094.", provenance: *synthetic_record_provenance }
+  - { id: admission-95, text: "Actually, `admission term 095` means a synthetic automatic meaning 095.", provenance: *synthetic_record_provenance }
+  - { id: admission-96, text: "Actually, `admission term 096` means a synthetic automatic meaning 096.", provenance: *synthetic_record_provenance }
+  - { id: admission-97, text: "Actually, `admission term 097` means a synthetic automatic meaning 097.", provenance: *synthetic_record_provenance }
+  - { id: admission-98, text: "Actually, `admission term 098` means a synthetic automatic meaning 098.", provenance: *synthetic_record_provenance }
+  - { id: admission-99, text: "Actually, `admission term 099` means a synthetic automatic meaning 099.", provenance: *synthetic_record_provenance }
+  - { id: admission-100, text: "Actually, `admission term 100` means a legacy compatibility marker. Please exclude this legacy alias from any personal glossary.", provenance: *synthetic_record_provenance }

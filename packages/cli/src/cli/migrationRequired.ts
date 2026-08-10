@@ -29,6 +29,7 @@ export function requiresCompletedEntityCutover(argv: string[]): boolean {
     command === "report" &&
     ["personal-glossary-publish", "profile-grounding", "personal-glossary-candidates", "personal-glossary-decision", "personal-glossary-reviews"].includes(subcommand)
   ) return false;
+  if (command === "check" && subcommand === "verify" && verb === "eval" && argv[3] === "glossary") return false;
   if (command === "prime" && (argv.includes("--guidance") || !argv.includes("--context") || value(argv, "--context") === "status")) return false;
   if (command === "query") return !argv.includes("--list-artifacts");
   if (command === "state" && subcommand === "query" && argv.includes("--list-artifacts")) return false;

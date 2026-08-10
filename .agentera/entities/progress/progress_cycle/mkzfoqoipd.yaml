@@ -1,0 +1,14 @@
+id: mkzfoqoipd
+artifact: progress
+record:
+  timestamp: 2026-08-10 09:48
+  type: feat
+  phase: build
+  what: frozen product-behavior evaluation now proves personal glossary quality metrics and fail-closed explicit qualification.
+  context:
+    intent: complete qalythqtiq with reproducible privacy-safe quality evidence and a real qualification blocker.
+    constraints: immutable labels; separate denominators and one-sided Wilson bounds; inferred automatic admission disabled; no project glossary or registry effects.
+    scope: evaluator, frozen synthetic corpus, decision quality gate, public structured verify output, package qualification regression, contracts and retained-reference parity.
+  verified: "Canonical metrics: discovery 20/20; scope 20/20; inferred review 19/20 with one-sided lower bound 0.8039927632259837; explicit admission 99/100 with lower bound 0.9564182264659439; metrics_sha256 de930e006d6cfc7392a1b54ec014e843d59793e790709f9136364b8bda5512cc. Source 3,913 passed/1 skipped; package 37 passed; typecheck/build; local glossary verify; retained-reference, activation-conjunction, and compact checks; final independent Audit PASS."
+  next: source integration qualification task onlyyjethm.
+  publication_order: 149

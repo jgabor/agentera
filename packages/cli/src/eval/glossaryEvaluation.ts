@@ -2,21 +2,20 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import type { JsonObject } from "../core/jsonValue.js";
-import { loadYamlMappingFile } from "../core/yaml.js";
+import YAML from "yaml";
+
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import {
-  GLOSSARY_OBSERVATIONS_SCHEMA_VERSION,
-  validateGlossaryObservations,
-} from "./glossaryObservations.js";
+import { loadYamlMappingFile } from "../core/yaml.js";
 
-export { GLOSSARY_OBSERVATIONS_SCHEMA_VERSION, validateGlossaryObservations } from "./glossaryObservations.js";
-
-type Mapping = Record<string, unknown>;
+export type Mapping = Record<string, unknown>;
 
 export const GLOSSARY_EVALUATION_AUTHORITY_SCHEMA_VERSION =
   "agentera.personalGlossaryEvaluationAuthority.v1";
 export const GLOSSARY_HOLDOUT_SCHEMA_VERSION = "agentera.personalGlossaryEvaluationHoldout.v1";
+export const GLOSSARY_BEHAVIOR_FIXTURE_SCHEMA_VERSION =
+  "agentera.personalGlossaryEvaluationBehaviorFixture.v1";
+export const GLOSSARY_OBSERVATIONS_SCHEMA_VERSION =
+  "agentera.personalGlossaryEvaluationObservations.v2";
 export const GLOSSARY_EVALUATION_SCHEMA_VERSION = "agentera.personalGlossaryEvaluation.v1";
 export const ONE_SIDED_95_WILSON_Z = 1.6448536269514722;
 
@@ -27,7 +26,16 @@ export const GLOSSARY_METRIC_IDS = [
   "explicit_admission_precision",
 ] as const;
 
+export const GLOSSARY_EVALUATION_CASE_SET_IDS = [
+  "discovery",
+  "scope",
+  "inferred_review",
+  "explicit_admission",
+] as const;
+
 export type GlossaryMetricId = (typeof GLOSSARY_METRIC_IDS)[number];
+export type GlossaryEvaluationCaseSetId = (typeof GLOSSARY_EVALUATION_CASE_SET_IDS)[number];
+export type GlossaryEvaluationCaseCounts = Record<GlossaryEvaluationCaseSetId, number>;
 export type GlossaryMetricStatus = "pass" | "fail";
 
 export interface BinaryEvaluationExample {
@@ -63,6 +71,7 @@ export interface MetricResult {
   uncertainty: {
     method: string;
     confidence: number;
+    one_sided: true;
     lower_bound: number | null;
   };
   thresholds: {
@@ -80,13 +89,28 @@ export interface MetricResult {
   failure_reasons: string[];
 }
 
-function mapping(value: unknown): Mapping | null {
+const MAX_BEHAVIOR_FIXTURE_UTF8_BYTES = 65_536;
+const MAX_BEHAVIOR_FIXTURE_ALIASES = 256;
+const FORBIDDEN_PRIVATE_FIELDS = new Set([
+  "raw_text",
+  "transcript",
+  "content",
+  "profile_path",
+  "personal_history",
+  "secret",
+  "password",
+  "api_key",
+  "credential",
+]);
+const FORBIDDEN_LABEL_FIELDS = /^(?:expected_|observed_|label$|labels$)/u;
+
+export function mapping(value: unknown): Mapping | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Mapping)
     : null;
 }
 
-function nonEmptyString(value: unknown): value is string {
+export function nonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
@@ -96,27 +120,71 @@ function strings(value: unknown): string[] {
     : [];
 }
 
+export function mappings(value: unknown): Mapping[] {
+  return Array.isArray(value)
+    ? value.flatMap((item) => {
+      const record = mapping(item);
+      return record === null ? [] : [record];
+    })
+    : [];
+}
+
 function isLowerSha256(value: unknown): value is string {
-  return typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+  return typeof value === "string" && /^[a-f0-9]{64}$/u.test(value);
 }
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function sha256(value: string | Buffer): string {
+export function sha256(value: string | Buffer): string {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-function sourcePath(root: string, relative: string): string | null {
-  if (!relative || path.isAbsolute(relative)) return null;
-  const resolvedRoot = path.resolve(root);
-  const resolved = path.resolve(root, relative);
-  const relativeToRoot = path.relative(resolvedRoot, resolved);
-  if (relativeToRoot === ".." || relativeToRoot.startsWith(`..${path.sep}`) || path.isAbsolute(relativeToRoot)) {
-    return null;
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Mapping)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, canonical(entry)]),
+    );
   }
-  return resolved;
+  return value;
+}
+
+export function canonicalDigest(value: unknown): string {
+  return sha256(JSON.stringify(canonical(value)));
+}
+
+/** Count the contract-owned frozen cases in each glossary evaluation family. */
+export function glossaryEvaluationCaseCounts(value: Mapping): GlossaryEvaluationCaseCounts {
+  return Object.fromEntries(
+    GLOSSARY_EVALUATION_CASE_SET_IDS.map((key) => [key, Array.isArray(value[key]) ? value[key].length : 0]),
+  ) as GlossaryEvaluationCaseCounts;
+}
+
+/** Digest the frozen labels without carrying them into evaluator output. */
+export function glossaryEvaluationLabelDigest(holdout: Mapping): string {
+  return canonicalDigest(Object.fromEntries([
+    ["discovery", mappings(holdout.discovery).map(({ id, expected_discoverable }) => ({ id, expected_discoverable }))],
+    ["scope", mappings(holdout.scope).map(({ id, expected_scope }) => ({ id, expected_scope }))],
+    ["inferred_review", mappings(holdout.inferred_review).map(({ id, expected_reviewable }) => ({ id, expected_reviewable }))],
+    ["explicit_admission", mappings(holdout.explicit_admission).map(({ id, expected_admissible }) => ({ id, expected_admissible }))],
+  ]));
+}
+
+function sameStrings(actual: unknown, expected: readonly string[]): boolean {
+  return JSON.stringify(strings(actual)) === JSON.stringify(expected);
+}
+
+function exactFields(record: Mapping, expected: readonly string[], source: string, errors: string[]): void {
+  for (const field of Object.keys(record)) {
+    if (!expected.includes(field)) errors.push(`${source}.${field} is not an allowed field`);
+  }
+  for (const field of expected) {
+    if (!(field in record)) errors.push(`${source}.${field} is required`);
+  }
 }
 
 export function glossaryEvaluationAuthorityPath(root: string = resolveSourceRoot()): string {
@@ -127,18 +195,31 @@ export function glossaryEvaluationHoldoutPath(root: string = resolveSourceRoot()
   return path.join(root, "references", "analysis", "personal-glossary-holdout.yaml");
 }
 
-export function glossaryEvaluationObservationsPath(root: string = resolveSourceRoot()): string {
-  return path.join(root, "references", "analysis", "personal-glossary-observations.yaml");
+export function glossaryEvaluationBehaviorFixturePath(root: string = resolveSourceRoot()): string {
+  return path.join(root, "references", "analysis", "personal-glossary-evaluation-corpus.yaml");
 }
 
-export function loadGlossaryEvaluationAuthority(
-  root: string = resolveSourceRoot(),
-): Mapping {
+export function loadGlossaryEvaluationAuthority(root: string = resolveSourceRoot()): Mapping {
   return loadYamlMappingFile(glossaryEvaluationAuthorityPath(root));
 }
 
 export function loadGlossaryEvaluationHoldout(root: string = resolveSourceRoot()): Mapping {
   return loadYamlMappingFile(glossaryEvaluationHoldoutPath(root));
+}
+
+export function loadGlossaryEvaluationBehaviorFixture(root: string = resolveSourceRoot()): Mapping {
+  const bytes = fs.readFileSync(glossaryEvaluationBehaviorFixturePath(root));
+  return parseGlossaryEvaluationBehaviorFixture(bytes);
+}
+
+function parseGlossaryEvaluationBehaviorFixture(bytes: Buffer): Mapping {
+  if (bytes.length > MAX_BEHAVIOR_FIXTURE_UTF8_BYTES) {
+    throw new Error("behavior fixture exceeds its UTF-8 bound");
+  }
+  const value = YAML.parse(bytes.toString("utf8"), { maxAliasCount: MAX_BEHAVIOR_FIXTURE_ALIASES });
+  const parsed = mapping(value);
+  if (parsed === null) throw new Error("YAML root must be a mapping");
+  return parsed;
 }
 
 function metricMapping(authority: Mapping, metric: GlossaryMetricId): Mapping | null {
@@ -148,9 +229,7 @@ function metricMapping(authority: Mapping, metric: GlossaryMetricId): Mapping | 
 export function metricRule(authority: Mapping, metric: GlossaryMetricId): MetricRule {
   const raw = metricMapping(authority, metric);
   const uncertainty = mapping(raw?.uncertainty);
-  if (!raw || !uncertainty) {
-    throw new Error(`metric authority is missing ${metric}`);
-  }
+  if (!raw || !uncertainty) throw new Error(`metric authority is missing ${metric}`);
   return {
     definition: String(raw.definition ?? ""),
     numerator: String(raw.numerator ?? ""),
@@ -214,13 +293,18 @@ export function validateGlossaryEvaluationAuthority(authority: Mapping): string[
   if (authority.schema_version !== GLOSSARY_EVALUATION_AUTHORITY_SCHEMA_VERSION) {
     errors.push("evaluation authority schema_version is invalid");
   }
-  if (authority.status !== "active_authority") errors.push("evaluation authority is not active_authority");
+  if (authority.status !== "active_authority") {
+    errors.push("evaluation authority is not active_authority");
+  }
   const holdout = mapping(authority.holdout);
   const holdoutLabels = mapping(holdout?.labels);
   const provenance = mapping(holdout?.provenance);
   const synthetic = mapping(provenance?.synthetic);
   const consented = mapping(provenance?.consented);
   const observations = mapping(authority.observations);
+  const behaviorFixture = mapping(observations?.behavior_fixture);
+  const results = mapping(authority.results);
+  const metricsDigest = mapping(results?.metrics_sha256);
   if (!holdout || holdout.status !== "frozen" || holdout.identity !== "content_addressed_fixture_bytes") {
     errors.push("evaluation authority holdout must be a frozen content-addressed fixture");
   }
@@ -255,11 +339,12 @@ export function validateGlossaryEvaluationAuthority(authority: Mapping): string[
   }
   if (
     observations?.schema_version !== GLOSSARY_OBSERVATIONS_SCHEMA_VERSION ||
-    observations?.source !== "evaluated_behavior_supplied_separately" ||
+    observations?.source !== "current_product_behavior" ||
     !sameStrings(observations?.required_fields, [
       "schema_version",
       "holdout_id",
       "holdout_fixture_sha256",
+      "behavior_fixture_sha256",
       "discovery",
       "scope",
       "inferred_review",
@@ -270,54 +355,56 @@ export function validateGlossaryEvaluationAuthority(authority: Mapping): string[
     observations?.missing !== "not_run_non_authorizing" ||
     observations?.invalid !== "reject_before_metrics"
   ) {
-    errors.push("evaluation authority must bind separate observations to the frozen holdout and exact IDs");
+    errors.push("evaluation authority observations must come from current product behavior");
   }
-
+  if (
+    behaviorFixture?.path !== "references/analysis/personal-glossary-evaluation-corpus.yaml" ||
+    !isLowerSha256(behaviorFixture?.fixture_sha256) ||
+    behaviorFixture?.status !== "frozen" ||
+    behaviorFixture?.identity !== "content_addressed_fixture_bytes" ||
+    behaviorFixture?.provenance !== "synthetic_only"
+  ) {
+    errors.push("evaluation authority behavior fixture must be frozen, content-addressed, and synthetic-only");
+  }
+  if (
+    metricsDigest?.field !== "metrics_sha256" ||
+    metricsDigest?.algorithm !== "sha256(canonical_json_metrics_array)"
+  ) {
+    errors.push("evaluation authority results must bind the canonical metric array digest");
+  }
   for (const metric of GLOSSARY_METRIC_IDS) {
-    const shape = METRIC_SHAPE[metric];
     const raw = metricMapping(authority, metric);
     const uncertainty = mapping(raw?.uncertainty);
-    const rule = raw ? metricRule(authority, metric) : null;
+    const expected = METRIC_SHAPE[metric];
     if (
       !raw ||
-      !nonEmptyString(raw.definition) ||
-      raw.numerator !== shape.numerator ||
-      raw.denominator !== shape.denominator ||
+      raw.numerator !== expected.numerator ||
+      raw.denominator !== expected.denominator ||
+      raw.sample_unit !== expected.sampleUnit ||
+      raw.minimum_sample_size !== expected.minimumSampleSize ||
+      raw.point_estimate_minimum !== expected.pointEstimateMinimum ||
       raw.denominator_zero !== "fail" ||
-      raw.sample_unit !== shape.sampleUnit ||
-      (metric === "scope_accuracy" && !sameStrings(raw.labels, ["personal", "project", "neither"])) ||
-      !rule ||
-      !Number.isInteger(rule.minimumSampleSize) ||
-      rule.minimumSampleSize !== shape.minimumSampleSize ||
-      !isFiniteNumber(rule.pointEstimateMinimum) ||
-      rule.pointEstimateMinimum !== shape.pointEstimateMinimum ||
       uncertainty?.method !== "wilson_lower_bound" ||
       uncertainty?.confidence !== 0.95 ||
-      !isFiniteNumber(rule.lowerBoundMinimum) ||
-      rule.lowerBoundMinimum !== shape.lowerBoundMinimum
+      uncertainty?.lower_bound_minimum !== expected.lowerBoundMinimum ||
+      (expected.labels !== undefined && !sameStrings(raw.labels, expected.labels))
     ) {
-      errors.push(`evaluation authority metric ${metric} has invalid definition, denominator, or gate`);
+      errors.push(`evaluation authority metric ${metric} does not preserve its approved denominator or threshold`);
     }
   }
-
   const uncertainty = mapping(authority.uncertainty);
+  const gates = mapping(authority.gates);
+  const releaseGate = mapping(gates?.release_authorizing_gate);
+  const inferredAuto = mapping(gates?.inferred_automatic_admission);
   if (
     uncertainty?.method !== "one_sided_wilson_lower_bound" ||
     uncertainty?.confidence !== 0.95 ||
+    !nonEmptyString(uncertainty?.rule) ||
     uncertainty?.rounding !== "report_full_precision_compare_unrounded" ||
-    !nonEmptyString(uncertainty?.rule)
-  ) {
-    errors.push("evaluation authority uncertainty must use the one-sided 95% Wilson lower bound");
-  }
-
-  const gates = mapping(authority.gates);
-  const exploratory = mapping(gates?.exploratory_report);
-  const release = mapping(gates?.release_authorizing_gate);
-  const inferredAuto = mapping(gates?.inferred_automatic_admission);
-  if (
-    exploratory?.release_authorizing !== false ||
-    release?.release_authorizing !== true ||
-    !sameStrings(release?.requirements, [
+    gates === null ||
+    mapping(gates?.exploratory_report)?.release_authorizing !== false ||
+    releaseGate?.release_authorizing !== true ||
+    !sameStrings(releaseGate?.requirements, [
       "frozen_holdout_digest_matches_authority",
       "observations_exactly_cover_frozen_ids",
       "every_metric_has_a_nonzero_denominator",
@@ -326,8 +413,6 @@ export function validateGlossaryEvaluationAuthority(authority: Mapping): string[
       "every_metric_meets_uncertainty_threshold",
       "inferred_automatic_admission_remains_disabled",
     ]) ||
-    !nonEmptyString(exploratory?.rule) ||
-    !nonEmptyString(release?.rule) ||
     inferredAuto?.status !== "disabled" ||
     inferredAuto?.measured_result !== "cannot_enable" ||
     !nonEmptyString(inferredAuto?.rule)
@@ -358,19 +443,13 @@ export function validateGlossaryEvaluationAuthority(authority: Mapping): string[
   return errors;
 }
 
-function sameStrings(actual: unknown, expected: readonly string[]): boolean {
-  return JSON.stringify(strings(actual)) === JSON.stringify(expected);
-}
-
-const FORBIDDEN_RECORD_FIELDS = new Set([
-  "raw_text",
-  "transcript",
-  "content",
-  "profile_path",
-  "personal_history",
-]);
-
-function validateRecordProvenance(record: Mapping, source: string, errors: string[]): void {
+function validateRecordProvenance(
+  record: Mapping,
+  source: string,
+  errors: string[],
+  sourceNamespace: string,
+  syntheticOnly = false,
+): void {
   const provenance = mapping(record.provenance);
   if (!provenance) {
     errors.push(`${source}.provenance is required`);
@@ -384,7 +463,7 @@ function validateRecordProvenance(record: Mapping, source: string, errors: strin
     (provenance.consent !== "not_required_synthetic" ||
       provenance.contains_personal_history !== false ||
       !nonEmptyString(provenance.source_namespace) ||
-      !provenance.source_namespace.startsWith("synthetic://"))
+      !provenance.source_namespace.startsWith(sourceNamespace))
   ) {
     errors.push(`${source}.provenance synthetic record is not privacy-safe`);
   }
@@ -396,11 +475,16 @@ function validateRecordProvenance(record: Mapping, source: string, errors: strin
   ) {
     errors.push(`${source}.provenance consented record lacks consent provenance`);
   }
+  if (syntheticOnly && provenance.record_class !== "synthetic") {
+    errors.push(`${source}.provenance must be synthetic`);
+  }
   for (const key of Object.keys(record)) {
-    if (FORBIDDEN_RECORD_FIELDS.has(key)) errors.push(`${source} contains forbidden private content field ${key}`);
+    if (FORBIDDEN_PRIVATE_FIELDS.has(key)) {
+      errors.push(`${source} contains forbidden private content field ${key}`);
+    }
   }
   for (const key of Object.keys(provenance)) {
-    if (FORBIDDEN_RECORD_FIELDS.has(key)) {
+    if (FORBIDDEN_PRIVATE_FIELDS.has(key)) {
       errors.push(`${source}.provenance contains forbidden private content field ${key}`);
     }
   }
@@ -414,13 +498,12 @@ function validateCaseList(
   seenIds: Set<string>,
   seenSourceIds: Set<string>,
   errors: string[],
-): Mapping[] {
+): void {
   const records = holdout[key];
   if (!Array.isArray(records)) {
     errors.push(`holdout.${key} must be a list`);
-    return [];
+    return;
   }
-  const mappings: Mapping[] = [];
   for (const [index, value] of records.entries()) {
     const source = `holdout.${key}[${index}]`;
     const record = mapping(value);
@@ -436,22 +519,10 @@ function validateCaseList(
     }
     if (nonEmptyString(id)) seenIds.add(id);
     if (nonEmptyString(sourceId)) seenSourceIds.add(sourceId);
-    const allowedFields = new Set(requiredFields);
-    for (const field of Object.keys(record)) {
-      if (!allowedFields.has(field)) errors.push(`${source}.${field} is not an allowed field`);
-    }
-    for (const field of requiredFields) {
-      if (!(field in record)) errors.push(`${source}.${field} is required`);
-    }
-    validateRecordProvenance(record, source, errors);
+    exactFields(record, requiredFields, source, errors);
+    validateRecordProvenance(record, source, errors, "synthetic://personal-glossary/");
     checkFields(record, source, errors);
-    mappings.push(record);
   }
-  return mappings;
-}
-
-function booleanField(record: Mapping, field: string, source: string, errors: string[]): void {
-  if (typeof record[field] !== "boolean") errors.push(`${source}.${field} must be boolean`);
 }
 
 export function validateFrozenGlossaryHoldout(
@@ -492,7 +563,6 @@ export function validateFrozenGlossaryHoldout(
       errors.push("holdout fixture digest does not match evaluation authority");
     }
   }
-
   const seenIds = new Set<string>();
   const seenSourceIds = new Set<string>();
   const scopeLabels = strings(metricMapping(authority, "scope_accuracy")?.labels);
@@ -501,7 +571,9 @@ export function validateFrozenGlossaryHoldout(
     "discovery",
     ["id", "source_id", "expected_discoverable", "provenance"],
     (record, source, caseErrors) => {
-      booleanField(record, "expected_discoverable", source, caseErrors);
+      if (typeof record.expected_discoverable !== "boolean") {
+        caseErrors.push(`${source}.expected_discoverable must be boolean`);
+      }
     },
     seenIds,
     seenSourceIds,
@@ -512,9 +584,7 @@ export function validateFrozenGlossaryHoldout(
     "scope",
     ["id", "source_id", "expected_scope", "provenance"],
     (record, source, caseErrors) => {
-      if (!nonEmptyString(record.expected_scope)) {
-        caseErrors.push(`${source}.expected_scope must be a non-empty string`);
-      } else if (!scopeLabels.includes(record.expected_scope)) {
+      if (!nonEmptyString(record.expected_scope) || !scopeLabels.includes(record.expected_scope)) {
         caseErrors.push(`${source}.scope labels are not in the authority label set`);
       }
     },
@@ -527,7 +597,9 @@ export function validateFrozenGlossaryHoldout(
     "inferred_review",
     ["id", "source_id", "expected_reviewable", "provenance"],
     (record, source, caseErrors) => {
-      booleanField(record, "expected_reviewable", source, caseErrors);
+      if (typeof record.expected_reviewable !== "boolean") {
+        caseErrors.push(`${source}.expected_reviewable must be boolean`);
+      }
     },
     seenIds,
     seenSourceIds,
@@ -538,12 +610,270 @@ export function validateFrozenGlossaryHoldout(
     "explicit_admission",
     ["id", "source_id", "expected_admissible", "provenance"],
     (record, source, caseErrors) => {
-      booleanField(record, "expected_admissible", source, caseErrors);
+      if (typeof record.expected_admissible !== "boolean") {
+        caseErrors.push(`${source}.expected_admissible must be boolean`);
+      }
     },
     seenIds,
     seenSourceIds,
     errors,
   );
+  return errors;
+}
+
+function behaviorIds(value: unknown): Set<string> {
+  return new Set(
+    mappings(value).flatMap((record) => (nonEmptyString(record.id) ? [record.id] : [])),
+  );
+}
+
+function sameIdSet(left: Set<string>, right: Set<string>): boolean {
+  return left.size === right.size && [...left].every((value) => right.has(value));
+}
+
+function validateBehaviorTextCase(
+  record: Mapping,
+  source: string,
+  errors: string[],
+  allowActor: boolean,
+): void {
+  const allowed = new Set(["id", "text", "provenance", ...(allowActor ? ["actor"] : [])]);
+  for (const field of Object.keys(record)) {
+    if (!allowed.has(field)) errors.push(`${source}.${field} is not an allowed field`);
+  }
+  for (const field of ["id", "text", "provenance"]) {
+    if (!(field in record)) errors.push(`${source}.${field} is required`);
+  }
+  if (!nonEmptyString(record.id)) errors.push(`${source}.id must be a non-empty string`);
+  if (!nonEmptyString(record.text) || Buffer.byteLength(record.text, "utf8") > 4096) {
+    errors.push(`${source}.text must be a bounded non-empty string`);
+  }
+  if (allowActor && record.actor !== undefined && record.actor !== "user" && record.actor !== "agent") {
+    errors.push(`${source}.actor must be user or agent when supplied`);
+  }
+  validateRecordProvenance(record, source, errors, "synthetic://personal-glossary-evaluation/", true);
+}
+
+function validateBehaviorInferredCase(record: Mapping, source: string, errors: string[]): void {
+  exactFields(record, ["id", "term", "sources", "provenance"], source, errors);
+  if (!nonEmptyString(record.id)) errors.push(`${source}.id must be a non-empty string`);
+  if (!nonEmptyString(record.term) || Buffer.byteLength(record.term, "utf8") > 256) {
+    errors.push(`${source}.term must be a bounded non-empty string`);
+  }
+  if (!Array.isArray(record.sources) || record.sources.length === 0) {
+    errors.push(`${source}.sources must be a non-empty list`);
+  } else {
+    for (const [index, item] of record.sources.entries()) {
+      const sourceRecord = mapping(item);
+      const itemSource = `${source}.sources[${index}]`;
+      if (!sourceRecord) {
+        errors.push(`${itemSource} must be a mapping`);
+        continue;
+      }
+      exactFields(sourceRecord, ["source_kind", "text"], itemSource, errors);
+      if (![
+        "instruction_document",
+        "project_config_signal",
+        "conversation_turn",
+      ].includes(String(sourceRecord.source_kind))) {
+        errors.push(`${itemSource}.source_kind is not supported`);
+      }
+      if (!nonEmptyString(sourceRecord.text) || Buffer.byteLength(sourceRecord.text, "utf8") > 4096) {
+        errors.push(`${itemSource}.text must be a bounded non-empty string`);
+      }
+    }
+  }
+  validateRecordProvenance(record, source, errors, "synthetic://personal-glossary-evaluation/", true);
+}
+
+function validateBehaviorLabelsAbsent(value: unknown, source: string, errors: string[]): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => validateBehaviorLabelsAbsent(item, `${source}[${index}]`, errors));
+    return;
+  }
+  const record = mapping(value);
+  if (!record) return;
+  for (const [key, item] of Object.entries(record)) {
+    if (FORBIDDEN_LABEL_FIELDS.test(key)) {
+      errors.push(`${source}.${key} must not supply a label or observation`);
+    }
+    validateBehaviorLabelsAbsent(item, `${source}.${key}`, errors);
+  }
+}
+
+function validateBehaviorList(
+  fixture: Mapping,
+  holdout: Mapping,
+  key: GlossaryMetricId extends never ? never : "discovery" | "scope" | "inferred_review" | "explicit_admission",
+  validate: (record: Mapping, source: string, errors: string[]) => void,
+  errors: string[],
+): void {
+  const records = fixture[key];
+  if (!Array.isArray(records)) {
+    errors.push(`behavior_fixture.${key} must be a list`);
+    return;
+  }
+  const seen = new Set<string>();
+  for (const [index, item] of records.entries()) {
+    const source = `behavior_fixture.${key}[${index}]`;
+    const record = mapping(item);
+    if (!record) {
+      errors.push(`${source} must be a mapping`);
+      continue;
+    }
+    validate(record, source, errors);
+    if (nonEmptyString(record.id)) {
+      if (seen.has(record.id)) errors.push(`${source}.id is duplicated`);
+      seen.add(record.id);
+    }
+  }
+  const holdoutIds = behaviorIds(holdout[key]);
+  if (!sameIdSet(seen, holdoutIds)) {
+    errors.push(`behavior_fixture.${key} must exactly cover frozen holdout ids`);
+  }
+}
+
+export function validateFrozenGlossaryBehaviorFixture(
+  authority: Mapping,
+  holdout: Mapping,
+  fixture: Mapping,
+  fixtureBytes?: string | Buffer,
+): string[] {
+  const errors: string[] = [];
+  if (fixture.schema_version !== GLOSSARY_BEHAVIOR_FIXTURE_SCHEMA_VERSION) {
+    errors.push("behavior fixture schema_version is invalid");
+  }
+  if (fixture.fixture_id !== "personal-glossary-synthetic-behavior-v1" || fixture.status !== "frozen") {
+    errors.push("behavior fixture must have the frozen synthetic identity");
+  }
+  exactFields(fixture, [
+    "schema_version",
+    "fixture_id",
+    "status",
+    "provenance",
+    "synthetic_record_provenance",
+    "discovery",
+    "scope",
+    "inferred_review",
+    "explicit_admission",
+  ], "behavior_fixture", errors);
+  const provenance = mapping(fixture.provenance);
+  if (
+    provenance?.record_class !== "synthetic" ||
+    provenance?.consent !== "not_required_synthetic" ||
+    provenance?.contains_personal_history !== false ||
+    !nonEmptyString(provenance?.source) ||
+    !nonEmptyString(provenance?.source_ref) ||
+    provenance?.owner !== "evaluation_authority" ||
+    provenance?.privacy_rule !== "no_raw_personal_history_or_transcript_content"
+  ) {
+    errors.push("behavior fixture provenance must identify synthetic privacy-safe product inputs");
+  }
+  if (fixtureBytes !== undefined) {
+    const expected = mapping(mapping(authority.observations)?.behavior_fixture)?.fixture_sha256;
+    if (!isLowerSha256(expected) || sha256(fixtureBytes) !== expected) {
+      errors.push("behavior fixture digest does not match evaluation authority");
+    }
+  }
+  validateBehaviorLabelsAbsent(fixture, "behavior_fixture", errors);
+  validateBehaviorList(fixture, holdout, "discovery", (record, source, caseErrors) => {
+    validateBehaviorTextCase(record, source, caseErrors, false);
+  }, errors);
+  validateBehaviorList(fixture, holdout, "scope", (record, source, caseErrors) => {
+    validateBehaviorTextCase(record, source, caseErrors, true);
+  }, errors);
+  validateBehaviorList(fixture, holdout, "inferred_review", validateBehaviorInferredCase, errors);
+  validateBehaviorList(fixture, holdout, "explicit_admission", (record, source, caseErrors) => {
+    validateBehaviorTextCase(record, source, caseErrors, false);
+  }, errors);
+  return errors;
+}
+
+type ObservationSpec = {
+  key: "discovery" | "scope" | "inferred_review" | "explicit_admission";
+  observedField: string;
+  kind: "boolean" | "scope";
+};
+
+const OBSERVATION_SPECS: readonly ObservationSpec[] = [
+  { key: "discovery", observedField: "observed_discovered", kind: "boolean" },
+  { key: "scope", observedField: "observed_scope", kind: "scope" },
+  { key: "inferred_review", observedField: "observed_reviewed", kind: "boolean" },
+  { key: "explicit_admission", observedField: "observed_admitted", kind: "boolean" },
+];
+
+/** Validate runtime observations after current product behavior has produced them. */
+export function validateGlossaryObservations(
+  authority: Mapping,
+  holdout: Mapping,
+  observations: Mapping,
+): string[] {
+  const errors: string[] = [];
+  if (observations.schema_version !== GLOSSARY_OBSERVATIONS_SCHEMA_VERSION) {
+    errors.push("observations schema_version is invalid");
+  }
+  if (observations.holdout_id !== holdout.holdout_id) {
+    errors.push("observations holdout_id does not match the frozen holdout");
+  }
+  const expectedHoldoutDigest = mapping(authority.holdout)?.fixture_sha256;
+  if (
+    !isLowerSha256(observations.holdout_fixture_sha256) ||
+    observations.holdout_fixture_sha256 !== expectedHoldoutDigest
+  ) {
+    errors.push("observations holdout_fixture_sha256 does not match the frozen holdout digest");
+  }
+  const expectedBehaviorDigest = mapping(mapping(authority.observations)?.behavior_fixture)?.fixture_sha256;
+  if (
+    !isLowerSha256(observations.behavior_fixture_sha256) ||
+    observations.behavior_fixture_sha256 !== expectedBehaviorDigest
+  ) {
+    errors.push("observations behavior_fixture_sha256 does not match the frozen behavior fixture digest");
+  }
+  const allowedTopLevel = new Set([
+    "schema_version",
+    "holdout_id",
+    "holdout_fixture_sha256",
+    "behavior_fixture_sha256",
+    ...OBSERVATION_SPECS.map(({ key }) => key),
+  ]);
+  for (const field of Object.keys(observations)) {
+    if (!allowedTopLevel.has(field)) errors.push(`observations.${field} is not an allowed field`);
+  }
+  const scopeLabels = strings(metricMapping(authority, "scope_accuracy")?.labels);
+  for (const { key, observedField, kind } of OBSERVATION_SPECS) {
+    const expectedIds = behaviorIds(holdout[key]);
+    const records = observations[key];
+    if (!Array.isArray(records)) {
+      errors.push(`observations.${key} must be a list`);
+      continue;
+    }
+    const seen = new Set<string>();
+    for (const [index, value] of records.entries()) {
+      const source = `observations.${key}[${index}]`;
+      const record = mapping(value);
+      if (!record) {
+        errors.push(`${source} must be a mapping`);
+        continue;
+      }
+      exactFields(record, ["id", observedField], source, errors);
+      if (!nonEmptyString(record.id) || !expectedIds.has(record.id)) {
+        errors.push(`${source}.id is unknown to the frozen holdout`);
+      } else if (seen.has(record.id)) {
+        errors.push(`${source}.id is duplicated`);
+      } else {
+        seen.add(record.id);
+      }
+      if (kind === "boolean" && typeof record[observedField] !== "boolean") {
+        errors.push(`${source}.${observedField} must be boolean`);
+      }
+      if (kind === "scope" && !scopeLabels.includes(String(record[observedField] ?? ""))) {
+        errors.push(`${source}.${observedField} is not an allowed scope label`);
+      }
+    }
+    for (const expectedId of expectedIds) {
+      if (!seen.has(expectedId)) errors.push(`observations.${key} is missing frozen id ${expectedId}`);
+    }
+  }
   return errors;
 }
 
@@ -560,28 +890,23 @@ export function wilsonLowerBound(successes: number, denominator: number, confide
     return null;
   }
   const z = ONE_SIDED_95_WILSON_Z;
-  const proportion = successes / denominator;
   const zSquared = z * z;
-  const scale = 1 + zSquared / denominator;
-  const centre = proportion + zSquared / (2 * denominator);
+  const estimate = successes / denominator;
+  const center = estimate + zSquared / (2 * denominator);
   const margin = z * Math.sqrt(
-    (proportion * (1 - proportion)) / denominator + zSquared / (4 * denominator * denominator),
+    estimate * (1 - estimate) / denominator + zSquared / (4 * denominator * denominator),
   );
-  return (centre - margin) / scale;
+  return (center - margin) / (1 + zSquared / denominator);
 }
 
-export function calculateMetric(
+function calculateMetric(
   metric: GlossaryMetricId,
   numerator: number,
   denominator: number,
   rule: MetricRule,
 ): MetricResult {
   const denominatorNonzero = Number.isInteger(denominator) && denominator > 0;
-  const validCounts =
-    denominatorNonzero &&
-    Number.isInteger(numerator) &&
-    numerator >= 0 &&
-    numerator <= denominator;
+  const validCounts = denominatorNonzero && Number.isInteger(numerator) && numerator >= 0 && numerator <= denominator;
   const pointEstimate = validCounts ? numerator / denominator : null;
   const lowerBound = validCounts ? wilsonLowerBound(numerator, denominator, rule.confidence) : null;
   const sampleSufficient = validCounts && denominator >= rule.minimumSampleSize;
@@ -601,6 +926,7 @@ export function calculateMetric(
     uncertainty: {
       method: rule.uncertaintyMethod,
       confidence: rule.confidence,
+      one_sided: true,
       lower_bound: lowerBound,
     },
     thresholds: {
@@ -614,14 +940,9 @@ export function calculateMetric(
       point_threshold: pointThreshold,
       uncertainty_threshold: uncertaintyThreshold,
     },
-    status:
-      denominatorNonzero &&
-      validCounts &&
-      sampleSufficient &&
-      pointThreshold &&
-      uncertaintyThreshold
-        ? "pass"
-        : "fail",
+    status: denominatorNonzero && validCounts && sampleSufficient && pointThreshold && uncertaintyThreshold
+      ? "pass"
+      : "fail",
     failure_reasons: failureReasons,
   };
 }
@@ -675,268 +996,4 @@ export function calculateExplicitAdmissionPrecision(
     admissions.length,
     rule,
   );
-}
-
-function binaryExamples(
-  holdout: Mapping,
-  observations: Mapping,
-  key: string,
-  expected: string,
-  observed: string,
-): BinaryEvaluationExample[] {
-  const records = Array.isArray(holdout[key]) ? holdout[key] : [];
-  const observedRecords = Array.isArray(observations[key]) ? observations[key] : [];
-  const observedById = new Map(
-    observedRecords.flatMap((value) => {
-      const record = mapping(value);
-      return record && nonEmptyString(record.id) ? [[record.id, record]] as const : [];
-    }),
-  );
-  return records.flatMap((value) => {
-    const record = mapping(value);
-    const evaluated = record && nonEmptyString(record.id) ? observedById.get(record.id) : undefined;
-    if (!record || !evaluated || !nonEmptyString(record.id) || typeof record[expected] !== "boolean" || typeof evaluated[observed] !== "boolean") {
-      return [];
-    }
-    return [{ id: record.id, expected: record[expected] as boolean, observed: evaluated[observed] as boolean }];
-  });
-}
-
-function scopeExamples(holdout: Mapping, observations: Mapping): ScopeEvaluationExample[] {
-  const records = Array.isArray(holdout.scope) ? holdout.scope : [];
-  const observedRecords = Array.isArray(observations.scope) ? observations.scope : [];
-  const observedById = new Map(
-    observedRecords.flatMap((value) => {
-      const record = mapping(value);
-      return record && nonEmptyString(record.id) ? [[record.id, record]] as const : [];
-    }),
-  );
-  return records.flatMap((value) => {
-    const record = mapping(value);
-    const evaluated = record && nonEmptyString(record.id) ? observedById.get(record.id) : undefined;
-    if (!record || !evaluated || !nonEmptyString(record.id) || !nonEmptyString(record.expected_scope) || !nonEmptyString(evaluated.observed_scope)) {
-      return [];
-    }
-    return [{ id: record.id, expected: record.expected_scope, observed: evaluated.observed_scope }];
-  });
-}
-
-function metricCounts(results: readonly MetricResult[]): Record<string, number> {
-  return Object.fromEntries(results.map((result) => [result.metric, result.denominator]));
-}
-
-function failureReport(errors: string[], authorityPath: string, holdoutPath: string): JsonObject {
-  return {
-    schemaVersion: GLOSSARY_EVALUATION_SCHEMA_VERSION,
-    status: "fail",
-    report: {
-      exploratory: { release_authorizing: false, status: "not_run" },
-      release_gate: { release_authorizing: true, status: "fail", failure_reasons: errors },
-    },
-    authority: { path: authorityPath },
-    holdout: { path: holdoutPath, status: "not_verified" },
-    metrics: [],
-    gates: {
-      release_authorizing: "fail_closed",
-      inferred_automatic_admission: { status: "disabled", enabled: false },
-    },
-    errors,
-  } as unknown as JsonObject;
-}
-
-function notRunReport(
-  authorityPath: string,
-  holdoutPath: string,
-  holdout: Mapping,
-  fixtureDigest: string,
-): JsonObject {
-  return {
-    schemaVersion: GLOSSARY_EVALUATION_SCHEMA_VERSION,
-    status: "not_run",
-    report: {
-      exploratory: { release_authorizing: false, status: "not_run" },
-      release_gate: {
-        release_authorizing: false,
-        release_authorized: false,
-        status: "not_run",
-        failure_reasons: ["observations_required"],
-      },
-    },
-    authority: { path: authorityPath },
-    holdout: {
-      id: holdout.holdout_id,
-      status: holdout.status,
-      fixture_sha256: fixtureDigest,
-      case_counts: {
-        discovery: Array.isArray(holdout.discovery) ? holdout.discovery.length : 0,
-        scope: Array.isArray(holdout.scope) ? holdout.scope.length : 0,
-        inferred_review: Array.isArray(holdout.inferred_review) ? holdout.inferred_review.length : 0,
-        explicit_admission: Array.isArray(holdout.explicit_admission) ? holdout.explicit_admission.length : 0,
-      },
-    },
-    observations: { status: "not_supplied" },
-    metrics: [],
-    gates: {
-      release_authorizing: "not_run",
-      inferred_automatic_admission: { status: "disabled", enabled: false, measured_result: "cannot_enable" },
-    },
-  } as unknown as JsonObject;
-}
-
-function observationPath(root: string, supplied: string): string {
-  return path.isAbsolute(supplied) ? path.resolve(supplied) : path.resolve(root, supplied);
-}
-
-export function evaluateGlossaryHoldout(
-  root: string = resolveSourceRoot(),
-  observationsPath?: string,
-): JsonObject {
-  const authorityPath = glossaryEvaluationAuthorityPath(root);
-  let authority: Mapping;
-  try {
-    authority = loadYamlMappingFile(authorityPath);
-  } catch (error) {
-    return failureReport([`cannot load evaluation authority: ${(error as Error).message}`], authorityPath, glossaryEvaluationHoldoutPath(root));
-  }
-  const authorityErrors = validateGlossaryEvaluationAuthority(authority);
-  const holdoutRelative = mapping(authority.holdout)?.path;
-  const holdoutPath = nonEmptyString(holdoutRelative) ? sourcePath(root, holdoutRelative) : null;
-  if (!holdoutPath) {
-    return failureReport([...authorityErrors, "evaluation authority holdout path is outside the source root"], authorityPath, glossaryEvaluationHoldoutPath(root));
-  }
-  let fixtureBytes: Buffer;
-  let holdout: Mapping;
-  try {
-    fixtureBytes = fs.readFileSync(holdoutPath);
-    holdout = loadYamlMappingFile(holdoutPath);
-  } catch (error) {
-    return failureReport([...authorityErrors, `cannot load frozen holdout: ${(error as Error).message}`], authorityPath, holdoutPath);
-  }
-  const holdoutErrors = validateFrozenGlossaryHoldout(authority, holdout, fixtureBytes);
-  const errors = [...authorityErrors, ...holdoutErrors];
-  if (errors.length > 0) return failureReport(errors, authorityPath, holdoutPath);
-
-  const fixtureDigest = sha256(fixtureBytes);
-  if (!observationsPath) return notRunReport(authorityPath, holdoutPath, holdout, fixtureDigest);
-
-  const suppliedObservationsPath = observationPath(root, observationsPath);
-  let observations: Mapping;
-  let observationsBytes: Buffer;
-  try {
-    const canonicalObservationsPath = glossaryEvaluationObservationsPath(root);
-    observationsBytes = suppliedObservationsPath === canonicalObservationsPath
-      ? fs.readFileSync(canonicalObservationsPath)
-      : fs.readFileSync(suppliedObservationsPath);
-    observations = suppliedObservationsPath === canonicalObservationsPath
-      ? loadYamlMappingFile(canonicalObservationsPath)
-      : loadYamlMappingFile(suppliedObservationsPath);
-  } catch (error) {
-    return failureReport(
-      [`cannot load evaluated observations: ${(error as Error).message}`],
-      authorityPath,
-      holdoutPath,
-    );
-  }
-  const observationErrors = validateGlossaryObservations(authority, holdout, observations);
-  if (observationErrors.length > 0) {
-    return failureReport(observationErrors, authorityPath, holdoutPath);
-  }
-
-  const results = [
-    calculateDiscoveryRecall(
-      binaryExamples(holdout, observations, "discovery", "expected_discoverable", "observed_discovered"),
-      metricRule(authority, "discovery_recall"),
-    ),
-    calculateScopeAccuracy(scopeExamples(holdout, observations), metricRule(authority, "scope_accuracy")),
-    calculateInferredReviewPrecision(
-      binaryExamples(holdout, observations, "inferred_review", "expected_reviewable", "observed_reviewed"),
-      metricRule(authority, "inferred_review_precision"),
-    ),
-    calculateExplicitAdmissionPrecision(
-      binaryExamples(holdout, observations, "explicit_admission", "expected_admissible", "observed_admitted"),
-      metricRule(authority, "explicit_admission_precision"),
-    ),
-  ];
-  const inferredAutomaticAdmission = mapping(mapping(authority.gates)?.inferred_automatic_admission);
-  const autoAdmissionDisabled = inferredAutomaticAdmission?.status === "disabled";
-  const metricsPass = results.every((result) => result.status === "pass");
-  const releaseGatePass = metricsPass && autoAdmissionDisabled;
-  return {
-    schemaVersion: GLOSSARY_EVALUATION_SCHEMA_VERSION,
-    status: releaseGatePass ? "pass" : "fail",
-    report: {
-      exploratory: {
-        release_authorizing: false,
-        status: "report_only",
-        metrics: results,
-      },
-      release_gate: {
-        release_authorizing: true,
-        release_authorized: releaseGatePass,
-        status: releaseGatePass ? "pass" : "fail",
-        requirements: {
-          frozen_holdout_digest_matches_authority: true,
-          observations_exactly_cover_frozen_ids: true,
-          every_metric_has_a_nonzero_denominator: results.every((result) => result.gates.denominator_nonzero),
-          every_metric_meets_minimum_sample_size: results.every((result) => result.gates.sample_sufficient),
-          every_metric_meets_point_threshold: results.every((result) => result.gates.point_threshold),
-          every_metric_meets_uncertainty_threshold: results.every((result) => result.gates.uncertainty_threshold),
-          inferred_automatic_admission_remains_disabled: autoAdmissionDisabled,
-        },
-      },
-    },
-    authority: {
-      schema_version: authority.schema_version,
-      sha256: sha256(fs.readFileSync(authorityPath)),
-      path: authorityPath,
-    },
-    holdout: {
-      id: holdout.holdout_id,
-      status: holdout.status,
-      fixture_sha256: sha256(fixtureBytes),
-      provenance: holdout.provenance as JsonObject,
-      case_counts: {
-        discovery: Array.isArray(holdout.discovery) ? holdout.discovery.length : 0,
-        scope: Array.isArray(holdout.scope) ? holdout.scope.length : 0,
-        inferred_review: Array.isArray(holdout.inferred_review) ? holdout.inferred_review.length : 0,
-        explicit_admission: Array.isArray(holdout.explicit_admission) ? holdout.explicit_admission.length : 0,
-      },
-    },
-    observations: {
-      schema_version: observations.schema_version,
-      path: suppliedObservationsPath,
-      sha256: sha256(observationsBytes),
-      holdout_fixture_sha256: observations.holdout_fixture_sha256,
-    },
-    metrics: results,
-    gates: {
-      explicit_admission: {
-        metric: "explicit_admission_precision",
-        status: results[3].status,
-        outcome: "explicit_automatic_admission_only",
-      },
-      inferred_review: {
-        metric: "inferred_review_precision",
-        status: results[2].status,
-        outcome: "review_suggestions_only",
-      },
-      inferred_automatic_admission: {
-        status: "disabled",
-        enabled: false,
-        measured_result: "cannot_enable",
-      },
-      release_authorizing: releaseGatePass ? "pass" : "fail_closed",
-    },
-    denominator_counts: metricCounts(results),
-  } as unknown as JsonObject;
-}
-
-export function main(
-  observationsPath?: string,
-  out: (line: string) => void = (line) => process.stdout.write(line),
-  root: string = resolveSourceRoot(),
-): number {
-  const report = evaluateGlossaryHoldout(root, observationsPath);
-  out(JSON.stringify(report, null, 2) + "\n");
-  return report.status === "pass" ? 0 : 1;
 }

@@ -5,7 +5,7 @@ record:
   depends_on:
     - ekgowckdus
     - wjzgtphdwk
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the frozen holdout WHEN evaluation runs THEN discovery recall, scope accuracy, review precision, and explicit admission precision report separately.
     - GIVEN repeated evaluation of one corpus and policy WHEN metrics produce THEN labels, provenance, denominators, uncertainty, and results reproduce.
@@ -13,3 +13,18 @@ record:
     - GIVEN inferred suggestions meet or miss threshold WHEN evaluation completes THEN results show while inferred auto-admission stays disabled.
     - GIVEN each metric and threshold rule WHEN regressions run THEN one pass and one fail cover it.
   plan: bcpkchatfu
+  evidence:
+    - Frozen label-free synthetic corpus executes through current explicit mining, recurring mining, and V2 CLI decision seams; immutable labels join only after exact-ID validated observations.
+    - "Canonical metrics: discovery 20/20; scope 20/20; inferred review 19/20 with one-sided lower bound 0.8039927632259837; explicit admission 99/100 with lower bound 0.9564182264659439; metrics_sha256 de930e006d6cfc7392a1b54ec014e843d59793e790709f9136364b8bda5512cc."
+    - Realistic deprecation and opt-out negatives expose false positives. Changed behavior with unchanged labels fails copied packaged qualification nonzero with no bundle or project effects; inferred automatic admission remains disabled.
+    - "Verified: source 3,913 passed/1 skipped; package 37 passed; typecheck/build; local glossary verify; retained-reference, activation-conjunction, and compact checks; final independent Audit PASS."
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Audit session ses_015bb75c3ffezNWmgUhoyyW1fG final targeted verification
+      recorded_at: 2026-08-10 09:49
+      writer_command: agentera state plan record-evaluation

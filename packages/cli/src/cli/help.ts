@@ -363,7 +363,7 @@ export function stateCommandNames(): string[] {
 export function printCheckHelp(sub?: string): string {
   if (sub === "verify") {
     return [
-       "usage: agentera check verify [-h] eval {skills,semantic,routing,glossary} [--observations PATH] [--format text|json] [options]",
+        "usage: agentera check verify [-h] eval {skills,semantic,routing,glossary} [--format text|json] [options]",
       "",
       "Evaluation verify gates. Smoke verify is retired on the npm self-contained CLI;",
       "use the stable Python line for smoke maintainer harnesses.",

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,9 +17,11 @@ import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/a
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlossaryExplicitMining.js";
 import { main } from "../../src/cli/dispatch.js";
+import { setGlossaryEvaluationRunnerForTest } from "../../src/eval/glossaryEvaluationProcess.js";
 import { printReportHelp } from "../../src/cli/help.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
+import { sourceGlossaryEvaluationRunnerPath } from "../helpers/sourceSubprocess.js";
 import {
   createGlossaryEvidenceCapsule,
   createGlossaryHostClassificationReceipt,
@@ -34,6 +37,9 @@ import {
 } from "../../src/registries/glossaryCandidateDecisionAuthority.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
+const SOURCE_BUILD_RUNNER = sourceGlossaryEvaluationRunnerPath();
+const SOURCE_BUILD_RUNNER_URL = pathToFileURL(SOURCE_BUILD_RUNNER).href;
+setGlossaryEvaluationRunnerForTest(SOURCE_BUILD_RUNNER);
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const AUTHORITY_PATH = path.join(ROOT, "references/artifacts/glossary-entry-contract.yaml");
 const DECISION_COMMAND_SOURCE = path.join(
@@ -59,6 +65,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setGlossaryEvaluationRunnerForTest(SOURCE_BUILD_RUNNER);
   if (previousProfileDir === undefined) delete process.env.AGENTERA_PROFILE_DIR;
   else process.env.AGENTERA_PROFILE_DIR = previousProfileDir;
   if (previousProfileraProfileDir === undefined) delete process.env.PROFILERA_PROFILE_DIR;
@@ -258,22 +265,74 @@ function unavailableExplicitFixture(): { capsule: GlossaryEvidenceCapsule; proje
   return { capsule, projection: persist([capsule]) };
 }
 
-function failingQualityGateRoot(): string {
+function qualityGateRoot(): string {
   const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "personal-glossary-quality-gate-"));
   const analysis = path.join(sourceRoot, "references", "analysis");
   fs.mkdirSync(analysis, { recursive: true });
   for (const name of [
     "personal-glossary-evaluation-authority.yaml",
     "personal-glossary-holdout.yaml",
-    "personal-glossary-observations.yaml",
+    "personal-glossary-evaluation-corpus.yaml",
   ]) {
     fs.copyFileSync(path.join(ROOT, "references", "analysis", name), path.join(analysis, name));
   }
-  const observationsPath = path.join(analysis, "personal-glossary-observations.yaml");
-  const observations = YAML.parse(fs.readFileSync(observationsPath, "utf8")) as Record<string, unknown>;
-  (observations.discovery as unknown[]).pop();
-  fs.writeFileSync(observationsPath, YAML.stringify(observations), "utf8");
+  const artifactPath = path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml");
+  fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
+  fs.copyFileSync(path.join(ROOT, "references", "artifacts", "glossary-entry-contract.yaml"), artifactPath);
+  fs.copyFileSync(
+    path.join(ROOT, "references", "analysis", "evidence-tier-authority.yaml"),
+    path.join(analysis, "evidence-tier-authority.yaml"),
+  );
   return sourceRoot;
+}
+
+function failingQualityGateRoot(): string {
+  const sourceRoot = qualityGateRoot();
+  fs.appendFileSync(
+    path.join(sourceRoot, "references", "analysis", "personal-glossary-evaluation-corpus.yaml"),
+    "\n# fixture drift\n",
+  );
+  return sourceRoot;
+}
+
+function useEvaluationRunner(sourceRoot: string, source: string): void {
+  const runner = path.join(sourceRoot, "glossary-evaluation-test-runner.mjs");
+  fs.writeFileSync(runner, source, "utf8");
+  setGlossaryEvaluationRunnerForTest(runner);
+}
+
+function evaluatedReportRunner(exitCode: number, mutate = ""): string {
+  return [
+    "process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = process.argv[2] ?? \"\";",
+    `const { evaluateGlossaryHoldout } = await import(${JSON.stringify(SOURCE_BUILD_RUNNER_URL)});`,
+    "const report = evaluateGlossaryHoldout(process.argv[2]);",
+    mutate,
+    "process.stdout.write(JSON.stringify(report));",
+    `process.exitCode = ${exitCode};`,
+  ].join("\n");
+}
+
+function minimalPassShapedRunner(): string {
+  return `process.stdout.write(${JSON.stringify(JSON.stringify({
+    schemaVersion: "agentera.personalGlossaryEvaluation.v1",
+    status: "pass",
+    gates: {
+      release_authorizing: "pass",
+      explicit_admission: { status: "pass" },
+    },
+  }))});`;
+}
+
+function expectQualityGateBlocked(
+  capsule: GlossaryEvidenceCapsule,
+  projection: PersonalGlossaryCandidateProjection,
+  sourceRoot: string,
+): void {
+  expect(decidePersonalGlossaryCandidate(receiptFor(capsule, projection), { sourceRoot })).toMatchObject({
+    status: "review_required",
+    reason: "quality_gate_not_authorizing",
+    decision: { outcome: "review_required" },
+  });
 }
 
 function invalidDecisionAuthorityRoot(): string {
@@ -699,6 +758,72 @@ describe("agentera report personal-glossary-decision", () => {
     expectNoEffects(before);
   });
 
+  it("invalidates a cached quality gate when its frozen behavior fixture changes", () => {
+    const { capsule, projection } = explicitFixture();
+    const sourceRoot = qualityGateRoot();
+    try {
+      const receipt = receiptFor(capsule, projection);
+      expect(decidePersonalGlossaryCandidate(receipt, { sourceRoot })).toMatchObject({
+        status: "automatic_admission",
+        reason: "explicit_current_authorized",
+      });
+      fs.appendFileSync(
+        path.join(sourceRoot, "references", "analysis", "personal-glossary-evaluation-corpus.yaml"),
+        "\n# fixture drift\n",
+      );
+      expect(decidePersonalGlossaryCandidate(receipt, { sourceRoot })).toMatchObject({
+        status: "review_required",
+        reason: "quality_gate_not_authorizing",
+      });
+    } finally {
+      fs.rmSync(sourceRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed when a valid-looking evaluator report exits nonzero and never caches its pass", () => {
+    const { capsule, projection } = explicitFixture();
+    const sourceRoot = qualityGateRoot();
+    try {
+      useEvaluationRunner(sourceRoot, evaluatedReportRunner(1));
+      expectQualityGateBlocked(capsule, projection, sourceRoot);
+
+      // A cached pass from the nonzero child would bypass this invalid second report.
+      useEvaluationRunner(sourceRoot, minimalPassShapedRunner());
+      expectQualityGateBlocked(capsule, projection, sourceRoot);
+    } finally {
+      fs.rmSync(sourceRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("fails closed when a zero-exit evaluator report has stale authority bindings", () => {
+    const { capsule, projection } = explicitFixture();
+    const sourceRoot = qualityGateRoot();
+    try {
+      useEvaluationRunner(
+        sourceRoot,
+        evaluatedReportRunner(0, 'report.authority.sha256 = "0".repeat(64);'),
+      );
+      expectQualityGateBlocked(capsule, projection, sourceRoot);
+    } finally {
+      fs.rmSync(sourceRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("authorizes only a zero-exit complete current evaluator report", () => {
+    const { capsule, projection } = explicitFixture();
+    const sourceRoot = qualityGateRoot();
+    try {
+      setGlossaryEvaluationRunnerForTest(SOURCE_BUILD_RUNNER);
+      expect(decidePersonalGlossaryCandidate(receiptFor(capsule, projection), { sourceRoot })).toMatchObject({
+        status: "automatic_admission",
+        reason: "explicit_current_authorized",
+        decision: { outcome: "automatic_admission" },
+      });
+    } finally {
+      fs.rmSync(sourceRoot, { recursive: true, force: true });
+    }
+  });
+
   it("keeps high-confidence inferred candidates and semantic uncertainty out of automatic admission", () => {
     const inferred = inferredFixture();
     expect(decidePersonalGlossaryCandidate(receiptFor(inferred.capsule, inferred.projection))).toMatchObject({
@@ -813,20 +938,7 @@ describe("agentera report personal-glossary-decision", () => {
 
   it("fails the explicit automatic path when the quality gate is not authorizing", () => {
     const { capsule, projection } = explicitFixture();
-    const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "personal-glossary-quality-gate-"));
-    const analysis = path.join(sourceRoot, "references", "analysis");
-    fs.mkdirSync(analysis, { recursive: true });
-    for (const name of [
-      "personal-glossary-evaluation-authority.yaml",
-      "personal-glossary-holdout.yaml",
-      "personal-glossary-observations.yaml",
-    ]) {
-      fs.copyFileSync(path.join(ROOT, "references", "analysis", name), path.join(analysis, name));
-    }
-    const observationsPath = path.join(analysis, "personal-glossary-observations.yaml");
-    const observations = YAML.parse(fs.readFileSync(observationsPath, "utf8")) as Record<string, unknown>;
-    (observations.discovery as unknown[]).pop();
-    fs.writeFileSync(observationsPath, YAML.stringify(observations), "utf8");
+    const sourceRoot = failingQualityGateRoot();
     try {
       expect(decidePersonalGlossaryCandidate(receiptFor(capsule, projection), { sourceRoot })).toMatchObject({
         status: "review_required",

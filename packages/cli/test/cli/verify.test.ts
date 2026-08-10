@@ -9,15 +9,14 @@ import {
   validateVerifyRequest,
   VerifyArgs,
 } from "../../src/cli/commands/verify.js";
+import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
+import { setGlossaryEvaluationRunnerForTest } from "../../src/eval/glossaryEvaluationProcess.js";
+import { sourceGlossaryEvaluationRunnerPath } from "../helpers/sourceSubprocess.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+setGlossaryEvaluationRunnerForTest(sourceGlossaryEvaluationRunnerPath());
 const SEMANTIC_FIXTURE = path.join(repoRoot, "fixtures", "semantic", "status-bare-message.md");
-const GLOSSARY_OBSERVATIONS = path.join(
-  repoRoot,
-  "references",
-  "analysis",
-  "personal-glossary-observations.yaml",
-);
+const GLOSSARY_METRICS_SHA256 = "de930e006d6cfc7392a1b54ec014e843d59793e790709f9136364b8bda5512cc";
 
 function run(args: VerifyArgs): { rc: number; out: string; err: string } {
   let out = "";
@@ -89,6 +88,7 @@ describe("cmdVerify", () => {
     expect(payload.family).toBe("eval");
     expect(payload.target).toBe("semantic");
     expect(payload.engine.exit_code).toBe(0);
+    expect(payload).not.toHaveProperty("glossary_evaluation");
     // diagnostics capture the engine's JSON report (ensure_ascii escaped)
     expect(payload.diagnostics.stdout.join("\n")).toContain('"status": "pass"');
   });
@@ -101,11 +101,11 @@ describe("cmdVerify", () => {
     expect(payload.safety.mode).toBe("dry-run");
   });
 
-  it("runs the frozen personal glossary evaluation gate in-process", () => {
+  it("runs the frozen personal glossary product evaluation gate in-process", () => {
+    expect(requiresCompletedEntityCutover(["check", "verify", "eval", "glossary"])).toBe(false);
     const { rc, out } = run({
       family: "eval",
       target: "glossary",
-      observations: GLOSSARY_OBSERVATIONS,
       format: "json",
     });
     expect(rc).toBe(0);
@@ -113,15 +113,18 @@ describe("cmdVerify", () => {
     expect(payload.status).toBe("pass");
     expect(payload.target).toBe("glossary");
     expect(payload.safety.mode).toBe("offline-frozen-holdout");
+    expect(payload.safety.summary).toContain("current glossary discovery");
+    expect(payload.glossary_evaluation).toMatchObject({
+      metrics_sha256: GLOSSARY_METRICS_SHA256,
+      metrics: [
+        { metric: "discovery_recall", numerator: 20, denominator: 20, point_estimate: 1, status: "pass" },
+        { metric: "scope_accuracy", numerator: 20, denominator: 20, point_estimate: 1, status: "pass" },
+        { metric: "inferred_review_precision", numerator: 19, denominator: 20, point_estimate: 0.95, status: "pass" },
+        { metric: "explicit_admission_precision", numerator: 99, denominator: 100, point_estimate: 0.99, status: "pass" },
+      ],
+    });
+    expect(payload.glossary_evaluation.metrics).toHaveLength(4);
     expect(payload.diagnostics.stdout.join("\n")).toContain('"status": "pass"');
-  });
-
-  it("reports glossary verification as not run when observations are omitted", () => {
-    const { rc, out } = run({ family: "eval", target: "glossary", format: "json" });
-    expect(rc).toBe(1);
-    const payload = JSON.parse(out);
-    expect(payload.status).toBe("fail");
-    expect(payload.diagnostics.stdout.join("\n")).toContain('"status": "not_run"');
   });
 
   it("does not allow a caller-supplied fixture to replace the frozen holdout", () => {
@@ -144,5 +147,24 @@ describe("buildVerifyPayload", () => {
     );
     expect(payload.diagnostics.stdout.length).toBe(21); // 20 + truncation marker
     expect(payload.diagnostics.stdout[20]).toContain("truncated 30 line(s)");
+  });
+
+  it("fails closed when a successful glossary engine report is invalid", () => {
+    const payload = buildVerifyPayload(
+      "eval",
+      "glossary",
+      "json",
+      {
+        command: ["x"],
+        returncode: 0,
+        stdout: JSON.stringify({ schemaVersion: "agentera.personalGlossaryEvaluation.v1", status: "pass" }),
+        stderr: "",
+      },
+      { mode: "offline-frozen-holdout", summary: "s", live: false, long_running_default: false },
+    );
+    expect(payload.status).toBe("fail");
+    expect(payload.engine.exit_code).toBe(1);
+    expect(payload).not.toHaveProperty("glossary_evaluation");
+    expect(payload.diagnostics.stderr).toEqual(["invalid glossary evaluation success report"]);
   });
 });

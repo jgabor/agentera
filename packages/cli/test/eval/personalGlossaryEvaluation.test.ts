@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,10 +11,12 @@ import {
   calculateExplicitAdmissionPrecision,
   calculateInferredReviewPrecision,
   calculateScopeAccuracy,
-  evaluateGlossaryHoldout,
+  canonicalDigest,
   GLOSSARY_METRIC_IDS,
   loadGlossaryEvaluationAuthority,
+  loadGlossaryEvaluationBehaviorFixture,
   metricRule,
+  validateFrozenGlossaryBehaviorFixture,
   validateFrozenGlossaryHoldout,
   validateGlossaryEvaluationAuthority,
   validateGlossaryObservations,
@@ -21,28 +24,33 @@ import {
   type BinaryEvaluationExample,
   type ScopeEvaluationExample,
 } from "../../src/eval/glossaryEvaluation.js";
+import { validateGlossaryEvaluationSuccessReport } from "../../src/eval/glossaryEvaluationSuccessReport.js";
+import {
+  evaluateGlossaryBehavior,
+  evaluateGlossaryHoldout,
+  main,
+} from "../../src/eval/glossaryEvaluationRunner.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
-const AUTHORITY_PATH = path.join(
-  ROOT,
-  "references/analysis/personal-glossary-evaluation-authority.yaml",
-);
-const HOLDOUT_PATH = path.join(ROOT, "references/analysis/personal-glossary-holdout.yaml");
-const OBSERVATIONS_PATH = path.join(ROOT, "references/analysis/personal-glossary-observations.yaml");
-
+const ANALYSIS = path.join(ROOT, "references", "analysis");
+const AUTHORITY_PATH = path.join(ANALYSIS, "personal-glossary-evaluation-authority.yaml");
+const HOLDOUT_PATH = path.join(ANALYSIS, "personal-glossary-holdout.yaml");
+const BEHAVIOR_PATH = path.join(ANALYSIS, "personal-glossary-evaluation-corpus.yaml");
 const temporaryRoots: string[] = [];
+
 afterEach(() => {
   for (const root of temporaryRoots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
+
+function sha256(bytes: string | Buffer): string {
+  return crypto.createHash("sha256").update(bytes).digest("hex");
+}
 
 function authority() {
   return loadGlossaryEvaluationAuthority(ROOT);
 }
 
-function binaryExamples(
-  count: number,
-  successes: number,
-): BinaryEvaluationExample[] {
+function binaryExamples(count: number, successes: number): BinaryEvaluationExample[] {
   return Array.from({ length: count }, (_, index) => ({
     id: `case-${index}`,
     expected: true,
@@ -74,72 +82,221 @@ function admissionExamples(count: number, successes: number): BinaryEvaluationEx
   }));
 }
 
-function tempRootWithCopiedAuthority(): string {
+function copiedEvaluationRoot(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "personal-glossary-evaluation-"));
   temporaryRoots.push(root);
-  fs.mkdirSync(path.join(root, "references", "analysis"), { recursive: true });
-  fs.copyFileSync(AUTHORITY_PATH, path.join(root, "references/analysis/personal-glossary-evaluation-authority.yaml"));
-  fs.copyFileSync(HOLDOUT_PATH, path.join(root, "references/analysis/personal-glossary-holdout.yaml"));
-  fs.copyFileSync(OBSERVATIONS_PATH, path.join(root, "references/analysis/personal-glossary-observations.yaml"));
+  const analysis = path.join(root, "references", "analysis");
+  fs.mkdirSync(analysis, { recursive: true });
+  for (const name of [
+    "personal-glossary-evaluation-authority.yaml",
+    "personal-glossary-holdout.yaml",
+    "personal-glossary-evaluation-corpus.yaml",
+  ]) {
+    fs.copyFileSync(path.join(ANALYSIS, name), path.join(analysis, name));
+  }
   return root;
 }
 
-describe("personal glossary evaluation authority", () => {
-  it("validates the active authority and keeps all four metric denominators separate", () => {
-    const raw = authority();
-    expect(validateGlossaryEvaluationAuthority(raw)).toEqual([]);
-    const metrics = raw.metrics as Record<string, Record<string, unknown>>;
-    expect(metrics.discovery_recall.denominator).toBe("count_expected_discoverable_true");
-    expect(metrics.scope_accuracy.denominator).toBe("count_all_scope_labeled_examples");
-    expect(metrics.inferred_review_precision.denominator).toBe("count_observed_reviewed_true");
-    expect(metrics.explicit_admission_precision.denominator).toBe("count_observed_admitted_true");
-    expect(new Set(Object.values(metrics).map((metric) => metric.denominator)).size).toBe(4);
-    expect(metrics.discovery_recall.minimum_sample_size).toBe(20);
-    expect(metrics.scope_accuracy.point_estimate_minimum).toBe(0.95);
-    expect(metrics.inferred_review_precision.point_estimate_minimum).toBe(0.95);
-    expect(metrics.explicit_admission_precision.point_estimate_minimum).toBe(0.99);
-    expect(
-      (metrics.explicit_admission_precision.uncertainty as Record<string, unknown>).lower_bound_minimum,
-    ).toBe(0.9);
-  });
+function updateBehaviorDigest(root: string): void {
+  const authorityPath = path.join(root, "references", "analysis", "personal-glossary-evaluation-authority.yaml");
+  const behaviorPath = path.join(root, "references", "analysis", "personal-glossary-evaluation-corpus.yaml");
+  const authorityRecord = YAML.parse(fs.readFileSync(authorityPath, "utf8")) as Record<string, any>;
+  authorityRecord.observations.behavior_fixture.fixture_sha256 = sha256(fs.readFileSync(behaviorPath));
+  fs.writeFileSync(authorityPath, YAML.stringify(authorityRecord), "utf8");
+}
 
-  it("requires observations before it can authorize a release gate", () => {
-    const report = evaluateGlossaryHoldout(ROOT);
-    expect(report).toMatchObject({
-      status: "not_run",
-      report: { release_gate: { release_authorizing: false, status: "not_run" } },
-      observations: { status: "not_supplied" },
-    });
-    expect(report.metrics).toEqual([]);
-  });
+function observationsFor(holdout: Record<string, any>, behaviorBytes: Buffer): Record<string, any> {
+  const execution = evaluateGlossaryBehavior(loadGlossaryEvaluationBehaviorFixture(ROOT));
+  return {
+    schema_version: "agentera.personalGlossaryEvaluationObservations.v2",
+    holdout_id: holdout.holdout_id,
+    holdout_fixture_sha256: sha256(fs.readFileSync(HOLDOUT_PATH)),
+    behavior_fixture_sha256: sha256(behaviorBytes),
+    discovery: execution.discovery,
+    scope: execution.scope,
+    inferred_review: execution.inferred_review,
+    explicit_admission: execution.explicit_admission,
+  };
+}
 
-  it("runs the frozen synthetic corpus as a passing release-gate evaluation", () => {
-    const report = evaluateGlossaryHoldout(ROOT, OBSERVATIONS_PATH);
-    expect(report).toMatchObject({
-      schemaVersion: "agentera.personalGlossaryEvaluation.v1",
+describe("personal glossary product evaluation", () => {
+  it("runs frozen synthetic inputs through current production seams reproducibly", () => {
+    const rawAuthority = authority();
+    const holdout = YAML.parse(fs.readFileSync(HOLDOUT_PATH, "utf8")) as Record<string, unknown>;
+    const behavior = loadGlossaryEvaluationBehaviorFixture(ROOT);
+    expect(validateGlossaryEvaluationAuthority(rawAuthority)).toEqual([]);
+    expect(validateFrozenGlossaryHoldout(rawAuthority, holdout, fs.readFileSync(HOLDOUT_PATH))).toEqual([]);
+    expect(validateFrozenGlossaryBehaviorFixture(rawAuthority, holdout, behavior, fs.readFileSync(BEHAVIOR_PATH))).toEqual([]);
+    expect(JSON.stringify(behavior)).not.toMatch(/expected_|observed_|"labels"/u);
+
+    const first = evaluateGlossaryHoldout(ROOT);
+    const second = evaluateGlossaryHoldout(ROOT);
+    expect(second).toEqual(first);
+    expect(first).toMatchObject({
       status: "pass",
+      policy: { path: "references/artifacts/glossary-entry-contract.yaml", sha256: expect.stringMatching(/^[a-f0-9]{64}$/u) },
       holdout: {
         status: "frozen",
+        labels_sha256: expect.stringMatching(/^[a-f0-9]{64}$/u),
+        provenance: { record_class: "synthetic", contains_personal_history: false },
         case_counts: { discovery: 20, scope: 20, inferred_review: 21, explicit_admission: 100 },
       },
-      report: { release_gate: { release_authorizing: true, status: "pass" } },
-      gates: { inferred_automatic_admission: { status: "disabled", enabled: false } },
+      behavior_fixture: {
+        status: "frozen",
+        provenance: { record_class: "synthetic", contains_personal_history: false },
+      },
+      observations: {
+        source: "current_product_behavior",
+        effects: [],
+        seams: [
+          { producer: "mineExplicitGlossaryCandidates" },
+          { producer: "mineExplicitGlossaryCandidates" },
+          { producer: "mineRecurringGlossaryCandidates+personalGlossaryDecision.v2" },
+          { producer: "mineExplicitGlossaryCandidates+personalGlossaryDecision.v2" },
+        ],
+      },
+      gates: {
+        explicit_admission: { status: "pass", qualification_blocker: true },
+        inferred_review: { status: "pass", outcome: "review_suggestions_only" },
+        inferred_automatic_admission: { status: "disabled", enabled: false },
+        release_authorizing: "pass",
+      },
     });
-    const metrics = report.metrics as Array<Record<string, unknown>>;
-    expect(metrics).toHaveLength(4);
-    expect(metrics.every((metric) => metric.status === "pass")).toBe(true);
+    const metrics = first.metrics as Array<Record<string, any>>;
+    expect(first.metrics_sha256).toBe(canonicalDigest(metrics));
+    expect(validateGlossaryEvaluationSuccessReport({ returncode: 0, stdout: JSON.stringify(first) }, ROOT)).toEqual({
+      metrics,
+      metrics_sha256: first.metrics_sha256,
+    });
+    const stale = structuredClone(first) as Record<string, any>;
+    stale.authority.sha256 = "0".repeat(64);
+    expect(validateGlossaryEvaluationSuccessReport({ returncode: 0, stdout: JSON.stringify(stale) }, ROOT)).toBeNull();
+    expect(metrics[0]).toMatchObject({ metric: "discovery_recall", numerator: 20, denominator: 20, point_estimate: 1, status: "pass" });
+    expect(metrics[1]).toMatchObject({ metric: "scope_accuracy", numerator: 20, denominator: 20, point_estimate: 1, status: "pass" });
+    expect(metrics[2]).toMatchObject({ metric: "inferred_review_precision", numerator: 19, denominator: 20, point_estimate: 0.95, uncertainty: { one_sided: true, lower_bound: 0.8039927632259837 }, status: "pass" });
+    expect(metrics[3]).toMatchObject({ metric: "explicit_admission_precision", numerator: 99, denominator: 100, point_estimate: 0.99, uncertainty: { one_sided: true, lower_bound: 0.9564182264659439 }, status: "pass" });
+    expect(JSON.stringify(first)).not.toContain("synthetic automatic meaning 001");
+    expect(JSON.stringify(first)).not.toContain(os.tmpdir());
+
+    const labels = holdout as Record<string, Array<Record<string, unknown>>>;
+    expect(labels.inferred_review.find(({ id }) => id === "review-20")?.expected_reviewable).toBe(false);
+    expect(labels.explicit_admission.find(({ id }) => id === "admission-100")?.expected_admissible).toBe(false);
+    expect((behavior.inferred_review as Array<Record<string, any>>).find(({ id }) => id === "review-20")?.sources)
+      .toEqual(expect.arrayContaining([expect.objectContaining({ text: expect.stringContaining("deprecated") })]));
+    expect((behavior.explicit_admission as Array<Record<string, unknown>>).find(({ id }) => id === "admission-100")?.text)
+      .toContain("exclude this legacy alias");
+    const execution = evaluateGlossaryBehavior(behavior);
+    expect(execution.inferred_review.map(({ id }) => id)).toEqual(
+      (behavior.inferred_review as Array<Record<string, unknown>>).map(({ id }) => id),
+    );
+    // The 100 admission cases exceed one projection's 50-candidate contract bound.
+    expect(execution.explicit_admission.map(({ id }) => id)).toEqual(
+      (behavior.explicit_admission as Array<Record<string, unknown>>).map(({ id }) => id),
+    );
+    expect(execution.inferred_review.find(({ id }) => id === "review-20")).toEqual({ id: "review-20", observed_reviewed: true });
+    expect(execution.explicit_admission.find(({ id }) => id === "admission-100")).toEqual({ id: "admission-100", observed_admitted: true });
+  });
+
+  it("fails the explicit qualification gate from changed product observations without relabeling", () => {
+    const root = copiedEvaluationRoot();
+    const holdoutPath = path.join(root, "references", "analysis", "personal-glossary-holdout.yaml");
+    const behaviorPath = path.join(root, "references", "analysis", "personal-glossary-evaluation-corpus.yaml");
+    const originalLabels = fs.readFileSync(holdoutPath);
+    const baseline = evaluateGlossaryHoldout(root) as Record<string, any>;
+    const behavior = YAML.parse(fs.readFileSync(behaviorPath, "utf8"), { maxAliasCount: 256 }) as Record<string, any>;
+    for (const record of behavior.explicit_admission.slice(0, 50)) {
+      record.text = `Is \`${record.id}\` an automatic glossary admission?`;
+    }
+    behavior.inferred_review[20].sources.push({
+      source_kind: "project_config_signal",
+      text: behavior.inferred_review[20].term,
+    });
+    fs.writeFileSync(behaviorPath, YAML.stringify(behavior), "utf8");
+    updateBehaviorDigest(root);
+
+    let output = "";
+    expect(main((line) => { output += line; }, root)).toBe(1);
+    const report = JSON.parse(output);
+    expect(fs.readFileSync(holdoutPath)).toEqual(originalLabels);
+    expect(report).toMatchObject({
+      status: "fail",
+      report: { release_gate: { release_authorizing: true, release_authorized: false, status: "fail" } },
+      gates: {
+        explicit_admission: { status: "fail", qualification_blocker: true },
+        inferred_review: { status: "fail", outcome: "review_suggestions_only" },
+        inferred_automatic_admission: { status: "disabled", enabled: false },
+        release_authorizing: "fail_closed",
+      },
+    });
+    const metrics = report.metrics as Array<Record<string, any>>;
+    expect(report.metrics_sha256).toBe(canonicalDigest(metrics));
+    expect(report.metrics_sha256).not.toBe(baseline.metrics_sha256);
+    expect(metrics.find((metric) => metric.metric === "explicit_admission_precision")).toMatchObject({
+      numerator: 49,
+      denominator: 50,
+      point_estimate: 0.98,
+      status: "fail",
+      failure_reasons: expect.arrayContaining(["point_threshold"]),
+    });
     expect(metrics.find((metric) => metric.metric === "inferred_review_precision")).toMatchObject({
       numerator: 19,
-      denominator: 20,
-      point_estimate: 0.95,
-      uncertainty: { lower_bound: 0.8039927632259837 },
+      denominator: 21,
+      status: "fail",
     });
-    expect(metrics.find((metric) => metric.metric === "explicit_admission_precision")).toMatchObject({
-      numerator: 99,
-      denominator: 100,
-      point_estimate: 0.99,
-    });
-    expect((report.report as Record<string, unknown>).exploratory).toMatchObject({ release_authorizing: false });
+    expect(output).toContain('"release_authorizing": "fail_closed"');
+  });
+
+  it("fails before metrics when frozen holdout or corpus digests drift", () => {
+    const root = copiedEvaluationRoot();
+    const holdoutPath = path.join(root, "references", "analysis", "personal-glossary-holdout.yaml");
+    fs.writeFileSync(
+      holdoutPath,
+      fs.readFileSync(holdoutPath, "utf8").replace("expected_discoverable: true", "expected_discoverable: false"),
+      "utf8",
+    );
+    const report = evaluateGlossaryHoldout(root);
+    expect(report).toMatchObject({ status: "fail", metrics: [] });
+    expect(JSON.stringify(report)).toContain("holdout fixture digest does not match evaluation authority");
+
+    const corpusRoot = copiedEvaluationRoot();
+    const corpusPath = path.join(corpusRoot, "references", "analysis", "personal-glossary-evaluation-corpus.yaml");
+    fs.appendFileSync(corpusPath, "\n# changed frozen behavior bytes\n");
+    const corpusReport = evaluateGlossaryHoldout(corpusRoot);
+    expect(corpusReport).toMatchObject({ status: "fail", metrics: [] });
+    expect(JSON.stringify(corpusReport)).toContain("behavior fixture digest does not match evaluation authority");
+
+    const behavior = structuredClone(loadGlossaryEvaluationBehaviorFixture(ROOT));
+    const canonicalHoldout = YAML.parse(fs.readFileSync(HOLDOUT_PATH, "utf8")) as Record<string, unknown>;
+    (behavior.discovery as Array<Record<string, unknown>>)[0]!.provenance = {
+      record_class: "consented",
+      consent_subject: "synthetic-user",
+    };
+    expect(validateFrozenGlossaryBehaviorFixture(authority(), canonicalHoldout, behavior)).toContain(
+      "behavior_fixture.discovery[0].provenance must be synthetic",
+    );
+  });
+
+  it("rejects missing, unknown, and duplicate runtime observation identifiers", () => {
+    const holdout = YAML.parse(fs.readFileSync(HOLDOUT_PATH, "utf8")) as Record<string, any>;
+    const observed = observationsFor(holdout, fs.readFileSync(BEHAVIOR_PATH));
+
+    const missing = structuredClone(observed);
+    missing.discovery.pop();
+    expect(validateGlossaryObservations(authority(), holdout, missing)).toContain(
+      "observations.discovery is missing frozen id discovery-20",
+    );
+
+    const unknown = structuredClone(observed);
+    unknown.discovery[0].id = "unknown-discovery";
+    expect(validateGlossaryObservations(authority(), holdout, unknown)).toContain(
+      "observations.discovery[0].id is unknown to the frozen holdout",
+    );
+
+    const duplicate = structuredClone(observed);
+    duplicate.discovery[1].id = duplicate.discovery[0].id;
+    expect(validateGlossaryObservations(authority(), holdout, duplicate)).toContain(
+      "observations.discovery[1].id is duplicated",
+    );
   });
 });
 
@@ -149,154 +306,44 @@ describe("separate metric calculations", () => {
     GLOSSARY_METRIC_IDS.map((metric) => [metric, metricRule(authorityRecord, metric)]),
   ) as Record<string, ReturnType<typeof metricRule>>;
 
-  it("passes and fails discovery recall with its positive-label denominator", () => {
+  it("passes and fails every authority-owned denominator and point threshold", () => {
     expect(calculateDiscoveryRecall(binaryExamples(20, 20), rules.discovery_recall).status).toBe("pass");
-    expect(calculateDiscoveryRecall(binaryExamples(20, 17), rules.discovery_recall)).toMatchObject({
-      status: "fail",
-      numerator: 17,
-      denominator: 20,
-      failure_reasons: expect.arrayContaining(["point_threshold"]),
-    });
-  });
-
-  it("passes and fails scope accuracy with the all-example denominator", () => {
-    expect(calculateScopeAccuracy(scopeExamples(100, 95), rules.scope_accuracy).status).toBe("pass");
-    expect(calculateScopeAccuracy(scopeExamples(100, 94), rules.scope_accuracy)).toMatchObject({
-      status: "fail",
-      numerator: 94,
-      denominator: 100,
-      failure_reasons: expect.arrayContaining(["point_threshold"]),
-    });
-  });
-
-  it("passes and fails inferred-review precision among review suggestions", () => {
-    expect(
-      calculateInferredReviewPrecision(reviewExamples(20, 20), rules.inferred_review_precision).status,
-    ).toBe("pass");
-    expect(calculateInferredReviewPrecision(reviewExamples(20, 18), rules.inferred_review_precision)).toMatchObject({
-      status: "fail",
-      numerator: 18,
-      denominator: 20,
-      failure_reasons: expect.arrayContaining(["point_threshold"]),
-    });
-  });
-
-  it("passes and fails explicit-admission precision among admissions", () => {
-    expect(
-      calculateExplicitAdmissionPrecision(admissionExamples(100, 99), rules.explicit_admission_precision).status,
-    ).toBe("pass");
-    expect(calculateExplicitAdmissionPrecision(admissionExamples(100, 98), rules.explicit_admission_precision)).toMatchObject({
-      status: "fail",
-      numerator: 98,
-      denominator: 100,
-      failure_reasons: expect.arrayContaining(["point_threshold"]),
-    });
-  });
-
-  it("fails closed for zero denominators and insufficient samples", () => {
-    const zeroReview = calculateInferredReviewPrecision(
-      [{ id: "no-suggestion", expected: true, observed: false }],
-      rules.inferred_review_precision,
-    );
-    expect(zeroReview).toMatchObject({ status: "fail", denominator: 0, point_estimate: null });
-    expect(zeroReview.failure_reasons).toContain("denominator_zero");
-    expect(calculateDiscoveryRecall(binaryExamples(19, 19), rules.discovery_recall).failure_reasons).toContain(
-      "insufficient_sample",
-    );
-    expect(calculateExplicitAdmissionPrecision(admissionExamples(49, 49), rules.explicit_admission_precision).failure_reasons).toContain(
-      "insufficient_sample",
-    );
-  });
-
-  it("uses the exact one-sided 95% Wilson critical value", () => {
-    expect(wilsonLowerBound(19, 20)).toBe(0.8039927632259837);
-  });
-
-  it("uses the threshold boundary and the unrounded Wilson lower bound", () => {
-    expect(calculateScopeAccuracy(scopeExamples(100, 95), rules.scope_accuracy).point_estimate).toBe(0.95);
+    expect(calculateDiscoveryRecall(binaryExamples(20, 17), rules.discovery_recall).status).toBe("fail");
     expect(calculateScopeAccuracy(scopeExamples(100, 95), rules.scope_accuracy).status).toBe("pass");
     expect(calculateScopeAccuracy(scopeExamples(100, 94), rules.scope_accuracy).status).toBe("fail");
-    expect(wilsonLowerBound(99, 100)).toBeGreaterThan(0.9);
-    expect(wilsonLowerBound(98, 100)).toBeGreaterThan(0.9);
-  });
-});
-
-describe("holdout privacy and label immutability", () => {
-  it("rejects a changed expected label before calculating metrics", () => {
-    const root = tempRootWithCopiedAuthority();
-    const holdoutPath = path.join(root, "references/analysis/personal-glossary-holdout.yaml");
-    const altered = fs.readFileSync(holdoutPath, "utf8").replace(
-      "expected_discoverable: true",
-      "expected_discoverable: false",
-    );
-    fs.writeFileSync(holdoutPath, altered, "utf8");
-    const report = evaluateGlossaryHoldout(root, "references/analysis/personal-glossary-observations.yaml");
-    expect(report).toMatchObject({
-      status: "fail",
-      report: { release_gate: { release_authorizing: true, status: "fail" } },
-    });
-    expect(JSON.stringify(report)).toContain("holdout fixture digest does not match evaluation authority");
-    expect(report.metrics).toEqual([]);
+    expect(calculateInferredReviewPrecision(reviewExamples(20, 20), rules.inferred_review_precision).status).toBe("pass");
+    expect(calculateInferredReviewPrecision(reviewExamples(20, 18), rules.inferred_review_precision).status).toBe("fail");
+    expect(calculateExplicitAdmissionPrecision(admissionExamples(100, 99), rules.explicit_admission_precision).status).toBe("pass");
+    expect(calculateExplicitAdmissionPrecision(admissionExamples(100, 98), rules.explicit_admission_precision).status).toBe("fail");
   });
 
-  it("rejects non-synthetic provenance without consent provenance", () => {
-    const rawAuthority = authority();
-    const holdout = YAML.parse(fs.readFileSync(HOLDOUT_PATH, "utf8")) as Record<string, unknown>;
-    const provenance = holdout.provenance as Record<string, unknown>;
-    provenance.record_class = "imported";
-    const errors = validateFrozenGlossaryHoldout(rawAuthority, holdout);
-    expect(errors).toContain("holdout provenance must identify a synthetic, privacy-safe authority source");
-    expect(errors.some((error) => error.includes("provenance.record_class is not allowed"))).toBe(false);
-  });
-
-  it("requires per-record consent fields when a record is not synthetic", () => {
-    const rawAuthority = authority();
-    const holdout = YAML.parse(fs.readFileSync(HOLDOUT_PATH, "utf8")) as Record<string, any>;
-    holdout.discovery[0].provenance.record_class = "consented";
-    const errors = validateFrozenGlossaryHoldout(rawAuthority, holdout);
-    expect(errors).toContain("holdout.discovery[0].provenance consented record lacks consent provenance");
-  });
-
-  it("keeps expected labels in the frozen holdout and observations separate", () => {
-    const rawAuthority = authority();
-    const holdout = YAML.parse(fs.readFileSync(HOLDOUT_PATH, "utf8")) as Record<string, any>;
-    const observations = YAML.parse(fs.readFileSync(OBSERVATIONS_PATH, "utf8")) as Record<string, any>;
-    expect(validateFrozenGlossaryHoldout(rawAuthority, holdout)).toEqual([]);
-    expect(validateGlossaryObservations(rawAuthority, holdout, observations)).toEqual([]);
-    expect(JSON.stringify(holdout)).not.toContain("observed_");
-  });
-
-  it("rejects incomplete observations before calculating metrics", () => {
-    const root = tempRootWithCopiedAuthority();
-    const observationsPath = path.join(root, "references/analysis/personal-glossary-observations.yaml");
-    const observations = YAML.parse(fs.readFileSync(observationsPath, "utf8")) as Record<string, any>;
-    observations.discovery.pop();
-    fs.writeFileSync(observationsPath, YAML.stringify(observations), "utf8");
-    const report = evaluateGlossaryHoldout(root, observationsPath);
-    expect(report).toMatchObject({ status: "fail", metrics: [] });
-    expect(JSON.stringify(report)).toContain("observations.discovery is missing frozen id discovery-20");
-  });
-
-  it("rejects observation digest drift before calculating metrics", () => {
-    const root = tempRootWithCopiedAuthority();
-    const observationsPath = path.join(root, "references/analysis/personal-glossary-observations.yaml");
-    const observations = YAML.parse(fs.readFileSync(observationsPath, "utf8")) as Record<string, any>;
-    observations.holdout_fixture_sha256 = "0".repeat(64);
-    fs.writeFileSync(observationsPath, YAML.stringify(observations), "utf8");
-    const report = evaluateGlossaryHoldout(root, observationsPath);
-    expect(report).toMatchObject({ status: "fail", metrics: [] });
-    expect(JSON.stringify(report)).toContain(
-      "observations holdout_fixture_sha256 does not match the frozen holdout digest",
+  it("fails closed for every zero denominator and reports one-sided uncertainty", () => {
+    const zeroes = [
+      calculateDiscoveryRecall([], rules.discovery_recall),
+      calculateScopeAccuracy([], rules.scope_accuracy),
+      calculateInferredReviewPrecision([], rules.inferred_review_precision),
+      calculateExplicitAdmissionPrecision([], rules.explicit_admission_precision),
+    ];
+    for (const result of zeroes) {
+      expect(result).toMatchObject({ status: "fail", denominator: 0, point_estimate: null });
+      expect(result.failure_reasons).toContain("denominator_zero");
+    }
+    expect(wilsonLowerBound(19, 20)).toBe(0.8039927632259837);
+    expect(calculateDiscoveryRecall(binaryExamples(20, 18), rules.discovery_recall).failure_reasons).toContain(
+      "uncertainty_threshold",
     );
   });
 
-  it("keeps inferred automatic admission disabled even when all measured gates pass", () => {
-    const report = evaluateGlossaryHoldout(ROOT, OBSERVATIONS_PATH);
-    expect(report.gates).toMatchObject({ inferred_automatic_admission: { status: "disabled", enabled: false } });
-    const mutated = structuredClone(authority()) as Record<string, any>;
-    (mutated.gates as Record<string, any>).inferred_automatic_admission.status = "enabled";
-    expect(validateGlossaryEvaluationAuthority(mutated)).toContain(
-      "evaluation authority must distinguish exploratory reports from the release gate",
-    );
+  it("fails each metric when its eligible sample is below the authority minimum", () => {
+    const insufficient = [
+      calculateDiscoveryRecall(binaryExamples(19, 19), rules.discovery_recall),
+      calculateScopeAccuracy(scopeExamples(19, 19), rules.scope_accuracy),
+      calculateInferredReviewPrecision(reviewExamples(19, 19), rules.inferred_review_precision),
+      calculateExplicitAdmissionPrecision(admissionExamples(49, 49), rules.explicit_admission_precision),
+    ];
+    for (const result of insufficient) {
+      expect(result).toMatchObject({ status: "fail", gates: { sample_sufficient: false } });
+      expect(result.failure_reasons).toContain("insufficient_sample");
+    }
   });
 });

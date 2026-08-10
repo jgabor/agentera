@@ -115,6 +115,8 @@ export interface AuthorityScanResult {
 
 const STABLE_HEADING = "## Stable v2 line";
 const DEVELOPMENT_HEADING = "## Upgrading v2 to v3 development channel";
+const MAX_YAML_ALIAS_COUNT = 100;
+const PERSONAL_GLOSSARY_EVALUATION_CORPUS = "references/analysis/personal-glossary-evaluation-corpus.yaml";
 export const STABLE_COMMANDS = [
   "npx -y agentera@latest upgrade --dry-run",
   "npx -y agentera@latest upgrade --yes",
@@ -722,7 +724,9 @@ function structuredSurfaces(
     const document = YAML.parseDocument(content, { schema: format === "json" ? "json" : "core", uniqueKeys: true, keepSourceTokens: true });
     if (document.errors.length > 0) return { surfaces: [], diagnostics: [malformedDiagnostic(sourcePath, format, document.errors[0].message)] };
     try {
-      const resolved = document.toJS({ maxAliasCount: 100 });
+      const resolved = document.toJS({
+        maxAliasCount: sourcePath === PERSONAL_GLOSSARY_EVALUATION_CORPUS ? 256 : MAX_YAML_ALIAS_COUNT,
+      });
       const ancestry = new WeakSet<object>();
       const detectCycle = (value: unknown): boolean => {
         if (!value || typeof value !== "object") return false;

@@ -26,6 +26,7 @@ import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidence
 import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlossaryExplicitMining.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import { main } from "../../src/cli/dispatch.js";
+import { installSourceGlossaryEvaluationRunner } from "../helpers/sourceSubprocess.js";
 import { printReportHelp, printStateHelp } from "../../src/cli/help.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
 import {
@@ -52,8 +53,10 @@ let profileDir: string;
 let currentGeneration: string;
 let previousProfileDir: string | undefined;
 let previousProfileraProfileDir: string | undefined;
+let restoreEvaluationRunner: (() => void) | undefined;
 
 beforeEach(() => {
+  restoreEvaluationRunner = installSourceGlossaryEvaluationRunner();
   profileDir = fs.mkdtempSync(path.join(os.tmpdir(), "personal-glossary-publish-"));
   previousProfileDir = process.env.AGENTERA_PROFILE_DIR;
   previousProfileraProfileDir = process.env.PROFILERA_PROFILE_DIR;
@@ -63,6 +66,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  restoreEvaluationRunner?.();
+  restoreEvaluationRunner = undefined;
   if (previousProfileDir === undefined) delete process.env.AGENTERA_PROFILE_DIR;
   else process.env.AGENTERA_PROFILE_DIR = previousProfileDir;
   if (previousProfileraProfileDir === undefined) delete process.env.PROFILERA_PROFILE_DIR;

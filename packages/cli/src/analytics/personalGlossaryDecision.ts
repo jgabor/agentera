@@ -1,7 +1,10 @@
+import crypto from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { evaluateGlossaryHoldout } from "../eval/glossaryEvaluation.js";
+import { runGlossaryEvaluationProcess } from "../eval/glossaryEvaluationProcess.js";
+import { validateGlossaryEvaluationSuccessReport } from "../eval/glossaryEvaluationSuccessReport.js";
 import {
   createGlossaryAdmissionDecision,
   validateGlossaryHostClassificationReceipt,
@@ -14,7 +17,10 @@ import {
   type PersonalGlossaryCandidateProjectionStorageOptions,
   type ProjectedPersonalGlossaryCandidate,
 } from "./personalGlossaryCandidateProjection.js";
-import { readCurrentPersonalGlossaryCandidateProjection } from "./personalGlossaryCurrentGeneration.js";
+import {
+  readCurrentPersonalGlossaryCandidateProjection,
+  type PersonalGlossaryCurrentGenerationResult,
+} from "./personalGlossaryCurrentGeneration.js";
 import { defaultTiersDir } from "./extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "./personalGlossaryExplicitMining.js";
 
@@ -45,6 +51,9 @@ type ExplicitEvidenceState =
   | "unavailable"
   | "changed"
   | "retracted_or_conflicted";
+
+const QUALITY_GATE_CACHE_LIMIT = 16;
+const qualityGateCache = new Map<string, { fingerprint: string; status: "pass" | "fail" | "unavailable" }>();
 
 function mapping(value: unknown): Mapping | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -104,8 +113,9 @@ function hasEntryConflict(
 function currentExplicitEvidence(
   capsule: GlossaryEvidenceCapsule,
   tiersDir: string,
+  precomputed?: ReturnType<typeof mineExplicitGlossaryCandidates>,
 ): ExplicitEvidenceState {
-  const mined = mineExplicitGlossaryCandidates({ tiersDir });
+  const mined = precomputed ?? mineExplicitGlossaryCandidates({ tiersDir });
   if (mined.state !== "current") return "unavailable";
   if (mined.generation !== capsule.generation) return "changed";
   if (
@@ -129,19 +139,40 @@ function currentExplicitEvidence(
   return "changed";
 }
 
+function qualityGateFingerprint(sourceRoot: string): string | null {
+  const digest = crypto.createHash("sha256");
+  try {
+    for (const relative of [
+      "references/analysis/personal-glossary-evaluation-authority.yaml",
+      "references/analysis/personal-glossary-holdout.yaml",
+      "references/analysis/personal-glossary-evaluation-corpus.yaml",
+      "references/analysis/evidence-tier-authority.yaml",
+      "references/artifacts/glossary-entry-contract.yaml",
+    ]) {
+      digest.update(relative).update("\0").update(fs.readFileSync(path.join(sourceRoot, relative))).update("\0");
+    }
+    return digest.digest("hex");
+  } catch {
+    return null;
+  }
+}
+
 function qualityGate(sourceRoot: string): "pass" | "fail" | "unavailable" {
   try {
-    const report = mapping(
-      evaluateGlossaryHoldout(
-        sourceRoot,
-        path.join(sourceRoot, "references", "analysis", "personal-glossary-observations.yaml"),
-      ),
-    );
-    const gates = mapping(report?.gates);
-    const explicit = mapping(gates?.explicit_admission);
-    return gates?.release_authorizing === "pass" && explicit?.status === "pass"
+    const fingerprint = qualityGateFingerprint(sourceRoot);
+    const cached = fingerprint === null ? undefined : qualityGateCache.get(sourceRoot);
+    if (cached?.fingerprint === fingerprint) return cached.status;
+    const evaluation = runGlossaryEvaluationProcess(sourceRoot);
+    const status = validateGlossaryEvaluationSuccessReport(evaluation, sourceRoot) !== null
       ? "pass"
       : "fail";
+    if (fingerprint !== null && status === "pass") {
+      qualityGateCache.set(sourceRoot, { fingerprint, status });
+      if (qualityGateCache.size > QUALITY_GATE_CACHE_LIMIT) {
+        qualityGateCache.delete(qualityGateCache.keys().next().value!);
+      }
+    }
+    return status;
   } catch {
     return "unavailable";
   }
@@ -171,15 +202,20 @@ function decision(
  * derive its only permitted admission outcome. This function never persists a
  * review, profile entry, projection, or project artifact.
  */
-export function decidePersonalGlossaryCandidate(
+function decidePersonalGlossaryCandidateInternal(
   receiptInput: unknown,
-  options: PersonalGlossaryDecisionOptions = {},
+  options: PersonalGlossaryDecisionOptions,
+  evaluationQualityGate: boolean,
+  precomputedExplicitMining?: ReturnType<typeof mineExplicitGlossaryCandidates>,
+  precomputedCurrentProjection?: PersonalGlossaryCurrentGenerationResult,
 ): PersonalGlossaryAdmissionResult {
-  let read;
-  try {
-    read = readCurrentPersonalGlossaryCandidateProjection(options);
-  } catch {
-    return result("abstain", "projection_unavailable");
+  let read = precomputedCurrentProjection;
+  if (read === undefined) {
+    try {
+      read = readCurrentPersonalGlossaryCandidateProjection(options);
+    } catch {
+      return result("abstain", "projection_unavailable");
+    }
   }
   if (read.status !== "current" || read.projection === null) {
     return result(
@@ -237,6 +273,7 @@ export function decidePersonalGlossaryCandidate(
   const evidence = currentExplicitEvidence(
     capsule,
     options.tiersDir ?? defaultTiersDir(options.env, options.platform),
+    precomputedExplicitMining,
   );
   if (evidence === "unavailable") {
     return decision(capsule, receipt, "abstain", "evidence_unavailable");
@@ -248,9 +285,37 @@ export function decidePersonalGlossaryCandidate(
     return decision(capsule, receipt, "review_required", "evidence_retracted_or_conflicted");
   }
 
-  const gate = qualityGate(options.sourceRoot ?? resolveSourceRoot());
+  const gate = evaluationQualityGate ? "pass" : qualityGate(options.sourceRoot ?? resolveSourceRoot());
   if (gate !== "pass") {
     return decision(capsule, receipt, "review_required", "quality_gate_not_authorizing");
   }
   return decision(capsule, receipt, "automatic_admission", "explicit_current_authorized");
+}
+
+/** Apply the release-authorizing quality report before an explicit admission. */
+export function decidePersonalGlossaryCandidate(
+  receiptInput: unknown,
+  options: PersonalGlossaryDecisionOptions = {},
+): PersonalGlossaryAdmissionResult {
+  return decidePersonalGlossaryCandidateInternal(receiptInput, options, false);
+}
+
+/**
+ * Exercise the same bounded decision boundary while measuring the prerequisite
+ * explicit policy. This internal evaluator seam is never wired to CLI dispatch;
+ * inferred candidates still return review_required before the quality branch.
+ */
+export function evaluatePersonalGlossaryCandidate(
+  receiptInput: unknown,
+  options: PersonalGlossaryDecisionOptions = {},
+  precomputedExplicitMining?: ReturnType<typeof mineExplicitGlossaryCandidates>,
+  precomputedCurrentProjection?: PersonalGlossaryCurrentGenerationResult,
+): PersonalGlossaryAdmissionResult {
+  return decidePersonalGlossaryCandidateInternal(
+    receiptInput,
+    options,
+    true,
+    precomputedExplicitMining,
+    precomputedCurrentProjection,
+  );
 }

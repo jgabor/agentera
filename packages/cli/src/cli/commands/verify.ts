@@ -1,6 +1,10 @@
 import { main as evalSkillsMain } from "../../eval/evalSkills.js";
 import { main as semanticEvalMain } from "../../eval/semanticEval.js";
-import { main as personalGlossaryEvaluationMain } from "../../eval/glossaryEvaluation.js";
+import { runGlossaryEvaluationProcess } from "../../eval/glossaryEvaluationProcess.js";
+import {
+  validateGlossaryEvaluationSuccessReport,
+  type GlossaryEvaluationSuccessReport,
+} from "../../eval/glossaryEvaluationSuccessReport.js";
 import { evaluateHybridRoute } from "../../eval/hybridRouteEvaluation.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { routeEvaluationExitCode } from "./route.js";
@@ -26,7 +30,10 @@ interface VerifyPayload {
   engine: { command: string[]; exit_code: number };
   diagnostics: { stdout: string[]; stderr: string[]; line_limit: number };
   safety: JsonObject;
+  glossary_evaluation?: GlossaryEvaluationPublicResult;
 }
+
+type GlossaryEvaluationPublicResult = GlossaryEvaluationSuccessReport;
 
 export interface VerifyArgs {
   family?: string | null;
@@ -40,7 +47,6 @@ export interface VerifyArgs {
   parallel?: number;
   runtime?: string;
   fixtures?: string[];
-  observations?: string | null;
 }
 
 function verifySyntax(): string {
@@ -121,7 +127,7 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
   if (family === "eval" && target === "glossary" && (args.fixtures ?? []).length > 0) {
     throw new Error(
       "glossary verify uses the contract-owned frozen holdout and accepts no fixture path. " +
-        "Supply evaluated behavior with --observations PATH. Syntax: agentera check verify eval glossary [--observations PATH] --format text|json.",
+        "It always runs current product behavior. Syntax: agentera check verify eval glossary --format text|json.",
     );
   }
   return [family, target, outputFormat];
@@ -135,8 +141,9 @@ interface EngineResult {
 }
 
 /**
- * Resolve the engine command + safety metadata for a verify target. eval engines
- * run in-process (ported TS). Only the eval family is supported; the smoke
+ * Resolve the engine command + safety metadata for a verify target. The frozen
+ * glossary evaluator runs in its isolated process so unrelated CLI starts do
+ * not load its mining graph. Only the eval family is supported; the smoke
  * family (maintainer/CI harnesses) was retired in the self-contained package.
  */
 function runVerifyEngine(family: string, target: string, args: VerifyArgs): { result: EngineResult; safety: JsonObject } {
@@ -185,18 +192,19 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
     return { result, safety };
   }
   if (family === "eval" && target === "glossary") {
-    const engineArgs = args.observations ? ["--observations", args.observations] : [];
     const safety = {
       mode: "offline-frozen-holdout",
-      summary: args.observations
-        ? "runs the contract-owned synthetic holdout against separately supplied observations; it never invokes glossary mining or a semantic host"
-        : "validates the contract-owned synthetic holdout without observations; no release-authorizing metrics run",
+      summary: "runs frozen synthetic inputs through current glossary discovery, classification, and V2 decision seams without a semantic host or user-local effects",
       live: false,
       long_running_default: false,
     };
-    const result = runInProcess(["eval", "glossary", ...engineArgs], (out) =>
-      personalGlossaryEvaluationMain(args.observations ?? undefined, (line) => out(line)),
-    );
+    const evaluation = runGlossaryEvaluationProcess();
+    const result = {
+      command: ["node", "agentera", "verify", "eval", "glossary"],
+      returncode: evaluation.returncode,
+      stdout: evaluation.stdout,
+      stderr: evaluation.stderr,
+    };
     return { result, safety };
   }
   if (family === "eval" && target === "routing") {
@@ -247,6 +255,24 @@ function boundedLines(text: string, limit = VERIFY_DIAGNOSTIC_LINE_LIMIT): strin
   return [...lines.slice(0, limit), `... truncated ${lines.length - limit} line(s)`];
 }
 
+function publicVerifyResult(
+  family: string,
+  target: string,
+  result: EngineResult,
+): { result: EngineResult; glossaryEvaluation?: GlossaryEvaluationPublicResult } {
+  if (family !== "eval" || target !== "glossary" || result.returncode !== 0) return { result };
+  const glossaryEvaluation = validateGlossaryEvaluationSuccessReport(result);
+  if (glossaryEvaluation !== null) return { result, glossaryEvaluation };
+  const separator = result.stderr === "" || result.stderr.endsWith("\n") ? "" : "\n";
+  return {
+    result: {
+      ...result,
+      returncode: 1,
+      stderr: `${result.stderr}${separator}invalid glossary evaluation success report\n`,
+    },
+  };
+}
+
 function verifyStatus(result: EngineResult): string {
   return result.returncode === 0 ? "pass" : "fail";
 }
@@ -258,19 +284,23 @@ export function buildVerifyPayload(
   result: EngineResult,
   safety: JsonObject,
 ): VerifyPayload {
+  const publicResult = publicVerifyResult(family, target, result);
   return {
     command: "verify",
-    status: verifyStatus(result),
+    status: verifyStatus(publicResult.result),
     family,
     target,
     format: outputFormat,
-    engine: { command: result.command, exit_code: result.returncode },
+    engine: { command: publicResult.result.command, exit_code: publicResult.result.returncode },
     diagnostics: {
-      stdout: boundedLines(result.stdout),
-      stderr: boundedLines(result.stderr),
+      stdout: boundedLines(publicResult.result.stdout),
+      stderr: boundedLines(publicResult.result.stderr),
       line_limit: VERIFY_DIAGNOSTIC_LINE_LIMIT,
     },
     safety,
+    ...(publicResult.glossaryEvaluation === undefined
+      ? {}
+      : { glossary_evaluation: publicResult.glossaryEvaluation }),
   };
 }
 
@@ -311,5 +341,5 @@ export function cmdVerify(args: VerifyArgs, io: Io = {}): number {
   } else {
     emitVerifyText(payload, out);
   }
-  return result.returncode;
+  return payload.engine.exit_code;
 }

@@ -6,10 +6,11 @@ purpose: >-
   scope accuracy, inferred-review precision, and explicit-admission precision.
   Every result is a metric report plus an explicit fail-closed gate result.
 implementation_boundary: >-
-  This authority and its executable harness define labels, denominators,
-  provenance, uncertainty, and delivery gates. They do not extract terms,
-  generate candidates, read candidates, persist reviews, publish a glossary, or
-  integrate with Profile Full.
+  This authority defines labels, denominators, provenance, uncertainty, and
+  delivery gates. It does not implement or own mining and reads no
+  personal/project history. Its executable harness exercises existing explicit
+  and recurring mining plus V2 decision seams on frozen synthetic inputs, with
+  no persistence outside isolated temporary state.
 preserved_authority:
   shared_primitive: references/artifacts/glossary-entry-contract.yaml#shared_primitive
   personal_owner: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.personal
@@ -43,13 +44,24 @@ holdout:
     missing_or_invalid: reject_before_metrics
 
 observations:
-  schema_version: agentera.personalGlossaryEvaluationObservations.v1
-  source: evaluated_behavior_supplied_separately
-  required_fields: [schema_version, holdout_id, holdout_fixture_sha256, discovery, scope, inferred_review, explicit_admission]
+  schema_version: agentera.personalGlossaryEvaluationObservations.v2
+  source: current_product_behavior
+  behavior_fixture:
+    path: references/analysis/personal-glossary-evaluation-corpus.yaml
+    fixture_sha256: 4d4c55b3d3fc60872f2ac06cdcc2e8e2ab40fa5d5cc749f1add7e493571e19c2
+    status: frozen
+    identity: content_addressed_fixture_bytes
+    provenance: synthetic_only
+  required_fields: [schema_version, holdout_id, holdout_fixture_sha256, behavior_fixture_sha256, discovery, scope, inferred_review, explicit_admission]
   digest_binding: holdout_fixture_sha256_must_equal_frozen_fixture_digest
   coverage: exact_frozen_id_set_per_metric
   missing: not_run_non_authorizing
   invalid: reject_before_metrics
+
+results:
+  metrics_sha256:
+    field: metrics_sha256
+    algorithm: sha256(canonical_json_metrics_array)
 
 metrics:
   discovery_recall:
@@ -155,8 +167,9 @@ scope:
     - Frozen synthetic holdout provenance and label immutability.
     - Separate metric definitions, denominators, sample rules, and uncertainty.
     - Fail-closed calculation and release-gate validation.
+    - Existing explicit/recurring mining and V2 decision seams on isolated synthetic inputs.
   out_of_scope:
-    - Glossary extraction or candidate generation.
-    - Candidate reads, review persistence, glossary publication, or Profile Full.
+    - Mining implementation or ownership.
     - Project glossary reads, writes, precedence, or publication replacement.
-    - Suite version changes, registry mutation, release, or publication.
+    - Profile mutation, review persistence, or release mutation.
+    - Suite version changes, registry mutation, release, or package publication.

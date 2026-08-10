@@ -1,8 +1,16 @@
 import fs from "node:fs";
 
-import { readCurrentPersonalGlossaryCandidateProjection } from "../../analytics/personalGlossaryCurrentGeneration.js";
-import { decidePersonalGlossaryCandidate } from "../../analytics/personalGlossaryDecision.js";
-import { loadYamlMapping } from "../../core/yaml.js";
+import {
+  readCurrentPersonalGlossaryCandidateProjection,
+  type PersonalGlossaryCurrentGenerationResult,
+} from "../../analytics/personalGlossaryCurrentGeneration.js";
+import {
+  decidePersonalGlossaryCandidate,
+  evaluatePersonalGlossaryCandidate,
+  type PersonalGlossaryDecisionOptions,
+} from "../../analytics/personalGlossaryDecision.js";
+import { mineExplicitGlossaryCandidates } from "../../analytics/personalGlossaryExplicitMining.js";
+import { loadYamlMapping, withReadOnlyYamlMappingCache } from "../../core/yaml.js";
 import {
   createGlossaryHostClassificationReceipt,
   type GlossaryHostClassification,
@@ -13,6 +21,16 @@ import type { Io } from "../dispatch/shared.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 
 type Mapping = Record<string, unknown>;
+
+export interface PersonalGlossaryEvaluationDecisionOptions
+  extends PersonalGlossaryDecisionOptions {
+  /** Precomputed from the same frozen generation only by the evaluator. */
+  precomputedExplicitMining?: ReturnType<typeof mineExplicitGlossaryCandidates>;
+  /** Current-tier binding prevalidated for one evaluator-owned projection batch. */
+  precomputedCurrentProjection?: PersonalGlossaryCurrentGenerationResult;
+  /** Decision contract loaded once by the evaluator's bounded workspace. */
+  precomputedDecisionContract?: PersonalGlossaryCandidateDecisionContract;
+}
 
 const COMMAND = "agentera report personal-glossary-decision --input <file|-> --format json";
 const RECOVERY =
@@ -30,9 +48,8 @@ function invalid(io: Io, body: InvalidInputErrorBody): number {
   return emitInvalidInput(io, { format: "json", body: { ...body, recovery: body.recovery ?? RECOVERY } });
 }
 
-function contract(): PersonalGlossaryCandidateDecisionContract {
-  const value = personalGlossaryCandidateDecisionContract();
-  if (
+function validContract(value: PersonalGlossaryCandidateDecisionContract): boolean {
+  return !(
     value.command !== "agentera report personal-glossary-decision" ||
     value.requestSchemaVersion !== "agentera.personalGlossaryAdmissionRequest.v1" ||
     JSON.stringify(value.requestFields) !== JSON.stringify(["schema_version", "receipt"]) ||
@@ -65,6 +82,15 @@ function contract(): PersonalGlossaryCandidateDecisionContract {
     value.automaticProvenance !== "provenance_variants.personal_explicit_definition" ||
     value.inferredAutomaticAdmission !== "disabled" ||
     value.qualityGate !== "personal_mining_authority.admission.quality_threshold"
+  );
+}
+
+function contract(
+  precomputed?: PersonalGlossaryCandidateDecisionContract,
+): PersonalGlossaryCandidateDecisionContract {
+  const value = precomputed ?? personalGlossaryCandidateDecisionContract();
+  if (
+    !validContract(value)
   ) {
     throw new Error("personal glossary decision contract is unavailable");
   }
@@ -277,12 +303,18 @@ type ReceiptConstruction =
   | { kind: "unavailable"; reason: string }
   | { kind: "invalid"; error: InvalidInputErrorBody };
 
-function constructReceipt(request: ReceiptConstructionRequest): ReceiptConstruction {
-  let current;
-  try {
-    current = readCurrentPersonalGlossaryCandidateProjection();
-  } catch {
-    return { kind: "unavailable", reason: "current_generation_unavailable" };
+function constructReceipt(
+  request: ReceiptConstructionRequest,
+  options: PersonalGlossaryDecisionOptions,
+  precomputedCurrentProjection?: PersonalGlossaryCurrentGenerationResult,
+): ReceiptConstruction {
+  let current = precomputedCurrentProjection;
+  if (current === undefined) {
+    try {
+      current = readCurrentPersonalGlossaryCandidateProjection(options);
+    } catch {
+      return { kind: "unavailable", reason: "current_generation_unavailable" };
+    }
   }
   if (current.status !== "current" || current.projection === null) {
     return {
@@ -340,11 +372,18 @@ function receiptConstructionResult(
   };
 }
 
-/** Run the read-only host-receipt validation and deterministic decision boundary. */
-export function runPersonalGlossaryDecisionCommand(argv: string[], io: Io): number {
+function runPersonalGlossaryDecisionCommandInternal(
+  argv: string[],
+  io: Io,
+  options: PersonalGlossaryDecisionOptions,
+  evaluation: boolean,
+  precomputedExplicitMining?: ReturnType<typeof mineExplicitGlossaryCandidates>,
+  precomputedCurrentProjection?: PersonalGlossaryCurrentGenerationResult,
+  precomputedDecisionContract?: PersonalGlossaryCandidateDecisionContract,
+): number {
   let contractValue: PersonalGlossaryCandidateDecisionContract;
   try {
-    contractValue = contract();
+    contractValue = contract(precomputedDecisionContract);
   } catch {
     return invalid(io, {
       class: "invalid_request",
@@ -365,14 +404,22 @@ export function runPersonalGlossaryDecisionCommand(argv: string[], io: Io): numb
   }
   const validated = validateRequest(request, contractValue);
   if ("error" in validated) return invalid(io, validated.error);
+  const decide = (receipt: Mapping) => evaluation
+    ? evaluatePersonalGlossaryCandidate(
+      receipt,
+      options,
+      precomputedExplicitMining,
+      precomputedCurrentProjection,
+    )
+    : decidePersonalGlossaryCandidate(receipt, options);
   if (validated.kind === "receipt") {
     return emitResult(
-      decidePersonalGlossaryCandidate(validated.receipt),
+      decide(validated.receipt),
       contractValue.maxResultUtf8Bytes,
       io,
     );
   }
-  const constructed = constructReceipt(validated.request);
+  const constructed = constructReceipt(validated.request, options, precomputedCurrentProjection);
   if (constructed.kind === "invalid") return invalid(io, constructed.error);
   if (constructed.kind === "unavailable") {
     return emitResult(
@@ -381,10 +428,39 @@ export function runPersonalGlossaryDecisionCommand(argv: string[], io: Io): numb
       io,
     );
   }
-  const decision = decidePersonalGlossaryCandidate(constructed.receipt);
+  const decision = decide(constructed.receipt);
   return emitResult(
     receiptConstructionResult(constructed.receipt, decision, null, contractValue),
     contractValue.receiptConstructionMaxResultUtf8Bytes,
     io,
+  );
+}
+
+/** Run the read-only host-receipt validation and deterministic decision boundary. */
+export function runPersonalGlossaryDecisionCommand(argv: string[], io: Io): number {
+  // The cache is scoped to one V2 request, not CLI startup or persistent state.
+  return withReadOnlyYamlMappingCache(() =>
+    runPersonalGlossaryDecisionCommandInternal(argv, io, {}, false),
+  );
+}
+
+/**
+ * Internal evaluator entry point. It preserves the V2 parser and receipt
+ * construction path while measuring explicit admission before its own gate.
+ * CLI dispatch never invokes this function.
+ */
+export function runPersonalGlossaryEvaluationDecisionCommand(
+  argv: string[],
+  io: Io,
+  options: PersonalGlossaryEvaluationDecisionOptions,
+): number {
+  return runPersonalGlossaryDecisionCommandInternal(
+    argv,
+    io,
+    options,
+    true,
+    options.precomputedExplicitMining,
+    options.precomputedCurrentProjection,
+    options.precomputedDecisionContract,
   );
 }

@@ -73,6 +73,6 @@ describe("strict package publication model", () => {
   it("rejects contract-defined census count, digest, and total reassignment", () => {
     expect(mutate((copy) => { copy.qualification.source.activationConjunction.census.classes.cli.count = 26; })).toThrow(/count 27/);
     expect(mutate((copy) => { copy.qualification.source.activationConjunction.census.classes.capability.sha256 = "f".repeat(64); })).toThrow(/007e1157/);
-    expect(mutate((copy) => { copy.qualification.source.activationConjunction.census.total.sha256 = "a".repeat(64); })).toThrow(/765dff49/);
+    expect(mutate((copy) => { copy.qualification.source.activationConjunction.census.total.sha256 = "a".repeat(64); })).toThrow(/1e25c4a2/);
   });
 });

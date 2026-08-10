@@ -23,17 +23,17 @@ inventory:
     classification: current
     production_owner: { module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: loadGlossaryEvaluationAuthority }
     consumers:
-      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: evaluateGlossaryHoldout, consumption: loads }
+      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluationSuccessReport.ts, symbol: validateGlossaryEvaluationSuccessReport, consumption: loads }
   - path: references/analysis/personal-glossary-holdout.yaml
     classification: current
     production_owner: { module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: loadGlossaryEvaluationHoldout }
     consumers:
-      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: evaluateGlossaryHoldout, consumption: loads }
-  - path: references/analysis/personal-glossary-observations.yaml
+      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluationSuccessReport.ts, symbol: validateGlossaryEvaluationSuccessReport, consumption: loads }
+  - path: references/analysis/personal-glossary-evaluation-corpus.yaml
     classification: current
-    production_owner: { module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: glossaryEvaluationObservationsPath }
+    production_owner: { module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: loadGlossaryEvaluationBehaviorFixture }
     consumers:
-      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: evaluateGlossaryHoldout, consumption: loads }
+      - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluationSuccessReport.ts, symbol: validateGlossaryEvaluationSuccessReport, consumption: loads }
   - path: references/analysis/verification-policy.yaml
     classification: current
     production_owner: { module: packages/cli/scripts/verify-lane.mjs, symbol: loadContract }
