@@ -1,0 +1,16 @@
+id: ebttutcjdc
+artifact: progress
+record:
+  timestamp: 2026-08-09 21:04
+  type: test
+  phase: build
+  what: Corrected the release-preparation verification record after the first independent audit.
+  context:
+    intent: Replace unsupported verification evidence with a current reproducible focused result.
+    constraints: Make no product change, task completion, commit, broad release rerun, or remote or registry effect.
+    unknowns: The `.opencode/package.json` failure was not rerun and remains baseline context only.
+    scope: One typed progress correction, the exact focused test command, and a diff whitespace check.
+  discovered: The prior claim of 125 tests across four files in progress ourzfvhbjh was unsupported and is superseded by this current reproducible result. It must not be used as task evidence.
+  verified: "Supersedes the unsupported 125-test claim in progress ourzfvhbjh. Executed exactly: `pnpm -C packages/cli exec vp test run --config vite.config.ts test/release/releaseQualification.test.ts test/release/rootReleaseScripts.test.ts test/release/publicationOrchestration.test.ts test/release/releaseBenchmark.test.ts`. Current output: exit 0; Test Files 4 passed (4); Tests 50 passed (50); Duration 21.14s. Executed `git diff --check`; exit 0 with no output. No broader gate was rerun. The documented `.opencode/package.json` blocker remains baseline context only."
+  next: Request a second independent audit while the task remains in progress and all changes remain uncommitted.
+  publication_order: 127

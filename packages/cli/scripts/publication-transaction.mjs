@@ -11,6 +11,7 @@ import {
   npmChildEnvironment,
 } from "./package-construction.mjs";
 import {
+  checkSourceReceipt,
   isolatedNpmState,
   smokePublishedCandidate,
   validateCandidateApproval,
@@ -128,10 +129,10 @@ export function prepareTargetMetadata(adapterName, manifest, targetVersion, sour
   return { manifest: next, changed: true };
 }
 
-export function validatePreparedSourceProvenance(adapterName, manifest) {
+export function validatePreparedSourceProvenance(adapterName, manifest, projectRoot = repoRoot) {
   const adapter = PACKAGE_ADAPTERS[adapterName];
   if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
-  validateAdapterSourceProvenance({ repo: repoRoot, adapter, manifest });
+  validateAdapterSourceProvenance({ repo: projectRoot, adapter, manifest });
 }
 
 export function preflightPublication(adapterName, manifest, state) {
@@ -198,8 +199,8 @@ function emit(receipt, json, verbose = false) {
   }
 }
 
-function readManifest(adapter) {
-  return JSON.parse(fs.readFileSync(path.join(repoRoot, adapter.manifestPath), "utf8"));
+function readManifest(adapter, projectRoot = repoRoot) {
+  return JSON.parse(fs.readFileSync(path.join(projectRoot, adapter.manifestPath), "utf8"));
 }
 
 function metadataCommitted(adapter) {
@@ -210,12 +211,76 @@ function metadataCommitted(adapter) {
   return tracked.status === 0;
 }
 
-function gitRefExists(gitRef) {
+function gitRefExists(gitRef, projectRoot = repoRoot) {
   if (!/^[0-9a-f]{40}$/.test(gitRef ?? "")) return false;
   return spawnSync("git", ["cat-file", "-e", `${gitRef}^{commit}`], {
-    cwd: repoRoot,
+    cwd: projectRoot,
     env: npmChildEnvironment(process.env),
   }).status === 0;
+}
+
+export function prepareReleaseMetadata(adapterName, request, options = {}) {
+  const adapter = PACKAGE_ADAPTERS[adapterName];
+  if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
+  const projectRoot = options.repo ?? repoRoot;
+  const targetVersion = request.targetVersion;
+  const sourceCommit = request.sourceCommit;
+  if (!targetVersion || !sourceCommit) {
+    throw new Error(
+      "prepare requires --target-version X.Y.Z[-dev.N] and --source-commit SHA; preparation never infers a target",
+    );
+  }
+  if (adapterName === "development") {
+    if (!request.candidateDirectory) {
+      throw new Error(
+        "development prepare requires --candidate-dir DIR containing a current valid source receipt",
+      );
+    }
+    checkSourceReceipt({ repo: projectRoot, candidateDirectory: request.candidateDirectory });
+  }
+  if (!gitRefExists(sourceCommit, projectRoot)) {
+    throw new Error("source commit does not name an existing immutable commit");
+  }
+  const prepared = prepareTargetMetadata(
+    adapterName,
+    readManifest(adapter, projectRoot),
+    targetVersion,
+    sourceCommit,
+  );
+  validatePreparedSourceProvenance(adapterName, prepared.manifest, projectRoot);
+  if (request.check) {
+    if (prepared.changed) {
+      throw new Error(
+        "requested target is not prepared; rerun without --check to create the reviewable metadata diff",
+      );
+    }
+    return result(
+      adapterName,
+      targetVersion,
+      "preparation",
+      "noop",
+      "target metadata already matches; review or qualify it",
+      undefined,
+      { executed: "none", reused: true },
+    );
+  }
+  if (prepared.changed) {
+    fs.writeFileSync(
+      path.join(projectRoot, adapter.manifestPath),
+      `${JSON.stringify(prepared.manifest, null, 2)}\n`,
+    );
+  }
+  return result(
+    adapterName,
+    targetVersion,
+    "preparation",
+    prepared.changed ? "prepared" : "noop",
+    prepared.changed
+      ? `Review and commit ${adapter.manifestPath}, then qualify the candidate.`
+      : "target metadata already matches; review or qualify it",
+    undefined,
+    prepared.changed ? undefined : { executed: "none", reused: true },
+  );
 }
 
 const NPM_COMMAND_FAILURE = Symbol("npm-command-failure");
@@ -827,55 +892,22 @@ async function main() {
       ? ["--check", "--json", "--verbose"]
       : ["--approve", "--json", "--verbose"],
     value: phase === "prepare"
-      ? ["--target-version", "--source-commit"]
+      ? [
+          "--target-version",
+          "--source-commit",
+          ...(adapterName === "development" ? ["--candidate-dir"] : []),
+        ]
       : ["--candidate-dir", "--source-run-id"],
   });
   const json = Boolean(flags.get("--json"));
   const verbose = Boolean(flags.get("--verbose"));
   if (phase === "prepare") {
-    const adapter = PACKAGE_ADAPTERS[adapterName];
-    const targetVersion = flags.get("--target-version");
-    const sourceCommit = flags.get("--source-commit");
-    if (!targetVersion || !sourceCommit) {
-      throw new Error(
-        "prepare requires --target-version X.Y.Z[-dev.N] and --source-commit SHA; preparation never infers a target",
-      );
-    }
-    if (!gitRefExists(sourceCommit)) {
-      throw new Error("source commit does not name an existing immutable commit");
-    }
-    const prepared = prepareTargetMetadata(adapterName, readManifest(adapter), targetVersion, sourceCommit);
-    validatePreparedSourceProvenance(adapterName, prepared.manifest);
-    if (flags.get("--check")) {
-      if (prepared.changed) {
-        throw new Error("requested target is not prepared; rerun without --check to create the reviewable metadata diff");
-      }
-      emit(result(adapterName, targetVersion, "preparation", "noop", "target metadata already matches; review or qualify it", undefined, {
-        executed: "none",
-        reused: true,
-      }), json);
-      return;
-    }
-    if (prepared.changed) {
-      fs.writeFileSync(
-        path.join(repoRoot, adapter.manifestPath),
-        `${JSON.stringify(prepared.manifest, null, 2)}\n`,
-      );
-    }
-    emit(
-      result(
-        adapterName,
-        targetVersion,
-        "preparation",
-        prepared.changed ? "prepared" : "noop",
-        prepared.changed
-          ? `Review and commit ${adapter.manifestPath}, then qualify the candidate.`
-          : "target metadata already matches; review or qualify it",
-        undefined,
-        prepared.changed ? undefined : { executed: "none", reused: true },
-      ),
-      json,
-    );
+    emit(prepareReleaseMetadata(adapterName, {
+      targetVersion: flags.get("--target-version"),
+      sourceCommit: flags.get("--source-commit"),
+      candidateDirectory: flags.get("--candidate-dir"),
+      check: Boolean(flags.get("--check")),
+    }), json);
     return;
   }
   const candidateDirectory = flags.get("--candidate-dir");

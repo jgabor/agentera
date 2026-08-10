@@ -2,7 +2,7 @@
   "schemaVersion": "agentera.packagePublication.v2",
   "owner": "repository/package scripts",
   "invariants": {
-    "preparation": "Preparation is pure and registry-independent. It accepts an explicit target version and source commit, changes only package version and agentera.gitRef, and leaves the diff for review and commit.",
+    "preparation": "Preparation is pure and registry-independent. Development preparation first validates a current normalized source receipt from an explicit external candidate directory, then accepts an explicit target version and source commit, changes only package version and agentera.gitRef, and leaves the diff for review and commit. Missing, stale, malformed, or tampered source evidence fails before metadata effects. Stable preparation retains its existing source-provenance contract and does not consume the development receipt.",
     "sourceQualification": "Source qualification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
     "candidateQualification": "Candidate qualification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
     "publication": "Registry publication consumes the retained candidate bytes through one measured stage, independent exact-version L2, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source qualification, or rolls a tag back.",
@@ -307,8 +307,8 @@
         "precommitEnvironment": "AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR",
         "authority": "The external path is input only. Reuse requires digest, full receipt semantics, exact governed gates, current toolchain, and matching current staged and working tracked-tree identities under the same package version and agentera.gitRef normalization used at source qualification.",
         "effects": "Runs no qualification gate and writes no repository, candidate, receipt, or registry state. Success emits executed none and reused true without receipt content or private paths.",
-        "fallback": "An absent environment variable preserves existing routing. A missing, invalid, ambiguous, or stale receipt never skips tests; pre-commit runs the existing broader policy.",
-        "scope": "Reused source evidence may skip only scripts/precommit-vitest.sh source/release policy execution. Build, compact, parity, candidate qualification, release metadata, approval, and publication remain mandatory at their owning stages."
+        "fallback": "An absent environment variable preserves existing pre-commit routing. A missing, invalid, ambiguous, or stale receipt never skips tests; pre-commit runs the existing broader policy. Development preparation has no fallback and fails before metadata effects.",
+        "scope": "Development preparation uses the check as a source-readiness prerequisite. Reused source evidence may skip only scripts/precommit-vitest.sh source/release policy execution. Build, compact, parity, candidate qualification, release metadata, approval, and publication remain mandatory at their owning stages."
       },
       "dag": {
         "batchA": ["generated-overlap", "stress", "typecheck"],

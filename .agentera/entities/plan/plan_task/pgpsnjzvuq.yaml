@@ -1,0 +1,25 @@
+id: pgpsnjzvuq
+artifact: plan
+record:
+  plan: lsftqiwiki
+  name: Resolve the repository-native retirement hook blocker
+  status: complete
+  depends_on:
+    - hqegoldrmz
+  acceptance:
+    - Relevant documentation, test/cli/repositoryNativeRetirement.test.ts, implementation code, and relevant configuration are reconciled to one authoritative repository-native retirement contract, including the intended treatment of .opencode/package.json.
+    - The root cause of the assertion failure at test/cli/repositoryNativeRetirement.test.ts:110 is resolved with the smallest structural change supported by that reconciled contract.
+    - Tests retain meaningful coverage of the authoritative repository-native retirement and .opencode dependency boundaries; no test is skipped, removed, loosened, or otherwise weakened merely to pass.
+    - If the .opencode dependency boundary remains authoritative, the implementation preserves it.
+    - The normal pre-commit hook and its source suite succeed for the complete staged change set without bypassing hooks or disabling checks.
+    - No push, publish, tag, remote mutation, or registry mutation occurs.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-pgpsnjzvuq-1
+      source: audit:pgpsnjzvuq:criteria=6/6-pass:evidence=pass:patch=d41a16e91f8711b40ad9b650f5ba09d93d0295f1:hook=18-files-exit0:overall=pass
+      recorded_at: 2026-08-10 08:21
+      writer_command: agentera state plan record-evaluation

@@ -30,11 +30,11 @@
   `agentera route request --input - --format json` and `agentera route receipt
   --help` expose the exact `agentera.route_receipt.v1` schema, valid outcomes,
   nullability, compound and UTF-8 span rules, plus a runnable stdin round trip.
-- Development releases now separate explicit metadata preparation, source and
-  candidate qualification, candidate-bound approval, staged exact-version
-  publication, and forward-only tag promotion. Preparation is registry-free;
-  qualification retains one immutable artifact with content-addressed receipts
-  and cold-state smoke evidence; ordinary CI pushes cannot publish it.
+- Development releases now qualify source before explicit metadata preparation,
+  then separate candidate qualification, candidate-bound approval, staged
+  exact-version publication, and forward-only tag promotion. Registry-free
+  preparation requires current source evidence; invalid evidence leaves version
+  files unchanged, while metadata-only preparation preserves source identity.
 - State record families now use canonical bounded `list` and exact `get` reads,
   with predictable summary counts, selectors, queue ordering, omission metadata,
   and exact-detail recovery generated from the retrieval authority.

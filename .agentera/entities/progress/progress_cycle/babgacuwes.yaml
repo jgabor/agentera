@@ -1,0 +1,16 @@
+id: babgacuwes
+artifact: progress
+record:
+  timestamp: 2026-08-10 07:56
+  type: fix
+  phase: build
+  what: Reconciled repository-native retirement with the ignored OpenCode dependency boundary and corrected the blocking static contract.
+  context:
+    intent: Resolve the repository-native retirement hook blocker without deleting or publishing the standalone OpenCode dependency boundary.
+    constraints: Preserve the audited release-preparation and replan changes; use typed state writers; do not complete the task, commit, push, tag, publish, or mutate a registry.
+    unknowns: None; the authoritative contract distinguishes tracked and packaged native descriptors from ignored checkout-local dependency state.
+  inspiration: DTC review of v3 packaging and lifecycle authorities, the verification skill, static-test ownership, migration-only OpenCode code, workspace and lock configuration, and package inventory.
+  discovered: The assertion conflated ignored host-local .opencode/package.json presence with tracked or packaged Agentera ownership; the local manifest, lock, and modules are ignored and untracked, outside the root workspace and npm package.
+  verified: Direct Vitest and canonical targeted source retirement runs passed 9/9; npm dependency, manifest-lock agreement, Git ignore/index state, root workspace and lock isolation, and diff checks passed. Full source passed 228/228 files with 3,444 passed and one pre-existing skip. Normal pre-commit passed Agentera, config, docs, parity, and staged-aware tests in 587.97 seconds.
+  next: Evaluator audit; keep pgpsnjzvuq in progress and do not commit until PASS.
+  publication_order: 128

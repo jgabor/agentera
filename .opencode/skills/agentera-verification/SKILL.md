@@ -15,8 +15,9 @@ working on generated output and package construction.
 
 - Use Node.js 22 or newer.
 - Use pnpm 10.30.3 through Corepack.
-- `.opencode/` has a standalone npm dependency boundary when its runtime code or
-  tests require `@opencode-ai/plugin` types.
+- `.opencode/` may keep an ignored, checkout-local npm dependency boundary when
+  its runtime code or tests require `@opencode-ai/plugin` types. Its manifest
+  and lockfile stay outside the root pnpm workspace and Agentera npm package.
 - Run contributor commands from the repository root unless noted.
 
 ## Common gates

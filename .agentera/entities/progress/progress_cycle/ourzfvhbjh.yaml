@@ -1,0 +1,16 @@
+id: ourzfvhbjh
+artifact: progress
+record:
+  timestamp: 2026-08-09 20:49
+  type: fix
+  phase: build
+  what: Gated development release metadata preparation on a current normalized source receipt while preserving the stable preparation contract.
+  context:
+    intent: Require source readiness before development metadata preparation can mutate governed version-bearing files.
+    constraints: Keep stable preparation unchanged; do not publish, tag, push, change suite version, complete the task, or commit before evaluator approval.
+    unknowns: The existing source-file scope remains authoritative but was not enumerated by startup context; glossary authority for source receipt was unavailable.
+    scope: Publication transaction logic, focused release tests, release contract and workflow guidance, changelog wording, and the volatile documentation mirror.
+  discovered: Development preparation previously validated only the requested target and source commit. A volatile exact-version mirror in documentation provenance also changed the normalized source identity after metadata-only preparation.
+  verified: Focused release tests passed 125 tests across four files. Missing, stale, and tampered receipts failed before manifest effects; a valid receipt changed only the governed development manifest version and gitRef and rechecked with the same receipt SHA; stable preparation passed without a receipt and changed only the shim manifest. Typecheck, build, compact, capability-contract, package verification (37 tests), package dry-run, artifact lint, and diff checks passed. The release conjunction stopped at the checked-in baseline's plan-external .opencode/package.json retirement failure with all release effects false.
+  next: Audit the uncommitted implementation, then complete and commit this task only after evaluator approval.
+  publication_order: 126

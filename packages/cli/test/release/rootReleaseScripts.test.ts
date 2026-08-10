@@ -47,7 +47,7 @@ describe("root release script argument forwarding", () => {
       npm_config_globalconfig: npmGlobalConfig,
     });
     const probes = [
-      ["publication-transaction.mjs", "prepare", "development", "--target-version", "3.0.0-dev.43", "--source-commit", "0".repeat(40), "--check", "--unexpected"],
+      ["publication-transaction.mjs", "prepare", "development", "--target-version", "3.0.0-dev.43", "--source-commit", "0".repeat(40), "--candidate-dir", candidate, "--check", "--unexpected"],
       ["release-qualification.mjs", "verify", "--unexpected"],
       ["release-qualification.mjs", "source", "--candidate-dir", candidate, "--unexpected"],
       ["release-qualification.mjs", "candidate", "--adapter", "development", "--candidate-dir", candidate, "--unexpected"],
@@ -189,6 +189,34 @@ describe("root release script argument forwarding", () => {
     }
   });
 
+  it("gates the development entrypoint before metadata effects", () => {
+    const script = path.join(REPO_ROOT, "packages/cli/scripts/publication-transaction.mjs");
+    const developmentPath = path.join(REPO_ROOT, "packages/cli/package.json");
+    const developmentBytes = fs.readFileSync(developmentPath);
+    const development = JSON.parse(developmentBytes.toString("utf8"));
+    const candidate = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-prepare-readiness-"));
+    try {
+      const developmentCheck = spawnSync(process.execPath, [
+        script,
+        "prepare",
+        "development",
+        "--candidate-dir",
+        candidate,
+        "--target-version",
+        development.version,
+        "--source-commit",
+        development.agentera.gitRef,
+        "--check",
+        "--json",
+      ], { cwd: REPO_ROOT, encoding: "utf8" });
+      expect(developmentCheck.status).toBe(1);
+      expect(developmentCheck.stderr).toContain("source receipt is missing");
+      expect(fs.readFileSync(developmentPath)).toEqual(developmentBytes);
+    } finally {
+      fs.rmSync(candidate, { recursive: true, force: true });
+    }
+  });
+
   it("accepts each documented pnpm argv shape and rejects extra separators or unknown flags", () => {
     expect(parseReleaseFlags([
       "--adapter", "development", "--", "--candidate-dir", "/external/candidate", "--json",
@@ -211,7 +239,11 @@ describe("root release script argument forwarding", () => {
 
   it("accepts the exact separator and JSON shape forwarded by every root release recipe", () => {
     const rootScripts = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")).scripts;
-    const prepare = {
+    const prepareDevelopment = {
+      boolean: ["--check", "--json", "--verbose"],
+      value: ["--target-version", "--source-commit", "--candidate-dir"],
+    };
+    const prepareStable = {
       boolean: ["--check", "--json", "--verbose"],
       value: ["--target-version", "--source-commit"],
     };
@@ -236,8 +268,8 @@ describe("root release script argument forwarding", () => {
       value: ["--candidate-dir", "--source-run-id"],
     };
     const recipes = [
-      ["cli:prepare:dev", prepare, ["--", "--target-version", "next", "--source-commit", "commit", "--json"]],
-      ["cli:prepare:stable", prepare, ["--", "--target-version", "next", "--source-commit", "commit", "--json"]],
+      ["cli:prepare:dev", prepareDevelopment, ["--", "--candidate-dir", "/external/candidate", "--target-version", "next", "--source-commit", "commit", "--json"]],
+      ["cli:prepare:stable", prepareStable, ["--", "--target-version", "next", "--source-commit", "commit", "--json"]],
       ["cli:qualify:source", qualification, ["--", "--candidate-dir", "/external/candidate", "--json"]],
       ["cli:qualify:dev", qualification, ["--adapter", "development", "--", "--candidate-dir", "/external/candidate", "--json"]],
       ["cli:approve:dev", approval, ["--adapter", "development", "--", "--candidate-dir", "/external/candidate", "--approved-by", "test", "--json"]],
@@ -256,5 +288,10 @@ describe("root release script argument forwarding", () => {
       expect(flags.get("--json"), script).toBe(true);
       expect([...flags.keys()], script).not.toContain("--");
     }
+    expect(() => parseReleaseFlags([
+      "--candidate-dir", "/external/candidate",
+      "--target-version", "next",
+      "--source-commit", "commit",
+    ], prepareStable)).toThrow("unexpected argument '--candidate-dir'");
   });
 });

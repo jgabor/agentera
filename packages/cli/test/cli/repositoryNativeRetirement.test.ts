@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -32,7 +32,10 @@ const RETIRED_PACKAGE_SURFACES = [
   "plugins/agentera",
 ] as const;
 
-const LOCAL_OPENCODE_PACKAGE = ".opencode/package.json";
+const LOCAL_OPENCODE_DEPENDENCY_SURFACES = [
+  ".opencode/package.json",
+  ".opencode/package-lock.json",
+] as const;
 
 const RETIRED_CURRENT_DESCRIPTOR_DIRECTORY = "skills/agentera/agents";
 
@@ -82,8 +85,12 @@ function relative(absolute: string): string {
   return path.relative(ROOT, absolute).split(path.sep).join("/");
 }
 
-function tracked(relativePath: string): boolean {
-  return spawnSync("git", ["ls-files", "--error-unmatch", "--", relativePath], { cwd: ROOT }).status === 0;
+function trackedPaths(paths: readonly string[]): string[] {
+  return execFileSync("git", ["ls-files", "-z", "--", ...paths], { cwd: ROOT })
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean)
+    .sort();
 }
 
 function hasCurrentDescriptorDirectory(root: string): boolean {
@@ -111,14 +118,34 @@ describe("repository-native retirement inventory", () => {
     }
   });
 
-  it("has no retired package or distribution descriptors", () => {
+  it("has no current package or distribution descriptors", () => {
     for (const relative of RETIRED_PACKAGE_SURFACES) {
       expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(false);
     }
   });
 
-  it("does not retain the local OpenCode dependency boundary in source", () => {
-    expect(tracked(LOCAL_OPENCODE_PACKAGE)).toBe(false);
+  it("keeps the standalone OpenCode dependency boundary local and untracked", () => {
+    expect(trackedPaths(LOCAL_OPENCODE_DEPENDENCY_SURFACES)).toEqual([]);
+
+    const manifestPath = path.join(ROOT, LOCAL_OPENCODE_DEPENDENCY_SURFACES[0]);
+    if (!fs.existsSync(manifestPath)) return;
+
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    expect(manifest).toEqual({
+      dependencies: {
+        "@opencode-ai/plugin": expect.any(String),
+      },
+    });
+
+    const lockPath = path.join(ROOT, LOCAL_OPENCODE_DEPENDENCY_SURFACES[1]);
+    expect(fs.existsSync(lockPath), LOCAL_OPENCODE_DEPENDENCY_SURFACES[1]).toBe(true);
+    const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+    expect(lock).toMatchObject({
+      lockfileVersion: 3,
+      packages: {
+        "": { dependencies: manifest.dependencies },
+      },
+    });
   });
 
   it("has no current native descriptor directory", () => {

@@ -71,16 +71,19 @@ replay without a token.
 
 ## Development publication
 
-Preparation requires an explicit next version and source commit. It is pure,
-registry-independent, and changes only package version and `agentera.gitRef`.
-The same target is a no-op; stale, skipped, malformed, and out-of-policy targets
-fail before effects.
+Development preparation requires an explicit next version, source commit, and
+external candidate directory containing a current normalized source receipt.
+It is pure, registry-independent, and changes only package version and
+`agentera.gitRef`. Missing, stale, malformed, or tampered source evidence and
+stale, skipped, malformed, or out-of-policy targets fail before effects. Stable
+preparation retains its separate source-provenance behavior without this receipt.
 
 ```bash
+pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
 pnpm cli:prepare:dev -- \
+  --candidate-dir /secure/external/candidate \
   --target-version 3.0.0-dev.N --source-commit COMMIT
 # Review and commit packages/cli/package.json.
-pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
 pnpm cli:qualify:dev -- --candidate-dir /secure/external/candidate
 pnpm cli:approve:dev -- \
   --candidate-dir /secure/external/candidate --approved-by NAME
@@ -106,8 +109,9 @@ On failure, correct the first reported owner and rerun the same source command.
 Do not run omitted owners separately, force-kill overlap, construct a candidate,
 or infer a receipt.
 
-For a version and `gitRef`-only preparation, source evidence can be checked
-without rerunning gates:
+Development preparation runs the read-only source-evidence check before changing
+version or `gitRef`. The same check can be invoked directly without rerunning
+gates:
 
 ```bash
 node packages/cli/scripts/release-qualification.mjs source-check \

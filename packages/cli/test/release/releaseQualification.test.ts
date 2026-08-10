@@ -24,7 +24,10 @@ import {
   validateCiAttestation,
   validateSourceReceipt,
 } from "../../scripts/release-qualification.mjs";
-import { prepareTargetMetadata } from "../../scripts/publication-transaction.mjs";
+import {
+  prepareReleaseMetadata,
+  prepareTargetMetadata,
+} from "../../scripts/publication-transaction.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
@@ -186,6 +189,37 @@ function fixture(): { repo: string; candidateDirectory: string; sourceCommit: st
   git(repo, "add", "packages/cli/package.json");
   git(repo, "commit", "--quiet", "-m", "metadata");
   return { repo, candidateDirectory, sourceCommit };
+}
+
+function stableFixture(): { repo: string; sourceCommit: string } {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-stable-preparation-test-"));
+  temporary.push(root);
+  const repo = path.join(root, "repo");
+  fs.mkdirSync(repo);
+  git(repo, "init", "--quiet");
+  git(repo, "config", "user.name", "Stable Preparation Test");
+  git(repo, "config", "user.email", "stable-preparation@example.invalid");
+  git(repo, "config", "commit.gpgsign", "false");
+  write(repo, "packages/cli/shim/bin/agentera.mjs", "#!/usr/bin/env node\n");
+  write(repo, "packages/cli/shim/lib/backend.mjs", "export const backend = true;\n");
+  write(repo, "packages/cli/shim/README.md", "# Stable shim\n");
+  write(repo, "packages/cli/shim/LICENSE", "Apache-2.0\n");
+  write(repo, "packages/cli/shim/package.json", JSON.stringify({
+    name: "agentera",
+    version: "0.0.2",
+    agentera: { suiteVersion: "2.7.7", gitRef: HEAD },
+  }, null, 2));
+  git(repo, "add", ".");
+  git(repo, "commit", "--quiet", "-m", "stable source");
+  const sourceCommit = git(repo, "rev-parse", "HEAD");
+  write(repo, "packages/cli/shim/package.json", JSON.stringify({
+    name: "agentera",
+    version: "0.0.2",
+    agentera: { suiteVersion: "2.7.7", gitRef: sourceCommit },
+  }, null, 2));
+  git(repo, "add", "packages/cli/shim/package.json");
+  git(repo, "commit", "--quiet", "-m", "stable metadata");
+  return { repo, sourceCommit };
 }
 
 async function sourceReceipt(repo: string, candidateDirectory: string) {
@@ -741,5 +775,120 @@ describe("explicit preparation", () => {
       .toThrow("not the next");
     expect(() => prepareTargetMetadata("development", manifest, "3.0.0-dev.43", "abcdef0123456789abcdef0123456789abcdef01"))
       .toThrow("not the next");
+  });
+
+  it("fails development preparation before metadata effects when source evidence is absent", () => {
+    const { repo, candidateDirectory, sourceCommit } = fixture();
+    const manifestPath = path.join(repo, "packages/cli/package.json");
+    const before = fs.readFileSync(manifestPath);
+
+    expect(() => prepareReleaseMetadata("development", {
+      targetVersion: "3.0.0-dev.42",
+      sourceCommit,
+    }, { repo })).toThrow("requires --candidate-dir");
+    expect(fs.readFileSync(manifestPath)).toEqual(before);
+
+    fs.mkdirSync(candidateDirectory);
+    expect(() => prepareReleaseMetadata("development", {
+      targetVersion: "3.0.0-dev.42",
+      sourceCommit,
+      candidateDirectory,
+    }, { repo })).toThrow("source receipt is missing");
+
+    expect(fs.readFileSync(manifestPath)).toEqual(before);
+    expect(git(repo, "status", "--porcelain=v1")).toBe("");
+  });
+
+  it("prepares only normalized development metadata and keeps source evidence reusable", async () => {
+    const { repo, candidateDirectory, sourceCommit } = fixture();
+    const source = await sourceReceipt(repo, candidateDirectory);
+    const manifestPath = path.join(repo, "packages/cli/package.json");
+    const before = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+
+    const preparation = prepareReleaseMetadata("development", {
+      targetVersion: "3.0.0-dev.42",
+      sourceCommit,
+      candidateDirectory,
+    }, { repo });
+
+    expect(preparation).toMatchObject({
+      package: "development",
+      version: "3.0.0-dev.42",
+      phase: "preparation",
+      outcome: "prepared",
+    });
+    expect(JSON.stringify(preparation)).not.toContain(candidateDirectory);
+    expect(git(repo, "diff", "--name-only")).toBe("packages/cli/package.json");
+    expect(JSON.parse(fs.readFileSync(manifestPath, "utf8"))).toEqual({
+      ...before,
+      version: "3.0.0-dev.42",
+      agentera: { ...before.agentera, gitRef: sourceCommit },
+    });
+    const rechecked = checkSourceReceipt({ repo, candidateDirectory });
+    expect(rechecked.receiptSha256).toBe(source.receiptSha256);
+    expect(rechecked.component).not.toHaveProperty("sourceCommit");
+    expect(rechecked.component).not.toHaveProperty("metadataCommit");
+    expect(rechecked.component).not.toHaveProperty("documentationProvenance");
+  });
+
+  it("rejects a tampered source receipt before development metadata effects", async () => {
+    const { repo, candidateDirectory, sourceCommit } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const receiptPath = path.join(candidateDirectory, "source-receipt.json");
+    const receipt = JSON.parse(fs.readFileSync(receiptPath, "utf8"));
+    receipt.gates[0].outcome = "failed";
+    fs.chmodSync(receiptPath, 0o600);
+    fs.writeFileSync(receiptPath, canonicalJson(receipt), { mode: 0o400 });
+    fs.chmodSync(receiptPath, 0o400);
+    const manifestPath = path.join(repo, "packages/cli/package.json");
+    const before = fs.readFileSync(manifestPath);
+
+    expect(() => prepareReleaseMetadata("development", {
+      targetVersion: "3.0.0-dev.42",
+      sourceCommit,
+      candidateDirectory,
+    }, { repo })).toThrow("digest does not match");
+
+    expect(fs.readFileSync(manifestPath)).toEqual(before);
+    expect(git(repo, "status", "--porcelain=v1")).toBe("");
+  });
+
+  it("rejects stale source evidence before changing version-bearing fields", async () => {
+    const { repo, candidateDirectory, sourceCommit } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const manifestPath = path.join(repo, "packages/cli/package.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    manifest.description = "changed after source qualification";
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    const before = fs.readFileSync(manifestPath);
+
+    expect(() => prepareReleaseMetadata("development", {
+      targetVersion: "3.0.0-dev.42",
+      sourceCommit,
+      candidateDirectory,
+    }, { repo })).toThrow("source receipt no longer matches current component inputs");
+
+    expect(fs.readFileSync(manifestPath)).toEqual(before);
+    expect(JSON.parse(fs.readFileSync(manifestPath, "utf8"))).toMatchObject({
+      version: "3.0.0-dev.41",
+      agentera: { gitRef: sourceCommit },
+    });
+  });
+
+  it("keeps stable preparation independent of development source receipts", () => {
+    const { repo, sourceCommit } = stableFixture();
+
+    const preparation = prepareReleaseMetadata("stable", {
+      targetVersion: "0.0.3",
+      sourceCommit,
+    }, { repo });
+
+    expect(preparation).toMatchObject({
+      package: "stable",
+      version: "0.0.3",
+      phase: "preparation",
+      outcome: "prepared",
+    });
+    expect(git(repo, "diff", "--name-only")).toBe("packages/cli/shim/package.json");
   });
 });

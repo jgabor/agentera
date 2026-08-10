@@ -45,18 +45,28 @@ machine-readable authority is
 It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
-Preparation is pure. It does not read npm or create a package. Supply both the
-next allowed target version and the immutable source commit:
+Development preparation is pure. It does not read npm, rerun source gates, or
+create a package. Qualify the completed source into a new external candidate
+directory first, then supply that directory, the next allowed target version,
+and the immutable source commit:
 
 ```bash
-pnpm cli:prepare:dev -- --target-version 3.0.0-dev.N --source-commit COMMIT
-pnpm cli:prepare:dev -- --target-version 3.0.0-dev.N --source-commit COMMIT --check
+pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
+pnpm cli:prepare:dev -- \
+  --candidate-dir /secure/external/candidate \
+  --target-version 3.0.0-dev.N --source-commit COMMIT
+pnpm cli:prepare:dev -- \
+  --candidate-dir /secure/external/candidate \
+  --target-version 3.0.0-dev.N --source-commit COMMIT --check
 ```
 
 Only `packages/cli/package.json#version` and `agentera.gitRef` can change. The
 same target is a no-op. A stale, skipped, malformed, or out-of-policy target
-fails before effects. Review and commit the diff; preparation never infers a
-version, reads the registry, or loads `.env` credentials.
+fails before effects. A missing, stale, malformed, or tampered source receipt
+also fails before metadata changes. Review and commit the diff; preparation
+never infers a version, reads the registry, or loads `.env` credentials. Stable
+shim preparation retains its separate source-provenance check and does not use
+the development receipt.
 
 Source qualification runs one evidence DAG. Batch A starts generated-overlap,
 stress, and typecheck together with separate HOME, cache, npm configs, and
@@ -146,7 +156,8 @@ blocks every later phase, reports every completed/cancelled failure while
 retaining the first observed label, and issues no receipt. The
 source-plus-candidate deadline remains a guard, not performance evidence.
 
-A metadata-only preparation can check reusable source evidence without running
+Development preparation performs the same read-only source check before it
+changes metadata. Maintainers can also run the check directly without running
 gates or writing repository or candidate state:
 
 ```bash
@@ -170,8 +181,10 @@ receipt falls back to the existing broader policy. Build, compact, parity,
 candidate qualification, release metadata, approval, and publication are never
 skipped.
 
+After committing the prepared metadata, qualify and approve the candidate from
+the same external directory:
+
 ```bash
-pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
 pnpm cli:qualify:dev -- --candidate-dir /secure/external/candidate
 pnpm cli:approve:dev -- --candidate-dir /secure/external/candidate --approved-by NAME
 ```

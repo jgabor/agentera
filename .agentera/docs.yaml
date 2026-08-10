@@ -249,11 +249,6 @@ coverage:
   documented: 1/1 skill entry points have SKILL.md (active bundled Agentera skill)
   undocumented: 0 skills lack documentation
   stale: 0 current documents; 1 historical gap-analysis inventory entry remains stale
-  release_metadata: >
-    Current v3 release surfaces keep the suite at 3.0.0 while the npm development
-    package advances independently as 3.0.0-dev.51 with immutable source reference
-    a70ed56a72d633f3f11e94cede11fe4aadba2d2e; metadata validation and package
-    dry-runs remain local-only.
   bounded_retrieval: >
     Public plan-task, plan, and objective-scoped experiment list/get surfaces are
     synchronized across runtime authority, help, schema introspection, capability

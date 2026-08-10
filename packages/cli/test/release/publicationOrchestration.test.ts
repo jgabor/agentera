@@ -66,6 +66,18 @@ describe("candidate publication orchestration", () => {
     expect(stablePackage.scripts).not.toHaveProperty("publish:stable");
   });
 
+  it("binds development preparation to reusable source evidence without changing stable preparation", () => {
+    expect(publicationContract.invariants.preparation).toContain(
+      "Development preparation first validates a current normalized source receipt",
+    );
+    expect(publicationContract.qualification.source.reuseCheck.scope).toContain(
+      "Development preparation uses the check as a source-readiness prerequisite",
+    );
+    expect(publicationContract.invariants.preparation).toContain(
+      "Stable preparation retains its existing source-provenance contract",
+    );
+  });
+
   it("keeps credentials out of package scripts and ordinary CI pushes", () => {
     expect(JSON.stringify(developmentPackage.scripts)).not.toContain(".env");
     expect(JSON.stringify(stablePackage.scripts)).not.toContain(".env");

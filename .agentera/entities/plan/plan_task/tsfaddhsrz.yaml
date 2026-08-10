@@ -4,6 +4,7 @@ record:
   name: Separate source, performance, and capacity ownership
   depends_on:
     - hqegoldrmz
+    - pgpsnjzvuq
   status: pending
   acceptance:
     - GIVEN correctness-shaped response-cap coverage WHEN owners run THEN it executes with deterministic source tests.

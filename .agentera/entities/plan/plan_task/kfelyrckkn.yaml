@@ -4,6 +4,7 @@ record:
   name: Restrict progress state to durable outcomes
   depends_on:
     - hqegoldrmz
+    - pgpsnjzvuq
   status: pending
   acceptance:
     - GIVEN an ordinary build or release attempt WHEN no durable project truth changes THEN no progress append is required.
