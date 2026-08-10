@@ -3,8 +3,8 @@ import path from "node:path";
 
 import type { Io } from "./dispatch/shared.js";
 import { emitStructured } from "./structured.js";
-import { detectStateMode } from "../state/stateMode.js";
-import { fullEntityUpgradeCommand } from "../upgrade/upgradeCommands.js";
+import { classifyProjectState, detectStateMode } from "../state/stateMode.js";
+import { commandText, fullEntityUpgradeCommand, fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
 import { preCutoverCommand } from "./preCutoverCommand.js";
 
 type Format = "text" | "json" | "yaml";
@@ -45,11 +45,25 @@ export function migrationProject(argv: string[], fallback = process.cwd()): stri
   }
 }
 
+function permitsFreshPlanInitialization(argv: string[]): boolean {
+  const [command, subcommand, verb] = argv;
+  return command === "state" && subcommand === "plan" && verb === "create"
+    || command === "prime" && value(argv, "--context") === "plan";
+}
+
+function freshPlanCreateCommand(project: string): string {
+  return commandText([
+    "npx", "-y", "agentera@next", "state", "plan", "create", "--project", project,
+    "--input", "PLAN.yaml", "--format", "json",
+  ]);
+}
+
 /** Read-only cutover gate. It only inspects the durable marker and emits a failure. */
 export function enforceCompletedEntityCutover(
   projectRoot: string,
   format: Format,
   io: Io = {},
+  argv: string[] = [],
 ): number | null {
   const project = path.resolve(projectRoot);
   let mode: "legacy" | "entities";
@@ -67,13 +81,34 @@ export function enforceCompletedEntityCutover(
     return 1;
   }
   if (mode === "entities") return null;
-  const recovery = fullEntityUpgradeCommand(project);
+  const classification = classifyProjectState(project);
+  if (classification.state === "fresh_uninitialized") {
+    if (permitsFreshPlanInitialization(argv)) return null;
+    const recovery = freshPlanCreateCommand(project);
+    const envelope = {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: "fresh_initialization_required",
+        message: "Fresh project state is initialized only by state plan create; no other state writer can create entity authority.",
+        project,
+        recovery,
+      },
+    };
+    if (format === "json" || format === "yaml") emitStructured(envelope, format, io.out ?? ((text) => process.stdout.write(text)));
+    else (io.err ?? ((text) => process.stderr.write(text)))(`Error: ${envelope.error.message}\nRecovery: ${recovery}\n`);
+    return 1;
+  }
+  const legacy = classification.state === "legacy";
+  const recovery = legacy ? fullEntityUpgradeCommand(project) : fullEntityUpgradePreviewCommand(project);
   const envelope = {
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
     error: {
       class: "migration_required",
-      message: "This command requires the completed entity-state cutover; legacy aggregates remain migration input only.",
+      message: legacy
+        ? "This command requires the completed entity-state cutover; legacy aggregates remain migration input only."
+        : `This command cannot adopt marker-absent ${classification.state} Agentera state; inspect it with the read-only recovery command before any mutation.`,
       project,
       recovery,
     },

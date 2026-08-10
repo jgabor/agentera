@@ -1,0 +1,11 @@
+id: jjunsdlfoh
+artifact: plan
+record:
+  name: Prepare development release metadata
+  depends_on:
+    - pswhuyftzf
+  status: pending
+  acceptance:
+    - GIVEN an explicitly selected next 3.0.0-dev.N version and verified source commit WHEN development preparation runs THEN only the permitted development package version and source binding advance while suite metadata stays at 3.0.0.
+    - GIVEN release metadata is prepared WHEN release validation runs THEN all governed version surfaces agree and no candidate, approval, registry mutation, tag, or push is created.
+  plan: ijkzofxryi

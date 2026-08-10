@@ -802,6 +802,58 @@ describe("npm distribution boundary", () => {
     expect(entityEnvelopes(project)).toEqual(entities);
   });
 
+  it("keeps Orca Journal-shaped fresh Plan initialization available in the installed package", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const project = fs.mkdtempSync(path.join(fixture.root, "fresh-plan-"));
+    const git = run("git", ["init", "--quiet"], project, isolatedPackageEnv());
+    expect(git.status, git.stderr).toBe(0);
+    for (const name of ["ARCHITECTURE.md", "MVP.md", "ROADMAP.md"]) {
+      fs.writeFileSync(path.join(project, name), `# ${name}\n`);
+    }
+    fs.writeFileSync(path.join(project, "TODO.md"), "| Task | Status |\n| --- | --- |\n| Draft | open |\n");
+    fs.mkdirSync(path.join(project, "reports"));
+    fs.writeFileSync(path.join(project, "reports", "journal.md"), "# Orca Journal\n");
+    const input = JSON.stringify({
+      header: { level: "light", created: "2026-08-10", status: "open", title: "Installed fresh Plan" },
+      what: "Verify dist/bin/agentera.js initializes fresh Plan state.",
+      why: "The package must retain the .agentera/state-mode.yaml fresh-state boundary.",
+      scope: { included: ["fresh Plan"], excluded: ["legacy migration"] },
+      tasks: [{ number: 1, name: "Publish first task", status: "pending", depends_on: [], acceptance: ["GIVEN fresh state WHEN Plan publishes THEN marker and task agree"] }],
+    });
+    const env = isolatedPackageEnv({
+      HOME: path.join(project, "home"),
+      AGENTERA_PROFILE_DIR: path.join(project, "profile"),
+      PROFILERA_PROFILE_DIR: path.join(project, "profile"),
+    });
+
+    const startup = run(process.execPath, [bin, "prime", "--context", "plan", "--format", "json"], project, env);
+    expect(startup.status, startup.stderr).toBe(0);
+    expect(JSON.parse(startup.stdout).capability_context.startup).toMatchObject({
+      outcome: "ok",
+      state_cutover: { status: "fresh_uninitialized", project_state: "fresh_uninitialized" },
+    });
+    expect(startup.stdout).not.toContain("upgrade --yes");
+
+    const dryRun = run(process.execPath, [bin, "state", "plan", "create", "--input", "-", "--dry-run", "--format", "json"], project, env, input);
+    expect(dryRun.status, dryRun.stderr || dryRun.stdout).toBe(0);
+    expect(JSON.parse(dryRun.stdout)).toMatchObject({
+      operation: { dry_run: true },
+      initialization: { marker: { record: { schemaVersion: "agentera.stateMode.v1", mode: "entities" } } },
+    });
+    expect(fs.existsSync(path.join(project, ".agentera"))).toBe(false);
+
+    const applied = run(process.execPath, [bin, "state", "plan", "create", "--input", "-", "--format", "json"], project, env, input);
+    expect(applied.status, applied.stderr).toBe(0);
+    expect(fs.readFileSync(path.join(project, ".agentera", "state-mode.yaml"), "utf8"))
+      .toContain("mode: entities");
+    const initialized = run(process.execPath, [bin, "prime", "--context", "plan", "--format", "json"], project, env);
+    expect(initialized.status, initialized.stderr).toBe(0);
+    expect(JSON.parse(initialized.stdout).capability_context.startup.outcome).toBe("ok");
+    expect(JSON.parse(initialized.stdout).capability_context.startup.state_cutover)
+      .toMatchObject({ status: "complete", project_state: "v3" });
+    expect(initialized.stdout).not.toContain("upgrade --yes");
+  });
+
   it("constructs one self-contained CLI and shared-skill package inventory", () => {
     const files = new Set(fixture.manifest.files.map((entry) => entry.path));
     for (const required of [

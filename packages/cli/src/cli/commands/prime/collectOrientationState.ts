@@ -19,7 +19,7 @@ import { v1MigrationSummary } from "./v1Migration.js";
 import { diagnoseCanonicalSkill } from "../../../setup/sharedSkill.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
 import { acquireProfile } from "../../profileAcquisition.js";
-import { fullEntityUpgradeCommand } from "../../../upgrade/upgradeCommands.js";
+import { fullEntityUpgradeCommand, fullEntityUpgradePreviewCommand } from "../../../upgrade/upgradeCommands.js";
 import { classifyEntityCutoverProject } from "../../../state/entityMigrationPreview.js";
 import { preCutoverCommand } from "../../preCutoverCommand.js";
 
@@ -31,7 +31,14 @@ function stateCutover(project: string, sourceRoot: string): OrientationState["st
     if (projectState === "v3") {
       return { status: "complete", project_state: "v3", recovery_command: null };
     }
-    return { status: "required", project_state: projectState, recovery_command: fullEntityUpgradeCommand(project) };
+    if (projectState === "fresh_uninitialized") {
+      return { status: "fresh_uninitialized", project_state: projectState, recovery_command: null };
+    }
+    return {
+      status: "required",
+      project_state: projectState,
+      recovery_command: projectState === "legacy" ? fullEntityUpgradeCommand(project) : fullEntityUpgradePreviewCommand(project),
+    };
   } catch {
     return { status: "invalid_lifecycle", project_state: "invalid_lifecycle", recovery_command: preCutoverCommand("check validate state --format json") };
   }
@@ -111,7 +118,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
       phase: entity.todoReconciliation.state === "unsafe_inactive" ? "plan" : entity.todoReconciliation.state === "invalid_lifecycle" ? "audit" : "build",
     })
     : readiness;
-  const nextAction = cutover.status !== "complete"
+  const nextAction = cutover.status === "required" || cutover.status === "invalid_lifecycle"
     ? withRecommended(readiness, {
       object: "Complete Agentera entity-state cutover",
       capability: "status",

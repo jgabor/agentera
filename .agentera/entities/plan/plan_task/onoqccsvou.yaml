@@ -1,0 +1,15 @@
+id: onoqccsvou
+artifact: plan
+record:
+  name: Synchronize final project state
+  depends_on:
+    - dmkqfmjsvu
+    - mucxyqkrxj
+    - pswhuyftzf
+    - jjunsdlfoh
+  status: pending
+  acceptance:
+    - GIVEN all preceding tasks pass WHEN project state is reconciled THEN TODO qeqpefwupo closes with evidence from the local built CLI and the completed Plan records its final evaluation.
+    - GIVEN the fix is user-visible WHEN the changelog is updated THEN it states that fresh Plan initialization now converges without exposing internal state bookkeeping or unrelated TODO work.
+    - GIVEN final synchronization completes WHEN the working tree and Plan are inspected THEN intended code, tests, contracts, metadata, and state agree and unrelated work remains untouched.
+  plan: ijkzofxryi

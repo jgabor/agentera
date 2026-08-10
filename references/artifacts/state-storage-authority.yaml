@@ -17,11 +17,14 @@ authority:
     Shared entity storage plus the progress, decisions, health, plan, objective,
     experiment, TODO-item, and documentation-inventory family writers and retrieval,
     plus one-way forward import, are implemented but activate entity authority only
-    from the durable cutover marker. The preserved
+    from the durable cutover marker. A marker-absent Git root with no .agentera
+    residue is fresh_uninitialized and may publish that marker only with its first
+    complete Plan create. The preserved
     singleton families remain legacy files. The
     numbered archives, aggregate overlays, and aggregate revision documents
     remain migration input while that marker is absent; no independent legacy
-    read or repair mutation remains.
+    read or repair mutation remains, and every other marker-absent residue fails
+    closed without publication.
 
 entity_target:
   status: progress_decisions_health_plan_objective_experiment_todo_and_docs_implemented_other_families_declared
@@ -44,9 +47,11 @@ entity_target:
     remaining_families: declared_not_implemented
     rule: >-
       Every implemented family selects entity behavior only when the durable
-      cutover marker is valid. Marker-absent ordinary consumers fail with
-      migration_required; the read-only migration preview and readiness checks do
-      not create entity state or write both authorities.
+      cutover marker is valid. The sole marker-absent exception is fresh Plan
+      create at a proven fresh_uninitialized Git root; it publishes one complete
+      plan graph and marker or rolls back. Other marker-absent consumers fail
+      closed; the read-only migration preview and readiness checks do not create
+      entity state or write both authorities.
   public_schema:
     canonical_identity_field: id
     canonical_classification_field: artifact
@@ -1193,16 +1198,30 @@ entity_migration:
       mode: entities
       source_fingerprint: lowercase_sha256_of_bound_migration_inputs
       preview_digest: lowercase_sha256_of_bound_migration_preview
-    absent_mode: legacy
+    absent_mode: classified
     invalid_behavior: fail_without_fallback
     detection: read_only
-    publication_owner: development_channel_v2_to_v3_upgrade
+    publication_owner: recognized_legacy_development_upgrade_or_fresh_plan_create
     selection: >-
       Project state and CLI installation state are independent dimensions. A v3
       CLI selects this cutover for recognized marker-absent v2 aggregate state
       whether the CLI runs from a self-contained npm package or a source
-      checkout. Pending v1 Markdown state and marker-absent state with no
-      recognized v2 entity input are rejected with manual recovery instructions.
+      checkout. A Git-root project with no .agentera path is fresh_uninitialized:
+      Plan startup remains read-only and its first Plan create is the sole
+      initializer. Pending v1 Markdown, partial, corrupt, and unknown
+      marker-absent state are rejected with their read-only recovery instructions.
+  fresh_initialization:
+    classification: >-
+      fresh_uninitialized requires an exact Git root, absent .agentera state
+      root, no entity records, no recognized aggregate migration input, and no
+      unknown Agentera-owned residue. Ordinary root documents, table-based TODO
+      files, and report directories are user-owned and do not participate.
+    startup: plan_context_is_read_only_and_operable_without_upgrade_apply
+    writer: state_plan_create_only
+    dry_run: previews_marker_plan_and_tasks_without_filesystem_effects
+    apply: publishes_plan_and_tasks_then_marker_with_ordinary_rollback_on_failure
+    other_writers: reject_without_initialization_route
+    global_runtime_resources: not_read_or_changed
   invocation:
     explicit_apply: full_upgrade_yes_only
     dry_run: optional_read_only_preview
@@ -1269,7 +1288,7 @@ entity_migration:
         Deterministic legacy plan lifecycle normalization is part of entity
         projection during cutover. Upgrade retains the original legacy YAML as
         source and recovery evidence instead of rewriting it first.
-      empty_state: unsupported_unknown_source_with_manual_handoff
+      empty_state: fresh_plan_create_only_other_marker_absent_state_manual_handoff
       existing_entity_state: validate_then_no_op
   source_scope:
     included_entities: entity_target.entities

@@ -12,8 +12,8 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
   const packageRoot = path.resolve(import.meta.dirname, "..");
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-source-verification-"));
   const result = spawnSync(
-    "pnpm",
-    ["exec", "tsc", "-p", "tsconfig.json", "--outDir", root, "--sourceMap", "false"],
+    process.execPath,
+    [path.join(packageRoot, "node_modules", "typescript", "bin", "tsc"), "-p", "tsconfig.json", "--outDir", root, "--sourceMap", "false"],
     { cwd: packageRoot, encoding: "utf8" },
   );
   if (result.status !== 0) {

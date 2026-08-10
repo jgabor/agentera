@@ -9,10 +9,9 @@ import { dumpYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import { allocateEntityId, canonicalEntityEnvelopeBytes, entityExactGetMaxBytes, exactDiscoveredEntityBytes, publishEntity, replaceEntity, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
-import type { EntityPublicationContext } from "./entityPublicationContext.js";
-import type { PublishedTargetIdentity } from "./entityPublicationContext.js";
+import { EntityPublicationContext, type PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { inspectPendingPlanReplacement, publishPlanReplacement, recoverPendingPlanReplacement } from "./planReplacementTransaction.js";
-import { detectStateModeBinding } from "./stateMode.js";
+import { detectStateModeBinding, freshEntityStateMarker, freshPlanInitialization } from "./stateMode.js";
 import { normalizeAndValidatePlanCreateInput, validatePlanPublicationCandidate } from "./write/planPublication.js";
 import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
@@ -271,8 +270,23 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
   return withEntityWriterLock(options.publicationContext, () => createPlanEntitiesUnderLock(req, options as Options & { publicationContext: EntityPublicationContext }));
 }
 
+/** The first Plan is the sole marker-absent entity initializer. */
+export function createFreshPlanEntities(req: StateWriteRequest, options: Omit<Options, "publicationContext"> = {}): StateWriteEnvelope | null {
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  const initialization = freshPlanInitialization(req.projectRoot, sourceRoot);
+  if (!initialization) return null;
+  const publicationContext = EntityPublicationContext.beginInitialization(initialization.root, initialization.markerPath);
+  try {
+    return createPlanEntities(req, { ...options, sourceRoot, publicationContext });
+  } finally {
+    publicationContext.close();
+  }
+}
+
 function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & { publicationContext: EntityPublicationContext }): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  const initializing = options.publicationContext.isInitializing();
+  const marker = initializing ? freshEntityStateMarker(sourceRoot) : null;
   const input = preparedPlanCreateInput(req);
   const discovery = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
   const entities = all(options.publicationContext.pinnedPath(), sourceRoot, discovery);
@@ -302,7 +316,20 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
     return record;
   });
   const publications = [{ boundary: PLAN, id: planId, record: planRecord }, ...taskRecords.map((record, index) => ({ boundary: TASK, id: taskIds[index], record }))];
-  if (req.dryRun) return envelope(command, { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, true, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
+  const resultExtra: JsonObject = {
+    tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })),
+    effects: lifecycle.effects,
+    ...(marker ? {
+      initialization: {
+        atomic: true,
+        marker: {
+          path: path.join(req.projectRoot, options.publicationContext.markerPath),
+          record: marker,
+        },
+      },
+    } : {}),
+  };
+  if (req.dryRun) return envelope(command, { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, true, resultExtra);
   if (command === "state plan replace" && lifecycle.predecessor && lifecycle.archivedRecord && lifecycle.replacementInputSha256) {
     const targets = [
       {
@@ -328,10 +355,11 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
         },
       },
     );
-    return envelope(command, { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
+    return envelope(command, { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, resultExtra);
   }
   const published: Array<{ relative: string; identity: PublishedTargetIdentity }> = [];
   let predecessor: { relative: string; archivedIdentity: PublishedTargetIdentity; bytes: string } | undefined;
+  let markerIdentity: PublishedTargetIdentity | undefined;
   try {
     if (lifecycle.predecessor && lifecycle.archivedRecord) {
       const archived = replaceEntityUnderLock({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: PLAN, id: lifecycle.predecessor.id!, expectedRecord: lifecycle.predecessor.record!, expectedBytes: exactDiscoveredEntityBytes(lifecycle.predecessor), migrationProvenance: lifecycle.predecessor.migrationProvenance, record: lifecycle.archivedRecord });
@@ -349,6 +377,10 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
     const validation = validateEntityState(options.publicationContext.pinnedPath(), sourceRoot, { kind: "project", projectRoot: options.publicationContext.validatedRoot });
     if (!validation.valid) throw new Error(`created plan graph failed state validation: ${validation.issues.map(({ message }) => message).join("; ")}`);
     options.publicationContext.assertValid();
+    if (marker) {
+      markerIdentity = options.publicationContext.publishStateMarker(dumpYamlMapping(marker));
+      options.publicationContext.assertValid();
+    }
   } catch (error) {
     const recoveryFailures: string[] = [];
     for (const item of published.reverse()) {
@@ -363,10 +395,18 @@ function createPlanEntitiesUnderLock(req: StateWriteRequest, options: Options & 
       try { options.publicationContext.restoreExact(predecessor.relative, predecessor.archivedIdentity, predecessor.bytes, entityExactGetMaxBytes(sourceRoot)); }
       catch (restoreError) { recoveryFailures.push(`predecessor restoration failed because ownership changed or publication was unsafe: ${(restoreError as Error).message}`); }
     }
+    if (markerIdentity) {
+      try {
+        const removed = options.publicationContext.removeExact(options.publicationContext.markerPath, markerIdentity, false);
+        if (removed === "identity_mismatch") recoveryFailures.push("cleanup ownership changed for fresh state marker");
+      } catch (cleanupError) {
+        recoveryFailures.push(`cleanup failed for fresh state marker: ${(cleanupError as Error).message}`);
+      }
+    }
     if (recoveryFailures.length) throw new Error(`plan replacement failed: ${(error as Error).message}; recovery failed: ${recoveryFailures.join("; ")}`, { cause: error });
     throw error;
   }
-  return envelope(command, { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, { tasks: taskRecords.map((record, index) => ({ id: taskIds[index], artifact: ARTIFACT, record })), effects: lifecycle.effects });
+  return envelope(command, { id: planId, path: entityPath(req.projectRoot, sourceRoot, PLAN, planId), replay: false }, planRecord, false, resultExtra);
 }
 
 interface PlanReplacementDecision {

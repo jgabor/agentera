@@ -1,0 +1,17 @@
+id: djpmuzqpzo
+artifact: progress
+record:
+  timestamp: 2026-08-10 12:04
+  type: fix
+  phase: build
+  what: Enabled a fresh Git project to initialize canonical entity state through its first Plan creation.
+  context:
+    intent: Permit only proven fresh Plan initialization.
+    constraints: Do not alter legacy or ambiguous state, release metadata, publication, tags, pushes, or the open TODO.
+    unknowns: The full source lane still sees two local non-candidate environment failures.
+    scope: Fresh state classification, atomic Plan publication, and Orca Journal regression coverage.
+  inspiration: Orca Journal startup must not route a new project through legacy migration.
+  discovered: Marker-absent state needs a distinct fresh classification before Plan write routing.
+  verified: 100 targeted source tests, 36 upgrade tests, 299 contract tests, typecheck, build, compact, state and capability validation, package verification with 38 tests, and a built-CLI fresh dry-run/apply proof passed.
+  next: Leave TODO qeqpefwupo and Plan Tasks 4-5 open for their separately scoped release metadata and final synchronization work.
+  publication_order: 124

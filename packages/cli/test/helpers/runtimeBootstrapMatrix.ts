@@ -611,10 +611,15 @@ export function runRuntimeBootstrapMatrix(
       });
       const primePayload = JSON.parse(prime.stdout);
       const expectedOutcome = projectState === "v3" ? "ok" : "blocked";
+      const expectedCutoverState = projectState === "clean"
+        ? "unknown"
+        : projectState === "v2"
+          ? "legacy"
+          : projectState;
       expect(primePayload.capability_context.startup.outcome).toBe(expectedOutcome);
       expect(Buffer.byteLength(prime.stdout, "utf8")).toBeLessThanOrEqual(25_000);
       expect(primePayload.capability_context.startup.state_cutover).toMatchObject({
-        project_state: projectState,
+        project_state: expectedCutoverState,
         status: projectState === "v3" ? "complete" : "required",
       });
       if (projectState === "v3") {

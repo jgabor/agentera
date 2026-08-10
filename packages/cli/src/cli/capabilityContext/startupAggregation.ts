@@ -64,7 +64,7 @@ export function startupAggregation(
   cutover: JsonObject | null = null,
   todoReconciliation: JsonObject | null = null,
 ): JsonObject {
-  const cutoverRequired = cutover?.status !== undefined && cutover.status !== "complete";
+  const cutoverRequired = cutover?.status === "required" || cutover?.status === "invalid_lifecycle";
   const reconciliationRequired = todoReconciliation?.status === "action_required";
   const blocked = cutoverRequired || reconciliationRequired || (typeof contract.schema_error === "string" && contract.schema_error.length > 0);
   const degraded = health.startup_outcome === "degraded";

@@ -95,9 +95,10 @@ export function main(argv: string[], io: Io = {}): number {
     args[0] === "check" && args[1] === "validate" && ["retained-references", "activation-conjunction"].includes(args[2] ?? "");
   if (!sourceOnlyReferenceValidation && requiresCompletedEntityCutover(args)) {
     const failure = enforceCompletedEntityCutover(
-        migrationProject(args),
+      migrationProject(args),
       requestedMigrationFailureFormat(args),
       io,
+      args,
     );
     if (failure !== null) return failure;
   }

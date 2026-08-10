@@ -1,7 +1,7 @@
 import { amendDecisionEntity, appendDecisionEntity, updateDecisionSatisfactionEntity } from "../decisionEntities.js";
 import { appendHealthEntity } from "../healthEntities.js";
 import { mutateObjectiveEntity, publishExperimentEntity } from "../objectiveExperimentEntities.js";
-import { mutatePlanEntities } from "../planEntities.js";
+import { createFreshPlanEntities, mutatePlanEntities } from "../planEntities.js";
 import { withEntityWriterLock } from "../entityStorage.js";
 import { appendProgressEntity } from "../progressEntities.js";
 import { requireEntityStateBinding } from "../stateMode.js";
@@ -28,6 +28,10 @@ export function executeStateWrite(
       syntax: `agentera state ${req.artifact} ${req.spec.verb} --input PATH --format json`,
       example: `agentera state ${req.artifact} ${req.spec.verb} --input - --format json`,
     });
+  if (req.artifact === "plan" && req.spec.verb === "create") {
+    const initialized = createFreshPlanEntities(req);
+    if (initialized) return initialized;
+  }
   const binding = requireEntityStateBinding(req.projectRoot);
   const publicationContext = binding.publicationContext;
   try {
