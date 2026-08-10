@@ -15,8 +15,12 @@ export interface PackFile {
 }
 
 export interface PackEntry {
+  name: string;
+  version: string;
   filename: string;
   files: PackFile[];
+  size: number;
+  unpackedSize: number;
   integrity: string;
   shasum: string;
 }
@@ -26,9 +30,14 @@ export interface PackageFixture {
   constructionRoot: string;
   packageRoot: string;
   manifest: PackEntry;
+  deterministicBytes: {
+    packRuns: 2;
+    sha256: string;
+    secondSha256: string;
+  };
   pathIndependence: {
-    constructionRoots: [string, string];
-    extractedRoots: [string, string];
+    constructionRoots: string[];
+    extractedRoots: string[];
     regularFiles: number;
     contentSha256: string;
     forbiddenPathMatches: string[];
@@ -78,8 +87,12 @@ function parseManifest(stdout: string): PackEntry {
   }
   const entry = entries[0] as Partial<PackEntry>;
   if (
-    typeof entry.filename !== "string"
+    typeof entry.name !== "string"
+    || typeof entry.version !== "string"
+    || typeof entry.filename !== "string"
     || !Array.isArray(entry.files)
+    || !Number.isSafeInteger(entry.size)
+    || !Number.isSafeInteger(entry.unpackedSize)
     || typeof entry.integrity !== "string"
     || typeof entry.shasum !== "string"
   ) {
@@ -114,12 +127,12 @@ function regularFileManifest(root: string): RegularFileEntry[] {
   return entries;
 }
 
-interface PathNeedle {
+export interface PathNeedle {
   class: string;
   bytes: Buffer;
 }
 
-function pathNeedles(needleClass: string, value: string): PathNeedle[] {
+export function pathNeedles(needleClass: string, value: string): PathNeedle[] {
   return [
     { class: `${needleClass}:raw`, bytes: Buffer.from(value) },
     { class: `${needleClass}:normalized`, bytes: Buffer.from(path.normalize(path.resolve(value))) },
@@ -146,6 +159,32 @@ function forbiddenPathMatches(root: string, needles: readonly PathNeedle[]): str
     }
   }
   return [...matches].sort();
+}
+
+export function assertNoForbiddenPathMatches(root: string, needles: readonly PathNeedle[]): string[] {
+  const matches = forbiddenPathMatches(root, needles);
+  if (matches.length > 0) {
+    throw new Error(
+      `package verification boundary failed: extracted file matched portable-path needle class: ${matches.join(", ")}`,
+    );
+  }
+  return matches;
+}
+
+export function assertDeterministicPackagePair(
+  firstBytes: Buffer,
+  secondBytes: Buffer,
+  firstManifest: PackEntry,
+  secondManifest: PackEntry,
+): void {
+  if (!firstBytes.equals(secondBytes)
+    || JSON.stringify(firstManifest.files) !== JSON.stringify(secondManifest.files)
+    || firstManifest.integrity !== secondManifest.integrity
+    || firstManifest.shasum !== secondManifest.shasum) {
+    throw new Error(
+      "package verification boundary failed: independent construction roots produced different package bytes",
+    );
+  }
 }
 
 function stageConstructionInputs(packageRoot: string, constructionRoot: string): void {
@@ -192,39 +231,27 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
         secondConstructionRoot,
       ),
     );
+    const tarball = path.join(root, manifest.filename);
+    const secondTarball = path.join(secondPackRoot, secondManifest.filename);
+    const tarballBytes = fs.readFileSync(tarball);
+    const secondTarballBytes = fs.readFileSync(secondTarball);
+    const tarballSha256 = createHash("sha256").update(tarballBytes).digest("hex");
+    const secondTarballSha256 = createHash("sha256").update(secondTarballBytes).digest("hex");
+    assertDeterministicPackagePair(tarballBytes, secondTarballBytes, manifest, secondManifest);
     run("tar", ["-xzf", path.join(root, manifest.filename), "-C", root], root);
     const extractedPackage = path.join(root, "package");
-    const secondExtractionRoot = path.join(root, "second extraction & [root]");
-    fs.mkdirSync(secondExtractionRoot);
-    run("tar", ["-xzf", path.join(secondPackRoot, secondManifest.filename), "-C", secondExtractionRoot], root);
-    const secondExtractedPackage = path.join(secondExtractionRoot, "package");
     const firstContent = regularFileManifest(extractedPackage);
-    const secondContent = regularFileManifest(secondExtractedPackage);
     const contentSha256 = createHash("sha256").update(JSON.stringify(firstContent)).digest("hex");
-    const secondContentSha256 = createHash("sha256").update(JSON.stringify(secondContent)).digest("hex");
-    if (JSON.stringify(manifest.files) !== JSON.stringify(secondManifest.files)
-      || contentSha256 !== secondContentSha256
-      || manifest.integrity !== secondManifest.integrity
-      || manifest.shasum !== secondManifest.shasum) {
-      throw new Error("package verification boundary failed: construction roots produced different package content");
-    }
     const pathScanNeedles = [
       ...pathNeedles("checkout-root", checkoutRoot),
       ...pathNeedles("construction-root-primary", constructionRoot),
       ...pathNeedles("construction-root-secondary", secondConstructionRoot),
       ...pathNeedles("extraction-root-primary", extractedPackage),
-      ...pathNeedles("extraction-root-secondary", secondExtractedPackage),
       ...pathNeedles("actual-home", os.homedir()),
       ...pathNeedles("developer-home-explicit", "/home/jgabor"),
       ...pathNeedles("prohibited-intermediate-tier", "/home/jgabor/.local/share/agentera/intermediate/tiers"),
     ];
-    const pathMatches = [
-      ...forbiddenPathMatches(extractedPackage, pathScanNeedles).map((match) => `first:${match}`),
-      ...forbiddenPathMatches(secondExtractedPackage, pathScanNeedles).map((match) => `second:${match}`),
-    ];
-    if (pathMatches.length > 0) {
-      throw new Error(`package verification boundary failed: extracted file matched portable-path needle class: ${pathMatches.join(", ")}`);
-    }
+    const pathMatches = assertNoForbiddenPathMatches(extractedPackage, pathScanNeedles);
     // Both constructed and extracted runtimes use the checkout's already
     // installed dependency graph. Package verification must never consult a
     // registry or mutate npm's user cache.
@@ -238,9 +265,14 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
       constructionRoot,
       packageRoot: extractedPackage,
       manifest,
+      deterministicBytes: {
+        packRuns: 2,
+        sha256: tarballSha256,
+        secondSha256: secondTarballSha256,
+      },
       pathIndependence: {
         constructionRoots: [constructionRoot, secondConstructionRoot],
-        extractedRoots: [extractedPackage, secondExtractedPackage],
+        extractedRoots: [extractedPackage],
         regularFiles: firstContent.length,
         contentSha256,
         forbiddenPathMatches: pathMatches,

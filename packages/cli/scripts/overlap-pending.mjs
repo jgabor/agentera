@@ -340,6 +340,16 @@ function validateConsumedPolicy(policy) {
         policyString(command, issues, `${label}.integration.command[${index}]`);
       }
     }
+    const execution = dataProperty(entry, "execution", issues, label, { optional: true });
+    if (execution !== undefined) {
+      const executionEntry = policyObject(execution, issues, `${label}.execution`);
+      for (const field of ["workers", "wall_time_budget_ms"]) {
+        const value = dataProperty(executionEntry, field, issues, `${label}.execution`, { optional: true });
+        if (value !== undefined && (!Number.isSafeInteger(value) || value < 1)) {
+          addIssue(issues, `${label}.execution.${field} must be a positive safe integer`);
+        }
+      }
+    }
     const evidence = dataProperty(entry, "evidence", issues, label, { optional: true });
     if (evidence !== undefined) {
       const evidenceEntry = policyObject(evidence, issues, `${label}.evidence`);

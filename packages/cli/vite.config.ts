@@ -16,7 +16,7 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.ts"],
     exclude: ["test/packaging/**"],
-    globalSetup: ["./test/sourceSetup.ts"],
+    globalSetup: ["./test/sourceSetup.ts", "./test/packaging/packageSetup.ts"],
     ...sharedTestConfig,
   },
 });

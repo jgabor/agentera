@@ -70,7 +70,7 @@ export interface RuntimeBootstrapMatrixSummary {
   stateCounts: Record<ProjectState, { accepted: number; rejected: number }>;
   preservationRootsPerRow: number;
   childStartRejections: number;
-  packageArtifact: { filename: string; integrity: string; shasum: string; files: number };
+  packageArtifact: { filename: string; integrity: string; shasum: string; tarballSha256: string; files: number };
   expectedCompositeRowIds: string[];
   runtimeObservationDigests: Record<RuntimeName, Record<ProjectState, string>>;
   authority: {
@@ -716,6 +716,7 @@ export function runRuntimeBootstrapMatrix(
       filename: fixture.manifest.filename,
       integrity: fixture.manifest.integrity,
       shasum: fixture.manifest.shasum,
+      tarballSha256: digest(fs.readFileSync(artifact)),
       files: fixture.manifest.files.length,
     },
     expectedCompositeRowIds: expectedAuthority.ids,

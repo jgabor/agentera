@@ -144,8 +144,14 @@ function inventory(contract, policyBytes) {
 
   for (const [owner, definition] of Object.entries(contract.owners ?? {})) {
     if (definition.execution !== undefined) {
-      if (!Number.isInteger(definition.execution.workers) || definition.execution.workers < 1) {
+      if (definition.execution.workers !== undefined
+        && (!Number.isSafeInteger(definition.execution.workers) || definition.execution.workers < 1)) {
         errors.push(`${owner} execution workers must be a positive integer`);
+      }
+      if (definition.execution.wall_time_budget_ms !== undefined
+        && (!Number.isSafeInteger(definition.execution.wall_time_budget_ms)
+          || definition.execution.wall_time_budget_ms < 1)) {
+        errors.push(`${owner} execution wall_time_budget_ms must be a positive integer`);
       }
     }
     if (!definition.integration) continue;
@@ -305,6 +311,7 @@ function runOwner(owner, state, forwarded = []) {
     runnerEnv.AGENTERA_VERIFICATION_WORKERS = String(definition.execution.workers);
   }
   delete runnerEnv.AGENTERA_VERIFICATION_RESULT;
+  const startedAt = process.hrtime.bigint();
   const result = spawnSync("vp", ["test", "run", "--config", config, ...selection.argv, ...reporter], {
     cwd: packageRoot,
     stdio: captureEvidence ? ["inherit", "pipe", "pipe"] : "inherit",
@@ -312,6 +319,7 @@ function runOwner(owner, state, forwarded = []) {
     maxBuffer: captureEvidence ? 1024 * 1024 : undefined,
     env: runnerEnv,
   });
+  const elapsedMs = Math.ceil(Number(process.hrtime.bigint() - startedAt) / 1_000_000);
   if (captureEvidence) {
     process.stdout.write(result.stdout ?? "");
     process.stderr.write(result.stderr ?? "");
@@ -331,6 +339,16 @@ function runOwner(owner, state, forwarded = []) {
     ? validatePerformanceEvidence(result.stdout ?? "", definition, root)
     : [];
   for (const error of evidenceErrors.slice(0, 10)) console.error(`${owner} owner evidence invalid: ${error}`);
+  const wallTimeBudgetMs = definition.execution?.wall_time_budget_ms;
+  if (Number.isSafeInteger(wallTimeBudgetMs)) {
+    console.log(`${owner} owner wall time ${elapsedMs}ms; budget ${wallTimeBudgetMs}ms`);
+  }
+  if (!result.error && result.status === 0 && evidenceErrors.length === 0
+    && Number.isSafeInteger(wallTimeBudgetMs) && elapsedMs > wallTimeBudgetMs) {
+    console.error(`${owner} owner exceeded its ${wallTimeBudgetMs}ms wall-time budget (${elapsedMs}ms)`);
+    console.error(`correction: ${definition.correction}`);
+    return 1;
+  }
   if (result.error || result.status !== 0 || evidenceErrors.length > 0) {
     console.error(`correction: ${definition.correction}`);
     return result.error || result.status !== 0 ? result.status ?? 1 : 1;

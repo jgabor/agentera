@@ -92,15 +92,18 @@ use the newly built CLI from that exact lease-free generation.
 Before it returns, generated-overlap gives the source and package owners separate
 isolated evidence directories under its report root. The source owner atomically
 writes one schema-versioned, content-addressed file and loads each instruction
-module independently from a source-only compilation. The package owner writes two
-content-addressed receipts with separate bounds: package-owner evidence is at most
-262,144 bytes, and the independently retained package-identity receipt is at most
-16,384 bytes. The first records executed capability, runtime-matrix, diagnostic,
-startup-producer, portability, and missing-surface observations. The second binds
-that evidence digest to independently recomputed tarball SHA-512 integrity, SHA-1,
-SHA-256, artifact-observation digest, and complete extracted-tree and tarball-tree
-identities. Missing, stale, duplicate, unknown, malformed, wrongly attributed, or
-cross-receipt evidence fails before combination.
+module independently from a source-only compilation. That source receipt also
+owns the 190 source/package command rows, their classifications and diagnostics,
+the pre-child rejection proof, missing-surface failures, and complete extracted
+capability behavior. The package owner writes two content-addressed receipts with
+separate bounds: package-owner evidence is at most 262,144 bytes, and the
+independently retained package-identity receipt is at most 16,384 bytes. Package
+evidence records construction, exact artifact layout and bytes, portability, and
+one extracted `status` smoke. The identity receipt binds that evidence digest to
+independently recomputed tarball SHA-512 integrity, SHA-1, SHA-256,
+artifact-observation digest, and complete extracted-tree and tarball-tree
+identities. Missing, stale, duplicate, unknown, malformed, wrongly attributed,
+or cross-receipt evidence fails before combination.
 
 Package finalization reads the tarball once through a bounded regular-file
 descriptor. Hashing and extraction consume those same retained bytes; extraction
@@ -303,11 +306,11 @@ independent:
 
 | Owner | Entry point | Owns |
 | ----- | ----------- | ---- |
-| Source | `pnpm -C packages/cli test` (`test:source`) | Deterministic correctness, including response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
+| Source | `pnpm -C packages/cli test` (`test:source`) | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, semantic command parity, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
 | Stress | `pnpm -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
 | Performance | `pnpm -C packages/cli run test:performance` | Machine-sensitive budget evidence, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
 | Capacity | `pnpm -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
-| Package | `pnpm -C packages/cli run verify:package` | Every package-assigned test against one genuinely packed, extracted, production-installed regular tree constructed independently of checkout output. |
+| Package | `pnpm -C packages/cli run verify:package` | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke. |
 
 Build is a separate generated-output participant, not a test owner.
 `pnpm -C packages/cli build` publishes one immutable checkout generation
@@ -315,12 +318,35 @@ containing matching `dist/` and `bundle/`, followed by one atomic `current`
 symlink replacement.
 
 `packages/cli/test/packaging/packageSetup.ts` is the canonical package fixture.
-It builds once, packs with lifecycle scripts disabled to prevent a second
-build, extracts once, and installs once. `packageVerification.test.ts` consumes
-the fixture for complete manifest classification and isolated installed-package
-conjunctions. `copyBundleSafety.test.ts` consumes it for focused staging
-preflight and filesystem-side-effect failures. A failing lane labels its own
-boundary and does not invoke the other lane.
+It builds in two distinct metacharacter-bearing roots, packs each construction
+once with lifecycle scripts disabled, rejects any byte or manifest difference,
+scans the extracted tree for both absolute roots, and extracts once. Source integration
+uses the same fixture for command parity, with a private package copy for tests
+that exercise fail-closed mutations. `packageVerification.test.ts` consumes the
+canonical fixture for distribution assertions and one extracted smoke.
+`copyBundleSafety.test.ts` consumes it for focused staging preflight and
+filesystem-side-effect failures. A failing lane labels its own boundary and
+does not invoke the other lane.
+
+The sole package wall-time authority is
+`owners.package.execution.wall_time_budget_ms` in the verification policy. Its
+adjacent `budget_basis` records the complete derivation. Task 1 measured three
+serial pre-change runs at 611.675, 386.578, and 307.207 seconds under heavy
+contention. On the same 16-thread Ryzen 7 9800X3D host with Node 22.23.2, pnpm
+10.30.3, existing dependencies and caches, and no intentionally concurrent
+verification, the final two-construction fixture took 12.376, 11.666, and
+11.047 seconds in three serial end-to-end runs. Its measured owner times were
+11.415, 10.789, and 10.202 seconds. Earlier single-construction calibration is
+retained in the policy but is explicitly superseded as final-snapshot evidence:
+the 10,000 ms candidate rejected a passing 10.429-second owner, while the
+15,000 ms candidate passed owner runs of 9.859, 8.962, and 13.069 seconds. The
+policy takes the smaller of the baseline minimum and 125 percent of the current
+12.376-second maximum rounded up to the next five seconds. This yields the
+governed 20,000 ms limit.
+The controlled shell timings include command-launch overhead, so they
+conservatively bound the owner process measured by `verify-lane.mjs`. An invalid
+limit fails before test execution. A successful test process that exceeds the
+limit fails with the package correction command.
 
 The canonical policy compositions are:
 
@@ -452,8 +478,13 @@ inputs.
 
 - Detailed runtime behavior and failure coverage stays under source-owned test
   areas such as `test/cli/`, `test/state/`, and `test/upgrade/`.
+- `test/integration/runtimeBootstrapMatrix.test.ts` owns the complete 190-row
+  source/package bootstrap matrix, classifications, protected-root proof, and
+  pre-child rejection evidence.
+- `test/integration/sourcePackageParity.test.ts` owns extracted command and
+  failure semantics that must remain equal to the source runtime.
 - `test/packaging/packageVerification.test.ts` owns distribution observations
-  and intentionally avoids command/failure matrices.
+  and one extracted smoke. It intentionally avoids command/failure matrices.
 - `test/packaging/copyBundleSafety.test.ts` owns focused bundle-staging
   containment, collision, registry-shape, and fail-before-side-effect coverage.
 - `test/verification/laneOwnership.test.ts` locks the lane configs, scripts,

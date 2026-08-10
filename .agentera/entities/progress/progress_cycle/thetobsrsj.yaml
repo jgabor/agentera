@@ -1,0 +1,15 @@
+id: thetobsrsj
+artifact: progress
+record:
+  timestamp: 2026-08-10 12:56
+  type: refactor
+  phase: build
+  what: Moved the complete source and extracted-package command matrix into the source owner, and reduced the package owner to distribution construction, bytes, layout, integrity, portability, and one extracted smoke.
+  context:
+    intent: Execute plan lsftqiwiki task mpkjepcfsb through one measured optimize cycle.
+    constraints: Preserve the source, stress, performance, and capacity split. Do not change version or publication state, publish, push, commit, mark the task complete, or mutate evaluation state.
+    scope: Source and package verification ownership, activation evidence provenance, package wall-time authority, focused documentation, and one durable progress record.
+  discovered: The task-1 package baseline was 307207 to 611675 ms under contention. Seven serial revised command measurements ranged from 7500 to 14293 ms. The governed formula selects 20000 ms, and the runner now rejects an invalid limit before execution or an over-budget successful test process afterward.
+  verified: The combined moved source tests passed 26 cases with all 190 rows, nine protected roots per row, complete classifications, and no rejected child starts. The full source owner passed 3488 tests with one intentional skip. The final package owner passed 11 tests at 7349 ms under the 20000 ms budget. Typecheck, build, compact, capability contract, inventory, and governed pack dry-run passed.
+  next: Obtain the independent evaluator verdict. Leave plan task mpkjepcfsb in progress and all implementation changes uncommitted for orchestration.
+  publication_order: 131

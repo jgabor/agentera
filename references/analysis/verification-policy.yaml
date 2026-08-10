@@ -128,6 +128,56 @@ owners:
   package:
     config: packages/cli/vite.package.config.ts
     correction: Run `pnpm -C packages/cli verify:package`; fix package construction or the extracted-package assertion.
+    execution:
+      wall_time_budget_ms: 20000
+      budget_basis:
+        baseline:
+          source: docs/packaging/v3-release-workflow-baseline.json#measurements.package
+          command: pnpm -C packages/cli run verify:package
+          serial_runs_ms: [611675, 386578, 307207]
+          minimum_ms: 307207
+          note: Task 1 recorded a contention fingerprint, so the minimum is a historical ceiling rather than a direct target.
+        controlled_measurement:
+          measured_on: 2026-08-10
+          command: pnpm -C packages/cli run verify:package
+          serial_runs_ms: [12376, 11666, 11047]
+          owner_wall_time_runs_ms: [11415, 10789, 10202]
+          minimum_ms: 11047
+          median_ms: 11666
+          maximum_ms: 12376
+          test_files: 2
+          passed_tests: 11
+          fixture_construction_cycles: 2
+          deterministic_pack_runs: 2
+          extracted_smoke_runs: 1
+          machine:
+            platform: Linux x86_64
+            processor: AMD Ryzen 7 9800X3D
+            logical_cpus: 16
+            node: 22.23.2
+            pnpm: 10.30.3
+            load_average_at_start:
+              - [15.69, 16.16, 15.30]
+              - [13.97, 15.76, 15.18]
+              - [12.79, 15.38, 15.07]
+          conditions: Serial commands with existing dependencies and caches, no intentional verification overlap, and two independent construction roots per command.
+        calibration_history:
+          superseded_single_construction_command_runs_ms: [7500, 7738, 7604, 11733, 11012, 9967, 14293]
+          note: These runs calibrated the candidate limits but do not represent the final two-construction snapshot.
+          rejected_candidate:
+            budget_ms: 10000
+            owner_wall_time_ms: 10429
+            command_wall_time_ms: 11733
+            outcome: tests_passed_budget_failed
+          stricter_candidate_validation:
+            budget_ms: 15000
+            owner_wall_time_runs_ms: [9859, 8962, 13069]
+            command_wall_time_runs_ms: [11012, 9967, 14293]
+            outcome: passed_repeatedly_before_final_fixture_strengthening
+        derivation:
+          formula: min(baseline_minimum_ms, ceil(controlled_maximum_ms * 1.25 / 5000) * 5000)
+          controlled_headroom_multiplier: 1.25
+          rounding_quantum_ms: 5000
 
 # Deterministic simultaneous-publication and stale-lock recovery evidence remains
 # source-owned. The independent 100-repetition stale-lock race is stress-owned.
@@ -187,6 +237,7 @@ conservative_routing:
     - packages/cli/scripts/release-benchmark.mjs
     - packages/cli/src/validate/activationConjunction.ts
     - packages/cli/src/validate/activationArtifactEvidence.ts
+    - packages/cli/src/validate/activationArtifactEvidenceTypes.ts
     - packages/cli/src/validate/activationEvidenceManifest.ts
     - packages/cli/src/validate/activationPackageSemantics.ts
     - packages/cli/src/validate/bootstrapAuthority.ts
@@ -197,6 +248,8 @@ conservative_routing:
     - packages/cli/test/helpers/runtimeBootstrapMatrix.ts
     - packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs
     - packages/cli/test/helpers/runtimeProofCliBoundary.mjs
+    - packages/cli/test/integration/runtimeBootstrapMatrix.test.ts
+    - packages/cli/test/integration/sourcePackageParity.test.ts
     - references/analysis/verification-policy.yaml
     - scripts/precommit-vitest.sh
   prefixes:

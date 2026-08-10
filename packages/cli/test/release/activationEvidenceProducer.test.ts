@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import {
   createSourceOwnerEvidence,
   SOURCE_OWNER_EVIDENCE_SCHEMA,
-  writeContentAddressedOwnerEvidence,
 } from "../../src/validate/activationArtifactEvidence.js";
 import { loadActivationProductionInputs } from "../../src/validate/activationConjunction.js";
 
@@ -25,7 +24,6 @@ describe("activation source owner evidence", () => {
     expect(modules.identities).toHaveLength(12);
     expect(runtime).toEqual(modules);
     expect(Object.values(modules.bodies).every((body: any) => body.bytes > 0 && /^[a-f0-9]{64}$/.test(body.sha256))).toBe(true);
-    const output = process.env.AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT;
-    if (output) expect(writeContentAddressedOwnerEvidence(output, evidence).digest).toBe(evidence.evidenceDigest);
+    expect(evidence.records).toHaveProperty("bootstrap.source-authority");
   });
 });

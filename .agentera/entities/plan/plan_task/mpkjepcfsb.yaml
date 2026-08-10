@@ -5,10 +5,20 @@ record:
   depends_on:
     - hqegoldrmz
     - tsfaddhsrz
-  status: pending
+  status: complete
   acceptance:
     - GIVEN source/package command parity WHEN ownership changes THEN all 190 bootstrap rows, classifications, child-boundary checks, and protected roots remain covered by source integration.
     - GIVEN package verification WHEN it runs THEN it checks construction safety, deterministic bytes, layout, integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke.
     - GIVEN task 1 measurements WHEN the revised matrix runs THEN it meets the governed wall-time budget without weakening row-level evidence.
     - GIVEN each moved behavior WHEN tested THEN one success and one failure path remain explicit, including rejection of a packed source map.
   plan: lsftqiwiki
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Progress thetobsrsj labels the rejected one-root 7349 ms run as final. Append a correction binding the frozen two-root diff, final calibration 12376/11666/11047 ms, owner 10658 ms, 2 files/11 tests, and corrected activation conjunction.
+    provenance:
+      attempt_id: audit-mpkjepcfsb-2
+      source: audit:mpkjepcfsb:attempt=2:criteria=4/4-pass:evidence=pass:frozen=bd3528538c113065ab675f41f9a9d4036a2793d4c325cd3e7b0f82ee9861a26c:correction=a2caebd4360d9e8f55a84041d8b827ebe003cb69ba764d701c5153c43ea7a3cb:overall=pass
+      recorded_at: 2026-08-10 13:26
+      writer_command: agentera state plan record-evaluation

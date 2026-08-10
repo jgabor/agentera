@@ -6,6 +6,8 @@ import { pathToFileURL } from "node:url";
 
 const runtimeRoot = path.resolve(process.argv[2] ?? "");
 const cwd = path.resolve(process.argv[3] ?? "");
+const observationMode = process.argv[4] ?? "full";
+if (!["full", "package-smoke"].includes(observationMode)) throw new Error(`unknown runtime observation mode '${observationMode}'`);
 if (!fs.existsSync(path.join(runtimeRoot, "dist/bin/agentera.js"))) throw new Error("runtime artifact has no CLI");
 
 const tuples = await import(pathToFileURL(path.join(runtimeRoot, "dist/registries/activationTuples.js")).href);
@@ -27,7 +29,8 @@ for (const capability of capabilityIds) {
 
 const served = {};
 let statusPayload = null;
-for (const capability of capabilityIds) {
+const servedCapabilityIds = observationMode === "package-smoke" ? ["status"] : capabilityIds;
+for (const capability of servedCapabilityIds) {
   const result = spawnSync(process.execPath, [path.join(runtimeRoot, "dist/bin/agentera.js"), "prime", "--context", capability, "--format", "json"], {
     cwd,
     env: { ...process.env, AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.join(runtimeRoot, "bundle") },

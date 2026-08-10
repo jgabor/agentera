@@ -11,65 +11,29 @@ import {
   packageDescriptorSemantics,
   packageDescriptors,
 } from "./activationPackageSemantics.js";
+import {
+  GENERATED_OWNER_EVIDENCE_SCHEMA,
+  OWNER_EVIDENCE_MAX_BYTES,
+  PACKAGE_IDENTITY_MAX_BYTES,
+  PACKAGE_IDENTITY_SCHEMA,
+  PACKAGE_OWNER_EVIDENCE_SCHEMA,
+  PACKAGE_SNAPSHOT_DIRECTORY,
+  PACKAGE_SNAPSHOT_EXTRACTED_MAX_BYTES,
+  PACKAGE_SNAPSHOT_MARKER_MAX_BYTES,
+  PACKAGE_SNAPSHOT_MAX_ENTRIES,
+  PACKAGE_SNAPSHOT_SCHEMA,
+  PACKAGE_SNAPSHOT_TARBALL_MAX_BYTES,
+  SOURCE_OWNER_EVIDENCE_SCHEMA,
+  type ActivationArtifactRecord,
+  type ActivationOwnerEvidence,
+  type ActivationPackageArtifactIdentity,
+  type ActivationPackageIdentity,
+  type ActivationProducerKind,
+  type FinalizedPackageOwnerEvidence,
+  type SourcePackageExecutionEvidence,
+} from "./activationArtifactEvidenceTypes.js";
 import { bootstrapMatrixAuthority } from "./bootstrapAuthority.js";
-
-export const SOURCE_OWNER_EVIDENCE_SCHEMA = "agentera.activationSourceOwnerEvidence.v1";
-export const PACKAGE_OWNER_EVIDENCE_SCHEMA = "agentera.activationPackageOwnerEvidence.v1";
-export const GENERATED_OWNER_EVIDENCE_SCHEMA = "agentera.activationGeneratedOwnerEvidence.v1";
-export const PACKAGE_IDENTITY_SCHEMA = "agentera.activationPackageIdentity.v1";
-export const PACKAGE_SNAPSHOT_SCHEMA = "agentera.activationPackageSnapshot.v1";
-export const PACKAGE_SNAPSHOT_DIRECTORY = ".activation-package-snapshot";
-export const OWNER_EVIDENCE_MAX_BYTES = 262_144;
-export const PACKAGE_IDENTITY_MAX_BYTES = 16_384;
-export const PACKAGE_SNAPSHOT_MARKER_MAX_BYTES = 16_384;
-export const PACKAGE_SNAPSHOT_TARBALL_MAX_BYTES = 64 * 1024 * 1024;
-export const PACKAGE_SNAPSHOT_EXTRACTED_MAX_BYTES = 128 * 1024 * 1024;
-export const PACKAGE_SNAPSHOT_MAX_ENTRIES = 4_096;
-
-export type ActivationProducerKind = "source-owner" | "generated-owner" | "package-owner";
-
-export interface ActivationArtifactRecord {
-  producerKind: ActivationProducerKind;
-  artifactClass: string;
-  artifactIdentity: string;
-  artifactContentDigest: string;
-  generation: string | null;
-  packageIntegrity: string | null;
-  content: unknown;
-  observationDigest: string;
-}
-
-export interface ActivationOwnerEvidence {
-  schemaVersion: string;
-  producerKind: ActivationProducerKind;
-  sourceDigest: string;
-  generation: string | null;
-  packageIntegrity: string | null;
-  records: Record<string, ActivationArtifactRecord>;
-  evidenceDigest: string;
-}
-
-export interface ActivationPackageArtifactIdentity {
-  filename: string;
-  integrity: string;
-  shasum: string;
-  tarballSha256: string;
-}
-
-export interface ActivationPackageIdentity {
-  schemaVersion: typeof PACKAGE_IDENTITY_SCHEMA;
-  packageEvidenceDigest: string;
-  packageArtifact: ActivationPackageArtifactIdentity;
-  packageArtifactObservationDigest: string;
-  extractedTree: { count: number; digest: string };
-  tarballTree: { count: number; digest: string };
-  identityDigest: string;
-}
-
-export interface FinalizedPackageOwnerEvidence {
-  evidence: ActivationOwnerEvidence;
-  packageIdentity: ActivationPackageIdentity;
-}
+export * from "./activationArtifactEvidenceTypes.js";
 
 interface CompleteTreeEntry {
   path: string;
@@ -512,9 +476,14 @@ function sourceProjection(root: string): CapabilityProjection {
   };
 }
 
-function runtimeArtifactObservation(runtimeRoot: string, projectRoot: string, sourceRoot: string): { projection: CapabilityProjection; bootstrap: unknown } {
+function runtimeArtifactObservation(
+  runtimeRoot: string,
+  projectRoot: string,
+  sourceRoot: string,
+  mode: "full" | "package-smoke" = "full",
+): { projection: CapabilityProjection; bootstrap: unknown } {
   const script = path.join(sourceRoot, "packages/cli/scripts/observe-runtime-artifact.mjs");
-  const result = spawnSync(process.execPath, [script, runtimeRoot, projectRoot], {
+  const result = spawnSync(process.execPath, [script, runtimeRoot, projectRoot, mode], {
     cwd: projectRoot,
     env: process.env,
     encoding: "utf8",
@@ -550,8 +519,13 @@ function runtimeArtifactObservation(runtimeRoot: string, projectRoot: string, so
   } };
 }
 
-function runtimeProjection(runtimeRoot: string, projectRoot: string, sourceRoot: string): CapabilityProjection {
-  return runtimeArtifactObservation(runtimeRoot, projectRoot, sourceRoot).projection;
+function runtimeProjection(
+  runtimeRoot: string,
+  projectRoot: string,
+  sourceRoot: string,
+  mode: "full" | "package-smoke" = "full",
+): CapabilityProjection {
+  return runtimeArtifactObservation(runtimeRoot, projectRoot, sourceRoot, mode).projection;
 }
 
 function createRecord(
@@ -653,7 +627,11 @@ function genericDimensionObservation(classId: string, dimension: string, input: 
   return { bounds: input.bounds, inputBounds: writes.map((entry: any) => ({ id: `${entry.artifact}.${entry.verb}`, bytes: entry.inputMaxBytes, formats: entry.projection.formatValues })) };
 }
 
-export function createSourceOwnerEvidence(root: string, productionInputs?: any): ActivationOwnerEvidence {
+export function createSourceOwnerEvidence(
+  root: string,
+  productionInputs?: any,
+  packageExecution?: SourcePackageExecutionEvidence,
+): ActivationOwnerEvidence {
   const capabilities = sourceProjection(root);
   const record = packageRecord(root);
   const records: Record<string, ActivationArtifactRecord> = {
@@ -682,6 +660,37 @@ export function createSourceOwnerEvidence(root: string, productionInputs?: any):
         );
       }
     }
+  }
+  if (packageExecution) {
+    const { fixture, runtimeSummary, missingSurfaceResults } = packageExecution;
+    const capabilityProject = path.join(fixture.root, "activation-source-package-capability-project");
+    resetObservationProject(capabilityProject);
+    const packageCapabilities = runtimeProjection(fixture.packageRoot, capabilityProject, root);
+    const packageRows = runtimeSummary.rows.filter((row: any) => row.runtime === "package");
+    const rejectedRows = packageRows.filter((row: any) => !row.accepted);
+    const commandPolicy = {
+      rowCount: packageRows.length,
+      accepted: packageRows.filter((row: any) => row.accepted).length,
+      rejected: rejectedRows.length,
+      classifications: Object.fromEntries([...new Set(packageRows.map((row: any) => row.classification))].sort().map((classification) => [classification, packageRows.filter((row: any) => row.classification === classification).length])),
+      compositeIdentityDigest: observationDigest(packageRows.map((row: any) => `${row.runtime}/${row.projectState}/${row.id}`).sort()),
+    };
+    const adversarial = {
+      rowCount: rejectedRows.length,
+      allBlockedBeforeChildStart: rejectedRows.every((row: any) => row.childStarted === false),
+      classifications: Object.fromEntries([...new Set(rejectedRows.map((row: any) => row.classification))].sort().map((classification) => [classification, rejectedRows.filter((row: any) => row.classification === classification).length])),
+    };
+    records["capability.extracted-served"] = createRecord("source-owner", "capability-extracted-served", "package/dist/bin/agentera.js#prime-context", packageCapabilities.artifacts.served!, packageCapabilities.served, null, null);
+    records["package.command-policy"] = createRecord("source-owner", "package-command-policy", "source-integration/runtime-matrix/classifications", observationDigest(packageRows), commandPolicy, null, null);
+    records["package.adversarial"] = createRecord("source-owner", "package-adversarial", "source-integration/runtime-matrix/rejections", observationDigest(rejectedRows), adversarial, null, null);
+    records["bootstrap.extracted-classifications"] = createRecord("source-owner", "bootstrap-extracted-classifications", "source-integration/runtime-matrix/rows", observationDigest(packageRows), packageRows, null, null);
+    records["bootstrap.extracted-diagnostics"] = createRecord("source-owner", "bootstrap-extracted-diagnostics", "source-integration/runtime-matrix/rejection-diagnostics", observationDigest(rejectedRows), rejectedRows, null, null);
+    const parity = {
+      ...(runtimeSummary.runtimeObservationDigests ?? {}),
+      packageArtifact: runtimeSummary.packageArtifact ?? null,
+    };
+    records["bootstrap.source-package-parity"] = createRecord("source-owner", "bootstrap-source-package-parity", "source-integration/runtime-matrix/parity", observationDigest(parity), parity, null, null);
+    records["bootstrap.missing-surface"] = createRecord("source-owner", "bootstrap-missing-surface", "source-integration/runtime-matrix/missing-required-surfaces", observationDigest(missingSurfaceResults), missingSurfaceResults, null, null);
   }
   return finishEvidence({
     schemaVersion: SOURCE_OWNER_EVIDENCE_SCHEMA,
@@ -721,23 +730,29 @@ function seedObservationProject(project: string): void {
   fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n", { flag: "wx", mode: 0o600 });
 }
 
+function resetObservationProject(project: string): void {
+  fs.rmSync(project, { recursive: true, force: true });
+  seedObservationProject(project);
+}
+
 export async function finalizePackageOwnerEvidence(options: {
   root: string;
   fixture: any;
-  runtimeSummary: any;
-  missingSurfaceResults: unknown[];
   requiredFiles: readonly string[];
   snapshotDirectory?: string;
 }): Promise<FinalizedPackageOwnerEvidence> {
-  const { root, fixture, runtimeSummary } = options;
+  const { root, fixture } = options;
   const runtimeRoot = fixture.packageRoot;
   const capabilityProject = path.join(fixture.root, "activation-capability-project");
-  seedObservationProject(capabilityProject);
-  const capabilities = await runtimeProjection(runtimeRoot, capabilityProject, root);
+  resetObservationProject(capabilityProject);
+  const capabilities = runtimeProjection(runtimeRoot, capabilityProject, root, "package-smoke");
   const record = packageRecord(path.join(runtimeRoot, "bundle"));
   const packageArtifact = packageArtifactObservation(runtimeRoot, fixture, options.requiredFiles, options.snapshotDirectory);
   const integrity = packageArtifact.integrity as string;
   const portability = {
+    deterministicPackRuns: fixture.deterministicBytes.packRuns,
+    deterministicTarballSha256: fixture.deterministicBytes.sha256,
+    secondTarballSha256: fixture.deterministicBytes.secondSha256,
     constructionRootCount: fixture.pathIndependence.constructionRoots.length,
     constructionRootsDistinct: new Set(fixture.pathIndependence.constructionRoots).size === fixture.pathIndependence.constructionRoots.length,
     extractedRootCount: fixture.pathIndependence.extractedRoots.length,
@@ -753,38 +768,18 @@ export async function finalizePackageOwnerEvidence(options: {
       files: fixture.pathIndependence.secondManifest.files,
     },
   };
-  const packageRows = runtimeSummary.rows.filter((row: any) => row.runtime === "package");
-  const rejectedRows = packageRows.filter((row: any) => !row.accepted);
-  const commandPolicy = {
-    rowCount: packageRows.length,
-    accepted: packageRows.filter((row: any) => row.accepted).length,
-    rejected: rejectedRows.length,
-    classifications: Object.fromEntries([...new Set(packageRows.map((row: any) => row.classification))].sort().map((classification) => [classification, packageRows.filter((row: any) => row.classification === classification).length])),
-    compositeIdentityDigest: observationDigest(packageRows.map((row: any) => `${row.runtime}/${row.projectState}/${row.id}`).sort()),
-  };
-  const adversarial = {
-    rowCount: rejectedRows.length,
-    allBlockedBeforeChildStart: rejectedRows.every((row: any) => row.childStarted === false),
-    classifications: Object.fromEntries([...new Set(rejectedRows.map((row: any) => row.classification))].sort().map((classification) => [classification, rejectedRows.filter((row: any) => row.classification === classification).length])),
-  };
   const records: Record<string, ActivationArtifactRecord> = {
     "capability.extracted-modules": createRecord("package-owner", "capability-extracted-modules", "package/dist/capabilities/*/instructions.js", capabilities.artifacts.modules, capabilities.modules, null, integrity),
     "capability.extracted-runtime-registry": createRecord("package-owner", "capability-extracted-runtime-registry", "package/dist/capabilities/index.js#CAPABILITY_INSTRUCTIONS", capabilities.artifacts.runtimeRegistry, capabilities.runtimeRegistry, null, integrity),
-    "capability.extracted-served": createRecord("package-owner", "capability-extracted-served", "package/dist/bin/agentera.js#prime-context", capabilities.artifacts.served!, capabilities.served, null, integrity),
     "capability.extracted-registry": createRecord("package-owner", "capability-extracted-registry", "package/bundle/registry.json#skills[0].capabilities", capabilities.artifacts.registry, capabilities.registry, null, integrity),
     "capability.extracted-routes": createRecord("package-owner", "capability-extracted-routes", "package/dist/cli/commands/capability.js#CAPABILITY_ROUTING_NAMES", capabilities.artifacts.routes, capabilities.routes, null, integrity),
     "capability.extracted-schemas": createRecord("package-owner", "capability-extracted-schemas", "package/bundle/skills/agentera/capabilities/*/schemas", capabilities.artifacts.schemas, capabilities.schemas, null, integrity),
     "package.extracted-artifact": createRecord("package-owner", "package-extracted-artifact", "npm-tarball/extracted-package", observationDigest(packageArtifact), packageArtifact, null, integrity),
     "package.extracted-registry": createRecord("package-owner", "package-extracted-registry", "package/bundle/references/adapters/package-registry.yaml#records[agentera]", artifactDigest(runtimeRoot, ["bundle/references/adapters/package-registry.yaml"]), packageDescriptorSemantics(packageDescriptors(record)), null, integrity),
-    "package.command-policy": createRecord("package-owner", "package-command-policy", "package/runtime-matrix/classifications", observationDigest(packageRows), commandPolicy, null, integrity),
+    "package.extracted-smoke": createRecord("package-owner", "package-extracted-smoke", "package/dist/bin/agentera.js#prime-context-status", capabilities.artifacts.served!, capabilities.served, null, integrity),
     "package.portability": createRecord("package-owner", "package-portability", "npm-tarball/path-portability", fixture.pathIndependence.contentSha256, portability, null, integrity),
-    "package.adversarial": createRecord("package-owner", "package-adversarial", "package/runtime-matrix/rejections", observationDigest(rejectedRows), adversarial, null, integrity),
-    "bootstrap.extracted-classifications": createRecord("package-owner", "bootstrap-extracted-classifications", "package/runtime-matrix/rows", observationDigest(packageRows), packageRows, null, integrity),
-    "bootstrap.extracted-diagnostics": createRecord("package-owner", "bootstrap-extracted-diagnostics", "package/runtime-matrix/rejection-diagnostics", observationDigest(rejectedRows), rejectedRows, null, integrity),
     "bootstrap.extracted-startup": createRecord("package-owner", "bootstrap-extracted-startup", "package/dist/bin/agentera.js#startup-producers", capabilities.artifacts.startupProducers!, capabilities.startupProducers, null, integrity),
     "bootstrap.extracted-declarations": createRecord("package-owner", "bootstrap-extracted-declarations", "package/bundle/references/adapters/package-registry.yaml#bootstrap_command_authority", artifactDigest(runtimeRoot, ["bundle/references/adapters/package-registry.yaml"]), packageCommandDeclarations(record), null, integrity),
-    "bootstrap.source-package-parity": createRecord("package-owner", "bootstrap-source-package-parity", "package/runtime-matrix/parity", observationDigest(runtimeSummary.runtimeObservationDigests ?? {}), runtimeSummary.runtimeObservationDigests ?? {}, null, integrity),
-    "bootstrap.missing-surface": createRecord("package-owner", "bootstrap-missing-surface", "package/runtime-matrix/missing-required-surfaces", observationDigest(options.missingSurfaceResults), options.missingSurfaceResults, null, integrity),
   };
   for (const classId of ["runtime", "reference", "state"]) {
     const relative = classId === "runtime"

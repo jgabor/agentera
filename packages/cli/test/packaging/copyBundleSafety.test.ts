@@ -90,6 +90,20 @@ function expectBoundaryFailure(root: string, state: { bundle: string; outside: s
 }
 
 describe("copy-bundle filesystem safety", () => {
+  it("copies the complete declared bundle into a fresh destination", () => {
+    const root = stageFakeRepo();
+    try {
+      const result = runCopyBundle(root);
+      expect(result.status, `package copy boundary failed:\n${result.stderr}`).toBe(0);
+      expect(fs.readFileSync(path.join(root, "packages/cli/bundle/skills/agentera/SKILL.md"), "utf8"))
+        .toBe("# Fixture\n");
+      expect(fs.existsSync(path.join(root, "packages/cli/bundle/references/artifacts/state-storage-authority.yaml")))
+        .toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("rejects a missing declared source before bundle side effects", () => {
     const root = stageFakeRepo({ omitSkills: true });
     try {

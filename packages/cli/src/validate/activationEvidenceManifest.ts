@@ -111,7 +111,7 @@ const CHECK_OBSERVATIONS: Readonly<Record<string, readonly string[]>> = Object.f
   "package.discovery": ["package.source-registry"],
   "package.behavior": ["package.source-construction", "package.generated-construction"],
   "package.diagnostics": ["package.command-policy"],
-  "package.package_projection": ["package.generated-registry", "package.extracted-artifact", "package.extracted-registry"],
+  "package.package_projection": ["package.generated-registry", "package.extracted-artifact", "package.extracted-registry", "package.extracted-smoke"],
   "package.instructions": ["package.source-selectors", "package.generated-selectors"],
   "package.adversarial": ["package.portability", "package.adversarial"],
   "bootstrap.discovery": ["bootstrap.source-authority"],
@@ -132,6 +132,13 @@ const SOURCE_PROVENANCE: Record<string, readonly [string, string]> = {
   "package.source-construction": ["package-source-construction", "references/adapters/package-registry.yaml#records[agentera].bundle_surfaces"],
   "package.source-selectors": ["package-source-selectors", "references/adapters/package-registry.yaml#records[agentera].semantic_fields"],
   "bootstrap.source-authority": ["bootstrap-source-authority", "packages/cli/src/validate/bootstrapAuthority.ts#bootstrapMatrixAuthority"],
+  "capability.extracted-served": ["capability-extracted-served", "package/dist/bin/agentera.js#prime-context"],
+  "package.command-policy": ["package-command-policy", "source-integration/runtime-matrix/classifications"],
+  "package.adversarial": ["package-adversarial", "source-integration/runtime-matrix/rejections"],
+  "bootstrap.extracted-classifications": ["bootstrap-extracted-classifications", "source-integration/runtime-matrix/rows"],
+  "bootstrap.extracted-diagnostics": ["bootstrap-extracted-diagnostics", "source-integration/runtime-matrix/rejection-diagnostics"],
+  "bootstrap.source-package-parity": ["bootstrap-source-package-parity", "source-integration/runtime-matrix/parity"],
+  "bootstrap.missing-surface": ["bootstrap-missing-surface", "source-integration/runtime-matrix/missing-required-surfaces"],
 };
 
 const GENERATED_PROVENANCE: Record<string, readonly [string, string]> = {
@@ -154,21 +161,15 @@ const GENERATED_PROVENANCE: Record<string, readonly [string, string]> = {
 const PACKAGE_PROVENANCE: Record<string, readonly [string, string]> = {
   "capability.extracted-modules": ["capability-extracted-modules", "package/dist/capabilities/*/instructions.js"],
   "capability.extracted-runtime-registry": ["capability-extracted-runtime-registry", "package/dist/capabilities/index.js#CAPABILITY_INSTRUCTIONS"],
-  "capability.extracted-served": ["capability-extracted-served", "package/dist/bin/agentera.js#prime-context"],
   "capability.extracted-registry": ["capability-extracted-registry", "package/bundle/registry.json#skills[0].capabilities"],
   "capability.extracted-routes": ["capability-extracted-routes", "package/dist/cli/commands/capability.js#CAPABILITY_ROUTING_NAMES"],
   "capability.extracted-schemas": ["capability-extracted-schemas", "package/bundle/skills/agentera/capabilities/*/schemas"],
   "package.extracted-artifact": ["package-extracted-artifact", "npm-tarball/extracted-package"],
   "package.extracted-registry": ["package-extracted-registry", "package/bundle/references/adapters/package-registry.yaml#records[agentera]"],
-  "package.command-policy": ["package-command-policy", "package/runtime-matrix/classifications"],
+  "package.extracted-smoke": ["package-extracted-smoke", "package/dist/bin/agentera.js#prime-context-status"],
   "package.portability": ["package-portability", "npm-tarball/path-portability"],
-  "package.adversarial": ["package-adversarial", "package/runtime-matrix/rejections"],
-  "bootstrap.extracted-classifications": ["bootstrap-extracted-classifications", "package/runtime-matrix/rows"],
-  "bootstrap.extracted-diagnostics": ["bootstrap-extracted-diagnostics", "package/runtime-matrix/rejection-diagnostics"],
   "bootstrap.extracted-startup": ["bootstrap-extracted-startup", "package/dist/bin/agentera.js#startup-producers"],
   "bootstrap.extracted-declarations": ["bootstrap-extracted-declarations", "package/bundle/references/adapters/package-registry.yaml#bootstrap_command_authority"],
-  "bootstrap.source-package-parity": ["bootstrap-source-package-parity", "package/runtime-matrix/parity"],
-  "bootstrap.missing-surface": ["bootstrap-missing-surface", "package/runtime-matrix/missing-required-surfaces"],
 };
 
 for (const classId of ["cli", "runtime", "reference", "state"]) {
@@ -369,6 +370,12 @@ function validatePackageSemantics(manifest: ActivationEvidenceManifest, violatio
 
 function validateExecutedArtifactSemantics(manifest: ActivationEvidenceManifest, violations: string[]): void {
   const records = allRecords(manifest.producers);
+  const smoke = records.get("package.extracted-smoke")?.content as any;
+  if (canonicalObservationJson(smoke?.identities) !== canonicalObservationJson(["status"])
+    || smoke?.bodies?.status?.bytes <= 0
+    || !/^[a-f0-9]{64}$/.test(smoke?.bodies?.status?.sha256 ?? "")) {
+    violations.push("extracted package smoke is missing or did not serve status");
+  }
   const artifact = records.get("package.extracted-artifact")?.content as any;
   if (!artifact || canonicalObservationJson({
     filename: artifact.filename,
@@ -411,8 +418,11 @@ function validateExecutedArtifactSemantics(manifest: ActivationEvidenceManifest,
     violations.push("complete extracted package tree is not bound to the current tarball payload");
   }
   const portability = records.get("package.portability")?.content as any;
-  if (portability?.constructionRootCount !== 2 || portability?.constructionRootsDistinct !== true
-    || portability?.extractedRootCount !== 2 || portability?.extractedRootsDistinct !== true
+  if (portability?.deterministicPackRuns !== 2
+    || !/^[a-f0-9]{64}$/.test(portability?.deterministicTarballSha256 ?? "")
+    || portability?.secondTarballSha256 !== portability?.deterministicTarballSha256
+    || portability?.constructionRootCount !== 2 || portability?.constructionRootsDistinct !== true
+    || portability?.extractedRootCount !== 1 || portability?.extractedRootsDistinct !== true
     || portability?.forbiddenPathMatches?.length !== 0 || !/^[a-f0-9]{64}$/.test(portability?.contentSha256 ?? "")) {
     violations.push("extracted package portability evidence is incomplete or failed");
   }
@@ -482,6 +492,12 @@ function validateExecutedArtifactSemantics(manifest: ActivationEvidenceManifest,
   if (!parity?.source || !parity?.package || canonicalObservationJson(parity.source) !== canonicalObservationJson(parity.package)
     || canonicalObservationJson(Object.keys(parity.source).sort()) !== canonicalObservationJson(["clean", "partial", "v2", "v3"])) {
     violations.push("source and extracted package runtime classification parity failed");
+  }
+  if (parity?.packageArtifact?.filename !== manifest.packageArtifact?.filename
+    || parity?.packageArtifact?.integrity !== manifest.packageArtifact?.integrity
+    || parity?.packageArtifact?.shasum !== manifest.packageArtifact?.shasum
+    || parity?.packageArtifact?.tarballSha256 !== manifest.packageArtifact?.tarballSha256) {
+    violations.push("source integration package artifact differs from the package owner artifact");
   }
   const missing = records.get("bootstrap.missing-surface")?.content as any;
   if (!Array.isArray(missing) || missing.length !== DEVELOPMENT_RUNTIME_REQUIRED_FILES.length * 2

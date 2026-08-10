@@ -1,0 +1,16 @@
+id: dtrqkpbajb
+artifact: progress
+record:
+  timestamp: 2026-08-10 13:21
+  type: test
+  phase: audit
+  what: Supersede progress thetobsrsj's false final 7349 ms wording with the frozen two-root verification evidence for the second audit.
+  context:
+    intent: Correct evidence integrity for plan lsftqiwiki task mpkjepcfsb without changing product behavior.
+    constraints: Do not edit or delete thetobsrsj, change product behavior, mark the task complete, commit, publish, push, tag, or mutate remote or registry state.
+    unknowns: The formal first-audit failure is plan-owned history. This record corrects its named evidence defect and does not evaluate or complete the task.
+    scope: Bind only the frozen task implementation and its final verification. Plan-external and background evidence remains outside this correction.
+  discovered: Progress thetobsrsj line 13 called the pre-fix 7349 ms package result final. That wording is false for the frozen two-root snapshot and is superseded by this record.
+  verified: Supersedes progress thetobsrsj's false final 7349 ms wording. Base HEAD 9f3571316da5863b9dd300312abe09ae45cf9640 and frozen implementation tracked diff SHA-256 bd3528538c113065ab675f41f9a9d4036a2793d4c325cd3e7b0f82ee9861a26c bind the corrected snapshot. Package verification used two independent construction roots, two packs, and one extraction. Final serial calibration was 12376, 11666, and 11047 ms. The final governed package owner passed 2 files and 11 tests at 10658 ms under the 20000 ms budget. The corrected activation conjunction passed 3/3 and its complete 42-check result passed. The source matrix covered all 190 rows with nine protected roots per row and no rejected child starts.
+  next: Use this correction instead of thetobsrsj's superseded timing wording for the second audit. Keep task mpkjepcfsb in_progress and all implementation changes uncommitted.
+  publication_order: 132

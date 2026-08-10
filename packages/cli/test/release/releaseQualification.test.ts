@@ -268,7 +268,10 @@ function candidateExecution(candidateDirectory: string, version = "3.0.0-dev.41"
   const observation = {
     name: "agentera",
     version,
-    files: [{ path: "package.json", size: 1 }],
+    files: [
+      { path: "package.json", size: 1, mode: 0o644 },
+      { path: "dist/bin/agentera.js", size: 1, mode: 0o755 },
+    ],
     size: bytes.length,
     unpackedSize: bytes.length,
     shasum: "timing-fixture-shasum",

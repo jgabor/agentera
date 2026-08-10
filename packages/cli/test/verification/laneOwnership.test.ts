@@ -206,6 +206,41 @@ describe("verification lane ownership", () => {
     expect(run(["source"]).runs[0].workers).toBe("");
   });
 
+  it("enforces an owner wall-time budget after a successful runner", () => {
+    const passing = fixture();
+    const passingContract = JSON.parse(fs.readFileSync(passing.contractPath, "utf8"));
+    passingContract.owners.package.execution = { wall_time_budget_ms: 60_000 };
+    fs.writeFileSync(passing.contractPath, JSON.stringify(passingContract));
+
+    const pass = run(["package"], passing);
+    expect(pass.result.status, pass.result.stderr).toBe(0);
+    expect(pass.runs).toHaveLength(1);
+    expect(pass.result.stdout).toMatch(/package owner wall time \d+ms; budget 60000ms/);
+
+    const failing = fixture();
+    const failingContract = JSON.parse(fs.readFileSync(failing.contractPath, "utf8"));
+    failingContract.owners.package.execution = { wall_time_budget_ms: 1 };
+    fs.writeFileSync(failing.contractPath, JSON.stringify(failingContract));
+
+    const failure = run(["package"], failing);
+    expect(failure.result.status).toBe(1);
+    expect(failure.runs).toHaveLength(1);
+    expect(failure.result.stderr).toMatch(/package owner exceeded its 1ms wall-time budget \(\d+ms\)/);
+    expect(failure.result.stderr).toContain("run package correction");
+  });
+
+  it("rejects an invalid owner wall-time budget before runner execution", () => {
+    const setup = fixture();
+    const contract = JSON.parse(fs.readFileSync(setup.contractPath, "utf8"));
+    contract.owners.package.execution = { wall_time_budget_ms: 0 };
+    fs.writeFileSync(setup.contractPath, JSON.stringify(contract));
+
+    const { result, runs } = run(["package"], setup);
+    expect(result.status).toBe(2);
+    expect(runs).toHaveLength(0);
+    expect(result.stderr).toContain("verification.owners.package.execution.wall_time_budget_ms must be a positive safe integer");
+  });
+
   it("forwards targeted filters only to the source owner", () => {
     const { result, runs } = run(["policy", "targeted", "--", "test/source.test.ts"]);
     expect(result.status, result.stderr).toBe(0);
@@ -414,8 +449,11 @@ describe("verification lane ownership", () => {
     expect(inventory.files.package).toEqual([
       "packages/cli/test/packaging/copyBundleSafety.test.ts",
       "packages/cli/test/packaging/packageVerification.test.ts",
-      "packages/cli/test/packaging/runtimeBootstrapMatrix.test.ts",
     ]);
+    expect(inventory.files.source).toEqual(expect.arrayContaining([
+      "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts",
+      "packages/cli/test/integration/sourcePackageParity.test.ts",
+    ]));
     expect(inventory.integrations).toEqual({
       performance: "packages/cli/test/integration/performanceOwner.integration.mjs",
     });

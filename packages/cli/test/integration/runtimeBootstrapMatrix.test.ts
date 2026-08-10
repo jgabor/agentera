@@ -86,7 +86,7 @@ const registryMutations: Array<[
   ["rejection classification drift", (registry) => { registry.rejections[0].classification = "malformed"; }],
 ];
 
-describe("offline source and extracted-package runtime bootstrap proof", () => {
+describe("source-owned runtime bootstrap integration", () => {
   it("rejects protected-root and execution-registry origin mutations against fixed authorities", () => {
     expect(PROTECTED_ROOT_IDENTIFIERS).toEqual([
       "project", "home", "shared_skill", "install", "package", "package_artifact", "cache", "temporary", "absence",
@@ -229,89 +229,6 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
     });
   });
 
-  it("proves path-independent extracted content, canonical integrity, manifest, and executable mode", () => {
-    const tarball = path.join(fixture.root, fixture.manifest.filename);
-    const bytes = fs.readFileSync(tarball);
-    const integrity = `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
-    const shasum = createHash("sha1").update(bytes).digest("hex");
-    const packageVersion = JSON.parse(fs.readFileSync(path.join(fixture.packageRoot, "package.json"), "utf8")).version;
-    expect(fixture.manifest.filename).toBe(`agentera-${packageVersion}.tgz`);
-    expect(fixture.manifest.integrity).toBe(integrity);
-    expect(fixture.manifest.shasum).toBe(shasum);
-    const bin = fixture.manifest.files.find(({ path: pathname }) => pathname === "dist/bin/agentera.js");
-    expect(bin).toMatchObject({ mode: 0o755 });
-    expect(fixture.manifest.files.map(({ path: pathname }) => pathname)).toEqual(expect.arrayContaining([
-      "package.json",
-      "dist/bin/agentera.js",
-      "bundle/.agentera-npx-bundle.json",
-      "bundle/registry.json",
-      "bundle/skills/agentera/SKILL.md",
-      "bundle/references/adapters/package-registry.yaml",
-    ]));
-    expect(fixture.manifest.files.some(({ path: pathname }) => pathname.endsWith(".js.map"))).toBe(false);
-    expect(fixture.pathIndependence.constructionRoots).toHaveLength(2);
-    expect(new Set(fixture.pathIndependence.constructionRoots).size).toBe(2);
-    expect(fixture.pathIndependence.constructionRoots.every((root) => /[ ;$()[\]]/u.test(root))).toBe(true);
-    expect(fixture.pathIndependence.extractedRoots).toHaveLength(2);
-    expect(fixture.pathIndependence.forbiddenPathMatches).toEqual([]);
-    expect(fixture.pathIndependence.pathNeedleClasses).toHaveLength(19);
-    expect(fixture.pathIndependence.pathNeedleClasses).toEqual(expect.arrayContaining([
-      "checkout-root:raw",
-      "checkout-root:normalized",
-      "construction-root-primary:raw",
-      "construction-root-primary:normalized",
-      "construction-root-secondary:raw",
-      "construction-root-secondary:normalized",
-      "actual-home:raw",
-      "actual-home:normalized",
-      "developer-home-explicit:raw",
-      "developer-home-explicit:normalized",
-      "prohibited-intermediate-tier:raw",
-      "prohibited-intermediate-tier:normalized",
-      "developer-home-pattern:linux",
-      "developer-home-pattern:macos",
-      "developer-home-pattern:windows",
-    ]));
-    expect(fixture.pathIndependence.secondManifest.files).toEqual(fixture.manifest.files);
-    expect(fixture.pathIndependence.secondManifest.integrity).toBe(fixture.manifest.integrity);
-    expect(fixture.pathIndependence.secondManifest.shasum).toBe(fixture.manifest.shasum);
-    expect(fixture.pathIndependence.regularFiles).toBe(fixture.manifest.files.length);
-    expect(fixture.pathIndependence.contentSha256).toMatch(/^[a-f0-9]{64}$/u);
-
-    const observed = observeCurrentPackageArtifact(tarball, fixture.packageRoot);
-    expect(observed).toMatchObject({
-      integrity,
-      shasum,
-      tarballSha256: createHash("sha256").update(bytes).digest("hex"),
-      runtimeSupportPaths: ["node_modules"],
-    });
-    expect(observed.extractedTree.digest).toBe(observationDigest(observed.extractedTree.entries));
-    expect(observed.tarballTree.digest).toBe(observationDigest(observed.tarballTree.entries));
-
-    const packageJson = path.join(fixture.packageRoot, "package.json");
-    const originalPackageJson = fs.readFileSync(packageJson);
-    try {
-      fs.appendFileSync(packageJson, "\n");
-      expect(() => observeCurrentPackageArtifact(tarball, fixture.packageRoot)).toThrow(/does not exactly match/);
-    } finally {
-      fs.writeFileSync(packageJson, originalPackageJson);
-    }
-    const heldReadme = path.join(fixture.root, "held-readme");
-    fs.renameSync(path.join(fixture.packageRoot, "README.md"), heldReadme);
-    try {
-      expect(() => observeCurrentPackageArtifact(tarball, fixture.packageRoot)).toThrow(/does not exactly match/);
-    } finally {
-      fs.renameSync(heldReadme, path.join(fixture.packageRoot, "README.md"));
-    }
-    const addition = path.join(fixture.packageRoot, "unobserved-addition.txt");
-    fs.writeFileSync(addition, "added after extraction\n");
-    try {
-      expect(() => observeCurrentPackageArtifact(tarball, fixture.packageRoot)).toThrow(/does not exactly match/);
-    } finally {
-      fs.rmSync(addition);
-    }
-  });
-
   it("rejects every missing source and package surface before the CLI boundary", { timeout: 240_000 }, async () => {
     const dispatcher = path.join(CHECKOUT_ROOT, "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs");
     const project = path.join(fixture.root, "missing surface project");
@@ -349,14 +266,21 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
     }
     expect(attempts).toBe(16);
     expect(matrixSummary).toBeDefined();
-    const snapshotOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_SNAPSHOT_OUTPUT;
+    const productionInputs = loadActivationProductionInputs(CHECKOUT_ROOT, fixture.constructionRoot);
+    const sourceEvidence = createSourceOwnerEvidence(CHECKOUT_ROOT, productionInputs, {
+      fixture,
+      runtimeSummary: matrixSummary!,
+      missingSurfaceResults,
+    });
+    const sourceOutput = process.env.AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT;
+    if (sourceOutput) {
+      expect(writeContentAddressedOwnerEvidence(sourceOutput, sourceEvidence).digest).toBe(sourceEvidence.evidenceDigest);
+      return;
+    }
     const finalized = await finalizePackageOwnerEvidence({
       root: CHECKOUT_ROOT,
       fixture,
-      runtimeSummary: matrixSummary,
-      missingSurfaceResults,
       requiredFiles: DEVELOPMENT_RUNTIME_REQUIRED_FILES,
-      snapshotDirectory: snapshotOutput,
     });
     const { evidence, packageIdentity } = finalized;
     expect(evidence).toMatchObject({
@@ -372,19 +296,6 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
         tarballSha256: createHash("sha256").update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename))).digest("hex"),
       },
     });
-    const output = process.env.AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT;
-    const identityOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_IDENTITY_OUTPUT;
-    if (output || identityOutput || snapshotOutput) {
-      expect(output).toBeTruthy();
-      expect(identityOutput).toBeTruthy();
-      expect(snapshotOutput).toBeTruthy();
-      expect(writeContentAddressedOwnerEvidence(output!, evidence).digest).toBe(evidence.evidenceDigest);
-      expect(writeContentAddressedPackageIdentity(identityOutput!, packageIdentity).digest).toBe(packageIdentity.identityDigest);
-      // Generated-overlap immediately combines and validates this exact package
-      // evidence after the owner passes. Avoid executing that same generated
-      // observation a second time inside the sole package evidence origin.
-      return;
-    }
     const retainedProbe = path.join(fixture.root, "retained-package-identity-probe");
     const retainedEvidenceDirectory = path.join(retainedProbe, "evidence");
     const retainedIdentityDirectory = path.join(retainedProbe, "identity");
@@ -396,8 +307,6 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
     fs.rmSync(retainedProbe, { recursive: true, force: true });
 
     const generation = `package-fixture-${fixture.manifest.shasum}`;
-    const productionInputs = loadActivationProductionInputs(CHECKOUT_ROOT, fixture.constructionRoot);
-    const sourceEvidence = createSourceOwnerEvidence(CHECKOUT_ROOT, productionInputs);
     const generatedEvidence = await createGeneratedOwnerEvidence({
       root: CHECKOUT_ROOT,
       generationRoot: fixture.constructionRoot,
@@ -430,18 +339,19 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
       ["generated module body", (copy) => { copy.producers.generated.records["capability.generated-modules"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
       ["generated served body", (copy) => { copy.producers.generated.records["capability.generated-served"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
       ["extracted module body", (copy) => { copy.producers.package.records["capability.extracted-modules"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
-      ["extracted served body", (copy) => { copy.producers.package.records["capability.extracted-served"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
+      ["extracted served body", (copy) => { copy.producers.source.records["capability.extracted-served"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
       ["registry name", (copy) => { copy.producers.package.records["capability.extracted-registry"].content[0] = "wrong"; }, /capability identity projection/],
       ["route set", (copy) => { copy.producers.generated.records["capability.generated-routes"].content.pop(); }, /capability identity projection/],
       ["schema set", (copy) => { copy.producers.package.records["capability.extracted-schemas"].content.pop(); }, /capability identity projection/],
       ["package integrity", (copy) => { copy.packageArtifact.integrity = "sha512-wrong"; }, /package artifact identity|package-owner evidence integrity/],
       ["package manifest", (copy) => { copy.producers.package.records["package.extracted-artifact"].content.manifest.type = "directory"; }, /content digest|expected independently observed/],
+      ["construction-root portability", (copy) => { copy.producers.package.records["package.portability"].content.constructionRootCount = 1; }, /extracted package portability evidence is incomplete or failed/],
       ["package semantic reason", (copy) => { copy.producers.package.records["package.extracted-registry"].content[0] += "changed"; }, /package semantic projection/],
       ["generated binder", (copy) => { copy.producers.generated.records["bootstrap.generated-binder"].content.rows[0].classification = "not_exact"; }, /content digest|expected independently observed/],
-      ["extracted classification", (copy) => { copy.producers.package.records["bootstrap.extracted-classifications"].content[0].classification = "malformed"; }, /content digest|expected independently observed/],
+      ["extracted classification", (copy) => { copy.producers.source.records["bootstrap.extracted-classifications"].content[0].classification = "malformed"; }, /content digest|expected independently observed/],
       ["diagnostic", (copy) => { copy.producers.generated.records["bootstrap.generated-diagnostics"].content.pop(); }, /content digest|expected independently observed/],
       ["startup producer", (copy) => { copy.producers.package.records["bootstrap.extracted-startup"].content.pop(); }, /content digest|expected independently observed/],
-      ["missing surface", (copy) => { copy.producers.package.records["bootstrap.missing-surface"].content.pop(); }, /content digest|expected independently observed/],
+      ["missing surface", (copy) => { copy.producers.source.records["bootstrap.missing-surface"].content.pop(); }, /content digest|expected independently observed/],
       ["artifact provenance", (copy) => { copy.producers.package.records["package.extracted-artifact"].artifactIdentity = "wrong"; }, /wrong producer or artifact provenance/],
       ["aliased record", (copy) => { copy.checks[1].observationRefs = [...copy.checks[0].observationRefs]; }, /aliased across checks|producer requirements drifted/],
       ["aliased producer content", (copy) => {
@@ -554,7 +464,11 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
         root: attackRoot,
         generation: attackGeneration,
         productionEvidence: collectActivationProductionEvidence(attackRoot, baselineInputs),
-        sourceEvidence: createSourceOwnerEvidence(attackRoot, baselineInputs),
+        sourceEvidence: createSourceOwnerEvidence(attackRoot, baselineInputs, {
+          fixture,
+          runtimeSummary: matrixSummary!,
+          missingSurfaceResults,
+        }),
         generatedEvidence: await createGeneratedOwnerEvidence({
           root: attackRoot,
           generationRoot: attackGenerationRoot,
@@ -611,7 +525,11 @@ describe("offline source and extracted-package runtime bootstrap proof", () => {
         root: attackRoot,
         generation: attackGeneration,
         productionEvidence: collectActivationProductionEvidence(attackRoot, attackedInputs),
-        sourceEvidence: createSourceOwnerEvidence(attackRoot, attackedInputs),
+        sourceEvidence: createSourceOwnerEvidence(attackRoot, attackedInputs, {
+          fixture,
+          runtimeSummary: matrixSummary!,
+          missingSurfaceResults,
+        }),
         generatedEvidence: await createGeneratedOwnerEvidence({
           root: attackRoot,
           generationRoot: attackGenerationRoot,
