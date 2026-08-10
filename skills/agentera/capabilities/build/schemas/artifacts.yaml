@@ -28,12 +28,13 @@ ARTIFACTS:
     artifact: progress
     local_role: produces_and_consumes
     description: >-
-      Operational cycle log and the sole durable channel for bounded autonomous
-      glossary caveat lifecycle evidence. Build consumes latest progress evidence from
-      execution_context first, then bounded `npx -y agentera@next state progress list --limit
-       20 --format json` discovery or exact `state progress get --id ID`
-      retrieval, and appends one entry per cycle with mandatory Verified field.
-      Compacted by applying schema COMPACTION rules.
+      Durable project-outcome log and the sole durable channel for bounded
+      autonomous glossary caveat lifecycle evidence. Build consumes latest
+      progress evidence from execution_context first, then bounded `npx -y
+      agentera@next state progress list --limit 20 --format json` discovery or
+      exact `state progress get --id ID` retrieval. The typed writer's
+      progress_write_policy governs whether a cycle appends zero or one record;
+      every appended cycle has a mandatory non-empty verified field.
   5:
     id: A5
     artifact: health

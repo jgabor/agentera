@@ -5,10 +5,20 @@ record:
   depends_on:
     - hqegoldrmz
     - pgpsnjzvuq
-  status: pending
+  status: complete
   acceptance:
     - GIVEN an ordinary build or release attempt WHEN no durable project truth changes THEN no progress append is required.
     - GIVEN a durable implementation outcome or required glossary caveat WHEN recorded THEN the typed progress writer remains available and authoritative.
     - GIVEN qualification or publication receipts WHEN progress is considered THEN timings, integrity, digests, retries, and replay remain receipt-owned.
     - GIVEN release-attempt detail WHEN write guidance is validated THEN duplicate receipt content is not authorized as progress; required-progress and no-progress cases pass.
   plan: lsftqiwiki
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-kfelyrckkn-1
+      source: audit:kfelyrckkn:criteria=4/4-pass:evidence=pass:policy=363931623d5d3ae2dcef65f36698517393637b787e8ab86038da37a994fcb207:progress=9b8f4d3f04bf5a50fb9429bda07623f30915fe82ab5f8e6689eee9e0820fc76d:overall=pass
+      recorded_at: 2026-08-10 09:46
+      writer_command: agentera state plan record-evaluation

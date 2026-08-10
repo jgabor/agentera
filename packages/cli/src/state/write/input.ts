@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 import { loadYamlMapping } from "../../core/yaml.js";
 import { glossaryCaveatContract } from "../../registries/glossaryCaveatContract.js";
+import { progressWritePolicy } from "../progressWritePolicy.js";
 import { todoOwnerCorrectionInputViolations } from "../todoReconciliationRepair.js";
 
 export type StructuredInputFieldType = "string" | "integer" | "date" | "datetime" | "mapping" | "list";
@@ -64,6 +65,7 @@ const PROGRESS_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
     omitted_fields: "not present in the canonical record except writer-defaulted timestamp",
     writer_metadata: "id, artifact, and publication_order are assigned by the writer and excluded from logical replay comparison",
     glossary_caveat: "current events deduplicate by the existing caveat lifecycle contract; resolved and superseded events remain distinct",
+    progress_write_policy: progressWritePolicy(),
   },
   ownedFields: ["id", "artifact", "publication_order"],
   immutableFields: [],

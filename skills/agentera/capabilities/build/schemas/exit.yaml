@@ -4,9 +4,10 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       One full cycle completed. Work was selected, implemented, and verified
-      against the project's test/build suite. Required TODO, progress,
-      changelog, and plan closeout updates preceded the cycle's single
-      conventional commit.
+      against the project's test/build suite. Required artifact updates
+      preceded the cycle's single conventional commit. They include TODO,
+      changelog, and plan updates. Progress is present for policy-required
+      cases and optional for allowed durable outcomes.
     exit_signal: complete
   2:
     id: E2
@@ -14,8 +15,8 @@ EXIT_CONDITIONS:
     description: >-
       The cycle completed but with notable issues. Possible causes:
       verification passed but with warnings, the committed work is narrower
-      than intended due to scope reduction, or discoveries logged in
-      progress state suggests the next cycle may face blockers.
+      than intended due to scope reduction, or durable discoveries recorded in
+      progress state suggest the next cycle may face blockers.
     exit_signal: flagged
   3:
     id: E3

@@ -185,8 +185,12 @@ describe("orientation: artifact summaries", () => {
       mode: "archive_only_history",
       work_selection: { task: null },
       plan_task: null,
-      artifact_update_requirements: { required_families: [], plan_status_update_required: false },
-      progress_logging_requirements: { append_cycle: false },
+      artifact_update_requirements: {
+        required_families: [],
+        conditional_families: [],
+        plan_status_update_required: false,
+      },
+      progress_logging_requirements: { requirement: "none" },
       plan_completion_sweep: { status: "not_eligible", required_updates: [], archive_candidate: null },
     });
   });
@@ -225,7 +229,12 @@ describe("orientation: artifact summaries", () => {
     expect(build).toMatchObject({
       mode: "completed_plan_sweep",
       plan_completion_sweep: { status: "eligible", archive_candidate: expect.any(String) },
-      artifact_update_requirements: { plan_status_update_required: true },
+      artifact_update_requirements: {
+        required_families: ["plan", "todo", "changelog", "progress"],
+        conditional_families: [],
+        plan_status_update_required: true,
+      },
+      progress_logging_requirements: { requirement: "required" },
     });
   });
 
@@ -295,6 +304,25 @@ describe("orientation: artifact summaries", () => {
       work_selection: { task: { id: "keknfvovnh", name: "Ready root" } },
       plan_task: { id: "keknfvovnh", depends_on: [] },
       acceptance_criteria: { items: ["root acceptance"] },
+      artifact_update_requirements: {
+        required_families: ["plan", "todo", "changelog"],
+        conditional_families: ["progress"],
+      },
+      progress_logging_requirements: {
+        requirement: "conditional",
+        verified_field_mandatory_when_appended: true,
+        policy: {
+          schemaVersion: "agentera.progressWritePolicy.v1",
+          append: {
+            mode: "conditional",
+          },
+          receipt_detail: {
+            owners: ["qualification_receipt", "publication_receipt"],
+            fields: ["timings", "integrity", "digests", "retries", "replay"],
+          },
+        },
+        guidance_command: "npx -y agentera@next state progress explain --verb append --format json",
+      },
     });
   });
 

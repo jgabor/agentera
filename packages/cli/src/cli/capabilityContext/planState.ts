@@ -189,15 +189,19 @@ export function buildArtifactUpdateRequirements(plan: JsonObject, docs: JsonObje
   const mapping = asList(docs.mapping);
   const mapped = mapping.filter((e) => e && typeof e === "object" && e.artifact).map((e) => e.artifact);
   const archiveOnly = Boolean(plan.exists) && plan.active === false;
+  const completionSweep = plan.active === true && Boolean(plan.complete_plan);
   return {
-    required_families: archiveOnly ? [] : ["plan", "progress", "todo", "changelog"],
+    required_families: archiveOnly
+      ? []
+      : ["plan", "todo", "changelog", ...(completionSweep ? ["progress"] : [])],
+    conditional_families: archiveOnly || completionSweep ? [] : ["progress"],
     protected_families: ["vision", "objective", "profile", "installed_app"],
     docs_mapping_available: Boolean(docs.exists && mapping.length > 0),
     mapped_artifacts: mapped,
     plan_status_update_required: plan.active === true,
     policy: archiveOnly
       ? "Archived plan history is non-executable and requires no execution artifact updates."
-      : "Update execution artifacts during the cycle; do not mutate protected state without explicit approval.",
+      : "Update required execution artifacts during the cycle; evaluate conditional progress through its typed writer guidance and do not mutate protected state without explicit approval.",
     source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.mapping"),
   };
 }

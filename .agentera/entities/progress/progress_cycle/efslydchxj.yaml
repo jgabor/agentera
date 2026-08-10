@@ -1,0 +1,16 @@
+id: efslydchxj
+artifact: progress
+record:
+  timestamp: 2026-08-10 09:27
+  type: fix
+  phase: build
+  what: Restricted Build progress logging to durable project outcomes while keeping attempt evidence with its owning authorities.
+  context:
+    intent: Keep progress as durable project truth instead of an attempt log.
+    constraints: Use typed state writers, preserve receipt ownership, and leave the task in progress without evaluation or commit.
+    unknowns: None.
+    scope: Build progress policy, writer explain projection, context, capability guidance and schemas, maintainer guidance, tests, and changelog.
+  discovered: A shared writer policy lets Build context, served guidance, and schemas distinguish optional, required, and no-progress cases without changing the progress record shape.
+  verified: 137 targeted tests passed for ordinary-attempt no-progress, optional durable-outcome progress, required glossary-caveat and plan-sweep progress, writer-owned identity, and exclusion of receipt-owned attempt detail; 3,446 source tests and 37 package tests passed, with typecheck, build, capability validation, contract validation, compact check, and governed pack dry run passing.
+  next: Audit task kfelyrckkn without changing its status or evaluation.
+  publication_order: 129

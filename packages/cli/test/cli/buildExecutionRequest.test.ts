@@ -186,7 +186,12 @@ describe("Build no-plan execution context", () => {
         items: ["No plan fallback is emitted"],
         source_provenance: { field: "acceptance", schema_version: "agentera.buildExecutionRequest.v1" },
       },
-      artifact_update_requirements: { plan_status_update_required: false },
+      artifact_update_requirements: {
+        required_families: ["todo", "changelog"],
+        conditional_families: ["progress"],
+        plan_status_update_required: false,
+      },
+      progress_logging_requirements: { requirement: "conditional" },
       source_contract: { complete_for_execution_context: true },
     });
     expect(context?.fallback_commands).not.toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);

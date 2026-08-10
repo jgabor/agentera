@@ -22,6 +22,7 @@ import { discoverProjectVerification } from "./projectVerification.js";
 import type { BuildExecutionRequest } from "../commands/prime/buildExecutionRequest.js";
 import { deferredStartupFamilies } from "./startupAggregation.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
+import { progressWritePolicy } from "../../state/progressWritePolicy.js";
 
 const TRANSIENT_BUILD_INPUT_COMMAND = preCutoverCommand("prime --context build --input <file|-> --format json");
 const TRANSIENT_BUILD_STDIN_COMMAND = preCutoverCommand("prime --context build --input - --format json");
@@ -180,10 +181,16 @@ export function buildExecutionContext(
       };
   const artifactUpdateRequirements = buildArtifactUpdateRequirements(plan, docs);
   if (buildRequest !== null) {
-    artifactUpdateRequirements.required_families = ["progress", "todo", "changelog"];
+    artifactUpdateRequirements.required_families = ["todo", "changelog"];
+    artifactUpdateRequirements.conditional_families = ["progress"];
     artifactUpdateRequirements.plan_status_update_required = false;
     artifactUpdateRequirements.policy = "Transient no-plan work does not create, mutate, or require plan state.";
   }
+  const progressRequirement = archiveOnly
+    ? "none"
+    : mode === "completed_plan_sweep"
+      ? "required"
+      : "conditional";
   return {
     capability: "build",
     mode,
@@ -222,10 +229,12 @@ export function buildExecutionContext(
     },
     artifact_update_requirements: artifactUpdateRequirements,
     progress_logging_requirements: {
-      append_cycle: buildRequest !== null || !archiveOnly,
-      verified_field_mandatory: true,
+      requirement: progressRequirement,
+      verified_field_mandatory_when_appended: true,
+      policy: progressWritePolicy(),
+      guidance_command: preCutoverCommand("state progress explain --verb append --format json"),
       latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
-       source_provenance: sourceProvenance("progress", STATE_FAMILY_LIST_COMMANDS.progress),
+      source_provenance: sourceProvenance("progress", STATE_FAMILY_LIST_COMMANDS.progress),
     },
     changelog_boundary: changelogBoundary,
     git_boundary: {

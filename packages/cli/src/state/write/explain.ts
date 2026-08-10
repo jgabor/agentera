@@ -18,6 +18,7 @@ import {
 import { reject } from "./errors.js";
 import { structuredInputDescriptor, structuredInputSchemaProjection } from "./input.js";
 import { artifactSchemaFieldsForOperation } from "../../registries/artifactSchemaProjection.js";
+import { progressWriteGuidance } from "../progressWritePolicy.js";
 
 function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> {
   const verb = verbsForArtifact(artifact).find((candidate) => candidate !== "explain");
@@ -333,7 +334,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
   ];
   if (entityArtifact && artifact === "docs" && verb === "update") return ["select one documentation inventory entry with its bare ten-letter --id; path remains record data, not identity", ...base];
   if (entityArtifact && artifact === "docs") return ["a bare ten-letter documentation inventory ID is assigned by the CLI; path remains record data", ...base];
-  if (artifact === "progress" && verb === "append") return ["supply one progress cycle mapping with --input PATH or --input -; the writer assigns id, artifact, and publication_order", "record content flags are retired; inspect the structured record_fields in explain before writing", ...base];
+  if (artifact === "progress" && verb === "append") return [...progressWriteGuidance(), "when the policy authorizes or requires progress, supply one cycle mapping with --input PATH or --input -; the writer assigns id, artifact, and publication_order", "record content flags are retired; inspect the structured record_fields in explain before writing", ...base];
   if (artifact === "decisions" && verb === "append") return ["a bare ten-letter ID is assigned by the CLI; do not pass an identity", "supply one decision record mapping with --input PATH or --input -; the writer assigns id and artifact", "record content flags are retired; satisfaction remains a separate flag-only transition", ...base];
   if (artifact === "decisions" && verb === "update") return ["select one base decision with its bare --id; numeric selectors are unavailable", "update replaces only that decision's authority-owned satisfaction entity after transition validation", ...base];
   if (artifact === "decisions" && verb === "amend") return ["select one base decision with its bare --id and current --base-sha256", "supply amendable decision content with --input PATH or --input -; record content flags are retired", "apply publishes one immutable revision entity; identical retries converge and same-base divergence conflicts", ...base];

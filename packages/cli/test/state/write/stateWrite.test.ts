@@ -247,6 +247,38 @@ describe("retained entity writer contract matrix", () => {
     expect(JSON.stringify(explained.json)).not.toMatch(/entry_number|artifact_id|stable_id/);
   });
 
+  it("keeps durable progress selection and release-attempt detail in writer-owned guidance", () => {
+    const explained = run(project(), ["progress", "explain", "--verb", "append", "--format", "json"]);
+    expect(explained.rc, explained.err).toBe(0);
+    expect(explained.json?.input_schema.semantics.progress_write_policy).toEqual({
+      schemaVersion: "agentera.progressWritePolicy.v1",
+      append: {
+        mode: "conditional",
+        allowed_when: [
+          "durable_project_truth_needed_by_future_work",
+          "required_glossary_caveat",
+          "plan_completion_sweep",
+        ],
+        required_when: ["required_glossary_caveat", "plan_completion_sweep"],
+        no_append_required_when: [
+          "ordinary_build_or_release_attempt_without_durable_project_truth_change",
+          "durable_outcome_not_needed_by_future_work",
+        ],
+        guidance: expect.stringContaining("require no progress append"),
+      },
+      receipt_detail: {
+        owners: ["qualification_receipt", "publication_receipt"],
+        fields: ["timings", "integrity", "digests", "retries", "replay"],
+        guidance: expect.stringContaining("do not duplicate receipt detail in progress"),
+      },
+    });
+    expect(explained.json?.guidance).toEqual(expect.arrayContaining([
+      expect.stringContaining("durable project truth that future work needs"),
+      expect.stringContaining("Qualification and publication receipts own timings, integrity, digests, retries, and replay"),
+    ]));
+    expect(explained.json?.input_schema.owned_fields).toEqual(["id", "artifact", "publication_order"]);
+  });
+
   it.each(["feat", "fix", "docs", "refactor", "chore", "test"])("publishes progress type %s as one canonical entity", (type) => {
     const root = project();
     const result = run(root, ["progress", "append", "--input", "-", "--format", "json"], JSON.stringify({ type, phase: "build", what: `Published ${type}`, context: { intent: "Exercise allowed type" } }));

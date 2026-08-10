@@ -159,6 +159,42 @@ describe("producer capability writer integration", () => {
     expect(auditInstructions).toContain("agentera state health append --input PATH");
   });
 
+  it("makes Build progress conditional while retaining typed writer authority", () => {
+    const variants = [buildInstructions, servedBuildInstructions()]
+      .map((text) => text.replaceAll("npx -y agentera@next ", "agentera "));
+    const artifacts = YAML.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/artifacts.yaml"),
+        "utf8",
+      ),
+    ) as Record<string, any>;
+    const validation = YAML.parse(
+      fs.readFileSync(
+        path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/validation.yaml"),
+        "utf8",
+      ),
+    ) as Record<string, any>;
+
+    for (const text of variants) {
+      expect(text).toContain("agentera state progress explain --verb append --format json");
+      expect(text).toContain("apply its `progress_write_policy`");
+      expect(text).toContain("If it requires progress");
+      expect(text).toContain("If it only allows progress");
+      expect(text).toContain("Otherwise make no progress write");
+      expect(text).not.toContain("Log skipped attempt in progress.yaml");
+      expect(text).not.toContain("inspect the last 3 entries in progress.yaml");
+      expect(text).toContain("Do not reconstruct attempt or retry history from progress");
+    }
+    expect(artifacts.ARTIFACTS[4].description).toContain("governs whether a cycle appends zero or one record");
+    expect(validation.VALIDATION[1].description).toContain("appended by Build");
+    expect(validation.VALIDATION[2].checks).toEqual([
+      "At most one progress entity is appended per invocation",
+      "Durable outcomes needed by future work may append one verified record",
+      "Required glossary caveats and plan-completion sweeps append one verified record",
+      "Attempt-only cycles with no durable project truth append no record",
+    ]);
+  });
+
   it("requires Build artifact logging before its single commit on source and served surfaces", () => {
     const variants = {
       source: buildInstructions,

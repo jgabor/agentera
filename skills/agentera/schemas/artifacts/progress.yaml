@@ -1,8 +1,9 @@
 # Progress Artifact Schema
 #
-# Cycle-by-cycle operational log for build. Each entry records what happened
-# in one development cycle: phase, work done, discoveries, verification,
-# next steps, and context envelope.
+# Durable project-outcome log for build. A Build invocation can produce zero or
+# one entry. The typed writer's progress_write_policy decides whether future
+# work needs the outcome or a governed glossary caveat. Attempt-only evidence
+# stays outside progress.
 #
 # The optional glossary_caveat envelope, Build writer, and bounded prime reader
 # are active. Build remains the sole progress producer; Plan may only emit the
@@ -42,8 +43,8 @@ meta:
   name: progress
   version: "1.0.0"
   description: >-
-    Cycle-by-cycle operational log. Produced by build. Consumed by
-    capabilities that need recent work history and verification evidence.
+    Durable project-outcome log. Produced by build. Consumed by capabilities
+    that need recent project truth and verification evidence.
   artifact_type: agent_facing
   path: ".agentera/progress.yaml"
   authority: legacy_migration_input_only
@@ -59,6 +60,7 @@ ENTITY_AUTHORITY:
     list: npx -y agentera@next state progress list --format json
     get: npx -y agentera@next state progress get --id ID --format json
   mutation: npx -y agentera@next state progress explain --verb append --format json
+  write_policy: input_schema.semantics.progress_write_policy
   direct_file_edits: forbidden
   legacy_schema_below: migration_input_only
   semantic_recency:
@@ -141,7 +143,7 @@ COMPACTION:
       use the direct state get contract.
   5:
     id: PX5
-    trigger: "When build writes a new cycle entry"
+    trigger: "When build writes a new durable outcome entry"
     description: >-
       Compaction runs when the producing skill writes a new entry.
       If >10 full-detail entries exist and their numbered archives verify,

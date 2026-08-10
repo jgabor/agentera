@@ -100,7 +100,8 @@ When a task changes code, tests, or user-facing docs, fold related state into
 that same commit:
 
 - Plan and task updates through the typed plan writer.
-- Progress through the typed progress writer.
+- Any durable progress record authorized or required by the current `state
+  progress explain --verb append` guidance, through the typed progress writer.
 - `TODO.md` open-item resolution or newly discovered work.
 - Health findings through the typed health writer.
 - Decision updates through the typed decisions writer.
