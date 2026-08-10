@@ -4,7 +4,7 @@ record:
   name: Simplify lifecycle repository inventory coverage
   depends_on:
     - ypdtaatnyq
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the resolved repository-surface boundary WHEN lifecycle markers are scanned THEN every required candidate is classified.
     - GIVEN generated, secret, linked, or nonregular surfaces WHEN inventory runs THEN excluded content is not treated as contract evidence.
