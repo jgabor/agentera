@@ -4,7 +4,7 @@ record:
   name: Consolidate repeated startup and capability work
   depends_on:
     - opphhvqohs
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the dashboard budget scenarios WHEN they run THEN each byte, adversarial-detail, and reconciliation claim remains covered without repeated equivalent state acquisition.
     - GIVEN every capability WHEN canonical entity context is built THEN each receives the expected plan projection and passes semantic checks.

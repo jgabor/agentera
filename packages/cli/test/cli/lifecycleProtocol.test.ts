@@ -5,6 +5,8 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
+import { buildStatusCapabilityContextPayload, collectOrientationState } from "../../src/cli/commands/prime.js";
 import { main } from "../../src/cli/dispatch/index.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../../src/cli/commands/schema.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
@@ -189,10 +191,12 @@ describe("final lifecycle protocol", () => {
       retrieval: { get: "npx -y agentera@next state plan tasks get --id eeeeeeeeee --format json" },
     }));
     expect(plan.first_pending).not.toHaveProperty("number");
+    const state = collectOrientationState({ projectRoot: root });
     for (const capability of CAPABILITY_NAMES) {
-      const result = capture(root, ["prime", "--context", capability, "--format", "json"]);
-      expect(result.rc, `${capability}: ${result.out}${result.err}`).toBe(0);
-      const capabilityContext = JSON.parse(result.out).capability_context;
+      const payload = capability === "status"
+        ? buildStatusCapabilityContextPayload(state)
+        : buildPrimeCapabilityContextPayload(state, capability);
+      const capabilityContext = payload.capability_context as Record<string, any>;
       expect(semanticFindings(`runtime://capability-context/${capability}`, capabilityContext)).toEqual([]);
       const context = capabilityContext.context;
       const contextPlan = capability === "status" ? context.status_context.plan : context.plan;
