@@ -11,12 +11,21 @@ output: [
 
 pre-commit:
   commands:
-    agentera:
-      run: pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact
+    agentera-state:
+      run: timeout --foreground 10s npx -y agentera@next check compact
+      glob:
+        - ".agentera/**"
+        - "TODO.md"
     py-ts-parity:
       run: bash packages/cli/scripts/py_ts_parity.sh --check --json
+      glob:
+        - "scripts/extract_corpus.py"
+        - "packages/cli/scripts/py_ts_parity.sh"
+        - "packages/cli/scripts/generate-extract-corpus-parity.mjs"
+        - "packages/cli/src/analytics/extractCorpus/**"
+        - "packages/cli/test/analytics/extractCorpus*.test.ts"
     docs:
-      run: bunx markdownlint --dot --fix --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- {staged_files}
+      run: timeout --foreground 10s bunx markdownlint --dot --fix --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- {staged_files}
       stage_fixed: true
       glob: "*.md"
       exclude:
@@ -25,7 +34,7 @@ pre-commit:
         - "packages/cli/test/fixtures/v2-compaction-2.7.11/input/TODO.md"
         - "packages/cli/test/fixtures/v2-compaction-2.7.11/output/TODO.md"
     configs:
-      run: vp fmt --write {staged_files}
+      run: timeout --foreground 10s vp fmt --write {staged_files}
       stage_fixed: true
       glob: "*.json"
     tests:

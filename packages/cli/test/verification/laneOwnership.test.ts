@@ -110,6 +110,8 @@ function run(args: string[], setup = fixture(), extraEnv: Record<string, string>
       PATH: `${setup.bin}${path.delimiter}${process.env.PATH ?? ""}`,
       AGENTERA_VERIFICATION_ROOT: setup.root,
       AGENTERA_VERIFICATION_CONTRACT: setup.contractPath,
+      VITEST_MAX_WORKERS: "",
+      AGENTERA_VERIFICATION_WORKERS: "",
       ...extraEnv,
     },
   });
@@ -128,22 +130,51 @@ function productionRoute(...paths: string[]): string {
   return result.stdout.trim();
 }
 
+function productionRouteJson(...paths: string[]): Record<string, unknown> {
+  const result = spawnSync(process.execPath, [RUNNER, "route", "--json", ...paths], {
+    cwd: PACKAGE_ROOT,
+    encoding: "utf8",
+  });
+  expect(result.status, result.stderr).toBe(0);
+  return JSON.parse(result.stdout);
+}
+
 describe("verification lane ownership", () => {
   it.each([
     "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
     "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
     "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
-  ])("routes critical runtime-matrix helper %s through every release owner", (helper) => {
-    expect(productionRoute(helper)).toBe("release");
+  ])("defers critical runtime-matrix helper %s to CI ownership", (helper) => {
+    expect(productionRoute(helper)).toBe("ci_owned");
   });
 
-  it("keeps the combined runtime-matrix helper change on release without broadening other helpers", () => {
+  it("keeps the combined runtime-matrix helper change CI-owned without broadening other helpers", () => {
     expect(productionRoute(
       "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
       "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
       "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
-    )).toBe("release");
+    )).toBe("ci_owned");
     expect(productionRoute("packages/cli/test/helpers/entityAuthorityFixture.ts")).toBe("precommit");
+  });
+
+  it("emits a stable structured CI handoff for global and specialized owners", () => {
+    expect(productionRouteJson("references/analysis/verification-policy.yaml")).toEqual({
+      schemaVersion: "agentera.stagedVerificationRoute.v1",
+      route: "ci_owned",
+      local_policy: "precommit",
+      ci_policy: "release",
+      ci_owners: ["source", "stress", "performance", "capacity", "package"],
+    });
+    expect(productionRouteJson("packages/cli/test/performance/entityAuthorityPerformance.test.ts")).toMatchObject({
+      route: "ci_owned",
+      ci_policy: "release",
+      ci_owners: ["performance"],
+    });
+    expect(productionRouteJson("packages/cli/test/cli/help.test.ts")).toMatchObject({
+      route: "precommit",
+      local_policy: "precommit",
+      ci_owners: [],
+    });
   });
 
   it.each(OWNER_NAMES)("runs the independently owned %s files headlessly", (owner) => {
@@ -476,7 +507,7 @@ describe("verification lane ownership", () => {
     expect(authority).toContain("The five test owners are");
     expect(authority).toContain("| Performance | `pnpm -C packages/cli run test:performance`");
     expect(authority).toContain("| `release` | Source, stress, performance, capacity, package |");
-    expect(authority).toContain("Conservative authority and verification surfaces route to `release`");
+    expect(authority).toContain("Conservative authority and verification surfaces route to `ci_owned`");
     expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
     expect(authority).toContain("generated:cleanup -- --force --json");
     expect(authority).toContain("singly linked regular");

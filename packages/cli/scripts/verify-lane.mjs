@@ -384,11 +384,30 @@ function runPolicy(name, state, forwarded) {
   return 0;
 }
 
-function route(paths, contract) {
-  const { exact = [], prefixes = [] } = contract.conservative_routing ?? {};
-  return paths.some((file) => exact.includes(file) || prefixes.some((prefix) => file.startsWith(prefix)))
-    ? "release"
-    : "precommit";
+function route(paths, state) {
+  const { exact = [], prefixes = [] } = state.contract.conservative_routing ?? {};
+  const releaseOwners = state.contract.policies.release ?? [];
+  const ciOwners = new Set();
+
+  for (const file of paths) {
+    const owner = state.assignments.get(file);
+    if (owner !== undefined && owner !== "source") {
+      ciOwners.add(owner);
+      continue;
+    }
+    if (exact.includes(file) || prefixes.some((prefix) => file.startsWith(prefix))) {
+      for (const owner of releaseOwners) ciOwners.add(owner);
+      continue;
+    }
+  }
+
+  return {
+    schemaVersion: "agentera.stagedVerificationRoute.v1",
+    route: ciOwners.size > 0 ? "ci_owned" : "precommit",
+    local_policy: "precommit",
+    ci_policy: "release",
+    ci_owners: OWNER_NAMES.filter((owner) => ciOwners.has(owner)),
+  };
 }
 
 const [command, name, ...rest] = process.argv.slice(2);
@@ -404,8 +423,14 @@ if (command === "inventory") {
   process.exit(0);
 }
 if (command === "route") {
-  const paths = [name, ...rest].filter((value) => value && value !== "--policy-only");
-  console.log(route(paths, state.contract));
+  const args = [name, ...rest].filter(Boolean);
+  const json = args.includes("--json");
+  const ownersOnly = args.includes("--owners-only");
+  const paths = args.filter((value) => !["--policy-only", "--json", "--owners-only"].includes(value));
+  const result = route(paths, state);
+  if (json) console.log(JSON.stringify(result, null, 2));
+  else if (ownersOnly) console.log(result.ci_owners.join("\n"));
+  else console.log(result.route);
   process.exit(0);
 }
 if (command === "policy") {

@@ -4,7 +4,7 @@ record:
   name: Enforce fast owner-aware local staged verification
   depends_on:
     - vvkilxhcaq
-  status: pending
+  status: complete
   acceptance:
     - GIVEN state or documentation-only changes WHEN pre-commit runs THEN only relevant format, schema, lint, or compact checks run within 10 seconds.
     - GIVEN ordinary source changes WHEN pre-commit runs THEN targeted deterministic feedback and typechecking finish within 60 seconds on the baseline machine.
@@ -12,3 +12,13 @@ record:
     - GIVEN specialized or global owners WHEN staged THEN routing remains owner-correct and authoritative execution occurs in required CI, not a local release lane.
     - GIVEN malformed content or a budget overrun WHEN hooks run THEN they fail without a bypass; route tests cover pass and fail cases.
   plan: lsftqiwiki
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-tqgnmgxder-1
+      source: audit:tqgnmgxder:criteria=5/5-pass:capsule=75034760dd3197245efceb383873811fbc8443adf8d7e05a81558cd97a9a05a7:fresh-route=pass:focused=2-files-124-tests:protected=unchanged:effects=none:overall=pass
+      recorded_at: 2026-08-11 18:35
+      writer_command: agentera state plan record-evaluation

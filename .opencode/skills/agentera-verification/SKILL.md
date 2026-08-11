@@ -76,14 +76,17 @@ lefthook install
 
 Pre-commit runs:
 
-- `agentera check compact` for the `uniform_10_40_50` artifact budget.
-- `scripts/precommit-vitest.sh {staged_files}` for staged-aware Vitest routing.
-- Markdown lint for repository docs.
-- `vp fmt` for supported configuration files.
+- State and TODO changes run `agentera check compact` within a 10-second budget.
+- Ordinary source changes run deterministic source-owned tests plus typecheck
+  within 60 seconds, with at most two Vitest workers.
+- Specialized and global owner surfaces route to `ci_owned`; the local hook
+  runs source-owned route guards while required CI executes `release`
+  authoritatively.
+- Markdown lint and supported configuration formatting each have a 10-second
+  budget. Py-TS parity runs only for its analytics inputs.
 
-Broad CLI, schema, skill, reference, registry, protocol, and workflow changes
-route to the full source suite. Do not rely on summaries when `.lefthook.yml`
-has changed.
+The staged hook never invokes release qualification, performance, capacity, or
+package owners. Do not rely on summaries when `.lefthook.yml` has changed.
 
 Use `LEFTHOOK=0` only when the hook configuration itself is broken or a failure
 is already tracked for CI. Never use it for routine commits, TODO changes, or

@@ -1,0 +1,16 @@
+id: mxtxewezan
+artifact: progress
+record:
+  timestamp: 2026-08-11 17:30
+  type: fix
+  phase: build
+  what: Replaced local release-policy fan-out with fast owner-aware staged verification.
+  context:
+    intent: Enforce fast deterministic local feedback while retaining one authoritative CI owner per specialized or global gate.
+    constraints: No hook bypass, release qualification, package gate, generated overlap, candidate, receipt, registry, publication, push, tag, credential, remote operation, protected-workflow change, vision change, or decision reconstruction.
+    unknowns: Lefthook reports that hook synchronization cannot write the primary worktree hook from this linked read-only worktree; each requested hook command itself passed and this warning did not change repository or index state.
+    scope: Lefthook routing, staged source executor, verification route output and policy, focused route tests, contributor and maintainer documentation, changelog, release adapter removal of the retired precommit receipt field, and typed task and progress state.
+  discovered: The 557.42-second commit path came from always-on build and compact work plus conservative paths executing every release owner locally. Exact source-test selection, scoped artifact checks, and an explicit ci_owned handoff preserve the authoritative CI conjunction without duplicating it in the hook.
+  verified: Retained cycle 1 passed 181 focused tests, typecheck, shellcheck, Bash syntax, Lefthook validation, verification-policy validation, Markdown lint, and diff checks. Realistic Lefthook runs completed state-only in 1.79 seconds, docs-only in 0.12 seconds, ordinary source in 35.50 seconds, and a deferred performance-owner change in 37.08 seconds. Vitest was fixed at two workers. Route tests cover source, global, each specialized owner, malformed route data, and a 60000 ms overrun with the retired environment bypass ignored. Raw output is /tmp/tqgnmgxder-evidence-cycle1.qGRNit/raw.log with SHA-256 75034760dd3197245efceb383873811fbc8443adf8d7e05a81558cd97a9a05a7. Task-only clean and shared patches have SHA-256 4a926234222536c41730df8f7560d2d5cd5fb3ac4a09d54ca4fc425e26a83e86 and c8bb102a3146b1b68ced905f8c2e948cd13e9ed80a55f474ca6e3640fdd68c2a. The capsule binds the dependency HEAD and proves an empty index, unchanged protected workflows, and unchanged vision state.
+  next: Keep tqgnmgxder in progress for independent audit. Commit only after a PASS evaluation, with inherited release-readiness work preserved and excluded from this task boundary.
+  publication_order: 137

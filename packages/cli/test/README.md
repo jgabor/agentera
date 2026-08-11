@@ -58,12 +58,11 @@ separate HOME, cache, npm configs, and report. A peer failure cancels only
 cancellable groups; generated-overlap settles without forced termination, and no
 reader barrier or receipt follows a batch, performance, or capacity failure.
 
-Pre-commit source-policy reuse is explicit. When
-`AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR` names an external candidate,
-`release-qualification.mjs source-check` validates its source receipt against
-the current normalized staged and working tracked tree. Success skips only this
-script's source/release test policy. Missing or invalid evidence retains the
-existing policy; an absent variable preserves existing routing.
+Pre-commit is a local feedback lane, not release qualification. It runs exact
+source-owned tests and typecheck with at most two workers. Specialized and
+global surfaces are labeled `ci_owned`; required CI runs their authoritative
+owners through the unchanged release conjunction. The hook accepts no receipt
+or environment bypass.
 
 ## Classification key
 
