@@ -138,6 +138,7 @@ describe("candidate publication orchestration", () => {
     expect(qualificationYaml).toContain(`runs-on: ${verificationPolicy.owners.performance.execution.authoritative_runner.runs_on}`);
     expect(qualificationYaml).toContain("AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04");
     expect(qualificationYaml).toContain("AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}");
+    expect(qualificationYaml.match(/COREPACK_HOME: \$\{\{ runner\.temp \}\}\/corepack/g)).toHaveLength(2);
     expect(qualificationYaml).not.toContain("github.run_number");
   });
 

@@ -33,11 +33,14 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
       - name: Validate serialized development version
         if: github.event_name == 'push'
         run: pnpm cli:validate:dev-push -- --before-commit "${{ github.event.before }}" --metadata-commit "${{ github.sha }}" --json
       - name: Qualify committed source
         env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
         run: pnpm cli:qualify:source -- --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
