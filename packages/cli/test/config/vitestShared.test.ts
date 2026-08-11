@@ -37,8 +37,15 @@ describe("source worker policy", () => {
 
   it("keeps GitHub Actions explicitly unmeasured", () => {
     const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8"));
-    const sourceStep = workflow.jobs.cli.steps.find((step: { name?: string }) => step.name === "Verify clean source boundary");
-    expect(sourceStep.env).toEqual({ AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY });
-    expect(workerPolicyFor(sourceStep.env)).toEqual({ name: UNMEASURED_WORKER_POLICY, workers: 4 });
+    const sourceOwnerStep = workflow.jobs.cli.steps.find(
+      (step: { name?: string }) => step.name === "Verify check-only release conjunction",
+    );
+    expect(sourceOwnerStep.env).toMatchObject({
+      AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
+    });
+    expect(workerPolicyFor(sourceOwnerStep.env)).toEqual({
+      name: UNMEASURED_WORKER_POLICY,
+      workers: 4,
+    });
   });
 });

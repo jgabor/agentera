@@ -363,11 +363,13 @@ The canonical policy compositions are:
 Pre-commit delegates composition to `verify-lane.mjs`. Ordinary source paths
 run targeted source files or the `local`/`precommit` source composition.
 Conservative authority and verification surfaces route to `release`, so all
-five owners run before those changes can commit. CI explicitly runs source and
-package, generated-output overlap, typecheck, build, and repository gates.
-Release gates add the stress, performance, and capacity owners plus metadata and
-dry-run publication checks, while using the same package construction path
-rather than adding another extracted-package matrix.
+five owners run before those changes can commit. Routine CI invokes the
+check-only release conjunction once on the policy-pinned runner. Generated
+overlap is therefore the sole execution origin for source, package, and build;
+the same DAG retains source-owned Py-TS parity, typecheck, compact, stress,
+performance, and capacity evidence without standalone duplicate steps. Release
+gates add metadata and dry-run publication checks while using the same package
+construction path rather than adding another extracted-package matrix.
 
 Run the complete non-publishing release-readiness conjunction from the
 repository root:

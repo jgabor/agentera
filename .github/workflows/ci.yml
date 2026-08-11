@@ -9,8 +9,8 @@ on:
 
 jobs:
   cli:
-    name: CLI (package, source, typecheck)
-    runs-on: ubuntu-latest
+    name: CLI verification DAG
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,24 +22,14 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      - name: Verify clean source boundary
+      - name: Fetch main for source-owned py-ts parity
+        run: git fetch origin main --depth=1
+      - name: Verify check-only release conjunction
         env:
           AGENTERA_VITEST_RUNNER_POLICY: unmeasured
-        run: pnpm -C packages/cli test
-      - name: Verify package boundary
-        run: pnpm -C packages/cli run verify:package
-      - name: Typecheck CLI
-        run: pnpm -C packages/cli run typecheck
-      - name: Fetch main for py-ts parity drift gate
-        run: git fetch origin main --depth=1
-      - name: Py-TS parity drift gate (#34)
-        run: bash packages/cli/scripts/py_ts_parity.sh --check --json
-      - name: Verify generated-output overlap
-        run: pnpm -C packages/cli run verify:generated-overlap
-      - name: Build checkout CLI
-        run: pnpm -C packages/cli build
-      - name: Repository gates
-        run: node packages/cli/dist/bin/agentera.js check compact
+          AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
+          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
+        run: pnpm -C packages/cli run verify:release
 
   sandbox-l1:
     name: v2→v3 sandbox L1

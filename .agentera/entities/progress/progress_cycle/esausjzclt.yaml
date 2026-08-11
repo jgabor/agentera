@@ -1,0 +1,16 @@
+id: esausjzclt
+artifact: progress
+record:
+  timestamp: 2026-08-10 16:24
+  type: test
+  phase: build
+  what: Bound the routine-CI verification retry to retained raw outputs and an isolated task identity.
+  context:
+    intent: Correct the evidence boundary for routine CI ownership without changing implementation or rerunning the blocked release gate.
+    constraints: Run each prescribed evidence command once, stop on failure, preserve unrelated work, and exclude unauthorized post-task state and code from acceptance evidence.
+    unknowns: The routine CI conjunction remains externally blocked by the retained package-budget result; it was deliberately not rerun. Decision detail remains degraded and unmodified.
+    scope: Evidence only for the current CI workflow, exact packaging documentation fragment, worker-policy test, and routine-CI ownership test.
+  discovered: The earlier vvkil changelog bullet is absent after post-task shared-file drift, so CHANGELOG.md is excluded from the runnable implementation manifest. No implementation file was changed during this evidence retry.
+  verified: "Correction for progress gjukhcmgbp: its numeric verification claims are superseded as unbound. Capsule /tmp/hook_outputs/019fe714-4e54-76a1-9776-8e125d34fa35/70088637-d4eb-49d3-a855-2ea19055506c.txt line 1, SHA-256 ac263ad222844a97046b3759e756df8169b2d54b990226194822eab3ed89e06e, retains every command, start and end time, exit code, and complete stdout and stderr in UTF-8 and base64. It binds HEAD 5b5f1eefc0ed4c620be57d7a4e2050d12ed4f01c and vvkil implementation manifest 2309121a6040039a4576e235c36c811fb5594be76884bedcac0e5da0c11267fd. One focused run passed 1 file and 8 tests; one affected run passed 5 files and 35 tests; typecheck, build, compact with 2,237 canonical entities, and git diff --check each exited 0. HEAD, empty index, implementation manifest, protected paths, and excluded-contamination hashes were unchanged before and after. Task jyvgshgtss, progress gytutxbxmz, verify-generated-overlap.mjs, verify-lane.mjs, and laneOwnership.test.ts are excluded and none of their claimed results is used. The 23,194 ms package-owner result against the 20,000 ms budget remains pre-existing plan-external evidence owned by TODO lkpvbgwhby; this retry did not execute or re-measure it. No release, readiness, package, candidate, receipt, publication, registry, credential, push, tag, approval, activation, or remote command ran."
+  next: Keep vvkilxhcaq in progress until independent audit attempt 2 verifies the retained capsule and records a verdict.
+  publication_order: 136

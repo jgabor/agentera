@@ -1,0 +1,16 @@
+id: gjukhcmgbp
+artifact: progress
+record:
+  timestamp: 2026-08-10 15:11
+  type: refactor
+  phase: build
+  what: Deduplicated routine CI around the canonical check-only release conjunction and added workflow ownership guards.
+  context:
+    intent: Give routine CI one canonical execution origin per governed gate while retaining all declared evidence.
+    constraints: Preserve the blocked readiness task and its TODO exactly; do not change the package budget, protected workflows, vision, decision satisfaction, credentials, registry state, or remote state.
+    unknowns: Current feat/v3 is not green because the separate governed package-budget correction remains open. Decision detail was degraded at startup and remains deferred.
+    scope: Routine CI workflow, focused ownership tests, the existing GitHub worker-policy test, maintainer documentation, changelog, and typed task/progress state only.
+  discovered: The former CLI job separately invoked source, package, typecheck, parity, generated overlap, build, and compact even though generated overlap owns source, package, and build. Decision detail remained degraded and was not reconstructed or marked satisfied.
+  verified: "The focused workflow contract passed 8 of 8 tests, including one positive and one forbidden standalone-invocation case for source, package, and build. Five affected files passed 35 of 35 tests. Typecheck, build, compact, and git diff checks passed. Routine CI is not claimed green: retained bound evidence reports generated-overlap as the exact first failure because the package owner took 23,194 ms against its governed 20,000 ms budget; TODO lkpvbgwhby owns that plan-external correction. The workflow neither bypasses nor hides the failure and has no publication, registry, candidate, receipt, activation, credential, push, or tag action."
+  next: Run an independent audit of the task-owned workflow, tests, documentation, and typed state changes. Keep task vvkilxhcaq in progress until evaluation records a verdict.
+  publication_order: 134
