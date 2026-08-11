@@ -2,11 +2,11 @@
   "schemaVersion": "agentera.packagePublication.v2",
   "owner": "repository/package scripts",
   "invariants": {
-    "preparation": "Preparation is pure and registry-independent. Development preparation first validates a current normalized source receipt from an explicit external candidate directory, then accepts an explicit target version and source commit, changes only package version and agentera.gitRef, and leaves the diff for review and commit. Missing, stale, malformed, or tampered source evidence fails before metadata effects. Stable preparation retains its existing source-provenance contract and does not consume the development receipt.",
+    "preparation": "Preparation is pure and registry-independent. Serialized feat/v3 integration preparation requires a clean committed source tree, allocates exactly dev.N+1 locally, sets agentera.gitRef to that source HEAD, and changes only the development manifest for a final metadata commit. The manual readiness preparation path first validates a current normalized source receipt, then accepts an explicit target version and source commit. Stable preparation retains its separate source-provenance contract.",
     "sourceQualification": "Source qualification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
     "candidateQualification": "Candidate qualification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
     "publication": "Registry publication consumes the retained candidate bytes through one measured stage, independent exact-version L2, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source qualification, or rolls a tag back.",
-    "approval": "Registry mutation requires an explicit approval bound to the candidate receipt digest, target version, integrity, package, registry, and tag. A branch push is never approval.",
+    "approval": "Registry mutation requires an approval bound to the candidate receipt digest, target version, integrity, package, registry, and tag. A serialized push to feat/v3 may issue the development approval automatically only after the committed dev.N increment, source qualification, candidate qualification, and CI attestation pass. Stable publication retains explicit protected-environment review on main. A push never substitutes for candidate binding.",
     "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
     "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
     "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The qualified-publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
@@ -49,6 +49,23 @@
       "name": "Qualify release candidate",
       "path": ".github/workflows/qualify-candidate.yml",
       "ref": "refs/heads/feat/v3"
+    },
+    "developmentPush": {
+      "trigger": "push to refs/heads/feat/v3",
+      "versionAuthority": "packages/cli/package.json committed by the serialized local feat/v3 integrator",
+      "preparationCommand": "pnpm cli:prepare:dev-push -- --json",
+      "validationCommand": "pnpm cli:validate:dev-push -- --before-commit BEFORE --metadata-commit HEAD --json",
+      "rules": [
+        "BEFORE must be an ancestor of the source commit",
+        "HEAD must be one non-merge metadata-only commit after the source commit",
+        "source must retain the BEFORE development version",
+        "HEAD must increment dev.N exactly once and set agentera.gitRef to the source commit",
+        "routine CI defers its duplicate release conjunction on direct feat/v3 pushes",
+        "CI never allocates a version or uses github.run_number",
+        "reruns reuse the same version, candidate, and source run identity"
+      ],
+      "approval": "After exact candidate qualification and CI attestation, the workflow issues a machine candidate-bound development approval and publishes to next without a review environment.",
+      "concurrency": "The local integrator waits for the prior development workflow to finish before another push. One non-cancelling workflow group protects the active run; it is not used as an unbounded queue."
     },
     "publicationRunBinding": {
       "beforeArtifactDownload": [
@@ -313,8 +330,8 @@
         "command": "node packages/cli/scripts/release-qualification.mjs source-check --candidate-dir DIR [--json]",
         "authority": "The external path is input only. Reuse requires digest, full receipt semantics, exact governed gates, current toolchain, and matching current staged and working tracked-tree identities under the same package version and agentera.gitRef normalization used at source qualification.",
         "effects": "Runs no qualification gate and writes no repository, candidate, receipt, or registry state. Success emits executed none and reused true without receipt content or private paths.",
-        "fallback": "A missing, invalid, ambiguous, or stale receipt fails before development metadata effects. The local staged-verification lane does not consume release receipts.",
-        "scope": "Development preparation uses the check as a source-readiness prerequisite. Direct diagnostics may inspect reuse without executing a gate. Build, compact, parity, candidate qualification, release metadata, approval, and publication remain mandatory at their owning stages."
+        "fallback": "A missing, invalid, ambiguous, or stale receipt fails before manual readiness metadata effects. Serialized integration preparation and the local staged-verification lane do not consume release receipts.",
+        "scope": "Manual readiness preparation uses the check as a source-readiness prerequisite. Direct diagnostics may inspect reuse without executing a gate. Build, compact, parity, candidate qualification, release metadata, approval, and publication remain mandatory at their owning stages."
       },
       "dag": {
         "batchA": ["generated-overlap", "stress", "typecheck"],
@@ -385,7 +402,7 @@
   },
   "trust": {
     "local": "A same-principal source receipt is a deterministic cache only. It cannot authorize registry mutation.",
-    "ci": "CI registry mutation requires the transferred exact artifact and receipts, a CI attestation bound to the candidate receipt and source run, and an explicit candidate-bound approval. OIDC provenance is deferred."
+    "ci": "CI registry mutation requires the transferred exact artifact and receipts, a CI attestation bound to the candidate receipt and source run, and a candidate-bound approval. The feat/v3 push workflow may issue development approval automatically after every prior bound check passes; stable main publication requires protected-environment review. OIDC provenance is deferred."
   },
   "registryStateTable": [
     {

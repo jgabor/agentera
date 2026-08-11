@@ -43,6 +43,8 @@
     "generated:cleanup": "node scripts/build-package.mjs --cleanup",
     "pack:dry-run": "node scripts/pack-package.mjs --dry-run",
     "release:prepare": "node scripts/publication-transaction.mjs prepare development",
+    "release:prepare:push": "node scripts/publication-transaction.mjs prepare-push development",
+    "release:validate:push": "node scripts/publication-transaction.mjs validate-push development",
     "release:qualify:source": "node scripts/release-qualification.mjs source",
     "release:ready": "node scripts/release-readiness.mjs development",
     "release:qualify:candidate": "node scripts/release-qualification.mjs candidate --adapter development",

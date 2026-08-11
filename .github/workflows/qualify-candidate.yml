@@ -1,6 +1,9 @@
 name: Qualify release candidate
 
 on:
+  push:
+    branches:
+      - feat/v3
   workflow_dispatch:
     inputs:
       adapter:
@@ -10,7 +13,12 @@ on:
         options: [development, stable]
 
 permissions:
+  actions: read
   contents: read
+
+concurrency:
+  group: publish-next-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   qualify:
@@ -25,19 +33,24 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - name: Validate serialized development version
+        if: github.event_name == 'push'
+        run: pnpm cli:validate:dev-push -- --before-commit "${{ github.event.before }}" --metadata-commit "${{ github.sha }}" --json
       - name: Qualify committed source
         env:
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
         run: pnpm cli:qualify:source -- --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
       - name: Qualify exact development candidate
-        if: inputs.adapter == 'development'
+        if: github.event_name == 'push' || inputs.adapter == 'development'
         run: pnpm cli:qualify:dev -- --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
       - name: Qualify exact stable candidate
         if: inputs.adapter == 'stable'
         run: node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
       - name: Attest transferred candidate
-        run: node packages/cli/scripts/release-qualification.mjs attest --adapter "${{ inputs.adapter }}" --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
+        env:
+          ADAPTER: ${{ github.event_name == 'push' && 'development' || inputs.adapter }}
+        run: node packages/cli/scripts/release-qualification.mjs attest --adapter "${ADAPTER}" --candidate-dir "${RUNNER_TEMP}/agentera-candidate"
       - name: Upload immutable candidate
         uses: actions/upload-artifact@v4
         with:
@@ -45,3 +58,31 @@ jobs:
           path: ${{ runner.temp }}/agentera-candidate
           if-no-files-found: error
           retention-days: 30
+
+  publish-development:
+    name: Publish committed development candidate to @next
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/v3'
+    needs: qualify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - name: Download exact candidate from this run
+        uses: actions/download-artifact@v4
+        with:
+          name: release-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/agentera-candidate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Record automatic candidate-bound development approval
+        run: node packages/cli/scripts/release-qualification.mjs approval --adapter development --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --approved-by "github-actions/feat-v3" --source-run-id "${{ github.run_id }}"
+      - name: Publish exact qualified development candidate
+        timeout-minutes: 3
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node packages/cli/scripts/release-benchmark.mjs publication --adapter development --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --source-run-id "${{ github.run_id }}" --receipt-file "${RUNNER_TEMP}/qualified-publication-receipt.json" --json

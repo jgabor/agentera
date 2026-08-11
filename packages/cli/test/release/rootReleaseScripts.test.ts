@@ -48,6 +48,8 @@ describe("root release script argument forwarding", () => {
     });
     const probes = [
       ["publication-transaction.mjs", "prepare", "development", "--target-version", "3.0.0-dev.43", "--source-commit", "0".repeat(40), "--candidate-dir", candidate, "--check", "--unexpected"],
+      ["publication-transaction.mjs", "prepare-push", "development", "--unexpected"],
+      ["publication-transaction.mjs", "validate-push", "development", "--before-commit", "0".repeat(40), "--metadata-commit", "0".repeat(40), "--unexpected"],
       ["release-qualification.mjs", "verify", "--unexpected"],
       ["release-qualification.mjs", "source", "--candidate-dir", candidate, "--unexpected"],
       ["release-readiness.mjs", "development", "--candidate-dir", candidate, "--target-version", "3.0.0-dev.43", "--source-commit", "0".repeat(40), "--unexpected"],
@@ -248,6 +250,10 @@ describe("root release script argument forwarding", () => {
       boolean: ["--check", "--json", "--verbose"],
       value: ["--target-version", "--source-commit"],
     };
+    const validateDevelopmentPush = {
+      boolean: ["--json", "--verbose"],
+      value: ["--before-commit", "--metadata-commit"],
+    };
     const qualification = {
       boolean: ["--json", "--verbose"],
       value: ["--candidate-dir", "--adapter"],
@@ -274,6 +280,8 @@ describe("root release script argument forwarding", () => {
     };
     const recipes = [
       ["cli:prepare:dev", prepareDevelopment, ["--", "--candidate-dir", "/external/candidate", "--target-version", "next", "--source-commit", "commit", "--json"]],
+      ["cli:prepare:dev-push", { boolean: prepareDevelopment.boolean, value: [] }, ["--", "--json"]],
+      ["cli:validate:dev-push", validateDevelopmentPush, ["--", "--before-commit", "before", "--metadata-commit", "head", "--json"]],
       ["cli:prepare:stable", prepareStable, ["--", "--target-version", "next", "--source-commit", "commit", "--json"]],
       ["cli:qualify:source", qualification, ["--", "--candidate-dir", "/external/candidate", "--json"]],
       ["cli:ready:dev", readiness, ["--", "--candidate-dir", "/external/candidate", "--target-version", "next", "--source-commit", "commit", "--json"]],

@@ -104,6 +104,26 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
   integration trunk.
 - The archived `main-pre-squash-v1` branch is historical only.
 
+### Development push contract
+
+- Local `feat/v3` is the sole development-version allocation authority. Before
+  a push, fast-forward it from `origin/feat/v3`, integrate the worktree branch,
+  and keep the integration linear.
+- End each push with one non-merge metadata-only commit. It changes only
+  `packages/cli/package.json`, increments `3.0.0-dev.N` to
+  `3.0.0-dev.N+1`, and sets `agentera.gitRef` to the source commit immediately
+  before it. Run `pnpm cli:prepare:dev-push -- --json` from the clean integrated
+  source commit, then commit only that manifest.
+- Push once. The `feat/v3` workflow validates the committed increment against
+  the previous remote head, qualifies that exact candidate, issues an automatic
+  candidate-bound development approval, and publishes it to npm `@next`.
+- Wait for that workflow to finish before the next `feat/v3` integration push.
+  This keeps the single local integrator and GitHub run order identical.
+- CI does not allocate or modify versions. Do not use `github.run_number` for
+  package identity. A rerun reuses the same committed version and candidate.
+- Publication from `main` remains the stable path and requires protected
+  environment review before npm mutation.
+
 Until `3.0.0` is on npm `@latest`, do not bump suite or release metadata beyond
 `3.0.0`. Any version or publication task must load `agentera-release` before
 editing files or checking credentials.
@@ -141,11 +161,15 @@ or touching generated and packaged output.
 
 ## Always-on boundaries
 
-- Never publish, tag, or push without explicit user authorization.
+- Never publish, tag, or push without explicit user authorization. The automatic
+  `feat/v3` workflow is standing policy after an authorized push; it does not
+  authorize an agent to make that push.
 - Never infer missing npm credentials from inherited `NPM_TOKEN` alone. Load
   `agentera-release` and complete its credential preflight.
-- Never use a push, `.env`, `.npmrc`, source receipt, or CI success as registry
-  mutation approval. Publication requires the qualified candidate contract.
+- Never use `.env`, `.npmrc`, a source receipt, or CI success as registry
+  mutation approval. A serialized `feat/v3` push may cause the workflow to issue
+  development approval only after the qualified candidate contract passes.
+  Stable publication always requires explicit protected review.
 - Never use direct `npm pack` or `npm publish` for Agentera packages.
 - Never push during ordinary capability execution.
 - Never amend, force-push, or use destructive Git operations unless the user

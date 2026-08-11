@@ -44,6 +44,8 @@ describe("candidate publication orchestration", () => {
   it("routes preparation, qualification, approval, staging, and promotion through explicit scripts", () => {
     expect(rootPackage.scripts).toMatchObject({
       "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
+      "cli:prepare:dev-push": "pnpm -C packages/cli run release:prepare:push",
+      "cli:validate:dev-push": "pnpm -C packages/cli run release:validate:push",
       "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
       "cli:ready:dev": "pnpm -C packages/cli run release:ready",
       "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
@@ -79,15 +81,18 @@ describe("candidate publication orchestration", () => {
     expect(stablePackage.scripts).not.toHaveProperty("publish:stable");
   });
 
-  it("binds development preparation to reusable source evidence without changing stable preparation", () => {
+  it("separates local integration allocation from receipt-bound manual preparation", () => {
     expect(publicationContract.invariants.preparation).toContain(
-      "Development preparation first validates a current normalized source receipt",
+      "Serialized feat/v3 integration preparation requires a clean committed source tree",
+    );
+    expect(publicationContract.invariants.preparation).toContain(
+      "manual readiness preparation path first validates a current normalized source receipt",
     );
     expect(publicationContract.qualification.source.reuseCheck.scope).toContain(
-      "Development preparation uses the check as a source-readiness prerequisite",
+      "Manual readiness preparation uses the check as a source-readiness prerequisite",
     );
     expect(publicationContract.invariants.preparation).toContain(
-      "Stable preparation retains its existing source-provenance contract",
+      "Stable preparation retains its separate source-provenance contract",
     );
   });
 
@@ -119,7 +124,12 @@ describe("candidate publication orchestration", () => {
   });
 
   it("retains a candidate and CI attestation before any separate approved mutation run", () => {
+    expect(qualificationYaml).toMatch(/push:\n\s+branches:\n\s+- feat\/v3/);
     expect(qualificationYaml).toContain("workflow_dispatch");
+    expect(qualificationYaml).toContain("cancel-in-progress: false");
+    expect(qualificationYaml).toContain("pnpm cli:validate:dev-push");
+    expect(qualificationYaml).toContain("github.event.before");
+    expect(qualificationYaml).toContain("github.sha");
     expect(qualificationYaml).toContain("pnpm cli:qualify:source");
     expect(qualificationYaml).toContain("pnpm cli:qualify:dev");
     expect(qualificationYaml).toContain("release-qualification.mjs attest");
@@ -128,7 +138,21 @@ describe("candidate publication orchestration", () => {
     expect(qualificationYaml).toContain(`runs-on: ${verificationPolicy.owners.performance.execution.authoritative_runner.runs_on}`);
     expect(qualificationYaml).toContain("AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04");
     expect(qualificationYaml).toContain("AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}");
-    expect(qualificationYaml).not.toContain("NPM_TOKEN");
+    expect(qualificationYaml).not.toContain("github.run_number");
+  });
+
+  it("publishes the exact push candidate to next without a review environment", () => {
+    const autoPublish = qualificationYaml.slice(qualificationYaml.indexOf("  publish-development:"));
+    expect(autoPublish).toContain("github.ref == 'refs/heads/feat/v3'");
+    expect(autoPublish).toContain("needs: qualify");
+    expect(autoPublish).toContain("release-candidate-${{ github.run_id }}");
+    expect(autoPublish).toContain("github-actions/feat-v3");
+    expect(autoPublish).toContain("--source-run-id \"${{ github.run_id }}\"");
+    expect(autoPublish).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
+    expect(autoPublish).toContain("release-benchmark.mjs publication --adapter development");
+    expect(autoPublish).not.toContain("environment:");
+    expect(autoPublish.indexOf("release-qualification.mjs approval"))
+      .toBeLessThan(autoPublish.indexOf("release-benchmark.mjs publication"));
   });
 
   it("validates API provenance before approval, then runs one bounded forward-only envelope", () => {

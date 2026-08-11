@@ -18,6 +18,10 @@
 
 ### Changed
 
+- Serialized `feat/v3` integrations now allocate one committed
+  `3.0.0-dev.N+1` version locally, then automatically qualify and publish that
+  exact build to npm `@next`. Stable publication from `main` remains protected
+  by review.
 - Local staged verification now gives ordinary source changes targeted tests
   and typecheck with two workers in at most 60 seconds. State and documentation
   checks stay under 10 seconds, while specialized and global owners defer to

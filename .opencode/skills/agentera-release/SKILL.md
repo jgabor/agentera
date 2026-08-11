@@ -71,22 +71,36 @@ replay without a token.
 
 ## Development publication
 
-Development preparation requires an explicit next version, source commit, and
-external candidate directory containing a current normalized source receipt.
-It is pure, registry-independent, and changes only package version and
-`agentera.gitRef`. Missing, stale, malformed, or tampered source evidence and
-stale, skipped, malformed, or out-of-policy targets fail before effects. Stable
-preparation retains its separate source-provenance behavior without this receipt.
+Serialized integration preparation requires a clean committed source tree and
+changes only package version and `agentera.gitRef`. The manual readiness
+preparer requires an explicit next version, source commit, and external
+candidate directory containing a current normalized source receipt. Both paths
+are pure and registry-independent. Stable preparation retains its separate
+source-provenance behavior without the development receipt.
 
-Use the resumable readiness coordinator for the normal development sequence.
-Its fresh run can issue source authority only on the contracted GitHub Actions
-runner. It pauses for separate metadata preparation, review, and commit. Resume
-requires the same explicit inputs plus the reviewed metadata commit. It then
-constructs the candidate once or reuses the exact valid candidate receipt and
-bytes. A workstation can run performance diagnostics, but cannot issue a new
-source receipt. This is the coordinator contract; the protected candidate
-handoff workflow must adopt it in a separately governed change before remote
-use.
+The normal development path has one version authority: serialized local
+integration on `feat/v3`. Fast-forward local `feat/v3` from its remote, integrate
+the worktree branch, then add one final metadata-only commit. That commit must
+increment `packages/cli/package.json#version` exactly once and set
+`agentera.gitRef` to its first parent. Push once. The workflow validates this
+shape against the previous remote head, qualifies the exact committed candidate,
+issues a machine candidate-bound development approval, and publishes it to
+`@next`. It never allocates a version and never uses `github.run_number`. A rerun
+reuses the same committed version and candidate. Wait for that workflow to
+finish before the next `feat/v3` integration push.
+
+```bash
+pnpm cli:prepare:dev-push -- --json
+# Commit only packages/cli/package.json as the final local feat/v3 commit.
+```
+
+The resumable readiness coordinator remains the manual diagnostic and recovery
+path. Its fresh run can issue source authority only on the contracted GitHub
+Actions runner. It pauses for separate metadata preparation, review, and commit.
+Resume requires the same explicit inputs plus the reviewed metadata commit. It
+then constructs the candidate once or reuses the exact valid candidate receipt
+and bytes. A workstation can run performance diagnostics, but cannot issue a new
+source receipt.
 
 ```bash
 pnpm cli:ready:dev -- \
@@ -111,7 +125,9 @@ NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
 ```
 
 Preparation, qualification, approval, and publication are separate operations.
-Never infer a version, source commit, candidate directory, approval, or receipt.
+Do not infer or mutate their inputs outside the owning commands. The local
+integration preparer owns the `N+1` mutation; the push validator derives that
+same expected value only to compare it with the committed metadata.
 The readiness coordinator never prepares metadata, commits, approves, rebuilds
 a valid candidate, stages bytes, or mutates registry state. `paused` and `ready`
 exit 0; invalid or stale evidence returns `rejected` and exits 1.
@@ -144,7 +160,9 @@ retains one immutable tarball and runs a cold-state local smoke before registry
 action.
 Every mutation requires a separate approval bound to candidate receipt,
 package, version, integrity, registry, and expected tag. CI also requires the
-transferred artifact and CI attestation.
+transferred artifact and CI attestation. The `feat/v3` push workflow may issue
+the development approval automatically after all bound checks pass. Stable
+publication from `main` retains protected-environment review.
 
 The publication coordinator never rebuilds or requalifies source. It stages the
 retained bytes, runs the independent exact-version L2 check, and promotes the

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 import {
   formatConstruction,
@@ -201,6 +202,104 @@ function emit(receipt, json, verbose = false) {
 
 function readManifest(adapter, projectRoot = repoRoot) {
   return JSON.parse(fs.readFileSync(path.join(projectRoot, adapter.manifestPath), "utf8"));
+}
+
+function readManifestAtCommit(adapter, commit, projectRoot = repoRoot) {
+  const contents = run("git", ["show", `${commit}:${adapter.manifestPath}`], { cwd: projectRoot });
+  return JSON.parse(contents);
+}
+
+export function prepareDevelopmentPush(options = {}) {
+  const projectRoot = options.repo ?? repoRoot;
+  const adapter = PACKAGE_ADAPTERS.development;
+  const status = run("git", ["status", "--porcelain", "--untracked-files=normal"], {
+    cwd: projectRoot,
+  });
+  if (status) throw new Error("development push preparation requires a clean committed source tree");
+  const sourceCommit = run("git", ["rev-parse", "HEAD"], { cwd: projectRoot });
+  const prepared = prepareMetadata("development", readManifest(adapter, projectRoot), sourceCommit);
+  if (!options.check) {
+    fs.writeFileSync(
+      path.join(projectRoot, adapter.manifestPath),
+      `${JSON.stringify(prepared.manifest, null, 2)}\n`,
+    );
+  }
+  return result(
+    "development",
+    prepared.manifest.version,
+    "development-push-preparation",
+    options.check ? "passed" : "prepared",
+    options.check
+      ? `write and commit only ${adapter.manifestPath}`
+      : `commit only ${adapter.manifestPath}, then push feat/v3 once`,
+    undefined,
+    { executed: options.check ? "validated local allocation" : "updated local metadata" },
+  );
+}
+
+export function validateDevelopmentPush(request, options = {}) {
+  const projectRoot = options.repo ?? repoRoot;
+  const adapter = PACKAGE_ADAPTERS.development;
+  const beforeCommit = request.beforeCommit;
+  const metadataCommit = request.metadataCommit;
+  for (const [label, commit] of [["before commit", beforeCommit], ["metadata commit", metadataCommit]]) {
+    if (typeof commit !== "string" || !/^[0-9a-f]{40}$/.test(commit) || /^0+$/.test(commit)) {
+      throw new Error(`${label} must be a nonzero 40-character commit SHA`);
+    }
+  }
+  const head = run("git", ["rev-parse", "HEAD"], { cwd: projectRoot });
+  if (head !== metadataCommit) {
+    throw new Error("development push metadata commit must equal the checked-out HEAD");
+  }
+  const parentRecord = run("git", ["rev-list", "--parents", "-n", "1", metadataCommit], {
+    cwd: projectRoot,
+  }).split(/\s+/);
+  if (parentRecord.length !== 2) {
+    throw new Error("development push must end with one non-merge metadata commit");
+  }
+  const sourceCommit = parentRecord[1];
+  const ancestor = spawnSync("git", ["merge-base", "--is-ancestor", beforeCommit, sourceCommit], {
+    cwd: projectRoot,
+    env: npmChildEnvironment(process.env),
+    stdio: "ignore",
+  });
+  if (ancestor.status !== 0) {
+    throw new Error("development push must fast-forward from the previous feat/v3 head");
+  }
+  const previousManifest = readManifestAtCommit(adapter, beforeCommit, projectRoot);
+  const sourceManifest = readManifestAtCommit(adapter, sourceCommit, projectRoot);
+  const committedManifest = readManifestAtCommit(adapter, metadataCommit, projectRoot);
+  const workingManifest = readManifest(adapter, projectRoot);
+  if (previousManifest.version !== sourceManifest.version) {
+    throw new Error("integrated source must retain the previous feat/v3 development version");
+  }
+  const expected = prepareTargetMetadata(
+    "development",
+    sourceManifest,
+    committedManifest.version,
+    sourceCommit,
+  ).manifest;
+  if (!isDeepStrictEqual(committedManifest, expected)) {
+    throw new Error("development metadata commit may change only version and agentera.gitRef");
+  }
+  if (!isDeepStrictEqual(workingManifest, committedManifest)) {
+    throw new Error("working development manifest differs from the metadata commit");
+  }
+  const changedPaths = run("git", ["diff", "--name-only", sourceCommit, metadataCommit, "--"], {
+    cwd: projectRoot,
+  }).split("\n").filter(Boolean);
+  if (changedPaths.length !== 1 || changedPaths[0] !== adapter.manifestPath) {
+    throw new Error(`final development metadata commit must change only ${adapter.manifestPath}`);
+  }
+  return result(
+    "development",
+    committedManifest.version,
+    "development-push",
+    "passed",
+    "qualify and publish the exact committed candidate",
+    undefined,
+    { executed: "validated serialized dev.N increment" },
+  );
 }
 
 function metadataCommitted(adapter) {
@@ -882,14 +981,16 @@ export function smokeQualifiedCandidate(adapterName, candidateDirectory, options
 
 async function main() {
   const [phase, adapterName, ...rest] = process.argv.slice(2);
-  if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "stage", "smoke", "promote"].includes(phase)) {
+  if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "prepare-push", "validate-push", "stage", "smoke", "promote"].includes(phase)) {
     throw new Error(
-      "usage: publication-transaction.mjs <prepare|stage|smoke|promote> <development|stable> [--candidate-dir DIR] [--approve] [--json|--verbose]",
+      "usage: publication-transaction.mjs <prepare|prepare-push|validate-push|stage|smoke|promote> <development|stable> [--candidate-dir DIR] [--approve] [--json|--verbose]",
     );
   }
   const flags = parseReleaseFlags(rest, {
-    boolean: phase === "prepare"
+    boolean: phase === "prepare" || phase === "prepare-push"
       ? ["--check", "--json", "--verbose"]
+      : phase === "validate-push"
+        ? ["--json", "--verbose"]
       : ["--approve", "--json", "--verbose"],
     value: phase === "prepare"
       ? [
@@ -897,6 +998,10 @@ async function main() {
           "--source-commit",
           ...(adapterName === "development" ? ["--candidate-dir"] : []),
         ]
+      : phase === "prepare-push"
+        ? []
+      : phase === "validate-push"
+        ? ["--before-commit", "--metadata-commit"]
       : ["--candidate-dir", "--source-run-id"],
   });
   const json = Boolean(flags.get("--json"));
@@ -907,6 +1012,19 @@ async function main() {
       sourceCommit: flags.get("--source-commit"),
       candidateDirectory: flags.get("--candidate-dir"),
       check: Boolean(flags.get("--check")),
+    }), json);
+    return;
+  }
+  if (phase === "prepare-push") {
+    if (adapterName !== "development") throw new Error("prepare-push supports only the development adapter");
+    emit(prepareDevelopmentPush({ check: Boolean(flags.get("--check")) }), json);
+    return;
+  }
+  if (phase === "validate-push") {
+    if (adapterName !== "development") throw new Error("validate-push supports only the development adapter");
+    emit(validateDevelopmentPush({
+      beforeCommit: flags.get("--before-commit"),
+      metadataCommit: flags.get("--metadata-commit"),
     }), json);
     return;
   }

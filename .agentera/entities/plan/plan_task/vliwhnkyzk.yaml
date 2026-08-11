@@ -1,17 +1,26 @@
 id: vliwhnkyzk
 artifact: plan
 record:
-  name: Activate and safely rehearse protected remote release operations
+  name: Activate serialized feat/v3 development publication
   depends_on:
     - rlypnnwkub
     - tufhsqjkfe
     - bhohnsdols
-  status: blocked
+  status: complete
   acceptance:
-    - GIVEN explicit authorization WHEN workflows are registered THEN main remains default while qualification dispatch selects feat/v3.
-    - GIVEN benchmark scheduling is authorized WHEN its default-branch launcher runs THEN it explicitly checks out feat/v3 and remains credential-free and non-blocking.
-    - GIVEN approved reviewer and secret scope WHEN the environment is configured THEN npm credentials are available only after protected approval.
-    - GIVEN a non-publishing rehearsal WHEN qualification completes THEN branch, SHA, receipt digest, candidate bytes, and mode all match.
-    - GIVEN publication rehearsal WHEN it reaches the environment THEN it waits for review and is cancelled before npm mutation.
+    - GIVEN explicit push authorization and synchronized feat/v3 WHEN a development integration is prepared THEN one local metadata-only commit assigns exactly dev.N+1 and binds it to the integrated source commit.
+    - GIVEN an authorized feat/v3 push WHEN source and candidate qualification pass THEN GitHub issues a candidate-bound machine development approval and publishes the exact retained candidate to npm @next with the repository NPM_TOKEN secret.
+    - GIVEN a rerun or queued integration WHEN workflow ordering is enforced THEN the committed version and candidate are reused, active runs are not cancelled, and CI allocates no version or github.run_number identity.
+    - GIVEN stable publication from main WHEN registry mutation is requested THEN protected human review remains required.
+    - GIVEN the changed CLI, workflow, contract, tests, and maintainer guidance WHEN focused verification runs THEN development automation and failure boundaries pass without weakening qualification or registry safeguards.
   plan: lsftqiwiki
-  blocked_reason: Explicit remote authorization is absent. This task requires workflow registration or scheduling authorization, approved reviewer and secret scope, a remote qualification rehearsal, and a protected publication rehearsal cancellation before npm mutation; repository rules forbid push, publication, GitHub settings, secrets, or remote workflow operations without explicit authorization.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-vliwhnkyzk-2026-08-12
+      source: self-audit:vliwhnkyzk:acceptance=5/5; focused=4-files-111-tests; typecheck/build/compact/capability-contract/config/markdown/diff=pass; NPM_TOKEN-secret=present; final-release-metadata=deferred-to-integrated-dev-push
+      recorded_at: 2026-08-12 00:18
+      writer_command: agentera state plan record-evaluation

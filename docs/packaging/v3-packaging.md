@@ -45,15 +45,35 @@ machine-readable authority is
 It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
-Development readiness is a resumable repository operation. The coordinator
-accepts an explicit external candidate directory, target version, and source
-commit. On the contracted GitHub Actions source runner, a fresh run executes
-the source evidence DAG once, writes the existing source receipt, and exits 0
+Normal development publication starts from the single serialized local
+`feat/v3` branch. Fast-forward it from `origin/feat/v3`, integrate the worktree
+branch, and commit that source. From the resulting clean source commit, run:
+
+```bash
+pnpm cli:prepare:dev-push -- --json
+# Review, then commit only packages/cli/package.json.
+# Push feat/v3 once when authorized.
+```
+
+This local command is the only development-version allocator. It increments
+`3.0.0-dev.N` exactly once and sets `agentera.gitRef` to the clean source
+commit. The final metadata commit must be non-merge and change no other path.
+On push, `.github/workflows/qualify-candidate.yml` compares the committed
+version with the previous remote head, proves the push is a fast-forward,
+qualifies the exact candidate, issues a machine candidate-bound development
+approval, and publishes it to npm `@next`. One non-cancelling concurrency group
+protects the active run. The local integrator waits for it to finish before the
+next push, so every committed integer is processed in order. CI never allocates
+or edits a version and does not use `github.run_number`. A rerun reuses the same
+committed version and candidate.
+
+The resumable readiness coordinator remains the manual diagnostic and recovery
+path. It accepts an explicit external candidate directory, target version, and
+source commit. On the contracted GitHub Actions source runner, a fresh run
+executes the source evidence DAG once, writes the source receipt, and exits 0
 with `outcome: "paused"`. A workstation can run performance diagnostics, but
 cannot issue new source authority. A valid downloaded source receipt is reused
-without running an owner. This defines the coordinator contract. The protected
-candidate handoff workflow must adopt it in a separately governed change before
-maintainers use this sequence remotely.
+without running an owner.
 
 ```bash
 pnpm cli:ready:dev -- \
@@ -87,15 +107,14 @@ and retained bytes. Stale or mismatched evidence exits 1 before an issuance
 owner starts. The candidate directory can be absent or empty for a fresh source
 run; after that it is retained input and must not be replaced.
 
-Preparation remains pure. Only `packages/cli/package.json#version` and
-`agentera.gitRef` can change. The same target is a no-op. A stale, skipped,
-malformed, or out-of-policy target fails before effects. A missing, stale,
-malformed, or tampered source receipt also fails before metadata changes.
-Preparation never infers a version, reads the registry, or loads `.env`
+Preparation remains pure. The serialized integration command owns the local
+`N+1` calculation and changes only `packages/cli/package.json#version` and
+`agentera.gitRef`. The manual readiness preparer accepts an explicit target; a
+stale, skipped, malformed, or out-of-policy target and missing or invalid source
+evidence fail before effects. Neither path reads the registry or loads `.env`
 credentials. Stable shim preparation retains its separate source-provenance
 check and does not use the development receipt. `cli:qualify:source` and
-`cli:qualify:dev` remain the exact low-level receipt owners; normal development
-readiness invokes their underlying owners only through the coordinator.
+`cli:qualify:dev` remain the exact low-level receipt owners.
 
 Source qualification runs one evidence DAG. Batch A starts generated-overlap,
 stress, and typecheck together with separate HOME, cache, npm configs, and
@@ -213,8 +232,8 @@ release qualification. `source-check` remains available for direct read-only
 diagnosis and as the development-preparation prerequisite. Missing, stale,
 malformed, or tampered evidence fails before metadata effects.
 
-After readiness returns `ready`, approval remains a separate explicit operation
-against the same external directory:
+For the manual recovery path, readiness returning `ready` still requires a
+separate explicit approval against the same external directory:
 
 ```bash
 pnpm cli:approve:dev -- --candidate-dir /secure/external/candidate --approved-by NAME
@@ -242,29 +261,29 @@ the explicit preparation fields. An existing but unrelated historical SHA
 fails provenance validation.
 
 An approval is an immutable `approval.json` bound to that candidate digest,
-package, version, integrity, registry, and public tag. A branch push is not an
-approval. Local receipts are deterministic cache records only. CI mutation also
-requires the transferred artifact and receipts, a CI attestation from the
-source-qualification run, and the explicit candidate-bound approval. OIDC
-provenance remains deferred.
+package, version, integrity, registry, and public tag. Local receipts are
+deterministic cache records only. CI mutation also requires the transferred
+artifact and receipts plus a CI attestation from the source-qualification run.
+After those checks pass, the `feat/v3` push workflow issues the development
+approval automatically. Stable publication from `main` retains explicit
+protected-environment review. A push never substitutes for candidate binding.
+OIDC provenance remains deferred.
 
 The CI attestation binds `jgabor/agentera`, the `Qualify release candidate`
 workflow, `.github/workflows/qualify-candidate.yml@refs/heads/feat/v3`, and
 the numeric source run ID. The full `refs/heads/...` contract is the branch
-authority. Before artifact download, the publication workflow queries that run
-and compares its repository, head repository, run ID, workflow name/path,
-event, conclusion, and `head_branch`. It then loads the candidate receipt and
-requires `metadataCommit` to equal the API-backed `head_sha`. These checks run
-in a predecessor job before the separate `npm-publish` environment approval.
-The approved job downloads the same immutable run artifact again; approval and
-each registry phase revalidate the same candidate and CI attestation.
+authority. For an automatic development push, the downstream publication job
+downloads the immutable candidate from that same run, revalidates its receipt
+and attestation, records the machine approval, and only then exposes
+`NPM_TOKEN` to the bounded mutation child. It has no review environment.
 
-The protected remote publication workflow is the normal publication path. It
-binds the GitHub API run identity and candidate receipt before environment
-approval, then downloads and revalidates the same candidate inside the protected
-job before credentials are available. The local qualified-publication command is
-explicit emergency recovery only, for use after the same candidate-bound
-approval and retained artifact are already established:
+The separately dispatched publication workflow remains the protected manual
+path. It queries the qualification run before artifact download, validates the
+candidate against the API-backed `head_sha`, and revalidates it inside the
+`npm-publish` environment before credentials are available. Stable publication
+from `main` uses this protected review. The local qualified-publication command
+is emergency recovery only, after the same candidate-bound approval and
+retained artifact are established:
 
 ```bash
 NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
@@ -403,7 +422,8 @@ run only their relevant compact, schema, lint, or format checks within a
 10-second budget. Conservative authority and verification surfaces route to `ci_owned`; the hook runs source-owned route guards and does not execute a
 local release lane. Specialized test files retain their exact owner in the
 route result. Routine CI invokes the check-only `release` conjunction once on
-the policy-pinned runner, where those deferred owners execute authoritatively.
+pull requests and `main` pushes. On direct `feat/v3` pushes, the qualification
+workflow owns that same DAG and routine CI skips its duplicate CLI job.
 Generated
 overlap is therefore the sole execution origin for source, package, and build;
 the same DAG retains source-owned Py-TS parity, typecheck, compact, stress,

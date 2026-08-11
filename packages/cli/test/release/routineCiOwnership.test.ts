@@ -69,6 +69,9 @@ describe("routine CI owner DAG", () => {
   it("runs the canonical check-only conjunction once on the authoritative performance runner", () => {
     expect(() => validateRoutineCiOwnership(workflow)).not.toThrow();
     expect(workflow.jobs.cli["runs-on"]).toBe("ubuntu-24.04");
+    expect(workflow.jobs.cli.if).toBe(
+      "github.event_name != 'push' || github.ref != 'refs/heads/feat/v3'",
+    );
     expect(developmentPackage.scripts["verify:release"]).toBe(
       "node scripts/release-qualification.mjs verify --json",
     );
