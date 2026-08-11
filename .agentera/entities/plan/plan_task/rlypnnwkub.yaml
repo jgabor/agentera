@@ -5,7 +5,7 @@ record:
   depends_on:
     - vvkilxhcaq
     - vmcczrxivl
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the normal release checklist WHEN followed THEN no benchmark receipt or three-run benchmark is required.
     - GIVEN scheduled or on-demand measurement WHEN it runs THEN exactly three cold qualifications execute against feat/v3 and retain timing trends.
@@ -13,3 +13,13 @@ record:
     - GIVEN default-branch authorization is absent WHEN benchmark automation is delivered THEN it remains visibly on-demand and is not claimed as scheduled.
     - GIVEN release and benchmark contracts WHEN tested THEN required qualification passes without benchmark evidence and benchmark failure remains visible.
   plan: lsftqiwiki
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-rlypnnwkub-1
+      source: self-audit:rlypnnwkub:acceptance=5/5; tests=releaseBenchmark+publicationOrchestration+packagePublicationModel 46, routineCiOwnership+rootReleaseScripts 13; typecheck/build/compact/capability-contract/retained-reference/forbidden-scan pass
+      recorded_at: 2026-08-11 20:04
+      writer_command: agentera state plan record-evaluation

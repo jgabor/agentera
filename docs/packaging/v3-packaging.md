@@ -305,6 +305,13 @@ pnpm cli:benchmark:qualification -- --adapter development \
   --candidate-root /secure/external/qualification-benchmark --json
 ```
 
+This benchmark is measurement only. The normal development release checklist
+does not require a benchmark receipt or a three-run benchmark. The repository
+workflow `.github/workflows/qualification-benchmark.yml` is manual only: it has
+`workflow_dispatch`, no `schedule`, checks out `feat/v3`, runs the same command,
+and uploads the timing JSON. Do not describe it as scheduled until default
+branch workflow registration is explicitly authorized.
+
 The qualification command runs exactly three cold-cache repetitions, retains
 one candidate per run, reports preflight, every source/candidate owner,
 execution/reuse, owner phases and durations, reconciled staged DAG wall time,

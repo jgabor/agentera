@@ -1,0 +1,12 @@
+id: ytbmvxzwyb
+artifact: progress
+record:
+  timestamp: 2026-08-11 20:04
+  type: feat
+  phase: build
+  what: Qualification benchmarking is now separate from normal release readiness. The benchmark workflow is manual-only, checks out feat/v3, runs the existing three-cold-run qualification benchmark, uploads timing JSON, and has no credential, approval, publication, stage, promote, or registry mutation path.
+  context:
+    intent: Complete plan task rlypnnwkub for non-blocking qualification benchmarking.
+  verified: "Focused release tests passed: releaseBenchmark plus publicationOrchestration plus packagePublicationModel, 46 tests; routineCiOwnership plus rootReleaseScripts, 13 tests. Typecheck, build, compact, capability-contract validation, retainedReferenceAuthority, and forbidden workflow string scan passed."
+  next: Continue with protected exact-candidate handoff.
+  publication_order: 139

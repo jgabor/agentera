@@ -452,7 +452,15 @@
       "sourceQualificationMs": 420000,
       "qualifiedPublicationMs": 120000
     },
-    "failureRule": "The first observed failing owner remains the reported label. Cancellable peers are stopped, generated-overlap is allowed to settle without forced termination, barrier B and receipt issuance are blocked, and completed/cancelled failures are reported. No timeout or failure authorizes repair, candidate work, or registry mutation."
+    "failureRule": "The first observed failing owner remains the reported label. Cancellable peers are stopped, generated-overlap is allowed to settle without forced termination, barrier B and receipt issuance are blocked, and completed/cancelled failures are reported. No timeout or failure authorizes repair, candidate work, or registry mutation.",
+    "workflow": {
+      "path": ".github/workflows/qualification-benchmark.yml",
+      "trigger": "workflow_dispatch only until default-branch scheduling is explicitly authorized",
+      "checkoutRef": "refs/heads/feat/v3",
+      "command": "pnpm cli:benchmark:qualification -- --adapter development --candidate-root DIR --json",
+      "retainedReport": "qualification-benchmark-${{ github.run_id }}",
+      "credentials": "No npm token, approval, publication, stage, promote, or registry mutation path is present."
+    }
   },
   "bounds": {
     "registryAttempts": 6,

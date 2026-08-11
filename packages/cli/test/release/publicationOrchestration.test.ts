@@ -21,6 +21,10 @@ const publicationYaml = fs.readFileSync(
   path.join(REPO_ROOT, ".github/workflows/publish-qualified-candidate.yml"),
   "utf8",
 );
+const benchmarkYaml = fs.readFileSync(
+  path.join(REPO_ROOT, ".github/workflows/qualification-benchmark.yml"),
+  "utf8",
+);
 const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
 const developmentPackage = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"),
@@ -34,6 +38,7 @@ const publicationContract = JSON.parse(
 const verificationPolicy = YAML.parse(
   fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"),
 );
+const benchmarkWorkflow = YAML.parse(benchmarkYaml);
 
 describe("candidate publication orchestration", () => {
   it("routes preparation, qualification, approval, staging, and promotion through explicit scripts", () => {
@@ -155,6 +160,29 @@ describe("candidate publication orchestration", () => {
     expect(publicationYaml.indexOf("release-qualification.mjs approval"))
       .toBeLessThan(publicationYaml.indexOf("release-benchmark.mjs publication"));
     expect(publicationYaml).not.toContain("release-benchmark.mjs qualification --adapter");
+  });
+
+  it("keeps qualification benchmarking manual, credential-free, and bound to feat/v3", () => {
+    expect(benchmarkWorkflow.on).toEqual({ workflow_dispatch: null });
+    expect(benchmarkWorkflow).not.toHaveProperty("schedule");
+    expect(benchmarkWorkflow.permissions).toEqual({ contents: "read" });
+    expect(benchmarkWorkflow.jobs["qualification-benchmark"]["runs-on"]).toBe("ubuntu-24.04");
+    expect(publicationContract.benchmark.workflow).toMatchObject({
+      path: ".github/workflows/qualification-benchmark.yml",
+      trigger: "workflow_dispatch only until default-branch scheduling is explicitly authorized",
+      checkoutRef: "refs/heads/feat/v3",
+      command: "pnpm cli:benchmark:qualification -- --adapter development --candidate-root DIR --json",
+    });
+    expect(publicationContract.benchmark.workflow.credentials).toContain("No npm token");
+    const steps = benchmarkWorkflow.jobs["qualification-benchmark"].steps;
+    expect(steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v4")).toMatchObject({
+      with: { ref: "feat/v3", "fetch-depth": 0 },
+    });
+    const benchmarkStep = steps.find((step: { name?: string }) => step.name === "Run on-demand qualification benchmark");
+    expect(benchmarkStep.run).toContain("pnpm cli:benchmark:qualification");
+    expect(benchmarkStep.run).toContain("--candidate-root");
+    expect(benchmarkStep.run).toContain("qualification-benchmark.json");
+    expect(JSON.stringify(benchmarkWorkflow)).not.toMatch(/NPM_TOKEN|npm publish|release-benchmark\.mjs publication|cli:publish|cli:stage|cli:promote|approval/i);
   });
 
   it("rejects a successful qualification run from the wrong contracted ref", () => {
