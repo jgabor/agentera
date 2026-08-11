@@ -418,12 +418,25 @@ function validateExecutedArtifactSemantics(manifest: ActivationEvidenceManifest,
     violations.push("complete extracted package tree is not bound to the current tarball payload");
   }
   const portability = records.get("package.portability")?.content as any;
+  const extractedManifestFiles = Array.isArray(extractedEntries)
+    ? extractedEntries
+      .filter((entry: any) => entry.type === "file")
+      .map((entry: any) => ({ path: entry.path, size: entry.size, mode: entry.mode }))
+      .sort((left: any, right: any) => left.path.localeCompare(right.path))
+    : null;
+  const secondManifest = portability?.secondManifest;
   if (portability?.deterministicPackRuns !== 2
     || !/^[a-f0-9]{64}$/.test(portability?.deterministicTarballSha256 ?? "")
     || portability?.secondTarballSha256 !== portability?.deterministicTarballSha256
     || portability?.constructionRootCount !== 2 || portability?.constructionRootsDistinct !== true
     || portability?.extractedRootCount !== 1 || portability?.extractedRootsDistinct !== true
-    || portability?.forbiddenPathMatches?.length !== 0 || !/^[a-f0-9]{64}$/.test(portability?.contentSha256 ?? "")) {
+    || portability?.forbiddenPathMatches?.length !== 0 || !/^[a-f0-9]{64}$/.test(portability?.contentSha256 ?? "")
+    || secondManifest?.filename !== manifest.packageArtifact.filename
+    || secondManifest?.integrity !== manifest.packageArtifact.integrity
+    || secondManifest?.shasum !== manifest.packageArtifact.shasum
+    || !Array.isArray(extractedManifestFiles)
+    || secondManifest?.files?.count !== extractedManifestFiles.length
+    || secondManifest?.files?.digest !== observationDigest(extractedManifestFiles)) {
     violations.push("extracted package portability evidence is incomplete or failed");
   }
 

@@ -100,6 +100,32 @@ function writeArtifact(name: string, content: string): void {
   fs.writeFileSync(path.join(dir, name), content);
 }
 
+function docsRichFixture(): Record<string, unknown> {
+  return {
+    exists: true,
+    status: "available",
+    indexed_documents: 94,
+    caveats: ["Documentation inventory includes current, intent, and stale records."],
+    entries: Array.from({ length: 20 }, (_, index) => ({
+      id: `${String.fromCharCode(97 + index)}ddddddddd`,
+      artifact: "docs",
+      record: {
+        document: `Documentation inventory entry ${index + 1}: ${"bounded orientation ".repeat(4).trim()}`,
+        path: `.agentera/archive/documentation-inventory-${String(index + 1).padStart(2, "0")}.md`,
+        last_updated: "2026-08-12",
+        status: index === 0 ? "stale" : index === 1 ? "intent" : "current",
+        ...(index === 0 ? { caveats: ["This stale entry needs exact review before update."] } : {}),
+      },
+      provenance: {
+        storage: "canonical_entity_file",
+        path: `.agentera/entities/docs/documentation_inventory_entry/${String.fromCharCode(97 + index)}ddddddddd.yaml`,
+        immutable: false,
+      },
+      retrieval: { get: `agentera state docs get --id ${String.fromCharCode(97 + index)}ddddddddd --format json` },
+    })),
+  };
+}
+
 function nestedPathAtLeast(base: string, minimumLength: number, label: string): string {
   let current = path.join(base, label);
   fs.mkdirSync(current, { recursive: true });
@@ -403,7 +429,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     });
   });
 
-  it("trims optional 21-task and path diagnostics before selected routing and canonical history evidence", () => {
+  it("trims optional 21-task, docs-rich, and path diagnostics before selected routing and canonical history evidence", () => {
     const selectedTask = {
       id: "vvvvvvvvvv",
       artifact: "plan",
@@ -550,6 +576,38 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     const normal = briefOrientationPayload(rawPayload);
     expect((normal.brief as Record<string, unknown>).projection).toBe("ok");
     expect(briefUtf8Bytes(normal)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+
+    const docs = docsRichFixture();
+    const docsRich = briefOrientationPayload({ ...rawPayload, docs }, { degradedMode: "status_routing" });
+    const docsRichBytes = briefUtf8Bytes(docsRich);
+    const projectedDocs = docsRich.docs as Record<string, any>;
+    expect((docsRich.brief as Record<string, unknown>).projection).toBe("degraded");
+    expect(PRIME_BRIEF_MAX_UTF8_BYTES - docsRichBytes).toBeGreaterThanOrEqual(1_000);
+    expect(projectedDocs).toMatchObject({
+      exists: true,
+      status: "available",
+      indexed_documents: 94,
+      counts: { total: 94, returned: 1, remaining: 93 },
+      caveats: (docs as any).caveats,
+      source_contract: {
+        detail_availability: "summary",
+        retrieval: "npx -y agentera@next state docs list --format json",
+      },
+      entries: [{
+        id: "addddddddd",
+        artifact: "docs",
+        record: {
+          path: ".agentera/archive/documentation-inventory-01.md",
+          status: "stale",
+          caveats: ["This stale entry needs exact review before update."],
+        },
+        retrieval: { get: "agentera state docs get --id addddddddd --format json" },
+      }],
+    });
+    expect(projectedDocs.entries).toHaveLength(1);
+    expect(projectedDocs.entries[0]).not.toHaveProperty("provenance");
+    expect(JSON.stringify(docsRich)).not.toContain("dddddddddd");
+    expect((docs as any).entries).toHaveLength(20);
 
     const longPath = `/tmp/${"nested/".repeat(350)}project`;
     const pathPressured = briefOrientationPayload({
@@ -769,6 +827,53 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       source_contract: {},
     }, { budgetBytes: 1 })).toThrow(BriefBudgetError);
   });
+
+  it("keeps compact status routing inside the public budget and rejects the byte below it", () => {
+    const payload = {
+      command: "prime",
+      outcome: "ok",
+      mode: "v3",
+      state_presence: { active: {}, available: {}, any_active: true, absence_explained: false, absence: {} },
+      source_contract: {},
+      todo: {
+        exists: true,
+        total: 1,
+        // The previous compact metadata made this same minimum envelope 12,030
+        // bytes. Keep the payload fixed so prose growth cannot consume the gate.
+        items: [{ id: "vvvvvvvvvv", text: "x".repeat(11_145) }],
+      },
+    };
+    const compact = briefOrientationPayload(payload, {
+      budgetBytes: PRIME_BRIEF_MAX_UTF8_BYTES,
+      degradedMode: "status_routing",
+    });
+    const compactBytes = briefUtf8Bytes(compact);
+    expect(compact).toMatchObject({
+      command: "prime",
+      outcome: "ok",
+      mode: "v3",
+      state_presence: payload.state_presence,
+      source_contract: {},
+      todo: payload.todo,
+      brief: {
+        budget_utf8_bytes: PRIME_BRIEF_MAX_UTF8_BYTES,
+        projection: "degraded",
+        utf8_bytes: compactBytes,
+        error: {
+          class: "brief_output_budget",
+          message: "brief exceeds byte budget",
+          recovery: "Run `npx -y agentera@next prime --context status --format json`.",
+        },
+      },
+    });
+    expect(compactBytes).toBe(11_934);
+    expect(PRIME_BRIEF_MAX_UTF8_BYTES - compactBytes).toBe(66);
+    expect(() => briefOrientationPayload(payload, {
+      budgetBytes: compactBytes - 1,
+      degradedMode: "status_routing",
+    })).toThrow(BriefBudgetError);
+  });
+
 });
 
 /** Read a dotted path from a JSON payload. Returns undefined when any segment

@@ -407,11 +407,69 @@ function briefDecisionAttention(attention: unknown): Record<string, unknown> | n
   return out;
 }
 
-function briefDocs(docs: unknown): Record<string, unknown> {
-  // No default-bare consumer reads the docs projection detail. Keep the
-  // availability signal and mapping count; the verbose source_contract with
-  // state_families recovers via the canonical docs list fallback.
-  return pick(docs, ["exists", "status", "mapping_entries", "indexed_documents"]);
+function briefDocsRetrieval(value: unknown, maxChars: number): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (isObject(value)) {
+    for (const key of ["list", "get", "exact", "detail_command"] as const) {
+      const command = boundedString(value[key], maxChars);
+      if (command !== undefined) out[key] = command;
+    }
+  }
+  return out;
+}
+
+function briefDocEntry(value: unknown, maxChars: number): Record<string, unknown> {
+  if (!isObject(value)) return {};
+  const out = pick(value, ["id", "artifact"]);
+  const source = isObject(value.record) ? value.record : value;
+  const record: Record<string, unknown> = {};
+  for (const key of ["document", "path", "last_updated", "status"] as const) {
+    const bounded = boundedString(source[key], maxChars);
+    if (bounded !== undefined) record[key] = bounded;
+  }
+  const recordCaveats = briefHistoryCaveats(source.caveats, maxChars);
+  if (recordCaveats !== undefined) record.caveats = recordCaveats;
+  if (Object.keys(record).length > 0) out.record = record;
+  const caveats = briefHistoryCaveats(value.caveats, maxChars);
+  if (caveats !== undefined) out.caveats = caveats;
+  const retrieval = briefDocsRetrieval(value.retrieval, maxChars);
+  if (Object.keys(retrieval).length > 0) out.retrieval = retrieval;
+  return out;
+}
+
+function briefDocs(
+  docs: unknown,
+  projection: SourceContractProjection = "normal",
+): Record<string, unknown> {
+  if (!isObject(docs)) return {};
+  const maxChars = projectionMaxChars(projection);
+  const entryLimit = projection === "normal" ? 3 : 1;
+  const out = pick(docs, ["exists", "status", "last_audit", "mapping_entries", "indexed_documents"]);
+  const absenceReason = boundedString(docs.absence_reason, maxChars);
+  if (absenceReason !== undefined) out.absence_reason = absenceReason;
+  const caveats = briefHistoryCaveats(docs.caveats, maxChars);
+  if (caveats !== undefined) out.caveats = caveats;
+  const sourceEntries = Array.isArray(docs.entries) ? docs.entries : null;
+  let detailAvailability = Number(docs.mapping_entries) > 0 || Number(docs.indexed_documents) > 0
+    ? "summary"
+    : "full";
+  if (sourceEntries) {
+    const entries = sourceEntries.slice(0, entryLimit).map((entry) => briefDocEntry(entry, maxChars));
+    const declaredTotal = Number(docs.indexed_documents);
+    const total = Number.isSafeInteger(declaredTotal) && declaredTotal >= entries.length
+      ? declaredTotal
+      : sourceEntries.length;
+    out.counts = { total, returned: entries.length, remaining: Math.max(0, total - entries.length) };
+    out.entries = entries;
+    detailAvailability = total > entries.length ? "summary" : "full";
+  }
+  const sourceContract = isObject(docs.source_contract)
+    ? pick(docs.source_contract, ["detail_availability", "raw_artifact_reads_required", "capability_startup_complete", "inventory_authority"])
+    : {};
+  sourceContract.detail_availability = detailAvailability;
+  sourceContract.retrieval = STATE_FAMILY_FALLBACK_COMMANDS.docs;
+  out.source_contract = sourceContract;
+  return out;
 }
 
 function briefProgress(progress: unknown): Record<string, unknown> {
@@ -651,7 +709,8 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   if ("progress" in payload) out.progress = briefProgress(payload.progress);
   if ("attention" in payload) out.attention = briefAttention(payload.attention);
   if ("source" in payload) out.source = briefSource(payload.source);
-  for (const conditional of ["v1_migration", "docs", "objective"] as const) {
+  if ("docs" in payload) out.docs = briefDocs(payload.docs, projection);
+  for (const conditional of ["v1_migration", "objective"] as const) {
     if (conditional in payload) out[conditional] = payload[conditional];
   }
   if (isObject(payload.plan)) out.plan = briefPlan(payload.plan, projection);
@@ -740,8 +799,8 @@ function degradedBriefEnvelope(
     path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     error: {
       class: "brief_output_budget",
-      message: "the projected decision brief exceeded the authority byte budget; compact recovery metadata was emitted",
-      recovery: `Run \`${preCutoverCommand("prime --context status --format json")}\` for status startup.`,
+      message: "brief exceeds byte budget",
+      recovery: `Run \`${preCutoverCommand("prime --context status --format json")}\`.`,
     },
   };
   const compact = settledBriefEnvelope(body("compact"), compactMeta);

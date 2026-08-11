@@ -1,0 +1,15 @@
+id: xghechspcp
+artifact: progress
+record:
+  timestamp: 2026-08-12 01:35
+  type: fix
+  phase: build
+  what: Fit the rebased personal-glossary integration within current feat/v3 routing and activation compactness boundaries while preserving Profile Full, docs routing, package parity, diagnostics, and lifecycle scanning.
+  context:
+    intent: Record implementation-side evidence for the audited rebased compactness fixes before commit.
+    constraints: Keep task onlyyjethm pending; do not record an evaluator verdict or infer canonical qualification success.
+    unknowns: Canonical source qualification remains pending until the exact committed retry.
+    scope: Routing docs projection, activation evidence compaction, and Git-index lifecycle socket regression.
+  verified: Bare Prime is 11,238/12,000 bytes; explicit docs returns 20 of 94 and status context is 21,514 bytes. Activation owner evidence is 229,531/262,144 bytes with all 42 checks; package verification passes 44/44. Budgets and checks are unchanged. No receipt, candidate, or registry effect occurred.
+  next: Commit implementation and same-commit state, then retry canonical source qualification for the pending receipt.
+  publication_order: 151

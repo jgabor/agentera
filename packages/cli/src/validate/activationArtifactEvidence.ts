@@ -553,6 +553,13 @@ function finishEvidence(value: Omit<ActivationOwnerEvidence, "evidenceDigest">):
   return { ...value, evidenceDigest: observationDigest(value) };
 }
 
+function packageManifestSummary(files: readonly { path: string; size: number; mode: number }[]): { count: number; digest: string } {
+  const normalized = [...files]
+    .map(({ path: file, size, mode }) => ({ path: file, size, mode }))
+    .sort((left, right) => left.path.localeCompare(right.path));
+  return { count: normalized.length, digest: observationDigest(normalized) };
+}
+
 function packageRecord(root: string): any {
   return loadRegistry(path.join(root, "references/adapters/package-registry.yaml"), root).get("agentera");
 }
@@ -749,6 +756,7 @@ export async function finalizePackageOwnerEvidence(options: {
   const record = packageRecord(path.join(runtimeRoot, "bundle"));
   const packageArtifact = packageArtifactObservation(runtimeRoot, fixture, options.requiredFiles, options.snapshotDirectory);
   const integrity = packageArtifact.integrity as string;
+  const secondManifestFiles = fixture.pathIndependence.secondManifest.files;
   const portability = {
     deterministicPackRuns: fixture.deterministicBytes.packRuns,
     deterministicTarballSha256: fixture.deterministicBytes.sha256,
@@ -765,7 +773,7 @@ export async function finalizePackageOwnerEvidence(options: {
       filename: fixture.pathIndependence.secondManifest.filename,
       integrity: fixture.pathIndependence.secondManifest.integrity,
       shasum: fixture.pathIndependence.secondManifest.shasum,
-      files: fixture.pathIndependence.secondManifest.files,
+      files: packageManifestSummary(secondManifestFiles),
     },
   };
   const records: Record<string, ActivationArtifactRecord> = {
@@ -870,7 +878,15 @@ export function createGeneratedOwnerEvidence(options: {
 export function writeContentAddressedOwnerEvidence(directory: string, evidence: ActivationOwnerEvidence): { path: string; digest: string; bytes: number } {
   const bytes = `${canonicalObservationJson(evidence)}\n`;
   const byteLength = Buffer.byteLength(bytes, "utf8");
-  if (byteLength > OWNER_EVIDENCE_MAX_BYTES) throw new Error(`activation owner evidence exceeds ${OWNER_EVIDENCE_MAX_BYTES} bytes`);
+  if (byteLength > OWNER_EVIDENCE_MAX_BYTES) {
+    const contributors = Object.entries(evidence.records)
+      .map(([ref, record]) => [ref, Buffer.byteLength(canonicalObservationJson(record), "utf8")] as const)
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 3)
+      .map(([ref, length]) => `${ref}=${length}`)
+      .join(", ");
+    throw new Error(`activation owner evidence is ${byteLength} bytes, over the ${OWNER_EVIDENCE_MAX_BYTES}-byte bound; largest records: ${contributors}`);
+  }
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const name = `${evidence.producerKind}-${evidence.evidenceDigest}.json`;
   const target = path.join(directory, name);

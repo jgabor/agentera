@@ -24,12 +24,14 @@ import {
 import { DEVELOPMENT_RUNTIME_REQUIRED_FILES } from "../../src/core/developmentInvocation.js";
 import {
   activationSourceDigest,
+  canonicalObservationJson,
   createGeneratedOwnerEvidence,
   createSourceOwnerEvidence,
   finalizePackageOwnerEvidence,
   installRetainedPackageSnapshot,
   observeCurrentPackageArtifact,
   observationDigest,
+  OWNER_EVIDENCE_MAX_BYTES,
   PACKAGE_OWNER_EVIDENCE_SCHEMA,
   readContentAddressedOwnerEvidence,
   readContentAddressedPackageIdentity,
@@ -283,6 +285,18 @@ describe("source-owned runtime bootstrap integration", () => {
       requiredFiles: DEVELOPMENT_RUNTIME_REQUIRED_FILES,
     });
     const { evidence, packageIdentity } = finalized;
+    const expectedSecondManifestFiles = [...fixture.pathIndependence.secondManifest.files]
+      .map(({ path: file, size, mode }) => ({ path: file, size, mode }))
+      .sort((left, right) => left.path.localeCompare(right.path));
+    const portabilityFiles = (evidence.records["package.portability"].content as any).secondManifest.files;
+    expect(portabilityFiles).toEqual({
+      count: expectedSecondManifestFiles.length,
+      digest: observationDigest(expectedSecondManifestFiles),
+    });
+    expect(Array.isArray(portabilityFiles)).toBe(false);
+    const evidenceBytes = Buffer.byteLength(`${canonicalObservationJson(evidence)}\n`, "utf8");
+    expect(evidenceBytes).toBeLessThanOrEqual(OWNER_EVIDENCE_MAX_BYTES);
+    expect(OWNER_EVIDENCE_MAX_BYTES - evidenceBytes).toBeGreaterThanOrEqual(16_384);
     expect(evidence).toMatchObject({
       schemaVersion: PACKAGE_OWNER_EVIDENCE_SCHEMA,
       producerKind: "package-owner",
@@ -347,6 +361,7 @@ describe("source-owned runtime bootstrap integration", () => {
       ["package manifest", (copy) => { copy.producers.package.records["package.extracted-artifact"].content.manifest.type = "directory"; }, /content digest|expected independently observed/],
       ["construction-root portability", (copy) => { copy.producers.package.records["package.portability"].content.constructionRootCount = 1; }, /extracted package portability evidence is incomplete or failed/],
       ["package semantic reason", (copy) => { copy.producers.package.records["package.extracted-registry"].content[0] += "changed"; }, /package semantic projection/],
+      ["portability manifest digest", (copy) => { copy.producers.package.records["package.portability"].content.secondManifest.files.digest = "0".repeat(64); }, /content digest|portability evidence|expected independently observed/],
       ["generated binder", (copy) => { copy.producers.generated.records["bootstrap.generated-binder"].content.rows[0].classification = "not_exact"; }, /content digest|expected independently observed/],
       ["extracted classification", (copy) => { copy.producers.source.records["bootstrap.extracted-classifications"].content[0].classification = "malformed"; }, /content digest|expected independently observed/],
       ["diagnostic", (copy) => { copy.producers.generated.records["bootstrap.generated-diagnostics"].content.pop(); }, /content digest|expected independently observed/],
