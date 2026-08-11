@@ -1,0 +1,24 @@
+id: dmkqfmjsvu
+artifact: plan
+record:
+  name: Establish fresh classification and startup
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a marker-absent Git project has no entity records, recognized legacy state, or unknown Agentera-owned residue WHEN Plan startup classifies it THEN its project state is fresh_uninitialized and startup remains read-only and operable.
+    - GIVEN a fresh project has ordinary root documents, a table-based TODO, and reports like Orca Journal WHEN classification runs THEN those user-owned artifacts are not adopted as legacy Agentera state.
+    - GIVEN a marker-absent project contains recognized legacy, partial, corrupt, or unknown Agentera state WHEN startup runs THEN it fails closed without mutation and preserves its applicable safe recovery route.
+    - GIVEN Plan startup identifies fresh_uninitialized WHEN it returns guidance THEN it does not recommend or expose an upgrade --yes apply command.
+  plan: ijkzofxryi
+  evidence: Implemented fresh_uninitialized classification for exact Git worktree roots without .agentera, preserving ordinary root documents, table TODOs, and reports while rejecting legacy, partial, corrupt, unknown, and .git-shaped non-worktree state. Verified by targeted source tests, migration and upgrade contract tests, and built-CLI startup.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: fresh-init-audit-1
+      source: independent implementation audit
+      recorded_at: 2026-08-10 13:10
+      writer_command: agentera state plan record-evaluation

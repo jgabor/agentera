@@ -34,11 +34,13 @@ documentation after deterministic abstention; it learns that contract from the C
 
 ## Bootstrap
 
-Run one pre-cutover `@next` call for orientation. It is read-only in clean, v2,
-partially migrated, and v3 projects. Clean, v2, and partial state returns
-`blocked` with the exact full entity-upgrade command in
-`state_cutover.recovery_command`; v3 returns `ok` unless health is degraded.
-The JSON also returns bounded app status, state slices, attention, and startup
+Run one pre-cutover `@next` call for orientation. It is read-only in fresh, v2,
+partially migrated, and v3 projects. A Git-root project with no `.agentera`
+state is `fresh_uninitialized`: `prime --context plan` is operable and its first
+`state plan create` is the sole initializer. Recognized v2 state returns the
+full entity-upgrade recovery; partial, corrupt, and unknown marker-absent state
+returns read-only recovery. V3 returns `ok` unless health is degraded. The JSON
+also returns bounded app status, state slices, attention, and startup
 availability.
 
 ```bash

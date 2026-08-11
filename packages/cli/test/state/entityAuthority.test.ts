@@ -408,10 +408,10 @@ describe("Decision 94 entity authority", () => {
         path: ".agentera/state-mode.yaml",
         schema_version: "agentera.stateMode.v1",
         entity_mode: { schemaVersion: "agentera.stateMode.v1", mode: "entities" },
-        absent_mode: "legacy",
+        absent_mode: "classified",
         invalid_behavior: "fail_without_fallback",
         detection: "read_only",
-        publication_owner: "development_channel_v2_to_v3_upgrade",
+        publication_owner: "recognized_legacy_development_upgrade_or_fresh_plan_create",
       },
       read_only_preview: {
         implementation: "implemented",

@@ -26,7 +26,7 @@ import { canonicalMigrationRecord } from "./canonicalMigrationRecord.js";
 import { legacySummaryRecord } from "./legacySummaryRecord.js";
 import { applyCausalBlockers } from "./entityMigrationCausality.js";
 import { todoMigrationObservations, todoReconciliationMigrationPlan } from "./entityMigrationTodo.js";
-import { detectStateMode } from "./stateMode.js";
+import { classifyProjectState } from "./stateMode.js";
 import { TODO_RECONCILIATION_ACTIVATION_PATH } from "./todoReconciliationActivation.js";
 import {
   projectPathIsStable as migrationPathIsStable,
@@ -36,15 +36,11 @@ import {
   type ProjectDescriptorPathResolver as DescriptorPathResolver,
 } from "./safeProjectFile.js";
 
-export type EntityCutoverProjectState = "v3" | "clean" | "v2" | "partial";
+export type EntityCutoverProjectState = "v3" | "fresh_uninitialized" | "legacy" | "partial" | "corrupt" | "unknown";
 
 export function classifyEntityCutoverProject(project: string, sourceRoot?: string): EntityCutoverProjectState {
-  if (detectStateMode(project, sourceRoot) === "entities") return "v3";
-  const stateRoot = path.join(project, ".agentera");
-  const aggregateNames = ["plan.yaml", "progress.yaml", "decisions.yaml", "health.yaml"];
-  const aggregateCount = aggregateNames.filter((name) => fs.existsSync(path.join(stateRoot, name))).length;
-  if (!fs.existsSync(stateRoot) || aggregateCount === 0 && !fs.existsSync(path.join(stateRoot, "entities"))) return "clean";
-  return fs.existsSync(path.join(stateRoot, "entities")) || aggregateCount === 1 ? "partial" : "v2";
+  const state = classifyProjectState(project, sourceRoot).state;
+  return state === "entities" ? "v3" : state;
 }
 
 export type EntityMigrationClassification =

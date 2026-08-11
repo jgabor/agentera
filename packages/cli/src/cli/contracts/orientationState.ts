@@ -216,8 +216,8 @@ export interface OrientationState {
   v1_migration: V1MigrationSummary;
   project_integration: ProjectIntegrationSummary;
   state_cutover: {
-    status: "complete" | "required" | "invalid_lifecycle";
-    project_state: "v3" | "clean" | "v2" | "partial" | "invalid_lifecycle";
+    status: "complete" | "fresh_uninitialized" | "required" | "invalid_lifecycle";
+    project_state: "v3" | "fresh_uninitialized" | "legacy" | "partial" | "corrupt" | "unknown" | "invalid_lifecycle";
     recovery_command: string | null;
   };
   shared_skill: JsonObject;

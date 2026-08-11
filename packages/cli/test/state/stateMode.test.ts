@@ -1,10 +1,11 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { detectStateMode } from "../../src/state/stateMode.js";
+import { classifyProjectState, detectStateMode } from "../../src/state/stateMode.js";
 
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
 const roots: string[] = [];
@@ -13,6 +14,12 @@ function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-state-mode-"));
   roots.push(root);
   return root;
+}
+
+function initializeGit(root: string): void {
+  const env = { ...process.env };
+  for (const name of ["GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR"]) delete env[name];
+  execFileSync("git", ["init", "--quiet"], { cwd: root, env });
 }
 
 function marker(root: string, bytes = VALID_MARKER): string {
@@ -33,6 +40,65 @@ afterEach(() => {
 });
 
 describe("state mode marker boundary", () => {
+  it("classifies an Orca Journal-shaped Git root as fresh without adopting user documents", () => {
+    const root = project();
+    initializeGit(root);
+    for (const name of ["ARCHITECTURE.md", "MVP.md", "ROADMAP.md"]) {
+      fs.writeFileSync(path.join(root, name), `# ${name}\n`);
+    }
+    fs.writeFileSync(path.join(root, "TODO.md"), "| Task | Status |\n| --- | --- |\n| Draft | open |\n");
+    fs.mkdirSync(path.join(root, "reports"));
+    const write = vi.spyOn(fs, "writeFileSync");
+    const mkdir = vi.spyOn(fs, "mkdirSync");
+    const rename = vi.spyOn(fs, "renameSync");
+
+    expect(classifyProjectState(root)).toMatchObject({ state: "fresh_uninitialized" });
+    expect(write).not.toHaveBeenCalled();
+    expect(mkdir).not.toHaveBeenCalled();
+    expect(rename).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);
+  });
+
+  it("requires a real, exact Git worktree root for fresh state", () => {
+    const fake = project();
+    fs.mkdirSync(path.join(fake, ".git"));
+
+    expect(classifyProjectState(fake)).toMatchObject({ state: "unknown" });
+
+    const root = project();
+    initializeGit(root);
+    const nested = path.join(root, "nested");
+    fs.mkdirSync(nested);
+
+    expect(classifyProjectState(nested)).toMatchObject({ state: "unknown" });
+  });
+
+  it("keeps recognized legacy, partial, corrupt, and unknown marker-absent state distinct", () => {
+    const legacy = project();
+    const partial = project();
+    const corrupt = project();
+    const unknown = project();
+    for (const root of [legacy, partial, corrupt, unknown]) fs.mkdirSync(path.join(root, ".git"));
+    fs.mkdirSync(path.join(legacy, ".agentera"));
+    fs.writeFileSync(path.join(legacy, ".agentera", "plan.yaml"), "header: {}\n");
+    fs.writeFileSync(path.join(legacy, ".agentera", "progress.yaml"), "cycles: []\n");
+    fs.mkdirSync(path.join(partial, ".agentera"));
+    fs.writeFileSync(path.join(partial, ".agentera", "plan.yaml"), "header: {}\n");
+    fs.mkdirSync(path.join(corrupt, ".agentera"));
+    fs.writeFileSync(path.join(corrupt, ".agentera", "entities"), "not a directory\n");
+    fs.mkdirSync(path.join(unknown, ".agentera"));
+    fs.writeFileSync(path.join(unknown, ".agentera", "unrecognized.yaml"), "value: retained\n");
+    const writes = vi.spyOn(fs, "writeFileSync");
+    const renames = vi.spyOn(fs, "renameSync");
+
+    expect(classifyProjectState(legacy)).toMatchObject({ state: "legacy" });
+    expect(classifyProjectState(partial)).toMatchObject({ state: "partial" });
+    expect(classifyProjectState(corrupt)).toMatchObject({ state: "corrupt" });
+    expect(classifyProjectState(unknown)).toMatchObject({ state: "unknown" });
+    expect(writes).not.toHaveBeenCalled();
+    expect(renames).not.toHaveBeenCalled();
+  });
+
   it("returns legacy without writes when the marker is absent from a valid root", () => {
     const root = project();
     const write = vi.spyOn(fs, "writeFileSync");

@@ -1,0 +1,25 @@
+id: pswhuyftzf
+artifact: plan
+record:
+  name: Lock the Orca Journal regression and public contract
+  depends_on:
+    - dmkqfmjsvu
+    - mucxyqkrxj
+  status: complete
+  acceptance:
+    - GIVEN a Git fixture matching Orca Journal's root documents, table-based TODO, reports directory, and absent .agentera state WHEN prime, Plan-create dry-run, Plan-create apply, and prime run in order THEN every command has the expected operable outcome and no response recommends upgrade --yes.
+    - GIVEN recognized legacy and unknown marker-absent fixtures WHEN the same startup and write boundaries are exercised THEN they reject before effects and retain their distinct safe recovery behavior.
+    - GIVEN classification and Plan publication are testable units WHEN regression coverage is reviewed THEN each has at least one passing path and one failing path, including publication rollback evidence.
+    - GIVEN source behavior is complete WHEN the built self-contained package and governing state and upgrade contracts are checked THEN they describe and exhibit the same fresh-versus-fail-closed boundary.
+  plan: ijkzofxryi
+  evidence: Added Orca Journal source and package regression coverage. The full source suite passed with 229 files, 3443 tests, and 1 skipped test; package verification passed with 38 tests; state and capability contracts passed; and the built CLI reproduced fresh startup, dry-run, apply, and post-apply startup.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: fresh-init-audit-1
+      source: independent implementation audit
+      recorded_at: 2026-08-10 13:10
+      writer_command: agentera state plan record-evaluation

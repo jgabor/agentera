@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -30,6 +31,8 @@ const RETIRED_PACKAGE_SURFACES = [
   "plugin.json",
   "plugins/agentera",
 ] as const;
+
+const LOCAL_OPENCODE_PACKAGE = ".opencode/package.json";
 
 const RETIRED_CURRENT_DESCRIPTOR_DIRECTORY = "skills/agentera/agents";
 
@@ -79,6 +82,10 @@ function relative(absolute: string): string {
   return path.relative(ROOT, absolute).split(path.sep).join("/");
 }
 
+function tracked(relativePath: string): boolean {
+  return spawnSync("git", ["ls-files", "--error-unmatch", "--", relativePath], { cwd: ROOT }).status === 0;
+}
+
 function hasCurrentDescriptorDirectory(root: string): boolean {
   return fs.existsSync(path.join(root, RETIRED_CURRENT_DESCRIPTOR_DIRECTORY));
 }
@@ -108,6 +115,10 @@ describe("repository-native retirement inventory", () => {
     for (const relative of RETIRED_PACKAGE_SURFACES) {
       expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(false);
     }
+  });
+
+  it("does not retain the local OpenCode dependency boundary in source", () => {
+    expect(tracked(LOCAL_OPENCODE_PACKAGE)).toBe(false);
   });
 
   it("has no current native descriptor directory", () => {

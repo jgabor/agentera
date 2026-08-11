@@ -88,13 +88,14 @@ describe("typed state writer on active entity authority", () => {
     expect(amend?.fields.map((field: any) => field.flag)).not.toContain("--number");
   });
 
-  it("rejects every marker-absent write with the sole full-upgrade recovery", () => {
+  it("rejects non-Git marker-absent writes with read-only recovery", () => {
     const root = project(false);
     for (const args of [progressArgs(), ["backfill", "--apply", "--force", "--format", "json"], ["unknown-repair", "--apply", "--format", "json"]]) {
       const rejected = run(root, args);
       expect(rejected.rc).toBe(1);
       expect(rejected.json?.error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade --channel development") });
-      expect(rejected.json?.error.recovery).toContain("--yes");
+      expect(rejected.json?.error.recovery).toContain("--dry-run");
+      expect(rejected.json?.error.recovery).not.toContain("--yes");
       expect(fs.readdirSync(root)).toEqual([]);
     }
   });
@@ -293,12 +294,13 @@ describe("retained entity writer contract matrix", () => {
     ["todo create", ["todo", "create", "--input", "-", "--format", "json"]],
     ["docs create", ["docs", "create", "--document", "Blocked", "--path", "blocked.md", "--status", "current", "--format", "json"]],
     ["compact mutation", ["query", "progress", "--format", "json"]],
-  ])("gates marker-absent %s with one upgrade recovery", (_label, args) => {
+  ])("gates non-Git marker-absent %s with read-only recovery", (_label, args) => {
     const root = project(false);
     const result = run(root, args as string[], "{}");
     expect(result.rc).toBe(1);
     expect(result.json?.error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade --channel development") });
-    expect(result.json?.error.recovery).toContain("--yes");
+    expect(result.json?.error.recovery).toContain("--dry-run");
+    expect(result.json?.error.recovery).not.toContain("--yes");
     expect(fs.readdirSync(root)).toEqual([]);
   });
 

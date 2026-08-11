@@ -310,6 +310,15 @@ function publicationConflict(markerPath: string): never {
   });
 }
 
+function initializationConflict(markerPath: string): never {
+  reject({
+    class: "conflict",
+    message: `state mode marker '${markerPath}' appeared during fresh plan initialization`,
+    syntax: "agentera state plan create --input PLAN.yaml --format json",
+    example: "remove no files; inspect the competing state publication and retry",
+  });
+}
+
 /**
  * Binds mutations to a validated project and exact entity-mode marker. Every
  * pathname and byte identity is checked at declared boundaries. Publication
@@ -322,22 +331,31 @@ export class EntityPublicationContext {
   readonly validatedRoot: ValidatedProjectRoot;
   readonly markerPath: string;
 
-  private readonly marker: StableFile;
+  private marker: StableFile | null;
   private readonly createdDirectories = new Map<string, StableDirectory>();
   private closed = false;
 
-  private constructor(root: ValidatedProjectRoot, markerPath: string, expectedBytes: Buffer) {
+  private constructor(root: ValidatedProjectRoot, markerPath: string, expectedBytes: Buffer | null) {
     this.projectRoot = root.path;
     this.validatedRoot = root;
     this.markerPath = markerPath;
     const markerAbsolute = path.join(root.path, ...safeSegments(markerPath, "state mode marker"));
-    this.marker = readStableFile(markerAbsolute, `state mode marker '${markerPath}'`);
-    if (!this.marker.bytes.equals(expectedBytes)) publicationConflict(markerPath);
+    if (expectedBytes === null) {
+      if (readFileIfPresent(markerAbsolute, `state mode marker '${markerPath}'`)) initializationConflict(markerPath);
+      this.marker = null;
+    } else {
+      this.marker = readStableFile(markerAbsolute, `state mode marker '${markerPath}'`);
+      if (!this.marker.bytes.equals(expectedBytes)) publicationConflict(markerPath);
+    }
     this.assertValid();
   }
 
   static open(root: ValidatedProjectRoot, markerPath: string, expectedBytes: Buffer): EntityPublicationContext {
     return new EntityPublicationContext(root, markerPath, expectedBytes);
+  }
+
+  static beginInitialization(root: ValidatedProjectRoot, markerPath: string): EntityPublicationContext {
+    return new EntityPublicationContext(root, markerPath, null);
   }
 
   pinnedPath(relativePath = ""): string {
@@ -349,6 +367,16 @@ export class EntityPublicationContext {
   assertValid(): void {
     if (this.closed) throw new Error("entity publication context is closed");
     assertValidatedProjectRoot(this.validatedRoot);
+    if (this.marker === null) {
+      try {
+        if (readFileIfPresent(path.join(this.projectRoot, ...safeSegments(this.markerPath, "state mode marker")), `state mode marker '${this.markerPath}'`)) {
+          initializationConflict(this.markerPath);
+        }
+      } catch {
+        initializationConflict(this.markerPath);
+      }
+      return;
+    }
     let current: StableFile;
     try { current = readStableFile(this.marker.absolute, `state mode marker '${this.markerPath}'`); }
     catch { publicationConflict(this.markerPath); }
@@ -356,8 +384,28 @@ export class EntityPublicationContext {
   }
 
   publishImmutable(relativeTarget: string, bytes: string): PublishedTargetIdentity | null {
+    return this.publishImmutableInternal(relativeTarget, bytes, false);
+  }
+
+  isInitializing(): boolean {
+    return this.marker === null;
+  }
+
+  publishStateMarker(bytes: string): PublishedTargetIdentity {
+    if (this.marker !== null) throw new Error("entity state marker is already active");
+    const published = this.publishImmutableInternal(this.markerPath, bytes, true);
+    if (!published) initializationConflict(this.markerPath);
+    return published;
+  }
+
+  private publishImmutableInternal(
+    relativeTarget: string,
+    bytes: string,
+    activateMarker: boolean,
+  ): PublishedTargetIdentity | null {
     const segments = safeSegments(relativeTarget, "immutable entity target");
     if (segments.length < 2) throw new Error(`unsafe immutable entity target '${relativeTarget}'`);
+    if (activateMarker && relativeTarget !== this.markerPath) throw new Error("only the state mode marker can activate fresh entity state");
     const directories: StableDirectory[] = [];
     const target = path.join(this.projectRoot, ...segments);
     let stage: StableFile | undefined;
@@ -395,16 +443,19 @@ export class EntityPublicationContext {
         throw new ExactReplacementConflictError(`immutable entity target '${relativeTarget}' changed at its publication boundary`);
       }
       publicationOwned = true;
+      if (activateMarker) this.marker = published;
       this.assertBoundary(directories, published, [stage]);
       removeExactFile(stage); stage = undefined;
       syncDirectory(directory);
       published = readStableFile(target, `published entity '${relativeTarget}'`);
+      if (activateMarker) this.marker = published;
       this.assertBoundary(directories, published);
       for (const entry of directories.filter(({ created }) => created)) {
         this.createdDirectories.set(relativeDisplay(this.projectRoot, entry.absolute), entry);
       }
       return publishedIdentity(published);
     } catch (error) {
+      if (activateMarker) this.marker = null;
       if (publicationOwned && published) {
         if (stage) {
           try { if (removeExactFile(stage)) stage = undefined; } catch { /* Preserve changed attempt bytes. */ }
@@ -469,6 +520,7 @@ export class EntityPublicationContext {
     if (!sameStableFile(current, confirmed)) return "identity_mismatch";
     fs.unlinkSync(target);
     syncDirectory(directory);
+    if (relativeTarget === this.markerPath) this.marker = null;
     this.removeAttemptDirectories();
     return "removed";
   }

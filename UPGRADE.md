@@ -52,10 +52,26 @@ npx -y agentera@next doctor --format json
 ```
 
 Before stable promotion, `prime --context status --format json` is the one-call
-bootstrap for clean, v2, partially migrated, and v3 projects. Marker-absent
-clean, v2, and partial projects return bounded `blocked` output with the exact
-full entity-upgrade recovery; v3 returns `ok` unless health is degraded. No
-recovery resolves `@latest`, and healthy v3 needs no second dashboard call.
+bootstrap for fresh, v2, partially migrated, and v3 projects. A Git-root project
+with no `.agentera` state is `fresh_uninitialized`: `prime --context plan` stays
+read-only and operable, and the first `state plan create` is its sole initializer.
+Recognized v2 remains on the full upgrade route; partial, corrupt, and unknown
+marker-absent state stays bounded and blocked behind read-only recovery. No fresh
+startup response recommends `upgrade --yes`, no recovery resolves `@latest`, and
+healthy v3 needs no second dashboard call.
+
+### Fresh Plan initialization
+
+For a fresh Git project, use the typed Plan writer. Its dry run previews the
+marker, plan, and task publication without changing the project; apply publishes
+the complete plan graph and then the entity-state marker, rolling back ordinary
+publication failures. Other state writers never initialize fresh state.
+
+```bash
+npx -y agentera@next prime --context plan --format json
+npx -y agentera@next state plan create --input PLAN.yaml --dry-run --format json
+npx -y agentera@next state plan create --input PLAN.yaml --format json
+```
 
 `doctor --format json` also reports bounded `retired_resources` candidates. Each
 entry has an exact retired resource ID, a path-only or fingerprint-safe
@@ -192,9 +208,9 @@ create dual authority, or add a repair or import command.
 
 ## Unsupported legacy state
 
-Pending v1 Markdown state and unknown marker-absent state are not automatic
-mutation inputs. `state migrate`, `state backfill`, projection repair, v1
-conversion, restore, and downgrade are unsupported. Only
+Pending v1 Markdown, partial, corrupt, and unknown marker-absent state are not
+automatic mutation inputs. `state migrate`, `state backfill`, projection repair,
+v1 conversion, restore, and downgrade are unsupported. Only
 `npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run`
 may inventory cutover input; it cannot publish it.
 

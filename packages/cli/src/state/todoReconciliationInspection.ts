@@ -152,6 +152,7 @@ export function inspectTodoReconciliationState(
   if (!activation) {
     try {
       const scan = managedRows(readTodoMarkdown(todoPublicPath(root, sourceRoot)).text, null, entities);
+      if (entities.length === 0 && scan.matchedRows === 0 && scan.retainedLegacyRows.length === 0) return null;
       const safety = inactiveTodoActivationSafety(scan, entities);
       return inspection(safety.safe ? "inactive" : "unsafe_inactive", safety.counts, safety.safe ? undefined : safety.risks);
     } catch (error) {

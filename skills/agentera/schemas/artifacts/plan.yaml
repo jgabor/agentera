@@ -705,12 +705,15 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/cli/commands/prime/*.ts
       - packages/cli/src/cli/capabilityContext/*.ts
       - packages/cli/src/cli/contracts/orientationState.ts
+      - packages/cli/src/cli/migrationRequired.ts
       - packages/cli/src/cli/startupCompletenessContract.ts
       - packages/cli/src/hooks/sessionStart.ts
       - packages/cli/src/eval/evalSkills.ts
+      - packages/cli/src/state/stateMode.ts
     writers:
       - packages/cli/src/state/write/*.ts
       - packages/cli/src/state/entityStorage.ts
+      - packages/cli/src/state/entityPublicationContext.ts
       - packages/cli/src/cli/commands/state/write.ts
     migrators:
       - packages/cli/src/upgrade/migrateArtifacts*.ts

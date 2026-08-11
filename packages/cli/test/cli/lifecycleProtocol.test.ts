@@ -90,7 +90,7 @@ function cutoverProject(): string {
 afterEach(() => { for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
 
 describe("final lifecycle protocol", () => {
-  it("fails ordinary marker-absent commands read-only with one exact migration recovery", () => {
+  it("fails unknown marker-absent commands read-only with one exact preview recovery", () => {
     const root = project();
     fs.writeFileSync(path.join(root, "legacy.txt"), "unchanged\n");
     const before = treeDigest(root);
@@ -109,10 +109,10 @@ describe("final lifecycle protocol", () => {
       const result = capture(root, args, args[1] === "progress" && args[2] === "append" ? "type: fix\nphase: build\nwhat: evidence\ncontext:\n  intent: test\n" : "");
       expect(result.rc).toBe(1); expect(result.err).toBe("");
       expect(JSON.parse(result.out).error).toEqual(expect.objectContaining({
-        class: "migration_required",
-        recovery: commandText([
-          "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", root, "--yes",
-        ]),
+          class: "migration_required",
+          recovery: commandText([
+          "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", root, "--dry-run",
+          ]),
       }));
       expect(treeDigest(root)).toBe(before);
       expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);

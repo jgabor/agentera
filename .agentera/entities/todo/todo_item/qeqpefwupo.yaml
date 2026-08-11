@@ -15,16 +15,16 @@ record:
     - Every machine-returned recovery command passes its own dry-run preflight and fresh initialization leaves global runtime resources unchanged.
   release_blocker: true
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make marker-absent fresh-project startup converge without legacy migration."
+      status: resolved
+      order: 106
       severity: normal
-      status: open
-      order: 22
   lifecycle:
-    operation: set-severity
-    reason: Moved from the duplicated Critical section to the Normal backlog.
-    date: 2026-08-06
+    operation: resolve
+    reason: Fresh Plan initialization passed existing built-local CLI and independent audit evidence.
+    date: 2026-08-11

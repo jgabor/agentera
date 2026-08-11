@@ -1261,7 +1261,7 @@ describe("entity migration read-only preview", () => {
     expect(rc).toBe(1);
     expect(JSON.parse(out).error).toMatchObject({
       class: "migration_required",
-      recovery: expect.stringMatching(/npx -y agentera@next upgrade --channel development .* --yes/),
+      recovery: expect.stringMatching(/npx -y agentera@next upgrade --channel development .* --dry-run/),
     });
     expect(tree(root)).toEqual(before);
     expect(printStateHelp("migrate")).not.toContain("state migrate entities");

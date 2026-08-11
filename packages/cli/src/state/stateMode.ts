@@ -1,13 +1,37 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { loadYamlMapping } from "../core/yaml.js";
+import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { EntityPublicationContext } from "./entityPublicationContext.js";
 import { validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
 export type StateMode = "legacy" | "entities";
+
+export type ProjectState =
+  | "entities"
+  | "fresh_uninitialized"
+  | "legacy"
+  | "partial"
+  | "corrupt"
+  | "unknown";
+
+export interface ProjectStateClassification {
+  state: ProjectState;
+  root: ValidatedProjectRoot;
+  markerPath: string;
+  markerBytes?: Buffer;
+  reason?: string;
+}
+
+export interface FreshPlanInitialization {
+  root: ValidatedProjectRoot;
+  markerPath: string;
+  marker: { schemaVersion: string; mode: string };
+  markerBytes: string;
+}
 
 export type StateModeBinding =
   | { mode: "legacy"; root: ValidatedProjectRoot }
@@ -80,6 +104,144 @@ function readStableMarker(root: ValidatedProjectRoot, markerPath: string): Buffe
     );
   }
   return snapshot.bytes;
+}
+
+function pathKind(root: ValidatedProjectRoot, relativePath: string): "missing" | "file" | "directory" | "unsafe" {
+  const absolute = path.join(root.path, ...relativePath.split("/"));
+  try {
+    const stat = fs.lstatSync(absolute);
+    if (stat.isSymbolicLink()) return "unsafe";
+    if (stat.isFile()) return "file";
+    if (stat.isDirectory()) return "directory";
+    return "unsafe";
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return "missing";
+    return "unsafe";
+  }
+}
+
+function isGitWorktreeRoot(root: ValidatedProjectRoot): boolean {
+  const env = { ...process.env };
+  for (const name of ["GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR"]) delete env[name];
+  const result = spawnSync("git", ["rev-parse", "--show-toplevel"], {
+    cwd: root.path,
+    env,
+    encoding: "utf8",
+  });
+  if (result.error || result.status !== 0) return false;
+  try {
+    return fs.realpathSync(String(result.stdout).trim()) === root.path;
+  } catch {
+    return false;
+  }
+}
+
+function classifyMarkerAbsentProject(
+  root: ValidatedProjectRoot,
+  markerPath: string,
+): ProjectStateClassification {
+  const stateRoot = pathKind(root, ".agentera");
+  if (stateRoot === "missing") {
+    return {
+      state: isGitWorktreeRoot(root) ? "fresh_uninitialized" : "unknown",
+      root,
+      markerPath,
+    };
+  }
+  if (stateRoot !== "directory") {
+    return {
+      state: "corrupt",
+      root,
+      markerPath,
+      reason: "Agentera state root '.agentera' is not a safe directory",
+    };
+  }
+
+  const entities = pathKind(root, ".agentera/entities");
+  if (entities !== "missing" && entities !== "directory") {
+    return {
+      state: "corrupt",
+      root,
+      markerPath,
+      reason: "Agentera entity root '.agentera/entities' is not a safe directory",
+    };
+  }
+  if (entities === "directory") return { state: "partial", root, markerPath };
+
+  const aggregates = ["plan.yaml", "progress.yaml", "decisions.yaml", "health.yaml"]
+    .map((name) => pathKind(root, `.agentera/${name}`));
+  if (aggregates.includes("unsafe")) {
+    return {
+      state: "corrupt",
+      root,
+      markerPath,
+      reason: "a recognized Agentera aggregate is not a safe regular file",
+    };
+  }
+  const aggregateCount = aggregates.filter((kind) => kind === "file").length;
+  if (aggregateCount >= 2) return { state: "legacy", root, markerPath };
+  if (aggregateCount === 1) return { state: "partial", root, markerPath };
+  return { state: "unknown", root, markerPath };
+}
+
+/** Classify local state without creating, repairing, or adopting project files. */
+export function classifyProjectState(
+  projectRoot: string,
+  sourceRoot = resolveSourceRoot(),
+): ProjectStateClassification {
+  const root = validateRealProjectRoot(projectRoot);
+  const declared = contract(sourceRoot);
+  let bytes: Buffer | null;
+  try {
+    bytes = readStableMarker(root, declared.markerPath);
+  } catch (error) {
+    return {
+      state: "corrupt",
+      root,
+      markerPath: declared.markerPath,
+      reason: (error as Error).message,
+    };
+  }
+  if (bytes === null) return classifyMarkerAbsentProject(root, declared.markerPath);
+  try {
+    const document = loadYamlMapping(bytes.toString("utf8"));
+    if (document.schemaVersion !== declared.schemaVersion || document.mode !== declared.mode) {
+      return {
+        state: "corrupt",
+        root,
+        markerPath: declared.markerPath,
+        reason: `state mode marker '${declared.markerPath}' must declare schemaVersion '${declared.schemaVersion}' and mode '${declared.mode}'; restore the durable migration marker before retrying`,
+      };
+    }
+  } catch (error) {
+    return {
+      state: "corrupt",
+      root,
+      markerPath: declared.markerPath,
+      reason: `state mode marker '${declared.markerPath}' is corrupt: ${(error as Error).message}; restore the durable migration marker before retrying`,
+    };
+  }
+  return { state: "entities", root, markerPath: declared.markerPath, markerBytes: bytes };
+}
+
+export function freshEntityStateMarker(sourceRoot = resolveSourceRoot()): { schemaVersion: string; mode: string } {
+  const declared = contract(sourceRoot);
+  return { schemaVersion: declared.schemaVersion, mode: declared.mode };
+}
+
+export function freshPlanInitialization(
+  projectRoot: string,
+  sourceRoot = resolveSourceRoot(),
+): FreshPlanInitialization | null {
+  const classified = classifyProjectState(projectRoot, sourceRoot);
+  if (classified.state !== "fresh_uninitialized") return null;
+  const marker = freshEntityStateMarker(sourceRoot);
+  return {
+    root: classified.root,
+    markerPath: classified.markerPath,
+    marker,
+    markerBytes: dumpYamlMapping(marker),
+  };
 }
 
 function detectValidatedStateMode(

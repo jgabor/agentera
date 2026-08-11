@@ -1,0 +1,36 @@
+id: ijkzofxryi
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-09
+    status: archived
+    reviewed: 2026-08-09
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    title: "Plan: Initialize Fresh Project Plan State"
+  what: Allow a truly fresh marker-absent Git project to enter v3 entity state through its first typed plan creation while preserving fail-closed migration boundaries.
+  why: Unblock new projects such as Orca Journal without misrouting them through legacy migration or weakening protections for ambiguous existing state.
+  constraints: Plan create is the sole initializer; prime stays read-only; legacy, partial, corrupt, and unknown marker-absent state stays non-mutating; Doctor, global cleanup, profile, publication, tagging, and pushing remain out of scope; release metadata stays within 3.0.0.
+  overall_acceptance: GIVEN a marker-absent project WHEN Agentera evaluates and initializes it THEN only proven fresh state can preview and atomically publish its first plan, every ambiguous or legacy state fails closed, and the Orca Journal sequence succeeds without an upgrade apply recommendation.
+  scope:
+    included:
+      - Fresh-uninitialized project classification and Plan startup availability
+      - Dry-run and atomic first Plan publication
+      - Fail-closed legacy and unknown marker-absent behavior
+      - Exact Orca Journal regression coverage and shipped-runtime parity
+      - Governing contract documentation, development metadata, and project-state synchronization
+    excluded:
+      - Initialization through state writers other than Plan create
+      - Doctor reporting changes
+      - Global cleanup separation
+      - Profile degradation changes
+      - npm publication, tagging, or pushing
+    deferred:
+      - Doctor, cleanup, and profile corrections owned by their existing TODOs
+  design: First establish one bounded state classification that separates genuinely fresh input from every migration or manual-recovery case. Then permit only Plan startup and first Plan publication to consume that classification, prove all-or-none local state publication, and lock the behavior across source and packaged runtime surfaces before synchronizing release and project records.
+  unknowns:
+    - question: Can the current all-or-none Plan publication contract include marker publication and rollback without a new recovery mechanism?
+      affects_task: 2
+      resolve_by: Use injected publication-failure evidence in Task 2; if any marker or entity survives, re-invoke Plan before adding crash recovery or another durable lifecycle.
+  surprises:
+    []
