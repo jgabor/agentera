@@ -1,0 +1,13 @@
+id: wtzacjektg
+artifact: plan
+record:
+  name: Synchronize fresh initialization delivery
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN the incomplete predecessor is replaced WHEN plan lineage is inspected THEN its completed tasks and audit evidence remain unchanged and the successor names the archived predecessor.
+    - GIVEN the local built CLI and independent audit passed WHEN TODO qeqpefwupo is reconciled THEN the item closes with evidence for the implemented fresh initialization behavior.
+    - GIVEN the fix is user-visible WHEN the changelog is updated THEN it states that fresh Plan initialization converges without exposing internal state bookkeeping or unrelated TODO work.
+    - GIVEN final synchronization completes WHEN repository state is inspected THEN the package remains at 3.0.0-dev.51, no release action or metadata change occurred, and unrelated work remains untouched.
+  plan: fdywjvwogr

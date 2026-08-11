@@ -84,6 +84,8 @@
 
 ### Fixed
 
+- Fixed fresh projects so they can initialize Plan entity state without a legacy
+  upgrade route.
 - Fixed `agentera doctor --format json` to report bounded, read-only retirement
   diagnostics for stale native resources. Each candidate now names its exact ID,
   path-only evidence, and a `doctor --retired-resource ID` preview command;

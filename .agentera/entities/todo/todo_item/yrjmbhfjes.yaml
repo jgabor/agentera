@@ -31,4 +31,4 @@ record:
       description: "[fix:3.0.0] Provide effect-bound owner correction for unsafe-inactive TODO projects."
       severity: normal
       status: open
-      order: 30
+      order: 29

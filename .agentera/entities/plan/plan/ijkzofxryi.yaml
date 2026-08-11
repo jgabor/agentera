@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-08-09
-    status: open
+    status: archived
     reviewed: 2026-08-09
     critic_issues: 2 found, 2 addressed, 0 dismissed
     title: "Plan: Initialize Fresh Project Plan State"

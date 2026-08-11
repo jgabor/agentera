@@ -22,7 +22,7 @@ record:
       description: "[fix:3.0.0] Make Doctor report project operability separately from installation health."
       severity: normal
       status: open
-      order: 23
+      order: 22
   lifecycle:
     operation: set-severity
     reason: Moved from the duplicated Critical section to the Normal backlog.

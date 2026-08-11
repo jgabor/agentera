@@ -22,7 +22,7 @@ record:
       description: "[fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup."
       severity: normal
       status: open
-      order: 24
+      order: 23
   lifecycle:
     operation: set-severity
     reason: Moved from the duplicated Critical section to the Normal backlog.

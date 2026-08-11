@@ -1,0 +1,25 @@
+id: fdywjvwogr
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-08-11
+    status: open
+    title: "Plan: Close Fresh Initialization Fix"
+  what: Complete final project-state synchronization for the audited fresh Plan initialization fix without preparing release metadata.
+  why: Honor the approved removal of the release task while preserving completed implementation and audit history and leaving one clear closeout cycle.
+  constraints: Preserve the predecessor and implemented behavior; keep the package at 3.0.0-dev.51; do not prepare, qualify, publish, tag, or push a release; do not absorb Doctor, cleanup, profile, or unrelated work.
+  overall_acceptance: GIVEN the fresh initialization implementation has passed independent audit WHEN this successor completes THEN the predecessor history remains intact, TODO and changelog state reflect the shipped behavior, no release metadata changes, and the project is internally consistent.
+  scope:
+    included:
+      - Preserve predecessor lineage and audited evidence
+      - Close TODO qeqpefwupo from existing verification evidence
+      - Add the user-facing changelog entry and reconcile final project state
+    excluded:
+      - Development version changes and release preparation
+      - Qualification, publication, tags, and pushes
+      - Further fresh-initialization implementation changes
+      - Doctor reporting, global cleanup separation, and profile degradation
+  surprises:
+    []
+  previous_plan_archived: ijkzofxryi

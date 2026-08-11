@@ -1,0 +1,14 @@
+id: zgnezdqyie
+artifact: progress
+record:
+  timestamp: 2026-08-11 17:28
+  type: fix
+  phase: build
+  what: Synchronize fresh Plan initialization delivery state and user-facing changelog.
+  context:
+    intent: Close the fresh Plan initialization delivery cycle.
+    constraints: No release action or version change; preserve predecessor history and unrelated work.
+    scope: Plan, TODO, progress, and changelog closeout only.
+  verified: Closeout checked against existing built-local CLI Orca Journal prime -> dry-run -> apply -> prime and independent audit evidence; current state retrieval and compact check passed, with package version unchanged at 3.0.0-dev.51.
+  next: Keep the task in progress until a separate audit.
+  publication_order: 125
