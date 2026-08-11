@@ -182,13 +182,10 @@ policy, lockfile, gate, toolchain, digest, or receipt-semantic change fails.
 Success emits `executed: "none"` and `reused: true` without receipt content or
 private paths.
 
-Set `AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR` to that external candidate only
-for a pre-commit that should attempt reuse. A valid check skips only the
-expensive source/release test policy in `scripts/precommit-vitest.sh`. An absent
-variable preserves existing routing; a missing, stale, malformed, or tampered
-receipt falls back to the existing broader policy. Build, compact, parity,
-candidate qualification, release metadata, approval, and publication are never
-skipped.
+The local staged-verification lane does not consume release receipts or run
+release qualification. `source-check` remains available for direct read-only
+diagnosis and as the development-preparation prerequisite. Missing, stale,
+malformed, or tampered evidence fails before metadata effects.
 
 After committing the prepared metadata, qualify and approve the candidate from
 the same external directory:
@@ -361,10 +358,14 @@ The canonical policy compositions are:
 | `release` | Source, stress, performance, capacity, package |
 
 Pre-commit delegates composition to `verify-lane.mjs`. Ordinary source paths
-run targeted source files or the `local`/`precommit` source composition.
-Conservative authority and verification surfaces route to `release`, so all
-five owners run before those changes can commit. Routine CI invokes the
-check-only release conjunction once on the policy-pinned runner. Generated
+run deterministic source-owned files plus typecheck within a 60-second total
+budget and use at most two Vitest workers. State and documentation-only changes
+run only their relevant compact, schema, lint, or format checks within a
+10-second budget. Conservative authority and verification surfaces route to `ci_owned`; the hook runs source-owned route guards and does not execute a
+local release lane. Specialized test files retain their exact owner in the
+route result. Routine CI invokes the check-only `release` conjunction once on
+the policy-pinned runner, where those deferred owners execute authoritatively.
+Generated
 overlap is therefore the sole execution origin for source, package, and build;
 the same DAG retains source-owned Py-TS parity, typecheck, compact, stress,
 performance, and capacity evidence without standalone duplicate steps. Release

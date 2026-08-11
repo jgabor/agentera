@@ -1,0 +1,16 @@
+id: thsbboaebt
+artifact: progress
+record:
+  timestamp: 2026-08-11 19:08
+  type: fix
+  phase: build
+  what: Corrected the staged-verification shared boundary after the independent audit found that the collector commit omitted its policy and documentation contract.
+  context:
+    intent: Preserve the implemented owner-aware staged-verification behavior while making the remaining task-owned shared deltas exact and auditable.
+    constraints: No history rewrite, staging, commit, hook bypass, release or package lane, generated overlap, readiness, candidate, receipt, registry, publication, push, tag, credential, remote operation, protected-workflow change, vision change, or inherited readiness mutation.
+    unknowns: The first focused-test invocation in the retained log used one unsupported worker flag and exited before test collection. The corrected invocation used VITEST_MAX_WORKERS=2 and is recorded in the same capsule.
+    scope: The verification-policy route and retired receipt-reuse block, package-publication adapter cleanup, release-skill cleanup, packaging documentation, and changelog entry.
+  discovered: Progress mxtxewezan correctly retained the implementation measurements, but its claim that the clean and shared patches formed a complete commit boundary is superseded. The collector commit omitted the shared contract, including the exact self-route required by its committed precommit test.
+  verified: The correction capsule is /tmp/tqgnmgxder-correction.c9CYcW. raw.log has SHA-256 447f6154f635f60fbc23a65ab93cfb07024c46f915b27e1a1649a200f72d03a9, correction-manifest.txt has SHA-256 d3ce3c5690222a68130be8d99f5c376a82ca78bec27dd237c3654cc796fc4f45, and correction-shared.patch has SHA-256 09299dca21630b15e0ed4a9c99c09baed11e3c717b46372d26324a841d3481cf. Policy validation and three route probes passed. The corrected focused run passed 181 tests in five files with two workers. Contract and documentation assertions, Markdown lint, whitespace, protected workflows and vision, and empty-index checks passed. The manifest records the unchanged collector HEAD and excludes all inherited readiness work.
+  next: Keep tqgnmgxder in progress for independent re-audit. Do not stage or commit until the audit records PASS.
+  publication_order: 138

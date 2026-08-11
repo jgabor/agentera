@@ -311,11 +311,10 @@
       },
       "reuseCheck": {
         "command": "node packages/cli/scripts/release-qualification.mjs source-check --candidate-dir DIR [--json]",
-        "precommitEnvironment": "AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR",
         "authority": "The external path is input only. Reuse requires digest, full receipt semantics, exact governed gates, current toolchain, and matching current staged and working tracked-tree identities under the same package version and agentera.gitRef normalization used at source qualification.",
         "effects": "Runs no qualification gate and writes no repository, candidate, receipt, or registry state. Success emits executed none and reused true without receipt content or private paths.",
-        "fallback": "An absent environment variable preserves existing pre-commit routing. A missing, invalid, ambiguous, or stale receipt never skips tests; pre-commit runs the existing broader policy. Development preparation has no fallback and fails before metadata effects.",
-        "scope": "Development preparation uses the check as a source-readiness prerequisite. Reused source evidence may skip only scripts/precommit-vitest.sh source/release policy execution. Build, compact, parity, candidate qualification, release metadata, approval, and publication remain mandatory at their owning stages."
+        "fallback": "A missing, invalid, ambiguous, or stale receipt fails before development metadata effects. The local staged-verification lane does not consume release receipts.",
+        "scope": "Development preparation uses the check as a source-readiness prerequisite. Direct diagnostics may inspect reuse without executing a gate. Build, compact, parity, candidate qualification, release metadata, approval, and publication remain mandatory at their owning stages."
       },
       "dag": {
         "batchA": ["generated-overlap", "stress", "typecheck"],

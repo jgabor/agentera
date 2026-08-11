@@ -126,11 +126,6 @@ node packages/cli/scripts/release-qualification.mjs source-check \
   --candidate-dir /secure/external/candidate --json
 ```
 
-Set `AGENTERA_PRECOMMIT_SOURCE_CANDIDATE_DIR` only to that external candidate
-when pre-commit should attempt source evidence reuse. A valid check skips only
-the source or release test policy. Build, compact, parity, candidate
-qualification, release metadata, approval, and publication remain mandatory.
-
 Candidate qualification requires a new external directory. It retains one
 immutable tarball and runs a cold-state local smoke before registry action.
 Every mutation requires a separate approval bound to candidate receipt,

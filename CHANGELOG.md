@@ -18,6 +18,10 @@
 
 ### Changed
 
+- Local staged verification now gives ordinary source changes targeted tests
+  and typecheck with two workers in at most 60 seconds. State and documentation
+  checks stay under 10 seconds, while specialized and global owners defer to
+  their authoritative CI conjunction instead of running a local release lane.
 - `agentera prime` now returns TODO state only through the canonical `todo`
   field. Requests for the retired `issues` field fail with one structured correction to `todo` instead of emitting a duplicate alias and warning.
 - Build progress logging now retains durable project outcomes, while release receipts remain authoritative for attempt evidence.
@@ -124,9 +128,9 @@
   actual source deadline, reserves bounded cleanup and parent-reconciliation
   time, and removes its generated state after failure. Source receipts now mark
   and validate all nine successful gate outcomes and reject semantic tampering.
-  The read-only `source-check` command now lets explicitly configured
-  version/gitRef-only pre-commits reuse matching source evidence without
-  skipping build, compact, parity, or later release qualification.
+  The read-only `source-check` command validates matching source evidence for
+  development preparation and direct diagnosis without running qualification
+  gates or changing repository, candidate, receipt, or registry state.
   Candidate qualification timing now closes construction before exact-artifact
   smoke and reconciles non-overlapping gate intervals with explicit overhead.
   Staging now rejects an absent exact version when the public tag already names
