@@ -769,6 +769,8 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
       expect(JSON.parse(result.stdout).error.class).toBe("schema_violation");
     }
     expect(entityEnvelopes(project)).toEqual(entities);
+  });
+
   it("keeps Orca Journal-shaped fresh Plan initialization available in the installed package", () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const project = fs.mkdtempSync(path.join(fixture.root, "fresh-plan-"));
@@ -816,7 +818,6 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
     expect(JSON.parse(initialized.stdout).capability_context.startup.state_cutover)
       .toMatchObject({ status: "complete", project_state: "v3" });
     expect(initialized.stdout).not.toContain("upgrade --yes");
-  });
   });
 
   it("executes source-built and self-contained packaged list help, examples, rejections, and corrections for every authority family", () => {
