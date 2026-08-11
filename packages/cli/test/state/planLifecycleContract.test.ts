@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
@@ -12,39 +13,6 @@ const SCHEMA_PATH = path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/plan
 function lifecycleContract(): Record<string, any> {
   const schema = YAML.parse(fs.readFileSync(SCHEMA_PATH, "utf8")) as Record<string, any>;
   return schema.LIFECYCLE_CONTRACT;
-}
-
-function filesUnder(
-  root: string,
-  target: string,
-  exclusions: string[],
-  excludedDirectoryNames: string[],
-): string[] {
-  const resolvedRoot = path.resolve(root);
-  const normalized = target === "." ? "" : target.replace(/^\.\//, "");
-  if (normalized && matchesAny(normalized, exclusions)) return [];
-  const absolute = path.resolve(resolvedRoot, normalized || ".");
-  if (absolute !== resolvedRoot && !absolute.startsWith(`${resolvedRoot}${path.sep}`)) return [];
-
-  let stats: fs.Stats;
-  try {
-    stats = fs.lstatSync(absolute);
-  } catch {
-    return [];
-  }
-  if (stats.isSymbolicLink()) return [];
-  if (stats.isFile()) return [normalized];
-  if (!stats.isDirectory()) return [];
-
-  return fs.readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
-    const child = normalized ? path.posix.join(normalized, entry.name) : entry.name;
-    if (entry.isDirectory() && /^\.agentera\/migrations\/entities\/\.[a-f0-9]{20}\.prepare-[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(child)) return [];
-    if (matchesAny(child, exclusions)) return [];
-    if (entry.isSymbolicLink()) return [];
-    if (entry.isDirectory() && excludedDirectoryNames.includes(entry.name)) return [];
-    if (entry.isDirectory()) return filesUnder(resolvedRoot, child, exclusions, excludedDirectoryNames);
-    return entry.isFile() ? [child] : [];
-  });
 }
 
 function matchesAny(file: string, patterns: string[]): boolean {
@@ -65,16 +33,37 @@ function scanOptions(contract = lifecycleContract()) {
   return {
     inventory,
     classifiedPatterns: families.flatMap((family) => inventory[family]),
-    exclusions: inventory.scan.exclusions.flatMap((entry: { patterns: string[] }) => entry.patterns),
+    exclusions: inventory.scan.exclusions.flatMap(
+      (entry: { patterns: string[] }) => entry.patterns,
+    ),
     excludedDirectoryNames: inventory.scan.excluded_directory_names.names as string[],
   };
 }
 
-function classifyFiles(root: string, inventory: Record<string, any>) {
-  const { classifiedPatterns, exclusions, excludedDirectoryNames } = scanOptions({ inventory });
-  const scanned = inventory.scan.roots.flatMap((scanRoot: string) =>
-    filesUnder(root, scanRoot, exclusions, excludedDirectoryNames),
+function repositoryFiles(root: string, inventory: Record<string, any>): string[] {
+  const { exclusions, excludedDirectoryNames } = scanOptions({ inventory });
+  const output = execFileSync(
+    "git",
+    ["-C", root, "ls-files", "--cached", "--others", "-z", "--", ...inventory.scan.roots],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
   );
+  return output
+    .split("\0")
+    .filter(Boolean)
+    .filter((file) => !file.split("/").some((part) => excludedDirectoryNames.includes(part)))
+    .filter((file) => !matchesAny(file, exclusions))
+    .filter((file) => {
+      try {
+        return fs.lstatSync(path.join(root, file)).isFile();
+      } catch {
+        return false;
+      }
+    });
+}
+
+function classifyFiles(root: string, inventory: Record<string, any>) {
+  const { classifiedPatterns } = scanOptions({ inventory });
+  const scanned = repositoryFiles(root, inventory);
   const candidates = scanned.filter((file: string) => {
     const text = fs.readFileSync(path.join(root, file), "utf8");
     return inventory.scan.markers.some((marker: string) => text.includes(marker));
@@ -101,8 +90,6 @@ function removeFixtureDirectory(root: string): void {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
-const posixIt = process.platform === "win32" ? it.skip : it;
-
 describe("plan lifecycle contract", () => {
   it("separates persisted lifecycle from positional activity", () => {
     const contract = lifecycleContract();
@@ -128,7 +115,9 @@ describe("plan lifecycle contract", () => {
       existing_successor: expect.stringContaining("previous_plan_archived"),
       create_successor: expect.stringContaining("complete plan document"),
       replay: expect.stringContaining("exact input identity"),
-      atomicity: expect.stringContaining("complete predecessor, successor, and created-task target set"),
+      atomicity: expect.stringContaining(
+        "complete predecessor, successor, and created-task target set",
+      ),
     });
   });
 
@@ -175,7 +164,7 @@ describe("plan lifecycle contract", () => {
       if (Array.isArray(surfaces)) expect(surfaces.length).toBeGreaterThan(0);
     }
 
-    const { inventory, classifiedPatterns, exclusions, excludedDirectoryNames } = scanOptions(contract);
+    const { inventory, exclusions, excludedDirectoryNames } = scanOptions(contract);
     expect(inventory.scan.roots).toEqual(["."]);
     expect(inventory.scan.symlinks).toContain("leave the repository boundary");
     expect(inventory.scan.excluded_directory_names.reason).toContain("any repository depth");
@@ -213,11 +202,12 @@ describe("plan lifecycle contract", () => {
     expect(
       matchesAny("packages/cli/src/hooks/validateArtifact/violations.ts", inventory.adapters),
     ).toBe(true);
-    expect(
-      matchesAny("packages/cli/src/upgrade/upgradeOrchestrator.ts", inventory.migrators),
-    ).toBe(true);
+    expect(matchesAny("packages/cli/src/upgrade/upgradeOrchestrator.ts", inventory.migrators)).toBe(
+      true,
+    );
     expect(matchesAny("fixtures/semantic/status-cli-budget.md", inventory.fixtures)).toBe(true);
     expect(matchesAny("fixtures/semantic/status-bare-message.md", inventory.fixtures)).toBe(true);
+    expect(matchesAny("skills/agentera/schemas/artifacts/plan.yaml", inventory.schemas)).toBe(true);
     expect(matchesAny(".agentera/docs.yaml", inventory.adapters)).toBe(true);
     expect(matchesAny("scripts/schemas/contracts.json", inventory.adapters)).toBe(true);
     expect(matchesAny("scripts/json_output_surface_manifest.yaml", inventory.adapters)).toBe(true);
@@ -225,137 +215,73 @@ describe("plan lifecycle contract", () => {
       expect.arrayContaining([
         "fixtures/semantic/status-cli-budget.md",
         "fixtures/semantic/status-bare-message.md",
+        "skills/agentera/schemas/artifacts/plan.yaml",
         ".agentera/docs.yaml",
         "scripts/schemas/contracts.json",
         "scripts/json_output_surface_manifest.yaml",
       ]),
     );
-    expect(filesUnder(REPO_ROOT, "node_modules", exclusions, excludedDirectoryNames)).toEqual([]);
-    expect(filesUnder(REPO_ROOT, ".git", exclusions, excludedDirectoryNames)).toEqual([]);
-    expect(
-      filesUnder(
-        REPO_ROOT,
-        "packages/cli/agentera-3.0.0-dev.1.tgz",
-        exclusions,
-        excludedDirectoryNames,
-      ),
-    ).toEqual([]);
+    expect(scanned.some((file: string) => file === ".git" || file.startsWith(".git/"))).toBe(false);
+    expect(scanned.some((file: string) => file.split("/").includes("node_modules"))).toBe(false);
     expect(scanned.some((file: string) => file.split("/").includes(".wrangler"))).toBe(false);
     expect(scanned.some((file: string) => file.endsWith(".tgz"))).toBe(false);
   });
 
-  it("does not traverse symbolic links", () => {
-    const root = temporaryDirectory();
-    const outside = temporaryDirectory();
-    try {
-      writeFixtureFile(outside, "outside-marker.txt", "plan.yaml");
-      fs.symlinkSync(
-        outside,
-        path.join(root, "outside-link"),
-        process.platform === "win32" ? "junction" : "dir",
-      );
-
-      expect(filesUnder(root, ".", [], [])).not.toContain("outside-link/outside-marker.txt");
-      expect(filesUnder(root, "outside-link", [], [])).toEqual([]);
-    } finally {
-      removeFixtureDirectory(root);
-      removeFixtureDirectory(outside);
-    }
-  });
-
-  it("prunes cache directories at any depth", () => {
-    const root = temporaryDirectory();
-    try {
-      writeFixtureFile(root, "nested/.cache/cache-marker.txt", "plan.yaml");
-      const { exclusions, excludedDirectoryNames } = scanOptions();
-
-      expect(filesUnder(root, ".", exclusions, excludedDirectoryNames)).not.toContain(
-        "nested/.cache/cache-marker.txt",
-      );
-    } finally {
-      removeFixtureDirectory(root);
-    }
-  });
-
-  it("prunes snapshot directories at any depth", () => {
-    const root = temporaryDirectory();
-    try {
-      writeFixtureFile(root, "nested/.snapshots/snapshot-marker.txt", "plan.yaml");
-      const { exclusions, excludedDirectoryNames } = scanOptions();
-
-      expect(filesUnder(root, ".", exclusions, excludedDirectoryNames)).not.toContain(
-        "nested/.snapshots/snapshot-marker.txt",
-      );
-    } finally {
-      removeFixtureDirectory(root);
-    }
-  });
-
-  it("excludes local-secret patterns before reading their contents", () => {
-    const root = temporaryDirectory();
-    try {
-      const secretFiles = [".env", ".env.local", "nested/.env.production", "keys/identity.pem", "keys/signing.key"];
-      for (const file of secretFiles) writeFixtureFile(root, file);
-      writeFixtureFile(root, "visible.txt", "plan.yaml");
-      const readFileSync = vi.spyOn(fs, "readFileSync");
-
-      try {
-        const { inventory } = scanOptions();
-        const { scanned, candidates } = classifyFiles(root, inventory);
-        const readPaths = readFileSync.mock.calls.map(([file]) => String(file));
-
-        expect(scanned).not.toEqual(expect.arrayContaining(secretFiles));
-        expect(candidates).toEqual(["visible.txt"]);
-        expect(readPaths).not.toEqual(
-          expect.arrayContaining(secretFiles.map((file) => path.join(root, file))),
-        );
-      } finally {
-        readFileSync.mockRestore();
-      }
-    } finally {
-      removeFixtureDirectory(root);
-    }
-  });
-
-  posixIt("skips nonregular filesystem entries", async () => {
+  it("reports an ignored unclassified candidate without reading excluded surfaces", async () => {
     // Unix socket paths are short; qualification deliberately nests TMPDIR.
     const root = fs.mkdtempSync(path.join("/tmp", "agentera-plan-socket-"));
+    const outside = temporaryDirectory();
     const socketPath = path.join(root, "scanner.sock");
-    const server = net.createServer();
+    const server = process.platform === "win32" ? undefined : net.createServer();
     let listening = false;
+    let readFileSync: ReturnType<typeof vi.spyOn> | undefined;
     try {
-      await new Promise<void>((resolve, reject) => {
-        server.once("error", reject);
-        server.listen(socketPath, () => {
-          listening = true;
-          resolve();
-        });
-      });
+      execFileSync("git", ["init", "-q"], { cwd: root });
+      writeFixtureFile(root, ".gitignore", "ignored-contract.txt\n");
+      writeFixtureFile(root, "ignored-contract.txt", "plan.yaml");
+      writeFixtureFile(root, "packages/cli/src/cli/planReader.ts", "plan.yaml");
+      writeFixtureFile(root, "dist/generated.txt", "plan.yaml");
+      writeFixtureFile(root, ".env.local", "plan.yaml");
+      const excludedPaths = ["dist/generated.txt", ".env.local"];
 
-      expect(fs.lstatSync(socketPath).isSocket()).toBe(true);
-      expect(filesUnder(root, ".", [], [])).not.toContain("scanner.sock");
+      if (server) {
+        const outsideFile = writeFixtureFile(outside, "outside-marker.txt", "plan.yaml");
+        fs.symlinkSync(outsideFile, path.join(root, "linked-marker.txt"));
+        excludedPaths.push("linked-marker.txt", "scanner.sock");
+        await new Promise<void>((resolve, reject) => {
+          server.once("error", reject);
+          server.listen(socketPath, () => {
+            listening = true;
+            resolve();
+          });
+        });
+        expect(fs.lstatSync(socketPath).isSocket()).toBe(true);
+      }
+
+      expect(
+        execFileSync("git", ["-C", root, "check-ignore", "ignored-contract.txt"], {
+          encoding: "utf8",
+        }).trim(),
+      ).toBe("ignored-contract.txt");
+
+      const { inventory } = scanOptions();
+      readFileSync = vi.spyOn(fs, "readFileSync");
+      const { scanned, candidates, unclassified } = classifyFiles(root, inventory);
+      const readPaths = readFileSync.mock.calls.map(([file]) => String(file));
+
+      expect(candidates).toEqual(["ignored-contract.txt", "packages/cli/src/cli/planReader.ts"]);
+      expect(unclassified).toEqual(["ignored-contract.txt"]);
+      expect(scanned).not.toEqual(expect.arrayContaining(excludedPaths));
+      expect(readPaths).not.toEqual(
+        expect.arrayContaining(excludedPaths.map((file) => path.join(root, file))),
+      );
     } finally {
-      if (listening) {
+      readFileSync?.mockRestore();
+      if (server && listening) {
         await new Promise<void>((resolve, reject) => {
           server.close((error) => (error ? reject(error) : resolve()));
         });
       }
-      removeFixtureDirectory(root);
-    }
-  });
-
-  it("rejects paths outside the scan root", () => {
-    const root = temporaryDirectory();
-    const outside = temporaryDirectory();
-    try {
-      const outsideFile = writeFixtureFile(outside, "outside-marker.txt", "plan.yaml");
-      const { exclusions, excludedDirectoryNames } = scanOptions();
-
-      expect(
-        filesUnder(root, path.relative(root, outsideFile), exclusions, excludedDirectoryNames),
-      ).toEqual([]);
-      expect(filesUnder(root, outsideFile, exclusions, excludedDirectoryNames)).toEqual([]);
-    } finally {
       removeFixtureDirectory(root);
       removeFixtureDirectory(outside);
     }

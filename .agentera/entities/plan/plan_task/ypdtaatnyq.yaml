@@ -1,0 +1,23 @@
+id: ypdtaatnyq
+artifact: plan
+record:
+  name: Consolidate repeated startup and capability work
+  depends_on:
+    - opphhvqohs
+  status: complete
+  acceptance:
+    - GIVEN the dashboard budget scenarios WHEN they run THEN each byte, adversarial-detail, and reconciliation claim remains covered without repeated equivalent state acquisition.
+    - GIVEN every capability WHEN canonical entity context is built THEN each receives the expected plan projection and passes semantic checks.
+    - GIVEN public startup and compact boundaries WHEN representative checks run THEN hostile aggregates remain ignored and the project remains unchanged.
+    - GIVEN each changed testable unit WHEN coverage is reviewed THEN it retains one passing and one failing case unless one side is not meaningful and the task records why.
+  plan: uqqfojmzbv
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-ypdtaatnyq-1
+      source: orchestrate evaluator for task ypdtaatnyq
+      recorded_at: 2026-08-10 11:24
+      writer_command: agentera state plan record-evaluation

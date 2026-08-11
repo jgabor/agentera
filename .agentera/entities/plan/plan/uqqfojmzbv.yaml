@@ -1,0 +1,41 @@
+id: uqqfojmzbv
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-10
+    status: complete
+    reviewed: 2026-08-10
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    revised: Preserved representative public-boundary coverage and made before-and-after runtime evidence explicit.
+    title: "Plan: Simplify expensive CLI tests"
+  what: Remove redundant setup, duplicate execution, weak assertions, and test-owned machinery from the reviewed CLI tests while preserving their behavioral and contract coverage.
+  why: The sampled suite passes, but several tests spend substantial time repeating startup work or maintaining machinery that is larger than the behavior under test. Firm decisions llavvlpcmb and imumkmffwh require one CLI authority, explicit retirement boundaries, and production responsibility rather than test-created authority.
+  constraints: Preserve public CLI behavior, capability coverage, repository contract coverage, read-only guarantees, and failure-path evidence. Do not add dependencies, change production behavior, weaken assertions, add machine-sensitive timing gates, or expand into unrelated test cleanup. Use the authoritative local tool for verification.
+  overall_acceptance: GIVEN the reviewed tests and their public boundaries WHEN the plan is complete THEN all intended pass and failure behaviors remain covered, the sampled and full source suites pass, type checking passes, no production contract changes, and comparable local measurements show less redundant work than the recorded 25.83-second wall and 36.89-second aggregate baseline.
+  scope:
+    included:
+      - Threshold-classification assertions and fixtures
+      - Upgrade verification rendering tests
+      - Bundle-status divergence and glossary-admission duplication
+      - Status-dashboard setup reuse
+      - Canonical lifecycle capability and compact coverage
+      - Plan lifecycle repository inventory coverage
+      - Targeted, full-suite, typecheck, timing, and state evidence
+    excluded:
+      - Production feature or CLI behavior changes
+      - Durability Git-boundary redesign
+      - Retained-reference authority redesign
+      - Lifecycle recovery redesign
+      - New dependencies or CI timing budgets
+      - Release, version, and changelog changes
+    deferred:
+      - Simplification of tests outside the reviewed sample
+      - Corepack signature-key environment repair
+  design: First correct assertions and delete work that has no independent purpose. Next consolidate repeated state acquisition while retaining representative public-boundary checks. Then simplify repository inventory only after its required inclusion boundary is established. Finish with broad verification, comparative measurements, and synchronized project state.
+  unknowns:
+    - question: Must lifecycle inventory cover ignored untracked files, or only tracked and nonignored repository surfaces?
+      affects_task: 3
+      resolve_by: Characterize the declared repository-surface contract before changing the inventory mechanism. Preserve the current boundary if tracked and nonignored inventory would omit required evidence.
+  surprises:
+    []

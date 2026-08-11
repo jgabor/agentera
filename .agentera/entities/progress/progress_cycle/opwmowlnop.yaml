@@ -1,0 +1,15 @@
+id: opwmowlnop
+artifact: progress
+record:
+  timestamp: 2026-08-10 11:18
+  type: test
+  phase: build
+  what: Consolidated repeated status startup setup and lifecycle capability construction without changing production behavior.
+  context:
+    intent: Execute plan task ypdtaatnyq for plan uqqfojmzbv.
+    constraints: Test-only changes. Keep the task in progress pending evaluator PASS. Preserve public startup, compact, hostile-aggregate, semantic, and plan-projection coverage.
+    scope: Status dashboard budget setup and canonical lifecycle capability-context coverage.
+  discovered: The status scenarios can share one collected synthetic state when adversarial attention and reconciliation values are shallow scenario overrides. The lifecycle fixture can build each capability context from one canonical state; primeProjectionContract already covers public dispatch for every capability.
+  verified: The affected two-file Vitest run passed 14 tests. It retains the normal byte-budget case, adversarial oversized-detail case, and action-required reconciliation case from one collected status state. The lifecycle test retains one public prime and compact invocation, hostile aggregate exclusion, and unchanged tree digest, while every capability receives its expected canonical plan projection and has no semantic findings. primeProjectionContract passed 5 tests, retaining independent public prime coverage for every capability. Existing negative lifecycle tests retain marker-absent, invalid-marker, dangling-relationship, and ambiguous-selection failures. No new failure case is meaningful for shared fixture setup because it has no product behavior; its scenario overrides preserve the existing adversarial and action-required cases.
+  next: Await evaluator PASS before the orchestrator marks task ypdtaatnyq complete.
+  publication_order: 122

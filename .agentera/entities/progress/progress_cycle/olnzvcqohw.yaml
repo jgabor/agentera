@@ -1,0 +1,15 @@
+id: olnzvcqohw
+artifact: progress
+record:
+  timestamp: 2026-08-10 12:15
+  type: test
+  phase: build
+  what: Reconciled repository-native retirement coverage with the supported checkout-local OpenCode dependency boundary and completed final verification.
+  context:
+    intent: Resolve the accepted audit blocker for final plan task cbmrtbmimj without changing production behavior.
+    constraints: Preserve the prior failed evaluation, ignored user-owned OpenCode state, valid native-runtime retirement coverage, and task in_progress status pending re-evaluation.
+    scope: Repository-native retirement test classification, targeted and full source tests, typecheck, and the exact ten-file simplification sample.
+  discovered: The failed assertion classified .opencode/package.json as retired by path alone. The maintainer verification authority allows an ignored checkout-local npm dependency boundary for @opencode-ai/plugin; git confirms the manifest, lockfile, node_modules, and local .gitignore are ignored while only maintainer skills are tracked under .opencode. The historical tracked manifest was an Agentera retired-native distribution descriptor, but the current ignored manifest contains only the supported maintainer dependency. The stale path assertion therefore crossed the documented boundary and coupled source verification to user-owned local state.
+  verified: Before correction, pnpm -C packages/cli exec vp test run --reporter=default test/cli/repositoryNativeRetirement.test.ts reproduced 1 failed/7 passed because .opencode/package.json existed. After the test-only correction, the same command passed 1 file/8 tests. pnpm -C packages/cli test passed 228 files with 3431 tests passed and 1 skipped in 283.44s. pnpm -C packages/cli run typecheck passed. The exact ten-file command passed 10 files/94 tests in 10.19s with 16.30s aggregate test time. No production code, ignored OpenCode state, retirement implementation path, timing gate, task status, or evaluation verdict changed.
+  next: Keep task cbmrtbmimj in_progress with its prior evaluator FAIL preserved; submit this bounded correction and evidence for re-evaluation.
+  publication_order: 125

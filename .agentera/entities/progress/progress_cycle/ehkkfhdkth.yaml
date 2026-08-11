@@ -1,0 +1,15 @@
+id: ehkkfhdkth
+artifact: progress
+record:
+  timestamp: 2026-08-10 10:57
+  type: test
+  phase: build
+  what: Made the five reviewed focused tests decisive and nonredundant without changing production behavior.
+  context:
+    intent: Execute plan task opphhvqohs for plan uqqfojmzbv.
+    constraints: Test-only changes. Preserve success and failure coverage, leave the task in progress pending evaluator PASS, and do not change production behavior, dependencies, release metadata, docs, or changelog.
+    scope: Threshold classification, upgrade verification rendering, bundle-status divergence, glossary admission, and lifecycle protocol tests.
+  discovered: Direct VerifyResult fixtures isolate pure JSON and text rendering while existing verifyUpgrade integration tests retain end-to-end coverage. A result assertion proves corrupt-manifest admission returns rather than throws.
+  verified: The focused five-file Vitest run passed 47 tests. The repeated threshold fixture now has two self_audit.verbosity events and asserts one repeated false-positive category plus consider_minimal_threshold_or_diagnostic_change; its single-event case asserts no_threshold_change_yet. Renderer coverage uses direct failing JSON and passing text results. Bundle-status retains outdated and matching cases, glossary admission retains admitted and corrupt cases, and lifecycle protocol retains marker-absent and static-discovery cases. The related 11-file source-area run passed 81 tests, and TypeScript typecheck passed.
+  next: Await evaluator PASS before the orchestrator marks task opphhvqohs complete.
+  publication_order: 121

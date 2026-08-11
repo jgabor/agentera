@@ -1,0 +1,31 @@
+id: esmykkbzgs
+artifact: health
+record:
+  date: 2026-08-10
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-plan closure for uqqfojmzbv passed. All four tasks are complete with latest PASS evaluations. The final task preserves one failed attempt followed by a bounded corrective PASS. This is not a codebase-wide health assessment.
+      findings:
+        []
+  trends:
+    comparison_target: Plan uqqfojmzbv delegated artifacts and terminal verification
+    improved: Sample timing is below the recorded baseline without a timing gate.
+    degraded: None in this limited scope.
+    new_findings: None.
+    resolved: The checkout-local OpenCode dependency assertion no longer blocks source verification.
+    carried_forward: Decision, vision, and profile detail remain deferred; broader health and release readiness are outside scope.
+  patterns:
+    - Preserve failed evaluations while recording bounded PASS corrections.
+    - Keep terminal-plan artifact freshness distinct from codebase-wide health.
+  appended_at: 2026-08-10T10:24:46.803Z

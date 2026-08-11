@@ -1,0 +1,23 @@
+id: yehvffmpqd
+artifact: plan
+record:
+  name: Simplify lifecycle repository inventory coverage
+  depends_on:
+    - ypdtaatnyq
+  status: complete
+  acceptance:
+    - GIVEN the resolved repository-surface boundary WHEN lifecycle markers are scanned THEN every required candidate is classified.
+    - GIVEN generated, secret, linked, or nonregular surfaces WHEN inventory runs THEN excluded content is not treated as contract evidence.
+    - GIVEN known lifecycle readers, writers, adapters, fixtures, and schemas WHEN classification runs THEN each remains assigned to its declared family.
+    - GIVEN the inventory mechanism WHEN its tests are reviewed THEN coverage focuses on one passing and one failing contract case rather than testing a second general-purpose filesystem product.
+  plan: uqqfojmzbv
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-yehvffmpqd-1
+      source: orchestrate evaluator for task yehvffmpqd
+      recorded_at: 2026-08-10 11:47
+      writer_command: agentera state plan record-evaluation

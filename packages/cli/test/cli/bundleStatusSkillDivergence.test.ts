@@ -77,7 +77,7 @@ describe("bundle-status skill-root divergence detection (D78)", () => {
     expect(divergence).toHaveLength(1);
     expect(divergence[0]?.actual).toBe("2.7.11");
     expect(divergence[0]?.expected).toBe("3.0.0");
-    expect(divergence[0]?.message).toContain(path.join(".agents", "skills", "agentera"));
+    expect(divergence[0]?.message).toContain(path.join(home, ".agents", "skills", "agentera"));
   });
 
   it("leaves status unchanged when the agent-compatible root matches expected", () => {
@@ -105,20 +105,5 @@ describe("bundle-status skill-root divergence detection (D78)", () => {
 
     const divergence = status.signals.filter((s) => s.kind === "skill_root_divergence");
     expect(divergence).toHaveLength(0);
-  });
-
-  it("flags the agent-compatible root the doctor lists as default-skill-root (consistency)", () => {
-    const appHome = process.env.AGENTERA_HOME as string;
-    managedV2(appHome);
-    const project = path.join(tmp, "proj-consistency");
-    fs.mkdirSync(project, { recursive: true });
-    process.chdir(project);
-    writeSkill(path.join(home, ".agents", "skills", "agentera"), "2.7.11");
-
-    const status = statusBundleStatus({ home, installRoot: appHome, env: process.env });
-
-    const divergence = status.signals.filter((s) => s.kind === "skill_root_divergence");
-    expect(divergence).toHaveLength(1);
-    expect(divergence[0]?.message).toContain(path.join(home, ".agents", "skills", "agentera"));
   });
 });

@@ -1,0 +1,15 @@
+id: nrslyfxxww
+artifact: progress
+record:
+  timestamp: 2026-08-10 11:42
+  type: test
+  phase: build
+  what: Replaced the lifecycle contract test's bespoke recursive scanner and six scanner-specific cases with repository inventory plus one passing and one failing contract case.
+  context:
+    intent: Execute plan task yehvffmpqd for plan uqqfojmzbv.
+    constraints: Test-only. Preserve the declared repository boundary, explicit exclusions, family assignments, and in-progress task status until evaluator PASS.
+    scope: Plan lifecycle repository inventory coverage in packages/cli/test/state/planLifecycleContract.test.ts.
+  discovered: Ignored untracked files remain inside the declared boundary. The authority requires every marker-bearing file under scan.roots unless an explicit lifecycle exclusion applies; Git ignore rules are not such an exclusion. Therefore tracked plus nonignored untracked inventory is insufficient. The replacement uses git ls-files --cached --others without --exclude-standard, then applies the authority's directory and path exclusions and admits only present regular files. A Git fixture proves an ignored untracked marker is still classified while generated, secret, linked, and socket surfaces are not read as evidence.
+  verified: The focused Vitest run passed 1 file/4 tests. Its main live-repository classification took 3.581s versus the recorded 4.796s baseline, with no timing gate; overall focused wall time was 11.136s. The related planLifecycleMigration run passed 1 file/3 tests. TypeScript typecheck passed. Targeted lint reported 0 warnings and 0 errors. The live case retained readers, writers, migrators, adapters, fixtures, and schemas and found no unclassified marker-bearing candidate.
+  next: Await evaluator PASS before changing task yehvffmpqd from in_progress.
+  publication_order: 123

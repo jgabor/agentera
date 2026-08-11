@@ -1,0 +1,25 @@
+id: cbmrtbmimj
+artifact: plan
+record:
+  name: Verify outcomes and synchronize current state
+  depends_on:
+    - opphhvqohs
+    - ypdtaatnyq
+    - yehvffmpqd
+  status: complete
+  acceptance:
+    - GIVEN all changed areas WHEN targeted verification runs THEN every affected test passes.
+    - GIVEN the complete source suite and type checker WHEN authoritative commands run THEN both pass without weakened policy.
+    - GIVEN comparable before-and-after sampled runs WHEN results are reviewed THEN wall time, aggregate test time, and remaining hotspots are recorded without becoming machine-sensitive gates.
+    - GIVEN verified completion WHEN project state is synchronized THEN plan, progress, and any related findings accurately reflect the delivered work.
+  plan: uqqfojmzbv
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: pnpm -C packages/cli test fails repositoryNativeRetirement because ignored .opencode/package.json exists; implementation range does not touch either surface
+    provenance:
+      attempt_id: audit-cbmrtbmimj-2
+      source: orchestrate evaluator for task cbmrtbmimj
+      recorded_at: 2026-08-10 12:20
+      writer_command: agentera state plan record-evaluation

@@ -10,6 +10,7 @@ import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMaj
 import { main } from "../../src/cli/dispatch.js";
 import {
   renderVerifySummary,
+  type VerifyResult,
   verifyOneWayUpgrade,
   verifyUpgrade,
 } from "../../src/cli/commands/upgradeVerify.js";
@@ -114,11 +115,10 @@ describe("verifyUpgrade", () => {
 
 describe("renderVerifySummary", () => {
   it("emits a JSON envelope when json=true", () => {
-    const result = verifyUpgrade({
-      installRoot: path.join(tmp, "missing-json"),
-      home,
-      expectedVersion: "3.0.0",
-    });
+    const result: VerifyResult = {
+      passed: false,
+      checks: [{ name: "doctor", passed: false, detail: "signals=1" }],
+    };
 
     const summary = renderVerifySummary(result, true);
     const parsed = JSON.parse(summary) as {
@@ -126,20 +126,17 @@ describe("renderVerifySummary", () => {
       status: string;
       checks: Array<{ name: string; passed: boolean; detail: string }>;
     };
-    expect(parsed.command).toBe("upgrade --verify");
-    expect(parsed.status).toBe("failed");
-    expect(Array.isArray(parsed.checks)).toBe(true);
-    expect(parsed.checks.length).toBeGreaterThan(0);
+    expect(parsed).toEqual({ command: "upgrade --verify", status: "failed", checks: result.checks });
   });
 
   it("emits a text summary with a status line and per-check rows", () => {
-    const appHome = path.join(tmp, "ok-text");
-    managedV3(appHome, "3.0.0");
-    const result = verifyUpgrade({
-      installRoot: appHome,
-      home,
-      expectedVersion: "3.0.0",
-    });
+    const result: VerifyResult = {
+      passed: true,
+      checks: [
+        { name: "doctor", passed: true, detail: "signals=0" },
+        { name: "prime --context status", passed: true, detail: "schema_error: null" },
+      ],
+    };
 
     const summary = renderVerifySummary(result, false);
     expect(summary).toContain("Agentera verify");
