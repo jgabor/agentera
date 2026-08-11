@@ -1,0 +1,24 @@
+id: qgsdjilvll
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-08-11
+    status: complete
+    title: "Plan: Simplify bootstrap command-authority inventory verification"
+  what: Remove aggregate census calculation and every assertion tied to the changing size of the live repository corpus while preserving semantic diagnostics, exact declaration validation, generated-surface checks, producer discovery, and source/package parity.
+  why: Compliant documentation, schema, changelog, and source changes should not fail commits merely because repository-wide totals changed. The semantic checks enforce the command-authority contract more precisely than aggregate counts.
+  constraints: Preserve fail-closed command-authority behavior. Do not change production CLI behavior, package contents, command grammar, registry declarations, or package parity. Do not replace the census with another repository-wide snapshot or manifest. Reuse the existing semantic and mutation tests without adding a new scanner fixture. Keep related state changes in the substantive implementation commit.
+  overall_acceptance: GIVEN the simplification is complete WHEN normal repository changes and deliberate policy mutations are tested THEN compliant cardinality changes pass while command-authority violations continue to fail.
+  scope:
+    included:
+      - Census result types and accumulation.
+      - Exact live counts for source, generated, and emitted records; declarations and categories; producer classifications; and migration-selected declarations.
+      - Mutation expectations derived from selected test data instead of hardcoded totals.
+    excluded:
+      - Invocation discovery and classification rules.
+      - Stable-channel authority and scalar declarations.
+      - Generated-file contracts and producer-closure semantics.
+      - Packaging construction and unrelated cleanup.
+  surprises:
+    []

@@ -79,18 +79,6 @@ export interface ScalarClassificationDeclaration {
   reason: string;
 }
 
-export interface BootstrapAuthorityCensus {
-  scanned_scalars: number;
-  invocation_occurrences: number;
-  canonical_development: number;
-  stable_pair: number;
-  noncanonical_occurrences: number;
-  noncanonical_scalars: number;
-  noncanonical_categories: Record<ScalarClassificationCategory, number>;
-  classification_uses: Record<ScalarClassificationKind, number>;
-  backticked_argument_contexts: number;
-}
-
 interface ScalarSurface {
   sourcePath: string;
   region: string;
@@ -123,7 +111,6 @@ export interface AuthorityScanResult {
     occurrence_count: number;
   }>;
   usedDeclarations: Set<string>;
-  census: BootstrapAuthorityCensus;
 }
 
 const STABLE_HEADING = "## Stable v2 line";
@@ -892,20 +879,6 @@ function stableInvocationAuthority(sourcePath: string, content: string, spans: r
   return { allowed, diagnostics: [] };
 }
 
-function emptyCensus(): BootstrapAuthorityCensus {
-  return {
-    scanned_scalars: 0,
-    invocation_occurrences: 0,
-    canonical_development: 0,
-    stable_pair: 0,
-    noncanonical_occurrences: 0,
-    noncanonical_scalars: 0,
-    noncanonical_categories: { identity_only: 0, argument_bearing: 0, other_vocabulary: 0 },
-    classification_uses: { bounded_descriptive: 0, exact_exemption: 0 },
-    backticked_argument_contexts: 0,
-  };
-}
-
 export function scanBootstrapAuthority(
   sourcePath: string,
   content: string,
@@ -930,17 +903,14 @@ export function scanBootstrapAuthority(
   const spans: InvocationSpan[] = [];
   const classifications: AuthorityScanResult["classifications"] = [];
   const usedDeclarations = new Set<string>();
-  const census = emptyCensus();
   const byKey = new Map(declarations.filter(({ path }) => path === sourcePath).map((entry) => [declarationKey(entry.path, entry.region), entry]));
   const discovered = parsed.surfaces.map((surface) => ({ surface, spans: discoverInvocationSpans(surface) }));
   const stableAuthority = stableInvocationAuthority(sourcePath, content, discovered.flatMap(({ spans: entries }) => entries));
   diagnostics.push(...stableAuthority.diagnostics);
 
   for (const { surface, spans: scalarSpans } of discovered) {
-    census.scanned_scalars += 1;
     if (scalarSpans.length === 0) continue;
     spans.push(...scalarSpans);
-    census.invocation_occurrences += scalarSpans.length;
     const declaration = byKey.get(declarationKey(sourcePath, surface.region));
     const digest = normalizedScalarSha256(surface.value);
     const category = scalarCategory(surface, scalarSpans);
@@ -948,13 +918,6 @@ export function scanBootstrapAuthority(
     const isMeasuredScalar = noncanonical.length > 0;
     const intrinsicallyClassified = noncanonical.every((span) => whollyNegated(surface, span)
       || boundedDescriptive(surface, span) || stableVocabulary(surface, span));
-    if (isMeasuredScalar) {
-      census.noncanonical_scalars += 1;
-      census.noncanonical_occurrences += noncanonical.length;
-      census.noncanonical_categories[category] += 1;
-      census.backticked_argument_contexts += noncanonical.filter((span) => span.traits.backticked && span.traits.argument_bearing && !whollyNegated(surface, span)).length;
-    }
-
     let declarationUsable = false;
     if (declaration) {
       const key = declarationKey(declaration.path, declaration.region);
@@ -965,7 +928,6 @@ export function scanBootstrapAuthority(
       else declarationUsable = true;
       if (declarationUsable) {
         usedDeclarations.add(key);
-        census.classification_uses[declaration.classification] += 1;
       }
     } else if (requireDeclarations && isMeasuredScalar && !intrinsicallyClassified) {
       diagnostics.push({
@@ -980,12 +942,10 @@ export function scanBootstrapAuthority(
     let scalarClass: AuthorityScanResult["classifications"][number]["classification"] = "rejected";
     for (const span of scalarSpans) {
       if (stableAuthority.allowed.has(span.identity)) {
-        census.stable_pair += 1;
         scalarClass = "stable_pair";
         continue;
       }
       if (exactDevelopment(span) || developmentVocabulary(surface, span)) {
-        census.canonical_development += 1;
         scalarClass = "canonical_development";
         continue;
       }
@@ -1025,7 +985,7 @@ export function scanBootstrapAuthority(
       occurrence_count: scalarSpans.length,
     });
   }
-  return { diagnostics, spans, classifications, usedDeclarations, census };
+  return { diagnostics, spans, classifications, usedDeclarations };
 }
 
 export const NEGATION_GRAMMAR_PRODUCTION_COUNT = NEGATION_PRODUCTIONS.length;

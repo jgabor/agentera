@@ -1,0 +1,14 @@
+id: ykyuivfwth
+artifact: plan
+record:
+  name: Simplify command-authority verification
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a compliant corpus change alters repository-wide totals WHEN command-authority tests run THEN no test fails solely because scalar, invocation, record, declaration, or producer counts changed.
+    - GIVEN malformed, unsafe, missing, stale, unused, or unclassified command guidance WHEN semantic validation runs THEN the existing specific diagnostic still rejects it.
+    - GIVEN generated declarations, producer classifications, or extracted package inventory drift from source WHEN parity checks run THEN verification still fails with the applicable semantic violation.
+    - GIVEN census-based assertions are removed WHEN the test helpers are inspected THEN no unused census type, accumulator, merge logic, counter update, or result property remains.
+    - GIVEN implementation is complete WHEN verification runs from narrow to broad THEN the targeted policy test, CLI source suite, typecheck, and package boundary pass.
+  plan: qgsdjilvll

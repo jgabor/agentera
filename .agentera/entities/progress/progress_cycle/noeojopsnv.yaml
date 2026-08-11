@@ -1,0 +1,17 @@
+id: noeojopsnv
+artifact: progress
+record:
+  timestamp: 2026-08-11 21:45
+  type: refactor
+  phase: build
+  what: Simplified bootstrap command-authority verification in packages/cli/test/helpers/invocationSpanPolicy.ts and its inventory/parity tests by removing aggregate census machinery and live repository cardinality assertions.
+  context:
+    intent: Remove repository-cardinality coupling without weakening command-authority enforcement.
+    constraints: Preserve diagnostics, declaration validation, generated checks, producer discovery, and package parity; add no replacement snapshot or fixture.
+    unknowns: None remain after audit confirmed the removed counters were aggregation-only.
+    scope: Test helpers, command-authority policy tests, package parity assertions, changelog, and typed plan/progress closeout.
+  inspiration: Preserve the semantic authority while deleting duplicate aggregate proof that repeatedly failed compliant commits.
+  discovered: Package verification retained one additional fixed inventory-size assertion after the initial implementation; audit identified it and the bounded correction removed it while preserving exact parity.
+  verified: Targeted policy verification passed 194 tests; the full CLI source suite passed 3,448 tests with one skip; typecheck passed; package verification passed 38 tests; the corrected package test passed 30 tests; diff checks and residual census/count searches passed.
+  next: The selected plan task is complete; retain semantic diagnostics, mutation coverage, and exact package parity as the command-authority gate.
+  publication_order: 130

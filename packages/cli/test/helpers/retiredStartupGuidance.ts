@@ -6,7 +6,6 @@ import ts from "@typescript/typescript6";
 
 import {
   scanBootstrapAuthority,
-  type BootstrapAuthorityCensus,
   type BootstrapAuthorityDiagnostic,
   type ScalarClassificationDeclaration,
 } from "./invocationSpanPolicy.js";
@@ -20,7 +19,6 @@ export {
   STABLE_COMMANDS,
 } from "./invocationSpanPolicy.js";
 export type {
-  BootstrapAuthorityCensus,
   BootstrapAuthorityDiagnostic,
   BootstrapAuthorityLocation,
   InvocationSpan,
@@ -69,7 +67,6 @@ export interface BootstrapAuthorityInventoryRecord {
 export interface BootstrapAuthorityInventory {
   records: BootstrapAuthorityInventoryRecord[];
   diagnostics: BootstrapAuthorityDiagnostic[];
-  census: BootstrapAuthorityCensus;
   scalarDeclarations: string[];
 }
 
@@ -87,36 +84,6 @@ export function preCutoverBootstrapGuidanceViolations(content: string): string[]
 /** Compatibility projection for one registry-owned source. */
 export function preCutoverBootstrapAuthorityViolations(relativePath: string, content: string): string[] {
   return [...new Set(preCutoverBootstrapAuthorityDiagnostics(relativePath, content).map(({ violation }) => violation))];
-}
-
-function emptyCensus(): BootstrapAuthorityCensus {
-  return {
-    scanned_scalars: 0,
-    invocation_occurrences: 0,
-    canonical_development: 0,
-    stable_pair: 0,
-    noncanonical_occurrences: 0,
-    noncanonical_scalars: 0,
-    noncanonical_categories: { identity_only: 0, argument_bearing: 0, other_vocabulary: 0 },
-    classification_uses: { bounded_descriptive: 0, exact_exemption: 0 },
-    backticked_argument_contexts: 0,
-  };
-}
-
-function mergeCensus(target: BootstrapAuthorityCensus, source: BootstrapAuthorityCensus): void {
-  target.scanned_scalars += source.scanned_scalars;
-  target.invocation_occurrences += source.invocation_occurrences;
-  target.canonical_development += source.canonical_development;
-  target.stable_pair += source.stable_pair;
-  target.noncanonical_occurrences += source.noncanonical_occurrences;
-  target.noncanonical_scalars += source.noncanonical_scalars;
-  target.backticked_argument_contexts += source.backticked_argument_contexts;
-  for (const category of ["identity_only", "argument_bearing", "other_vocabulary"] as const) {
-    target.noncanonical_categories[category] += source.noncanonical_categories[category];
-  }
-  for (const classification of ["bounded_descriptive", "exact_exemption"] as const) {
-    target.classification_uses[classification] += source.classification_uses[classification];
-  }
 }
 
 function collectFiles(root: string, relativePath: string, files: Set<string>, diagnostics: BootstrapAuthorityDiagnostic[]): void {
@@ -290,7 +257,6 @@ export function registryBootstrapAuthorityInventory(
 ): BootstrapAuthorityInventory {
   const diagnostics: BootstrapAuthorityDiagnostic[] = [];
   const records: BootstrapAuthorityInventoryRecord[] = [];
-  const census = emptyCensus();
   const registryAuthorityPath = "references/adapters/package-registry.yaml";
   const record = registryRecord(root, packaged, packaged ? undefined : overrides.get(registryAuthorityPath));
   const declarations = scalarDeclarations(record, diagnostics);
@@ -309,7 +275,6 @@ export function registryBootstrapAuthorityInventory(
       const content = overrides.get(authorityPath) ?? fs.readFileSync(path.join(root, inventoryPath), "utf8");
       const scan = scanBootstrapAuthority(authorityPath, content, declarations, requireDeclarations);
       diagnostics.push(...scan.diagnostics.map((item) => ({ ...item, path: inventoryPath })));
-      mergeCensus(census, scan.census);
       for (const key of scan.usedDeclarations) usedDeclarations.add(key);
     } else {
       records.push({ path: inventoryPath, surface: packaged ? "bundle" : "source", classification: "reason_classified", reason: "" });
@@ -349,7 +314,6 @@ export function registryBootstrapAuthorityInventory(
     if (fs.existsSync(path.join(root, packagedPath))) {
       const scan = scanBootstrapAuthority(packagedPath, fs.readFileSync(path.join(root, packagedPath), "utf8"));
       diagnostics.push(...scan.diagnostics);
-      mergeCensus(census, scan.census);
     }
   }
 
@@ -385,7 +349,7 @@ export function registryBootstrapAuthorityInventory(
     if (!nonProducer.reason) diagnostics.push({ path: String(nonProducer.path), location: { structured_path: "$" }, candidate: null, violation: "constructor_non_producer_unclassified", correction: "Add a non-empty inspectable non-producer reason." });
     if (producerEntries.some((producer: any) => String(producer.path) === String(nonProducer.path))) diagnostics.push({ path: String(nonProducer.path), location: { structured_path: "$" }, candidate: null, violation: "constructor_module_duplicate_classification", correction: "Classify each constructor-closure module exactly once." });
   }
-  return { records, diagnostics, census, scalarDeclarations: declarations.map((entry) => JSON.stringify(entry)).sort() };
+  return { records, diagnostics, scalarDeclarations: declarations.map((entry) => JSON.stringify(entry)).sort() };
 }
 
 function normalizedInventoryRecord(record: BootstrapAuthorityInventoryRecord): string {
