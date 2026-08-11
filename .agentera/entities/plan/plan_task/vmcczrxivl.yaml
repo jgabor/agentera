@@ -1,0 +1,28 @@
+id: vmcczrxivl
+artifact: plan
+record:
+  plan: lsftqiwiki
+  name: Coordinate release readiness with one execution per gate, waiver accepted
+  status: complete
+  depends_on:
+    - tsfaddhsrz
+    - mpkjepcfsb
+    - hiealiomfd
+  acceptance:
+    - GIVEN a normal development release WHEN readiness runs THEN each source owner and candidate construction executes once.
+    - GIVEN valid source or candidate receipts WHEN readiness resumes THEN evidence is reused; stale or mismatched evidence fails before effects.
+    - GIVEN the metadata review boundary WHEN coordination pauses and resumes THEN no automatic commit, approval, artifact rebuild, or registry mutation occurs.
+    - GIVEN coordinator paths WHEN tested THEN fresh, reused, and rejected evidence each has an explicit result.
+  evidence:
+    - Original task itaydxofpc passed all functional acceptance criteria and agent-native behavior checks; its remaining failure was only generated-overlap package owner time, 23,194 ms against a 20,000 ms governed budget.
+    - On 2026-08-11 the user explicitly waived that approximately 3 second budget overrun as not meaningful enough to force replan or refactoring.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-itaydxofpc-user-waiver-2026-08-11
+      source: user-waiver:2026-08-11:original=itaydxofpc:acceptance=4/4-pass:agent-native=pass:only-failure=generated-overlap-23194ms-vs-20000ms:budget-delta-waived:effects=none
+      recorded_at: 2026-08-11 19:39
+      writer_command: agentera state plan record-evaluation

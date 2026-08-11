@@ -262,6 +262,16 @@ function receiptPath(directory, name) {
   return path.join(directory, name);
 }
 
+function containedRegularReceipt(directory, filename, label) {
+  const file = receiptPath(directory, filename);
+  if (!fs.existsSync(file)) throw new Error(`${label} is missing from the external candidate directory`);
+  const stat = fs.lstatSync(file);
+  if (!stat.isFile() || stat.isSymbolicLink() || path.dirname(fs.realpathSync(file)) !== directory) {
+    throw new Error(`${label} must be a regular file inside the external candidate directory`);
+  }
+  return file;
+}
+
 function readJson(file, label) {
   let parsed;
   try {
@@ -1103,12 +1113,7 @@ export function validateSourceReceipt(options = {}) {
 export function checkSourceReceipt(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo, false);
-  const file = receiptPath(candidateDirectory, "source-receipt.json");
-  if (!fs.existsSync(file)) throw new Error("source receipt is missing from the external candidate directory");
-  const stat = fs.lstatSync(file);
-  if (!stat.isFile() || stat.isSymbolicLink() || path.dirname(fs.realpathSync(file)) !== candidateDirectory) {
-    throw new Error("source receipt must be a regular file inside the external candidate directory");
-  }
+  const file = containedRegularReceipt(candidateDirectory, "source-receipt.json", "source receipt");
   const receipt = validateSourceReceipt({
     ...options,
     repo,
@@ -1121,10 +1126,10 @@ export function checkSourceReceipt(options = {}) {
 function ensureRegularArtifact(directory, filename) {
   if (path.basename(filename) !== filename) throw new Error("candidate artifact filename must not contain a path");
   const artifact = path.join(directory, filename);
+  const stat = fs.lstatSync(artifact);
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("candidate artifact must be a regular file");
   const resolved = fs.realpathSync(artifact);
   if (path.dirname(resolved) !== directory) throw new Error("candidate artifact escapes its candidate directory");
-  const stat = fs.lstatSync(resolved);
-  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("candidate artifact must be a regular file");
   return { artifact: resolved, stat };
 }
 
@@ -1340,16 +1345,11 @@ function firstPackEntry(value) {
 function constructCandidatePackage({ repo, adapter, manifest, candidateDirectory, execute }) {
   const packageRoot = path.join(repo, adapter.packagePath);
   if (adapter.construction === "isolatedTypeScriptPackage") {
-    return {
-      dry: executeJson(process.execPath, ["scripts/pack-package.mjs", "--dry-run", "--json"], {
-        cwd: packageRoot,
-        run: execute,
-      }),
-      packed: executeJson(process.execPath, ["scripts/pack-package.mjs", "--output-dir", candidateDirectory, "--json"], {
-        cwd: packageRoot,
-        run: execute,
-      }),
-    };
+    return executeJson(
+      process.execPath,
+      ["scripts/pack-package.mjs", "--output-dir", candidateDirectory, "--with-dry-run", "--json"],
+      { cwd: packageRoot, run: execute },
+    );
   }
   const state = isolatedNpmState("agentera-shim-candidate-", { ignoreScripts: false });
   try {
@@ -1370,6 +1370,61 @@ function constructCandidatePackage({ repo, adapter, manifest, candidateDirectory
   }
 }
 
+function validateCandidateReceiptSemantics(receipt) {
+  if (receipt.schemaVersion !== RECEIPT_SCHEMA) throw new Error("candidate receipt schema is invalid");
+  if (receipt.kind !== "candidate") throw new Error("candidate receipt kind is invalid");
+  const expectedGates = RELEASE_CONTRACT.qualification.candidate.gates;
+  if (
+    !Array.isArray(receipt.gates)
+    || canonicalJson(receipt.gates.map((gate) => gate?.name)) !== canonicalJson(expectedGates)
+  ) {
+    throw new Error("candidate receipt gates must contain the exact governed gate set in order");
+  }
+  for (const gate of receipt.gates) {
+    if (
+      gate.outcome !== "passed"
+      || !Number.isSafeInteger(gate.elapsedMs)
+      || gate.elapsedMs < 0
+      || gate.executed !== "ordered"
+      || gate.reused !== false
+      || (gate.name === "local-exact-artifact-smoke"
+        && (typeof gate.output !== "string" || !gate.output.includes(receipt.version)))
+    ) {
+      throw new Error(`candidate receipt gate '${gate.name}' has invalid execution evidence`);
+    }
+  }
+  const ownerElapsedMs = receipt.gates.reduce((total, gate) => total + gate.elapsedMs, 0);
+  const execution = receipt.execution;
+  if (
+    execution?.strategy !== "ordered-non-overlapping"
+    || !Number.isSafeInteger(execution.elapsedMs)
+    || execution.elapsedMs < 0
+    || !Number.isSafeInteger(execution.ownerElapsedMs)
+    || execution.ownerElapsedMs !== ownerElapsedMs
+    || !Number.isSafeInteger(execution.unattributedElapsedMs)
+    || execution.unattributedElapsedMs < 0
+    || execution.reconciled !== true
+    || execution.ownerElapsedMs + execution.unattributedElapsedMs !== execution.elapsedMs
+  ) {
+    throw new Error("candidate receipt execution timing does not reconcile");
+  }
+  const construction = receipt.artifact?.construction;
+  if (
+    construction?.name !== receipt.package
+    || construction?.version !== receipt.version
+    || !Number.isSafeInteger(construction.fileCount)
+    || construction.fileCount < 1
+    || !Number.isSafeInteger(construction.packedSize)
+    || construction.packedSize !== receipt.artifact?.bytes
+    || !Number.isSafeInteger(construction.unpackedSize)
+    || construction.unpackedSize < 0
+    || typeof construction.shasum !== "string"
+    || construction.shasum.length === 0
+  ) {
+    throw new Error("candidate receipt construction observation is incomplete");
+  }
+}
+
 export function issueCandidateReceipt(options = {}) {
   const clock = options.clock ?? (() => performance.now());
   const candidateStarted = clock();
@@ -1385,9 +1440,8 @@ export function issueCandidateReceipt(options = {}) {
   const metadataCommit = git(["rev-parse", "HEAD"], repo);
   const candidateFile = receiptPath(candidateDirectory, "candidate-receipt.json");
   if (fs.existsSync(candidateFile)) {
-    const existing = validReceiptDigest(readJson(candidateFile, "candidate receipt"), "candidate receipt");
-    validateCandidateReceipt({ candidateDirectory, receipt: existing, adapterName: options.adapterName, repo });
-    return { receipt: existing, reused: true };
+    const existing = validateCandidateReceipt({ candidateDirectory, adapterName: options.adapterName, repo });
+    return { receipt: existing.receipt, reused: true };
   }
 
   const execute = options.run ?? run;
@@ -1515,16 +1569,15 @@ export function validateCandidateReceipt(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo, false);
   const receipt = validReceiptDigest(
-    options.receipt ?? readJson(receiptPath(candidateDirectory, "candidate-receipt.json"), "candidate receipt"),
+    options.receipt ?? readJson(
+      containedRegularReceipt(candidateDirectory, "candidate-receipt.json", "candidate receipt"),
+      "candidate receipt",
+    ),
     "candidate receipt",
   );
-  if (receipt.kind !== "candidate") throw new Error("candidate receipt kind is invalid");
+  validateCandidateReceiptSemantics(receipt);
   const { manifest, adapter } = candidateManifest(options.adapterName ?? receipt.adapter, repo);
-  const storedSource = validReceiptDigest(
-    readJson(receiptPath(candidateDirectory, "source-receipt.json"), "source receipt"),
-    "source receipt",
-  );
-  const source = validateSourceReceipt({ repo, receipt: storedSource, gates: storedSource.component?.gates });
+  const source = checkSourceReceipt({ repo, candidateDirectory });
   if (
     receipt.sourceReceiptSha256 !== source.receiptSha256
     || receipt.adapter !== (options.adapterName ?? receipt.adapter)
@@ -1545,6 +1598,7 @@ export function validateCandidateReceipt(options = {}) {
     receipt.artifact.sha256 !== sha256(bytes)
     || receipt.artifact.integrity !== sha512Integrity(bytes)
     || receipt.artifact.bytes !== bytes.byteLength
+    || receipt.artifact.construction.shasum !== createHash("sha1").update(bytes).digest("hex")
   ) {
     throw new Error("candidate artifact changed after qualification");
   }

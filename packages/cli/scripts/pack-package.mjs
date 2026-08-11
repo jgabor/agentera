@@ -20,6 +20,7 @@ const cache = path.join(temporary, "cache");
 const npmrc = path.join(temporary, "npmrc");
 const globalNpmrc = path.join(temporary, "global-npmrc");
 const dryRun = process.argv.includes("--dry-run");
+const withDryRun = process.argv.includes("--with-dry-run");
 const json = process.argv.includes("--json");
 const verbose = process.argv.includes("--verbose");
 const outputIndex = process.argv.indexOf("--output-dir");
@@ -70,6 +71,9 @@ function npmEnvironment() {
 }
 
 try {
+  if (withDryRun && (dryRun || outputIndex < 0 || !json)) {
+    throw new Error("--with-dry-run requires --output-dir and --json, and cannot be combined with --dry-run");
+  }
   fs.mkdirSync(home, { recursive: true, mode: 0o700 });
   fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
   fs.writeFileSync(npmrc, "", { mode: 0o600, flag: "wx" });
@@ -82,7 +86,45 @@ try {
   run(process.execPath, ["scripts/build-package.mjs", "--output-root", construction], packageRoot);
   const expected = JSON.parse(fs.readFileSync(path.join(construction, "package.json"), "utf8"));
   const expectedTag = expected.publishConfig?.tag ?? "next";
-  if (dryRun) {
+  if (withDryRun) {
+    const { entry: dryEntry, warnings: dryWarnings } = npmPack(
+      ["pack", "--dry-run", "--ignore-scripts"],
+      construction,
+    );
+    const dry = normalizeConstruction(dryEntry, {
+      expectedName: expected.name,
+      expectedVersion: expected.version,
+      expectedTag,
+      warnings: dryWarnings,
+    });
+    const destination = path.join(outputDir, dryEntry.filename);
+    if (fs.existsSync(destination)) {
+      throw new Error(
+        `package artifact already exists at ${destination}; move or remove it and retry`,
+      );
+    }
+    const { entry, warnings } = npmPack(
+      ["pack", "--ignore-scripts", "--pack-destination", temporary],
+      construction,
+    );
+    const tarball = path.join(temporary, entry.filename);
+    const packedDestination = path.join(outputDir, entry.filename);
+    const packed = normalizeConstruction(entry, {
+      expectedName: expected.name,
+      expectedVersion: expected.version,
+      expectedTag,
+      artifact: packedDestination,
+      warnings,
+    });
+    fs.mkdirSync(outputDir, { recursive: true });
+    try {
+      fs.copyFileSync(tarball, packedDestination, fs.constants.COPYFILE_EXCL);
+      process.stdout.write(`${JSON.stringify({ dry, packed })}\n`);
+    } catch (error) {
+      fs.rmSync(packedDestination, { force: true });
+      throw error;
+    }
+  } else if (dryRun) {
     const { entry, warnings } = npmPack(["pack", "--dry-run", "--ignore-scripts"], construction);
     const result = normalizeConstruction(entry, {
       expectedName: expected.name,

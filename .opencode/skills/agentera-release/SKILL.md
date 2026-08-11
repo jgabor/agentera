@@ -78,18 +78,28 @@ It is pure, registry-independent, and changes only package version and
 stale, skipped, malformed, or out-of-policy targets fail before effects. Stable
 preparation retains its separate source-provenance behavior without this receipt.
 
-The contracted GitHub Actions qualification workflow runs the first command on
-the pinned remote runner and uploads the candidate directory. A workstation can
-run performance diagnostics, but cannot issue a new source receipt. Download
-the workflow candidate before running preparation locally.
+Use the resumable readiness coordinator for the normal development sequence.
+Its fresh run can issue source authority only on the contracted GitHub Actions
+runner. It pauses for separate metadata preparation, review, and commit. Resume
+requires the same explicit inputs plus the reviewed metadata commit. It then
+constructs the candidate once or reuses the exact valid candidate receipt and
+bytes. A workstation can run performance diagnostics, but cannot issue a new
+source receipt. This is the coordinator contract; the protected candidate
+handoff workflow must adopt it in a separately governed change before remote
+use.
 
 ```bash
-pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
+pnpm cli:ready:dev -- \
+  --candidate-dir /secure/external/candidate \
+  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT --json
 pnpm cli:prepare:dev -- \
   --candidate-dir /secure/external/candidate \
-  --target-version 3.0.0-dev.N --source-commit COMMIT
+  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT
 # Review and commit packages/cli/package.json.
-pnpm cli:qualify:dev -- --candidate-dir /secure/external/candidate
+pnpm cli:ready:dev -- \
+  --candidate-dir /secure/external/candidate \
+  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT \
+  --metadata-commit METADATA_COMMIT --json
 pnpm cli:approve:dev -- \
   --candidate-dir /secure/external/candidate --approved-by NAME
 pnpm cli:benchmark:qualification -- \
@@ -102,6 +112,9 @@ NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
 
 Preparation, qualification, approval, and publication are separate operations.
 Never infer a version, source commit, candidate directory, approval, or receipt.
+The readiness coordinator never prepares metadata, commits, approves, rebuilds
+a valid candidate, stages bytes, or mutates registry state. `paused` and `ready`
+exit 0; invalid or stale evidence returns `rejected` and exits 1.
 
 ## Qualification contract
 
@@ -126,8 +139,9 @@ node packages/cli/scripts/release-qualification.mjs source-check \
   --candidate-dir /secure/external/candidate --json
 ```
 
-Candidate qualification requires a new external directory. It retains one
-immutable tarball and runs a cold-state local smoke before registry action.
+Candidate qualification reuses the retained external readiness directory. It
+retains one immutable tarball and runs a cold-state local smoke before registry
+action.
 Every mutation requires a separate approval bound to candidate receipt,
 package, version, integrity, registry, and expected tag. CI also requires the
 transferred artifact and CI attestation.
@@ -154,7 +168,7 @@ NPM_TOKEN=... pnpm cli:publish:qualified:stable -- \
   --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
-## Release gates
+## Check-only release gates
 
 Run from the repository root:
 
@@ -172,7 +186,9 @@ pnpm -C packages/cli run pack:dry-run
 
 `verify:release` is the canonical source, stress, performance, capacity, and
 package conjunction. Do not bypass a failing gate or substitute direct package
-commands.
+commands. This diagnostic conjunction is not a step before or after
+`cli:ready:dev` in a normal candidate-readiness run because that would repeat
+owners that the coordinator already executes once.
 
 ## Changelog and commit boundary
 

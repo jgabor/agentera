@@ -45,31 +45,57 @@ machine-readable authority is
 It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
-Development preparation is pure. It does not read npm, rerun source gates, or
-create a package. The contracted GitHub Actions qualification workflow issues
-the source receipt on the pinned remote runner and uploads the external
-candidate directory. A workstation can run performance diagnostics, but cannot
-issue new source authority. Download that candidate directory, then supply it,
-the next allowed target version, and the immutable source commit. The first
-command below is the exact workflow-owned source command:
+Development readiness is a resumable repository operation. The coordinator
+accepts an explicit external candidate directory, target version, and source
+commit. On the contracted GitHub Actions source runner, a fresh run executes
+the source evidence DAG once, writes the existing source receipt, and exits 0
+with `outcome: "paused"`. A workstation can run performance diagnostics, but
+cannot issue new source authority. A valid downloaded source receipt is reused
+without running an owner. This defines the coordinator contract. The protected
+candidate handoff workflow must adopt it in a separately governed change before
+maintainers use this sequence remotely.
 
 ```bash
-pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
+pnpm cli:ready:dev -- \
+  --candidate-dir /secure/external/candidate \
+  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT --json
+# outcome: paused; state: awaiting_metadata_review
+
 pnpm cli:prepare:dev -- \
   --candidate-dir /secure/external/candidate \
-  --target-version 3.0.0-dev.N --source-commit COMMIT
+  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT
+# Review and commit packages/cli/package.json separately.
+
+pnpm cli:ready:dev -- \
+  --candidate-dir /secure/external/candidate \
+  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT \
+  --metadata-commit METADATA_COMMIT --json
+# outcome: ready; state: ready_for_approval
+
 pnpm cli:prepare:dev -- \
   --candidate-dir /secure/external/candidate \
-  --target-version 3.0.0-dev.N --source-commit COMMIT --check
+  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT --check
 ```
 
-Only `packages/cli/package.json#version` and `agentera.gitRef` can change. The
-same target is a no-op. A stale, skipped, malformed, or out-of-policy target
-fails before effects. A missing, stale, malformed, or tampered source receipt
-also fails before metadata changes. Review and commit the diff; preparation
-never infers a version, reads the registry, or loads `.env` credentials. Stable
-shim preparation retains its separate source-provenance check and does not use
-the development receipt.
+The readiness coordinator never prepares metadata, commits, approves, rebuilds
+a valid candidate, stages publication bytes, loads registry credentials, or
+reads or mutates registry state. The metadata review is a hard pause. Resume
+requires the same explicit inputs plus a clean current `HEAD` equal to
+`--metadata-commit`. It validates the existing source receipt, then constructs
+the candidate once or validates and reuses the exact existing candidate receipt
+and retained bytes. Stale or mismatched evidence exits 1 before an issuance
+owner starts. The candidate directory can be absent or empty for a fresh source
+run; after that it is retained input and must not be replaced.
+
+Preparation remains pure. Only `packages/cli/package.json#version` and
+`agentera.gitRef` can change. The same target is a no-op. A stale, skipped,
+malformed, or out-of-policy target fails before effects. A missing, stale,
+malformed, or tampered source receipt also fails before metadata changes.
+Preparation never infers a version, reads the registry, or loads `.env`
+credentials. Stable shim preparation retains its separate source-provenance
+check and does not use the development receipt. `cli:qualify:source` and
+`cli:qualify:dev` remain the exact low-level receipt owners; normal development
+readiness invokes their underlying owners only through the coordinator.
 
 Source qualification runs one evidence DAG. Batch A starts generated-overlap,
 stress, and typecheck together with separate HOME, cache, npm configs, and
@@ -187,11 +213,10 @@ release qualification. `source-check` remains available for direct read-only
 diagnosis and as the development-preparation prerequisite. Missing, stale,
 malformed, or tampered evidence fails before metadata effects.
 
-After committing the prepared metadata, qualify and approve the candidate from
-the same external directory:
+After readiness returns `ready`, approval remains a separate explicit operation
+against the same external directory:
 
 ```bash
-pnpm cli:qualify:dev -- --candidate-dir /secure/external/candidate
 pnpm cli:approve:dev -- --candidate-dir /secure/external/candidate --approved-by NAME
 ```
 
@@ -372,8 +397,8 @@ performance, and capacity evidence without standalone duplicate steps. Release
 gates add metadata and dry-run publication checks while using the same package
 construction path rather than adding another extracted-package matrix.
 
-Run the complete non-publishing release-readiness conjunction from the
-repository root:
+For check-only diagnosis, run the complete non-publishing release conjunction
+from the repository root:
 
 ```bash
 pnpm -C packages/cli run verify:release
@@ -386,6 +411,10 @@ node packages/cli/dist/bin/agentera.js check validate \
   release-metadata --format json
 pnpm -C packages/cli run pack:dry-run
 ```
+
+This diagnostic conjunction is not a step before or after `cli:ready:dev` in a
+normal candidate-readiness run. Doing both would repeat owners that the
+coordinator already executes once.
 
 `verify:release` runs that same eleven-gate source-qualification DAG against the
 current source tree, including dirty or staged work, in check-only mode. It

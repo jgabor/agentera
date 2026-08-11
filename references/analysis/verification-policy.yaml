@@ -230,6 +230,7 @@ conservative_routing:
     - packages/cli/scripts/reject-direct-prepack.mjs
     - packages/cli/scripts/publication-transaction.mjs
     - packages/cli/scripts/release-qualification.mjs
+    - packages/cli/scripts/release-readiness.mjs
     - packages/cli/scripts/release-benchmark.mjs
     - packages/cli/src/validate/activationConjunction.ts
     - packages/cli/src/validate/activationArtifactEvidence.ts

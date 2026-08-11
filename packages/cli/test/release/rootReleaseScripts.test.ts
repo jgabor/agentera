@@ -50,6 +50,7 @@ describe("root release script argument forwarding", () => {
       ["publication-transaction.mjs", "prepare", "development", "--target-version", "3.0.0-dev.43", "--source-commit", "0".repeat(40), "--candidate-dir", candidate, "--check", "--unexpected"],
       ["release-qualification.mjs", "verify", "--unexpected"],
       ["release-qualification.mjs", "source", "--candidate-dir", candidate, "--unexpected"],
+      ["release-readiness.mjs", "development", "--candidate-dir", candidate, "--target-version", "3.0.0-dev.43", "--source-commit", "0".repeat(40), "--unexpected"],
       ["release-qualification.mjs", "candidate", "--adapter", "development", "--candidate-dir", candidate, "--unexpected"],
       ["release-qualification.mjs", "approval", "--adapter", "development", "--candidate-dir", candidate, "--approved-by", "test", "--unexpected"],
       ["release-benchmark.mjs", "qualification", "--adapter", "development", "--candidate-root", benchmark, "--unexpected"],
@@ -251,6 +252,10 @@ describe("root release script argument forwarding", () => {
       boolean: ["--json", "--verbose"],
       value: ["--candidate-dir", "--adapter"],
     };
+    const readiness = {
+      boolean: ["--json"],
+      value: ["--candidate-dir", "--target-version", "--source-commit", "--metadata-commit"],
+    };
     const approval = {
       boolean: qualification.boolean,
       value: [...qualification.value, "--approved-by", "--source-run-id"],
@@ -271,6 +276,7 @@ describe("root release script argument forwarding", () => {
       ["cli:prepare:dev", prepareDevelopment, ["--", "--candidate-dir", "/external/candidate", "--target-version", "next", "--source-commit", "commit", "--json"]],
       ["cli:prepare:stable", prepareStable, ["--", "--target-version", "next", "--source-commit", "commit", "--json"]],
       ["cli:qualify:source", qualification, ["--", "--candidate-dir", "/external/candidate", "--json"]],
+      ["cli:ready:dev", readiness, ["--", "--candidate-dir", "/external/candidate", "--target-version", "next", "--source-commit", "commit", "--json"]],
       ["cli:qualify:dev", qualification, ["--adapter", "development", "--", "--candidate-dir", "/external/candidate", "--json"]],
       ["cli:approve:dev", approval, ["--adapter", "development", "--", "--candidate-dir", "/external/candidate", "--approved-by", "test", "--json"]],
       ["cli:benchmark:qualification", qualificationBenchmark, ["--", "--adapter", "development", "--candidate-root", "/external/benchmark", "--json"]],

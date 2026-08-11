@@ -44,6 +44,7 @@
     "pack:dry-run": "node scripts/pack-package.mjs --dry-run",
     "release:prepare": "node scripts/publication-transaction.mjs prepare development",
     "release:qualify:source": "node scripts/release-qualification.mjs source",
+    "release:ready": "node scripts/release-readiness.mjs development",
     "release:qualify:candidate": "node scripts/release-qualification.mjs candidate --adapter development",
     "release:approve": "node scripts/release-qualification.mjs approval --adapter development",
     "release:attest": "node scripts/release-qualification.mjs attest --adapter development",

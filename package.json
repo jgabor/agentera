@@ -5,6 +5,7 @@
     "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
     "cli:prepare:stable": "pnpm -C packages/cli/shim run release:prepare",
     "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
+    "cli:ready:dev": "pnpm -C packages/cli run release:ready",
     "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
     "cli:benchmark:qualification": "pnpm -C packages/cli run release:benchmark:qualification",
     "cli:publish:qualified:dev": "pnpm -C packages/cli run release:publish:qualified",

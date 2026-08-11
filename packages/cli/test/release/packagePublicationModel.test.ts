@@ -21,6 +21,14 @@ describe("strict package publication model", () => {
     expect(model.sourceDag.performanceBarrier).toEqual(["performance"]);
     expect(model.sourceDag.capacityBarrier).toEqual(["capacity"]);
     expect(model.sourceDag.barrierB).toEqual(["compact", "capability-contract", "activation-conjunction"]);
+    expect(model.readiness).toMatchObject({
+      schemaVersion: "agentera.releaseReadiness.v1",
+      adapter: "development",
+      phases: ["source-readiness", "metadata-review", "candidate-readiness"],
+      receipts: { source: "source-receipt.json", candidate: "candidate-receipt.json" },
+      outcomes: ["paused", "ready", "rejected"],
+      exitCodes: { paused: 0, ready: 0, rejected: 1 },
+    });
     expect(model.activationConjunction.classes).toHaveLength(7);
     expect(model.activationConjunction.dimensions).toHaveLength(6);
     expect(model.activationConjunction.checkIds).toHaveLength(42);
@@ -43,6 +51,10 @@ describe("strict package publication model", () => {
     ["omitted dimension", (copy: any) => { copy.qualification.source.activationConjunction.dimensions.pop(); }],
     ["duplicate check", (copy: any) => { copy.qualification.source.activationConjunction.checkIds[1] = copy.qualification.source.activationConjunction.checkIds[0]; }],
     ["empty correction", (copy: any) => { copy.qualification.source.gates[0].correction = ""; }],
+    ["missing readiness reuse", (copy: any) => { delete copy.qualification.readiness.reuse; }],
+    ["changed metadata review rule", (copy: any) => { copy.qualification.readiness.metadataReview = ""; }],
+    ["wrong readiness receipt", (copy: any) => { copy.qualification.readiness.receipts.candidate = "other.json"; }],
+    ["wrong readiness exit", (copy: any) => { copy.qualification.readiness.exitCodes.rejected = 0; }],
   ])("rejects %s", (_label, change) => expect(mutate(change)).toThrow(/package publication contract/));
 
   it.each(ACTIVATION_CLASSES)("rejects a well-formed wrong %s class owner and reports canonical identity", (classId) => {

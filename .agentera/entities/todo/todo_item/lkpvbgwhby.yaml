@@ -1,0 +1,40 @@
+id: lkpvbgwhby
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Restore generated-overlap package verification to its governed wall-time budget.
+  requirements:
+    - Investigate the canonical generated-overlap owner failure recorded after plan task itaydxofpc exhausted two evaluator attempts.
+    - Correct the package verification path that took 23,194 ms against its governed 20,000 ms wall-time budget without bypassing the owner or weakening the budget without governed evidence.
+    - Keep receipt, candidate, registry, activation, publication, credential, push, and tag effects absent during check-only correction.
+    - Replace unsupported historical broad verification claims with retained, snapshot-bound evidence.
+  acceptance:
+    - The canonical generated-overlap owner passes once within its governed wall-time budget and returns complete structured evidence.
+    - After that owner correction, one canonical 11-gate release conjunction passes with retained snapshot-bound output.
+    - Correction and conjunction runs create no receipt, candidate, registry, activation, or publication effect.
+    - Progress evidence labels the earlier deadline, correction, and retry history unverified unless original bound outputs are recovered.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: optimize
+    reason: Plan task itaydxofpc is blocked because current release verification fails its generated-overlap package budget.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: Restore the canonical release gate before release readiness coordination can complete.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Restore generated-overlap package verification to its governed wall-time budget."
+      status: resolved
+      order: 104
+      severity: critical
+  lifecycle:
+    operation: resolve
+    reason: User accepted the only blocking 23.194s versus 20s package-budget delta as immaterial; no replan or refactor required.
+    date: 2026-08-11

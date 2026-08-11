@@ -142,6 +142,26 @@ export interface SourceGateContract {
   correction: string;
 }
 
+export interface ReleaseReadinessContract {
+  schemaVersion: "agentera.releaseReadiness.v1";
+  component: "release-readiness";
+  adapter: "development";
+  command: string;
+  phases: ["source-readiness", "metadata-review", "candidate-readiness"];
+  receipts: {
+    source: "source-receipt.json";
+    candidate: "candidate-receipt.json";
+  };
+  reuse: string;
+  metadataReview: string;
+  outcomes: ["paused", "ready", "rejected"];
+  exitCodes: {
+    paused: 0;
+    ready: 0;
+    rejected: 1;
+  };
+}
+
 export interface PackagePublicationModel {
   sourceGates: SourceGateContract[];
   sourceDag: {
@@ -155,6 +175,7 @@ export interface PackagePublicationModel {
     minimumExecutionWindowMs: Record<string, number>;
   };
   sourceQualificationMs: number;
+  readiness: ReleaseReadinessContract;
   activationConjunction: ActivationConjunctionContract;
 }
 
@@ -206,8 +227,56 @@ function exactCensusIdentity(value: any, expected: ActivationCensusIdentity, lab
 export function validatePackagePublicationDocument(raw: any): PackagePublicationModel {
   if (raw?.schemaVersion !== "agentera.packagePublication.v2") fail("schemaVersion is invalid");
   const source = raw?.qualification?.source;
+  const readiness = raw?.qualification?.readiness;
   const activation = source?.activationConjunction;
   if (!source || !activation || activation.gateIdentity !== "agentera.activationConjunction.v1") fail("source activation conjunction is missing or invalid");
+  if (
+    !readiness
+    || readiness.schemaVersion !== "agentera.releaseReadiness.v1"
+    || readiness.component !== "release-readiness"
+    || readiness.adapter !== "development"
+  ) fail("release readiness authority is missing or invalid");
+  const readinessCommand = boundedText(
+    readiness.command,
+    "release readiness command",
+    320,
+    /^node packages\/cli\/scripts\/release-readiness\.mjs development --candidate-dir DIR --target-version VERSION --source-commit COMMIT \[--metadata-commit COMMIT\] \[--json\]$/,
+  );
+  const readinessPhases = exactList(
+    readiness.phases,
+    ["source-readiness", "metadata-review", "candidate-readiness"],
+    "release readiness phases",
+  ) as ReleaseReadinessContract["phases"];
+  if (
+    !readiness.receipts
+    || Object.keys(readiness.receipts).sort().join("\0") !== "candidate\0source"
+    || readiness.receipts.source !== "source-receipt.json"
+    || readiness.receipts.candidate !== "candidate-receipt.json"
+  ) fail("release readiness receipts must name the governed source and candidate receipts");
+  const readinessReuse = boundedText(
+    readiness.reuse,
+    "release readiness reuse rule",
+    1200,
+    /^[^\0\r\n]+$/,
+  );
+  const readinessMetadataReview = boundedText(
+    readiness.metadataReview,
+    "release readiness metadata review rule",
+    1200,
+    /^[^\0\r\n]+$/,
+  );
+  const readinessOutcomes = exactList(
+    readiness.outcomes,
+    ["paused", "ready", "rejected"],
+    "release readiness outcomes",
+  ) as ReleaseReadinessContract["outcomes"];
+  if (
+    !readiness.exitCodes
+    || Object.keys(readiness.exitCodes).sort().join("\0") !== "paused\0ready\0rejected"
+    || readiness.exitCodes.paused !== 0
+    || readiness.exitCodes.ready !== 0
+    || readiness.exitCodes.rejected !== 1
+  ) fail("release readiness exit codes must map paused and ready to 0 and rejected to 1");
 
   if (!Array.isArray(source.gates) || source.gates.length !== SOURCE_GATE_IDS.length) fail(`source gates must contain exactly ${SOURCE_GATE_IDS.length} entries`);
   const sourceGates = source.gates.map((gate: any, index: number): SourceGateContract => {
@@ -281,6 +350,25 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
       minimumExecutionWindowMs,
     },
     sourceQualificationMs: positiveInteger(raw?.benchmark?.timeouts?.sourceQualificationMs, "source qualification timeout", 900_000),
+    readiness: {
+      schemaVersion: readiness.schemaVersion,
+      component: readiness.component,
+      adapter: readiness.adapter,
+      command: readinessCommand,
+      phases: readinessPhases,
+      receipts: {
+        source: readiness.receipts.source,
+        candidate: readiness.receipts.candidate,
+      },
+      reuse: readinessReuse,
+      metadataReview: readinessMetadataReview,
+      outcomes: readinessOutcomes,
+      exitCodes: {
+        paused: readiness.exitCodes.paused,
+        ready: readiness.exitCodes.ready,
+        rejected: readiness.exitCodes.rejected,
+      },
+    },
     activationConjunction: {
       gateIdentity: activation.gateIdentity, classes, dimensions, checkIds, bounds, owners,
       census: { algorithm: ACTIVATION_CENSUS_AUTHORITY.algorithm, classes: censusClasses, total: censusTotal },

@@ -4,7 +4,7 @@ record:
   name: Preserve exact candidates through protected workflow handoff
   depends_on:
     - vvkilxhcaq
-    - itaydxofpc
+    - vmcczrxivl
   status: pending
   acceptance:
     - GIVEN a qualified candidate WHEN transferred through GitHub artifacts THEN its bytes and required read-only mode remain unchanged and validator-proven.

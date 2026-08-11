@@ -335,6 +335,25 @@
       },
       "parallelism": "Batch A runs generated-overlap, stress, and typecheck concurrently. generated-overlap is the sole checkout generated-output writer and sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, performance runs alone in fresh isolated state with one worker. Capacity runs alone after performance. After capacity passes, compact, capability-contract, and activation-conjunction run concurrently as readers of the settled generation."
     },
+    "readiness": {
+      "schemaVersion": "agentera.releaseReadiness.v1",
+      "component": "release-readiness",
+      "adapter": "development",
+      "command": "node packages/cli/scripts/release-readiness.mjs development --candidate-dir DIR --target-version VERSION --source-commit COMMIT [--metadata-commit COMMIT] [--json]",
+      "phases": ["source-readiness", "metadata-review", "candidate-readiness"],
+      "receipts": {
+        "source": "source-receipt.json",
+        "candidate": "candidate-receipt.json"
+      },
+      "reuse": "A present source receipt is validated with the source reuse check instead of invoking source qualification. A present candidate receipt and retained artifact are validated instead of invoking candidate qualification. Invalid, stale, incomplete, or mismatched evidence rejects the run before an issuance owner starts.",
+      "metadataReview": "A successful source qualification or source-receipt reuse pauses before candidate construction until the caller supplies the explicit reviewed metadata commit. The coordinator never prepares metadata, changes a version, commits, approves, rebuilds a valid candidate, stages bytes, or mutates registry state.",
+      "outcomes": ["paused", "ready", "rejected"],
+      "exitCodes": {
+        "paused": 0,
+        "ready": 0,
+        "rejected": 1
+      }
+    },
     "candidate": {
       "component": "release-candidate",
       "inputs": [

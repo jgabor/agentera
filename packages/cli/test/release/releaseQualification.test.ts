@@ -31,6 +31,7 @@ import {
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const temporary: string[] = [];
 const GOVERNED_GATES = RELEASE_CONTRACT.qualification.source.gates;
 
@@ -265,6 +266,7 @@ async function sourceReceipt(repo: string, candidateDirectory: string) {
 function candidateExecution(candidateDirectory: string, version = "3.0.0-dev.41") {
   const artifact = path.join(candidateDirectory, `agentera-${version}.tgz`);
   const bytes = Buffer.from("candidate timing fixture");
+  const calls = { constructions: 0 };
   const observation = {
     name: "agentera",
     version,
@@ -274,16 +276,25 @@ function candidateExecution(candidateDirectory: string, version = "3.0.0-dev.41"
     ],
     size: bytes.length,
     unpackedSize: bytes.length,
-    shasum: "timing-fixture-shasum",
+    shasum: createHash("sha1").update(bytes).digest("hex"),
     integrity: sha512Integrity(bytes),
     warnings: [],
   };
   return {
     run: (_command: string, args: string[]) => {
-      if (!args.includes("--dry-run")) fs.writeFileSync(artifact, bytes);
-      return JSON.stringify(args.includes("--dry-run") ? observation : { ...observation, artifact });
+      calls.constructions += 1;
+      expect(args).toEqual([
+        "scripts/pack-package.mjs",
+        "--output-dir",
+        candidateDirectory,
+        "--with-dry-run",
+        "--json",
+      ]);
+      fs.writeFileSync(artifact, bytes);
+      return JSON.stringify({ dry: observation, packed: { ...observation, artifact } });
     },
     smokeRun: (command: string) => command === process.execPath ? `agentera ${version}` : "installed",
+    constructionCalls: calls,
   };
 }
 
@@ -292,6 +303,39 @@ afterEach(() => {
 });
 
 describe("release qualification receipts", () => {
+  it("observes and retains a development package from one isolated construction", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-candidate-construction-test-"));
+    temporary.push(root);
+    const outputDirectory = path.join(root, "candidate");
+    const result = spawnSync(process.execPath, [
+      "scripts/pack-package.mjs",
+      "--output-dir",
+      outputDirectory,
+      "--with-dry-run",
+      "--json",
+    ], {
+      cwd: path.join(REPO_ROOT, "packages/cli"),
+      encoding: "utf8",
+      timeout: 120_000,
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+    const { dry, packed } = JSON.parse(result.stdout);
+    expect(packed).toMatchObject({
+      name: dry.name,
+      version: dry.version,
+      filename: dry.filename,
+      fileCount: dry.fileCount,
+      packedSize: dry.packedSize,
+      unpackedSize: dry.unpackedSize,
+      shasum: dry.shasum,
+      integrity: dry.integrity,
+      expectedTag: dry.expectedTag,
+      artifact: path.join(outputDirectory, dry.filename),
+    });
+    expect(fs.readFileSync(packed.artifact).byteLength).toBe(packed.packedSize);
+  }, 120_000);
+
   it("reuses source evidence after committed version and gitRef-only metadata changes", async () => {
     const { repo, candidateDirectory } = fixture();
     const first = await sourceReceipt(repo, candidateDirectory);
@@ -598,13 +642,14 @@ describe("release qualification receipts", () => {
     const { repo, candidateDirectory } = fixture();
     await sourceReceipt(repo, candidateDirectory);
     const ticks = [0, 10, 20, 25, 55, 60, 90, 100];
+    const candidate = candidateExecution(candidateDirectory);
     const issued = issueCandidateReceipt({
       repo,
       candidateDirectory,
       adapterName: "development",
       clock: () => ticks.shift()!,
       metadataRun: () => "{}",
-      ...candidateExecution(candidateDirectory),
+      ...candidate,
     });
 
     expect(ticks).toEqual([]);
@@ -620,10 +665,66 @@ describe("release qualification receipts", () => {
       unattributedElapsedMs: 30,
       reconciled: true,
     });
+    expect(candidate.constructionCalls.constructions).toBe(1);
     expect(issued.receipt.gates.reduce((total: number, gate: any) => total + gate.elapsedMs, 0))
       .toBeLessThanOrEqual(issued.receipt.execution.elapsedMs);
     expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "utf8")))
       .toEqual(issued.receipt);
+
+    const artifact = path.join(candidateDirectory, issued.receipt.artifact.filename);
+    const retained = {
+      artifact: fs.readFileSync(artifact),
+      artifactMtime: fs.statSync(artifact).mtimeMs,
+      receipt: fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json")),
+      receiptMtime: fs.statSync(path.join(candidateDirectory, "candidate-receipt.json")).mtimeMs,
+    };
+    const replay = issueCandidateReceipt({
+      repo,
+      candidateDirectory,
+      adapterName: "development",
+      metadataRun: () => { throw new Error("candidate replay must not rerun metadata"); },
+      run: () => { throw new Error("candidate replay must not reconstruct bytes"); },
+      smokeRun: () => { throw new Error("candidate replay must not rerun smoke"); },
+    });
+    expect(replay).toMatchObject({ reused: true, receipt: { receiptSha256: issued.receipt.receiptSha256 } });
+    expect(fs.readFileSync(artifact)).toEqual(retained.artifact);
+    expect(fs.statSync(artifact).mtimeMs).toBe(retained.artifactMtime);
+    expect(fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"))).toEqual(retained.receipt);
+    expect(fs.statSync(path.join(candidateDirectory, "candidate-receipt.json")).mtimeMs).toBe(retained.receiptMtime);
+
+    const artifactBacking = path.join(candidateDirectory, "candidate-artifact-backing.tgz");
+    fs.renameSync(artifact, artifactBacking);
+    fs.symlinkSync(artifactBacking, artifact);
+    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
+      .toThrow("candidate artifact must be a regular file");
+    fs.unlinkSync(artifact);
+    fs.renameSync(artifactBacking, artifact);
+
+    const candidateFile = path.join(candidateDirectory, "candidate-receipt.json");
+    const outsideReceipt = path.join(path.dirname(candidateDirectory), "candidate-receipt-outside.json");
+    fs.renameSync(candidateFile, outsideReceipt);
+    fs.symlinkSync(outsideReceipt, candidateFile);
+    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
+      .toThrow("candidate receipt must be a regular file inside the external candidate directory");
+    fs.unlinkSync(candidateFile);
+    fs.renameSync(outsideReceipt, candidateFile);
+
+    const tampered = JSON.parse(fs.readFileSync(candidateFile, "utf8"));
+    delete tampered.receiptSha256;
+    tampered.gates[0].reused = true;
+    tampered.receiptSha256 = sha256(canonicalJson(tampered));
+    fs.chmodSync(candidateFile, 0o600);
+    fs.writeFileSync(candidateFile, canonicalJson(tampered));
+    fs.chmodSync(candidateFile, 0o400);
+    expect(() => issueCandidateReceipt({
+      repo,
+      candidateDirectory,
+      adapterName: "development",
+      metadataRun: () => { throw new Error("invalid replay must not rerun metadata"); },
+      run: () => { throw new Error("invalid replay must not reconstruct bytes"); },
+      smokeRun: () => { throw new Error("invalid replay must not rerun smoke"); },
+    })).toThrow("candidate receipt gate 'release-metadata' has invalid execution evidence");
+    expect(fs.readFileSync(artifact)).toEqual(retained.artifact);
   });
 
   it("preserves the local smoke owner and writes no candidate receipt on failure", async () => {
@@ -743,10 +844,35 @@ describe("release qualification receipts", () => {
         integrity: sha512Integrity(artifact),
         bytes: artifact.byteLength,
         mode: 0o444,
-        construction: { name: "agentera", version: "3.0.0-dev.41", fileCount: 1, packedSize: 21, unpackedSize: 21, shasum: "test" },
+        construction: {
+          name: "agentera",
+          version: "3.0.0-dev.41",
+          fileCount: 1,
+          packedSize: artifact.byteLength,
+          unpackedSize: artifact.byteLength,
+          shasum: createHash("sha1").update(artifact).digest("hex"),
+        },
         dryPackEquivalent: true,
       },
-      gates: [],
+      gates: [
+        { name: "release-metadata", outcome: "passed", elapsedMs: 1, executed: "ordered", reused: false },
+        { name: "dry-pack-observation-equivalence", outcome: "passed", elapsedMs: 1, executed: "ordered", reused: false },
+        {
+          name: "local-exact-artifact-smoke",
+          outcome: "passed",
+          elapsedMs: 1,
+          executed: "ordered",
+          reused: false,
+          output: "agentera 3.0.0-dev.41",
+        },
+      ],
+      execution: {
+        strategy: "ordered-non-overlapping",
+        elapsedMs: 4,
+        ownerElapsedMs: 3,
+        unattributedElapsedMs: 1,
+        reconciled: true,
+      },
     };
     candidate.receiptSha256 = sha256(canonicalJson(candidate));
 

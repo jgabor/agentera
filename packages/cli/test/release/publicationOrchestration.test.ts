@@ -40,6 +40,7 @@ describe("candidate publication orchestration", () => {
     expect(rootPackage.scripts).toMatchObject({
       "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
       "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
+      "cli:ready:dev": "pnpm -C packages/cli run release:ready",
       "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
       "cli:benchmark:qualification": "pnpm -C packages/cli run release:benchmark:qualification",
       "cli:publish:qualified:dev": "pnpm -C packages/cli run release:publish:qualified",
@@ -49,6 +50,9 @@ describe("candidate publication orchestration", () => {
     });
     expect(developmentPackage.scripts["release:prepare"]).toContain(
       "publication-transaction.mjs prepare development",
+    );
+    expect(developmentPackage.scripts["release:ready"]).toBe(
+      "node scripts/release-readiness.mjs development",
     );
     expect(developmentPackage.scripts["release:stage"]).toContain(
       "publication-transaction.mjs stage development --approve",
@@ -79,6 +83,23 @@ describe("candidate publication orchestration", () => {
     );
     expect(publicationContract.invariants.preparation).toContain(
       "Stable preparation retains its existing source-provenance contract",
+    );
+  });
+
+  it("keeps readiness resumable and hard-paused before approval or registry work", () => {
+    expect(publicationContract.qualification.readiness).toMatchObject({
+      schemaVersion: "agentera.releaseReadiness.v1",
+      adapter: "development",
+      phases: ["source-readiness", "metadata-review", "candidate-readiness"],
+      receipts: { source: "source-receipt.json", candidate: "candidate-receipt.json" },
+      outcomes: ["paused", "ready", "rejected"],
+      exitCodes: { paused: 0, ready: 0, rejected: 1 },
+    });
+    expect(publicationContract.qualification.readiness.metadataReview).toContain(
+      "never prepares metadata, changes a version, commits, approves",
+    );
+    expect(publicationContract.qualification.readiness.reuse).toContain(
+      "validated instead of invoking candidate qualification",
     );
   });
 

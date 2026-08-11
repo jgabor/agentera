@@ -4,7 +4,7 @@ record:
   name: Make qualification benchmarking non-blocking and ready for scheduling
   depends_on:
     - vvkilxhcaq
-    - itaydxofpc
+    - vmcczrxivl
   status: pending
   acceptance:
     - GIVEN the normal release checklist WHEN followed THEN no benchmark receipt or three-run benchmark is required.

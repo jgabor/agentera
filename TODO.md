@@ -150,6 +150,7 @@
 - [x] [id:yrjmbhfjes] [fix:3.0.0] Provide effect-bound owner correction for unsafe-inactive TODO projects.
 - [x] [id:gxcnoplnwr] [fix:3.0.0] Keep unsafe-TODO status startup within the Prime byte budget.
 - [x] [id:qeqpefwupo] [fix:3.0.0] Make marker-absent fresh-project startup converge without legacy migration.
+- [x] [id:lkpvbgwhby] [fix:3.0.0] Restore generated-overlap package verification to its governed wall-time budget.
 
 ## → Critical
 

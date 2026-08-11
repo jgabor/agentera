@@ -6,10 +6,23 @@ record:
     - tsfaddhsrz
     - mpkjepcfsb
     - hiealiomfd
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN a normal development release WHEN readiness runs THEN each source owner and candidate construction executes once.
     - GIVEN valid source or candidate receipts WHEN readiness resumes THEN evidence is reused; stale or mismatched evidence fails before effects.
     - GIVEN the metadata review boundary WHEN coordination pauses and resumes THEN no automatic commit, approval, artifact rebuild, or registry mutation occurs.
     - GIVEN coordinator paths WHEN tested THEN fresh, reused, and rejected evidence each has an explicit result.
   plan: lsftqiwiki
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Bound verify:release failed at generated-overlap: package owner took 23194 ms and exceeded its 20000 ms budget. Run the prescribed owner correction once and retain structured output before any full-conjunction retry."
+    provenance:
+      attempt_id: audit-itaydxofpc-2
+      source: audit:itaydxofpc:attempt=2:criteria=4/4-pass:agent-native=pass:verify-release=fail:generated-overlap=23194ms>20000ms:effects=none:overall=fail
+      recorded_at: 2026-08-10 14:56
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - vmcczrxivl
+  superseded_reason: User waived the only remaining 23.194s versus 20s package-budget failure after functional acceptance passed; replacement records the accepted completion.
