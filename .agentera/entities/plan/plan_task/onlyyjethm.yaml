@@ -11,3 +11,6 @@ record:
     - GIVEN generated authorities and projections WHEN qualification runs THEN help, schema, commands, contracts, and capability instructions agree.
     - GIVEN each integration gate WHEN regressions run THEN one pass and one fail prove it.
   plan: bcpkchatfu
+  evidence:
+    - "Root cause: redundant package verification work and serial cold-process startup exhausted generated-overlap. Preserved source/package/build and cold-artifact checks: package 40/40 in 300.636s; overlap 351.496s with 3,918 source tests, 40 package tests, build, 42 activation checks, zero identity/surface failures, and the unchanged 410s window."
+    - Abortable scheduler regression proved deterministic ordering at concurrency four, queued cancellation, active-child termination, and close/timer settlement before root removal; independent Audit PASS. Canonical source receipt remains pending on the exact committed retry.

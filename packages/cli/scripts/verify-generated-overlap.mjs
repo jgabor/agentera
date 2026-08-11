@@ -78,8 +78,17 @@ export async function writeActivationEvidence({ repoRoot, generationRoot, genera
 function killGroup(child, signal) {
   if (!child.pid) return;
   try {
-    if (process.platform === "win32") child.kill(signal);
-    else process.kill(-child.pid, signal);
+    if (process.platform === "win32") {
+      const tree = spawnSync(
+        "taskkill",
+        ["/PID", String(child.pid), "/T", ...(signal === "SIGKILL" ? ["/F"] : [])],
+        { windowsHide: true, stdio: "ignore" },
+      );
+      if (!tree.error && tree.status === 0) return;
+      child.kill(signal);
+    } else {
+      process.kill(-child.pid, signal);
+    }
   } catch (error) {
     if (error?.code !== "ESRCH") throw error;
   }

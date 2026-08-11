@@ -623,6 +623,13 @@ LIFECYCLE_CONTRACT:
       roots:
         - .
       symlinks: Excluded because their targets may leave the repository boundary.
+      generated_output:
+        owner: packages/cli/scripts/generated-output.mjs#generatedOutputRoot
+        package_roots: [packages/cli]
+        treatment: exclude_exact_generated_root_subtree
+        reason: >-
+          Generated verification and build evidence is retained for bounded
+          downstream readers, but is not a tracked lifecycle-bearing source surface.
       excluded_directory_names:
         names:
           - .git

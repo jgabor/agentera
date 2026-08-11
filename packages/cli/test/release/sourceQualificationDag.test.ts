@@ -657,6 +657,9 @@ describe("source qualification DAG", () => {
     expect(script).toContain('source: ["pnpm", "-C", "packages/cli", "run", "test:source"]');
     expect(script).toContain('build: ["pnpm", "-C", "packages/cli", "build"]');
     expect(script).toContain('package: ["pnpm", "-C", "packages/cli", "run", "verify:package"]');
+    expect(script).not.toContain("VITEST_MAX_WORKERS");
+    expect(script).toContain('"taskkill"');
+    expect(script).toContain('["/PID", String(child.pid), "/T"');
     expect(script).toContain('schemaVersion: "agentera.generatedOverlapEvidence.v1"');
     expect(RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema)
       .toBe(policy.owners.performance.evidence.schema_version);

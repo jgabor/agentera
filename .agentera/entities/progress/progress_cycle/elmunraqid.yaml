@@ -1,0 +1,14 @@
+id: elmunraqid
+artifact: progress
+record:
+  timestamp: 2026-08-11 22:35
+  type: fix
+  phase: build
+  what: Removed redundant package verification work and made concurrent cold CLI cleanup fail-safe so generated-overlap fits its governed source window.
+  context:
+    intent: Unblock onlyyjethm without weakening source/package/build evidence.
+    constraints: Budgets, tests, and matrices remain unchanged; no receipt, candidate, or registry effects; canonical qualification is pending after commit.
+    scope: Generated-overlap worker policy, runtime bootstrap batching, package verification concurrency/reuse, child cleanup, and verification inventory.
+  verified: Package 40/40 passed in 300.636s; generated-overlap passed in 351.496s with 3,918 source tests, 40 package tests, build, 42 activation checks, zero identity/surface failures, and independent Audit PASS.
+  next: Commit the audited fix and retry the exact canonical source qualifier.
+  publication_order: 150

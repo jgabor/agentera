@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
 import fs from "node:fs";
+import { performance } from "node:perf_hooks";
 import path from "node:path";
 
 import { expect } from "vitest";
@@ -18,6 +19,7 @@ import {
 import type { PackageFixture } from "../packaging/packageSetup.js";
 
 const DISPATCHER = path.resolve(import.meta.dirname, "preCutoverBootstrapDispatcher.mjs");
+const REJECTION_DISPATCHER = path.resolve(import.meta.dirname, "preCutoverBootstrapRejectionDispatcher.mjs");
 const DANGER = `space ; $() & 'quote' [雪]`;
 
 export const RUNTIME_ID_AUTHORITY = BOOTSTRAP_RUNTIME_IDS;
@@ -64,6 +66,15 @@ export interface RowObservation {
   preservationRoots: number;
 }
 
+export interface RuntimeBootstrapMatrixTiming {
+  setupMs: number;
+  protectedRootSnapshotsMs: number;
+  acceptedCommandMs: number;
+  rejectedCommandMs: number;
+  otherMs: number;
+  totalMs: number;
+}
+
 export interface RuntimeBootstrapMatrixSummary {
   rows: RowObservation[];
   runtimeCounts: Record<RuntimeName, { accepted: number; rejected: number }>;
@@ -73,6 +84,7 @@ export interface RuntimeBootstrapMatrixSummary {
   packageArtifact: { filename: string; integrity: string; shasum: string; tarballSha256: string; files: number };
   expectedCompositeRowIds: string[];
   runtimeObservationDigests: Record<RuntimeName, Record<ProjectState, string>>;
+  timing: RuntimeBootstrapMatrixTiming;
   authority: {
     protectedRootCount: number;
     protectedRootDigest: string;
@@ -120,6 +132,7 @@ export const PROTECTED_ROOT_AUTHORITY_SHA256 = "031fd076c396b44b31fb1d923245976a
 export const EXPECTED_COMPOSITE_ROW_COUNT = 190;
 export const EXPECTED_COMPOSITE_ROW_SHA256 = "dd3b04ddd46c487b3f0056a16b1b9225fad61cd25988fa907a10520fc41a5da7";
 export const RUNTIME_MATRIX_AUTHORITY_SHA256 = "d8af8891a8dfa27618ecd165989f635c252caae46a7f93abe2503cf546f2d73c";
+export const RUNTIME_BOOTSTRAP_MATRIX_BUDGET_MS = 240_000;
 
 function errorCode(error: unknown): string | undefined {
   return error && typeof error === "object" && "code" in error
@@ -369,6 +382,50 @@ function snapshots(roots: ReadonlyArray<readonly [string, string]>): Record<stri
   return Object.fromEntries(roots.map(([label, root]) => [label, snapshot(root)]));
 }
 
+type RuntimeBootstrapMatrixTimingAccumulator = Omit<RuntimeBootstrapMatrixTiming, "otherMs" | "totalMs">;
+
+function elapsedMs(started: number): number {
+  return Math.max(0, performance.now() - started);
+}
+
+function finalizeTiming(
+  started: number,
+  accumulator: RuntimeBootstrapMatrixTimingAccumulator,
+): RuntimeBootstrapMatrixTiming {
+  const setupMs = Math.max(0, Math.round(accumulator.setupMs));
+  const protectedRootSnapshotsMs = Math.max(0, Math.round(accumulator.protectedRootSnapshotsMs));
+  const acceptedCommandMs = Math.max(0, Math.round(accumulator.acceptedCommandMs));
+  const rejectedCommandMs = Math.max(0, Math.round(accumulator.rejectedCommandMs));
+  const measuredTotalMs = Math.max(0, Math.round(elapsedMs(started)));
+  const componentTotal = setupMs + protectedRootSnapshotsMs + acceptedCommandMs + rejectedCommandMs;
+  const totalMs = Math.max(measuredTotalMs, componentTotal);
+  return {
+    setupMs,
+    protectedRootSnapshotsMs,
+    acceptedCommandMs,
+    rejectedCommandMs,
+    otherMs: totalMs - componentTotal,
+    totalMs,
+  };
+}
+
+export function assertRuntimeBootstrapMatrixTiming(timing: RuntimeBootstrapMatrixTiming): void {
+  const componentTotal = timing.setupMs
+    + timing.protectedRootSnapshotsMs
+    + timing.acceptedCommandMs
+    + timing.rejectedCommandMs
+    + timing.otherMs;
+  if (
+    !Object.values(timing).every((value) => Number.isSafeInteger(value) && value >= 0)
+    || timing.totalMs !== componentTotal
+  ) {
+    throw new Error("runtime bootstrap matrix timing must be finite, non-negative, and reconciled");
+  }
+  if (timing.totalMs > RUNTIME_BOOTSTRAP_MATRIX_BUDGET_MS) {
+    throw new Error(`runtime bootstrap matrix exceeded ${RUNTIME_BOOTSTRAP_MATRIX_BUDGET_MS}ms: ${JSON.stringify(timing)}`);
+  }
+}
+
 function seedDecoys(root: string): void {
   const decoys = path.join(root, `decoys ${DANGER}`);
   fs.mkdirSync(path.join(decoys, "directory"), { recursive: true });
@@ -456,6 +513,21 @@ export function runRuntimeBootstrapMatrix(
   fixture: PackageFixture,
   checkoutRoot: string,
 ): RuntimeBootstrapMatrixSummary {
+  const started = performance.now();
+  const timing: RuntimeBootstrapMatrixTimingAccumulator = {
+    setupMs: 0,
+    protectedRootSnapshotsMs: 0,
+    acceptedCommandMs: 0,
+    rejectedCommandMs: 0,
+  };
+  const snapshotsWithTiming = (roots: ReadonlyArray<readonly [string, string]>): Record<string, TreeEntry[]> => {
+    const snapshotStarted = performance.now();
+    try {
+      return snapshots(roots);
+    } finally {
+      timing.protectedRootSnapshotsMs += elapsedMs(snapshotStarted);
+    }
+  };
   const executionRegistry = runtimeMatrixExecutionRegistry();
   assertRuntimeMatrixExecutionRegistry(executionRegistry);
   const expectedAuthority = expectedCompositeRowAuthority();
@@ -479,6 +551,7 @@ export function runRuntimeBootstrapMatrix(
   let evidenceSequence = 0;
 
   for (const { id: runtime, root: originalRoot } of runtimeBindings) {
+    const setupStarted = performance.now();
     const runtimeRoot = path.join(matrixRoot, `${runtime} install ${DANGER}`);
     fs.cpSync(originalRoot, runtimeRoot, { recursive: true, verbatimSymlinks: true });
     const home = path.join(matrixRoot, `${runtime} HOME ${DANGER}`);
@@ -502,6 +575,7 @@ export function runRuntimeBootstrapMatrix(
     seedDecoys(paths.cache);
     seedDecoys(paths.tmp);
     const env = isolatedEnvironment(paths);
+    timing.setupMs += elapsedMs(setupStarted);
 
     for (const projectState of BOOTSTRAP_PROJECT_STATE_IDS) {
       const quotedSeparator = projectState === "clean" ? "\n" : projectState === "v2" ? "\r" : "";
@@ -542,7 +616,8 @@ export function runRuntimeBootstrapMatrix(
         const sentinel = path.join(evidenceRoot, `${evidenceSequence}-${runtime}-${projectState}-${id}.sentinel`);
         const environmentEvidence = `${sentinel}.environment.json`;
         evidenceSequence += 1;
-        const before = snapshots(protectedRoots);
+        const before = snapshotsWithTiming(protectedRoots);
+        const commandStarted = performance.now();
         const result = spawnSync(process.execPath, [
           DISPATCHER,
           JSON.stringify(identity),
@@ -552,7 +627,8 @@ export function runRuntimeBootstrapMatrix(
           sentinel,
           environmentEvidence,
         ], { cwd: project, env, encoding: "utf8", shell: false });
-        const after = snapshots(protectedRoots);
+        timing.acceptedCommandMs += elapsedMs(commandStarted);
+        const after = snapshotsWithTiming(protectedRoots);
         expect(after, `${runtime}/${projectState}/${id} preservation`).toEqual(before);
         const childStarted = fs.existsSync(sentinel);
         expect(childStarted, `${runtime}/${projectState}/${id} child start`).toBe(expected.accepted);
@@ -678,9 +754,38 @@ export function runRuntimeBootstrapMatrix(
         row.recoveryCount = recoveries.length;
       }
 
-      for (const { id, candidate, classification, states } of REJECTION_EXECUTION_SPECS) {
-        if (!states.includes(projectState)) continue;
-        dispatch(id, { owner: "prime.status", source: primeCommand }, candidate!, { accepted: false, classification });
+      const rejectionSpecs = REJECTION_EXECUTION_SPECS.filter(({ states }) => states.includes(projectState));
+      const rejectionBefore = snapshotsWithTiming(protectedRoots);
+      const rejectionStarted = performance.now();
+      const rejectionResult = spawnSync(process.execPath, [
+        REJECTION_DISPATCHER,
+        runtimeRoot,
+        JSON.stringify(rejectionSpecs.map(({ id, candidate }) => ({
+          id,
+          identity: { owner: "prime.status", source: primeCommand },
+          candidate,
+        }))),
+      ], { cwd: project, env, encoding: "utf8", shell: false });
+      timing.rejectedCommandMs += elapsedMs(rejectionStarted);
+      const rejectionAfter = snapshotsWithTiming(protectedRoots);
+      expect(rejectionAfter, `${runtime}/${projectState}/rejections preservation`).toEqual(rejectionBefore);
+      expect(rejectionResult.status, `${runtime}/${projectState}/rejections\n${rejectionResult.stderr}\n${rejectionResult.stdout}`).toBe(0);
+      const rejectionObservations = JSON.parse(rejectionResult.stdout) as Array<{ id: string; classification: string }>;
+      expect(rejectionObservations.map(({ id }) => id)).toEqual(rejectionSpecs.map(({ id }) => id));
+      for (const [index, { id, classification }] of rejectionSpecs.entries()) {
+        expect(rejectionObservations[index], `${runtime}/${projectState}/${id}`).toEqual({ id, classification });
+        rows.push({
+          id,
+          runtime,
+          projectState,
+          accepted: false,
+          exit: 64,
+          classification,
+          outcome: null,
+          recoveryCount: 0,
+          childStarted: false,
+          preservationRoots: protectedRoots.length,
+        });
       }
 
       const normalizedObservation = normalized({
@@ -706,6 +811,8 @@ export function runRuntimeBootstrapMatrix(
     rejected: rows.filter((row) => row.projectState === state && !row.accepted).length,
   }])) as RuntimeBootstrapMatrixSummary["stateCounts"];
   assertCompleteCompositeRows(rows, expectedAuthority.ids);
+  const matrixTiming = finalizeTiming(started, timing);
+  assertRuntimeBootstrapMatrixTiming(matrixTiming);
   return {
     rows,
     runtimeCounts,
@@ -721,6 +828,7 @@ export function runRuntimeBootstrapMatrix(
     },
     expectedCompositeRowIds: expectedAuthority.ids,
     runtimeObservationDigests,
+    timing: matrixTiming,
     authority: {
       protectedRootCount: PROTECTED_ROOT_AUTHORITY_COUNT,
       protectedRootDigest: PROTECTED_ROOT_AUTHORITY_SHA256,

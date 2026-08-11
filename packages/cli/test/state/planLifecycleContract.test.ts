@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import YAML from "yaml";
 
+import { generatedOutputRoot } from "../../scripts/generated-output.mjs";
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const SCHEMA_PATH = path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/plan.yaml");
 
@@ -17,6 +19,14 @@ function lifecycleContract(): Record<string, any> {
 
 function matchesAny(file: string, patterns: string[]): boolean {
   return patterns.some((pattern) => path.matchesGlob(file, pattern));
+}
+
+function isWithinExcludedRoot(file: string, roots: string[]): boolean {
+  return roots.some((root) => file === root || file.startsWith(`${root}/`));
+}
+
+function repositoryPath(file: string): string {
+  return file.split(path.sep).join("/");
 }
 
 function scanOptions(contract = lifecycleContract()) {
@@ -37,11 +47,14 @@ function scanOptions(contract = lifecycleContract()) {
       (entry: { patterns: string[] }) => entry.patterns,
     ),
     excludedDirectoryNames: inventory.scan.excluded_directory_names.names as string[],
+    excludedRoots: inventory.scan.generated_output.package_roots.map((packageRoot: string) =>
+      repositoryPath(generatedOutputRoot(packageRoot))
+    ),
   };
 }
 
 function repositoryFiles(root: string, inventory: Record<string, any>): string[] {
-  const { exclusions, excludedDirectoryNames } = scanOptions({ inventory });
+  const { exclusions, excludedDirectoryNames, excludedRoots } = scanOptions({ inventory });
   const output = execFileSync(
     "git",
     ["-C", root, "ls-files", "--cached", "--others", "-z", "--", ...inventory.scan.roots],
@@ -52,6 +65,7 @@ function repositoryFiles(root: string, inventory: Record<string, any>): string[]
     .filter(Boolean)
     .filter((file) => !file.split("/").some((part) => excludedDirectoryNames.includes(part)))
     .filter((file) => !matchesAny(file, exclusions))
+    .filter((file) => !isWithinExcludedRoot(file, excludedRoots))
     .filter((file) => {
       try {
         return fs.lstatSync(path.join(root, file)).isFile();
@@ -73,6 +87,14 @@ function classifyFiles(root: string, inventory: Record<string, any>) {
     candidates,
     unclassified: candidates.filter((file: string) => !matchesAny(file, classifiedPatterns)),
   };
+}
+
+function requireClassifiedLifecycleFiles(root: string, inventory: Record<string, any>) {
+  const result = classifyFiles(root, inventory);
+  if (result.unclassified.length > 0) {
+    throw new Error(`unclassified lifecycle-bearing repository surfaces: ${result.unclassified.join(", ")}`);
+  }
+  return result;
 }
 
 function temporaryDirectory(): string {
@@ -164,9 +186,14 @@ describe("plan lifecycle contract", () => {
       if (Array.isArray(surfaces)) expect(surfaces.length).toBeGreaterThan(0);
     }
 
-    const { inventory, exclusions, excludedDirectoryNames } = scanOptions(contract);
+    const { inventory, exclusions, excludedDirectoryNames, excludedRoots } = scanOptions(contract);
     expect(inventory.scan.roots).toEqual(["."]);
     expect(inventory.scan.symlinks).toContain("leave the repository boundary");
+    expect(inventory.scan.generated_output).toMatchObject({
+      owner: "packages/cli/scripts/generated-output.mjs#generatedOutputRoot",
+      treatment: "exclude_exact_generated_root_subtree",
+    });
+    expect(excludedRoots).toEqual([repositoryPath(generatedOutputRoot("packages/cli"))]);
     expect(inventory.scan.excluded_directory_names.reason).toContain("any repository depth");
     expect(excludedDirectoryNames).toEqual(
       expect.arrayContaining([
@@ -188,7 +215,7 @@ describe("plan lifecycle contract", () => {
       expect(exclusion.patterns.length).toBeGreaterThan(0);
       expect(exclusion.reason.length).toBeGreaterThan(20);
     }
-    const { scanned, candidates, unclassified } = classifyFiles(REPO_ROOT, inventory);
+    const { scanned, candidates, unclassified } = requireClassifiedLifecycleFiles(REPO_ROOT, inventory);
 
     expect(candidates.length).toBeGreaterThan(100);
     expect(unclassified).toEqual([]);
@@ -225,6 +252,32 @@ describe("plan lifecycle contract", () => {
     expect(scanned.some((file: string) => file.split("/").includes("node_modules"))).toBe(false);
     expect(scanned.some((file: string) => file.split("/").includes(".wrangler"))).toBe(false);
     expect(scanned.some((file: string) => file.endsWith(".tgz"))).toBe(false);
+    expect(scanned.some((file: string) => isWithinExcludedRoot(file, excludedRoots))).toBe(false);
+  });
+
+  it("excludes generated evidence without hiding a comparable repository surface", () => {
+    const root = temporaryDirectory();
+    try {
+      execFileSync("git", ["init", "-q"], { cwd: root });
+      const inventory = lifecycleContract().inventory;
+      const generatedRoot = repositoryPath(generatedOutputRoot("packages/cli"));
+      const generatedEvidence = path.posix.join(
+        generatedRoot,
+        "generations/test-generation/activation-evidence.json",
+      );
+      const repositoryEvidence = "packages/cli/retained-verification-evidence/activation-evidence.json";
+      const lifecycleContent = '{"authority":"plan.yaml","selector":"state.plan.current"}\n';
+      writeFixtureFile(root, generatedEvidence, lifecycleContent);
+      writeFixtureFile(root, repositoryEvidence, lifecycleContent);
+
+      const result = classifyFiles(root, inventory);
+      expect(result.scanned).not.toContain(generatedEvidence);
+      expect(result.candidates).toContain(repositoryEvidence);
+      expect(result.unclassified).toEqual([repositoryEvidence]);
+      expect(() => requireClassifiedLifecycleFiles(root, inventory)).toThrow(repositoryEvidence);
+    } finally {
+      removeFixtureDirectory(root);
+    }
   });
 
   it("reports an ignored unclassified candidate without reading excluded surfaces", async () => {

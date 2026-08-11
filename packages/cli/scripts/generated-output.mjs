@@ -27,6 +27,11 @@ function generatedPaths(root) {
   };
 }
 
+/** Canonical generated verification/build root owned by this module. */
+export function generatedOutputRoot(root) {
+  return generatedPaths(root).generatedRoot;
+}
+
 function optionalLstat(file) {
   try {
     return fs.lstatSync(file);
