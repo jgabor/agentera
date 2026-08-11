@@ -186,15 +186,15 @@ manifest never creates surface identity; the code-owned tuple catalog remains th
 identity, owner, selector, semantic, and correction authority.
 
 The coordinator passes generated-overlap the actual remaining absolute source
-deadline. Overlap stops starting work 10,000 ms before the 600,000 ms envelope,
+deadline. Overlap stops starting work 10,000 ms before the 900,000 ms envelope,
 cancels and settles its owned process groups, and removes its generated surfaces
 on failure. It must return at least 4,000 ms before the envelope so the parent can
 reconcile and stop cancellable peers. The parent may request this cooperative
 stop with `SIGTERM`; it never force-kills the overlap owner during publication.
 The parent starts reader barrier B only when at least 6,000 ms of concurrent
-child execution plus the 4,000 ms reconciliation reserve remain. The 600,000 ms
-source envelope retains headroom over the observed 410,613 ms cold GitHub run
-that exhausted the previous envelope and the 319,015 ms local eleven-gate pass.
+child execution plus the 4,000 ms reconciliation reserve remain. The 900,000 ms
+source envelope retains headroom over the observed 590,689 ms cold GitHub cutoff
+under the previous envelope and the 319,015 ms local eleven-gate pass.
 
 The content-addressed `source-receipt.json` contains all eleven named gates with
 their execution origin, `outcome: "passed"`, observations, finite durations, and
@@ -346,7 +346,7 @@ failing owner before it stops. It never receives credentials or mutates npm.
 The separate qualified-publication command above measures the actual approved
 registry sequence once and enforces a total below two minutes in human and JSON
 output. The contract limits preflight to under 30 seconds and measured
-source-plus-candidate qualification to under ten minutes. Do not use a timeout
+source-plus-candidate qualification to under fifteen minutes. Do not use a timeout
 or a different cache/network state as performance evidence.
 
 The observed pre-change workflow timings and failure classifications are in
