@@ -1,0 +1,12 @@
+id: uxgmrfbyux
+artifact: progress
+record:
+  timestamp: 2026-08-11 20:10
+  type: fix
+  phase: build
+  what: Protected publication handoff now revalidates downloaded candidate receipts, retained artifact bytes, and read-only mode before environment approval and again inside the protected publish job. The packaging guide names the protected remote workflow as the normal path and local qualified publication as emergency recovery only.
+  context:
+    intent: Complete plan task tufhsqjkfe for exact candidate handoff.
+  verified: "Focused release tests passed: publicationOrchestration plus releaseQualification, 39 tests; packagePublicationModel plus rootReleaseScripts, 31 tests. Typecheck, build, compact, capability-contract validation, and workflow ordering scan passed."
+  next: Continue with governed delivery metadata after readiness.
+  publication_order: 140

@@ -259,14 +259,21 @@ in a predecessor job before the separate `npm-publish` environment approval.
 The approved job downloads the same immutable run artifact again; approval and
 each registry phase revalidate the same candidate and CI attestation.
 
-The qualified-publication coordinator consumes the retained bytes; it does not
-run `npm pack`, rebuild source, or run source qualification:
+The protected remote publication workflow is the normal publication path. It
+binds the GitHub API run identity and candidate receipt before environment
+approval, then downloads and revalidates the same candidate inside the protected
+job before credentials are available. The local qualified-publication command is
+explicit emergency recovery only, for use after the same candidate-bound
+approval and retained artifact are already established:
 
 ```bash
 NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
   --candidate-dir /secure/external/candidate \
   --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
+
+The qualified-publication coordinator consumes the retained bytes; it does not
+run `npm pack`, rebuild source, or run source qualification.
 
 The coordinator measures one ordered stage, independent exact-version L2, and
 promote envelope with a monotonic clock. Staging first inspects npm without

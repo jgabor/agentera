@@ -146,6 +146,8 @@ describe("candidate publication orchestration", () => {
     expect(publicationContract.ci.publicationRunBinding.beforeEnvironmentApproval).toContain("run.head_sha");
     expect(publicationYaml).toContain("validateQualificationWorkflowRun(run, runId)");
     expect(publicationYaml).toContain("validateCandidateRunBinding");
+    expect(publicationYaml.match(/validateCandidateReceipt\(\{/g)).toHaveLength(2);
+    expect(publicationYaml).toContain("git checkout --detach");
     expect(publicationYaml).toContain("run-id: ${{ inputs.source_run_id }}");
     expect(publicationYaml).toContain("release-qualification.mjs approval");
     expect(publicationYaml).toContain("--source-run-id");
@@ -154,9 +156,13 @@ describe("candidate publication orchestration", () => {
     expect(publicationYaml).toContain("timeout-minutes: 3");
     expect(publicationYaml).toContain("qualified-publication-receipt.json");
     expect(publicationYaml.indexOf("validateQualificationWorkflowRun(run, runId)"))
+      .toBeLessThan(publicationYaml.indexOf("Checkout qualified source head"));
+    expect(publicationYaml.indexOf("Checkout qualified source head"))
       .toBeLessThan(publicationYaml.indexOf("Download exact qualification artifact"));
     expect(publicationYaml.indexOf("Bind candidate receipt to API-backed run head"))
       .toBeLessThan(publicationYaml.indexOf("environment: npm-publish"));
+    expect(publicationYaml.indexOf("Recheck transferred candidate binding"))
+      .toBeLessThan(publicationYaml.indexOf("NPM_TOKEN"));
     expect(publicationYaml.indexOf("release-qualification.mjs approval"))
       .toBeLessThan(publicationYaml.indexOf("release-benchmark.mjs publication"));
     expect(publicationYaml).not.toContain("release-benchmark.mjs qualification --adapter");

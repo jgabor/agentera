@@ -50,6 +50,8 @@ jobs:
             const qualification = await import(pathToFileURL(`${process.env.GITHUB_WORKSPACE}/packages/cli/scripts/release-qualification.mjs`).href);
             const validated = qualification.validateQualificationWorkflowRun(run, runId);
             core.setOutput("head_sha", validated.headSha);
+      - name: Checkout qualified source head
+        run: git checkout --detach "${{ steps.run.outputs.head_sha }}"
       - name: Download exact qualification artifact
         uses: actions/download-artifact@v4
         with:
@@ -60,11 +62,12 @@ jobs:
       - name: Bind candidate receipt to API-backed run head
         id: candidate
         env:
+          ADAPTER: ${{ inputs.adapter }}
           EXPECTED_CANDIDATE_SHA256: ${{ inputs.candidate_receipt_sha256 }}
           SOURCE_HEAD_SHA: ${{ steps.run.outputs.head_sha }}
         run: |
           set -euo pipefail
-          node --input-type=module -e 'import fs from "node:fs"; import { validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const receipt=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/agentera-candidate/candidate-receipt.json")); const bound=validateCandidateRunBinding(receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA); fs.appendFileSync(process.env.GITHUB_OUTPUT, `metadata_commit=${bound.metadataCommit}\n`);'
+          node --input-type=module -e 'import fs from "node:fs"; import { validateCandidateReceipt, validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const loaded=validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-candidate", adapterName: process.env.ADAPTER }); const bound=validateCandidateRunBinding(loaded.receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA); fs.appendFileSync(process.env.GITHUB_OUTPUT, `metadata_commit=${bound.metadataCommit}\n`);'
 
   publish:
     name: Stage, verify, and promote approved candidate
@@ -85,11 +88,12 @@ jobs:
           github-token: ${{ github.token }}
       - name: Recheck transferred candidate binding
         env:
+          ADAPTER: ${{ inputs.adapter }}
           EXPECTED_CANDIDATE_SHA256: ${{ inputs.candidate_receipt_sha256 }}
           SOURCE_HEAD_SHA: ${{ needs.validate_source.outputs.head_sha }}
         run: |
           set -euo pipefail
-          node --input-type=module -e 'import fs from "node:fs"; import { validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const receipt=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/agentera-candidate/candidate-receipt.json")); validateCandidateRunBinding(receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA);'
+          node --input-type=module -e 'import { validateCandidateReceipt, validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const loaded=validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-candidate", adapterName: process.env.ADAPTER }); validateCandidateRunBinding(loaded.receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA);'
       - uses: actions/setup-node@v4
         with:
           node-version: 22
