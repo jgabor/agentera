@@ -761,7 +761,6 @@ function degradedBriefEnvelope(
     budget_utf8_bytes: budget,
     projection: "degraded",
     attempted_utf8_bytes: attemptedBytes,
-    path_diagnostics_recovery: PATH_DIAGNOSTICS_RECOVERY,
     error: {
       class: "brief_output_budget",
       message: "the configured budget cannot contain the detailed recovery envelope",
