@@ -1,0 +1,14 @@
+id: gcsgndpamy
+artifact: progress
+record:
+  timestamp: 2026-08-11 20:35
+  type: chore
+  phase: audit
+  what: "Correction for .agentera/entities/progress/progress_cycle/ugmouqamao.yaml and closeout task xjwyeuialk: tracked plan lsftqiwiki contains 13 complete tasks, one superseded task, and one blocked task. Including known invalid untracked .agentera/entities/plan/plan_task/jyvgshgtss.yaml produces 13 complete, one superseded, and two blocked. This record supersedes only the stale terminal-count wording in progress ugmouqamao and evaluation attempt audit-xjwyeuialk-1; their substantive PASS and status conclusions remain correct."
+  context:
+    intent: Make xjwyeuialk terminal-count evidence unambiguous after independent audit.
+    constraints: Use typed writers only. Preserve PASS, task and plan statuses, and invalid untracked records unchanged.
+    scope: One progress correction; no code, docs, workflow, package, lifecycle, or remote changes.
+  verified: Exact typed plan reads show 16 workspace-visible tasks split into 13 complete, one superseded, and two blocked. Git status identifies jyvgshgtss as untracked, leaving 15 tracked canonical tasks split into 13 complete, one superseded, and one blocked. A supported evaluation-writer dry run rejected a second evaluation because xjwyeuialk is complete, so the original PASS is preserved and this record corrects its stale count wording. No remote or lifecycle action occurred.
+  next: Use this correction as the terminal-count authority for re-audit. Treat invalid untracked jyvgshgtss, gytutxbxmz, and subzoubfif as preserved workspace noise outside tracked canonical state.
+  publication_order: 144
