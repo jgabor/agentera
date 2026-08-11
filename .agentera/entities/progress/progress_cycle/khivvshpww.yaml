@@ -1,0 +1,12 @@
+id: khivvshpww
+artifact: progress
+record:
+  timestamp: 2026-08-11 20:15
+  type: chore
+  phase: build
+  what: Development delivery metadata now targets 3.0.0-dev.52 and binds agentera.gitRef to the completed package-source commit f4546b2ff2fa997baa94f0de38a768212ea446c9. Suite metadata remains 3.0.0 and stable metadata is unchanged.
+  context:
+    intent: Complete plan task bhohnsdols for governed delivery metadata.
+  verified: release-metadata validation passed; releaseMetadata plus releaseQualification tests passed, 53 tests; typecheck, build, compact, and capability-contract validation passed. Existing Unreleased changelog entries already describe the shipped release-workflow behavior without receipts, timings, internal state, or agent activity.
+  next: Continue to authorization-gated remote release rehearsal.
+  publication_order: 141
