@@ -1,0 +1,15 @@
+id: wwgwsqvycs
+artifact: progress
+record:
+  timestamp: 2026-08-09 20:57
+  type: fix
+  phase: build
+  what: Serialized performance-owned files inside the isolated performance owner so the 64 MiB analytics cap test cannot contend with authoritative cold exact-get samples.
+  context:
+    intent: Restore stable authoritative exact-get evidence without changing performance policy or TODO owner-correction behavior.
+    constraints: Preserve owner suite membership, five repetitions, fixture sizes, limits, and the accepted audit evaluation while leaving task zjvdfuxhrj in progress.
+    scope: Performance owner execution isolation and its focused regression coverage.
+  discovered: The performance owner selected three files under the shared four-worker default; analyticsEvidenceTierCap allocates and processes more than 64 MiB while entityAuthorityPerformance measures wall-clock cold CLI latency. The accepted 1007.316 ms failure occurred with this internal contention path.
+  verified: pnpm -C packages/cli run test:performance completed all five exact_get repetitions at 505.990, 495.432, 482.588, 502.814, and 488.603 ms against the unchanged 1000 ms ceiling; laneOwnership 69 tests and TODO owner-correction/mutation grammar 112 tests completed; typecheck, build, compact, and state validation completed with state issue_count 0.
+  next: Keep plan task zjvdfuxhrj in progress for the requested correction review; do not close TODO yrjmbhfjes or run closeout task fvvuodghxu.
+  publication_order: 127

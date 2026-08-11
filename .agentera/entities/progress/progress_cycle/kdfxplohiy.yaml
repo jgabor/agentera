@@ -1,0 +1,15 @@
+id: kdfxplohiy
+artifact: progress
+record:
+  timestamp: 2026-08-10 10:23
+  type: fix
+  phase: build
+  what: Attributed exact-get failures to cross-owner host contention and made the serial performance owner reject sampling while another marked Agentera verification owner is active.
+  context:
+    intent: Attribute and remove the exact-get regression without changing product behavior or performance authority.
+    constraints: Preserve blocked zjvdfuxhrj and TODO readiness, suite membership, five repetitions, fixture size, assertions, the 1000 ms ceiling, and all owner-correction behavior.
+    scope: Authoritative performance-owner host isolation and its regression coverage.
+  discovered: Under the same current serial owner, current tests, five repetitions, 1000-entity fixture, and host session, pre-feature source 85d375e2 first exceeded the exact-get limit at repetition 2 with 1028.580 ms, while the final owner-correction source first exceeded it at repetition 1 with 1080.529 ms. The host load was 30.63 on 16 logical CPUs, with concurrent marked source and package workers near 100 percent CPU. Since the baseline also failed, correction-only product loading was not attributed as the root cause.
+  verified: With no other marked owner active, the corrected authoritative performance owner completed exact_get repetitions at 787.653, 757.049, 730.836, 788.557, and 755.291 ms against the unchanged 1000 ms ceiling. Focused owner-correction and mutation grammar coverage completed 112 tests; the isolation regression completed in the 70-test lane-ownership file; package verification completed 37 tests including source and extracted-package parity; typecheck, build, compact, and state validation completed with zero state issues.
+  next: Leave nsyqzzptkg in progress for Prime Audit evaluation. The preflight observes marked Agentera owners only at owner start; unmarked host work or work that starts later remains a residual machine caveat, so the final successful samples are supporting evidence together with the baseline/current attribution, not proof by transient pass alone.
+  publication_order: 128

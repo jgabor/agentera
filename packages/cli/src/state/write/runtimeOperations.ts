@@ -51,7 +51,7 @@ export interface RuntimeOperationSpec {
 
 export const RUNTIME_WRITE_VERBS = [
   "append", "update", "amend", "set-status", "supersede", "set-plan-status",
-  "record-evaluation", "archive", "create", "replace", "publish", "activate", "repair", "set-severity", "resolve", "reopen", "explain",
+  "record-evaluation", "archive", "create", "replace", "publish", "activate", "repair", "correct-owners", "set-severity", "resolve", "reopen", "explain",
 ] as const;
 export type RuntimeWriteVerb = (typeof RUNTIME_WRITE_VERBS)[number];
 
@@ -115,6 +115,7 @@ const RUNTIME_OPERATION_CORES: RuntimeOperationCoreSpec[] = [
   op("experiments", "publish", [f("--objective", "objective", "string", { required: true }), f("--id", "id", "string")], { selectors: ["--objective", "--id"], ownedFields: ["id", "artifact", "objective", "archive_identity"], inputMode: "structured", inputRoot: "one experiment entry", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "objective"], inputMaxBytes: 32768, compacts: true }),
   op("todo", "activate", [f("--effect-sha256", "effect_sha256", "string"), f("--yes", "confirmed", "boolean")], { ownedFields: ["reconciliation", "public_document", "activation"], compacts: true }),
   op("todo", "repair", [f("--effect-sha256", "effect_sha256", "string"), f("--yes", "confirmed", "boolean")], { ownedFields: ["reconciliation", "public_document", "activation"], compacts: true }),
+  op("todo", "correct-owners", [f("--effect-sha256", "effect_sha256", "string"), f("--yes", "confirmed", "boolean")], { ownedFields: ["reconciliation", "public_document", "activation"], inputMode: "structured", inputRoot: "one unsafe TODO owner mapping", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], inputMaxBytes: 32768, compacts: true }),
   op("todo", "create", [], { ownedFields: ["id", "artifact", "status", "public_order", "lifecycle"], inputMode: "structured", inputRoot: "full typed TODO record", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "status", "public_order", "lifecycle"], inputMaxBytes: 32768 }),
   op("todo", "update", [f("--id", "id", "string", { required: true })], { selectors: ["--id"], ownedFields: ["id", "artifact", "status", "public_order", "lifecycle"], inputMode: "structured", inputRoot: "TODO record patch", inputSources: ["file", "stdin"], structuredInputSources: ["file", "stdin"], cliOwnedFields: ["id", "artifact", "status", "public_order", "lifecycle"], inputMaxBytes: 32768 }),
   op("todo", "set-severity", [f("--id", "id", "string", { required: true }), f("--severity", "severity", "string", { required: true, validValues: ["critical", "degraded", "normal", "annoying"] }), f("--reason", "lifecycle.reason", "string", { required: true }), f("--date", "lifecycle.date", "date", { required: true })], { selectors: ["--id"], ownedFields: ["id", "artifact", "severity", "lifecycle"] }),
@@ -223,7 +224,7 @@ const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionCo
     developmentCommand("state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json"),
   ),
   "todo.activate": projection(
-    "Preview and review every reported safe activation effect before explicit confirmed apply; unsafe inactive evidence requires non-mutating owner correction and replanning.",
+    "Preview and review every reported safe activation effect before explicit confirmed apply; unsafe inactive evidence requires the separate effect-bound owner-correction operation.",
     developmentCommand("state todo activate --dry-run --format json"),
     developmentCommand("state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json"),
   ),
@@ -231,6 +232,11 @@ const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionCo
     "Preview and review every diagnosed repair decision before explicit confirmed apply; ambiguous evidence is rejected without effects.",
     developmentCommand("state todo repair --dry-run --format json"),
     developmentCommand("state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json"),
+  ),
+  "todo.correct-owners": projection(
+    "Supply one complete id/source_line owner mapping, preview its bounded effect, then apply only the exact returned effect; malformed, ambiguous, unmatched, or stale evidence is rejected without effects.",
+    developmentCommand("state todo correct-owners --input owner-mapping.yaml --dry-run --format json"),
+    developmentCommand("state todo correct-owners --input owner-mapping.yaml --effect-sha256 EFFECT_SHA256 --yes --format json"),
   ),
   "todo.create": projection(
     `Run ${developmentCommand("state todo explain --verb create --format json")}, remove CLI-owned fields, provide the full typed TODO record, and retry.`,

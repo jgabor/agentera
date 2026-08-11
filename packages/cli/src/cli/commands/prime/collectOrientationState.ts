@@ -105,10 +105,10 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, entity.todoReadiness);
   const reconciliationReadiness = entity.todoReconciliation?.status === "action_required"
     ? withRecommended(readiness, {
-      object: entity.todoReconciliation.state === "unsafe_inactive" ? "Replan unsafe TODO activation correction" : entity.todoReconciliation.state === "inactive" ? "Activate TODO reconciliation" : "Repair TODO reconciliation",
-      capability: entity.todoReconciliation.state === "unsafe_inactive" ? "plan" : "build",
+      object: entity.todoReconciliation.state === "unsafe_inactive" ? "Correct unsafe TODO ownership" : entity.todoReconciliation.state === "inactive" ? "Activate TODO reconciliation" : "Repair TODO reconciliation",
+      capability: "build",
       reason: entity.todoReconciliation.recovery_command,
-      phase: entity.todoReconciliation.state === "unsafe_inactive" ? "plan" : entity.todoReconciliation.state === "invalid_lifecycle" ? "audit" : "build",
+      phase: entity.todoReconciliation.state === "unsafe_inactive" ? "build" : entity.todoReconciliation.state === "invalid_lifecycle" ? "audit" : "build",
     })
     : readiness;
   const nextAction = cutover.status !== "complete"

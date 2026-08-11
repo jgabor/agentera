@@ -11,6 +11,8 @@ import type { EntityDiscoveryResult } from "./entityStorage.js";
 import {
   TODO_ACTIVATION_APPLY_COMMAND,
   TODO_ACTIVATION_PREVIEW_COMMAND,
+  TODO_OWNER_CORRECTION_APPLY_COMMAND,
+  TODO_OWNER_CORRECTION_PREVIEW_COMMAND,
   TODO_RECONCILIATION_ACTIVATION_PATH,
   TODO_REPAIR_APPLY_COMMAND,
   TODO_REPAIR_PREVIEW_COMMAND,
@@ -91,8 +93,8 @@ function invalidLifecycle(): TodoReconciliationInspection {
 function inspection(state: TodoReconciliationState, rawCounts: JsonObject, risks?: JsonObject): TodoReconciliationInspection {
   const bounded = boundedCounts(rawCounts);
   const active = state === "healthy_active" || state === "unsafe_active";
-  const preview = state === "inactive" ? TODO_ACTIVATION_PREVIEW_COMMAND : active ? TODO_REPAIR_PREVIEW_COMMAND : null;
-  const apply = state === "inactive" ? TODO_ACTIVATION_APPLY_COMMAND : active ? TODO_REPAIR_APPLY_COMMAND : null;
+  const preview = state === "unsafe_inactive" ? TODO_OWNER_CORRECTION_PREVIEW_COMMAND : state === "inactive" ? TODO_ACTIVATION_PREVIEW_COMMAND : active ? TODO_REPAIR_PREVIEW_COMMAND : null;
+  const apply = state === "unsafe_inactive" ? TODO_OWNER_CORRECTION_APPLY_COMMAND : state === "inactive" ? TODO_ACTIVATION_APPLY_COMMAND : active ? TODO_REPAIR_APPLY_COMMAND : null;
   return {
     state,
     status: state === "healthy_active" ? "operable" : "action_required",

@@ -1,0 +1,15 @@
+id: dmhjvlrmkt
+artifact: progress
+record:
+  timestamp: 2026-08-09 17:30
+  type: fix
+  phase: build
+  what: Updated packages/cli/src/cli/commands/prime/orientationOutput.ts so large unsafe-inactive TODO status keeps its diagnosis in startup and projects raw TODO attention and alternatives out of the status view.
+  context:
+    intent: Keep unsafe inactive status within the Prime startup budget without weakening its blocked diagnosis.
+    constraints: Preserve healthy and small unsafe status semantics, use no raw artifact read, and retain the canonical startup recovery.
+    scope: Status startup projection, source and extracted-package tests, and the unreleased changelog.
+  discovered: When unsafe risk IDs were omitted, status copied private TODO text through attention and a TODO routing alternative outside the startup diagnosis.
+  verified: pnpm -C packages/cli exec vp test run test/cli/statusContextStartup.test.ts --config vite.config.ts passed 24 tests; pnpm -C packages/cli run typecheck and pnpm -C packages/cli build passed; pnpm -C packages/cli run verify:package passed 37 tests.
+  next: Leave the task in progress for Audit; do not close the TODO or plan in this cycle.
+  publication_order: 124

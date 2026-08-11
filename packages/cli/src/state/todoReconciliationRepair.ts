@@ -1,7 +1,10 @@
+import { createHash } from "node:crypto";
+
 import type { JsonObject } from "../core/jsonValue.js";
 import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMarkdown.js";
+import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { reject } from "./write/errors.js";
-import { todoLegacyRowFingerprint, TODO_REPAIR_PREVIEW_COMMAND, type TodoReconciliationActivation } from "./todoReconciliationActivation.js";
+import { todoLegacyRowFingerprint, TODO_OWNER_CORRECTION_INPUT_VERSION, TODO_OWNER_CORRECTION_PREVIEW_COMMAND, TODO_REPAIR_PREVIEW_COMMAND, type TodoReconciliationActivation } from "./todoReconciliationActivation.js";
 
 const RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
 const DIAGNOSTIC_LIMIT = 20;
@@ -10,6 +13,8 @@ interface Row { line: number; section: string; sourceLine: string; snapshot: Sna
 interface ManagedRow extends Row { id: string }
 interface Entity { id: string | null; record: JsonObject | null }
 export interface TodoRepairPlan { records: Map<string, JsonObject>; retainedLegacyRows: string[]; rendered: string; diagnosis: JsonObject }
+export interface TodoOwnerCorrectionEvidence { owners: Array<{ id: string; source_line: number }>; sha256: string }
+export interface TodoOwnerCorrectionPlan { records: Map<string, JsonObject>; rendered: string; diagnosis: JsonObject }
 
 function mapping(value: unknown): value is JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function severity(section: string): string | null { return ["critical", "degraded", "normal", "annoying"].includes(section) ? section : null; }
@@ -29,6 +34,54 @@ function importMarkdown(record: JsonObject, row: Row): JsonObject {
   result.status = row.item.status; return result;
 }
 function rowFor(id: string, record: JsonObject): string { return `- [${record.status === "resolved" ? "x" : " "}] [id:${id}] ${renderTodoPublicRecord(record)}`; }
+
+export function todoOwnerCorrectionInputViolations(input: Record<string, unknown>): string[] {
+  const violations: string[] = [];
+  const allowed = new Set(["schema_version", "owners"]);
+  for (const key of Object.keys(input)) if (!allowed.has(key)) violations.push(`input field '${key}' is not accepted for owner correction`);
+  if (input.schema_version !== TODO_OWNER_CORRECTION_INPUT_VERSION) violations.push(`schema_version must be '${TODO_OWNER_CORRECTION_INPUT_VERSION}'`);
+  if (!Array.isArray(input.owners)) {
+    violations.push("owners must be a list of owner mappings");
+    return violations;
+  }
+  if (input.owners.length === 0 || input.owners.length > 256) violations.push("owners must contain 1..256 mappings");
+  const ids = new Set<string>();
+  const lines = new Set<number>();
+  input.owners.forEach((owner, index) => {
+    if (!mapping(owner)) {
+      violations.push(`owners[${index}] must be a mapping`);
+      return;
+    }
+    const keys = Object.keys(owner).sort().join(",");
+    if (keys !== "id,source_line") violations.push(`owners[${index}] must contain only id and source_line`);
+    if (typeof owner.id !== "string" || !/^[a-z]{10}$/.test(owner.id)) violations.push(`owners[${index}].id must be a bare ten-letter TODO ID`);
+    else if (ids.has(owner.id)) violations.push(`owners[${index}].id duplicates another owner claim`);
+    else ids.add(owner.id);
+    if (!Number.isSafeInteger(owner.source_line) || Number(owner.source_line) < 1) violations.push(`owners[${index}].source_line must be a positive integer`);
+    else if (lines.has(Number(owner.source_line))) violations.push(`owners[${index}].source_line duplicates another owner claim`);
+    else lines.add(Number(owner.source_line));
+  });
+  return violations.length <= DIAGNOSTIC_LIMIT
+    ? violations
+    : [...violations.slice(0, DIAGNOSTIC_LIMIT), `${violations.length - DIAGNOSTIC_LIMIT} additional input violations omitted`];
+}
+
+export function normalizeTodoOwnerCorrectionEvidence(input: Record<string, unknown>): TodoOwnerCorrectionEvidence {
+  const violations = todoOwnerCorrectionInputViolations(input);
+  if (violations.length) reject({
+    class: "schema_violation",
+    message: "TODO owner correction input is invalid",
+    violations,
+    recovery: `Run exactly '${TODO_OWNER_CORRECTION_PREVIEW_COMMAND}' with one complete schema-valid owner mapping; no state was changed.`,
+  });
+  const owners = (input.owners as Array<Record<string, unknown>>)
+    .map((owner) => ({ id: String(owner.id), source_line: Number(owner.source_line) }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+  return {
+    owners,
+    sha256: createHash("sha256").update(canonicalRecordJson({ schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION, owners })).digest("hex"),
+  };
+}
 function scanRows(markdown: string): { managed: Map<string, ManagedRow[]>; legacy: Row[] } {
   const managed = new Map<string, ManagedRow[]>(); const legacy: Row[] = []; const order = new Map<string, number>(); let section: string | null = null;
   markdown.split(/\r?\n/).forEach((line, index) => {
@@ -88,4 +141,88 @@ export function planTodoRepair(markdown: string, activation: TodoReconciliationA
   for (const [id, record] of records) { const row = final.get(id)?.[0]; records.set(id, withBaseline(record, row ? rowSnapshot(row, record) : { present: false })); }
   const retainedLegacyRows = retainedRows.filter((row) => !claimedLegacy.has(row.line)).map((row) => todoLegacyRowFingerprint(row.section, row.sourceLine)).sort();
   return { records, retainedLegacyRows, rendered, diagnosis: { counts: { duplicate, stale, matched, retained: retainedLegacyRows.length, conflicting: 0 }, items, omitted_count: Math.max(0, duplicate + matched + retainedLegacyRows.length - items.length) } };
+}
+
+function correctedRow(row: Row, id: string, record: JsonObject): string {
+  const indent = row.sourceLine.match(/^\s*/)?.[0] ?? "";
+  return `${indent}${rowFor(id, record)}`;
+}
+
+export function planTodoOwnerCorrection(
+  markdown: string,
+  entities: readonly Entity[],
+  evidence: TodoOwnerCorrectionEvidence,
+): TodoOwnerCorrectionPlan {
+  const { managed, legacy } = scanRows(markdown);
+  const rows = new Map<number, Row>();
+  for (const row of legacy) rows.set(row.line, row);
+  for (const entries of managed.values()) for (const row of entries) rows.set(row.line, row);
+  const byId = new Map(entities.filter((entity): entity is Entity & { id: string; record: JsonObject } => Boolean(entity.id && entity.record)).map((entity) => [entity.id, entity]));
+  const conflicts: string[] = [];
+  const claimedIds = new Set<string>();
+  const claimedLines = new Set<number>();
+  const records = new Map<string, JsonObject>();
+  const replacements = new Map<number, string>();
+  const items: JsonObject[] = [];
+  let stale = 0;
+
+  for (const owner of evidence.owners) {
+    const entity = byId.get(owner.id);
+    const row = rows.get(owner.source_line - 1);
+    if (!entity) {
+      conflicts.push(`owner ID '${owner.id}' has no canonical entity`);
+      continue;
+    }
+    if (!row) {
+      conflicts.push(`owner source line ${owner.source_line} has no managed TODO row`);
+      continue;
+    }
+    if (row.item.id && row.item.id !== owner.id) {
+      conflicts.push(`owner source line ${owner.source_line} already names '${row.item.id}', not '${owner.id}'`);
+      continue;
+    }
+    if (!claimedIds.add(owner.id) || !claimedLines.add(row.line)) {
+      conflicts.push(`owner mapping duplicates ID '${owner.id}' or source line ${owner.source_line}`);
+      continue;
+    }
+    if (entity.record.status === "resolved" && row.item.status === "open") {
+      conflicts.push(`owner source line ${owner.source_line} would reopen completed TODO '${owner.id}'`);
+      continue;
+    }
+    const record = importMarkdown(entity.record, row);
+    const stalePublic = !samePublic(publicSnapshot(entity.record), rowSnapshot(row, entity.record));
+    if (stalePublic) stale += 1;
+    records.set(owner.id, record);
+    replacements.set(row.line, correctedRow(row, owner.id, record));
+    if (items.length < DIAGNOSTIC_LIMIT) items.push({ id: owner.id, source_line: owner.source_line, stale_public: stalePublic });
+  }
+
+  for (const id of byId.keys()) if (!claimedIds.has(id)) conflicts.push(`canonical TODO entity '${id}' has no owner mapping`);
+  for (const [line, row] of rows) if (!claimedLines.has(line)) conflicts.push(`managed TODO row at line ${row.line + 1} has no owner mapping`);
+  for (const [id, entries] of managed) {
+    if (entries.length > 1) conflicts.push(`managed ID '${id}' occurs at lines ${entries.map((row) => row.line + 1).join(", ")}`);
+    if (!byId.has(id)) conflicts.push(`managed ID '${id}' has no canonical entity`);
+  }
+  if (conflicts.length) reject({
+    class: "conflict",
+    message: `TODO owner correction requires complete one-to-one evidence; found ${conflicts.length} conflicting claim${conflicts.length === 1 ? "" : "s"}`,
+    violations: [...conflicts.slice(0, DIAGNOSTIC_LIMIT), ...(conflicts.length > DIAGNOSTIC_LIMIT ? [`${conflicts.length - DIAGNOSTIC_LIMIT} additional conflicts omitted`] : [])],
+    diagnosis: {
+      counts: { matched: records.size, converted: legacy.length, retained: 0, duplicate: 0, stale, conflicting: conflicts.length },
+      items,
+      omitted_count: Math.max(0, evidence.owners.length - items.length),
+      conflicts_omitted_count: Math.max(0, conflicts.length - DIAGNOSTIC_LIMIT),
+    },
+    recovery: `Correct every id/source_line claim and rerun exactly '${TODO_OWNER_CORRECTION_PREVIEW_COMMAND}'; no state was changed.`,
+  });
+  const rendered = `${markdown.split(/\r?\n/).map((line, index) => replacements.get(index) ?? line).join("\n").replace(/\n*$/, "")}\n`;
+  return {
+    records,
+    rendered,
+    diagnosis: {
+      counts: { matched: records.size, converted: legacy.length, retained: 0, duplicate: 0, stale, conflicting: 0 },
+      items,
+      omitted_count: Math.max(0, evidence.owners.length - items.length),
+    },
+  };
 }

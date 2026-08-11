@@ -40,7 +40,7 @@
   and exact-detail recovery generated from the retrieval authority.
 - TODO state now reconciles repository-first `TODO.md` edits with operational
   entity state and publishes requested mutations through one recoverable atomic
-  transaction.
+  transaction, including effect-bound unsafe owner correction before activation.
 - State mutation behavior now comes from one code-owned 25-operation registry,
   with declarative discovery in `references/artifacts/state-storage-authority.yaml`
   required to match it before commands run. `state <family> explain --all`,
@@ -84,6 +84,8 @@
 
 ### Fixed
 
+- Fixed status startup for large unsafe inactive TODO sets to stay within its
+  22,500-byte JSON limit while retaining bounded recovery details.
 - Fixed `agentera doctor --format json` to report bounded, read-only retirement
   diagnostics for stale native resources. Each candidate now names its exact ID,
   path-only evidence, and a `doctor --retired-resource ID` preview command;

@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -79,7 +79,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
   fs.mkdirSync(bin);
   const record = path.join(root, "runs.jsonl");
   const vp = path.join(bin, "vp");
-  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
+  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s","maxWorkers":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" "$VITEST_MAX_WORKERS" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
   fs.chmodSync(vp, 0o755);
   return { root, contractPath, record, bin };
 }
@@ -215,6 +215,41 @@ describe("verification lane ownership", () => {
     expect(runs[0].args).toContain("--no-color");
     expect(runs[0].args).toContain("test/performance.test.ts");
     expect(runs[0].args).not.toContain("test/source.test.ts");
+  });
+
+  it("runs performance-owned files serially inside the isolated owner", () => {
+    const { result, runs } = run(["performance"], fixture(), { VITEST_MAX_WORKERS: "8" });
+    expect(result.status, result.stderr).toBe(0);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ owner: "performance", maxWorkers: "1" });
+    expect(runs[0].args).toContain("test/performance-analytics.test.ts");
+    expect(runs[0].args).toContain("test/performance.test.ts");
+  });
+
+  it.runIf(process.platform === "linux")("rejects performance evidence while another marked owner is active", () => {
+    const setup = fixture();
+    const contract = JSON.parse(fs.readFileSync(setup.contractPath, "utf8"));
+    contract.owners.performance.evidence = {
+      schema_version: "agentera.entityAuthorityPerformanceEvidence.v1",
+      authority: "fixture",
+      stdout_format: "fixture",
+      max_utf8_bytes: 65536,
+    };
+    fs.writeFileSync(setup.contractPath, JSON.stringify(contract));
+    const competing = spawn(process.execPath, ["-e", "setTimeout(() => {}, 30000)"], {
+      env: { ...process.env, AGENTERA_VERIFICATION_OWNER: "package" },
+      stdio: "ignore",
+    });
+    try {
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+      const { result, runs } = run(["performance"], setup);
+      expect(result.status).toBe(1);
+      expect(runs).toHaveLength(0);
+      expect(result.stderr).toContain("performance owner rejected contended host");
+      expect(result.stderr).toContain("machine-sensitive samples cannot share the host");
+    } finally {
+      competing.kill();
+    }
   });
 
   it.each(Object.entries(PERFORMANCE_FORWARDING.forbidden_options))("rejects forbidden option %s before runner execution", (option, risk) => {

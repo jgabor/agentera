@@ -1,0 +1,28 @@
+id: zjvdfuxhrj
+artifact: plan
+record:
+  name: "yrjmbhfjes: Provide effect-bound unsafe TODO owner correction"
+  depends_on:
+    []
+  status: superseded
+  acceptance:
+    - GIVEN the correction operation is exposed WHEN its grammar, explain, schema, help, source, and extracted-package surfaces are inspected THEN they describe one compatible preview/apply contract and malformed or missing owner or effect input rejects before effects.
+    - GIVEN the hierarchical marker-absent fixture with 161 stale open entities WHEN correction is previewed THEN a bounded exact effect manifest is returned without changing bytes or activating unsafe state.
+    - GIVEN supplied evidence yields a complete one-to-one owner mapping WHEN the exact preview is confirmed THEN there is one public row per entity, completed Markdown work stays complete, unrelated prose and canonical IDs remain stable, Agentera-owned operational fields remain intact, and state validation passes without intermediate activation.
+    - GIVEN correction is requested outside marker-absent unsafe-inactive state or evidence contains duplicate claims, unmatched rows or entities, unresolved ambiguity, reopened completed work, or effects that differ from preview WHEN validation runs THEN it rejects before writes with bounded typed recovery and marker-present repair behavior is unchanged.
+    - GIVEN interruption, exact replay, or two simultaneous matching clients WHEN correction recovery settles THEN public bytes, entity baselines, activation state, canonical IDs, and results converge; one client owns the transaction, the other replays it, duplicate effects are absent, and supported reads never accept mixed state.
+  test_proportionality: At least one pass and one fail per correction decision branch, the 161-row fixture, one interruption and replay proof, and exactly two simultaneous clients. Retain the existing scheduled 100x two-client stale-lock stress without expanding fan-out.
+  plan: nsabzvpqqs
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: After serializing performance-owned files, the authoritative final-tree performance owner still failed exact_get repetition 2 at 1211.312 ms against the unchanged 1000 ms ceiling.
+    provenance:
+      attempt_id: zjvdfuxhrj-audit-2
+      source: Agentera Orchestrate Audit evaluation 2
+      recorded_at: 2026-08-09 21:15
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - nsyqzzptkg
+  superseded_reason: Replacement established uncontended performance-owner evidence without changing the owner-correction contract or performance authority.

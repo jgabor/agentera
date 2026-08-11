@@ -49,6 +49,7 @@ export interface TodoReconciliationRecoveryReceipt {
 export interface TodoReconciliationRecoveryOptions {
   createRequestSha256?: string;
   activationEffectSha256?: string;
+  ownerMappingSha256?: string;
   beforeRecovery?: (targets: readonly ValidatedTodoReconciliationTarget[]) => void;
   beforeCommit?: () => void;
   beforeActivation?: () => void;
@@ -57,6 +58,7 @@ export interface TodoReconciliationRecoveryOptions {
 export interface TodoReconciliationPublicationOptions {
   create?: TodoReconciliationCreateReceipt;
   activationEffectSha256?: string;
+  ownerMappingSha256?: string;
   interruptAfterTarget?: number;
   retainUnchangedTargets?: boolean;
   beforeCommit?: () => void;
@@ -82,6 +84,7 @@ interface Journal {
   mapping_sha256: string;
   create?: TodoReconciliationCreateReceipt;
   activation_effect_sha256?: string;
+  owner_mapping_sha256?: string;
   targets: JournalTarget[];
 }
 
@@ -171,7 +174,7 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
   catch { invalidJournal("TODO reconciliation journal is not valid bounded UTF-8 JSON"); }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) invalidJournal("TODO reconciliation journal is not a mapping");
   const value = parsed as Partial<Journal>;
-  const expectedKeys = ["schema_version", "id", "public_path", "mapping_sha256", "targets", ...(value.create === undefined ? [] : ["create"]), ...(value.activation_effect_sha256 === undefined ? [] : ["activation_effect_sha256"])].sort().join(",");
+  const expectedKeys = ["schema_version", "id", "public_path", "mapping_sha256", "targets", ...(value.create === undefined ? [] : ["create"]), ...(value.activation_effect_sha256 === undefined ? [] : ["activation_effect_sha256"]), ...(value.owner_mapping_sha256 === undefined ? [] : ["owner_mapping_sha256"])].sort().join(",");
   if (
     Object.keys(value).sort().join(",") !== expectedKeys
     || value.schema_version !== VERSION
@@ -185,6 +188,7 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
     || value.targets.length > MAX_TARGETS
   ) invalidJournal("TODO reconciliation journal is malformed");
   if (value.activation_effect_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.activation_effect_sha256)) invalidJournal("TODO reconciliation journal has an invalid activation effect authorization");
+  if (value.owner_mapping_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.owner_mapping_sha256)) invalidJournal("TODO reconciliation journal has an invalid owner-mapping authorization");
   if (value.create !== undefined && (
     !value.create
     || typeof value.create !== "object"
@@ -214,15 +218,16 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
   }
   const body = value.targets as JournalTarget[];
   const activates = body.some((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH);
-  if (!activates && value.activation_effect_sha256 !== undefined) invalidJournal("TODO reconciliation journal effect authorization has no activation target");
+  if (!activates && (value.activation_effect_sha256 !== undefined || value.owner_mapping_sha256 !== undefined)) invalidJournal("TODO reconciliation journal effect authorization has no activation target");
+  if (value.owner_mapping_sha256 !== undefined && value.activation_effect_sha256 === undefined) invalidJournal("TODO reconciliation journal owner-mapping authorization has no effect authorization");
   const inferredCreate = createReceiptFromTargets(body);
   if (value.create && (
     !inferredCreate
     || value.create.created_id !== inferredCreate.created_id
     || value.create.request_sha256 !== inferredCreate.request_sha256
   )) invalidJournal("TODO reconciliation create receipt does not match its canonical entity target");
-  const identity = value.create || value.activation_effect_sha256
-    ? { ...(value.create ? { create: value.create } : {}), ...(value.activation_effect_sha256 ? { activation_effect_sha256: value.activation_effect_sha256 } : {}), targets: body }
+  const identity = value.create || value.activation_effect_sha256 || value.owner_mapping_sha256
+    ? { ...(value.create ? { create: value.create } : {}), ...(value.activation_effect_sha256 ? { activation_effect_sha256: value.activation_effect_sha256 } : {}), ...(value.owner_mapping_sha256 ? { owner_mapping_sha256: value.owner_mapping_sha256 } : {}), targets: body }
     : body;
   const expectedId = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (value.id !== expectedId || (fileName !== undefined && fileName !== `${value.id}.json`)) {
@@ -559,6 +564,11 @@ export function recoverTodoReconciliation(
       message: "pending TODO activation does not match the authorized preview effect",
       recovery: "Retry the exact activation apply command returned by the original preview; no transaction target bytes were changed.",
     });
+    if (journal.owner_mapping_sha256 && options.ownerMappingSha256 !== journal.owner_mapping_sha256) reject({
+      class: "conflict",
+      message: "pending TODO owner correction does not match the supplied owner mapping",
+      recovery: "Retry the exact correction input and apply command returned by the original preview; no transaction target bytes were changed.",
+    });
     options.beforeRecovery?.(journal.targets.map((target) => ({
       path: target.path,
       before: target.before === null ? null : decode(target.before),
@@ -604,9 +614,10 @@ export function publishTodoReconciliation(
       || Number(left.path === binding.publicPath) - Number(right.path === binding.publicPath)
       || left.path.localeCompare(right.path));
   const body = normalized.map((target) => ({ path: target.path, before: target.before === null ? null : encode(target.before), after: encode(target.after) }));
-  if (options.activationEffectSha256 && !normalized.some((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH)) reject({ class: "schema_violation", message: "TODO activation authorization requires its activation target", recovery: "Recompute the complete activation target set from a fresh dry-run; no state was changed." });
-  const identity = options.create || options.activationEffectSha256
-    ? { ...(options.create ? { create: options.create } : {}), ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}), targets: body }
+  if ((options.activationEffectSha256 || options.ownerMappingSha256) && !normalized.some((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH)) reject({ class: "schema_violation", message: "TODO activation authorization requires its activation target", recovery: "Recompute the complete activation target set from a fresh dry-run; no state was changed." });
+  if (options.ownerMappingSha256 && !options.activationEffectSha256) reject({ class: "schema_violation", message: "TODO owner-mapping authorization requires its effect authorization", recovery: "Recompute the complete owner correction target set from a fresh dry-run; no state was changed." });
+  const identity = options.create || options.activationEffectSha256 || options.ownerMappingSha256
+    ? { ...(options.create ? { create: options.create } : {}), ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}), ...(options.ownerMappingSha256 ? { owner_mapping_sha256: options.ownerMappingSha256 } : {}), targets: body }
     : body;
   const id = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (!normalized.length) return { id, targetCount: 0 };
@@ -637,6 +648,7 @@ export function publishTodoReconciliation(
     mapping_sha256: binding.mappingSha256,
     ...(options.create ? { create: options.create } : {}),
     ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}),
+    ...(options.ownerMappingSha256 ? { owner_mapping_sha256: options.ownerMappingSha256 } : {}),
     targets: body,
   };
   const bytes = `${JSON.stringify(journal)}\n`;

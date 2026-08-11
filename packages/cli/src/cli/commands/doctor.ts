@@ -157,7 +157,7 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
     }
   } else if (unsafeInactiveTodo) {
     lines.push("");
-    lines.push("Next: complete the owner correction and replan before any TODO mutation.");
+    lines.push("Next: supply the complete owner mapping, preview the reported correction, then use its exact apply_command.");
   } else if (todoReconciliation) {
     lines.push("");
     lines.push("Next: run the reported TODO reconciliation preview, review its bounded effect, then use its exact apply_command.");

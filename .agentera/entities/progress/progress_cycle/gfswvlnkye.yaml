@@ -1,0 +1,15 @@
+id: gfswvlnkye
+artifact: progress
+record:
+  timestamp: 2026-08-10 11:28
+  type: fix
+  phase: build
+  what: "Verified the 161-row unsafe fixture: status was 21,858 bytes, correction matched 161 rows, and test:performance exact-get peaked at 623.144 ms."
+  context:
+    intent: Verify both shipped unsafe-TODO fixes and synchronize their project state.
+    constraints: Keep the 3.0.0 hold; do not publish, tag, push, or complete the plan task.
+    scope: Local CLI behavior, authoritative verification, TODO closeout, and progress evidence.
+  discovered: The performance owner initially rejected an active package owner, then ran once after that owner settled.
+  verified: "Compiled local CLI: prime --context status --format json exited 0 with unsafe_inactive at 21,858 UTF-8 bytes (<=22,500); state todo correct-owners preview/apply matched 161 rows; check validate state returned 0 issues. Focused tests: owner correction 3/3, status 27/27, mutation grammar 32/32, lane ownership 70/70. pnpm -C packages/cli run typecheck, build, and test:source passed (3446 passed, 1 skipped); test:performance exact-get was 623.144, 571.905, 604.264, 562.569, and 532.247 ms (<=1000); verify:package 37/37; compact pass; capability contract 3/3; state validation pass."
+  next: Await Audit-owned evaluator PASS and final plan lifecycle transitions.
+  publication_order: 129

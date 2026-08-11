@@ -16,19 +16,23 @@ record:
   severity: normal
   readiness:
     capability: build
-    reason: Fail-closed activation protects OpenEval but leaves no supported path to reconcile its 161 stale entities, so owner correction is required before project work can resume.
+    reason: Owner correction and exact-get performance evidence passed.
     dependencies:
       []
     blocked: null
     gate: null
     queue_rank: 42
-    order_reason: Add the safe recovery path after unsafe activation was correctly blocked.
-  status: open
+    order_reason: Complete the verified safe recovery path.
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Provide effect-bound owner correction for unsafe-inactive TODO projects."
+      status: resolved
+      order: 104
       severity: normal
-      status: open
-      order: 30
+  lifecycle:
+    operation: resolve
+    reason: The 161-row correction passed state validation and exact-get stayed below 1000 ms.
+    date: 2026-08-10

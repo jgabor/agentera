@@ -212,6 +212,7 @@ export function printStateHelp(sub?: string): string {
     return [
       ...recordFamilyReadSection("todo"),
        "       agentera state todo activate|repair --dry-run|--effect-sha256 SHA256 --yes --format json",
+       "       agentera state todo correct-owners --input OWNER_MAPPING.yaml --dry-run|--effect-sha256 SHA256 --yes --format json",
        "       agentera state todo create --input TODO.yaml --format json",
        "       agentera state todo update --id ID --input TODO-PATCH.yaml --format json",
        "       agentera state todo set-severity --id ID --severity LEVEL --reason TEXT --date YYYY-MM-DD --format json",

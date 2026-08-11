@@ -40,8 +40,6 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
-- [ ] [id:yrjmbhfjes] [fix:3.0.0] Provide effect-bound owner correction for unsafe-inactive TODO projects.
-- [ ] [id:gxcnoplnwr] [fix:3.0.0] Keep unsafe-TODO status startup within the Prime byte budget.
 
 ## ⇢ Annoying
 
@@ -150,6 +148,8 @@
 - [x] [id:ituipybnoy] [fix:3.0.0] Fail closed when TODO activation would resurrect or duplicate public work.
 - [x] [id:hpqprlcqhf] [feat:3.0.0] Add explicit atomic plan replacement and competing-open-plan recovery.
 - [x] [id:zggqwckvpy] [chore:3.0.0] Refresh final qualification evidence after governed documentation changes.
+- [x] [id:yrjmbhfjes] [fix:3.0.0] Provide effect-bound owner correction for unsafe-inactive TODO projects.
+- [x] [id:gxcnoplnwr] [fix:3.0.0] Keep unsafe-TODO status startup within the Prime byte budget.
 
 ## → Critical
 

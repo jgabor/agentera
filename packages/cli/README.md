@@ -56,11 +56,11 @@ npx -y agentera@next state todo repair --effect-sha256 EFFECT_SHA256 --yes --for
 
 Unsafe inactive evidence (unmatched projections, duplicate public work, stale
 entity status, or prospective resurrection) reports a bounded, content-private
-diagnosis but no effect digest or apply command. It has no repair path before
-activation. Correct the Markdown-owned public rows and Agentera-owned entity
-state, then replan any required mutation. `check validate state` reports the
-same read-only diagnosis. Healthy active TODO projections keep the existing
-output.
+diagnosis and an owner-correction preview. Supply a complete `id` and
+one-based `source_line` mapping for every managed row, then confirm the exact
+effect-bound apply command. The correction preserves Markdown-owned public
+state and Agentera-owned operational fields without an intermediate activation.
+`check validate state` reports the same read-only diagnosis. Healthy active TODO projections keep the existing output.
 
 ## Shared-skill integration
 

@@ -320,7 +320,10 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       example: exampleFor(artifact, verb),
     });
   const selectorFields = new Set(spec.fields.filter((field) => spec.selectors.includes(field.flag)).map((field) => field.field));
-  if (spec.inputRoot && Object.keys(values).some((field) => !selectorFields.has(field)))
+  const correctionApplyFields = artifact === "todo" && verb === "correct-owners"
+    ? new Set(["effect_sha256", "confirmed"])
+    : new Set<string>();
+  if (spec.inputRoot && Object.keys(values).some((field) => !selectorFields.has(field) && !correctionApplyFields.has(field)))
     invalid({
       class: "mutually_exclusive",
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,
