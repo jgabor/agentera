@@ -15,6 +15,9 @@ import { observationDigest } from "../../src/validate/activationArtifactEvidence
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const GATES = RELEASE_CONTRACT.qualification.source.gates;
 const gate = (name: string) => GATES.find((entry: { name: string }) => entry.name === name)!;
+const SOURCE_QUALIFICATION_MS = RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
+const OVERLAP_CLEANUP_MARGIN_MS = RELEASE_CONTRACT.qualification.source.dag.overlapCleanupMarginMs;
+const PARENT_RECONCILIATION_MARGIN_MS = RELEASE_CONTRACT.qualification.source.dag.overlapParentReconciliationMarginMs;
 
 function packageIdentity() {
   const unsigned = {
@@ -158,28 +161,28 @@ describe("source qualification DAG", () => {
     expect(started.map(({ name }) => name)).not.toEqual(expect.arrayContaining(["source", "package", "build"]));
     expect(started[0]).toMatchObject({
       name: "generated-overlap",
-      timeoutMs: 410_000,
+      timeoutMs: SOURCE_QUALIFICATION_MS - OVERLAP_CLEANUP_MARGIN_MS,
       cooperativeStop: true,
       environment: {
-        AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "421000",
-        AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
+        AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(1_000 + SOURCE_QUALIFICATION_MS),
+        AGENTERA_SOURCE_CLEANUP_MARGIN_MS: String(OVERLAP_CLEANUP_MARGIN_MS),
       },
     });
     expect(started.slice(0, 3).every(({ name }) => !["performance", "compact", "capability-contract", "activation-conjunction"].includes(name))).toBe(true);
     expect(started.find(({ name }) => name === "performance")).toMatchObject({
-      timeoutMs: 416_000,
+      timeoutMs: SOURCE_QUALIFICATION_MS - PARENT_RECONCILIATION_MARGIN_MS,
       concurrentWith: [],
-      environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "421000" },
+      environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(1_000 + SOURCE_QUALIFICATION_MS) },
     });
     expect(started.find(({ name }) => name === "capacity")).toMatchObject({
-      timeoutMs: 416_000,
+      timeoutMs: SOURCE_QUALIFICATION_MS - PARENT_RECONCILIATION_MARGIN_MS,
       concurrentWith: [],
-      environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "421000" },
+      environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(1_000 + SOURCE_QUALIFICATION_MS) },
     });
     expect(started.filter(({ name }) => ["compact", "capability-contract", "activation-conjunction"].includes(name)).map(({ name, timeoutMs }) => ({ name, timeoutMs }))).toEqual([
-      { name: "compact", timeoutMs: 416_000 },
-      { name: "capability-contract", timeoutMs: 416_000 },
-      { name: "activation-conjunction", timeoutMs: 416_000 },
+      { name: "compact", timeoutMs: SOURCE_QUALIFICATION_MS - PARENT_RECONCILIATION_MARGIN_MS },
+      { name: "capability-contract", timeoutMs: SOURCE_QUALIFICATION_MS - PARENT_RECONCILIATION_MARGIN_MS },
+      { name: "activation-conjunction", timeoutMs: SOURCE_QUALIFICATION_MS - PARENT_RECONCILIATION_MARGIN_MS },
     ]);
     expect(started.find(({ name }) => name === "activation-conjunction")?.environment).toMatchObject({
       AGENTERA_ACTIVATION_GENERATION_ID: "generation-a",
@@ -400,8 +403,8 @@ describe("source qualification DAG", () => {
   });
 
   it.each([
-    ["starts at the exact concurrent allocation boundary", 410_000, "pass"],
-    ["fails before starting below the allocation boundary", 410_001, "fail"],
+    ["starts at the exact concurrent allocation boundary", SOURCE_QUALIFICATION_MS - 10_000, "pass"],
+    ["fails before starting below the allocation boundary", SOURCE_QUALIFICATION_MS - 9_999, "fail"],
   ])("%s", async (_label, afterPerformance, expected) => {
     let now = 0;
     const phases: string[][] = [];
