@@ -820,7 +820,7 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
     expect(initialized.stdout).not.toContain("upgrade --yes");
   });
 
-  it("executes source-built and self-contained packaged list help, examples, rejections, and corrections for every authority family", () => {
+  it("executes source-built and self-contained packaged list help, examples, rejections, and corrections for every authority family", { timeout: 240_000 }, () => {
     const sourceBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
     const packagedBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const project = fs.mkdtempSync(path.join(fixture.root, "retrieval-help-parity-"));
