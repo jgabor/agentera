@@ -1,0 +1,15 @@
+id: sqewyknfxs
+artifact: progress
+record:
+  timestamp: 2026-08-12 08:20
+  type: fix
+  phase: build
+  what: Closed the activation-evidence trust boundary while retaining canonical source qualification margin.
+  context:
+    intent: Record implementation evidence without completing the task or recording an evaluator verdict.
+    constraints: Keep onlyyjethm pending; preserve budgets, gate order, and no-effect boundaries.
+    scope: Activation evidence trust boundary and source qualification timing.
+  discovered: The timing optimization was unsafe when public validation context accepted caller-supplied authoritative evidence; a caller could forge and re-digest owner and manifest records.
+  verified: "Validator-owned assembly observes source and generated artifacts once, snapshots and deep-freezes inputs, and validates cross-bindings without a caller trust override. Ordinary validation and unchanged Barrier B independently re-observe artifacts. Canonical no-receipt qualification passed all 10 gates in order: source 331234ms, stress 32231ms, performance 45036ms, package 330422ms, generated-overlap 342911ms, typecheck 638ms, build 2633ms, compact 1426ms, capability-contract 285ms, activation-conjunction 9358ms. Total 397361ms, leaving 22639ms; batch A 342915ms, performance barrier 45037ms, Barrier B 9373ms, reconciliation 36ms. Package 44/44, focused source 54/54, and typecheck passed. The 420s deadline, 10s overlap reserve, 6s Barrier B allocation, 4s reconciliation, gate set, and receipt order are unchanged; no receipt, candidate, registry, activation, or publication effect occurred."
+  next: Commit the implementation and implementation-side state together, then run the clean canonical source qualifier to issue the pending source receipt.
+  publication_order: 153

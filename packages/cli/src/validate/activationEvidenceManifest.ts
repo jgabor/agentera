@@ -67,6 +67,16 @@ export interface ActivationEvidenceValidationContext {
   readonly expectedPackageIdentity: ActivationPackageIdentity | unknown;
 }
 
+export interface ActivationEvidenceAssemblyContext {
+  readonly root: string;
+  readonly generationRoot: string;
+  readonly generation: string;
+  readonly productionInputs: unknown;
+  readonly productionEvidence: ProductionEvidence;
+  readonly packageEvidence: ActivationOwnerEvidence;
+  readonly expectedPackageIdentity: ActivationPackageIdentity | unknown;
+}
+
 interface ProductionEvidence {
   classes: Record<string, { dimensions: Record<string, { identities: string[] }> }>;
 }
@@ -270,6 +280,59 @@ export function createActivationEvidenceManifest(options: {
     checks,
   };
   return { ...unsigned, manifestDigest: observationDigest(unsigned) };
+}
+
+function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
+  if (!value || typeof value !== "object" || seen.has(value)) return value;
+  seen.add(value);
+  for (const child of Object.values(value)) deepFreeze(child, seen);
+  return Object.freeze(value);
+}
+
+/** Observe, snapshot, assemble, and validate immediate release evidence inside one trust boundary. */
+export function assembleAndValidateActivationEvidence(
+  context: ActivationEvidenceAssemblyContext,
+): { manifest: ActivationEvidenceManifest; observerCalls: { source: number; generated: number } } {
+  let sourceObserverCalls = 0;
+  let generatedObserverCalls = 0;
+  sourceObserverCalls += 1;
+  const observedSourceEvidence = createSourceOwnerEvidence(context.root, context.productionInputs);
+  const sourceEvidence = deepFreeze(structuredClone(observedSourceEvidence));
+  generatedObserverCalls += 1;
+  const observedGeneratedEvidence = createGeneratedOwnerEvidence({
+    root: context.root,
+    generationRoot: context.generationRoot,
+    generation: context.generation,
+    productionInputs: context.productionInputs,
+  });
+  const generatedEvidence = deepFreeze(structuredClone(observedGeneratedEvidence));
+  const productionEvidence = deepFreeze(structuredClone(context.productionEvidence));
+  const packageEvidence = deepFreeze(structuredClone(context.packageEvidence));
+  const expectedPackageIdentity = deepFreeze(structuredClone(context.expectedPackageIdentity));
+  const manifest = deepFreeze(createActivationEvidenceManifest({
+    root: context.root,
+    generation: context.generation,
+    productionEvidence,
+    sourceEvidence,
+    generatedEvidence,
+    packageEvidence,
+  }));
+  const violations = activationEvidenceViolationsInternal(manifest, {
+    root: context.root,
+    generationRoot: context.generationRoot,
+    generation: context.generation,
+    sourceEvidence,
+    generatedEvidence,
+    expectedPackageIdentity,
+  });
+  if (violations.length > 0) throw new Error(violations[0]);
+  return {
+    manifest: structuredClone(manifest),
+    observerCalls: {
+      source: sourceObserverCalls,
+      generated: generatedObserverCalls,
+    },
+  };
 }
 
 function validateOwnerEvidence(
@@ -555,17 +618,24 @@ function validateChecks(manifest: ActivationEvidenceManifest, violations: string
   if (used.size !== Object.keys(PROVENANCE).length) violations.push("activation evidence contains unconsumed or multiply consumed producer records");
 }
 
-export function activationEvidenceViolations(
+interface ImmediateValidationContext {
+  root: string;
+  generationRoot: string;
+  generation: string;
+  sourceEvidence: ActivationOwnerEvidence;
+  generatedEvidence: ActivationOwnerEvidence;
+  expectedPackageIdentity: ActivationPackageIdentity | unknown;
+}
+
+function activationEvidenceViolationsInternal(
   actual: unknown,
-  expectedOrContext: ActivationEvidenceManifest | ActivationEvidenceValidationContext,
+  context: ImmediateValidationContext | null,
 ): string[] {
   const manifest = actual as ActivationEvidenceManifest | null;
   if (!manifest || typeof manifest !== "object") return ["activation evidence manifest is missing"];
   const violations: string[] = [];
-  const context = "root" in expectedOrContext ? expectedOrContext : null;
-  const expected = context ? null : expectedOrContext as ActivationEvidenceManifest;
-  const generation = context?.generation ?? expected!.generation;
-  const sourceDigest = context ? activationSourceDigest(context.root) : expected!.currentSourceDigest;
+  const generation = context?.generation ?? manifest.generation;
+  const sourceDigest = context ? activationSourceDigest(context.root) : manifest.currentSourceDigest;
   const packageIntegrity = context
     ? (context.expectedPackageIdentity as ActivationPackageIdentity | undefined)?.packageArtifact?.integrity ?? null
     : manifest.packageArtifact?.integrity ?? null;
@@ -588,20 +658,8 @@ export function activationEvidenceViolations(
   if (manifestDigest !== observationDigest(unsigned)) violations.push("activation evidence manifest digest mismatched");
   if (Buffer.byteLength(`${canonicalObservationJson(manifest)}\n`, "utf8") > ACTIVATION_EVIDENCE_MAX_BYTES) violations.push("activation evidence manifest exceeds its byte bound");
   if (context) {
-    const authoritativeSource = createSourceOwnerEvidence(context.root, context.productionInputs);
-    const authoritativeGenerated = createGeneratedOwnerEvidence({
-      root: context.root,
-      generationRoot: context.generationRoot,
-      generation: context.generation,
-      productionInputs: context.productionInputs,
-    });
-    validateAuthoritativeOwner(manifest.producers?.source, authoritativeSource, violations);
-    validateAuthoritativeOwner(manifest.producers?.generated, authoritativeGenerated, violations);
-    if (!/^[a-f0-9]{64}$/.test(context.expectedManifestDigest)) {
-      violations.push("trusted release activation evidence digest is missing or malformed");
-    } else if (manifest.manifestDigest !== context.expectedManifestDigest) {
-      violations.push("activation evidence manifest differs from the trusted release observation");
-    }
+    validateAuthoritativeOwner(manifest.producers?.source, context.sourceEvidence, violations);
+    validateAuthoritativeOwner(manifest.producers?.generated, context.generatedEvidence, violations);
     violations.push(...activationPackageIdentityViolations(context.expectedPackageIdentity, manifest.producers?.package));
     for (const relative of [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json"]) {
       try {
@@ -609,7 +667,45 @@ export function activationEvidenceViolations(
       } catch { violations.push("activation evidence generation marker is missing or malformed"); }
     }
   }
-  if (expected && canonicalObservationJson(manifest) !== canonicalObservationJson(expected)) violations.push("activation evidence differs from the expected independently observed manifest");
+  return [...new Set(violations)];
+}
+
+export function activationEvidenceManifestViolations(
+  actual: unknown,
+  expected: ActivationEvidenceManifest,
+): string[] {
+  const violations = activationEvidenceViolationsInternal(actual, null);
+  if (canonicalObservationJson(actual) !== canonicalObservationJson(expected)) {
+    violations.push("activation evidence differs from the expected independently observed manifest");
+  }
+  return [...new Set(violations)];
+}
+
+export function activationEvidenceViolations(
+  actual: unknown,
+  context: ActivationEvidenceValidationContext,
+): string[] {
+  const sourceEvidence = createSourceOwnerEvidence(context.root, context.productionInputs);
+  const generatedEvidence = createGeneratedOwnerEvidence({
+    root: context.root,
+    generationRoot: context.generationRoot,
+    generation: context.generation,
+    productionInputs: context.productionInputs,
+  });
+  const violations = activationEvidenceViolationsInternal(actual, {
+    root: context.root,
+    generationRoot: context.generationRoot,
+    generation: context.generation,
+    sourceEvidence,
+    generatedEvidence,
+    expectedPackageIdentity: context.expectedPackageIdentity,
+  });
+  const manifest = actual as ActivationEvidenceManifest | null;
+  if (!/^[a-f0-9]{64}$/.test(context.expectedManifestDigest)) {
+    violations.push("trusted release activation evidence digest is missing or malformed");
+  } else if (manifest?.manifestDigest !== context.expectedManifestDigest) {
+    violations.push("activation evidence manifest differs from the trusted release observation");
+  }
   return [...new Set(violations)];
 }
 

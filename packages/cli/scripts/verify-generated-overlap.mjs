@@ -49,18 +49,17 @@ export async function writeActivationEvidence({ repoRoot, generationRoot, genera
   const packageEvidence = artifacts.readContentAddressedOwnerEvidence(packageEvidenceDirectory, "package-owner");
   const productionInputs = conjunction.loadActivationProductionInputs(repoRoot, generationRoot);
   const productionEvidence = conjunction.collectActivationProductionEvidence(repoRoot, productionInputs);
-  const generatedEvidence = await artifacts.createGeneratedOwnerEvidence({ root: repoRoot, generationRoot, generation, productionInputs });
   const packageSnapshot = artifacts.installRetainedPackageSnapshot(packageSnapshotDirectory, generationRoot, packageIdentity);
-  const manifest = evidence.createActivationEvidenceManifest({ root: repoRoot, generation, productionEvidence, sourceEvidence, generatedEvidence, packageEvidence });
-  const violations = evidence.activationEvidenceViolations(manifest, {
+  const assembled = evidence.assembleAndValidateActivationEvidence({
     root: repoRoot,
     generationRoot,
     generation,
     productionInputs,
-    expectedManifestDigest: manifest.manifestDigest,
+    productionEvidence,
+    packageEvidence,
     expectedPackageIdentity: packageIdentity,
   });
-  if (violations.length > 0) throw overlapFailure(`activation evidence rejected: ${violations[0]}`);
+  const manifest = assembled.manifest;
   const target = path.join(generationRoot, evidence.ACTIVATION_EVIDENCE_FILE);
   const temporary = `${target}.${process.pid}.tmp`;
   fs.writeFileSync(temporary, `${artifacts.canonicalObservationJson(manifest)}\n`, { flag: "wx", mode: 0o600 });
@@ -75,7 +74,7 @@ export async function writeActivationEvidence({ repoRoot, generationRoot, genera
       source: { path: path.basename(fs.readdirSync(sourceEvidenceDirectory)[0]), digest: sourceEvidence.evidenceDigest },
       package: { path: path.basename(fs.readdirSync(packageEvidenceDirectory)[0]), digest: packageEvidence.evidenceDigest },
       packageIdentity: { path: path.basename(fs.readdirSync(packageIdentityDirectory)[0]), digest: packageIdentity.identityDigest },
-      generated: { path: "embedded:generated-owner", digest: generatedEvidence.evidenceDigest },
+      generated: { path: "embedded:generated-owner", digest: manifest.producers.generated.evidenceDigest },
     },
   };
 }

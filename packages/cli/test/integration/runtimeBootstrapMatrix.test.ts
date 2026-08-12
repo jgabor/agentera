@@ -39,7 +39,9 @@ import {
   writeContentAddressedPackageIdentity,
 } from "../../src/validate/activationArtifactEvidence.js";
 import {
+  activationEvidenceManifestViolations,
   activationEvidenceViolations,
+  assembleAndValidateActivationEvidence,
   createActivationEvidenceManifest,
 } from "../../src/validate/activationEvidenceManifest.js";
 import {
@@ -335,7 +337,86 @@ describe("source-owned runtime bootstrap integration", () => {
       generatedEvidence,
       packageEvidence: evidence,
     });
-    expect(activationEvidenceViolations(manifest, manifest)).toEqual([]);
+    expect(activationEvidenceManifestViolations(manifest, manifest)).toEqual([]);
+
+    let sourceObservations = 0;
+    let generatedObservations = 0;
+    const mutablePackageEvidence = structuredClone(evidence);
+    const originalGenerationMarkers = [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json"]
+      .map((relative) => {
+        const file = path.join(fixture.constructionRoot, relative);
+        return [relative, fs.existsSync(file) ? fs.readFileSync(file) : null] as const;
+      });
+    for (const [relative] of originalGenerationMarkers) {
+      fs.writeFileSync(path.join(fixture.constructionRoot, relative), `${JSON.stringify({ id: generation })}\n`);
+    }
+    let assembledResult: ReturnType<typeof assembleAndValidateActivationEvidence>;
+    try {
+      assembledResult = assembleAndValidateActivationEvidence({
+        root: CHECKOUT_ROOT,
+        generationRoot: fixture.constructionRoot,
+        generation,
+        productionInputs,
+        productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
+        packageEvidence: mutablePackageEvidence,
+        expectedPackageIdentity: packageIdentity,
+      });
+    } finally {
+      for (const [relative, bytes] of originalGenerationMarkers) {
+        const file = path.join(fixture.constructionRoot, relative);
+        if (bytes) fs.writeFileSync(file, bytes);
+        else fs.rmSync(file, { force: true });
+      }
+    }
+    sourceObservations += assembledResult.observerCalls.source;
+    generatedObservations += assembledResult.observerCalls.generated;
+    const assembled = assembledResult.manifest;
+    const packageRecord = mutablePackageEvidence.records["capability.extracted-modules"];
+    packageRecord.content = { attacker: true };
+    packageRecord.observationDigest = observationDigest(packageRecord.content);
+    expect({ sourceObservations, generatedObservations }).toEqual({ sourceObservations: 1, generatedObservations: 1 });
+    expect(activationEvidenceManifestViolations(assembled, assembled)).toEqual([]);
+    expect(assembled.producers.package.records["capability.extracted-modules"].content).not.toEqual({ attacker: true });
+
+    const forged = structuredClone(manifest) as any;
+    const forgedRecord = forged.producers.generated.records["capability.generated-modules"];
+    forgedRecord.content = { attacker: true };
+    forgedRecord.observationDigest = observationDigest(forgedRecord.content);
+    forgedRecord.artifactContentDigest = observationDigest({ forged: forgedRecord.content });
+    const { evidenceDigest: _forgedOwnerDigest, ...unsignedForgedOwner } = forged.producers.generated;
+    forged.producers.generated.evidenceDigest = observationDigest(unsignedForgedOwner);
+    const forgedRecords = new Map<string, any>([
+      ...Object.entries(forged.producers.source.records),
+      ...Object.entries(forged.producers.generated.records),
+      ...Object.entries(forged.producers.package.records),
+    ]);
+    for (const check of forged.checks) {
+      check.observationDigest = observationDigest(check.observationRefs.map((ref: string) => forgedRecords.get(ref)?.content ?? null));
+    }
+    const forgedBodyRefs = [
+      "capability.source-modules", "capability.source-runtime-registry",
+      "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served",
+      "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served",
+    ];
+    const forgedIdentityRefs = [
+      "capability.source-registry", "capability.source-routes", "capability.source-schemas",
+      "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas",
+      "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas",
+    ];
+    forged.capabilityParityDigest = observationDigest({
+      bodies: forgedBodyRefs.map((ref) => ({ ref, content: forgedRecords.get(ref)?.content ?? null })),
+      identities: forgedIdentityRefs.map((ref) => ({ ref, content: forgedRecords.get(ref)?.content ?? null })),
+    });
+    const { manifestDigest: _forgedManifestDigest, ...unsignedForgedManifest } = forged;
+    forged.manifestDigest = observationDigest(unsignedForgedManifest);
+    expect(activationEvidenceViolations(forged, {
+      root: CHECKOUT_ROOT,
+      generationRoot: fixture.constructionRoot,
+      generation,
+      productionInputs,
+      expectedManifestDigest: forged.manifestDigest,
+      expectedPackageIdentity: packageIdentity,
+    }).join("\n")).toMatch(/capability\.generated-modules.*authoritative artifact observation/);
     expect(manifest.checks).toHaveLength(42);
     expect(new Set(manifest.checks.flatMap((check) => check.observationRefs)).size)
       .toBe(manifest.checks.flatMap((check) => check.observationRefs).length);
@@ -380,7 +461,7 @@ describe("source-owned runtime bootstrap integration", () => {
     for (const [label, mutate, expected] of mutations) {
       const copy = structuredClone(manifest);
       mutate(copy);
-      expect(activationEvidenceViolations(copy, manifest).join("\n"), label).toMatch(expected);
+      expect(activationEvidenceManifestViolations(copy, manifest).join("\n"), label).toMatch(expected);
     }
 
     const coordinatedBlank = structuredClone(manifest) as any;
@@ -391,7 +472,7 @@ describe("source-owned runtime bootstrap integration", () => {
         }
       }
     }
-    expect(activationEvidenceViolations(coordinatedBlank, manifest).join("\n")).toMatch(/capability body projection/);
+    expect(activationEvidenceManifestViolations(coordinatedBlank, manifest).join("\n")).toMatch(/capability body projection/);
 
     const resigned = structuredClone(manifest) as any;
     const resignedRecords = new Map<string, any>([
