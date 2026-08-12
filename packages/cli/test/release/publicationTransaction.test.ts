@@ -211,6 +211,7 @@ describe("publication contract", () => {
     const invocation = spawnSync("pnpm", ["-C", "packages/cli/shim", "test"], {
       cwd: REPO_ROOT,
       encoding: "utf8",
+      env: { ...process.env, VITEST_MAX_WORKERS: "1" },
     });
 
     expect(invocation.status, invocation.stderr || invocation.stdout).toBe(0);

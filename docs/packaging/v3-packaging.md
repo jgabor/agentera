@@ -122,7 +122,7 @@ report outputs. Generated-overlap is the only checkout
 generated-output writer. It invokes the exact public source, package, and build
 commands once and returns their inventory, pending-test, build, generation, and
 continuous-reader evidence. Source, package, and build are not spawned again.
-The GitHub qualification step gives the long-running source participant four
+The GitHub qualification step gives the long-running source participant two
 workers and limits the concurrently starting package and stress participants to
 one worker each. This bounds initial contention without starving the source
 owner that determines the generated-overlap wall time.

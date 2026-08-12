@@ -886,6 +886,7 @@ describe("release qualification receipts", () => {
 
     fs.writeFileSync(path.join(candidateDirectory, "candidate-receipt.json"), canonicalJson(candidate), { mode: 0o400 });
     const approval = issueCandidateApproval({
+      environment: {},
       repo,
       candidateDirectory,
       adapterName: "development",
