@@ -30,7 +30,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.23.2
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
         env:
@@ -82,7 +82,7 @@ jobs:
           path: ${{ runner.temp }}/agentera-candidate
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.23.2
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - name: Record automatic candidate-bound development approval

@@ -96,7 +96,7 @@ jobs:
           node --input-type=module -e 'import { validateCandidateReceipt, validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const loaded=validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-candidate", adapterName: process.env.ADAPTER }); validateCandidateRunBinding(loaded.receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA);'
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.23.2
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - name: Record candidate-bound approval

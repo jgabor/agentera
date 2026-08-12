@@ -143,6 +143,7 @@ describe("candidate publication orchestration", () => {
     expect(qualificationYaml).toContain('VITEST_TEST_TIMEOUT_MS: "120000"');
     expect(qualificationYaml).toContain('AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"');
     expect(qualificationYaml).not.toContain("github.run_number");
+    expect(qualificationYaml.match(/node-version: 22\.23\.2/g)).toHaveLength(2);
   });
 
   it("publishes the exact push candidate to next without a review environment", () => {
@@ -194,6 +195,7 @@ describe("candidate publication orchestration", () => {
     expect(publicationYaml.indexOf("release-qualification.mjs approval"))
       .toBeLessThan(publicationYaml.indexOf("release-benchmark.mjs publication"));
     expect(publicationYaml).not.toContain("release-benchmark.mjs qualification --adapter");
+    expect(publicationYaml).toContain("node-version: 22.23.2");
   });
 
   it("keeps qualification benchmarking manual, credential-free, and bound to feat/v3", () => {
