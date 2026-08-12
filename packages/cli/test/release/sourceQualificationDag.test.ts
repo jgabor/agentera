@@ -9,7 +9,7 @@ import {
   RELEASE_CONTRACT,
   runSourceQualificationDag,
 } from "../../scripts/release-qualification.mjs";
-import { runGeneratedOverlap } from "../../scripts/verify-generated-overlap.mjs";
+import { generatedOverlapParticipantEnvironment, runGeneratedOverlap } from "../../scripts/verify-generated-overlap.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -116,6 +116,18 @@ function ownerError(name: string, detail: string, status = "failed") {
 }
 
 describe("source qualification DAG", () => {
+  it("reserves workers for the long source participant without widening its peers", () => {
+    const environment = {
+      VITEST_MAX_WORKERS: "1",
+      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "3",
+    };
+    expect(generatedOverlapParticipantEnvironment("source", environment)).toEqual({ VITEST_MAX_WORKERS: "3" });
+    expect(generatedOverlapParticipantEnvironment("package", environment)).toEqual({});
+    expect(() => generatedOverlapParticipantEnvironment("source", {
+      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "0",
+    })).toThrow("generated-overlap source worker allocation must be a positive integer");
+  });
+
   it("runs one-worker performance alone, then capacity serially, before the parallel reader barrier", async () => {
     const started: Array<{ name: string; environment: NodeJS.ProcessEnv; reportFile: string; concurrentWith: string[] }> = [];
     const cleaned: string[] = [];

@@ -26,6 +26,15 @@ function overlapFailure(message) {
   return error;
 }
 
+export function generatedOverlapParticipantEnvironment(name, environment = process.env) {
+  const sourceWorkers = environment.AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS;
+  if (name !== "source" || sourceWorkers === undefined) return {};
+  if (!/^[1-9]\d*$/.test(sourceWorkers)) {
+    throw overlapFailure("generated-overlap source worker allocation must be a positive integer");
+  }
+  return { VITEST_MAX_WORKERS: sourceWorkers };
+}
+
 export async function writeActivationEvidence({ repoRoot, generationRoot, generation, sourceEvidenceDirectory, packageEvidenceDirectory, packageIdentityDirectory, packageSnapshotDirectory }) {
   const evidence = await import(pathToFileURL(path.join(generationRoot, "dist/validate/activationEvidenceManifest.js")).href);
   const artifacts = await import(pathToFileURL(path.join(generationRoot, "dist/validate/activationArtifactEvidence.js")).href);
@@ -124,6 +133,7 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
       NPM_CONFIG_OFFLINE: offline ? "true" : "false",
       AGENTERA_VERIFICATION_BARRIER: barrier,
       AGENTERA_VERIFICATION_PARTICIPANT: name,
+      ...generatedOverlapParticipantEnvironment(name),
       ...(name === "build" || name === "invocation" ? {} : { AGENTERA_VERIFICATION_RESULT: path.join(root, `${name}.json`) }),
       ...(name === "source" ? { AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "source") } : {}),
       ...(name === "package" ? { AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "package") } : {}),
