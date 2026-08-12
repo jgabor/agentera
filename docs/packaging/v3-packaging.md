@@ -146,6 +146,11 @@ After it passes, capacity runs alone with one worker for large deterministic
 scale evidence. After capacity passes, compact, capability-contract, and the
 source-only activation conjunction run together as reader barrier B. All three
 use the newly built CLI from that exact lease-free generation.
+use the newly built CLI from that exact lease-free generation. Generated-overlap
+computes one Git commit, Git tree, and exact working-tree digest before
+releasing participants. Build and both package constructions embed that
+identity in `dist/` and `bundle/`; selection and barrier reads reject a
+complete generation whose source identity differs.
 
 Before it returns, generated-overlap gives the source and package owners separate
 isolated evidence directories under its report root. The source owner atomically
@@ -490,7 +495,14 @@ turn scheduler-dependent observation counts into durable evidence.
 
 `packages/cli/scripts/generated-output.mjs` is the executable authority. A
 generation is complete only when its root, `dist/`, and `bundle/` carry the
-same identity. `current` must be a symlink to a regular direct child of
+same generation identity. Production builds also require matching
+`.agentera-build-source.json` markers in `dist/` and `bundle/`, bound to the Git
+commit, Git tree, file count, and exact tracked-plus-untracked working-tree
+digest observed before and after construction. Each digest record includes its
+canonical Git mode: `100644` or `100755` for regular files and `120000` for
+target-bound symlinks. Only the executable bit participates when Git supports
+worktree file modes; other host permission bits do not. `current` must be a symlink to a
+regular direct child of
 `.agentera-generated/generations/`; canonical-path checks reject external
 targets, prefix collisions, generation symlinks, missing surfaces, and identity
 mismatches. Validation recursively `lstat`s and canonicalizes every `dist/` and

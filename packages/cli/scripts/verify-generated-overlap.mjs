@@ -6,7 +6,12 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { pinGeneratedGeneration, selectGeneratedGeneration } from "./generated-output.mjs";
+import {
+  generatedSourceIdentity,
+  pinGeneratedGeneration,
+  sameGeneratedSourceIdentity,
+  selectGeneratedGeneration,
+} from "./generated-output.mjs";
 import { validatePendingTests } from "./overlap-pending.mjs";
 import { npmChildEnvironment } from "./package-construction.mjs";
 
@@ -106,7 +111,7 @@ function defaultWithDeadline(promise, deadline, label, now) {
   ]).finally(() => clearTimeout(timer));
 }
 
-function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now }) {
+function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now, sourceIdentity }) {
   const started = now();
   const output = path.join(root, `${name}.log`);
   const stream = fs.createWriteStream(output, { flags: "wx", mode: 0o600 });
@@ -138,6 +143,7 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
       AGENTERA_HOME: path.join(stateRoot, "agentera"),
       AGENTERA_REPORT_ROOT: path.join(stateRoot, "reports"),
       AGENTERA_OUTPUT_ROOT: path.join(stateRoot, "output"),
+      AGENTERA_GENERATED_SOURCE_IDENTITY: JSON.stringify(sourceIdentity),
       NPM_CONFIG_CACHE: cache,
       NPM_CONFIG_OFFLINE: offline ? "true" : "false",
       AGENTERA_VERIFICATION_BARRIER: barrier,
@@ -236,7 +242,7 @@ async function waitForReady(names, barrier, operationDeadline, now) {
   }
 }
 
-function startReader(packageRoot) {
+function startReader(packageRoot, sourceIdentity) {
   let observed = false;
   let identityMismatches = 0;
   let surfaceValidationFailures = 0;
@@ -245,7 +251,7 @@ function startReader(packageRoot) {
   const timer = setInterval(() => {
     try {
       if (!fs.existsSync(path.join(packageRoot, ".agentera-generated", "current"))) return;
-      const pinned = pinGeneratedGeneration(packageRoot);
+      const pinned = pinGeneratedGeneration(packageRoot, { sourceIdentity });
       try {
         const dist = JSON.parse(fs.readFileSync(path.join(pinned.root, "dist", ".agentera-generation.json"), "utf8")).id;
         const bundle = JSON.parse(fs.readFileSync(path.join(pinned.root, "bundle", ".agentera-generation.json"), "utf8")).id;
@@ -277,6 +283,7 @@ export async function runGeneratedOverlap(options = {}) {
   const repoRoot = options.repoRoot ?? defaultRepoRoot;
   const now = options.now ?? (() => Date.now());
   const contract = options.contract ?? readReleaseContract(repoRoot);
+  const sourceIdentity = options.sourceIdentity ?? generatedSourceIdentity(packageRoot);
   const cleanupMarginMs = contract.qualification.source.dag.overlapCleanupMarginMs;
   const parentReconciliationMarginMs = contract.qualification.source.dag.overlapParentReconciliationMarginMs;
   const suppliedMargin = options.environment?.AGENTERA_SOURCE_CLEANUP_MARGIN_MS ?? process.env.AGENTERA_SOURCE_CLEANUP_MARGIN_MS;
@@ -307,7 +314,7 @@ export async function runGeneratedOverlap(options = {}) {
   const withDeadline = options.withDeadline
     ?? ((promise, deadline, label) => defaultWithDeadline(promise, deadline, label, now));
   const start = options.startParticipant
-    ?? ((name, command) => startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now }));
+    ?? ((name, command) => startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now, sourceIdentity }));
   const loadInventory = options.loadInventory
     ?? (() => readInventory(packageRoot, operationDeadline - now()));
   const ready = options.waitForReady
@@ -360,7 +367,7 @@ export async function runGeneratedOverlap(options = {}) {
     await awaitWork(Promise.resolve(ready(Object.keys(participants))), operationDeadline, "participant readiness");
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before releasing participants");
     fs.writeFileSync(path.join(barrier, "release"), "release\n");
-    reader = options.startReader?.() ?? startReader(packageRoot);
+    reader = options.startReader?.() ?? startReader(packageRoot, sourceIdentity);
     const settled = await awaitWork(settlement(), operationDeadline, "source/build/package settlement");
     const failed = settled.find((entry) => entry.status === "rejected");
     if (failed) throw primaryFailure ?? failed.reason;
@@ -385,7 +392,11 @@ export async function runGeneratedOverlap(options = {}) {
       throw overlapFailure(`real overlap owner count mismatch: ${JSON.stringify({ source, package: packageResult, inventory: inventory.counts })}`);
     }
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before selecting generated output");
-    const selected = (options.selectGeneration ?? (() => selectGeneratedGeneration(packageRoot)))();
+    const settledSourceIdentity = generatedSourceIdentity(packageRoot);
+    if (!sameGeneratedSourceIdentity(settledSourceIdentity, sourceIdentity)) {
+      throw overlapFailure("generated-overlap source changed while owners were executing");
+    }
+    const selected = (options.selectGeneration ?? (() => selectGeneratedGeneration(packageRoot, { sourceIdentity })))();
     const generationRoot = selected.root ?? path.join(packageRoot, ".agentera-generated/generations", selected.id);
     const activationEvidence = await withDeadline((options.writeActivationEvidence ?? writeActivationEvidence)({
       repoRoot,
@@ -407,6 +418,7 @@ export async function runGeneratedOverlap(options = {}) {
     return {
       schemaVersion: "agentera.generatedOverlapEvidence.v1",
       status: "pass",
+      source_identity: sourceIdentity,
       inventory: inventory.counts,
       participants: {
         source: { ...source, command: completed.source.command, elapsedMs: completed.source.elapsedMs },

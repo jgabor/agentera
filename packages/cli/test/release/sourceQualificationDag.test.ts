@@ -10,6 +10,7 @@ import {
   runSourceQualificationDag,
 } from "../../scripts/release-qualification.mjs";
 import { generatedOverlapParticipantEnvironment, runGeneratedOverlap } from "../../scripts/verify-generated-overlap.mjs";
+import { sealGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -36,11 +37,23 @@ function packageIdentity() {
   return { ...unsigned, identityDigest: observationDigest(unsigned) };
 }
 
+function sourceIdentity() {
+  const unsigned = {
+    schemaVersion: "agentera.generatedBuildSource.v1",
+    commit: "1".repeat(40),
+    tree: "2".repeat(40),
+    files: 10,
+    workingTreeSha256: "3".repeat(64),
+  };
+  return sealGeneratedSourceIdentity(unsigned);
+}
+
 function overlapEvidence() {
   return {
     schemaVersion: "agentera.generatedOverlapEvidence.v1",
     status: "pass",
-    inventory: { source: 10, package: 4, stress: 1, performance: 1, capacity: 2 },
+    source_identity: sourceIdentity(),
+    inventory: { source: 10, package: 4, stress: 1, performance: 3, capacity: 2 },
     participants: {
       source: { command: gate("source").command, elapsedMs: 80, files: 10, tests: 40, pending: [] },
       package: { command: gate("package").command, elapsedMs: 70, files: 4, tests: 12, pending: [] },

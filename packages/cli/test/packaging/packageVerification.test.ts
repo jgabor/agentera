@@ -1573,11 +1573,23 @@ describe("npm distribution boundary", () => {
     const observed: Record<string, any> = {};
 
     for (const [label, bin] of [["source", sourceBin], ["package", packagedBin]] as const) {
+      const runtimeRoot = path.resolve(path.dirname(bin), "../..");
+      const sourceIdentity = JSON.parse(fs.readFileSync(path.join(runtimeRoot, "dist/.agentera-build-source.json"), "utf8"));
+      const briefPath = path.join(runtimeRoot, "dist/cli/commands/prime/briefOrientation.js");
+      const briefSha256 = createHash("sha256").update(fs.readFileSync(briefPath)).digest("hex");
+      const provenance = `${label} runtime=${runtimeRoot} source=${sourceIdentity.commit}/${sourceIdentity.tree}/${sourceIdentity.workingTreeSha256} brief=${briefSha256}`;
+      expect(sourceIdentity, provenance).toEqual(fixture.sourceIdentity);
       const result = invoke(bin, ["prime", "--format", "json"]);
-      expect(result.status, result.stderr || result.stdout).toBe(0);
-      expect(Buffer.byteLength(result.stdout, "utf8")).toBeLessThanOrEqual(12_000);
+      expect(result.status, `${provenance}\n${result.stderr || result.stdout}`).toBe(0);
+      const outputBytes = Buffer.byteLength(result.stdout, "utf8");
       const payload = JSON.parse(result.stdout);
-      expect(payload.brief.projection).toMatch(/^(ok|degraded)$/);
+      const contributors = Object.entries(payload)
+        .map(([key, value]) => `${key}=${Buffer.byteLength(JSON.stringify(value), "utf8")}`)
+        .sort((left, right) => Number(right.split("=").at(-1)) - Number(left.split("=").at(-1)))
+        .slice(0, 8)
+        .join(", ");
+      expect(outputBytes, `${provenance} fields=${contributors}`).toBeLessThanOrEqual(11_400);
+      expect(payload.brief.projection).toBe("degraded");
       expect(payload.plan).toMatchObject({
         id: seeded.planId,
         total: 21,
@@ -1611,6 +1623,14 @@ describe("npm distribution boundary", () => {
           source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "mixed" },
         });
       }
+      for (const artifact of ["progress", "health"]) {
+        for (const route of [
+          `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
+          `npx -y agentera@next state ${artifact} get --id ID --format json`,
+        ]) {
+          expect(result.stdout.split(route), `${label} duplicate ${artifact} route: ${route}`).toHaveLength(2);
+        }
+      }
       expect(payload.decision_attention).toBeNull();
 
       const selected = invoke(bin, shellCommandArgs(payload.next_action.retrieval.exact.replace(/^npx -y agentera@next /, "agentera ")));
@@ -1627,6 +1647,9 @@ describe("npm distribution boundary", () => {
         next_action: payload.next_action,
         history: payload.history,
         decision_attention: payload.decision_attention,
+        outputBytes,
+        briefSha256,
+        sourceIdentity,
       };
     }
     expect(observed.package).toEqual(observed.source);

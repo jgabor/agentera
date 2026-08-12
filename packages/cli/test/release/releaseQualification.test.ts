@@ -28,6 +28,7 @@ import {
   prepareReleaseMetadata,
   prepareTargetMetadata,
 } from "../../scripts/publication-transaction.mjs";
+import { sealGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
@@ -61,11 +62,23 @@ function outputObservation() {
   };
 }
 
+function sourceIdentity() {
+  const unsigned = {
+    schemaVersion: "agentera.generatedBuildSource.v1",
+    commit: "1".repeat(40),
+    tree: "2".repeat(40),
+    files: 10,
+    workingTreeSha256: "3".repeat(64),
+  };
+  return sealGeneratedSourceIdentity(unsigned);
+}
+
 function overlapObservation() {
   const command = (name: string) => GOVERNED_GATES.find((gate: { name: string }) => gate.name === name)!.command;
   return {
     schemaVersion: RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema,
     status: "pass",
+    source_identity: sourceIdentity(),
     inventory: { source: 1, package: 1, stress: 1, performance: 1, capacity: 1 },
     participants: {
       source: { command: command("source"), elapsedMs: 1, files: 1, tests: 1, pending: [] },

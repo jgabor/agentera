@@ -6,6 +6,8 @@ import path from "node:path";
 
 const generatedDirectory = ".agentera-generated";
 const identityFile = ".agentera-generation.json";
+const sourceIdentityFile = ".agentera-build-source.json";
+const sourceIdentitySchema = "agentera.generatedBuildSource.v1";
 const guardFile = ".agentera-generation.guard";
 const guardSchema = "agentera.generatedGuard.v1";
 const retainedGenerationLimit = 2;
@@ -60,6 +62,130 @@ function readJsonFile(file, label) {
   } catch (error) {
     throw new Error(`${label} is invalid at ${file}: ${error.message}`);
   }
+}
+
+function git(repo, args, encoding = "utf8") {
+  const result = spawnSync("git", ["-C", repo, ...args], {
+    encoding,
+    maxBuffer: 64 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (result.status !== 0) throw new Error(`unable to read generated-output source identity: ${String(result.stderr).trim()}`);
+  return result.stdout;
+}
+
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+  }
+  return value;
+}
+
+function sourceIdentityDigest(value) {
+  const { identitySha256: _identitySha256, ...unsigned } = value;
+  return createHash("sha256").update(JSON.stringify(canonical(unsigned))).digest("hex");
+}
+
+export function sealGeneratedSourceIdentity(unsigned) {
+  return { ...unsigned, identitySha256: sourceIdentityDigest(unsigned) };
+}
+
+function validateSourceIdentity(value, label = "generated build source identity") {
+  if (value?.schemaVersion !== sourceIdentitySchema
+    || !/^[0-9a-f]{40}$/.test(value?.commit ?? "")
+    || !/^[0-9a-f]{40}$/.test(value?.tree ?? "")
+    || !Number.isInteger(value?.files) || value.files < 1
+    || !/^[0-9a-f]{64}$/.test(value?.workingTreeSha256 ?? "")
+    || value?.identitySha256 !== sourceIdentityDigest(value)) {
+    throw new Error(`${label} is malformed or self-inconsistent`);
+  }
+  return value;
+}
+
+export function validateGeneratedSourceIdentity(value, label) {
+  return validateSourceIdentity(value, label);
+}
+
+function trackedGitModes(repo) {
+  const modes = new Map();
+  const records = git(repo, ["ls-files", "--stage", "-z"], null).toString("utf8").split("\0").filter(Boolean);
+  for (const record of records) {
+    const match = /^(100644|100755|120000) [0-9a-f]+ ([0-3])\t([\s\S]+)$/.exec(record);
+    if (!match) throw new Error("generated-output source identity encountered an unsupported Git index entry");
+    const [, mode, stage, relative] = match;
+    if (stage !== "0" || modes.has(relative)) {
+      throw new Error(`generated-output source identity cannot bind unresolved Git index stages for ${relative}`);
+    }
+    modes.set(relative, mode);
+  }
+  return modes;
+}
+
+function canonicalGitMode(stat, trackedMode, fileModeSupported) {
+  if (stat.isSymbolicLink() || trackedMode === "120000") return "120000";
+  if (!stat.isFile()) return null;
+  if (!fileModeSupported) return trackedMode === "100755" ? "100755" : "100644";
+  return (stat.mode & 0o100) === 0 ? "100644" : "100755";
+}
+
+export function generatedSourceIdentity(packageRoot) {
+  const repo = path.resolve(packageRoot, "../..");
+  const repoRoot = String(git(repo, ["rev-parse", "--show-toplevel"])).trim();
+  if (fs.realpathSync(repoRoot) !== fs.realpathSync(repo)) {
+    throw new Error(`generated-output package root is not inside its expected repository: ${packageRoot}`);
+  }
+  const raw = git(repo, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], null);
+  const files = raw.toString("utf8").split("\0").filter(Boolean).sort();
+  const trackedModes = trackedGitModes(repo);
+  const fileModeSupported = String(git(repo, ["config", "--bool", "--default", "true", "core.filemode"])).trim() === "true";
+  const digest = createHash("sha256");
+  for (const relative of files) {
+    const file = path.join(repo, relative);
+    const stat = fs.lstatSync(file);
+    const trackedMode = trackedModes.get(relative);
+    const mode = canonicalGitMode(stat, trackedMode, fileModeSupported);
+    if (!mode) throw new Error(`generated-output source identity contains a non-file Git path at ${file}`);
+    digest.update(relative);
+    digest.update("\0");
+    digest.update(mode);
+    digest.update("\0");
+    if (mode === "120000") {
+      digest.update(stat.isSymbolicLink() ? fs.readlinkSync(file) : fs.readFileSync(file));
+    } else {
+      digest.update(fs.readFileSync(file));
+    }
+    digest.update("\0");
+  }
+  const unsigned = {
+    schemaVersion: sourceIdentitySchema,
+    commit: String(git(repo, ["rev-parse", "HEAD"])).trim(),
+    tree: String(git(repo, ["rev-parse", "HEAD^{tree}"])).trim(),
+    files: files.length,
+    workingTreeSha256: digest.digest("hex"),
+  };
+  return sealGeneratedSourceIdentity(unsigned);
+}
+
+export function sameGeneratedSourceIdentity(left, right) {
+  return validateSourceIdentity(left).identitySha256 === validateSourceIdentity(right).identitySha256;
+}
+
+export function writeGeneratedSourceIdentity(outputRoot, identity) {
+  const source = validateSourceIdentity(identity);
+  const bytes = `${JSON.stringify(source, null, 2)}\n`;
+  for (const surface of ["dist", "bundle"]) {
+    fs.writeFileSync(path.join(outputRoot, surface, sourceIdentityFile), bytes, { flag: "wx" });
+  }
+}
+
+export function readGeneratedSourceIdentity(outputRoot) {
+  const identities = ["dist", "bundle"].map((surface) =>
+    validateSourceIdentity(readJsonFile(path.join(outputRoot, surface, sourceIdentityFile), `${surface} build source identity`)));
+  if (!sameGeneratedSourceIdentity(identities[0], identities[1])) {
+    throw new Error(`generated dist and bundle do not share one build source identity at ${outputRoot}`);
+  }
+  return identities[0];
 }
 
 function readIdentity(file, label) {
@@ -220,7 +346,7 @@ function assertGenerationId(id) {
   }
 }
 
-export function validateGeneration(generationRoot, expectedId) {
+export function validateGeneration(generationRoot, expectedId, options = {}) {
   assertGenerationId(expectedId);
   const rootStat = optionalLstat(generationRoot);
   if (!rootStat?.isDirectory() || rootStat.isSymbolicLink()) {
@@ -239,16 +365,28 @@ export function validateGeneration(generationRoot, expectedId) {
   if (identities.some(({ id }) => id !== expectedId)) {
     throw new Error(`generated surfaces do not share generation ${JSON.stringify(expectedId)} at ${generationRoot}`);
   }
-  return { id: expectedId, root: generationRoot, inventory };
+  let sourceIdentity = null;
+  const sourceMarkers = ["dist", "bundle"].map((surface) => path.join(generationRoot, surface, sourceIdentityFile));
+  if (sourceMarkers.some((file) => optionalLstat(file))) sourceIdentity = readGeneratedSourceIdentity(generationRoot);
+  if (identities.some((identity) => identity.sourceIdentity !== undefined)
+    && (!sourceIdentity || identities.some((identity) => identity.sourceIdentity === undefined
+      || !sameGeneratedSourceIdentity(identity.sourceIdentity, sourceIdentity)))) {
+    throw new Error(`generated surfaces do not bind generation ${JSON.stringify(expectedId)} to one source identity`);
+  }
+  if (options.sourceIdentity && (!sourceIdentity || !sameGeneratedSourceIdentity(sourceIdentity, options.sourceIdentity))) {
+    throw new Error(`generated generation ${JSON.stringify(expectedId)} does not match the required source identity`);
+  }
+  return { id: expectedId, root: generationRoot, inventory, sourceIdentity };
 }
 
-export function writeGenerationIdentity(generationRoot, id) {
+export function writeGenerationIdentity(generationRoot, id, sourceIdentity = null) {
   assertGenerationId(id);
   const payload = JSON.stringify({
     schemaVersion: "agentera.generatedGeneration.v1",
     id,
     createdAt: new Date().toISOString(),
     owner: ownerEvidence(),
+    ...(sourceIdentity ? { sourceIdentity: validateSourceIdentity(sourceIdentity) } : {}),
   }, null, 2) + "\n";
   fs.writeFileSync(path.join(generationRoot, identityFile), payload);
   for (const surface of ["dist", "bundle"]) fs.writeFileSync(path.join(generationRoot, surface, identityFile), payload);
@@ -260,7 +398,7 @@ export function writeStagingOwner(stagedRoot) {
   fs.writeFileSync(path.join(stagedRoot, ".owner.json"), JSON.stringify(ownerEvidence()) + "\n", { flag: "wx" });
 }
 
-export function selectGeneratedGeneration(root) {
+export function selectGeneratedGeneration(root, options = {}) {
   const { current } = generatedPaths(root);
   const stat = optionalLstat(current);
   if (!stat) throw new Error(`generated-output current selection is missing at ${current}; correction: run pnpm -C packages/cli build`);
@@ -283,7 +421,7 @@ export function selectGeneratedGeneration(root) {
   if (identity.id !== confined.name) {
     throw new Error(`generated-output selection name ${JSON.stringify(confined.name)} does not match identity ${JSON.stringify(identity.id)}; correction: run pnpm -C packages/cli build`);
   }
-  return validateGeneration(confined.canonical, identity.id);
+  return validateGeneration(confined.canonical, identity.id, options);
 }
 
 function ensureLeasesRoot(root) {
@@ -315,11 +453,11 @@ function createLease(root, generationRoot, generationId, kind) {
   };
 }
 
-export function pinGeneratedGeneration(root) {
+export function pinGeneratedGeneration(root, options = {}) {
   let lastError;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const selected = selectGeneratedGeneration(root);
+      const selected = selectGeneratedGeneration(root, options);
       const lease = createLease(root, selected.root, selected.id, "reader");
       return { ...selected, leasePath: lease.leasePath, release: lease.release };
     } catch (error) {

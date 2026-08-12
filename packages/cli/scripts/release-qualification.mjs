@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
-import { selectGeneratedGeneration } from "./generated-output.mjs";
+import { selectGeneratedGeneration, validateGeneratedSourceIdentity } from "./generated-output.mjs";
 import { performanceEvidenceRecords } from "./performance-evidence.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 import "./source-loader-register.mjs";
@@ -502,6 +502,11 @@ async function runConcurrentSourceOwners(specifications, options = {}) {
 
 function validateOverlapEvidence(evidence, gates) {
   const schema = RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema;
+  try {
+    validateGeneratedSourceIdentity(evidence.source_identity, "generated-overlap source identity");
+  } catch {
+    throw sourceProcessFailure("generated-overlap", "generated-overlap source identity is incomplete", "failed");
+  }
   if (
     evidence.schemaVersion !== schema
     || evidence.status !== "pass"
@@ -572,9 +577,9 @@ function parseOverlapEvidence(result, gates) {
   return validateOverlapEvidence(records[0], gates);
 }
 
-function generatedState(repo) {
+function generatedState(repo, sourceIdentity) {
   const packageRoot = path.join(repo, "packages/cli");
-  const selected = selectGeneratedGeneration(packageRoot);
+  const selected = selectGeneratedGeneration(packageRoot, { sourceIdentity });
   const leasesRoot = path.join(packageRoot, ".agentera-generated", "leases");
   return {
     generation: selected.id,
@@ -765,7 +770,7 @@ export async function runSourceQualificationDag(options = {}) {
   })), common);
   const batchElapsedMs = Math.max(0, Math.round(clock() - batchStarted));
   const overlap = parseOverlapEvidence(batch["generated-overlap"], gates);
-  const readState = options.readGeneratedState ?? generatedState;
+  const readState = options.readGeneratedState ?? ((currentRepo) => generatedState(currentRepo, overlap.source_identity));
   const afterBatch = readState(repo);
   if (afterBatch.generation !== overlap.generation || afterBatch.leases.length !== 0) {
     throw sourceProcessFailure("reader-barrier", "generated-overlap did not settle one lease-free generation", "failed");

@@ -544,11 +544,31 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       progress: {
         exists: true,
         status: "degraded_history",
-        degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
+        degraded_history: {
+          status: "degraded",
+          summary_count: 12,
+          returned_count: 0,
+          omitted_count: 12,
+          caveats: ["Progress summary history remains exact and read-only."],
+          retrieval: {
+            list: "agentera state progress list --limit 20 --format json",
+            get: "agentera state progress get --id ID --format json",
+          },
+        },
       },
       health: {
         exists: true,
-        degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
+        degraded_history: {
+          status: "degraded",
+          summary_count: 12,
+          returned_count: 0,
+          omitted_count: 12,
+          caveats: ["Health summary history remains exact and read-only."],
+          retrieval: {
+            list: "agentera state health list --limit 20 --format json",
+            get: "agentera state health get --id ID --format json",
+          },
+        },
       },
       source_contract: {
         fields: ["plan", "next_action", "history", "state_presence", "source_contract"],
@@ -608,6 +628,23 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(projectedDocs.entries[0]).not.toHaveProperty("provenance");
     expect(JSON.stringify(docsRich)).not.toContain("dddddddddd");
     expect((docs as any).entries).toHaveLength(20);
+    for (const artifact of ["progress", "health"] as const) {
+      const projected = docsRich[artifact] as Record<string, any>;
+      expect(projected.degraded_history).toMatchObject({
+        status: "degraded",
+        summary_count: 12,
+        returned_count: 0,
+        omitted_count: 12,
+        caveats: [expect.stringContaining("summary history remains exact")],
+      });
+      expect(projected.degraded_history).not.toHaveProperty("retrieval");
+      for (const route of [
+        `agentera state ${artifact} list --limit 20 --format json`,
+        `agentera state ${artifact} get --id ID --format json`,
+      ]) {
+        expect(JSON.stringify(docsRich).split(route)).toHaveLength(2);
+      }
+    }
 
     const longPath = `/tmp/${"nested/".repeat(350)}project`;
     const pathPressured = briefOrientationPayload({
@@ -872,6 +909,36 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       budgetBytes: compactBytes - 1,
       degradedMode: "status_routing",
     })).toThrow(BriefBudgetError);
+  });
+
+  it("keeps one canonical TODO reconciliation route in a degraded brief", () => {
+    const reconciliation = {
+      state: "unsafe_inactive",
+      status: "action_required",
+      preview_command: "npx -y agentera@next state todo correct-owners --input OWNER_MAPPING.yaml --dry-run --format json",
+      apply_command: "npx -y agentera@next state todo correct-owners --input OWNER_MAPPING.yaml --effect-sha256 SHA256 --yes --format json",
+      risks: { resurrected_count: 161, resurrected_ids: Array.from({ length: 20 }, (_, index) => `todo-${index}`), omitted_count: 141 },
+    };
+    const payload: Record<string, unknown> = {
+      command: "prime",
+      outcome: "blocked",
+      mode: "returning",
+      state_presence: { active: {}, available: {}, any_active: true, absence_explained: false, absence: {} },
+      source_contract: {},
+      todo_reconciliation: reconciliation,
+      startup: {
+        schemaVersion: "agentera.primeStartup.v1",
+        outcome: "blocked",
+        todo_reconciliation: reconciliation,
+        availability: [],
+      },
+      todo: { detail: "x".repeat(9_000) },
+    };
+
+    const compact = briefOrientationPayload(payload, { degradedMode: "status_routing" });
+    expect(compact.todo_reconciliation).toEqual(reconciliation);
+    expect(compact.startup).not.toHaveProperty("todo_reconciliation");
+    expect(briefUtf8Bytes(compact)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
   });
 
 });

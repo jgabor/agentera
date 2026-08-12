@@ -7,9 +7,12 @@ import { fileURLToPath } from "node:url";
 
 import {
   cleanupGeneratedState,
+  generatedSourceIdentity,
   publishGeneratedGeneration,
+  sameGeneratedSourceIdentity,
   validateRegularTree,
   withGeneratedStateLock,
+  writeGeneratedSourceIdentity,
   writeGenerationIdentity,
   writeStagingOwner,
 } from "./generated-output.mjs";
@@ -25,7 +28,7 @@ function run(command, args, cwd = packageRoot) {
   if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed with exit ${result.status ?? "signal"}`);
 }
 
-function construct(outputRoot) {
+function construct(outputRoot, sourceIdentity) {
   const distRoot = path.join(outputRoot, "dist");
   const bundleRoot = path.join(outputRoot, "bundle");
   const dependencies = path.join(outputRoot, "node_modules");
@@ -39,11 +42,39 @@ function construct(outputRoot) {
     run("pnpm", ["exec", "tsc", "-p", "tsconfig.json", "--outDir", distRoot, "--sourceMap", "false"]);
     fs.chmodSync(path.join(distRoot, "bin", "agentera.js"), 0o755);
     run(process.execPath, ["scripts/copy-bundle.mjs", "--dist-root", distRoot, "--bundle-root", bundleRoot]);
+    writeGeneratedSourceIdentity(outputRoot, sourceIdentity);
     validateRegularTree(distRoot, "packaged dist surface");
     validateRegularTree(bundleRoot, "packaged bundle surface");
   } finally {
     if (createdDependencyLink) fs.rmSync(dependencies, { force: true });
   }
+}
+
+function requiredSourceIdentity() {
+  const observed = generatedSourceIdentity(packageRoot);
+  const supplied = process.env.AGENTERA_GENERATED_SOURCE_IDENTITY;
+  if (supplied !== undefined) {
+    let expected;
+    try {
+      expected = JSON.parse(supplied);
+    } catch {
+      throw new Error("AGENTERA_GENERATED_SOURCE_IDENTITY is malformed");
+    }
+    if (!sameGeneratedSourceIdentity(observed, expected)) {
+      throw new Error("generated build source does not match the coordinator source identity");
+    }
+  }
+  return observed;
+}
+
+function constructStableSource(outputRoot) {
+  const before = requiredSourceIdentity();
+  construct(outputRoot, before);
+  const after = generatedSourceIdentity(packageRoot);
+  if (!sameGeneratedSourceIdentity(before, after)) {
+    throw new Error("generated build source changed during construction");
+  }
+  return before;
 }
 
 function launcherSource() {
@@ -88,7 +119,7 @@ function main() {
   if (outputIndex >= 0) {
     const outputRoot = process.argv[outputIndex + 1];
     if (!outputRoot) throw new Error("--output-root requires a path");
-    construct(path.resolve(outputRoot));
+    constructStableSource(path.resolve(outputRoot));
     return;
   }
   waitForVerificationBarrier();
@@ -102,8 +133,8 @@ function main() {
   const stagedRoot = path.join(generatedRoot, `.staging-${process.pid}-${generationId}`);
   try {
     writeStagingOwner(stagedRoot);
-    construct(stagedRoot);
-    writeGenerationIdentity(stagedRoot, generationId);
+    const sourceIdentity = constructStableSource(stagedRoot);
+    writeGenerationIdentity(stagedRoot, generationId, sourceIdentity);
     withGeneratedStateLock(packageRoot, () => {
       publishGeneratedGeneration(packageRoot, stagedRoot, generationId, { lockHeld: true });
       cleanupGeneratedState(packageRoot, { lockHeld: true });

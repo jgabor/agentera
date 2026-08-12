@@ -298,7 +298,9 @@ function briefHistory(
     if (caveats !== undefined) projected.caveats = caveats;
     if (isObject(entryObj.degraded_history)) {
       const degraded = pick(entryObj.degraded_history, ["summary_count", "returned_count", "omitted_count"]);
-      degraded.retrieval = briefHistoryRetrieval(entryObj.degraded_history.retrieval);
+      // Compact routing already retains the same exact list/get commands on the
+      // parent history entry. Keep the nested copy only in the normal brief.
+      if (projection === "normal") degraded.retrieval = briefHistoryRetrieval(entryObj.degraded_history.retrieval);
       const degradedCaveats = briefHistoryCaveats(entryObj.degraded_history.caveats, maxChars);
       if (degradedCaveats !== undefined) degraded.caveats = degradedCaveats;
       projected.degraded_history = degraded;
@@ -472,13 +474,22 @@ function briefDocs(
   return out;
 }
 
-function briefProgress(progress: unknown): Record<string, unknown> {
+function briefDegradedHistory(value: unknown, omitRetrieval: boolean): Record<string, unknown> | undefined {
+  if (!isObject(value)) return undefined;
+  if (!omitRetrieval) return { ...value };
+  const out = pick(value, ["status", "summary_count", "returned_count", "omitted_count", "caveats"]);
+  return out;
+}
+
+function briefProgress(progress: unknown, omitDegradedRetrieval = false): Record<string, unknown> {
   // opencode reads progress.latest.number/what/next; the brief keeps the
   // latest cycle but caps free-text scalars at BRIEF_SCALAR_MAX_CHARS so a
   // pathological value cannot blow the budget. Full detail recovers via
   // `agentera state progress get --id ID --format json`.
   if (!isObject(progress)) return {};
-  const out = pick(progress, ["exists", "status", "latest_verification", "cycle_count", "degraded_history"]);
+  const out = pick(progress, ["exists", "status", "latest_verification", "cycle_count"]);
+  const degradedHistory = briefDegradedHistory(progress.degraded_history, omitDegradedRetrieval);
+  if (degradedHistory !== undefined) out.degraded_history = degradedHistory;
   const latest = progress.latest;
   if (isObject(latest)) {
     const boundedLatest: Record<string, unknown> = {};
@@ -492,8 +503,21 @@ function briefProgress(progress: unknown): Record<string, unknown> {
   return out;
 }
 
-function briefHealth(health: unknown): Record<string, unknown> {
-  return pick(health, ["exists", "id", "artifact", "date", "trajectory", "grade", "degraded_history"]);
+function briefHealth(health: unknown, omitDegradedRetrieval = false): Record<string, unknown> {
+  const out = pick(health, ["exists", "id", "artifact", "date", "trajectory", "grade"]);
+  if (isObject(health)) {
+    const degradedHistory = briefDegradedHistory(health.degraded_history, omitDegradedRetrieval);
+    if (degradedHistory !== undefined) out.degraded_history = degradedHistory;
+  }
+  return out;
+}
+
+function hasCanonicalHistoryRetrieval(history: unknown, artifact: "progress" | "health"): boolean {
+  if (!isObject(history) || !isObject(history[artifact])) return false;
+  const retrieval = history[artifact].retrieval;
+  return isObject(retrieval)
+    && typeof retrieval.list === "string" && retrieval.list.length > 0
+    && typeof retrieval.get === "string" && retrieval.get.length > 0;
 }
 
 function briefAction(action: unknown, maxChars: number): Record<string, unknown> {
@@ -648,10 +672,10 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
         out[key] = briefSharedSkill(value);
         break;
       case "progress":
-        out[key] = briefProgress(value);
+        out[key] = briefProgress(value, hasCanonicalHistoryRetrieval(payload.history, "progress"));
         break;
       case "health":
-        out[key] = briefHealth(value);
+        out[key] = briefHealth(value, hasCanonicalHistoryRetrieval(payload.history, "health"));
         break;
       case "next_action":
         out[key] = briefNextAction(value);
@@ -703,10 +727,16 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   if ("shared_skill" in payload) out.shared_skill = briefSharedSkill(payload.shared_skill);
   if ("project_integration" in payload) out.project_integration = briefProjectIntegration(payload.project_integration);
   if ("todo_reconciliation" in payload) out.todo_reconciliation = payload.todo_reconciliation;
-  if ("startup" in payload) out.startup = payload.startup;
-  if ("health" in payload) out.health = briefHealth(payload.health);
+  if ("startup" in payload) {
+    // The top-level reconciliation object is the canonical bare-prime route.
+    // Do not repeat it inside startup when compacting an over-budget envelope.
+    const startup = isObject(payload.startup) ? { ...payload.startup } : payload.startup;
+    if (isObject(startup) && "todo_reconciliation" in out) delete startup.todo_reconciliation;
+    out.startup = startup;
+  }
+  if ("health" in payload) out.health = briefHealth(payload.health, hasCanonicalHistoryRetrieval(payload.history, "health"));
   if ("todo" in payload) out.todo = payload.todo;
-  if ("progress" in payload) out.progress = briefProgress(payload.progress);
+  if ("progress" in payload) out.progress = briefProgress(payload.progress, hasCanonicalHistoryRetrieval(payload.history, "progress"));
   if ("attention" in payload) out.attention = briefAttention(payload.attention);
   if ("source" in payload) out.source = briefSource(payload.source);
   if ("docs" in payload) out.docs = briefDocs(payload.docs, projection);

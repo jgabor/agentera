@@ -169,10 +169,10 @@ describe("package registry", () => {
 
     const generatedDuplicate = registryFixture();
     generatedDuplicate.records[0].bundle_surfaces.generated_files[0].id = "skills";
-    generatedDuplicate.records[0].bundle_surfaces.generated_files[1].path = "README.md";
+    generatedDuplicate.records[0].bundle_surfaces.generated_files[2].path = "README.md";
     expect(validateRegistryData(generatedDuplicate, REPO_ROOT)).toEqual(expect.arrayContaining([
       'records[0].bundle_surfaces.generated_files[0].id "skills" duplicates records[0].bundle_surfaces.directories[0].id; correction: use a unique id across all bundle surfaces',
-      'records[0].bundle_surfaces.generated_files[1].path "README.md" for id "extract-corpus-parity" duplicates records[0].bundle_surfaces.files[0].path; correction: use a unique path across all bundle surfaces',
+      'records[0].bundle_surfaces.generated_files[2].path "README.md" for id "extract-corpus-parity" duplicates records[0].bundle_surfaces.files[0].path; correction: use a unique path across all bundle surfaces',
     ]));
   });
 

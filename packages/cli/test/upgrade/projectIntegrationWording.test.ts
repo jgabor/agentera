@@ -179,6 +179,35 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.dry_run_command).toContain("upgrade");
   });
 
+  it("does not displace npx routing for an absent optional XDG platform app", () => {
+    const bundle = path.join(tmp, "npx-bundle");
+    seedNpxBundle(bundle);
+    const userHome = path.join(tmp, "user-home");
+    const xdgData = path.join(tmp, "isolated-xdg-data");
+    fs.mkdirSync(userHome, { recursive: true });
+    const project = path.join(tmp, "npx-platform-missing");
+    fs.mkdirSync(project, { recursive: true });
+
+    const summary = summarizeProjectIntegration({
+      project,
+      sourceRoot: bundle,
+      home: userHome,
+      env: { XDG_DATA_HOME: xdgData },
+      installRoot: bundle,
+      bundleStatus: APP_UP_TO_DATE,
+      crossMajorBoundary: false,
+    });
+
+    expect(summary).toMatchObject({
+      recommendation: "stay",
+      aggregate_status: "stay",
+      pending_artifacts: 0,
+      phases: { app: { counts: { blocked: 0 }, blockers: [] } },
+    });
+    expect(summary.message).toContain("No app or project-state upgrade is required");
+    expect(summary.message).not.toContain("manual review");
+  });
+
   it("uses cross-major narrative when boundary is announced", () => {
     const authorityRoot = path.join(tmp, "announced");
     fs.mkdirSync(path.join(authorityRoot, ".git"), { recursive: true });

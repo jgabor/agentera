@@ -1,0 +1,15 @@
+id: ikbrwcpdyf
+artifact: progress
+record:
+  timestamp: 2026-08-12 05:18
+  type: fix
+  phase: build
+  what: Bound generated artifacts to the current commit, tree, working tree, and canonical Git modes, then compacted rebased Prime history routing to retain each canonical recovery route once.
+  context:
+    intent: Bind generated artifacts to current source identity and compact rebased Prime history routing.
+    constraints: Budgets and check counts remain unchanged. Do not create a source receipt, candidate, or registry effect before commit and canonical qualification.
+    unknowns: Canonical source receipt remains pending after commit.
+    scope: Generated source identity, generated selection and overlap qualification, degraded Prime history routing, package parity, and implementation-side evidence.
+  verified: "Exact generated identity: commit 3b41be521651a78c26be0a0e64d47631c8ff1324, tree df176ac694d213a05f915dfe7268d4f5a2b445f9, working-tree SHA-256 19be0e960bf5a377c6952b24784f9750ed52d033288bf75b7845f768e2bd5ecd, identity SHA-256 334c8663fc85b290e3bd78de57dcc5ddd3299d5f57be06dc4d03d8850b44165b. Mode-only and stale-selection regressions passed. Prime progress and health list/get routes occur exactly once with a 685-byte independent margin under 12,000. Generated overlap passed source 240 files/3,981 tests, package 4 files/44 tests, build, and 42 activation checks with zero identity or surface failures; Audit PASS."
+  next: Commit implementation and state together, then run the canonical source qualifier to produce the pending source receipt.
+  publication_order: 152

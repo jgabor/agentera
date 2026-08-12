@@ -93,6 +93,7 @@ const addedTuples: ActivationCanonicalTuple[] = [
   { class: "state", surface_id: "write:todo.repair", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.repair", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
   { class: "package", surface_id: "emitted:packages/cli/src/cli/commands/doctor.ts", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: "packages/cli/src/cli/commands/doctor.ts", semantic_selector_if_any: JSON.stringify({ path: "packages/cli/src/cli/commands/doctor.ts", selector: null, format: null, classification: null, reason: "Doctor project-state signals publish bounded reconciliation preview and apply guidance." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
   { class: "package", surface_id: "emitted:packages/cli/src/state/todoReconciliationInspection.ts", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: "packages/cli/src/state/todoReconciliationInspection.ts", semantic_selector_if_any: JSON.stringify({ path: "packages/cli/src/state/todoReconciliationInspection.ts", selector: null, format: null, classification: null, reason: "TODO reconciliation inspection publishes bounded preview and effect-bound apply guidance." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
+  { class: "package", surface_id: "generated:build-source-identity", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: ".agentera-build-source.json", semantic_selector_if_any: JSON.stringify({ path: ".agentera-build-source.json", selector: null, format: "json", classification: "active", reason: "Build-generated source identity binds constructed dist and bundle output to one Git commit, tree, and exact working-tree digest; no source copy exists." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
   {
     class: "reference",
     surface_id: "references/analysis/personal-glossary-evaluation-authority.yaml",
@@ -138,10 +139,10 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
     runtime: { count: 81, sha256: "99b2abff3ebff889b54b1781c563ab4b32609a479c4e90d6aad854f48fba7edc" },
     reference: { count: 25, sha256: "2a40b8a8585933417a6e66a350c9ad68050288600cdac1e7f44b914e7022565c" },
     state: { count: 38, sha256: "697de8dcd13ac521124c35058ba222aa5cb6cae546f00bb54652ceaca4b662aa" },
-    package: { count: 66, sha256: "83e6971af7f7564e42369aaccc445b32a0793bfffade843d149b6abd4fd3dbbc" },
+    package: { count: 67, sha256: "5dbe325af5ffb29a1ea50534070d08fcff647d4d9ef5654b4ce03d76eeaa8adb" },
     bootstrap: { count: 34, sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc" },
   },
-  total: { count: 283, sha256: "9fd0ebfcfad818d36dc4f9ac5f96c777be1bac79c55a570e5014dc3ae90bdbf7" },
+  total: { count: 284, sha256: "6b0d109f9d833598dcd1ec5b21cbc57e80ee8f21a0e5b61ca8aa420c6d32eb60" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string { return JSON.stringify(value); }
 export function digestCanonicalTuples(values: readonly ActivationCanonicalTuple[]): string {

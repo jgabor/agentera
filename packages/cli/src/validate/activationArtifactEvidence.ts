@@ -847,7 +847,7 @@ export function createGeneratedOwnerEvidence(options: {
   const bundleRoot = path.join(options.generationRoot, "bundle");
   const record = packageRecord(bundleRoot);
   const bootstrap = runtimeObservation.bootstrap;
-  const generationFiles = [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json", "bundle/.agentera-npx-bundle.json", "bundle/extract-corpus-parity.json"]
+  const generationFiles = [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json", "dist/.agentera-build-source.json", "bundle/.agentera-build-source.json", "bundle/.agentera-npx-bundle.json", "bundle/extract-corpus-parity.json"]
     .filter((file) => fs.existsSync(path.join(options.generationRoot, file)));
   const records: Record<string, ActivationArtifactRecord> = {
     "capability.generated-modules": createRecord("generated-owner", "capability-generated-modules", "generation/dist/capabilities/*/instructions.js", capabilities.artifacts.modules, capabilities.modules, options.generation, null),

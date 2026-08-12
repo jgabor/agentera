@@ -278,10 +278,6 @@ describe("summary entity ordinary reads", () => {
           summary_count: 1,
           returned_count: 0,
           omitted_count: 1,
-          retrieval: {
-            list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
-            get: `npx -y agentera@next state ${artifact} get --id ID --format json`,
-          },
         },
         retrieval: {
           list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,

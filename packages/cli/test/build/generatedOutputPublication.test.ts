@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -9,11 +9,14 @@ import {
   cleanupGeneratedState,
   classifyProcessOwner,
   GENERATED_RETENTION_LIMIT,
+  generatedSourceIdentity,
   legacyPublicationLockPath,
   pinGeneratedGeneration,
   publishGeneratedGeneration,
+  sealGeneratedSourceIdentity,
   processStartIdentity,
   selectGeneratedGeneration,
+  writeGeneratedSourceIdentity,
   writeGenerationIdentity,
 } from "../../scripts/generated-output.mjs";
 
@@ -25,13 +28,48 @@ function tempRoot(): string {
   return root;
 }
 
-function stage(root: string, id: string): string {
+function git(root: string, args: string[]): string {
+  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  if (result.status !== 0) throw new Error(result.stderr || result.stdout);
+  return result.stdout.trim();
+}
+
+function sourceIdentityRepository(fileMode: boolean): { root: string; packageRoot: string; file: string } {
+  const root = tempRoot();
+  const packageRoot = path.join(root, "packages", "cli");
+  const file = path.join(root, "mode-fixture.txt");
+  fs.mkdirSync(packageRoot, { recursive: true });
+  fs.writeFileSync(path.join(root, ".gitignore"), "packages/cli/.agentera-generated/\n");
+  fs.writeFileSync(file, "mode-bound bytes\n");
+  git(root, ["init", "--quiet"]);
+  git(root, ["config", "user.name", "Agentera test"]);
+  git(root, ["config", "user.email", "agentera-test@example.invalid"]);
+  git(root, ["config", "commit.gpgsign", "false"]);
+  git(root, ["config", "core.filemode", String(fileMode)]);
+  git(root, ["add", "."]);
+  git(root, ["commit", "--quiet", "-m", "fixture"]);
+  return { root, packageRoot, file };
+}
+
+function sourceIdentity(value: string) {
+  const unsigned = {
+    schemaVersion: "agentera.generatedBuildSource.v1",
+    commit: value.repeat(40),
+    tree: value.repeat(40),
+    files: 1,
+    workingTreeSha256: value.repeat(64),
+  };
+  return sealGeneratedSourceIdentity(unsigned);
+}
+
+function stage(root: string, id: string, source?: ReturnType<typeof sourceIdentity>): string {
   const staged = path.join(root, `.stage-${id}`);
   for (const surface of ["dist", "bundle"]) {
     fs.mkdirSync(path.join(staged, surface), { recursive: true });
     fs.writeFileSync(path.join(staged, surface, "generation.txt"), `${id}\n`);
   }
-  writeGenerationIdentity(staged, id);
+  if (source) writeGeneratedSourceIdentity(staged, source);
+  writeGenerationIdentity(staged, id, source);
   return staged;
 }
 
@@ -130,6 +168,57 @@ describe("generated generation publication", () => {
     const root = tempRoot();
     publishGeneratedGeneration(root, stage(root, "first"), "first");
     expect(selectedTokens(root)).toEqual(["first", "first"]);
+  });
+
+  it("rejects a complete lease-free generation built from another source identity", () => {
+    const root = tempRoot();
+    const oldSource = sourceIdentity("a");
+    const currentSource = sourceIdentity("b");
+    publishGeneratedGeneration(root, stage(root, "old", oldSource), "old");
+
+    expect(selectGeneratedGeneration(root, { sourceIdentity: oldSource }).sourceIdentity).toEqual(oldSource);
+    expect(() => selectGeneratedGeneration(root, { sourceIdentity: currentSource }))
+      .toThrow("does not match the required source identity");
+
+    publishGeneratedGeneration(root, stage(root, "current", currentSource), "current");
+    expect(selectGeneratedGeneration(root, { sourceIdentity: currentSource }).sourceIdentity).toEqual(currentSource);
+  });
+
+  it.runIf(process.platform !== "win32")("binds tracked and untracked Git executable bits and rejects a stale selected generation", () => {
+    const repo = sourceIdentityRepository(true);
+    fs.chmodSync(repo.file, 0o644);
+    const nonExecutable = generatedSourceIdentity(repo.packageRoot);
+    publishGeneratedGeneration(repo.packageRoot, stage(repo.packageRoot, "non-executable", nonExecutable), "non-executable");
+
+    fs.chmodSync(repo.file, 0o755);
+    const executable = generatedSourceIdentity(repo.packageRoot);
+    expect(executable.workingTreeSha256).not.toBe(nonExecutable.workingTreeSha256);
+    expect(executable.identitySha256).not.toBe(nonExecutable.identitySha256);
+    expect(() => selectGeneratedGeneration(repo.packageRoot, { sourceIdentity: executable }))
+      .toThrow("does not match the required source identity");
+
+    const untracked = path.join(repo.root, "untracked.txt");
+    fs.writeFileSync(untracked, "untracked mode-bound bytes\n");
+    fs.chmodSync(untracked, 0o644);
+    const untrackedNonExecutable = generatedSourceIdentity(repo.packageRoot);
+    fs.chmodSync(untracked, 0o755);
+    const untrackedExecutable = generatedSourceIdentity(repo.packageRoot);
+    expect(untrackedExecutable.workingTreeSha256).not.toBe(untrackedNonExecutable.workingTreeSha256);
+    expect(untrackedExecutable.identitySha256).not.toBe(untrackedNonExecutable.identitySha256);
+  });
+
+  it.runIf(process.platform !== "win32")("ignores non-executable permission noise and unsupported worktree chmod", () => {
+    const supported = sourceIdentityRepository(true);
+    fs.chmodSync(supported.file, 0o644);
+    const ordinary = generatedSourceIdentity(supported.packageRoot);
+    fs.chmodSync(supported.file, 0o604);
+    expect(generatedSourceIdentity(supported.packageRoot)).toEqual(ordinary);
+
+    const unsupported = sourceIdentityRepository(false);
+    fs.chmodSync(unsupported.file, 0o644);
+    const indexed = generatedSourceIdentity(unsupported.packageRoot);
+    fs.chmodSync(unsupported.file, 0o755);
+    expect(generatedSourceIdentity(unsupported.packageRoot)).toEqual(indexed);
   });
 
   it.each([

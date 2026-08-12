@@ -6,6 +6,11 @@ import path from "node:path";
 
 import type { GlobalSetupContext } from "vitest/node";
 
+import {
+  generatedSourceIdentity,
+  readGeneratedSourceIdentity,
+  sameGeneratedSourceIdentity,
+} from "../../scripts/generated-output.mjs";
 import { waitForVerificationBarrier } from "../../scripts/verification-barrier.mjs";
 
 export interface PackFile {
@@ -30,6 +35,7 @@ export interface PackageFixture {
   constructionRoot: string;
   packageRoot: string;
   manifest: PackEntry;
+  sourceIdentity: ReturnType<typeof generatedSourceIdentity>;
   deterministicBytes: {
     packRuns: 2;
     sha256: string;
@@ -199,6 +205,7 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
   waitForVerificationBarrier();
   const packageRoot = path.resolve(import.meta.dirname, "../..");
   const checkoutRoot = path.resolve(packageRoot, "../..");
+  const sourceIdentity = generatedSourceIdentity(packageRoot);
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-verification-"));
   const constructionRoot = path.join(root, "construction one ; [source]");
   const secondConstructionRoot = path.join(root, "construction two $ (source)");
@@ -215,6 +222,11 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
       ["scripts/build-package.mjs", "--output-root", secondConstructionRoot],
       packageRoot,
     );
+    for (const construction of [constructionRoot, secondConstructionRoot]) {
+      if (!sameGeneratedSourceIdentity(readGeneratedSourceIdentity(construction), sourceIdentity)) {
+        throw new Error("package verification boundary failed: construction source identity drifted");
+      }
+    }
     const manifest = parseManifest(
       run(
         "npm",
@@ -240,6 +252,9 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
     assertDeterministicPackagePair(tarballBytes, secondTarballBytes, manifest, secondManifest);
     run("tar", ["-xzf", path.join(root, manifest.filename), "-C", root], root);
     const extractedPackage = path.join(root, "package");
+    if (!sameGeneratedSourceIdentity(readGeneratedSourceIdentity(extractedPackage), sourceIdentity)) {
+      throw new Error("package verification boundary failed: extracted package source identity drifted");
+    }
     const firstContent = regularFileManifest(extractedPackage);
     const contentSha256 = createHash("sha256").update(JSON.stringify(firstContent)).digest("hex");
     const pathScanNeedles = [
@@ -265,6 +280,7 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
       constructionRoot,
       packageRoot: extractedPackage,
       manifest,
+      sourceIdentity,
       deterministicBytes: {
         packRuns: 2,
         sha256: tarballSha256,

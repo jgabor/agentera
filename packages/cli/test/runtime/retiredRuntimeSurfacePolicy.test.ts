@@ -1056,6 +1056,13 @@ describe("retired runtime current-surface policy", () => {
       .map(({ generated_declaration }) => generated_declaration))
       .toEqual([
         {
+          id: "build-source-identity",
+          path: ".agentera-build-source.json",
+          format: "json",
+          classification: "active",
+          reason: expect.any(String),
+        },
+        {
           id: "npx-bundle-marker",
           path: ".agentera-npx-bundle.json",
           format: "json",

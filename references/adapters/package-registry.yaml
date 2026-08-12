@@ -48,6 +48,11 @@ records:
         - id: routing-evaluation-corpus
           path: fixtures/routing/hybrid-corpus.yaml
       generated_files:
+        - id: build-source-identity
+          path: .agentera-build-source.json
+          format: json
+          classification: active
+          command_authority_reason: Build-generated source identity binds constructed dist and bundle output to one Git commit, tree, and exact working-tree digest; no source copy exists.
         - id: npx-bundle-marker
           path: .agentera-npx-bundle.json
           format: json
