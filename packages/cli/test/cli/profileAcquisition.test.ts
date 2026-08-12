@@ -199,8 +199,9 @@ describe("shared bounded profile acquisition", () => {
     expect(readProfileSourceSafely(profilePath, 65_536, {
       noFollowFlag: 0,
       afterPathSnapshot: () => {
-        fs.rmSync(profilePath);
-        fs.writeFileSync(profilePath, "replacement");
+        const replacement = path.join(root, "replacement-profile");
+        fs.writeFileSync(replacement, "replacement");
+        fs.renameSync(replacement, profilePath);
       },
     }).status).toBe("unsafe");
   });

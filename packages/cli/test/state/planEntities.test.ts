@@ -1471,7 +1471,9 @@ finally { process.chdir(cwd); }
         if (calls === 1) firstBytes = bytes;
         if (calls === 2) {
           const first = path.join(root, ".agentera/entities/plan/plan/aaaaaaaaaa.yaml");
-          fs.unlinkSync(first); fs.writeFileSync(first, content === "identical" ? firstBytes : "successor bytes\n");
+          const successor = path.join(root, "same-path-successor.yaml");
+          fs.writeFileSync(successor, content === "identical" ? firstBytes : "successor bytes\n");
+          fs.renameSync(successor, first);
           fs.unlinkSync(path.join(root, ".agentera/state-mode.yaml"));
         }
         return result;
