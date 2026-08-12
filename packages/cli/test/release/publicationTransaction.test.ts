@@ -69,7 +69,12 @@ function withTemporaryConstruction<T>(callback: (temporary: string) => T): T {
 
 function withDevelopmentPush<T>(
   version: string,
-  callback: (fixture: { root: string; beforeCommit: string; metadataCommit: string }) => T,
+  callback: (fixture: {
+    root: string;
+    beforeCommit: string;
+    sourceCommit: string;
+    metadataCommit: string;
+  }) => T,
 ): T {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-push-"));
   const packagePath = path.join(root, "packages/cli/package.json");
@@ -109,7 +114,7 @@ function withDevelopmentPush<T>(
       }, null, 2)}\n`);
     }
     const metadataCommit = commit("prepare development metadata");
-    return callback({ root, beforeCommit, metadataCommit });
+    return callback({ root, beforeCommit, sourceCommit, metadataCommit });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -130,6 +135,23 @@ describe("publication contract", () => {
     withDevelopmentPush("3.0.0-dev.34", ({ root, beforeCommit, metadataCommit }) => {
       expect(() => validateDevelopmentPush({ beforeCommit, metadataCommit }, { repo: root }))
         .toThrow("is not the next development version '3.0.0-dev.33'");
+    });
+  });
+
+  it("rejects another version allocation when no source commit follows metadata", () => {
+    withDevelopmentPush("3.0.0-dev.33", ({ root }) => {
+      expect(() => prepareDevelopmentPush({ repo: root })).toThrow(
+        "requires an integrated source commit after the previous metadata commit",
+      );
+    });
+  });
+
+  it("rejects a metadata push with no source commit after the previous remote head", () => {
+    withDevelopmentPush("3.0.0-dev.33", ({ root, sourceCommit, metadataCommit }) => {
+      expect(() => validateDevelopmentPush(
+        { beforeCommit: sourceCommit, metadataCommit },
+        { repo: root },
+      )).toThrow("requires an integrated source commit after the previous feat/v3 head");
     });
   });
 

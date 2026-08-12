@@ -67,6 +67,14 @@ next push, so every committed integer is processed in order. CI never allocates
 or edits a version and does not use `github.run_number`. A rerun reuses the same
 committed version and candidate.
 
+One explicit push authorization permits exactly one push and is consumed by it.
+After that push, stop. A failed or cancelled workflow ends the release attempt;
+it does not authorize another metadata commit, version, or push. Make fixes on a
+worktree branch, then obtain fresh authorization for a later integration push.
+If GitHub accepted the push but did not create the workflow, dispatch the
+workflow at the unchanged `feat/v3` head. Local commits do not publish, and a
+retry or recovery never allocates a replacement version.
+
 The resumable readiness coordinator remains the manual diagnostic and recovery
 path. It accepts an explicit external candidate directory, target version, and
 source commit. On the contracted GitHub Actions source runner, a fresh run

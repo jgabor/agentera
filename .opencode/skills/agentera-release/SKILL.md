@@ -89,6 +89,15 @@ issues a machine candidate-bound development approval, and publishes it to
 reuses the same committed version and candidate. Wait for that workflow to
 finish before the next `feat/v3` integration push.
 
+A user's explicit push authorization is single-use and is consumed by one
+`git push`. Local commits do not publish. After that push, stop. A failed or
+cancelled workflow ends that release attempt and does not authorize another
+metadata commit, version, or push. Make corrections on a worktree branch and
+obtain fresh explicit authorization before a later integration push. If GitHub
+accepted the push but did not instantiate the workflow, dispatch the same
+workflow at the unchanged `feat/v3` head. A retry or recovery must never
+allocate a replacement version.
+
 ```bash
 pnpm cli:prepare:dev-push -- --json
 # Commit only packages/cli/package.json as the final local feat/v3 commit.

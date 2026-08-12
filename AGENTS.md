@@ -117,6 +117,14 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
 - Push once. The `feat/v3` workflow validates the committed increment against
   the previous remote head, qualifies that exact candidate, issues an automatic
   candidate-bound development approval, and publishes it to npm `@next`.
+- A user's explicit push authorization permits exactly one push and is consumed
+  by it. After that push, stop. A failed or cancelled workflow does not
+  authorize another metadata commit, version, or push. Repair the cause on a
+  worktree branch and obtain fresh explicit authorization before integrating it.
+- Do not prepare a development version unless at least one source commit was
+  integrated after the previous `feat/v3` head. Local commits do not publish.
+  Retry or recover a missing workflow only at the unchanged metadata commit.
+  Never allocate a replacement version for a retry.
 - Wait for that workflow to finish before the next `feat/v3` integration push.
   This keeps the single local integrator and GitHub run order identical.
 - If GitHub records the push but does not instantiate its workflow, dispatch

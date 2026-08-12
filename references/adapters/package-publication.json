@@ -62,7 +62,9 @@
         "HEAD must increment dev.N exactly once and set agentera.gitRef to the source commit",
         "routine CI defers its duplicate release conjunction on direct feat/v3 pushes",
         "CI never allocates a version or uses github.run_number",
-        "reruns reuse the same version, candidate, and source run identity"
+        "reruns reuse the same version, candidate, and source run identity",
+        "a development push requires at least one integrated source commit after BEFORE",
+        "one explicit push authorization is single-use; failure requires worktree repair and fresh authorization"
       ],
       "approval": "After exact candidate qualification and CI attestation, the workflow issues a machine candidate-bound development approval and publishes to next without a review environment.",
       "concurrency": "The local integrator waits for the prior development workflow to finish before another push. One non-cancelling workflow group protects the active run; it is not used as an unbounded queue."

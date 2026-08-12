@@ -209,6 +209,21 @@ function readManifestAtCommit(adapter, commit, projectRoot = repoRoot) {
   return JSON.parse(contents);
 }
 
+function isDevelopmentMetadataCommit(adapter, commit, projectRoot = repoRoot) {
+  const parentRecord = run("git", ["rev-list", "--parents", "-n", "1", commit], {
+    cwd: projectRoot,
+  }).split(/\s+/);
+  if (parentRecord.length !== 2) return false;
+  const parent = parentRecord[1];
+  const changedPaths = run("git", ["diff", "--name-only", parent, commit, "--"], {
+    cwd: projectRoot,
+  }).split("\n").filter(Boolean);
+  const manifest = readManifestAtCommit(adapter, commit, projectRoot);
+  return changedPaths.length === 1
+    && changedPaths[0] === adapter.manifestPath
+    && manifest.agentera?.gitRef === parent;
+}
+
 export function prepareDevelopmentPush(options = {}) {
   const projectRoot = options.repo ?? repoRoot;
   const adapter = PACKAGE_ADAPTERS.development;
@@ -217,6 +232,11 @@ export function prepareDevelopmentPush(options = {}) {
   });
   if (status) throw new Error("development push preparation requires a clean committed source tree");
   const sourceCommit = run("git", ["rev-parse", "HEAD"], { cwd: projectRoot });
+  if (isDevelopmentMetadataCommit(adapter, sourceCommit, projectRoot)) {
+    throw new Error(
+      "development push preparation requires an integrated source commit after the previous metadata commit",
+    );
+  }
   const prepared = prepareMetadata("development", readManifest(adapter, projectRoot), sourceCommit);
   if (!options.check) {
     fs.writeFileSync(
@@ -258,6 +278,11 @@ export function validateDevelopmentPush(request, options = {}) {
     throw new Error("development push must end with one non-merge metadata commit");
   }
   const sourceCommit = parentRecord[1];
+  if (sourceCommit === beforeCommit) {
+    throw new Error(
+      "development push requires an integrated source commit after the previous feat/v3 head",
+    );
+  }
   const ancestor = spawnSync("git", ["merge-base", "--is-ancestor", beforeCommit, sourceCommit], {
     cwd: projectRoot,
     env: npmChildEnvironment(process.env),
