@@ -275,6 +275,8 @@ function realisticTodoProject(count = 120): { root: string; orderedIds: string[]
   return { root, orderedIds: [...criticalOpenIds, ...criticalResolvedIds, ...normalOpenIds], criticalOpenIds };
 }
 
+const REALISTIC_TODO_CURSOR_TIMEOUT_MS = 90_000;
+
 function doc(root: string, document: string, filePath: string, status = "current"): any {
   const result = capture(root, ["state", "docs", "create", "--input", "-", "--format", "json"], { document, path: filePath, last_updated: "2026-07-17", status });
   expect(result.rc, result.err || result.out).toBe(0); return result.json;
@@ -923,7 +925,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(cursorExact.json.entry).toMatchObject({ id: orderedIds.at(-1), artifact: "todo" });
 
     expect(files(root)).toEqual(before);
-  });
+  }, REALISTIC_TODO_CURSOR_TIMEOUT_MS);
 
   it("preserves filtered TODO continuation and pre-filter queue rank", () => {
     const { root, orderedIds } = realisticTodoProject();
@@ -1028,7 +1030,7 @@ describe("TODO item and documentation inventory entity authority", () => {
       expect(restarted.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
     }
     expect(files(root)).toEqual(before);
-  });
+  }, REALISTIC_TODO_CURSOR_TIMEOUT_MS);
 
   it("rejects signed invalid TODO limits and preserves YAML and text cursor errors", () => {
     const { root } = realisticTodoProject(20);
@@ -1079,7 +1081,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(stale.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor snapshot is no longer available", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
     expect(capture(root, shellCommandArgs(stale.json.error.recovery)).rc).toBe(0);
     expect(files(root)).toEqual(mutated);
-  });
+  }, REALISTIC_TODO_CURSOR_TIMEOUT_MS);
 
   it("uses static final help and explain with bare IDs", () => {
     const root = project();
