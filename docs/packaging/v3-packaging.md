@@ -122,6 +122,8 @@ report outputs. Generated-overlap is the only checkout
 generated-output writer. It invokes the exact public source, package, and build
 commands once and returns their inventory, pending-test, build, generation, and
 continuous-reader evidence. Source, package, and build are not spawned again.
+The GitHub qualification step limits the overlapping source and package Vitest
+participants to two workers each so overlap does not oversubscribe the runner.
 After every batch owner passes and overlap settles one lease-free generation,
 performance runs alone with one worker in fresh isolated state on the pinned
 remote runner declared by the policy, and records the runner identity. Local
