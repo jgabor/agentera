@@ -304,6 +304,33 @@ describe("qualified publication timing coordinator", () => {
     expect(calls).toEqual(["stage", "exact-version-l2"]);
   });
 
+  it("retries only transient exact-version registry propagation before promotion", async () => {
+    let now = 0;
+    let l2Attempts = 0;
+    const calls: string[] = [];
+    const receipt = await runQualifiedPublication({
+      adapterName: "development",
+      candidateDirectory: "/retained/candidate",
+      candidate,
+      clock: () => now,
+      sleep: async (delayMs: number) => { now += delayMs; },
+      runCommand: (command: { name: string }) => {
+        calls.push(command.name);
+        now += 5;
+        if (command.name === "exact-version-l2" && ++l2Attempts < 3) {
+          throw new Error("npm error code ETARGET\nnpm error notarget No matching version found");
+        }
+        return command.name === "exact-version-l2"
+          ? { stdout: "L2 passed", stderr: "" }
+          : transactionOutput(command.name, false);
+      },
+    });
+
+    expect(calls).toEqual(["stage", "exact-version-l2", "exact-version-l2", "exact-version-l2", "promote"]);
+    expect(receipt.outcome).toBe("passed");
+    expect(receipt.withinBudget).toBe(true);
+  });
+
   it("reconciles measured components with unattributed coordinator time", async () => {
     let now = 0;
     let clockReads = 0;

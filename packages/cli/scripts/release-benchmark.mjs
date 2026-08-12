@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 import { npmChildEnvironment } from "./package-construction.mjs";
@@ -21,6 +22,8 @@ import {
 
 const scriptPath = fileURLToPath(import.meta.url);
 const QUALIFICATION_BUDGET_MS = RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
+const EXACT_VERSION_PROPAGATION_ATTEMPTS = 10;
+const EXACT_VERSION_PROPAGATION_RETRY_MS = 5_000;
 let failureWasEmitted = false;
 
 function benchmarkError(message, owner) {
@@ -239,6 +242,37 @@ function defaultCommandRunner(specification) {
   return { stdout: invocation.stdout, stderr: invocation.stderr };
 }
 
+function isTransientExactVersionPropagationFailure(specification, error) {
+  const detail = error instanceof Error ? error.message : String(error);
+  return specification.name === "exact-version-l2"
+    && specification.env?.AGENTERA_SANDBOX_TIER === "L2"
+    && detail.includes("ETARGET")
+    && detail.includes("No matching version found");
+}
+
+async function runPublicationCommand(specification, commandRunner, timeoutMs, remaining, wait) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await commandRunner({ ...specification, timeoutMs });
+    } catch (error) {
+      if (
+        attempt >= EXACT_VERSION_PROPAGATION_ATTEMPTS
+        || !isTransientExactVersionPropagationFailure(specification, error)
+      ) {
+        throw error;
+      }
+      if (remaining() <= EXACT_VERSION_PROPAGATION_RETRY_MS) {
+        throw error;
+      }
+      await wait(EXACT_VERSION_PROPAGATION_RETRY_MS);
+      timeoutMs = remaining();
+      if (timeoutMs <= 0) {
+        throw error;
+      }
+    }
+  }
+}
+
 function transactionArguments(phase, adapterName, candidateDirectory, sourceRunId) {
   return [
     path.join(REPO_ROOT, "packages/cli/scripts/publication-transaction.mjs"),
@@ -383,6 +417,7 @@ export async function runQualifiedPublication(options = {}) {
   const clock = options.clock ?? (() => performance.now());
   const commandRunner = options.runCommand ?? defaultCommandRunner;
   const emit = options.emit ?? (() => {});
+  const wait = options.sleep ?? sleep;
   const environment = options.environment ?? process.env;
   const l2State = adapterName === "development"
     ? isolatedNpmState("agentera-qualified-l2-", {
@@ -421,7 +456,13 @@ export async function runQualifiedPublication(options = {}) {
       }
       emit({ event: "started", phase: specification.name });
       try {
-        const output = await commandRunner({ ...specification, timeoutMs: remainingMs });
+        const output = await runPublicationCommand(
+          specification,
+          commandRunner,
+          remainingMs,
+          () => budgetMs - (now() - started),
+          wait,
+        );
         const phaseEnded = now();
         const transaction = successfulTransaction(specification, output ?? {});
         const phase = {

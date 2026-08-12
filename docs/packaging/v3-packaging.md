@@ -308,8 +308,11 @@ absent while `next` or `latest` already names that target, staging treats the
 state as a conflict before candidate-tag inspection or credentials: publishing
 would make the public tag effective before exact-version qualification. Staging
 does not move `next` or `latest`. The development L2 runs the pinned
-exact-version consumer harness while the public tag is unchanged; the stable
-adapter repeats its isolated exact-version consumer smoke. Promotion verifies
+exact-version consumer harness while the public tag is unchanged. It retries
+only npm's transient `ETARGET` missing-version response at five-second
+intervals, at most ten attempts and within the existing publication deadline.
+The stable adapter repeats its isolated exact-version consumer smoke.
+Promotion verifies
 the staged exact version, moves the expected tag forward, waits for integrity
 and tag convergence, and observes the final exact version. Exact matching
 staged or promoted state replays without upload or backward tag movement. A
