@@ -80,6 +80,8 @@ jobs:
         with:
           name: release-candidate-${{ github.run_id }}
           path: ${{ runner.temp }}/agentera-candidate
+      - name: Restore governed candidate artifact mode after transfer
+        run: chmod 0444 "${RUNNER_TEMP}"/agentera-candidate/*.tgz
       - uses: actions/setup-node@v4
         with:
           node-version: 22.23.2

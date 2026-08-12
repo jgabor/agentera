@@ -86,6 +86,8 @@ jobs:
           path: ${{ runner.temp }}/agentera-candidate
           run-id: ${{ inputs.source_run_id }}
           github-token: ${{ github.token }}
+      - name: Restore governed candidate artifact mode after transfer
+        run: chmod 0444 "${RUNNER_TEMP}"/agentera-candidate/*.tgz
       - name: Recheck transferred candidate binding
         env:
           ADAPTER: ${{ inputs.adapter }}

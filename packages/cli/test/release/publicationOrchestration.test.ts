@@ -155,6 +155,7 @@ describe("candidate publication orchestration", () => {
     expect(autoPublish).toContain("--source-run-id \"${{ github.run_id }}\"");
     expect(autoPublish).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
     expect(autoPublish).toContain("release-benchmark.mjs publication --adapter development");
+    expect(autoPublish).toContain('chmod 0444 "${RUNNER_TEMP}"/agentera-candidate/*.tgz');
     expect(autoPublish).not.toContain("environment:");
     expect(autoPublish.indexOf("release-qualification.mjs approval"))
       .toBeLessThan(autoPublish.indexOf("release-benchmark.mjs publication"));
@@ -184,6 +185,7 @@ describe("candidate publication orchestration", () => {
     expect(publicationYaml).toContain("coordinator enforces <120s");
     expect(publicationYaml).toContain("timeout-minutes: 3");
     expect(publicationYaml).toContain("qualified-publication-receipt.json");
+    expect(publicationYaml).toContain('chmod 0444 "${RUNNER_TEMP}"/agentera-candidate/*.tgz');
     expect(publicationYaml.indexOf("validateQualificationWorkflowRun(run, runId)"))
       .toBeLessThan(publicationYaml.indexOf("Checkout qualified source head"));
     expect(publicationYaml.indexOf("Checkout qualified source head"))
@@ -192,6 +194,8 @@ describe("candidate publication orchestration", () => {
       .toBeLessThan(publicationYaml.indexOf("environment: npm-publish"));
     expect(publicationYaml.indexOf("Recheck transferred candidate binding"))
       .toBeLessThan(publicationYaml.indexOf("NPM_TOKEN"));
+    expect(publicationYaml.indexOf("Restore governed candidate artifact mode after transfer"))
+      .toBeLessThan(publicationYaml.indexOf("Recheck transferred candidate binding"));
     expect(publicationYaml.indexOf("release-qualification.mjs approval"))
       .toBeLessThan(publicationYaml.indexOf("release-benchmark.mjs publication"));
     expect(publicationYaml).not.toContain("release-benchmark.mjs qualification --adapter");
