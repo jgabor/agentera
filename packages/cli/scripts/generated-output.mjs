@@ -4,6 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { gitSourceTreeDigest } from "./git-source-tree.mjs";
+
 const generatedDirectory = ".agentera-generated";
 const identityFile = ".agentera-generation.json";
 const sourceIdentityFile = ".agentera-build-source.json";
@@ -107,62 +109,22 @@ export function validateGeneratedSourceIdentity(value, label) {
   return validateSourceIdentity(value, label);
 }
 
-function trackedGitModes(repo) {
-  const modes = new Map();
-  const records = git(repo, ["ls-files", "--stage", "-z"], null).toString("utf8").split("\0").filter(Boolean);
-  for (const record of records) {
-    const match = /^(100644|100755|120000) [0-9a-f]+ ([0-3])\t([\s\S]+)$/.exec(record);
-    if (!match) throw new Error("generated-output source identity encountered an unsupported Git index entry");
-    const [, mode, stage, relative] = match;
-    if (stage !== "0" || modes.has(relative)) {
-      throw new Error(`generated-output source identity cannot bind unresolved Git index stages for ${relative}`);
-    }
-    modes.set(relative, mode);
-  }
-  return modes;
-}
-
-function canonicalGitMode(stat, trackedMode, fileModeSupported) {
-  if (stat.isSymbolicLink() || trackedMode === "120000") return "120000";
-  if (!stat.isFile()) return null;
-  if (!fileModeSupported) return trackedMode === "100755" ? "100755" : "100644";
-  return (stat.mode & 0o100) === 0 ? "100644" : "100755";
-}
-
 export function generatedSourceIdentity(packageRoot) {
   const repo = path.resolve(packageRoot, "../..");
   const repoRoot = String(git(repo, ["rev-parse", "--show-toplevel"])).trim();
   if (fs.realpathSync(repoRoot) !== fs.realpathSync(repo)) {
     throw new Error(`generated-output package root is not inside its expected repository: ${packageRoot}`);
   }
-  const raw = git(repo, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], null);
-  const files = raw.toString("utf8").split("\0").filter(Boolean).sort();
-  const trackedModes = trackedGitModes(repo);
-  const fileModeSupported = String(git(repo, ["config", "--bool", "--default", "true", "core.filemode"])).trim() === "true";
-  const digest = createHash("sha256");
-  for (const relative of files) {
-    const file = path.join(repo, relative);
-    const stat = fs.lstatSync(file);
-    const trackedMode = trackedModes.get(relative);
-    const mode = canonicalGitMode(stat, trackedMode, fileModeSupported);
-    if (!mode) throw new Error(`generated-output source identity contains a non-file Git path at ${file}`);
-    digest.update(relative);
-    digest.update("\0");
-    digest.update(mode);
-    digest.update("\0");
-    if (mode === "120000") {
-      digest.update(stat.isSymbolicLink() ? fs.readlinkSync(file) : fs.readFileSync(file));
-    } else {
-      digest.update(fs.readFileSync(file));
-    }
-    digest.update("\0");
-  }
+  const workingTree = gitSourceTreeDigest(repo, {
+    includeUntracked: true,
+    label: "generated-output source identity",
+  });
   const unsigned = {
     schemaVersion: sourceIdentitySchema,
     commit: String(git(repo, ["rev-parse", "HEAD"])).trim(),
     tree: String(git(repo, ["rev-parse", "HEAD^{tree}"])).trim(),
-    files: files.length,
-    workingTreeSha256: digest.digest("hex"),
+    files: workingTree.files,
+    workingTreeSha256: workingTree.sha256,
   };
   return sealGeneratedSourceIdentity(unsigned);
 }

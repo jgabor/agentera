@@ -1,0 +1,16 @@
+id: tncykekuvd
+artifact: progress
+record:
+  timestamp: 2026-08-12 10:10
+  type: fix
+  phase: build
+  what: Bound source receipts to shared Git mode, blob, and symlink identity with core.symlinks=false compatibility.
+  context:
+    intent: Record implementation-side cache-identity evidence before commit without closing the selected task or recording an evaluator verdict.
+    constraints: Keep onlyyjethm pending; do not issue a receipt or create candidate, registry, activation, or publication effects before commit.
+    unknowns: Final clean committed-source qualification and evaluator verdict remain pending.
+    scope: Shared generated-output and release-receipt Git source identity, compatibility regressions, and implementation-side state.
+  discovered: The receipt cache used a separate path-and-dereferenced-bytes hash, and a tracked index symlink can be a clean regular-file surrogate when Git disables worktree symlinks.
+  verified: packages/cli/scripts/git-source-tree.mjs now binds deterministic paths, stage-zero modes and blobs, symlink targets, executable bits, and core.symlinks=false surrogates for generated output and source receipts. Changed modes, links, and surrogate targets invalidate; irrelevant chmod and core.filemode=false stay stable; digest-valid legacy and stale receipts reject. Focused release/generated checks passed 91 tests with one platform skip; typecheck and Audit PASS. No receipt, candidate, registry, activation, or publication effect occurred.
+  next: Commit implementation and state together, then run the clean canonical source qualifier to reissue the receipt; keep the task pending until that qualification and evaluator verdict.
+  publication_order: 154

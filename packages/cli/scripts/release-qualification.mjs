@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
 import { selectGeneratedGeneration, validateGeneratedSourceIdentity } from "./generated-output.mjs";
+import { gitSourceTreeDigest } from "./git-source-tree.mjs";
 import { performanceEvidenceRecords } from "./performance-evidence.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 import "./source-loader-register.mjs";
@@ -140,29 +141,29 @@ function stagedSourceBytes(repo, relative) {
 }
 
 function trackedSourceHash(repo = REPO_ROOT) {
-  const raw = run("git", ["ls-files", "-z"], { cwd: repo });
-  const digest = createHash("sha256");
-  for (const relative of raw.split("\0").filter(Boolean).sort()) {
-    const bytes = fs.readFileSync(path.join(repo, relative));
-    digest.update(relative);
-    digest.update("\0");
-    digest.update(
-      relative === "packages/cli/package.json"
-        ? packageManifestSourceBytes(repo, bytes)
-        : bytes,
-    );
-    digest.update("\0");
-  }
-  return digest.digest("hex");
+  return gitSourceTreeDigest(repo, {
+    source: "index",
+    label: "release source identity",
+    transformBytes: (relative, bytes) => relative === "packages/cli/package.json"
+      ? packageManifestSourceBytes(repo, bytes)
+      : bytes,
+  }).sha256;
 }
 
 function assertStagedSourceMatchesWorking(repo) {
-  const diff = spawnSync("git", ["diff", "--quiet", "--", ".", ":(exclude)packages/cli/package.json"], {
-    cwd: repo,
-    env: npmChildEnvironment(process.env),
+  const transformBytes = (relative, bytes) => relative === "packages/cli/package.json"
+    ? packageManifestSourceBytes(repo, bytes)
+    : bytes;
+  const staged = gitSourceTreeDigest(repo, {
+    source: "index",
+    label: "release staged source identity",
+    transformBytes,
   });
-  if (diff.status === 1) throw new Error("staged and working source inputs differ");
-  if (diff.status !== 0) throw new Error("unable to compare staged and working source inputs");
+  const working = gitSourceTreeDigest(repo, {
+    label: "release working source identity",
+    transformBytes,
+  });
+  if (staged.sha256 === working.sha256) return;
   if (
     !packageManifestSourceBytes(repo).equals(
       packageManifestSourceBytes(repo, stagedSourceBytes(repo, "packages/cli/package.json")),
@@ -170,6 +171,7 @@ function assertStagedSourceMatchesWorking(repo) {
   ) {
     throw new Error("staged and working package inputs differ outside version and agentera.gitRef");
   }
+  throw new Error("staged and working source inputs differ");
 }
 
 export function toolVersion(command, args = ["--version"], repo = REPO_ROOT, options = {}) {
@@ -1119,13 +1121,12 @@ export function checkSourceReceipt(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo, false);
   const file = containedRegularReceipt(candidateDirectory, "source-receipt.json", "source receipt");
-  const receipt = validateSourceReceipt({
+  assertStagedSourceMatchesWorking(repo);
+  return validateSourceReceipt({
     ...options,
     repo,
     receipt: readJson(file, "source receipt"),
   });
-  assertStagedSourceMatchesWorking(repo);
-  return receipt;
 }
 
 function ensureRegularArtifact(directory, filename) {

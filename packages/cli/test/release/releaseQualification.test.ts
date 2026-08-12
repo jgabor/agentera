@@ -202,6 +202,38 @@ function write(root: string, relative: string, contents: string): void {
   fs.writeFileSync(file, contents);
 }
 
+function commit(repo: string, message: string): void {
+  git(repo, "add", "-A");
+  git(repo, "commit", "--quiet", "-m", message);
+}
+
+function rewriteReceipt(file: string, receipt: any): void {
+  const { receiptSha256: _oldReceiptSha256, ...content } = receipt;
+  receipt.receiptSha256 = sha256(canonicalJson(content));
+  fs.chmodSync(file, 0o600);
+  fs.writeFileSync(file, canonicalJson(receipt));
+  fs.chmodSync(file, 0o400);
+}
+
+function legacyTrackedSourceHash(repo: string): string {
+  const digest = createHash("sha256");
+  const tracked = git(repo, "ls-files", "-z").split("\0").filter(Boolean).sort();
+  for (const relative of tracked) {
+    let bytes = fs.readFileSync(path.join(repo, relative));
+    if (relative === "packages/cli/package.json") {
+      const manifest = JSON.parse(bytes.toString("utf8"));
+      delete manifest.version;
+      if (manifest.agentera) delete manifest.agentera.gitRef;
+      bytes = Buffer.from(canonicalJson(manifest));
+    }
+    digest.update(relative);
+    digest.update("\0");
+    digest.update(bytes);
+    digest.update("\0");
+  }
+  return digest.digest("hex");
+}
+
 function fixture(): { repo: string; candidateDirectory: string; sourceCommit: string } {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-release-qualification-test-"));
   temporary.push(root);
@@ -371,6 +403,123 @@ describe("release qualification receipts", () => {
 
     expect(replay.reused).toBe(true);
     expect(replay.receipt.receiptSha256).toBe(first.receiptSha256);
+  });
+
+  it.runIf(process.platform !== "win32")("invalidates source receipt reuse after a committed executable-bit change", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const file = path.join(repo, "pnpm-lock.yaml");
+    fs.chmodSync(file, 0o644);
+    await sourceReceipt(repo, candidateDirectory);
+
+    fs.chmodSync(file, 0o755);
+    commit(repo, "make source executable");
+
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("source receipt no longer matches current component inputs");
+    await expect(sourceReceipt(repo, candidateDirectory)).rejects.toThrow("source receipt inputs changed");
+  });
+
+  it.runIf(process.platform !== "win32").each([
+    ["target", (file: string) => {
+      fs.rmSync(file);
+      fs.symlinkSync("target-b", file);
+    }],
+    ["mode", (file: string) => {
+      fs.rmSync(file);
+      fs.writeFileSync(file, "target-a");
+    }],
+  ])("invalidates source receipt reuse after a committed symlink %s change", async (_kind, mutate) => {
+    const { repo, candidateDirectory } = fixture();
+    const file = path.join(repo, "source-link");
+    fs.symlinkSync("target-a", file);
+    commit(repo, "add source symlink");
+    await sourceReceipt(repo, candidateDirectory);
+
+    mutate(file);
+    commit(repo, "change source symlink");
+
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("source receipt no longer matches current component inputs");
+  });
+
+  it("reuses a source receipt for a clean core.symlinks=false surrogate and rejects target changes", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const file = path.join(repo, "source-link");
+    fs.writeFileSync(file, "target-a");
+    git(repo, "config", "core.symlinks", "false");
+    const object = git(repo, "hash-object", "-w", "source-link");
+    git(repo, "update-index", "--add", "--cacheinfo", `120000,${object},source-link`);
+    git(repo, "commit", "--quiet", "-m", "add source symlink surrogate");
+    const receipt = await sourceReceipt(repo, candidateDirectory);
+
+    expect(git(repo, "status", "--porcelain=v1")).toBe("");
+    expect(checkSourceReceipt({ repo, candidateDirectory }).receiptSha256).toBe(receipt.receiptSha256);
+    const replay = await issueSourceReceipt({
+      repo,
+      candidateDirectory,
+      gates: GOVERNED_GATES,
+      runDag: async () => { throw new Error("clean symlink surrogate must reuse its receipt"); },
+    });
+    expect(replay.reused).toBe(true);
+
+    fs.writeFileSync(file, "target-b");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("staged and working source inputs differ");
+  });
+
+  it.runIf(process.platform !== "win32")("rejects a regular symlink replacement when core.symlinks is enabled", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const file = path.join(repo, "source-link");
+    fs.symlinkSync("target-a", file);
+    commit(repo, "add source symlink");
+    await sourceReceipt(repo, candidateDirectory);
+
+    git(repo, "config", "core.symlinks", "true");
+    fs.rmSync(file);
+    fs.writeFileSync(file, "target-a");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("staged and working source inputs differ");
+  });
+
+  it.runIf(process.platform !== "win32")("keeps source receipt reuse stable across irrelevant permission noise", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const file = path.join(repo, "pnpm-lock.yaml");
+    fs.chmodSync(file, 0o644);
+    const receipt = await sourceReceipt(repo, candidateDirectory);
+
+    fs.chmodSync(file, 0o604);
+
+    expect(checkSourceReceipt({ repo, candidateDirectory }).receiptSha256).toBe(receipt.receiptSha256);
+    expect(git(repo, "status", "--porcelain=v1")).toBe("");
+  });
+
+  it.runIf(process.platform !== "win32")("uses index executable modes when core.filemode is false", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const file = path.join(repo, "pnpm-lock.yaml");
+    git(repo, "config", "core.filemode", "false");
+    fs.chmodSync(file, 0o644);
+    const receipt = await sourceReceipt(repo, candidateDirectory);
+
+    fs.chmodSync(file, 0o755);
+
+    expect(checkSourceReceipt({ repo, candidateDirectory }).receiptSha256).toBe(receipt.receiptSha256);
+    expect(git(repo, "status", "--porcelain=v1")).toBe("");
+  });
+
+  it("rejects a digest-valid receipt made with the legacy path-and-bytes source hash", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const receipt = await sourceReceipt(repo, candidateDirectory);
+    const receiptFile = path.join(candidateDirectory, "source-receipt.json");
+    const legacy = structuredClone(receipt);
+    legacy.component.trackedTreeSha256 = legacyTrackedSourceHash(repo);
+    const { sha256: _oldComponentSha256, ...component } = legacy.component;
+    legacy.component.sha256 = sha256(canonicalJson(component));
+    rewriteReceipt(receiptFile, legacy);
+
+    expect(legacy.component.trackedTreeSha256).not.toBe(receipt.component.trackedTreeSha256);
+    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
+      .toThrow("source receipt no longer matches current component inputs");
+    await expect(sourceReceipt(repo, candidateDirectory)).rejects.toThrow("source receipt inputs changed");
   });
 
   it("checks metadata-only staged changes without running gates or writing candidate state", async () => {

@@ -19,6 +19,7 @@ import {
   writeGeneratedSourceIdentity,
   writeGenerationIdentity,
 } from "../../scripts/generated-output.mjs";
+import { gitSourceTreeDigest } from "../../scripts/git-source-tree.mjs";
 
 const roots: string[] = [];
 
@@ -48,6 +49,41 @@ function sourceIdentityRepository(fileMode: boolean): { root: string; packageRoo
   git(root, ["config", "core.filemode", String(fileMode)]);
   git(root, ["add", "."]);
   git(root, ["commit", "--quiet", "-m", "fixture"]);
+  return { root, packageRoot, file };
+}
+
+function symlinkIdentityRepository(): { root: string; packageRoot: string; file: string } {
+  const root = tempRoot();
+  const packageRoot = path.join(root, "packages", "cli");
+  const file = path.join(root, "source-link");
+  fs.mkdirSync(packageRoot, { recursive: true });
+  fs.writeFileSync(path.join(root, ".gitignore"), "packages/cli/.agentera-generated/\n");
+  git(root, ["init", "--quiet"]);
+  git(root, ["config", "user.name", "Agentera test"]);
+  git(root, ["config", "user.email", "agentera-test@example.invalid"]);
+  git(root, ["config", "commit.gpgsign", "false"]);
+  fs.symlinkSync("target-a", file);
+  git(root, ["add", "."]);
+  git(root, ["commit", "--quiet", "-m", "symlink fixture"]);
+  return { root, packageRoot, file };
+}
+
+function symlinkSurrogateIdentityRepository(): { root: string; packageRoot: string; file: string } {
+  const root = tempRoot();
+  const packageRoot = path.join(root, "packages", "cli");
+  const file = path.join(root, "source-link");
+  fs.mkdirSync(packageRoot, { recursive: true });
+  fs.writeFileSync(path.join(root, ".gitignore"), "packages/cli/.agentera-generated/\n");
+  fs.writeFileSync(file, "target-a");
+  git(root, ["init", "--quiet"]);
+  git(root, ["config", "user.name", "Agentera test"]);
+  git(root, ["config", "user.email", "agentera-test@example.invalid"]);
+  git(root, ["config", "commit.gpgsign", "false"]);
+  git(root, ["config", "core.symlinks", "false"]);
+  git(root, ["add", ".gitignore"]);
+  const object = git(root, ["hash-object", "-w", "source-link"]);
+  git(root, ["update-index", "--add", "--cacheinfo", `120000,${object},source-link`]);
+  git(root, ["commit", "--quiet", "-m", "symlink surrogate fixture"]);
   return { root, packageRoot, file };
 }
 
@@ -219,6 +255,40 @@ describe("generated generation publication", () => {
     const indexed = generatedSourceIdentity(unsupported.packageRoot);
     fs.chmodSync(unsupported.file, 0o755);
     expect(generatedSourceIdentity(unsupported.packageRoot)).toEqual(indexed);
+  });
+
+  it("matches a clean core.symlinks=false surrogate to its index symlink and binds target changes", () => {
+    const repo = symlinkSurrogateIdentityRepository();
+    expect(git(repo.root, ["status", "--porcelain=v1"])).toBe("");
+    const surrogate = generatedSourceIdentity(repo.packageRoot);
+    expect(gitSourceTreeDigest(repo.root).sha256)
+      .toBe(gitSourceTreeDigest(repo.root, { source: "index" }).sha256);
+
+    fs.writeFileSync(repo.file, "target-b");
+    const changed = generatedSourceIdentity(repo.packageRoot);
+    expect(changed.workingTreeSha256).not.toBe(surrogate.workingTreeSha256);
+    expect(changed.identitySha256).not.toBe(surrogate.identitySha256);
+  });
+
+  it.runIf(process.platform !== "win32")("treats a regular replacement as a symlink type mismatch when symlinks are enabled", () => {
+    const repo = symlinkIdentityRepository();
+    git(repo.root, ["config", "core.symlinks", "true"]);
+    const linked = generatedSourceIdentity(repo.packageRoot);
+
+    fs.rmSync(repo.file);
+    fs.writeFileSync(repo.file, "target-a");
+    const replaced = generatedSourceIdentity(repo.packageRoot);
+
+    expect(replaced.workingTreeSha256).not.toBe(linked.workingTreeSha256);
+    expect(replaced.identitySha256).not.toBe(linked.identitySha256);
+  });
+
+  it("fails closed when Git cannot parse the effective symlink configuration", () => {
+    const repo = sourceIdentityRepository(true);
+    git(repo.root, ["config", "core.symlinks", "not-a-boolean"]);
+
+    expect(() => generatedSourceIdentity(repo.packageRoot))
+      .toThrow("unable to read generated-output source identity");
   });
 
   it.each([
