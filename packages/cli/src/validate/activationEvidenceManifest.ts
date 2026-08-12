@@ -73,6 +73,7 @@ export interface ActivationEvidenceAssemblyContext {
   readonly generation: string;
   readonly productionInputs: unknown;
   readonly productionEvidence: ProductionEvidence;
+  readonly sourceEvidence: ActivationOwnerEvidence;
   readonly packageEvidence: ActivationOwnerEvidence;
   readonly expectedPackageIdentity: ActivationPackageIdentity | unknown;
 }
@@ -296,8 +297,7 @@ export function assembleAndValidateActivationEvidence(
   let sourceObserverCalls = 0;
   let generatedObserverCalls = 0;
   sourceObserverCalls += 1;
-  const observedSourceEvidence = createSourceOwnerEvidence(context.root, context.productionInputs);
-  const sourceEvidence = deepFreeze(structuredClone(observedSourceEvidence));
+  const sourceEvidence = deepFreeze(structuredClone(context.sourceEvidence));
   generatedObserverCalls += 1;
   const observedGeneratedEvidence = createGeneratedOwnerEvidence({
     root: context.root,

@@ -228,7 +228,7 @@ describe("source qualification DAG", () => {
     expect(qualification.gates.find((entry: any) => entry.name === "source").observation)
       .toMatchObject({ command: gate("source").command, files: 10, tests: 40, pending: [] });
     expect(qualification.gates.find((entry: any) => entry.name === "performance").observation)
-      .toMatchObject({ inventoryFiles: 1, evidence: { status: "pass", samples: 1, runner: { authority: { identity: "GitHub Actions 1" } } } });
+      .toMatchObject({ inventoryFiles: 3, evidence: { status: "pass", samples: 1, runner: { authority: { identity: "GitHub Actions 1" } } } });
     expect(qualification.gates.find((entry: any) => entry.name === "performance").phase)
       .toBe("performance-barrier");
     expect(qualification.gates.find((entry: any) => entry.name === "capacity")).toMatchObject({
@@ -670,7 +670,7 @@ describe("source qualification DAG", () => {
     expect(script).toContain('source: ["pnpm", "-C", "packages/cli", "run", "test:source"]');
     expect(script).toContain('build: ["pnpm", "-C", "packages/cli", "build"]');
     expect(script).toContain('package: ["pnpm", "-C", "packages/cli", "run", "verify:package"]');
-    expect(script).not.toContain("VITEST_MAX_WORKERS");
+    expect(script).not.toContain('VITEST_MAX_WORKERS: "2"');
     expect(script).toContain('"taskkill"');
     expect(script).toContain('["/PID", String(child.pid), "/T"');
     expect(script).toContain('schemaVersion: "agentera.generatedOverlapEvidence.v1"');

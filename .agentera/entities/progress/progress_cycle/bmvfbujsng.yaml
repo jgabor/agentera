@@ -1,0 +1,14 @@
+id: bmvfbujsng
+artifact: progress
+record:
+  timestamp: 2026-08-13 00:29
+  type: fix
+  phase: build
+  what: Reconciled the personal glossary feature with the latest feat/v3 release and test architecture.
+  context:
+    intent: Record implementation-side state for the audited nine-file post-rebase correction before commit.
+    constraints: No release preparation, version change, publish, or push; keep the task pending and do not record an evaluator verdict.
+    scope: Nine parity/authority files.
+  verified: Focused release/runtime 247, runtime matrix 3, source/package parity 25, typecheck, build, compact, and capability checks passed; independent Audit PASS.
+  next: Commit and fast-forward merge into local feat/v3, then stop before release preparation.
+  publication_order: 155

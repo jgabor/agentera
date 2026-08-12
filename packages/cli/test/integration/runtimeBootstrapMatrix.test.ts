@@ -358,6 +358,7 @@ describe("source-owned runtime bootstrap integration", () => {
         generation,
         productionInputs,
         productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
+        sourceEvidence,
         packageEvidence: mutablePackageEvidence,
         expectedPackageIdentity: packageIdentity,
       });

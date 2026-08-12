@@ -1238,7 +1238,7 @@ describe("explicit preparation", () => {
       targetVersion: "3.0.0-dev.42",
       sourceCommit,
       candidateDirectory,
-    }, { repo })).toThrow("source receipt no longer matches current component inputs");
+    }, { repo })).toThrow("staged and working package inputs differ outside version and agentera.gitRef");
 
     expect(fs.readFileSync(manifestPath)).toEqual(before);
     expect(JSON.parse(fs.readFileSync(manifestPath, "utf8"))).toMatchObject({

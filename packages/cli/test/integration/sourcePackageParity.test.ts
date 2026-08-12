@@ -625,7 +625,7 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
     const authoritative = YAML.parse(original);
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const mutations: Array<[string, (authority: any) => void, string[], string | undefined, boolean?]> = [
-      ["profile_output.command", (authority) => { authority.ownership_contracts.personal.profile_output.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined],
+      ["profile_output.command", (authority) => { authority.ownership_contracts.personal.profile_output.command.canonical += " --force"; }, ["schema", "--format", "json"], undefined, true],
       ["profile_grounding.command", (authority) => { authority.consumer_boundary.profile_grounding.command += " garbage"; }, ["report", "profile-grounding", "--format", "json"], undefined],
       ["profile_grounding.repair", (authority) => { authority.consumer_boundary.profile_grounding.recovery.repair = authority.consumer_boundary.profile_grounding.recovery.repair.replace("--format json", "--format invalid"); }, ["report", "profile-grounding", "--format", "json"], undefined],
       ["profile_grounding.absent", (authority) => { authority.consumer_boundary.profile_grounding.recovery.absent = `x${authority.consumer_boundary.profile_grounding.recovery.absent}`; }, ["report", "profile-grounding", "--format", "json"], undefined],
@@ -1721,6 +1721,11 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
   it("queues and reads private glossary review metadata through the constructed package", () => {
     const profile = fs.mkdtempSync(path.join(fixture.root, "packaged-glossary-review-"));
     const environment = isolatedPackageEnv({ AGENTERA_PROFILE_DIR: profile });
+    const generation = publishEvidenceTiers([], {
+      tiersDir: path.join(profile, "intermediate", "tiers"),
+      adapterVersion: ADAPTER_VERSION,
+      publishedAt: "2026-08-10T00:00:00.000Z",
+    }).generation;
     const capsule = createGlossaryEvidenceCapsule({
       term: "private packaged review term",
       meaning: "private packaged review meaning",
@@ -1730,7 +1735,7 @@ describe("source and extracted-package semantic parity", { timeout: 120_000 }, (
         { source_id: "source-package-a", evidence_anchor: "anchor-package-a", source_kind: "instruction_document" },
         { source_id: "source-package-b", evidence_anchor: "anchor-package-b", source_kind: "project_config_signal" },
       ],
-      generation: "packaged-review-generation",
+      generation,
       policy_version: "agentera.personalGlossaryMiningPolicy.v1",
     });
     const projection = projectPersonalGlossaryCandidates({

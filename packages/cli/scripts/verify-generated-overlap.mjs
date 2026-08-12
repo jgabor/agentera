@@ -56,6 +56,7 @@ export async function writeActivationEvidence({ repoRoot, generationRoot, genera
     generation,
     productionInputs,
     productionEvidence,
+    sourceEvidence,
     packageEvidence,
     expectedPackageIdentity: packageIdentity,
   });

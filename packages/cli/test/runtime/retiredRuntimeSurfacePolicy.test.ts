@@ -1104,7 +1104,6 @@ describe("retired runtime current-surface policy", () => {
     const registry = YAML.parse(read(packageRegistryPath));
     const declarations = registry.records[0].bootstrap_command_authority.scalar_classifications;
     const addedPaths = new Set([
-      "CHANGELOG.md",
       "DESIGN.md",
       "references/adapters/package-publication.json",
       "references/artifacts/state-storage-authority.yaml",
