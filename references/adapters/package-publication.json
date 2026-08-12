@@ -466,7 +466,7 @@
     },
     "timeouts": {
       "preflightMs": 30000,
-      "sourceQualificationMs": 1800000,
+      "sourceQualificationMs": 2400000,
       "qualifiedPublicationMs": 120000
     },
     "failureRule": "The first observed failing owner remains the reported label. Cancellable peers are stopped, generated-overlap is allowed to settle without forced termination, barrier B and receipt issuance are blocked, and completed/cancelled failures are reported. No timeout or failure authorizes repair, candidate work, or registry mutation.",

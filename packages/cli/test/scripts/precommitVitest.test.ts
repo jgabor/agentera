@@ -200,6 +200,7 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     "packages/cli/scripts/verify-generated-overlap.mjs",
     "packages/cli/test/sourceSetup.ts",
     "packages/cli/test/state/todoDocsEntities.test.ts",
+    "packages/cli/test/upgrade/upgradeEntityCutover.test.ts",
     "packages/cli/test/scripts/precommitVitest.test.ts",
     "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
     "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",

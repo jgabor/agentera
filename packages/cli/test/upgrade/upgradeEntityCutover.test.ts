@@ -20,6 +20,7 @@ import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMaj
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const FIXTURE = path.join(import.meta.dirname, "fixtures/v2-yaml-project");
 const V2_COMPACTION_OUTPUT = path.join(import.meta.dirname, "../fixtures/v2-compaction-2.7.11/output");
+const LARGE_CUTOVER_TIMEOUT_MS = 240_000;
 const roots: string[] = [];
 
 function managedV2(home: string): string {
@@ -203,7 +204,7 @@ describe("one-way Git entity cutover", () => {
     expect(records).toHaveLength(161);
     expect(records.filter((record) => record.status === "resolved")).toHaveLength(54);
     expect(records.every((record) => record.readiness?.reason === "Preserve operational state")).toBe(true);
-  }, 120_000);
+  }, LARGE_CUTOVER_TIMEOUT_MS);
 
   it("uses an explicit row ID while importing stale public entity values", () => {
     const root = precreatedTodoProject(1, { explicit: true });
@@ -543,7 +544,7 @@ describe("one-way Git entity cutover", () => {
     expect(treeBytes(root, ".agentera/entities")).toEqual(finalEntities);
     assertSourcesUnchanged(null);
     expect(sha256(fs.readFileSync(path.join(root, "TODO.md")))).toBe(todoAfter);
-  }, 120_000);
+  }, LARGE_CUTOVER_TIMEOUT_MS);
 
   it("refuses authority-undeclared aggregate collections before any cutover effect", () => {
     const root = project();

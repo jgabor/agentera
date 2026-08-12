@@ -32,6 +32,8 @@ describe("strict package publication model", () => {
     expect(model.activationConjunction.classes).toHaveLength(7);
     expect(model.activationConjunction.dimensions).toHaveLength(6);
     expect(model.activationConjunction.checkIds).toHaveLength(42);
+    expect(model.sourceQualificationMs).toBe(2_400_000);
+    expect(mutate((copy) => { copy.benchmark.timeouts.sourceQualificationMs = 2_400_001; })).toThrow(/source qualification timeout/);
   });
 
   it.each([
