@@ -190,15 +190,15 @@ manifest never creates surface identity; the code-owned tuple catalog remains th
 identity, owner, selector, semantic, and correction authority.
 
 The coordinator passes generated-overlap the actual remaining absolute source
-deadline. Overlap stops starting work 10,000 ms before the 900,000 ms envelope,
+deadline. Overlap stops starting work 10,000 ms before the 1,200,000 ms envelope,
 cancels and settles its owned process groups, and removes its generated surfaces
 on failure. It must return at least 4,000 ms before the envelope so the parent can
 reconcile and stop cancellable peers. The parent may request this cooperative
 stop with `SIGTERM`; it never force-kills the overlap owner during publication.
 The parent starts reader barrier B only when at least 6,000 ms of concurrent
-child execution plus the 4,000 ms reconciliation reserve remain. The 900,000 ms
-source envelope retains headroom over the observed 590,689 ms cold GitHub cutoff
-under the previous envelope and the 319,015 ms local eleven-gate pass.
+child execution plus the 4,000 ms reconciliation reserve remain. The 1,200,000 ms
+source envelope retains headroom over the observed 890,695 ms cold private
+GitHub-runner cutoff and the 353,286 ms local eleven-gate pass.
 
 The content-addressed `source-receipt.json` contains all eleven named gates with
 their execution origin, `outcome: "passed"`, observations, finite durations, and

@@ -349,7 +349,7 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
       overlapParentReconciliationMarginMs: positiveInteger(dag.overlapParentReconciliationMarginMs, "parent reconciliation margin", 60_000),
       minimumExecutionWindowMs,
     },
-    sourceQualificationMs: positiveInteger(raw?.benchmark?.timeouts?.sourceQualificationMs, "source qualification timeout", 900_000),
+    sourceQualificationMs: positiveInteger(raw?.benchmark?.timeouts?.sourceQualificationMs, "source qualification timeout", 1_200_000),
     readiness: {
       schemaVersion: readiness.schemaVersion,
       component: readiness.component,
