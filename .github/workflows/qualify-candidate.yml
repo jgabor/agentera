@@ -67,7 +67,9 @@ jobs:
 
   publish-development:
     name: Publish committed development candidate to @next
-    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/v3'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/feat/v3') ||
+      (github.event_name == 'workflow_dispatch' && inputs.adapter == 'development')
     needs: qualify
     runs-on: ubuntu-latest
     steps:

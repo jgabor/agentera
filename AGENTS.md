@@ -119,6 +119,10 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
   candidate-bound development approval, and publishes it to npm `@next`.
 - Wait for that workflow to finish before the next `feat/v3` integration push.
   This keeps the single local integrator and GitHub run order identical.
+- If GitHub records the push but does not instantiate its workflow, dispatch
+  `Qualify release candidate` at the unchanged `feat/v3` head with adapter
+  `development`. This recovery uses the same no-review development job and
+  does not allocate another version.
 - CI does not allocate or modify versions. Do not use `github.run_number` for
   package identity. A rerun reuses the same committed version and candidate.
 - Publication from `main` remains the stable path and requires protected

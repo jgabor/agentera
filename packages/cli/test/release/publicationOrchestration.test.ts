@@ -149,6 +149,7 @@ describe("candidate publication orchestration", () => {
   it("publishes the exact push candidate to next without a review environment", () => {
     const autoPublish = qualificationYaml.slice(qualificationYaml.indexOf("  publish-development:"));
     expect(autoPublish).toContain("github.ref == 'refs/heads/feat/v3'");
+    expect(autoPublish).toContain("github.event_name == 'workflow_dispatch' && inputs.adapter == 'development'");
     expect(autoPublish).toContain("needs: qualify");
     expect(autoPublish).toContain("release-candidate-${{ github.run_id }}");
     expect(autoPublish).toContain("github-actions/feat-v3");

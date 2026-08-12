@@ -283,6 +283,10 @@ and attestation, records the machine approval, and only then exposes
 `NPM_TOKEN` to the bounded mutation child. It has no review environment.
 
 The separately dispatched publication workflow remains the protected manual
+If GitHub records a development push but does not instantiate its workflow,
+dispatch the same workflow at the unchanged `feat/v3` head with adapter
+`development`. This recovery uses the same qualification, candidate, approval,
+and no-review publication job; it does not allocate another version.
 path. It queries the qualification run before artifact download, validates the
 candidate against the API-backed `head_sha`, and revalidates it inside the
 `npm-publish` environment before credentials are available. Stable publication
