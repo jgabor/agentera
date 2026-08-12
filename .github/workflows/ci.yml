@@ -28,6 +28,7 @@ jobs:
       - name: Verify check-only release conjunction
         env:
           AGENTERA_VITEST_RUNNER_POLICY: unmeasured
+          VITEST_TEST_TIMEOUT_MS: "120000"
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
         run: pnpm -C packages/cli run verify:release

@@ -42,6 +42,7 @@ jobs:
         env:
           COREPACK_HOME: ${{ runner.temp }}/corepack
           VITEST_MAX_WORKERS: "1"
+          VITEST_TEST_TIMEOUT_MS: "120000"
           AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}

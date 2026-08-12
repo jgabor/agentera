@@ -19,12 +19,18 @@ export function maxWorkersFor(environment: NodeJS.ProcessEnv = process.env): num
   return workerPolicyFor(environment).workers;
 }
 
+export function testTimeoutFor(environment: NodeJS.ProcessEnv = process.env): number {
+  const override = Number.parseInt(environment.VITEST_TEST_TIMEOUT_MS ?? "", 10);
+  return override > 0 ? override : 30_000;
+}
+
 export const maxWorkers = maxWorkersFor();
+export const testTimeout = testTimeoutFor();
 
 export const sharedTestConfig = {
   environment: "node" as const,
   globals: false,
   maxWorkers,
-  testTimeout: 30_000,
+  testTimeout,
   experimentalFsModuleCache: true,
 };

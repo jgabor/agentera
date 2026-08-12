@@ -123,9 +123,10 @@ generated-output writer. It invokes the exact public source, package, and build
 commands once and returns their inventory, pending-test, build, generation, and
 continuous-reader evidence. Source, package, and build are not spawned again.
 The GitHub qualification step gives the long-running source participant two
-workers and limits the concurrently starting package and stress participants to
-one worker each. This bounds initial contention without starving the source
-owner that determines the generated-overlap wall time.
+workers, gives hosted Vitest assertions a 120-second ceiling, and limits the
+concurrently starting package and stress participants to one worker each. Local
+assertions retain the 30-second default. This bounds initial contention without
+starving the source owner that determines the generated-overlap wall time.
 After every batch owner passes and overlap settles one lease-free generation,
 performance runs alone with one worker in fresh isolated state on the pinned
 remote runner declared by the policy, and records the runner identity. Local
