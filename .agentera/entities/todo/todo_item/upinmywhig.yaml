@@ -1,0 +1,32 @@
+id: upinmywhig
+artifact: todo
+record:
+  kind: fix
+  target_version: null
+  title: Align packaging guide with routine feat/v3 publication
+  requirements:
+    - Remove or explicitly scope the obsolete five-step staging, migration-smoke, and promotion flow in docs/packaging/v3-packaging.md.
+    - Keep the current routine feat/v3 build, exact-tarball smoke, and @next publication path authoritative.
+  acceptance:
+    - The packaging guide contains no conflicting description of routine feat/v3 publication.
+    - Targeted documentation checks pass without release, push, registry, or profile mutation.
+  release_blocker: false
+  severity: normal
+  readiness:
+    capability: document
+    reason: An audit found contradictory routine publication instructions.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: Resolve the sole blocker before delivery-readiness closeout.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix] Align packaging guide with routine feat/v3 publication"
+      severity: normal
+      status: open
+      order: 29

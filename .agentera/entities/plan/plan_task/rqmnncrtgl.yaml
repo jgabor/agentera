@@ -1,0 +1,12 @@
+id: rqmnncrtgl
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Align packaging guide with routine publication
+  status: pending
+  depends_on:
+    - aglveetddu
+  acceptance:
+    - GIVEN the current feat/v3 workflow WHEN the packaging guide describes routine development publication THEN it names only isolated construction, source binding, executable smoke, and exact-byte publication.
+    - GIVEN manual or stable recovery remains documented WHEN routine guidance is read THEN obsolete staging, migration-smoke, promotion, receipt, candidate, metadata-preparation, and dry-pack steps are not presented as routine requirements.
+    - GIVEN the delivery-readiness audit finding WHEN targeted documentation checks run THEN the conflicting text is removed or correctly scoped and no release, push, registry, or profile mutation occurs.

@@ -39,6 +39,7 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
+- [ ] [id:upinmywhig] [fix] Align packaging guide with routine feat/v3 publication
 
 ## ⇢ Annoying
 
