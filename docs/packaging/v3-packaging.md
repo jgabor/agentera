@@ -45,17 +45,12 @@ machine-readable authority is
 It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
-The five-step publication flow is: build the artifact, verify the artifact,
-stage the package under the staging tag, run the staged package migration smoke
-test, then promote the expected npm tag.
-
 Every passing queued push to `feat/v3` publishes through
 `.github/workflows/qualify.yml` to npm `@next`. CI derives `3.0.0-dev.N` as
 `GITHUB_RUN_NUMBER + 72`, builds once from `GITHUB_SHA`, and sets
 `agentera.gitRef` to `GITHUB_SHA` only in the copied construction manifest. It
 validates that exact tarball's version and git ref, runs its executable CLI
-version smoke, then publishes the same tarball to `@next`. This routine path does
-not run the manual qualification, receipt, attestation, benchmark, or artifact
+version smoke, then publishes the same tarball to `@next`. This routine path does not run the manual qualification, receipt, attestation, benchmark, or artifact
 handoff framework. It does not edit the checkout or require a final metadata-only
 commit. The `publish-next-${{ github.ref }}` group uses
 `queue: max`, which keeps up to 100 pending pushes. Failed runs can create gaps.
@@ -254,6 +249,8 @@ release verification. `source-check` remains available for direct read-only
 diagnosis and as the development-preparation prerequisite. Missing, stale,
 malformed, or tampered evidence fails before metadata effects.
 
+### Manual development recovery and stable publication
+
 For the manual recovery path, readiness returning `ready` still requires a
 separate explicit approval against the same external directory:
 
@@ -282,22 +279,19 @@ For the stable shim, `agentera.gitRef` must identify a commit with the same
 the explicit preparation fields. An existing but unrelated historical SHA
 fails provenance validation.
 
-An approval is an immutable `approval.json` bound to that package artifact digest,
-package, version, integrity, registry, and public tag. Local receipts are
-deterministic cache records only. CI mutation also requires the transferred
-package artifact and receipts plus a CI attestation from the source verification run.
-After those checks pass, the `feat/v3` push workflow issues the development
-approval automatically. Stable publication from `main` retains explicit
-protected-environment review. A push never substitutes for artifact binding.
-OIDC provenance remains deferred.
+In the manual development and stable paths, approval is an immutable
+`approval.json` bound to that package artifact digest, package, version,
+integrity, registry, and public tag. Local receipts are deterministic cache
+records only. Manual CI mutation also requires the transferred package artifact
+and receipts plus a CI attestation from the source verification run. Stable
+publication from `main` retains explicit protected-environment review. OIDC
+provenance remains deferred.
 
-The CI attestation binds `jgabor/agentera`, the `Verify package`
+The manual CI attestation binds `jgabor/agentera`, the `Verify package`
 workflow, `.github/workflows/qualify.yml@refs/heads/feat/v3`, and
 the numeric source run ID. The full `refs/heads/...` contract is the branch
-authority. For an automatic development push, the downstream publication job
-downloads the immutable package artifact from that same run, revalidates its receipt
-and attestation, records the machine approval, and only then exposes
-`NPM_TOKEN` to the bounded mutation child. It has no review environment.
+authority. This attestation and approval flow is not part of routine `feat/v3`
+push publication.
 
 After the stable workflow files land on default `main`, the separately
 dispatched `.github/workflows/publish.yml` workflow becomes the protected manual
@@ -314,8 +308,8 @@ NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
   --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
-The publication coordinator consumes the retained package artifact; it does not
-run `npm pack`, rebuild source, or run source verification.
+The manual publication coordinator consumes the retained package artifact; it
+does not run `npm pack`, rebuild source, or run source verification.
 
 The coordinator measures one ordered stage, independent staged package migration smoke test, and
 promote envelope with a monotonic clock. Staging first inspects npm without

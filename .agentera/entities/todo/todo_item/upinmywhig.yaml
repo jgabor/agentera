@@ -21,12 +21,16 @@ record:
     gate: null
     queue_rank: 1
     order_reason: Resolve the sole blocker before delivery-readiness closeout.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix] Align packaging guide with routine feat/v3 publication"
+      status: resolved
+      order: 112
       severity: normal
-      status: open
-      order: 29
+  lifecycle:
+    operation: resolve
+    reason: Packaging guide now scopes legacy publication machinery to manual recovery and stable publication while routine feat/v3 guidance matches exact-byte CI.
+    date: 2026-08-14

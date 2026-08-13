@@ -1,0 +1,13 @@
+id: osrfeadoxs
+artifact: progress
+record:
+  timestamp: 2026-08-14 00:44
+  type: docs
+  phase: build
+  what: Aligned the packaging guide with routine feat/v3 publication while retaining manual recovery and stable publication guidance.
+  context:
+    intent: Record the corrected durable publication guidance and its verification for delivery-readiness audit.
+    constraints: Documentation and same-commit typed state only; preserve manual and stable recovery; do not complete or evaluate the plan task; do not mutate release, registry, profile, workflow, implementation, version, metadata, or changelog surfaces.
+    scope: docs/packaging/v3-packaging.md, task rqmnncrtgl, TODO upinmywhig, and this progress record.
+  verified: The audit grep now finds only the current queued-push statement and manual recovery migration-smoke references. Exact textual comparison confirms the routine guide names isolated construction, GITHUB_SHA version and source binding, executable exact-tarball smoke, and same-byte publication to @next, matching qualify.yml and package-publication.json. Markdownlint, compact, and diff checks passed. No release, push, registry, or profile mutation occurred.
+  publication_order: 157

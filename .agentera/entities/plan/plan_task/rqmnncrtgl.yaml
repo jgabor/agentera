@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bcpkchatfu
   name: Align packaging guide with routine publication
-  status: pending
+  status: in_progress
   depends_on:
     - aglveetddu
   acceptance:
