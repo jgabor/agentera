@@ -4,10 +4,15 @@ record:
   name: Confirm current delivery readiness
   depends_on:
     - aglveetddu
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN current source and published-package evidence WHEN delivery readiness is reviewed THEN glossary commands, privacy, review, compatibility, and inferred-admission behavior remain accurate.
     - GIVEN routine feat/v3 publication now owns only isolated construction, manifest binding, executable smoke, and npm upload WHEN readiness is assessed THEN no obsolete receipt, immutable-candidate, metadata-preparation, or dry-pack gate is required.
     - GIVEN replacement task state and delivery documentation WHEN inspected THEN they agree with the current workflow and preserve the recorded package-owner timing caveat without overclaiming.
     - GIVEN readiness is confirmed WHEN delivery concludes THEN versions remain within the 3.0 boundary and no new release, push, registry, or profile mutation occurs.
   plan: bcpkchatfu
+  evidence:
+    - Profile instructions and focused 118/118 tests confirm current glossary commands, consent-bound privacy, durable review, legacy compatibility, and no inferred automatic admission.
+    - qualify.yml and package-publication authority confirm routine feat/v3 publication only constructs one isolated tarball, binds version and Git ref, executable-smokes it, and publishes the same bytes; receipt, candidate qualification, metadata preparation, and dry-pack gates are manual-only and not readiness requirements.
+    - Replacement task aglveetddu remains complete with independent PASS and accurately retains the 40/40 package assertions plus obsolete 60-second budget failure at 236.834 seconds.
+    - Profile and release metadata were not changed; no release, push, registry, or profile mutation occurred, and versions remain within 3.0.
