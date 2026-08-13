@@ -108,12 +108,13 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
 
 - Every passing queued push to `feat/v3` publishes one rolling
   development package to npm `@next`. CI derives `3.0.0-dev.N` as
-  `GITHUB_RUN_NUMBER + 72` and binds package and receipt metadata to
-  `GITHUB_SHA` in isolated package construction. It does not edit the checkout
-  or require a final metadata commit.
+  `GITHUB_RUN_NUMBER + 72`, builds once from `GITHUB_SHA`, and sets package
+  `agentera.gitRef` to that SHA in isolated package construction. It validates
+  and smokes that exact tarball before publishing the same bytes. It does not
+  edit the checkout or require a final metadata commit.
 - The `publish-next-${{ github.ref }}` concurrency group uses `queue: max`, which
   keeps up to 100 pending pushes. Failed runs can create version gaps. A rerun
-  keeps the same run number, SHA, version, and package artifact.
+  keeps the same run number, SHA, version, and source.
 - A user's explicit push authorization permits exactly one push and is consumed
   by it. After that push, stop. A failed or cancelled workflow does not
   authorize another version or push. Repair the cause on a
@@ -169,10 +170,10 @@ or touching generated and packaged output.
 - Never infer missing npm credentials from inherited `NPM_TOKEN` alone. Load
   `agentera-release` and complete its credential preflight.
 - Never use `.env`, `.npmrc`, a source receipt, or CI success as registry
-  mutation approval. A serialized `feat/v3` push may cause the workflow to issue
-  development approval only after the verified package artifact contract passes.
-  Stable publication always requires explicit protected review.
-- Never use direct `npm pack` or `npm publish` for Agentera packages.
+  mutation approval. A serialized `feat/v3` push runs the direct development
+  publication workflow. Stable publication always requires explicit protected review.
+- Never use direct `npm pack` or `npm publish` for Agentera packages outside the
+  repository package construction and publication helpers.
 - Never push during ordinary capability execution.
 - Never amend, force-push, or use destructive Git operations unless the user
   explicitly authorizes the applicable action.

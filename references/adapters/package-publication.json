@@ -6,7 +6,7 @@
     "sourceQualification": "Source verification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
     "candidateQualification": "Package verification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
     "publication": "Registry publication consumes the retained package artifact through one measured stage, independent staged package migration smoke, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source verification, or rolls a tag back.",
-    "approval": "Registry mutation requires an approval bound to the package artifact receipt digest, target version, integrity, package, registry, and tag. A push to feat/v3 may issue the development approval automatically only after source verification, isolated package verification, and CI attestation pass. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch. A push never substitutes for artifact binding.",
+    "approval": "Manual development and stable release machinery requires artifact-bound approval. The routine feat/v3 push path instead derives its immutable version and git ref from the GitHub run and push SHA, validates and smokes the exact isolated tarball, and publishes those bytes directly to next. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch.",
     "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
     "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
     "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
@@ -46,7 +46,7 @@
   "ci": {
     "repository": "jgabor/agentera",
     "qualificationWorkflow": {
-      "name": "Verify package",
+      "name": "Publish development package",
       "path": ".github/workflows/qualify.yml",
       "ref": "refs/heads/feat/v3"
     },
@@ -56,13 +56,14 @@
       "runNumberOffset": 72,
       "rules": [
         "version is 3.0.0-dev.(GITHUB_RUN_NUMBER + 72)",
-        "agentera.gitRef, sourceCommit, and metadataCommit equal GITHUB_SHA",
+        "agentera.gitRef equals GITHUB_SHA",
         "the checkout manifest is not modified",
-        "reruns reuse the same run number, SHA, version, package artifact, and source run identity",
+        "one isolated tarball is built, validated for version and git ref, and executable-smoked before those exact bytes are published to next",
+        "reruns reuse the same run number, SHA, and version; identical already-published bytes succeed without another upload",
         "failed runs can create version gaps",
         "before the first push, confirm qualify.yml is still unregistered at run 0 and npm 3.0.0-dev.73 is absent"
       ],
-      "approval": "After exact package verification and CI attestation, the workflow issues a machine artifact-bound development approval and publishes to next without a review environment.",
+      "approval": "The routine push workflow publishes the locally validated exact tarball to next without the manual qualification, receipt, attestation, benchmark, approval, or artifact-handoff framework.",
       "concurrency": "The publish-next-${{ github.ref }} group uses queue: max, which keeps up to 100 pending runs and does not cancel an active or pending push."
     },
     "stableVerificationWorkflow": {
@@ -405,7 +406,7 @@
   },
   "trust": {
     "local": "A same-principal source receipt is a deterministic cache only. It cannot authorize registry mutation.",
-    "ci": "CI registry mutation requires the transferred exact package artifact and receipts, a CI attestation bound to the package artifact receipt and source run, and an artifact-bound approval. The feat/v3 push workflow may issue development approval automatically after every prior bound check passes; stable main publication requires protected-environment review. OIDC provenance is deferred."
+    "ci": "Manual CI publication requires transferred artifacts, receipts, attestation, and artifact-bound approval. The routine feat/v3 push workflow is separate: it validates, smokes, and publishes one local isolated tarball directly. Stable main publication requires protected-environment review. OIDC provenance is deferred."
   },
   "registryStateTable": [
     {

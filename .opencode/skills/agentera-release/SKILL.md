@@ -78,10 +78,12 @@ paths are pure and registry-independent. Stable preparation retains its separate
 source-provenance behavior without the development receipt.
 
 Every passing queued push to `feat/v3` publishes to `@next`. CI allocates
-`3.0.0-dev.(GITHUB_RUN_NUMBER + 72)` and binds package `agentera.gitRef`, receipt
-`sourceCommit`, and receipt `metadataCommit` to `GITHUB_SHA` without editing the
-checkout. Failed runs can create gaps. `queue: max` keeps up to 100 pending runs.
-A rerun reuses the same run number, SHA, version, and package artifact.
+`3.0.0-dev.(GITHUB_RUN_NUMBER + 72)`, builds once from `GITHUB_SHA`, and sets
+package `agentera.gitRef` to that SHA without editing the checkout. It validates
+the isolated tarball metadata, runs its executable CLI version smoke, and
+publishes those exact bytes to `@next`. Failed runs can create gaps. `queue: max`
+keeps up to 100 pending runs. A rerun reuses the same run number, SHA, and version;
+matching already-published bytes are a successful replay.
 
 A user's explicit push authorization is single-use and is consumed by one
 `git push`. Local commits do not publish. After that push, stop. A failed or
@@ -160,10 +162,10 @@ node packages/cli/scripts/release-qualification.mjs source-check \
 Package verification reuses the retained external readiness directory. It
 retains one immutable tarball and runs a cold-state local smoke before registry
 action.
-Every mutation requires a separate approval bound to the package artifact receipt,
-package, version, integrity, registry, and expected tag. CI also requires the
-transferred artifact and CI attestation. The `feat/v3` push workflow may issue
-the development approval automatically after all bound checks pass. Stable
+Manual mutation requires a separate approval bound to the package artifact receipt,
+package, version, integrity, registry, and expected tag. Stable CI also requires
+the transferred artifact and CI attestation. The routine `feat/v3` push workflow
+is separate and publishes its locally validated exact tarball directly. Stable
 publication from `main` retains protected-environment review.
 
 The publication coordinator never rebuilds or re-verifies source. It stages the

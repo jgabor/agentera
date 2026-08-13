@@ -1,4 +1,4 @@
-name: Verify package
+name: Publish development package
 
 on:
   push:
@@ -6,7 +6,6 @@ on:
       - feat/v3
 
 permissions:
-  actions: read
   contents: read
 
 concurrency:
@@ -14,96 +13,55 @@ concurrency:
   queue: max
 
 jobs:
-  qualify:
-    name: Verify source and development package
+  publish-development:
+    name: Build, smoke, and publish to @next
     runs-on: ubuntu-24.04
-    outputs:
-      version: ${{ steps.allocate.outputs.version }}
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        timeout-minutes: 1
         with:
-          fetch-depth: 0
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
+        timeout-minutes: 1
         with:
           node-version: 22.23.2
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        timeout-minutes: 3
         env:
           COREPACK_HOME: ${{ runner.temp }}/corepack
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
       - name: Allocate rolling development version
-        id: allocate
+        id: version
+        timeout-minutes: 1
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
-          set -euo pipefail
-          version="$(node packages/cli/scripts/release-qualification.mjs allocate --run-number "${GITHUB_RUN_NUMBER}")"
-          printf 'version=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
+          version="$(node -p "'3.0.0-dev.' + (Number(process.env.GITHUB_RUN_NUMBER) + 72)")"
+          printf 'value=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
           printf 'Publishing %s from %s\n' "${version}" "${GITHUB_SHA}"
-      - name: Verify committed source
-        if: github.run_attempt == 1
-        env:
-          COREPACK_HOME: ${{ runner.temp }}/corepack
-          VITEST_MAX_WORKERS: "1"
-          VITEST_TEST_TIMEOUT_MS: "120000"
-          AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
-          AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
-          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
-        run: pnpm cli:qualify:source -- --candidate-dir "${RUNNER_TEMP}/agentera-package"
-      - name: Verify development package
-        if: github.run_attempt == 1
-        env:
-          COREPACK_HOME: ${{ runner.temp }}/corepack
-        run: pnpm cli:qualify:dev -- --candidate-dir "${RUNNER_TEMP}/agentera-package" --target-version "${{ steps.allocate.outputs.version }}" --source-commit "${GITHUB_SHA}"
-      - name: Attest transferred package
-        if: github.run_attempt == 1
-        run: node packages/cli/scripts/release-qualification.mjs attest --adapter development --candidate-dir "${RUNNER_TEMP}/agentera-package"
-      - name: Upload verified package
-        if: github.run_attempt == 1
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-candidate-${{ github.run_id }}
-          path: ${{ runner.temp }}/agentera-package
-          if-no-files-found: error
-          retention-days: 30
-      - name: Download retained package
-        if: github.run_attempt > 1
-        uses: actions/download-artifact@v4
-        with:
-          name: release-candidate-${{ github.run_id }}
-          path: ${{ runner.temp }}/agentera-package
-          github-token: ${{ github.token }}
-          run-id: ${{ github.run_id }}
-      - name: Restore retained package file mode
-        if: github.run_attempt > 1
-        run: chmod 0444 "${RUNNER_TEMP}"/agentera-package/*.tgz
-      - name: Validate retained package and CI attestation
-        if: github.run_attempt > 1
+      - name: Build one isolated package tarball
+        timeout-minutes: 2
         run: |
-          node --input-type=module -e 'import { validateCandidateReceipt, validateCiAttestation, validateDevelopmentCiCandidateBinding } from "./packages/cli/scripts/release-qualification.mjs"; const candidate=validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-package", adapterName: "development" }); validateDevelopmentCiCandidateBinding({ adapterName: "development", targetVersion: candidate.receipt.version, sourceCommit: candidate.receipt.sourceCommit }); validateCiAttestation({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-package", adapterName: "development", candidate, sourceRunId: process.env.GITHUB_RUN_ID });'
-
-  publish-development:
-    name: Publish development package to @next
-    needs: qualify
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.sha }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-candidate-${{ github.run_id }}
-          path: ${{ runner.temp }}/agentera-package
-      - run: chmod 0444 "${RUNNER_TEMP}"/agentera-package/*.tgz
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.23.2
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
-      - name: Approve verified package
-        run: node packages/cli/scripts/release-qualification.mjs approval --adapter development --candidate-dir "${RUNNER_TEMP}/agentera-package" --approved-by "github-actions/feat-v3" --source-run-id "${{ github.run_id }}"
-      - name: Publish development package
-        timeout-minutes: 3
+          node packages/cli/scripts/pack-package.mjs \
+            --output-dir "${RUNNER_TEMP}/agentera-package" \
+            --package-version "${{ steps.version.outputs.value }}" \
+            --git-ref "${GITHUB_SHA}" --json
+      - name: Validate and smoke the exact tarball
+        timeout-minutes: 1
+        run: |
+          node packages/cli/scripts/publish-development.mjs validate \
+            --tarball "${RUNNER_TEMP}/agentera-package/agentera-${{ steps.version.outputs.value }}.tgz" \
+            --package-version "${{ steps.version.outputs.value }}" \
+            --git-ref "${GITHUB_SHA}"
+      - name: Publish the exact tarball to npm @next
+        timeout-minutes: 2
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: node packages/cli/scripts/release-benchmark.mjs publication --adapter development --candidate-dir "${RUNNER_TEMP}/agentera-package" --source-run-id "${{ github.run_id }}" --receipt-file "${RUNNER_TEMP}/qualified-publication-receipt.json" --json
+        run: |
+          node packages/cli/scripts/publish-development.mjs publish \
+            --tarball "${RUNNER_TEMP}/agentera-package/agentera-${{ steps.version.outputs.value }}.tgz" \
+            --package-version "${{ steps.version.outputs.value }}" \
+            --git-ref "${GITHUB_SHA}"

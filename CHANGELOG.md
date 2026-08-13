@@ -20,8 +20,8 @@
 
 - Every passing `feat/v3` push now publishes one CI-allocated rolling
   `3.0.0-dev.N` package to npm `@next` without a metadata-only commit. The
-  stable workflow dispatch remains a cutover prerequisite, and publication
-  remains protected by review.
+  bounded workflow builds one isolated tarball, validates and smokes those exact
+  bytes, then publishes them directly. Stable publication remains protected by review.
 - Local staged verification now gives ordinary source changes targeted tests
   and typecheck with two workers in at most 60 seconds. State and documentation
   checks stay under 10 seconds, while specialized and global owners defer to

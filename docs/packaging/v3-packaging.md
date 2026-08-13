@@ -51,12 +51,16 @@ test, then promote the expected npm tag.
 
 Every passing queued push to `feat/v3` publishes through
 `.github/workflows/qualify.yml` to npm `@next`. CI derives `3.0.0-dev.N` as
-`GITHUB_RUN_NUMBER + 72`, sets
-`agentera.gitRef` and both receipt commit fields to `GITHUB_SHA`, and changes
-only the copied construction manifest. It does not edit the checkout or require
-a final metadata-only commit. The `publish-next-${{ github.ref }}` group uses
+`GITHUB_RUN_NUMBER + 72`, builds once from `GITHUB_SHA`, and sets
+`agentera.gitRef` to `GITHUB_SHA` only in the copied construction manifest. It
+validates that exact tarball's version and git ref, runs its executable CLI
+version smoke, then publishes the same tarball to `@next`. This routine path does
+not run the manual qualification, receipt, attestation, benchmark, or artifact
+handoff framework. It does not edit the checkout or require a final metadata-only
+commit. The `publish-next-${{ github.ref }}` group uses
 `queue: max`, which keeps up to 100 pending pushes. Failed runs can create gaps.
-A rerun keeps the same run number, SHA, version, and package artifact.
+A rerun keeps the same run number, SHA, and version. If identical bytes already
+exist at that version on `@next`, publication succeeds without another upload.
 
 Before the first push, confirm the new `qualify.yml` path remains unregistered
 at run number 0 and npm `3.0.0-dev.73` is absent. The offset 72 is a one-time

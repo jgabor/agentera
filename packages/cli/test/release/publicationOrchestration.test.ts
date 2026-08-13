@@ -40,9 +40,6 @@ const stablePackage = JSON.parse(
 const publicationContract = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"),
 );
-const verificationPolicy = YAML.parse(
-  fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"),
-);
 
 describe("package publication orchestration", () => {
   it("routes preparation, verification, approval, staging, and promotion through explicit scripts", () => {
@@ -140,53 +137,28 @@ describe("package publication orchestration", () => {
     );
   });
 
-  it("retains a package artifact and CI attestation before any separate approved mutation run", () => {
+  it("builds, validates, smokes, and publishes one development tarball directly", () => {
     expect(qualificationYaml).toMatch(/push:\n\s+branches:\n\s+- feat\/v3/);
     expect(qualificationYaml).not.toContain("workflow_dispatch");
     expect(qualificationYaml).toContain("queue: max");
     expect(qualificationYaml).not.toContain("cancel-in-progress");
     expect(qualificationYaml).toContain("github.run_number");
     expect(qualificationYaml).toContain("GITHUB_SHA");
-    expect(qualificationYaml.match(/if: github\.run_attempt == 1/g)).toHaveLength(4);
-    expect(qualificationYaml.match(/if: github\.run_attempt > 1/g)).toHaveLength(3);
-    expect(qualificationYaml).toContain("pnpm cli:qualify:source");
-    expect(qualificationYaml).toContain("pnpm cli:qualify:dev");
+    expect(qualificationYaml).toContain("pack-package.mjs");
+    expect(qualificationYaml).toContain("publish-development.mjs validate");
+    expect(qualificationYaml).toContain("publish-development.mjs publish");
+    expect(qualificationYaml).toContain("--package-version \"${{ steps.version.outputs.value }}\"");
+    expect(qualificationYaml).toContain("--git-ref \"${GITHUB_SHA}\"");
+    expect(qualificationYaml.match(/agentera-\$\{\{ steps\.version\.outputs\.value \}\}\.tgz/g)).toHaveLength(2);
+    expect(qualificationYaml).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
+    expect(qualificationYaml).toContain("timeout-minutes: 8");
+    expect(qualificationYaml.match(/timeout-minutes:/g)).toHaveLength(8);
     expect(stableVerificationYaml).toContain("workflow_dispatch");
     expect(stableVerificationYaml).toContain("candidate --adapter stable");
-    expect(qualificationYaml).toContain("release-qualification.mjs attest");
-    expect(qualificationYaml).toContain("release-candidate-${{ github.run_id }}");
-    expect(qualificationYaml.match(/actions\/upload-artifact@v4/g)).toHaveLength(1);
-    expect(qualificationYaml).toContain("Download retained package");
-    expect(qualificationYaml).toContain("github-token: ${{ github.token }}");
-    expect(qualificationYaml).toContain("run-id: ${{ github.run_id }}");
-    expect(qualificationYaml).toContain("validateCandidateReceipt");
-    expect(qualificationYaml).toContain("validateDevelopmentCiCandidateBinding");
-    expect(qualificationYaml).toContain("validateCiAttestation");
-    expect(qualificationYaml).toContain("retention-days: 30");
-    expect(qualificationYaml).toContain(`runs-on: ${verificationPolicy.owners.performance.execution.authoritative_runner.runs_on}`);
-    expect(qualificationYaml).toContain("AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04");
-    expect(qualificationYaml).toContain("AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}");
-    expect(qualificationYaml.match(/COREPACK_HOME: \$\{\{ runner\.temp \}\}\/corepack/g)).toHaveLength(3);
-    expect(qualificationYaml).toContain('VITEST_MAX_WORKERS: "1"');
-    expect(qualificationYaml).toContain('VITEST_TEST_TIMEOUT_MS: "120000"');
-    expect(qualificationYaml).toContain('AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"');
-    expect(qualificationYaml.match(/node-version: 22\.23\.2/g)).toHaveLength(2);
-  });
-
-  it("publishes the exact push package to next without a review environment", () => {
-    const autoPublish = qualificationYaml.slice(qualificationYaml.indexOf("  publish-development:"));
-    expect(autoPublish).not.toContain("workflow_dispatch");
-    expect(autoPublish).not.toContain("inputs.adapter");
-    expect(autoPublish).toContain("needs: qualify");
-    expect(autoPublish).toContain("release-candidate-${{ github.run_id }}");
-    expect(autoPublish).toContain("github-actions/feat-v3");
-    expect(autoPublish).toContain("--source-run-id \"${{ github.run_id }}\"");
-    expect(autoPublish).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
-    expect(autoPublish).toContain("release-benchmark.mjs publication --adapter development");
-    expect(autoPublish).toContain('chmod 0444 "${RUNNER_TEMP}"/agentera-package/*.tgz');
-    expect(autoPublish).not.toContain("environment:");
-    expect(autoPublish.indexOf("release-qualification.mjs approval"))
-      .toBeLessThan(autoPublish.indexOf("release-benchmark.mjs publication"));
+    for (const excluded of [
+      "cli:qualify:source", "cli:qualify:dev", "release-qualification", "release-benchmark",
+      "upload-artifact", "download-artifact", "receipt", "attestation", "performance", "capacity", "migration",
+    ]) expect(qualificationYaml).not.toContain(excluded);
   });
 
   it("validates API provenance before approval, then runs one bounded forward-only envelope", () => {
@@ -200,7 +172,7 @@ describe("package publication orchestration", () => {
     expect(publicationYaml).toContain("actions/github-script@v7");
     expect(publicationYaml).toContain("packages/cli/scripts/release-qualification.mjs");
     expect(publicationContract.ci.qualificationWorkflow).toEqual({
-      name: "Verify package",
+      name: "Publish development package",
       path: ".github/workflows/qualify.yml",
       ref: "refs/heads/feat/v3",
     });
