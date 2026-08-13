@@ -6,7 +6,7 @@ import {
   sourceQualificationGateIdentity,
 } from "../../scripts/release-qualification.mjs";
 
-describe("no-receipt release conjunction", () => {
+describe("no-receipt release verification", () => {
   it("shares the exact eleven-gate DAG identity and reports no authority side effects", async () => {
     const gates = RELEASE_CONTRACT.qualification.source.gates;
     const result = await runSourceConjunction({

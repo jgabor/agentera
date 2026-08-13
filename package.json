@@ -3,8 +3,6 @@
   "private": true,
   "scripts": {
     "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
-    "cli:prepare:dev-push": "pnpm -C packages/cli run release:prepare:push",
-    "cli:validate:dev-push": "pnpm -C packages/cli run release:validate:push",
     "cli:prepare:stable": "pnpm -C packages/cli/shim run release:prepare",
     "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
     "cli:ready:dev": "pnpm -C packages/cli run release:ready",

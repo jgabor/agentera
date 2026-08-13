@@ -526,7 +526,7 @@
       "Before protected approval, separate API-backed validation confirms the run event, conclusion, branch, head SHA, workflow identity, and candidate binding. The approved job checks out the same commit, downloads the artifact again, and rechecks the binding. OIDC provenance remains deferred."
     ],
     "convergence": [
-      "The ordered envelope stages retained bytes on the candidate tag, waits for exact integrity and smoke, runs independent exact-version L2 while the public tag is unchanged, promotes only forward, then waits for integrity and tag convergence plus final smoke.",
+      "The ordered envelope stages retained bytes on the candidate tag, waits for exact integrity and smoke, runs independent npm candidate migration smoke while the public tag is unchanged, promotes only forward, then waits for integrity and tag convergence plus final smoke.",
       "Registry convergence uses six attempts with 5000 ms delay and rechecks compatibility each time.",
       "The qualified publication envelope uses a monotonic clock, remains below 120000 ms, reconciles owner and unattributed time, retains the first failure, suppresses later phases, and records noRollback true.",
       "The timing receipt binds candidate digest, metadata commit, package, version, artifact SHA-256 and integrity, and source run ID."

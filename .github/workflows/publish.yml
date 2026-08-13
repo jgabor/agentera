@@ -1,21 +1,16 @@
-name: Publish qualified release candidate
+name: Publish verified package
 
 on:
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: Qualification workflow run that retained the exact candidate
+        description: Verification workflow run containing the package
         required: true
         type: string
       candidate_receipt_sha256:
-        description: Exact candidate receipt digest approved for mutation
+        description: Receipt digest for the verified package
         required: true
         type: string
-      adapter:
-        description: Package adapter
-        required: true
-        type: choice
-        options: [development, stable]
 
 permissions:
   actions: read
@@ -23,7 +18,7 @@ permissions:
 
 jobs:
   validate_source:
-    name: Validate qualification provenance before approval
+    name: Validate verified package
     runs-on: ubuntu-latest
     outputs:
       head_sha: ${{ steps.run.outputs.head_sha }}
@@ -32,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Validate contracted qualification run identity
+      - name: Validate verification run
         id: run
         uses: actions/github-script@v7
         env:
@@ -50,27 +45,27 @@ jobs:
             const qualification = await import(pathToFileURL(`${process.env.GITHUB_WORKSPACE}/packages/cli/scripts/release-qualification.mjs`).href);
             const validated = qualification.validateQualificationWorkflowRun(run, runId);
             core.setOutput("head_sha", validated.headSha);
-      - name: Checkout qualified source head
+      - name: Checkout verified source
         run: git checkout --detach "${{ steps.run.outputs.head_sha }}"
-      - name: Download exact qualification artifact
+      - name: Download verified package
         uses: actions/download-artifact@v4
         with:
           name: release-candidate-${{ inputs.source_run_id }}
-          path: ${{ runner.temp }}/agentera-candidate
+          path: ${{ runner.temp }}/agentera-package
           run-id: ${{ inputs.source_run_id }}
           github-token: ${{ github.token }}
-      - name: Bind candidate receipt to API-backed run head
+      - name: Match package receipt to workflow run
         id: candidate
         env:
-          ADAPTER: ${{ inputs.adapter }}
+          ADAPTER: stable
           EXPECTED_CANDIDATE_SHA256: ${{ inputs.candidate_receipt_sha256 }}
           SOURCE_HEAD_SHA: ${{ steps.run.outputs.head_sha }}
         run: |
           set -euo pipefail
-          node --input-type=module -e 'import fs from "node:fs"; import { validateCandidateReceipt, validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const loaded=validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-candidate", adapterName: process.env.ADAPTER }); const bound=validateCandidateRunBinding(loaded.receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA); fs.appendFileSync(process.env.GITHUB_OUTPUT, `metadata_commit=${bound.metadataCommit}\n`);'
+          node --input-type=module -e 'import fs from "node:fs"; import { validateCandidateReceipt, validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const loaded=validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-package", adapterName: process.env.ADAPTER }); const bound=validateCandidateRunBinding(loaded.receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA); fs.appendFileSync(process.env.GITHUB_OUTPUT, `metadata_commit=${bound.metadataCommit}\n`);'
 
   publish:
-    name: Stage, verify, and promote approved candidate
+    name: Publish package
     needs: validate_source
     runs-on: ubuntu-latest
     environment: npm-publish
@@ -79,33 +74,35 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.validate_source.outputs.metadata_commit }}
-      - name: Download exact validated qualification artifact
+      - name: Download verified package
         uses: actions/download-artifact@v4
         with:
           name: release-candidate-${{ inputs.source_run_id }}
-          path: ${{ runner.temp }}/agentera-candidate
+          path: ${{ runner.temp }}/agentera-package
           run-id: ${{ inputs.source_run_id }}
           github-token: ${{ github.token }}
-      - name: Restore governed candidate artifact mode after transfer
-        run: chmod 0444 "${RUNNER_TEMP}"/agentera-candidate/*.tgz
-      - name: Recheck transferred candidate binding
+      - name: Restore package file mode
+        run: chmod 0444 "${RUNNER_TEMP}"/agentera-package/*.tgz
+      - name: Recheck package receipt
         env:
-          ADAPTER: ${{ inputs.adapter }}
+          ADAPTER: stable
           EXPECTED_CANDIDATE_SHA256: ${{ inputs.candidate_receipt_sha256 }}
           SOURCE_HEAD_SHA: ${{ needs.validate_source.outputs.head_sha }}
         run: |
           set -euo pipefail
-          node --input-type=module -e 'import { validateCandidateReceipt, validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const loaded=validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-candidate", adapterName: process.env.ADAPTER }); validateCandidateRunBinding(loaded.receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA);'
+          node --input-type=module -e 'import { validateCandidateReceipt, validateCandidateRunBinding } from "./packages/cli/scripts/release-qualification.mjs"; const loaded=validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-package", adapterName: process.env.ADAPTER }); validateCandidateRunBinding(loaded.receipt, process.env.EXPECTED_CANDIDATE_SHA256, process.env.SOURCE_HEAD_SHA);'
       - uses: actions/setup-node@v4
         with:
           node-version: 22.23.2
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - name: Record candidate-bound approval
-        run: node packages/cli/scripts/release-qualification.mjs approval --adapter "${{ inputs.adapter }}" --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --approved-by "${{ github.actor }}" --source-run-id "${{ inputs.source_run_id }}"
-      - name: Run bounded qualified publication envelope
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+      - name: Approve verified package
+        run: node packages/cli/scripts/release-qualification.mjs approval --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package" --approved-by "${{ github.actor }}" --source-run-id "${{ inputs.source_run_id }}"
+      - name: Stage, test, and promote package
         # The coordinator enforces <120s; this outer guard leaves time to emit its failure receipt.
         timeout-minutes: 3
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: node packages/cli/scripts/release-benchmark.mjs publication --adapter "${{ inputs.adapter }}" --candidate-dir "${RUNNER_TEMP}/agentera-candidate" --source-run-id "${{ inputs.source_run_id }}" --receipt-file "${RUNNER_TEMP}/qualified-publication-receipt.json" --json
+        run: node packages/cli/scripts/release-benchmark.mjs publication --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package" --source-run-id "${{ inputs.source_run_id }}" --receipt-file "${RUNNER_TEMP}/qualified-publication-receipt.json" --json

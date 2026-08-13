@@ -59,10 +59,10 @@ function assertEmptyCandidateDirectory(candidateDirectory) {
   if (!fs.existsSync(resolved)) return;
   const stat = fs.lstatSync(resolved);
   if (!stat.isDirectory() || stat.isSymbolicLink()) {
-    throw new Error("candidate directory must be a regular external directory");
+    throw new Error("artifact directory must be regular");
   }
   if (fs.readdirSync(resolved).length !== 0) {
-    throw new Error("source qualification requires a new empty candidate directory when no source receipt exists");
+    throw new Error("source verification requires a new empty artifact directory when no source receipt exists");
   }
 }
 
@@ -191,7 +191,7 @@ function metadataPause(request, source, execution, prepared, elapsedMs) {
 }
 
 export function formatReadinessResult(value) {
-  return `development readiness ${value.outcome}; state:${value.state}; phase:${value.phase}; source:${value.source.status}; candidate:${value.candidate.status}; next:${value.nextAction}`;
+  return `development readiness ${value.outcome}; state:${value.state}; phase:${value.phase}; source:${value.source.status}; package:${value.candidate.status}; next:${value.nextAction}`;
 }
 
 export async function coordinateDevelopmentReadiness(request, options = {}) {
@@ -229,7 +229,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
         throw new Error("source readiness must complete before the target metadata is prepared");
       }
       if (candidatePresent) {
-        throw new Error("candidate evidence cannot exist before the source receipt");
+        throw new Error("package evidence cannot exist before the source receipt");
       }
       if (git(repo, ["rev-parse", "HEAD"]) !== request.sourceCommit) {
         throw new Error("fresh source readiness requires HEAD to equal the explicit source commit");
@@ -269,7 +269,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
     if (request.metadataCommit === undefined) {
       if (currentMetadataState === "unprepared") {
         if (candidatePresent) {
-          throw new Error("candidate evidence does not match the still-unprepared target metadata");
+          throw new Error("package evidence does not match the still-unprepared target metadata");
         }
         if (git(repo, ["rev-parse", "HEAD"]) !== request.sourceCommit) {
           throw new Error("unprepared metadata requires HEAD to equal the explicit source commit");
@@ -314,6 +314,9 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
         repo,
         candidateDirectory: request.candidateDirectory,
         adapterName: READINESS_CONTRACT.adapter,
+        targetVersion: request.targetVersion,
+        sourceCommit: request.sourceCommit,
+        environment: options.environment,
         ...(options.candidateOptions ?? {}),
       });
       execution.candidateQualificationInvocations = issued.reused ? 0 : 1;
@@ -334,7 +337,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
       candidate,
       execution,
       elapsedMs: clock() - started,
-      nextAction: "Review the retained candidate, then run the separate explicit approval command when authorized.",
+      nextAction: "Review the retained package artifact, then run the separate explicit approval command when authorized.",
     });
   } catch (error) {
     const detail = redact(error instanceof Error ? error.message : error, request, repo);
@@ -362,7 +365,7 @@ function emitReadinessResult(value, json) {
 }
 
 function helpText() {
-  return `${USAGE}\n\nRuns source readiness once, pauses for separate metadata review and commit, then validates or constructs one candidate on explicit resume.\nThe command never prepares metadata, commits, approves, publishes, or mutates registry state.\nExit codes: 0 paused or ready; 1 rejected or invalid usage.\n`;
+  return `${USAGE}\n\nRuns source readiness once, pauses for separate metadata review and commit, then validates or builds one package on explicit resume.\nThe command never prepares metadata, commits, approves, publishes, or mutates registry state.\nExit codes: 0 paused or ready; 1 rejected or invalid usage.\n`;
 }
 
 async function main() {

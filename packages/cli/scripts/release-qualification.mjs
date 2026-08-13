@@ -29,6 +29,40 @@ export const RELEASE_MODEL = loadPackagePublicationModel(REPO_ROOT);
 const RECEIPT_SCHEMA = "agentera.releaseQualification.v1";
 const ARTIFACT_MODE = Number.parseInt(RELEASE_CONTRACT.qualification.candidate.retainedArtifactMode, 8);
 
+export function developmentVersionFromRunNumber(baseCore, runNumber, offset = RELEASE_CONTRACT.ci.developmentPush.runNumberOffset) {
+  if (baseCore !== "3.0.0") throw new Error("development version core must be 3.0.0");
+  if (typeof runNumber !== "string" || !/^[1-9]\d*$/.test(runNumber)) {
+    throw new Error("GitHub run number must be a positive decimal integer");
+  }
+  if (!Number.isSafeInteger(offset) || offset < 0) throw new Error("development run number offset must be a nonnegative safe integer");
+  const parsed = Number(runNumber);
+  if (!Number.isSafeInteger(parsed) || !Number.isSafeInteger(parsed + offset)) {
+    throw new Error("GitHub run number allocation exceeds the safe integer range");
+  }
+  return `${baseCore}-dev.${parsed + offset}`;
+}
+
+export function validateDevelopmentCiCandidateBinding(options = {}) {
+  const environment = options.environment ?? process.env;
+  const expected = qualificationWorkflowIdentity("development");
+  const contractedCi = environment.GITHUB_ACTIONS === "true"
+    && environment.GITHUB_REPOSITORY === expected.repository
+    && environment.GITHUB_WORKFLOW === expected.workflow
+    && environment.GITHUB_WORKFLOW_REF === expected.workflowRef;
+  if (options.adapterName !== "development" || !contractedCi) return;
+  assertQualificationWorkflowEnvironment(environment, "development");
+  const expectedVersion = developmentVersionFromRunNumber("3.0.0", environment.GITHUB_RUN_NUMBER);
+  if (options.targetVersion !== expectedVersion) {
+    throw new Error(`development CI target version must equal ${expectedVersion} for GITHUB_RUN_NUMBER`);
+  }
+  if (options.sourceCommit !== environment.GITHUB_SHA) {
+    throw new Error("development CI source commit must equal GITHUB_SHA");
+  }
+  if (environment.GITHUB_SHA !== git(["rev-parse", "HEAD"], options.repo ?? REPO_ROOT)) {
+    throw new Error("development CI checkout HEAD must equal GITHUB_SHA");
+  }
+}
+
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") {
@@ -191,7 +225,7 @@ function sourceGateSet() {
 function governedSourceGates(gates = sourceGateSet()) {
   const governed = sourceGateSet();
   if (canonicalJson(gates) !== canonicalJson(governed)) {
-    throw new Error("source qualification must use the exact governed gate set");
+    throw new Error("source verification must use the exact governed gate set");
   }
   return governed;
 }
@@ -220,7 +254,7 @@ export function sourceComponentIdentity(options = {}) {
 
 function assertCleanCommittedTree(repo = REPO_ROOT) {
   if (git(["status", "--porcelain"], repo)) {
-    throw new Error("source qualification requires a clean committed tree; commit governed source before qualifying");
+    throw new Error("source verification requires a clean committed tree; commit governed source before verifying");
   }
 }
 
@@ -229,15 +263,15 @@ export function qualificationPreflight(options = {}) {
   const candidateDirectory = path.resolve(options.candidateDirectory);
   const relative = path.relative(repo, candidateDirectory);
   if (relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== "..")) {
-    throw new Error("candidate directory must be outside the repository checkout");
+    throw new Error("artifact directory must be outside the repository checkout");
   }
   if (fs.existsSync(candidateDirectory)) {
-    throw new Error("qualification preflight requires a new empty candidate directory");
+    throw new Error("package verification preflight requires a new empty artifact directory");
   }
   const parent = fs.realpathSync(path.dirname(candidateDirectory));
   const fromRepo = path.relative(repo, parent);
   if (fromRepo === "" || (!fromRepo.startsWith(`..${path.sep}`) && fromRepo !== "..")) {
-    throw new Error("candidate directory parent resolves inside the repository checkout");
+    throw new Error("artifact directory parent resolves inside the repository checkout");
   }
   assertCleanCommittedTree(repo);
   const { manifest, adapter } = candidateManifest(options.adapterName ?? "development", repo);
@@ -248,14 +282,14 @@ function assertExternalDirectory(directory, repo = REPO_ROOT, create = true) {
   const candidate = path.resolve(directory);
   const relative = path.relative(repo, candidate);
   if (relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== "..")) {
-    throw new Error("candidate directory must be outside the repository checkout");
+    throw new Error("artifact directory must be outside the repository checkout");
   }
   if (create) fs.mkdirSync(candidate, { recursive: true, mode: 0o700 });
-  else if (!fs.existsSync(candidate)) throw new Error("candidate directory is missing");
+  else if (!fs.existsSync(candidate)) throw new Error("artifact directory is missing");
   const resolved = fs.realpathSync(candidate);
   const fromRepo = path.relative(repo, resolved);
   if (fromRepo === "" || (!fromRepo.startsWith(`..${path.sep}`) && fromRepo !== "..")) {
-    throw new Error("candidate directory resolves inside the repository checkout");
+    throw new Error("artifact directory resolves inside the repository checkout");
   }
   return resolved;
 }
@@ -266,10 +300,10 @@ function receiptPath(directory, name) {
 
 function containedRegularReceipt(directory, filename, label) {
   const file = receiptPath(directory, filename);
-  if (!fs.existsSync(file)) throw new Error(`${label} is missing from the external candidate directory`);
+  if (!fs.existsSync(file)) throw new Error(`${label} is missing from the artifact directory`);
   const stat = fs.lstatSync(file);
   if (!stat.isFile() || stat.isSymbolicLink() || path.dirname(fs.realpathSync(file)) !== directory) {
-    throw new Error(`${label} must be a regular file inside the external candidate directory`);
+    throw new Error(`${label} must be a regular file inside the artifact directory`);
   }
   return file;
 }
@@ -325,13 +359,13 @@ const OVERLAP_PARTICIPANTS = GENERATED_OVERLAP_ORIGINS.filter((name) => name !==
 
 function sourceGateMap(gates) {
   const required = sourceGateSet();
-  if (!Array.isArray(gates) || gates.length !== required.length) throw new Error(`source qualification gate set must contain exactly the ${required.length} governed gates`);
+  if (!Array.isArray(gates) || gates.length !== required.length) throw new Error(`source verification gate set must contain exactly the ${required.length} governed gates`);
   const entries = new Map();
   for (let index = 0; index < required.length; index += 1) {
     const expected = required[index];
     const gate = gates[index];
     if (!gate || gate.name !== expected.name || entries.has(gate.name) || canonicalJson(gate) !== canonicalJson(expected)) {
-      throw new Error(`source qualification gate ${index} must exactly match '${expected.name}'`);
+      throw new Error(`source verification gate ${index} must exactly match '${expected.name}'`);
     }
     entries.set(gate.name, gate);
   }
@@ -425,7 +459,7 @@ function defaultStartSourceOwner(specification) {
       if (timedOut) {
         reject(sourceProcessFailure(
           specification.name,
-          `${specification.name} exceeded the source qualification deadline`,
+          `${specification.name} exceeded the source verification deadline`,
           "failed",
         ));
       } else if (cancelled) {
@@ -756,7 +790,7 @@ export async function runSourceQualificationDag(options = {}) {
   const batchStarted = clock();
   const batchTimeout = remaining();
   if (batchTimeout <= cleanupMarginMs) {
-    throw sourceProcessFailure("full-qualification", "source qualification has no safe overlap execution window before its cleanup margin", "failed");
+    throw sourceProcessFailure("full-qualification", "source verification has no safe overlap execution window before its cleanup margin", "failed");
   }
   const batch = await runConcurrent(SOURCE_BATCH_A.map((name) => ({
     name,
@@ -780,7 +814,7 @@ export async function runSourceQualificationDag(options = {}) {
   const performanceStarted = clock();
   const performanceRemaining = remaining();
   if (performanceRemaining <= reconciliationMarginMs) {
-    throw sourceProcessFailure("performance", "source qualification has no safe performance execution window before reconciliation", "failed");
+    throw sourceProcessFailure("performance", "source verification has no safe performance execution window before reconciliation", "failed");
   }
   const performanceResult = (await runConcurrent(SOURCE_PERFORMANCE_BARRIER.map((name) => ({
     name,
@@ -803,7 +837,7 @@ export async function runSourceQualificationDag(options = {}) {
   const capacityStarted = clock();
   const capacityRemaining = remaining();
   if (capacityRemaining <= reconciliationMarginMs) {
-    throw sourceProcessFailure("capacity", "source qualification has no safe capacity execution window before reconciliation", "failed");
+    throw sourceProcessFailure("capacity", "source verification has no safe capacity execution window before reconciliation", "failed");
   }
   const capacityResult = (await runConcurrent(SOURCE_CAPACITY_BARRIER.map((name) => ({
     name,
@@ -824,7 +858,7 @@ export async function runSourceQualificationDag(options = {}) {
   if (barrierTimeout < requiredBarrierWindowMs + reconciliationMarginMs) {
     throw sourceProcessFailure(
       "reader-barrier",
-      `source qualification requires ${requiredBarrierWindowMs}ms for barrier B plus ${reconciliationMarginMs}ms reconciliation; ${barrierTimeout}ms remain`,
+      `source verification requires ${requiredBarrierWindowMs}ms for barrier B plus ${reconciliationMarginMs}ms reconciliation; ${barrierTimeout}ms remain`,
       "failed",
     );
   }
@@ -865,11 +899,11 @@ export async function runSourceQualificationDag(options = {}) {
   }
   const elapsedMs = Math.max(0, Math.round(clock() - started));
   if (elapsedMs >= deadlineMs) {
-    throw sourceProcessFailure("full-qualification", `source qualification exceeded its ${deadlineMs}ms budget`, "failed");
+    throw sourceProcessFailure("full-qualification", `source verification exceeded its ${deadlineMs}ms budget`, "failed");
   }
   const unattributedElapsedMs = elapsedMs - batchElapsedMs - performanceElapsedMs - capacityElapsedMs - barrierElapsedMs;
   if (unattributedElapsedMs < 0) {
-    throw sourceProcessFailure("full-qualification", "source qualification phase timings do not reconcile", "failed");
+    throw sourceProcessFailure("full-qualification", "source verification phase timings do not reconcile", "failed");
   }
   const originEntries = Object.fromEntries(OVERLAP_PARTICIPANTS.map((name) => [name, {
     name,
@@ -1014,11 +1048,11 @@ export async function issueSourceReceipt(options = {}) {
     const existing = validReceiptDigest(readJson(file, "source receipt"), "source receipt");
     validateSourceReceiptSemantics(existing);
     if (existing.component?.sha256 !== identity.sha256) {
-      throw new Error("source receipt inputs changed; use a new empty candidate directory and rerun source qualification");
+      throw new Error("source receipt inputs changed; use a new empty artifact directory and rerun source verification");
     }
     return { receipt: existing, reused: true, gates: [] };
   }
-  assertSourceQualificationWorkflowAuthority(repo, options.environment ?? process.env);
+  assertSourceQualificationWorkflowAuthority(repo, options.environment ?? process.env, options.adapterName);
   const qualification = await (options.runDag ?? runSourceQualificationDag)({
     ...options,
     repo,
@@ -1130,12 +1164,12 @@ export function checkSourceReceipt(options = {}) {
 }
 
 function ensureRegularArtifact(directory, filename) {
-  if (path.basename(filename) !== filename) throw new Error("candidate artifact filename must not contain a path");
+  if (path.basename(filename) !== filename) throw new Error("package artifact filename must not contain a path");
   const artifact = path.join(directory, filename);
   const stat = fs.lstatSync(artifact);
-  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("candidate artifact must be a regular file");
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("package artifact must be a regular file");
   const resolved = fs.realpathSync(artifact);
-  if (path.dirname(resolved) !== directory) throw new Error("candidate artifact escapes its candidate directory");
+  if (path.dirname(resolved) !== directory) throw new Error("package artifact escapes its artifact directory");
   return { artifact: resolved, stat };
 }
 
@@ -1148,8 +1182,13 @@ function executeJson(command, args, options = {}) {
   }
 }
 
-function candidateManifest(adapterName, repo = REPO_ROOT) {
+function candidateManifest(adapterName, repo = REPO_ROOT, override) {
   const manifest = readManifest(adapterName, repo);
+  if (override) {
+    if (adapterName !== "development") throw new Error("package metadata overrides support only development");
+    manifest.version = override.targetVersion;
+    manifest.agentera = { ...manifest.agentera, gitRef: override.sourceCommit };
+  }
   const adapter = RELEASE_CONTRACT.packages[adapterName];
   const expectedDevelopment = adapterName === "development";
   const validVersion = expectedDevelopment
@@ -1157,13 +1196,13 @@ function candidateManifest(adapterName, repo = REPO_ROOT) {
     : /^\d+\.\d+\.\d+$/.test(manifest.version);
   if (!validVersion) throw new Error(`${adapterName} manifest version is outside its release policy`);
   if (!/^[0-9a-f]{40}$/.test(manifest.agentera?.gitRef ?? "")) {
-    throw new Error("candidate manifest has no immutable 40-character agentera.gitRef");
+    throw new Error("package manifest has no immutable 40-character agentera.gitRef");
   }
   if (spawnSync("git", ["cat-file", "-e", `${manifest.agentera.gitRef}^{commit}`], {
     cwd: repo,
     env: npmChildEnvironment(process.env),
   }).status !== 0) {
-    throw new Error("candidate manifest agentera.gitRef does not name an existing commit");
+    throw new Error("package manifest agentera.gitRef does not name an existing commit");
   }
   validateAdapterSourceProvenance({ repo, adapter, manifest });
   return { manifest, adapter };
@@ -1325,10 +1364,17 @@ export function smokePublishedCandidate(options = {}) {
   }
 }
 
-function releaseMetadataGate(repo, adapterName, execute = run) {
+function releaseMetadataGate(repo, adapterName, manifest, execute = run) {
   execute(process.execPath, ["packages/cli/dist/bin/agentera.js", "check", "validate", "release-metadata", "--format", "json"], {
     cwd: repo,
-    env: { ...npmChildEnvironment(process.env), AGENTERA_RELEASE_ADAPTER: adapterName },
+    env: {
+      ...npmChildEnvironment(process.env),
+      AGENTERA_RELEASE_ADAPTER: adapterName,
+      ...(adapterName === "development" ? {
+        AGENTERA_RELEASE_PACKAGE_VERSION: manifest.version,
+        AGENTERA_RELEASE_GIT_REF: manifest.agentera.gitRef,
+      } : {}),
+    },
     timeout: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
   });
 }
@@ -1353,7 +1399,10 @@ function constructCandidatePackage({ repo, adapter, manifest, candidateDirectory
   if (adapter.construction === "isolatedTypeScriptPackage") {
     return executeJson(
       process.execPath,
-      ["scripts/pack-package.mjs", "--output-dir", candidateDirectory, "--with-dry-run", "--json"],
+      [
+        "scripts/pack-package.mjs", "--output-dir", candidateDirectory, "--with-dry-run", "--json",
+        "--package-version", manifest.version, "--git-ref", manifest.agentera.gitRef,
+      ],
       { cwd: packageRoot, run: execute },
     );
   }
@@ -1377,14 +1426,14 @@ function constructCandidatePackage({ repo, adapter, manifest, candidateDirectory
 }
 
 function validateCandidateReceiptSemantics(receipt) {
-  if (receipt.schemaVersion !== RECEIPT_SCHEMA) throw new Error("candidate receipt schema is invalid");
-  if (receipt.kind !== "candidate") throw new Error("candidate receipt kind is invalid");
+  if (receipt.schemaVersion !== RECEIPT_SCHEMA) throw new Error("package receipt schema is invalid");
+  if (receipt.kind !== "candidate") throw new Error("package receipt kind must be 'candidate'");
   const expectedGates = RELEASE_CONTRACT.qualification.candidate.gates;
   if (
     !Array.isArray(receipt.gates)
     || canonicalJson(receipt.gates.map((gate) => gate?.name)) !== canonicalJson(expectedGates)
   ) {
-    throw new Error("candidate receipt gates must contain the exact governed gate set in order");
+    throw new Error("package receipt gates must contain the exact governed gate set in order");
   }
   for (const gate of receipt.gates) {
     if (
@@ -1396,7 +1445,7 @@ function validateCandidateReceiptSemantics(receipt) {
       || (gate.name === "local-exact-artifact-smoke"
         && (typeof gate.output !== "string" || !gate.output.includes(receipt.version)))
     ) {
-      throw new Error(`candidate receipt gate '${gate.name}' has invalid execution evidence`);
+      throw new Error(`package receipt gate '${gate.name}' has invalid execution evidence`);
     }
   }
   const ownerElapsedMs = receipt.gates.reduce((total, gate) => total + gate.elapsedMs, 0);
@@ -1412,7 +1461,7 @@ function validateCandidateReceiptSemantics(receipt) {
     || execution.reconciled !== true
     || execution.ownerElapsedMs + execution.unattributedElapsedMs !== execution.elapsedMs
   ) {
-    throw new Error("candidate receipt execution timing does not reconcile");
+    throw new Error("package receipt execution timing does not reconcile");
   }
   const construction = receipt.artifact?.construction;
   if (
@@ -1427,7 +1476,7 @@ function validateCandidateReceiptSemantics(receipt) {
     || typeof construction.shasum !== "string"
     || construction.shasum.length === 0
   ) {
-    throw new Error("candidate receipt construction observation is incomplete");
+    throw new Error("package receipt construction observation is incomplete");
   }
 }
 
@@ -1442,18 +1491,38 @@ export function issueCandidateReceipt(options = {}) {
     receipt: validReceiptDigest(readJson(receiptPath(candidateDirectory, "source-receipt.json"), "source receipt"), "source receipt"),
     toolchain: options.toolchain,
   });
-  const { adapter, manifest } = candidateManifest(options.adapterName, repo);
+  const override = options.targetVersion || options.sourceCommit
+    ? { targetVersion: options.targetVersion, sourceCommit: options.sourceCommit }
+    : undefined;
+  if (override && (!/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(override.targetVersion ?? "") || !/^[0-9a-f]{40}$/.test(override.sourceCommit ?? ""))) {
+    throw new Error("development package override requires --target-version 3.0.0-dev.N and --source-commit SHA");
+  }
+  validateDevelopmentCiCandidateBinding({
+    repo,
+    adapterName: options.adapterName,
+    targetVersion: options.targetVersion,
+    sourceCommit: options.sourceCommit,
+    environment: options.environment ?? process.env,
+  });
+  const { adapter, manifest } = candidateManifest(options.adapterName, repo, override);
   const metadataCommit = git(["rev-parse", "HEAD"], repo);
   const candidateFile = receiptPath(candidateDirectory, "candidate-receipt.json");
   if (fs.existsSync(candidateFile)) {
     const existing = validateCandidateReceipt({ candidateDirectory, adapterName: options.adapterName, repo });
+    if (
+      override
+      && (existing.receipt.version !== override.targetVersion
+        || existing.receipt.sourceCommit !== override.sourceCommit)
+    ) {
+      throw new Error("existing package receipt does not match the requested development metadata");
+    }
     return { receipt: existing.receipt, reused: true };
   }
 
   const execute = options.run ?? run;
   const metadataStarted = clock();
   try {
-    releaseMetadataGate(repo, options.adapterName, options.metadataRun);
+    releaseMetadataGate(repo, options.adapterName, manifest, options.metadataRun);
   } catch (error) {
     if (error && typeof error === "object") error.owner ??= "release-metadata";
     throw error;
@@ -1497,7 +1566,7 @@ export function issueCandidateReceipt(options = {}) {
   fs.chmodSync(artifactState.artifact, ARTIFACT_MODE);
   const retainedArtifact = ensureRegularArtifact(candidateDirectory, path.basename(construction.artifact));
   if ((retainedArtifact.stat.mode & 0o777) !== ARTIFACT_MODE) {
-    throw new Error("candidate artifact did not retain the required immutable mode");
+    throw new Error("package artifact did not retain the required immutable mode");
   }
   const constructionEnded = clock();
   const constructionGate = {
@@ -1528,7 +1597,7 @@ export function issueCandidateReceipt(options = {}) {
   const candidateElapsedMs = monotonicDuration(candidateStarted, candidateEnded, "candidate-qualification");
   const ownerElapsedMs = metadataGate.elapsedMs + constructionGate.elapsedMs + smokeGate.elapsedMs;
   const unattributedElapsedMs = candidateElapsedMs - ownerElapsedMs;
-  if (unattributedElapsedMs < 0) throw new Error("candidate qualification timing intervals overlap");
+  if (unattributedElapsedMs < 0) throw new Error("package verification timing intervals overlap");
   const receipt = {
     schemaVersion: RECEIPT_SCHEMA,
     kind: "candidate",
@@ -1567,7 +1636,7 @@ export function issueCandidateReceipt(options = {}) {
     },
   };
   receipt.receiptSha256 = receiptDigest(receipt);
-  writeImmutableJson(candidateFile, receipt, "candidate receipt");
+  writeImmutableJson(candidateFile, receipt, "package receipt");
   return { receipt, reused: false };
 }
 
@@ -1576,17 +1645,21 @@ export function validateCandidateReceipt(options = {}) {
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo, false);
   const receipt = validReceiptDigest(
     options.receipt ?? readJson(
-      containedRegularReceipt(candidateDirectory, "candidate-receipt.json", "candidate receipt"),
-      "candidate receipt",
+      containedRegularReceipt(candidateDirectory, "candidate-receipt.json", "package receipt"),
+      "package receipt",
     ),
-    "candidate receipt",
+    "package receipt",
   );
   validateCandidateReceiptSemantics(receipt);
-  const { manifest, adapter } = candidateManifest(options.adapterName ?? receipt.adapter, repo);
+  const adapterName = options.adapterName ?? receipt.adapter;
+  const override = adapterName === "development"
+    ? { targetVersion: receipt.version, sourceCommit: receipt.sourceCommit }
+    : undefined;
+  const { manifest, adapter } = candidateManifest(adapterName, repo, override);
   const source = checkSourceReceipt({ repo, candidateDirectory });
   if (
     receipt.sourceReceiptSha256 !== source.receiptSha256
-    || receipt.adapter !== (options.adapterName ?? receipt.adapter)
+    || receipt.adapter !== adapterName
     || receipt.metadataCommit !== git(["rev-parse", "HEAD"], repo)
     || receipt.package !== manifest.name
     || receipt.version !== manifest.version
@@ -1596,7 +1669,7 @@ export function validateCandidateReceipt(options = {}) {
     || receipt.registry !== "https://registry.npmjs.org/"
     || receipt.artifact?.dryPackEquivalent !== true
   ) {
-    throw new Error("candidate receipt no longer matches the selected package metadata or source receipt");
+    throw new Error("package receipt no longer matches the selected package metadata or source receipt");
   }
   const artifactState = ensureRegularArtifact(candidateDirectory, receipt.artifact?.filename);
   const bytes = fs.readFileSync(artifactState.artifact);
@@ -1606,13 +1679,13 @@ export function validateCandidateReceipt(options = {}) {
     || receipt.artifact.bytes !== bytes.byteLength
     || receipt.artifact.construction.shasum !== createHash("sha1").update(bytes).digest("hex")
   ) {
-    throw new Error("candidate artifact changed after qualification");
+    throw new Error("package artifact changed after verification");
   }
   if (
     receipt.artifact.mode !== ARTIFACT_MODE
     || (artifactState.stat.mode & 0o777) !== receipt.artifact.mode
   ) {
-    throw new Error("candidate artifact permissions changed after qualification");
+    throw new Error("package artifact permissions changed after verification");
   }
   return { receipt, artifact: artifactState.artifact, manifest, adapter };
 }
@@ -1622,7 +1695,7 @@ export function issueCandidateApproval(options = {}) {
   if (typeof approvedBy !== "string" || !/^[A-Za-z0-9_.@/-]{1,120}$/.test(approvedBy)) {
     throw new Error("approval requires a bounded --approved-by principal");
   }
-  const candidate = validateCandidateReceipt(options);
+  const candidate = options.candidate ?? validateCandidateReceipt(options);
   if ((options.environment ?? process.env).GITHUB_ACTIONS === "true") {
     validateCiAttestation({
       ...options,
@@ -1667,7 +1740,7 @@ export function validateCandidateApproval(options = {}) {
     || approval.registry !== candidate.receipt.registry
     || approval.expectedTag !== candidate.receipt.expectedTag
   ) {
-    throw new Error("candidate approval is not bound to this exact candidate");
+    throw new Error("artifact approval is not bound to this exact package artifact");
   }
   return approval;
 }
@@ -1676,9 +1749,9 @@ function validRunId(value) {
   return typeof value === "string" && /^[1-9]\d{0,19}$/.test(value);
 }
 
-export function qualificationWorkflowIdentity() {
+export function qualificationWorkflowIdentity(kind = "development") {
   const ci = RELEASE_CONTRACT.ci;
-  const workflow = ci?.qualificationWorkflow;
+  const workflow = kind === "stable" ? ci?.stableVerificationWorkflow : ci?.qualificationWorkflow;
   if (
     !ci?.repository
     || !workflow?.name
@@ -1687,7 +1760,7 @@ export function qualificationWorkflowIdentity() {
     || !workflow.ref.startsWith("refs/heads/")
     || workflow.ref.length === "refs/heads/".length
   ) {
-    throw new Error("release publication contract has no qualification workflow identity");
+    throw new Error("release publication contract has no verification workflow identity");
   }
   return {
     repository: ci.repository,
@@ -1700,7 +1773,7 @@ export function qualificationWorkflowIdentity() {
 }
 
 export function validateQualificationWorkflowRun(run, requestedRunId) {
-  const expected = qualificationWorkflowIdentity();
+  const expected = qualificationWorkflowIdentity("stable");
   const expectedPaths = new Set([
     expected.workflowPath,
     `${expected.workflowPath}@${expected.branch}`,
@@ -1731,47 +1804,48 @@ export function validateQualificationWorkflowRun(run, requestedRunId) {
 }
 
 export function validateCandidateRunBinding(receipt, expectedReceiptSha256, runHeadSha) {
-  validReceiptDigest(receipt, "candidate receipt");
+  validReceiptDigest(receipt, "package receipt");
   if (receipt.kind !== "candidate") {
-    throw new Error("candidate receipt kind is invalid");
+    throw new Error("package receipt kind must be 'candidate'");
   }
   if (
     typeof expectedReceiptSha256 !== "string"
     || !/^[0-9a-f]{64}$/.test(expectedReceiptSha256)
     || receipt.receiptSha256 !== expectedReceiptSha256
   ) {
-    throw new Error("candidate receipt digest does not match the explicit workflow approval");
+    throw new Error("package receipt digest does not match the explicit workflow approval");
   }
   if (
     typeof runHeadSha !== "string"
     || !/^[0-9a-f]{40}$/.test(runHeadSha)
     || receipt.metadataCommit !== runHeadSha
+    || (receipt.adapter === "development" && receipt.sourceCommit !== runHeadSha)
   ) {
-    throw new Error("candidate metadata commit does not match the API-backed qualification run head SHA");
+    throw new Error("package receipt commits do not match the API-backed verification run head SHA");
   }
   return { metadataCommit: receipt.metadataCommit, candidateReceiptSha256: receipt.receiptSha256 };
 }
 
-function assertQualificationWorkflowEnvironment(environment) {
-  const expected = qualificationWorkflowIdentity();
+function assertQualificationWorkflowEnvironment(environment, adapterName = "development") {
+  const expected = qualificationWorkflowIdentity(adapterName === "stable" ? "stable" : "development");
   if (
     environment.GITHUB_REPOSITORY !== expected.repository
     || environment.GITHUB_WORKFLOW !== expected.workflow
     || environment.GITHUB_WORKFLOW_REF !== expected.workflowRef
     || !validRunId(environment.GITHUB_RUN_ID)
   ) {
-    throw new Error("CI attestation must originate from the contracted qualification repository, workflow, workflow ref, and run identity");
+    throw new Error("CI attestation must originate from the contracted verification repository, workflow, workflow ref, and run identity");
   }
   return expected;
 }
 
-function assertSourceQualificationWorkflowAuthority(repo, environment) {
+function assertSourceQualificationWorkflowAuthority(repo, environment, adapterName) {
   if (environment.GITHUB_ACTIONS !== "true") {
-    throw new Error("source receipt authority requires the contracted GitHub Actions qualification workflow");
+    throw new Error("source receipt authority requires the contracted GitHub Actions verification workflow");
   }
-  assertQualificationWorkflowEnvironment(environment);
+  assertQualificationWorkflowEnvironment(environment, adapterName);
   if (environment.GITHUB_SHA !== git(["rev-parse", "HEAD"], repo)) {
-    throw new Error("source receipt checkout SHA does not match the committed qualification source");
+    throw new Error("source receipt checkout SHA does not match the committed verification source");
   }
 }
 
@@ -1780,10 +1854,15 @@ export function issueCiAttestation(options = {}) {
   if (environment.GITHUB_ACTIONS !== "true") {
     throw new Error("CI attestation can only be issued by a GitHub Actions runner");
   }
-  const expected = assertQualificationWorkflowEnvironment(environment);
-  const candidate = validateCandidateReceipt(options);
-  if (environment.GITHUB_SHA !== candidate.receipt.metadataCommit) {
-    throw new Error("CI checkout SHA does not match the candidate metadata commit");
+  const expected = assertQualificationWorkflowEnvironment(environment, options.adapterName);
+  const candidate = options.candidate ?? validateCandidateReceipt(options);
+  const checkoutHead = git(["rev-parse", "HEAD"], options.repo ?? REPO_ROOT);
+  if (
+    environment.GITHUB_SHA !== checkoutHead
+    || environment.GITHUB_SHA !== candidate.receipt.metadataCommit
+    || (options.adapterName === "development" && environment.GITHUB_SHA !== candidate.receipt.sourceCommit)
+  ) {
+    throw new Error("CI checkout SHA does not match the package receipt commits");
   }
   const attestation = {
     schemaVersion: RECEIPT_SCHEMA,
@@ -1809,9 +1888,10 @@ export function validateCiAttestation(options = {}) {
   if (environment.GITHUB_ACTIONS !== "true") {
     throw new Error("CI registry mutation requires a GitHub Actions execution context");
   }
-  const expected = qualificationWorkflowIdentity();
+  const adapterName = options.adapterName ?? options.candidate?.receipt?.adapter ?? "development";
+  const expected = qualificationWorkflowIdentity(adapterName === "stable" ? "stable" : "development");
   if (environment.GITHUB_REPOSITORY !== expected.repository || !validRunId(options.sourceRunId)) {
-    throw new Error("CI registry mutation requires the contracted repository and a source qualification run identity");
+    throw new Error("CI registry mutation requires the contracted repository and a source verification run identity");
   }
   const candidate = options.candidate ?? validateCandidateReceipt(options);
   const attestation = validReceiptDigest(
@@ -1829,7 +1909,7 @@ export function validateCiAttestation(options = {}) {
     || !validRunId(attestation.runId)
     || attestation.runId !== options.sourceRunId
   ) {
-    throw new Error("CI attestation is not bound to this candidate and source run");
+    throw new Error("CI attestation is not bound to this package and source run");
   }
   return attestation;
 }
@@ -1837,7 +1917,11 @@ export function validateCiAttestation(options = {}) {
 async function runCommand(command, flags) {
   const candidateDirectory = requireArgument(flags, "--candidate-dir");
   const adapterName = flags.get("--adapter") ?? "development";
-  const manifest = readManifest(adapterName);
+  const targetVersion = flags.get("--target-version");
+  const sourceCommit = flags.get("--source-commit");
+  const manifest = adapterName === "development" && targetVersion && sourceCommit
+    ? candidateManifest(adapterName, REPO_ROOT, { targetVersion, sourceCommit }).manifest
+    : readManifest(adapterName);
   const json = Boolean(flags.get("--json"));
   const started = performance.now();
   const phase = command === "source" ? "source-qualification" : command === "candidate" ? "candidate-qualification" : command;
@@ -1848,13 +1932,19 @@ async function runCommand(command, flags) {
     outcome: "started",
     executed: "pending",
     reused: false,
-    nextAction: command === "source" ? "run ordered source gates" : "validate source evidence and retained artifact",
+    nextAction: command === "source" ? "run source verification" : "verify the package from the source receipt",
   }), json);
   try {
     const issued = command === "source"
-      ? await issueSourceReceipt({ candidateDirectory })
+      ? await issueSourceReceipt({ candidateDirectory, adapterName })
       : command === "candidate"
-          ? issueCandidateReceipt({ candidateDirectory, adapterName })
+          ? issueCandidateReceipt({
+              candidateDirectory,
+              adapterName,
+              targetVersion,
+              sourceCommit,
+              environment: process.env,
+            })
           : command === "approval"
           ? {
               receipt: issueCandidateApproval({
@@ -1875,12 +1965,12 @@ async function runCommand(command, flags) {
       executed: issued.reused ? "none" : "ordered gates",
       reused: issued.reused,
       nextAction: command === "source"
-        ? "qualify a candidate from this receipt"
+        ? "build and verify the package from this receipt"
         : command === "candidate"
-          ? "record explicit candidate approval before staging"
+          ? "record explicit artifact approval before staging"
           : command === "approval"
-            ? "stage the exact approved candidate"
-            : "transfer the attested candidate to the explicitly approved publication workflow",
+            ? "stage the approved package"
+            : "transfer the verified package to the publication workflow",
     }), json);
   } catch (error) {
     emit(phaseResult({
@@ -1944,17 +2034,24 @@ export async function runNoReceiptVerificationCommand(flags, options = {}) {
   const result = await runSourceConjunction(options);
   const json = Boolean(flags.get("--json"));
   if (json) process.stdout.write(`${JSON.stringify(result)}\n`);
-  else process.stdout.write(`release conjunction ${result.status}; gates:${result.gate_count}; generation:${result.generated_artifact?.generation ?? "none"}; first failure:${result.first_failure ?? "none"}; correction:${result.correction ?? "none"}\n`);
+  else process.stdout.write(`release verification ${result.status}; gates:${result.gate_count}; generation:${result.generated_artifact?.generation ?? "none"}; first failure:${result.first_failure ?? "none"}; correction:${result.correction ?? "none"}\n`);
   if (result.status !== "pass") process.exitCode = 1;
   return result;
 }
 
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
-  if (!["verify", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
-    throw new Error("usage: release-qualification.mjs <verify|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
+  if (!["allocate", "verify", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
+    throw new Error("usage: release-qualification.mjs <allocate|verify|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
+  }
+  if (command === "allocate") {
+    const flags = parseReleaseFlags(rest, { boolean: ["--json"], value: ["--run-number"] });
+    const version = developmentVersionFromRunNumber("3.0.0", requireArgument(flags, "--run-number"));
+    process.stdout.write(flags.get("--json") ? `${JSON.stringify({ version })}\n` : `${version}\n`);
+    return;
   }
   const valueFlags = command === "verify" ? [] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
+  if (command === "candidate") valueFlags.push("--target-version", "--source-commit");
   if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
   const flags = parseReleaseFlags(rest, {
     boolean: ["verify", "source-check"].includes(command) ? ["--json"] : ["--json", "--verbose"],

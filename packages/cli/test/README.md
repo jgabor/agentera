@@ -45,23 +45,23 @@ and structural validation finish before normalization or consumption; direct
 JavaScript objects, including proxies and accessors, are outside this runtime
 boundary.
 
-Release source qualification uses the policy-owned DAG. One generated-overlap
+Release source verification uses the policy-owned DAG. One generated-overlap
 process is the sole origin for source, package, build, and overlap evidence. It
 runs beside isolated stress and typecheck owners. After those three batch owners
 pass and the generated generation settles without leases, performance runs alone
 with one worker in fresh state on the pinned remote runner, and records runner
 identity so CPU contention cannot invalidate its machine-sensitive evidence.
-Local performance runs are diagnostic, not authoritative qualification evidence.
+Local performance runs are diagnostic, not authoritative package verification evidence.
 Capacity then runs alone with one worker for large deterministic scale evidence.
 Compact and capability-contract then run together as readers. Every child has a
 separate HOME, cache, npm configs, and report. A peer failure cancels only
 cancellable groups; generated-overlap settles without forced termination, and no
 reader barrier or receipt follows a batch, performance, or capacity failure.
 
-Pre-commit is a local feedback lane, not release qualification. It runs exact
+Pre-commit is a local feedback lane, not release verification. It runs exact
 source-owned tests and typecheck with at most two workers. Specialized and
 global surfaces are labeled `ci_owned`; required CI runs their authoritative
-owners through the unchanged release conjunction. The hook accepts no receipt
+owners through the unchanged release verification. The hook accepts no receipt
 or environment bypass.
 
 ## Classification key

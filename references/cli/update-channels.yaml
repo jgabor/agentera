@@ -3,7 +3,7 @@ status: active_authority
 purpose: >-
   Define dual update channels that select which published Agentera line upgrade,
   doctor, and prime resolve: stable tracks the supported 2.x line; development
-  tracks 3.x alphas and release candidates.
+  tracks 3.x prereleases.
 sources:
   prose:
     - references/cli/vocabulary.md#update-channels
@@ -60,7 +60,7 @@ channels:
   development:
     concept: v3_pre_release_line
     definition: >-
-      Tracks 3.x alphas, betas, and release candidates for early adopters and
+      Tracks 3.x prereleases for early adopters and
       maintainers testing the npm self-contained TypeScript distribution. The
       feat/v3 branch and v3 CLI are npm-only; v2→v3 is a one-way upgrade through
       npx @next, not through uvx or git checkout installs.

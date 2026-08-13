@@ -1,0 +1,44 @@
+name: Verify stable package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.2
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+      - name: Verify committed source
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+          VITEST_MAX_WORKERS: "1"
+          VITEST_TEST_TIMEOUT_MS: "120000"
+          AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
+          AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
+          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
+        run: node packages/cli/scripts/release-qualification.mjs source --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package"
+      - name: Verify stable package
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+        run: node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package"
+      - name: Attest transferred package
+        run: node packages/cli/scripts/release-qualification.mjs attest --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/agentera-package
+          if-no-files-found: error
+          retention-days: 30

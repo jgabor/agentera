@@ -88,9 +88,15 @@ function operations() {
       }
       return { receiptSha256: "a".repeat(64) };
     },
-    issueCandidate: ({ candidateDirectory }: { candidateDirectory: string }) => {
+    issueCandidate: ({ candidateDirectory, targetVersion, sourceCommit }: {
+      candidateDirectory: string;
+      targetVersion: string;
+      sourceCommit: string;
+    }) => {
       counters.candidateIssues += 1;
       counters.candidateConstructions += 1;
+      expect(targetVersion).toBe("3.0.0-dev.42");
+      expect(sourceCommit).toMatch(/^[0-9a-f]{40}$/);
       fs.writeFileSync(path.join(candidateDirectory, artifactName), artifactBytes, { flag: "wx", mode: 0o444 });
       fs.writeFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "valid-candidate\n", { flag: "wx" });
       return { reused: false, receipt: { receiptSha256: "b".repeat(64) } };
@@ -101,7 +107,7 @@ function operations() {
         fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "utf8") !== "valid-candidate\n"
         || !fs.readFileSync(path.join(candidateDirectory, artifactName)).equals(artifactBytes)
       ) {
-        throw new Error("candidate artifact changed after qualification");
+        throw new Error("package artifact changed after verification");
       }
       return { receipt: { receiptSha256: "b".repeat(64) } };
     },
@@ -272,7 +278,7 @@ describe("development release readiness coordinator", () => {
         candidateQualificationInvocations: 0,
         candidateConstructionExecutions: 0,
       },
-      detail: "candidate artifact changed after qualification",
+      detail: "package artifact changed after verification",
     });
     expect(owners.counters.candidateIssues).toBe(1);
     expect(owners.counters.candidateConstructions).toBe(1);

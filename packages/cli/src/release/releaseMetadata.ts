@@ -319,23 +319,26 @@ function pickChannelDefaults(authority: JsonObject | null): {
   };
 }
 
-export function readReleaseMetadata(root: string = rootDefault()): ReleaseMetadataSnapshot {
+export function readReleaseMetadata(
+  root: string = rootDefault(),
+  packageOverride?: { version: string; gitRef: string },
+): ReleaseMetadataSnapshot {
   const resolved = resolvePath(root);
   const registry = readRegistryVersion(resolved);
   const pkg = readPackageJson(resolved);
   const channels = readUpdateChannels(resolved);
   const bundle = readBundleSentinel(resolved);
 
-  const topVersion = pkg && typeof pkg.version === "string" ? pkg.version : null;
+  const topVersion = packageOverride?.version ?? (pkg && typeof pkg.version === "string" ? pkg.version : null);
   const agenteraBlock = pkg && typeof pkg.agentera === "object" && pkg.agentera !== null
     ? (pkg.agentera as JsonObject)
     : null;
   const suiteVersion = agenteraBlock && typeof agenteraBlock.suiteVersion === "string"
     ? agenteraBlock.suiteVersion
     : null;
-  const gitRef = agenteraBlock && typeof agenteraBlock.gitRef === "string"
+  const gitRef = packageOverride?.gitRef ?? (agenteraBlock && typeof agenteraBlock.gitRef === "string"
     ? agenteraBlock.gitRef
-    : null;
+    : null);
   const { development, stable } = pickChannelDefaults(channels);
 
   return {
@@ -357,6 +360,7 @@ export function readReleaseMetadata(root: string = rootDefault()): ReleaseMetada
 export function validateReleaseMetadata(
   root: string = rootDefault(),
   adapter: "development" | "stable" = "development",
+  packageOverride?: { version: string; gitRef: string },
 ): string[] {
   if (adapter === "stable") {
     const manifestPath = "packages/cli/shim/package.json";
@@ -372,7 +376,7 @@ export function validateReleaseMetadata(
     return validateStableShimGitRefProvenance(resolvePath(root), gitRef);
   }
   const errors: string[] = [];
-  const snap = readReleaseMetadata(root);
+  const snap = readReleaseMetadata(root, packageOverride);
   const rootLabel = path.basename(resolvePath(root)) || "repo root";
 
   // 1. registry.json must publish a valid semver `skills[0].version`.
@@ -500,7 +504,18 @@ export function releaseMetadataMain(opts: ReleaseMetadataMainOptions = {}): numb
   const root = resolvePath(opts.root ?? rootDefault());
   const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
   const err = opts.err ?? ((line: string) => process.stderr.write(line + "\n"));
-  const errors = validateReleaseMetadata(root, opts.adapter);
+  const overrideVersion = process.env.AGENTERA_RELEASE_PACKAGE_VERSION;
+  const overrideGitRef = process.env.AGENTERA_RELEASE_GIT_REF;
+  if ((overrideVersion === undefined) !== (overrideGitRef === undefined)) {
+    out("release-metadata validation failed:");
+    out("- AGENTERA_RELEASE_PACKAGE_VERSION and AGENTERA_RELEASE_GIT_REF must be supplied together");
+    return 1;
+  }
+  const errors = validateReleaseMetadata(
+    root,
+    opts.adapter,
+    overrideVersion === undefined ? undefined : { version: overrideVersion, gitRef: overrideGitRef! },
+  );
   if (errors.length > 0) {
     out("release-metadata validation failed:");
     for (const message of errors) out(`- ${message}`);

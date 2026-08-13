@@ -56,7 +56,7 @@ function invokes(line: string, command: string): boolean {
 function validateRoutineCiOwnership(candidate: any): void {
   const lines = runLines(candidate);
   if (lines.filter((line) => invokes(line, RELEASE_COMMAND)).length !== 1) {
-    throw new Error("routine CI must invoke the check-only release conjunction exactly once");
+    throw new Error("routine CI must invoke the check-only release verification exactly once");
   }
   for (const entry of REMOVED_DUPLICATES) {
     if (entry.forbidden.some((command) => lines.some((line) => invokes(line, command)))) {
@@ -69,9 +69,26 @@ describe("routine CI owner DAG", () => {
   it("runs the canonical check-only conjunction once on the authoritative performance runner", () => {
     expect(() => validateRoutineCiOwnership(workflow)).not.toThrow();
     expect(workflow.jobs.cli["runs-on"]).toBe("ubuntu-24.04");
-    expect(workflow.jobs.cli.if).toBe(
-      "github.event_name != 'push' || github.ref != 'refs/heads/feat/v3'",
+    expect(workflow.jobs.cli).not.toHaveProperty("if");
+    expect(workflow.on.push.branches).toEqual(["main"]);
+    expect(workflow.on).toHaveProperty("pull_request");
+    expect(workflow.jobs["source-migration"].name).toBe("v2→v3 migration (source build)");
+    expect(workflow.jobs["source-migration"].if).toBe(
+      "github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'",
     );
+    const migrationSteps = workflow.jobs["source-migration"].steps;
+    const scenarioStep = migrationSteps.find(
+      (step: { name?: string }) => step.name === "Run v2→v3 migration scenarios",
+    );
+    expect(scenarioStep).toMatchObject({ env: expect.any(Object), run: expect.any(String) });
+    const reportStep = migrationSteps.find(
+      (step: { name?: string }) => step.name === "Upload sandbox reports",
+    );
+    expect(reportStep).toMatchObject({
+      if: "always()",
+      uses: "actions/upload-artifact@v4",
+      with: { name: "source-migration-reports" },
+    });
     expect(developmentPackage.scripts["verify:release"]).toBe(
       "node scripts/release-qualification.mjs verify --json",
     );

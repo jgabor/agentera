@@ -34,8 +34,8 @@ The twelve capabilities are:
 Load every matching skill before acting. Skill descriptions are intentionally
 explicit so runtime skill discovery can select them from user intent.
 
-- For npm publication, version changes, release metadata, candidates,
-  qualification, approval, registry credentials, dist-tags, or replay, load
+- For npm publication, version changes, release metadata, package artifacts,
+  verification, approval, registry credentials, dist-tags, or replay, load
   `agentera-release` from
   `.opencode/skills/agentera-release/SKILL.md`.
 - For capability instructions, schemas, triggers, protocol primitives,
@@ -64,7 +64,7 @@ packages/cli/
     registries/             Contract loaders and typed registry models
     state/                  Typed project-state readers and writers
     validate/               Artifact and contract validation
-  scripts/                  Build, package, qualification, publication
+  scripts/                  Build, package, verification, publication
   test/                     Source, package, stress, and performance tests
   shim/                     Transitional stable npm package
 
@@ -106,35 +106,25 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
 
 ### Development push contract
 
-- Local `feat/v3` is the sole development-version allocation authority. Before
-  a push, fast-forward it from `origin/feat/v3`, integrate the worktree branch,
-  and keep the integration linear.
-- End each push with one non-merge metadata-only commit. It changes only
-  `packages/cli/package.json`, increments `3.0.0-dev.N` to
-  `3.0.0-dev.N+1`, and sets `agentera.gitRef` to the source commit immediately
-  before it. Run `pnpm cli:prepare:dev-push -- --json` from the clean integrated
-  source commit, then commit only that manifest.
-- Push once. The `feat/v3` workflow validates the committed increment against
-  the previous remote head, qualifies that exact candidate, issues an automatic
-  candidate-bound development approval, and publishes it to npm `@next`.
+- Every passing queued push to `feat/v3` publishes one rolling
+  development package to npm `@next`. CI derives `3.0.0-dev.N` as
+  `GITHUB_RUN_NUMBER + 72` and binds package and receipt metadata to
+  `GITHUB_SHA` in isolated package construction. It does not edit the checkout
+  or require a final metadata commit.
+- The `publish-next-${{ github.ref }}` concurrency group uses `queue: max`, which
+  keeps up to 100 pending pushes. Failed runs can create version gaps. A rerun
+  keeps the same run number, SHA, version, and package artifact.
 - A user's explicit push authorization permits exactly one push and is consumed
   by it. After that push, stop. A failed or cancelled workflow does not
-  authorize another metadata commit, version, or push. Repair the cause on a
+  authorize another version or push. Repair the cause on a
   worktree branch and obtain fresh explicit authorization before integrating it.
-- Do not prepare a development version unless at least one source commit was
-  integrated after the previous `feat/v3` head. Local commits do not publish.
-  Retry or recover a missing workflow only at the unchanged metadata commit.
-  Never allocate a replacement version for a retry.
-- Wait for that workflow to finish before the next `feat/v3` integration push.
-  This keeps the single local integrator and GitHub run order identical.
-- If GitHub records the push but does not instantiate its workflow, dispatch
-  `Qualify release candidate` at the unchanged `feat/v3` head with adapter
-  `development`. This recovery uses the same no-review development job and
-  does not allocate another version.
-- CI does not allocate or modify versions. Do not use `github.run_number` for
-  package identity. A rerun reuses the same committed version and candidate.
+- Before the first push with `.github/workflows/qualify.yml`, confirm that this
+  new workflow is still unregistered at run number 0 and npm `3.0.0-dev.73` is
+  absent. The offset 72 is a one-time migration assumption, not a registry query.
 - Publication from `main` remains the stable path and requires protected
-  environment review before npm mutation.
+  environment review before npm mutation. The stable `workflow_dispatch`
+  paths are not operational until `verify-stable.yml` and `publish.yml` exist
+  on the default `main` branch. Landing them there is a v3 cutover prerequisite.
 
 Until `3.0.0` is on npm `@latest`, do not bump suite or release metadata beyond
 `3.0.0`. Any version or publication task must load `agentera-release` before
@@ -180,7 +170,7 @@ or touching generated and packaged output.
   `agentera-release` and complete its credential preflight.
 - Never use `.env`, `.npmrc`, a source receipt, or CI success as registry
   mutation approval. A serialized `feat/v3` push may cause the workflow to issue
-  development approval only after the qualified candidate contract passes.
+  development approval only after the verified package artifact contract passes.
   Stable publication always requires explicit protected review.
 - Never use direct `npm pack` or `npm publish` for Agentera packages.
 - Never push during ordinary capability execution.
@@ -194,7 +184,7 @@ or touching generated and packaged output.
   per-capability schemas.
 - Keep version and package surfaces governed by `.agentera/docs.yaml` and
   `references/adapters/package-registry.yaml`; do not add ad hoc copies.
-- Do not add internal state bookkeeping, qualification details, receipt paths,
+- Do not add internal state bookkeeping, verification details, receipt paths,
   or agent activity to user-facing changelog entries.
 
 ## Runtime notes

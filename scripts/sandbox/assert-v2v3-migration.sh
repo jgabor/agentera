@@ -16,7 +16,7 @@ TIER="${AGENTERA_SANDBOX_TIER:-L1}"
 export HOME="$SANDBOX/home"
 export XDG_CONFIG_HOME="${SANDBOX}/xdg-config"
 if [[ "$TIER" == "L2" ]]; then
-  PIN="${AGENTERA_NPM_PIN:?L2 assertions require AGENTERA_NPM_PIN}"
+  PIN="${AGENTERA_NPM_PIN:?npm package assertions require AGENTERA_NPM_PIN}"
   CLI=(npx -y "$PIN")
   unset AGENTERA_BOOTSTRAP_SOURCE_ROOT
 else
@@ -159,13 +159,18 @@ if [[ "$prime_rc" -ne 0 ]]; then
   exit 1
 fi
 
-python3 - <<'PY' "$prime_out"
+expected_install_track="source"
+if [[ "$TIER" == "L2" ]]; then
+  expected_install_track="v3"
+fi
+python3 - <<'PY' "$prime_out" "$expected_install_track"
 import json, sys
 payload = json.load(open(sys.argv[1]))
+expected_install_track = sys.argv[2]
 if payload.get("outcome") != "ok":
     raise SystemExit(f"assert_post_migration_prime: outcome is {payload.get('outcome')!r}")
 app_home = payload.get("app_home") or {}
-if app_home.get("status") != "up_to_date" or app_home.get("install_track") != "v3":
+if app_home.get("status") != "up_to_date" or app_home.get("install_track") != expected_install_track:
     raise SystemExit(f"assert_post_migration_prime: invalid app home {app_home!r}")
 startup = payload.get("startup") or {}
 cutover = startup.get("state_cutover") or {}

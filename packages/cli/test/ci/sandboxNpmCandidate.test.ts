@@ -1,4 +1,4 @@
-// The exact-version L2 scenario is a candidate barrier, not an ordinary push effect.
+// The staged package migration smoke is a package barrier, not an ordinary push effect.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const workflow = fs.readFileSync(
-  path.join(REPO_ROOT, ".github/workflows/publish-qualified-candidate.yml"),
+  path.join(REPO_ROOT, ".github/workflows/publish.yml"),
   "utf8",
 );
 const benchmark = fs.readFileSync(
@@ -24,22 +24,23 @@ const assertions = fs.readFileSync(
 );
 const scannerPath = path.join(REPO_ROOT, "scripts/sandbox/scan-python-leftovers.sh");
 
-describe("candidate L2 npm pin contract", () => {
+describe("staged package migration contract", () => {
   it("derives the exact package pin only after staging", () => {
     expect(workflow).not.toMatch(/AGENTERA_NPM_PIN:\s*agentera@/);
     expect(benchmark).toContain("AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`");
-    expect(benchmark).toMatch(/transaction\("stage", "stage"\),\s+exactVersionL2,\s+transaction\("promote", "promote"\)/);
+    expect(benchmark).toContain("const candidateMigrationSmoke = adapterName === \"development\"");
+    expect(benchmark).toContain("candidateMigrationSmoke,");
   });
 
-  it("keeps the public tag unchanged until exact-version L2 succeeds", () => {
+  it("keeps the public tag unchanged until the staged package migration smoke succeeds", () => {
     expect(workflow).toContain("release-benchmark.mjs publication");
     expect(benchmark).toContain("AGENTERA_SANDBOX_TIER: \"L2\"");
     expect(workflow).toContain("candidate_receipt_sha256");
     expect(workflow).toContain("environment: npm-publish");
   });
 
-  it("gives L2 npx sandbox-owned user and global npm configuration", () => {
-    expect(benchmark).toContain('isolatedNpmState("agentera-qualified-l2-"');
+  it("gives the npm candidate npx smoke sandbox-owned user and global npm configuration", () => {
+    expect(benchmark).toContain('isolatedNpmState("agentera-qualified-candidate-"');
     expect(benchmark).toContain("registryInGlobalConfig: true");
     expect(harness).toContain('NPM_CONFIG_USERCONFIG="$SANDBOX/npm-user.npmrc"');
     expect(harness).toContain('NPM_CONFIG_GLOBALCONFIG="$SANDBOX/npm-global.npmrc"');
@@ -47,15 +48,32 @@ describe("candidate L2 npm pin contract", () => {
     expect(harness.match(/registry=https:\/\/registry\.npmjs\.org\//g)).toHaveLength(2);
   });
 
-  it("tracks the copied v2 source and keeps every L2 assertion on the exact npm package", () => {
+  it("tracks the copied v2 source and keeps every npm candidate assertion on the exact package", () => {
     expect(harness).toContain('git -C "$PROJECT" init -q');
     expect(harness).toContain("-c commit.gpgsign=false");
     expect(harness).toMatch(/if \[\[ "\$TIER" == "L2" \]\]; then\s+unset AGENTERA_BOOTSTRAP_SOURCE_ROOT/);
-    expect(assertions).toContain('PIN="${AGENTERA_NPM_PIN:?L2 assertions require AGENTERA_NPM_PIN}"');
+    expect(assertions).toContain('PIN="${AGENTERA_NPM_PIN:?npm package assertions require AGENTERA_NPM_PIN}"');
     expect(assertions).toContain('CLI=(npx -y "$PIN")');
     expect(assertions).toContain('env -i "${prime_env[@]}" "${CLI[@]}" prime --format json');
     expect(assertions).toContain('"${CLI[@]}" report profile-grounding --format json');
     expect(assertions).toContain("unset AGENTERA_BOOTSTRAP_SOURCE_ROOT");
+  });
+
+  it("expects source-build execution for source migration and npm-package execution for staged package migration", () => {
+    expect(assertions).toContain('expected_install_track="source"');
+    expect(assertions).toMatch(/if \[\[ "\$TIER" == "L2" \]\]; then\s+expected_install_track="v3"/);
+    expect(assertions).toContain('app_home.get("install_track") != expected_install_track');
+  });
+
+  it("recognizes the successful apply envelope and keeps partial runtime preview-only", () => {
+    expect(harness).toContain('payload.get("phase") == "complete"');
+    expect(harness).toContain('payload.get("status") == "success"');
+    expect(harness).toContain('(payload.get("startup_validation") or {}).get("status") == "passed"');
+    expect(harness).toContain('(payload.get("state_validation") or {}).get("status") == "passed"');
+    expect(harness).toContain('SCENARIO" != "stable-safety" && "$SCENARIO" != "v1-md-blocked" && "$SCENARIO" != "partial-only-runtime"');
+    expect(harness).toContain('apply_lifecycle="skipped"');
+    expect(harness).toContain('fixture not in {"noisy-app-home", "partial-only-runtime"}');
+    expect(harness).toContain('fixture not in {"noisy-app-home", "partial-only-runtime"}');
   });
 
   it("ignores canonical retirement authorities but still rejects user-owned Python leftovers", () => {

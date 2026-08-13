@@ -18,10 +18,10 @@
 
 ### Changed
 
-- Serialized `feat/v3` integrations now allocate one committed
-  `3.0.0-dev.N+1` version locally, then automatically qualify and publish that
-  exact build to npm `@next`. Stable publication from `main` remains protected
-  by review.
+- Every passing `feat/v3` push now publishes one CI-allocated rolling
+  `3.0.0-dev.N` package to npm `@next` without a metadata-only commit. The
+  stable workflow dispatch remains a cutover prerequisite, and publication
+  remains protected by review.
 - Local staged verification now gives ordinary source changes targeted tests
   and typecheck with two workers in at most 60 seconds. State and documentation
   checks stay under 10 seconds, while specialized and global owners defer to
@@ -39,7 +39,7 @@
   --help` expose the exact `agentera.route_receipt.v1` schema, valid outcomes,
   nullability, compound and UTF-8 span rules, plus a runnable stdin round trip.
 - Development releases now run source checks once before explicit metadata review,
-  reuse valid evidence on resume, and construct or reuse one candidate before
+  reuse valid evidence on resume, and construct or reuse one package artifact before
   separate approval, staged exact-version publication, and forward-only tag
   promotion. Invalid or stale evidence fails before release effects, while the
   review pause performs no metadata, approval, rebuild, or registry action.
@@ -113,32 +113,32 @@
 - Fixed native resource cleanup to replay historical Codex descriptor ownership
   IDs, preserve identity collisions and unowned files, and expose the complete
   retired native-resource vocabulary for v2-only upgrade discovery.
-- Fixed release qualification provenance and isolation. CI approvals now bind
-  the contracted qualification repository, workflow, full branch ref, run, and
+- Fixed release verification provenance and isolation. CI approvals now bind
+  the contracted source verification repository, workflow, full branch ref, run, and
   API-backed head SHA before environment approval or artifact mutation;
   stable shim releases require packaged-input source provenance; retained
   artifacts keep and revalidate mode `0444`; and npm/pnpm probes and mutation
   validation use fresh sanitized state. Added a three-run non-mutating
-  qualification benchmark plus a content-bound, monotonic stage/L2/promote
-  publication envelope with a strict two-minute budget, reconciled timing,
-  replay evidence, and first-failure reporting. Source qualification now runs a
+  package verification benchmark plus a content-bound, monotonic publication envelope
+  with a strict two-minute budget, reconciled timing,
+  replay evidence, and first-failure reporting. Source verification now runs a
   bounded evidence DAG: one generated-overlap execution supplies source,
   package, build, and overlap proof beside isolated stress and typecheck owners,
   followed by a solo performance barrier and concurrent compact and
   capability-contract readers. The solo phase prevents CPU contention from
   invalidating machine-sensitive performance evidence. Failures preserve the
-  first owner, settle overlap safely, block candidate work, and issue no
+  first owner, settle overlap safely, block package construction, and issue no
   receipt. Generated-overlap now receives the
   actual source deadline, reserves bounded cleanup and parent-reconciliation
   time, and removes its generated state after failure. Source receipts now mark
   and validate all nine successful gate outcomes and reject semantic tampering.
   The read-only `source-check` command validates matching source evidence for
-  development preparation and direct diagnosis without running qualification
-  gates or changing repository, candidate, receipt, or registry state.
-  Candidate qualification timing now closes construction before exact-artifact
+  development preparation and direct diagnosis without running verification
+  gates or changing repository, package artifact, receipt, or registry state.
+  Package verification timing now closes construction before exact-artifact
   smoke and reconciles non-overlapping gate intervals with explicit overhead.
   Staging now rejects an absent exact version when the public tag already names
-  that target, before candidate inspection, credentials, or publication.
+  that target, before artifact inspection, credentials, or publication.
 
 - Fixed bare `agentera prime` briefs to compact absolute path diagnostics before
   routing and history evidence, preserving executable plan selection, next-action

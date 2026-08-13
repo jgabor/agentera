@@ -1,8 +1,8 @@
 ---
 name: agentera-release
 description: >-
-  Prepare, qualify, approve, publish, replay, or recover Agentera npm releases.
-  Use for version bumps, release metadata, npm credentials, candidates,
+  Prepare, verify, approve, publish, replay, or recover Agentera npm releases.
+  Use for version bumps, release metadata, npm credentials, package artifacts,
   dist-tags, publication receipts, and stable or development channels.
 ---
 
@@ -18,8 +18,7 @@ authorization. Credentials and a branch push are never publication authority.
 - `references/adapters/package-registry.yaml` owns synchronized package
   surfaces.
 - `references/adapters/package-publication.json` owns package adapters,
-  candidate tags, qualification, approval, registry state, replay, and
-  recovery.
+  staging tags, verification, approval, registry state, replay, and recovery.
 - `docs/packaging/v3-packaging.md` owns the complete maintainer workflow.
 - `.opencode/skills/agentera-verification/SKILL.md` owns verification lanes,
   generated output, package construction, and pre-commit behavior.
@@ -30,7 +29,7 @@ or direct `npm publish` commands.
 ## Current release boundary
 
 Until `3.0.0` has landed on npm `@latest`, do not bump suite or release
-metadata beyond `3.0.0`. The only permitted development bump is
+metadata beyond `3.0.0`. The only permitted manual recovery development bump is
 `packages/cli/package.json#version` from `3.0.0-dev.N` to
 `3.0.0-dev.N+1`. Keep suite-bearing surfaces at `3.0.0`, retain changelog
 entries under `[Unreleased]`, and publish development builds only to `@next`.
@@ -64,86 +63,80 @@ inherited `NPM_TOKEN` does not prove that no credential is available.
 The publication coordinator sanitizes inherited npm configuration and requires
 `NPM_TOKEN` in its environment only when an upload is necessary. For an
 explicitly authorized publication, inject the token from the established local
-credential source into the exact qualified-publication command. A `.env` or
-`.npmrc` is a credential source, not approval. The immutable candidate-bound
+credential source into the exact publication command. A `.env` or
+`.npmrc` is a credential source, not approval. The immutable artifact-bound
 approval remains registry mutation authority. Matching registry state can
 replay without a token.
 
 ## Development publication
 
-Serialized integration preparation requires a clean committed source tree and
-changes only package version and `agentera.gitRef`. The manual readiness
+CI development preparation changes only package version and `agentera.gitRef`
+in the isolated construction manifest. The manual readiness
 preparer requires an explicit next version, source commit, and external
-candidate directory containing a current normalized source receipt. Both paths
-are pure and registry-independent. Stable preparation retains its separate
+artifact directory containing a current normalized source receipt. Both
+paths are pure and registry-independent. Stable preparation retains its separate
 source-provenance behavior without the development receipt.
 
-The normal development path has one version authority: serialized local
-integration on `feat/v3`. Fast-forward local `feat/v3` from its remote, integrate
-the worktree branch, then add one final metadata-only commit. That commit must
-increment `packages/cli/package.json#version` exactly once and set
-`agentera.gitRef` to its first parent. Push once. The workflow validates this
-shape against the previous remote head, qualifies the exact committed candidate,
-issues a machine candidate-bound development approval, and publishes it to
-`@next`. It never allocates a version and never uses `github.run_number`. A rerun
-reuses the same committed version and candidate. Wait for that workflow to
-finish before the next `feat/v3` integration push.
+Every passing queued push to `feat/v3` publishes to `@next`. CI allocates
+`3.0.0-dev.(GITHUB_RUN_NUMBER + 72)` and binds package `agentera.gitRef`, receipt
+`sourceCommit`, and receipt `metadataCommit` to `GITHUB_SHA` without editing the
+checkout. Failed runs can create gaps. `queue: max` keeps up to 100 pending runs.
+A rerun reuses the same run number, SHA, version, and package artifact.
 
 A user's explicit push authorization is single-use and is consumed by one
 `git push`. Local commits do not publish. After that push, stop. A failed or
 cancelled workflow ends that release attempt and does not authorize another
-metadata commit, version, or push. Make corrections on a worktree branch and
-obtain fresh explicit authorization before a later integration push. If GitHub
-accepted the push but did not instantiate the workflow, dispatch the same
-workflow at the unchanged `feat/v3` head. A retry or recovery must never
-allocate a replacement version.
+version or push. Make corrections on a worktree branch and
+obtain fresh explicit authorization before a later integration push. Rerunning
+an existing workflow reuses its allocation.
 
-```bash
-pnpm cli:prepare:dev-push -- --json
-# Commit only packages/cli/package.json as the final local feat/v3 commit.
-```
+Before the first push, confirm `.github/workflows/qualify.yml` is still
+unregistered at run number 0 and npm `3.0.0-dev.73` is absent. The offset is a
+one-time migration assumption, not a runtime registry query.
 
 The resumable readiness coordinator remains the manual diagnostic and recovery
-path. Its fresh run can issue source authority only on the contracted GitHub
+path, separate from normal push publication. Its fresh run can issue source
+authority only on the contracted GitHub
 Actions runner. It pauses for separate metadata preparation, review, and commit.
 Resume requires the same explicit inputs plus the reviewed metadata commit. It
-then constructs the candidate once or reuses the exact valid candidate receipt
-and bytes. A workstation can run performance diagnostics, but cannot issue a new
+then constructs the package artifact once or reuses the exact valid receipt and
+artifact. A workstation can run performance diagnostics, but cannot issue a new
 source receipt.
 
 ```bash
 pnpm cli:ready:dev -- \
-  --candidate-dir /secure/external/candidate \
+  --candidate-dir /secure/external/agentera-package \
   --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT --json
 pnpm cli:prepare:dev -- \
-  --candidate-dir /secure/external/candidate \
+  --candidate-dir /secure/external/agentera-package \
   --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT
 # Review and commit packages/cli/package.json.
 pnpm cli:ready:dev -- \
-  --candidate-dir /secure/external/candidate \
+  --candidate-dir /secure/external/agentera-package \
   --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT \
   --metadata-commit METADATA_COMMIT --json
 pnpm cli:approve:dev -- \
-  --candidate-dir /secure/external/candidate --approved-by NAME
+  --candidate-dir /secure/external/agentera-package --approved-by NAME
 pnpm cli:benchmark:qualification -- \
   --adapter development \
-  --candidate-root /secure/external/qualification-benchmark --json
+  --candidate-root /secure/external/agentera-verification-benchmark --json
 NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
-  --candidate-dir /secure/external/candidate \
+  --candidate-dir /secure/external/agentera-package \
   --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
-Preparation, qualification, approval, and publication are separate operations.
-Do not infer or mutate their inputs outside the owning commands. The local
-integration preparer owns the `N+1` mutation; the push validator derives that
-same expected value only to compare it with the committed metadata.
+Preparation, verification, approval, and publication are separate operations.
+Do not infer or mutate their inputs outside the owning commands. Normal push
+publication derives the version from the GitHub Actions run number and changes
+only the isolated construction manifest. Manual recovery preparation accepts
+explicit metadata and does not describe or control normal push publication.
 The readiness coordinator never prepares metadata, commits, approves, rebuilds
-a valid candidate, stages bytes, or mutates registry state. `paused` and `ready`
+a valid package artifact, stages bytes, or mutates registry state. `paused` and `ready`
 exit 0; invalid or stale evidence returns `rejected` and exits 1.
 
-## Qualification contract
+## Verification contract
 
-Source qualification runs the contract-owned evidence DAG. Generated overlap
+Source verification runs the contract-owned evidence DAG. Generated overlap
 is the sole source, package, and build execution origin beside isolated stress
 and typecheck owners. Performance runs alone with one worker on the pinned
 remote runner after that batch settles, and records runner identity. Capacity
@@ -152,7 +145,7 @@ lease-free generation. New source authority is bound to the contracted workflow
 identity and committed checkout SHA.
 
 On failure, correct the first reported owner and rerun the same source command.
-Do not run omitted owners separately, force-kill overlap, construct a candidate,
+Do not run omitted owners separately, force-kill overlap, construct a package,
 or infer a receipt.
 
 Development preparation runs the read-only source-evidence check before changing
@@ -161,37 +154,43 @@ gates:
 
 ```bash
 node packages/cli/scripts/release-qualification.mjs source-check \
-  --candidate-dir /secure/external/candidate --json
+  --candidate-dir /secure/external/agentera-package --json
 ```
 
-Candidate qualification reuses the retained external readiness directory. It
+Package verification reuses the retained external readiness directory. It
 retains one immutable tarball and runs a cold-state local smoke before registry
 action.
-Every mutation requires a separate approval bound to candidate receipt,
+Every mutation requires a separate approval bound to the package artifact receipt,
 package, version, integrity, registry, and expected tag. CI also requires the
 transferred artifact and CI attestation. The `feat/v3` push workflow may issue
 the development approval automatically after all bound checks pass. Stable
 publication from `main` retains protected-environment review.
 
-The publication coordinator never rebuilds or requalifies source. It stages the
-retained bytes, runs the independent exact-version L2 check, and promotes the
-expected tag forward. Matching exact version, integrity, and tag state replays
-without upload. A conflicting integrity, escaped artifact, stale tag, or
-unrecognized registry state fails before mutation.
+The publication coordinator never rebuilds or re-verifies source. It stages the
+retained package artifact, runs the independent staged package migration smoke
+test, and promotes the expected tag forward. Matching exact version, integrity,
+and tag state replays without upload. A conflicting integrity, escaped artifact,
+stale tag, or unrecognized registry state fails before mutation.
 
-On failure, correct the reported cause and rerun the same exact candidate.
+On failure, correct the reported cause and rerun the same exact package artifact.
 Never reconstruct it, move a tag backward, or attempt rollback.
 
 ## Stable shim
 
-The stable shim uses the same candidate flow and remains on `@latest`:
+Stable verification and publication are not operational until
+`.github/workflows/verify-stable.yml` and `.github/workflows/publish.yml` exist
+on the default `main` branch. Their `workflow_dispatch` triggers are a v3
+`@latest` cutover prerequisite, not a path available from the current
+`feat/v3`-only checkout.
+
+The stable shim uses the same package flow and remains on `@latest`:
 
 ```bash
 pnpm cli:prepare:stable -- \
   --target-version X.Y.Z --source-commit COMMIT
 # Review and commit packages/cli/shim/package.json.
 NPM_TOKEN=... pnpm cli:publish:qualified:stable -- \
-  --candidate-dir /secure/external/candidate \
+  --candidate-dir /secure/external/agentera-package \
   --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
@@ -212,9 +211,9 @@ pnpm -C packages/cli run pack:dry-run
 ```
 
 `verify:release` is the canonical source, stress, performance, capacity, and
-package conjunction. Do not bypass a failing gate or substitute direct package
-commands. This diagnostic conjunction is not a step before or after
-`cli:ready:dev` in a normal candidate-readiness run because that would repeat
+package verification. Do not bypass a failing gate or substitute direct package
+commands. This diagnostic verification is not a step before or after
+`cli:ready:dev` in a normal package-readiness run because that would repeat
 owners that the coordinator already executes once.
 
 ## Changelog and commit boundary
@@ -222,5 +221,5 @@ owners that the coordinator already executes once.
 Load `.opencode/skills/agentera-state/SKILL.md` before committing release
 metadata. Release cuts and npm registry alignment are the only narrow cases
 that may land without paired product code. Promote `[Unreleased]` entries only
-when the release contract calls for it. Do not add internal qualification,
+when the release contract calls for it. Do not add internal verification,
 receipt, state-entity, or agent bookkeeping to the changelog.

@@ -56,11 +56,13 @@ checking generated behavior.
 
 [`package-publication.json`](./package-publication.json) owns the shared
 repository publication transaction and distinguishes the development
-TypeScript package from the transitional stable shim. Both require separately
-prepared and committed version and `gitRef` metadata, explicit publication
+TypeScript package from the transitional stable shim. Normal development CI
+derives version and `gitRef` metadata in isolated construction without changing
+the checkout. Manual development recovery and stable publication retain their
+separate prepared metadata paths. Both adapters require explicit publication
 authority, a clean tree, exact registry convergence, safe exact-version replay,
-and bounded phase results. Development retains isolated construction and the
-`next` tag; stable retains shim tests/construction and the `latest` tag. Each
+and bounded phase results. Development uses the `next` tag; stable retains shim
+tests/construction and the `latest` tag. Each
 adapter's only publication smoke is its non-mutating, no-project exact-version
 `--version` invocation, so publication does not absorb migration coverage.
 

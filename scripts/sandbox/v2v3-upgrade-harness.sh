@@ -30,7 +30,7 @@ PROJECT="$SANDBOX/project"
 
 # Cross-major apply accepts only a complete v2 source tracked unchanged at
 # HEAD. Sandbox fixtures are copied into a fresh directory, so establish that
-# source authority before either the local or exact-version runtime inspects it.
+# source authority before either the source-build or npm package runtime inspects it.
 git -C "$PROJECT" init -q
 git -C "$PROJECT" add -f .
 git -C "$PROJECT" \
@@ -124,12 +124,28 @@ if [[ "$SCENARIO" == "stable-safety" ]]; then
   if [[ "$preview_rc" -ne 1 && "$preview_rc" -ne 0 ]]; then overall="fail"; fi
 elif [[ "$SCENARIO" == "v1-md-blocked" ]]; then
   if ! grep -q '"blocked"' "$SANDBOX/preview.json"; then overall="fail"; fi
+elif [[ "$SCENARIO" == "partial-only-runtime" ]]; then
+  if [[ "$preview_rc" -ne 1 || "$preview_lifecycle" != "manual_review_needed" ]] \
+    || ! python3 - <<'PY' "$SANDBOX/preview.json"
+import json, sys
+payload = json.load(open(sys.argv[1]))
+runtime = next((phase for phase in payload.get("phases", []) if phase.get("name") == "runtime"), None)
+if (
+    runtime is None
+    or runtime.get("status") != "pending"
+    or (runtime.get("summary") or {}).get("pending", 0) < 1
+):
+    raise SystemExit(1)
+PY
+  then
+    overall="fail"
+  fi
 elif [[ "$preview_rc" -ne 1 ]]; then
   overall="fail"
 fi
 
 apply_lifecycle="skipped"
-if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "v1-md-blocked" ]]; then
+if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "v1-md-blocked" && "$SCENARIO" != "partial-only-runtime" ]]; then
   set +e
   "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
     "${CHANNEL[@]}" "${TARGET[@]}" "${ONLY[@]}" "${FORCE[@]}" --yes --format json \
@@ -145,10 +161,24 @@ if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "v1-md-blocked" ]]; then
 
   apply_lifecycle="$(python3 - <<'PY' "$SANDBOX/apply.json"
 import json, sys
-print(json.load(open(sys.argv[1])).get("lifecycleStatus", "unknown"))
+payload = json.load(open(sys.argv[1]))
+lifecycle = payload.get("lifecycleStatus")
+if isinstance(lifecycle, str):
+    print(lifecycle)
+elif (
+    payload.get("phase") == "complete"
+    and payload.get("status") == "success"
+    and (payload.get("startup_validation") or {}).get("status") == "passed"
+    and (payload.get("state_validation") or {}).get("status") == "passed"
+):
+    print("applied")
+else:
+    print("unknown")
 PY
 )"
-  if [[ "$SCENARIO" != "noisy-app-home" ]]; then
+  if [[ "$apply_rc" -ne 0 ]]; then
+    overall="fail"
+  elif [[ "$SCENARIO" != "noisy-app-home" ]]; then
     if ! "$SCRIPT_DIR/assert-v2v3-migration.sh" "$SANDBOX" "$SCENARIO"; then
       overall="fail"
     fi
@@ -177,7 +207,7 @@ payload = {
     "pythonLeftoversFound": [],
     "appSubTreeRemoved": fixture not in {"noisy-app-home", "v1-md-blocked", "stable-safety", "partial-only-runtime"},
     "unrecognizedAppHomeEntries": ["notes.txt"] if fixture == "noisy-app-home" else [],
-    "idempotentSecondRun": overall == "pass",
+    "idempotentSecondRun": fixture not in {"noisy-app-home", "partial-only-runtime"} and overall == "pass",
     "runtimeMatrix": {
         "claude": "noop",
         "opencode": "applied",

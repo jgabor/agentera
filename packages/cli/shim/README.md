@@ -49,22 +49,22 @@ The shim does not bundle Python, skills, or hooks. Install paths for runtimes re
 ## Publishing (maintainers)
 
 This section applies only to the transitional 0.x stable shim. Prepare explicit
-metadata without reading npm, review and commit it, then qualify one retained
-candidate before its separately approved measured publication envelope:
+metadata without reading npm, review and commit it, then verify one retained
+package artifact before its separately approved measured publication envelope:
 
 ```bash
 pnpm cli:prepare:stable -- --target-version X.Y.Z --source-commit COMMIT
 # review and commit packages/cli/shim/package.json
-pnpm cli:qualify:source -- --candidate-dir /secure/external/candidate
-node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir /secure/external/candidate
-node packages/cli/scripts/release-qualification.mjs approval --adapter stable --candidate-dir /secure/external/candidate --approved-by NAME
-NPM_TOKEN=... pnpm cli:publish:qualified:stable -- --candidate-dir /secure/external/candidate --receipt-file /secure/external/qualified-publication-receipt.json --json
+pnpm cli:qualify:source -- --candidate-dir /secure/external/agentera-package
+node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir /secure/external/agentera-package
+node packages/cli/scripts/release-qualification.mjs approval --adapter stable --candidate-dir /secure/external/agentera-package --approved-by NAME
+NPM_TOKEN=... pnpm cli:publish:qualified:stable -- --candidate-dir /secure/external/agentera-package --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
-The shared transaction requires an immutable candidate-bound approval and
-`NPM_TOKEN` only in its npm mutation child. It stages the exact tarball on a
-candidate tag, proves exact registry integrity from a separate empty state, and
-moves `latest` forward only after an independent exact-version consumer check.
+The shared transaction requires an immutable artifact-bound approval and
+`NPM_TOKEN` only in its npm mutation child. It stages the exact tarball under a
+staging tag, proves registry integrity from a separate empty state, and moves
+`latest` forward only after an independent exact-version consumer check.
 The content-bound timing receipt must report a reconciled total below two
 minutes. Matching state is a credential-free replay. Conflicts, changed
 artifacts, failed smoke, and timeouts do not roll a tag back.

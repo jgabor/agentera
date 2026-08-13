@@ -399,7 +399,7 @@ for upgrade, doctor, prime, docs, and tests.
 
 Use this prose as guidance only: **stable** tracks the supported 2.x npm line
 and, for maintainers, `uvx --from git+...@main` (Python
-CLI). **development** tracks 3.x alphas and release candidates on **npm only**
+CLI). **development** tracks 3.x prereleases on **npm only**
 (`npx -y agentera@next`); feat/v3 is TypeScript-only and has no uv/git install
 path. v2→v3 is a one-way upgrade through the development npm channel. Default
 channel is stable. Override with `--channel`, `AGENTERA_UPDATE_CHANNEL`, or

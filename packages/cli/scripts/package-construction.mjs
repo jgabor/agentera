@@ -44,7 +44,7 @@ export function normalizeConstruction(packed, options) {
   const version = requireString(packed?.version, "version");
   if (name !== options.expectedName || version !== options.expectedVersion) {
     throw new Error(
-      `constructed package identity ${name}@${version} does not match committed metadata ${options.expectedName}@${options.expectedVersion}`,
+      `constructed package identity ${name}@${version} does not match expected metadata ${options.expectedName}@${options.expectedVersion}`,
     );
   }
   const files = normalizedPackedFiles(packed.files);

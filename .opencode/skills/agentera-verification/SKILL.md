@@ -50,13 +50,13 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
 - Performance owns machine-sensitive budgets, runs without competing owners,
   uses one worker on the policy-pinned remote runner, and records runner
   identity in its structured evidence. Local runs are diagnostic, not
-  authoritative qualification evidence.
+  authoritative package verification evidence.
 - Capacity owns large deterministic scale evidence and runs serially after
-  performance before source-qualification readers.
+  performance before source verification readers.
 - Generated overlap is the sole source, package, and build execution origin in
-  release source qualification.
+  release source verification.
 
-Do not run an omitted owner separately after qualification failure. Correct the
+Do not run an omitted owner separately after verification failure. Correct the
 first reported owner and rerun the owning command.
 
 Vitest does not validate this checkout's live `.agentera/` or `TODO.md` budgets.
@@ -85,7 +85,7 @@ Pre-commit runs:
 - Markdown lint and supported configuration formatting each have a 10-second
   budget. Py-TS parity runs only for its analytics inputs.
 
-The staged hook never invokes release qualification, performance, capacity, or
+The staged hook never invokes release verification, performance, capacity, or
 package owners. Do not rely on summaries when `.lefthook.yml` has changed.
 
 Use `LEFTHOOK=0` only when the hook configuration itself is broken or a failure
@@ -100,6 +100,9 @@ self-contained and includes runtime data under `packages/cli/bundle/`.
 `packages/cli/scripts/pack-package.mjs` constructs an isolated package tree and
 runs `npm pack` with lifecycle scripts disabled. Checkout `prepack` rejects
 direct `npm pack`; it is a safety guard, not a build step. Do not bypass it.
+For a development push, CI passes the allocated package version and pushed SHA
+to construction. Only the copied manifest changes; source and receipt checks
+remain bound to the clean pushed checkout.
 
 Package verification requires an executable regular
 `dist/bin/agentera.js`, excludes source maps, and verifies source, generated,
@@ -117,7 +120,7 @@ pnpm -C packages/cli run generated:cleanup -- --force --json
 
 Cleanup requires either `--dry-run` or `--force`. Inspect preserved or
 uncertain ownership before removal. Never force-kill generated overlap during
-source qualification.
+source verification.
 
 ## Behavioral verification
 

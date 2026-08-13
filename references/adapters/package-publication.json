@@ -2,14 +2,14 @@
   "schemaVersion": "agentera.packagePublication.v2",
   "owner": "repository/package scripts",
   "invariants": {
-    "preparation": "Preparation is pure and registry-independent. Serialized feat/v3 integration preparation requires a clean committed source tree, allocates exactly dev.N+1 locally, sets agentera.gitRef to that source HEAD, and changes only the development manifest for a final metadata commit. The manual readiness preparation path first validates a current normalized source receipt, then accepts an explicit target version and source commit. Stable preparation retains its separate source-provenance contract.",
-    "sourceQualification": "Source qualification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
-    "candidateQualification": "Candidate qualification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
-    "publication": "Registry publication consumes the retained candidate bytes through one measured stage, independent exact-version L2, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source qualification, or rolls a tag back.",
-    "approval": "Registry mutation requires an approval bound to the candidate receipt digest, target version, integrity, package, registry, and tag. A serialized push to feat/v3 may issue the development approval automatically only after the committed dev.N increment, source qualification, candidate qualification, and CI attestation pass. Stable publication retains explicit protected-environment review on main. A push never substitutes for candidate binding.",
+    "preparation": "Preparation is pure and registry-independent. CI allocates rolling development package metadata in an isolated construction tree without changing the checkout. The manual readiness preparation path first validates a current normalized source receipt, then accepts an explicit target version and source commit. Stable preparation retains its separate source-provenance contract.",
+    "sourceQualification": "Source verification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
+    "candidateQualification": "Package verification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
+    "publication": "Registry publication consumes the retained package artifact through one measured stage, independent staged package migration smoke, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source verification, or rolls a tag back.",
+    "approval": "Registry mutation requires an approval bound to the package artifact receipt digest, target version, integrity, package, registry, and tag. A push to feat/v3 may issue the development approval automatically only after source verification, isolated package verification, and CI attestation pass. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch. A push never substitutes for artifact binding.",
     "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
     "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
-    "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The qualified-publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
+    "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
   },
   "packages": {
     "development": {
@@ -46,28 +46,29 @@
   "ci": {
     "repository": "jgabor/agentera",
     "qualificationWorkflow": {
-      "name": "Qualify release candidate",
-      "path": ".github/workflows/qualify-candidate.yml",
+      "name": "Verify package",
+      "path": ".github/workflows/qualify.yml",
       "ref": "refs/heads/feat/v3"
     },
     "developmentPush": {
       "trigger": "push to refs/heads/feat/v3",
-      "versionAuthority": "packages/cli/package.json committed by the serialized local feat/v3 integrator",
-      "preparationCommand": "pnpm cli:prepare:dev-push -- --json",
-      "validationCommand": "pnpm cli:validate:dev-push -- --before-commit BEFORE --metadata-commit HEAD --json",
+      "versionAuthority": "GitHub Actions workflow run number plus the fixed migration offset",
+      "runNumberOffset": 72,
       "rules": [
-        "BEFORE must be an ancestor of the source commit",
-        "HEAD must be one non-merge metadata-only commit after the source commit",
-        "source must retain the BEFORE development version",
-        "HEAD must increment dev.N exactly once and set agentera.gitRef to the source commit",
-        "routine CI defers its duplicate release conjunction on direct feat/v3 pushes",
-        "CI never allocates a version or uses github.run_number",
-        "reruns reuse the same version, candidate, and source run identity",
-        "a development push requires at least one integrated source commit after BEFORE",
-        "one explicit push authorization is single-use; failure requires worktree repair and fresh authorization"
+        "version is 3.0.0-dev.(GITHUB_RUN_NUMBER + 72)",
+        "agentera.gitRef, sourceCommit, and metadataCommit equal GITHUB_SHA",
+        "the checkout manifest is not modified",
+        "reruns reuse the same run number, SHA, version, package artifact, and source run identity",
+        "failed runs can create version gaps",
+        "before the first push, confirm qualify.yml is still unregistered at run 0 and npm 3.0.0-dev.73 is absent"
       ],
-      "approval": "After exact candidate qualification and CI attestation, the workflow issues a machine candidate-bound development approval and publishes to next without a review environment.",
-      "concurrency": "The local integrator waits for the prior development workflow to finish before another push. One non-cancelling workflow group protects the active run; it is not used as an unbounded queue."
+      "approval": "After exact package verification and CI attestation, the workflow issues a machine artifact-bound development approval and publishes to next without a review environment.",
+      "concurrency": "The publish-next-${{ github.ref }} group uses queue: max, which keeps up to 100 pending runs and does not cancel an active or pending push."
+    },
+    "stableVerificationWorkflow": {
+      "name": "Verify stable package",
+      "path": ".github/workflows/verify-stable.yml",
+      "ref": "refs/heads/main"
     },
     "publicationRunBinding": {
       "beforeArtifactDownload": [
@@ -82,13 +83,13 @@
         "run.conclusion"
       ],
       "refRule": "qualificationWorkflow.ref is a full refs/heads branch ref; run.head_branch must equal its exact branch name",
-      "beforeEnvironmentApproval": "The content-validated candidate receipt metadataCommit must equal the API-backed run.head_sha"
+      "beforeEnvironmentApproval": "The content-validated package artifact receipt metadataCommit must equal the API-backed run.head_sha; development sourceCommit must also equal run.head_sha"
     }
   },
   "qualification": {
     "source": {
       "component": "release-source",
-      "issuanceAuthority": "A new source receipt can be issued only by the contracted GitHub Actions qualification workflow at the committed checkout SHA. Existing valid receipts remain reusable through the read-only source check.",
+      "issuanceAuthority": "A new source receipt can be issued only by the contracted GitHub Actions source verification workflow at the committed checkout SHA. Existing valid receipts remain reusable through the read-only source check.",
       "inputs": [
         "tracked_tree_except_package_version_gitRef",
         "verification_policy",
@@ -330,10 +331,10 @@
       },
       "reuseCheck": {
         "command": "node packages/cli/scripts/release-qualification.mjs source-check --candidate-dir DIR [--json]",
-        "authority": "The external path is input only. Reuse requires digest, full receipt semantics, exact governed gates, current toolchain, and matching current staged and working tracked-tree identities under the same package version and agentera.gitRef normalization used at source qualification.",
-        "effects": "Runs no qualification gate and writes no repository, candidate, receipt, or registry state. Success emits executed none and reused true without receipt content or private paths.",
-        "fallback": "A missing, invalid, ambiguous, or stale receipt fails before manual readiness metadata effects. Serialized integration preparation and the local staged-verification lane do not consume release receipts.",
-        "scope": "Manual readiness preparation uses the check as a source-readiness prerequisite. Direct diagnostics may inspect reuse without executing a gate. Build, compact, parity, candidate qualification, release metadata, approval, and publication remain mandatory at their owning stages."
+        "authority": "The external path is input only. Reuse requires digest, full receipt semantics, exact governed gates, current toolchain, and matching current staged and working tracked-tree identities under the same package version and agentera.gitRef normalization used at source verification.",
+        "effects": "Runs no verification gate and writes no repository, package artifact, receipt, or registry state. Success emits executed none and reused true without receipt content or private paths.",
+        "fallback": "A missing, invalid, ambiguous, or stale receipt fails before manual readiness metadata effects. Serialized integration preparation and the local staged verification lane do not consume release receipts.",
+        "scope": "Manual readiness preparation uses the check as a source-readiness prerequisite. Direct diagnostics may inspect reuse without executing a gate. Build, compact, parity, package verification, release metadata, approval, and publication remain mandatory at their owning stages."
       },
       "dag": {
         "batchA": ["generated-overlap", "stress", "typecheck"],
@@ -364,8 +365,8 @@
         "source": "source-receipt.json",
         "candidate": "candidate-receipt.json"
       },
-      "reuse": "A present source receipt is validated with the source reuse check instead of invoking source qualification. A present candidate receipt and retained artifact are validated instead of invoking candidate qualification. Invalid, stale, incomplete, or mismatched evidence rejects the run before an issuance owner starts.",
-      "metadataReview": "A successful source qualification or source-receipt reuse pauses before candidate construction until the caller supplies the explicit reviewed metadata commit. The coordinator never prepares metadata, changes a version, commits, approves, rebuilds a valid candidate, stages bytes, or mutates registry state.",
+      "reuse": "A present source receipt is validated with the source reuse check instead of invoking source verification. A present package artifact receipt and retained artifact are validated instead of invoking package verification. Invalid, stale, incomplete, or mismatched evidence rejects the run before an issuance owner starts.",
+      "metadataReview": "A successful source verification or source-receipt reuse pauses before package artifact construction until the caller supplies the explicit reviewed metadata commit. The coordinator never prepares metadata, changes a version, commits, approves, rebuilds a valid package artifact, stages bytes, or mutates registry state.",
       "outcomes": ["paused", "ready", "rejected"],
       "exitCodes": {
         "paused": 0,
@@ -388,7 +389,7 @@
         "artifact_mode"
       ],
       "retainedArtifactMode": "0444",
-      "timing": "Candidate qualification records monotonic, non-overlapping release-metadata, construction/equivalence, and exact-artifact-smoke intervals at their true boundaries. Their sum cannot exceed measured candidate elapsed time; explicit unattributed overhead completes an exact reconciliation.",
+      "timing": "Package verification records monotonic, non-overlapping release-metadata, construction/equivalence, and exact-artifact-smoke intervals at their true boundaries. Their sum cannot exceed measured package verification time; explicit unattributed overhead completes an exact reconciliation.",
       "gates": [
         "release-metadata",
         "dry-pack-observation-equivalence",
@@ -404,7 +405,7 @@
   },
   "trust": {
     "local": "A same-principal source receipt is a deterministic cache only. It cannot authorize registry mutation.",
-    "ci": "CI registry mutation requires the transferred exact artifact and receipts, a CI attestation bound to the candidate receipt and source run, and a candidate-bound approval. The feat/v3 push workflow may issue development approval automatically after every prior bound check passes; stable main publication requires protected-environment review. OIDC provenance is deferred."
+    "ci": "CI registry mutation requires the transferred exact package artifact and receipts, a CI attestation bound to the package artifact receipt and source run, and an artifact-bound approval. The feat/v3 push workflow may issue development approval automatically after every prior bound check passes; stable main publication requires protected-environment review. OIDC provenance is deferred."
   },
   "registryStateTable": [
     {
@@ -421,7 +422,7 @@
       "candidateTag": "target version",
       "expectedTag": "older",
       "stage": "replay without upload and run observational smoke",
-      "promote": "move expected tag forward after exact-version qualification"
+      "promote": "move expected tag forward after staged package migration smoke"
     },
     {
       "state": "promoted",
@@ -442,16 +443,16 @@
   ],
   "benchmark": {
     "environment": "Ubuntu runner or clean local Node 22, npm 10, and pnpm 10.30.3; record exact tool versions in receipts.",
-    "fixture": "clean committed checkout and an external empty candidate directory; no tracked or checkout-local generated candidate files.",
-    "cacheNetwork": "Preflight uses no registry call. Every qualification DAG child and each smoke use a distinct empty HOME, npm cache, user config, global config, and report output; public npm dependency network access is allowed and recorded as cold-cache. Publication reads the registry before credentials.",
+    "fixture": "clean committed checkout and an empty external artifact directory; no tracked or checkout-local generated package artifacts.",
+    "cacheNetwork": "Preflight uses no registry call. Every verification DAG child and each smoke use a distinct empty HOME, npm cache, user config, global config, and report output; public npm dependency network access is allowed and recorded as cold-cache. Publication reads the registry before credentials.",
     "repetitions": 3,
-    "statistic": "Qualification reports median wall milliseconds over exactly three cold-cache repetitions. Concurrent owner-duration totals are reported separately; only owners in the same parallel phase overlap, while the solo performance and serial capacity barriers contribute ordered wall time. Phase timing reconciles through measured DAG wall time rather than by summing nested owner durations. Qualified publication reports one actual approved transaction because registry mutation is not a benchmark repetition; replays run the same measured envelope and report reused registry phases.",
-    "coordinator": "packages/cli/scripts/release-benchmark.mjs has separate qualification and publication commands. qualification runs only preflight and source-plus-candidate qualification and never receives npm credentials. publication runs only the approved stage, independent exact-version L2, and promote commands, measures them with one monotonic deadline, and never runs source qualification.",
+    "statistic": "Package verification reports median wall milliseconds over exactly three cold-cache repetitions. Concurrent owner-duration totals are reported separately; only owners in the same parallel phase overlap, while the solo performance and serial capacity barriers contribute ordered wall time. Phase timing reconciles through measured DAG wall time rather than by summing nested owner durations. Publication reports one actual approved transaction because registry mutation is not a benchmark repetition; replays run the same measured envelope and report reused registry phases.",
+    "coordinator": "packages/cli/scripts/release-benchmark.mjs has separate verification and publication commands. verification runs only preflight and source-plus-package verification and never receives npm credentials. publication runs only the approved stage, independent staged package migration smoke, and promote commands, measures them with one monotonic deadline, and never runs source verification.",
     "qualifiedPublication": {
       "command": "node packages/cli/scripts/release-benchmark.mjs publication --adapter ADAPTER --candidate-dir DIR --receipt-file FILE",
       "sequence": [
-        "stage retained bytes on the candidate tag, wait for exact integrity convergence, and observe an isolated exact-version registry smoke",
-        "run an independent exact-version L2 consumer check while the public tag is unchanged",
+        "stage the retained package artifact on the staging tag, wait for exact integrity convergence, and observe an isolated exact-version registry smoke",
+        "run an independent staged package migration smoke while the public tag is unchanged",
         "promote the expected tag forward, wait for tag and integrity convergence, and observe the final exact-version registry smoke"
       ],
       "receiptBindings": [
@@ -464,22 +465,14 @@
         "source_run_id"
       ],
       "timing": "The coordinator measures commands with a monotonic clock. Caller-supplied elapsed data is not accepted. Component floors plus unattributed elapsed time must equal the measured total, and total elapsed time must be strictly less than qualifiedPublicationMs.",
-      "failure": "The first child failure label or timeout owner is retained, later phases do not start, and no rollback is attempted. A retry uses the same exact candidate; stage and promote replay matching registry state without upload or backward tag movement."
+      "failure": "The first child failure label or timeout owner is retained, later phases do not start, and no rollback is attempted. A retry uses the same exact package artifact; stage and promote replay matching registry state without upload or backward tag movement."
     },
     "timeouts": {
       "preflightMs": 30000,
       "sourceQualificationMs": 2400000,
       "qualifiedPublicationMs": 120000
     },
-    "failureRule": "The first observed failing owner remains the reported label. Cancellable peers are stopped, generated-overlap is allowed to settle without forced termination, barrier B and receipt issuance are blocked, and completed/cancelled failures are reported. No timeout or failure authorizes repair, candidate work, or registry mutation.",
-    "workflow": {
-      "path": ".github/workflows/qualification-benchmark.yml",
-      "trigger": "workflow_dispatch only until default-branch scheduling is explicitly authorized",
-      "checkoutRef": "refs/heads/feat/v3",
-      "command": "pnpm cli:benchmark:qualification -- --adapter development --candidate-root DIR --json",
-      "retainedReport": "qualification-benchmark-${{ github.run_id }}",
-      "credentials": "No npm token, approval, publication, stage, promote, or registry mutation path is present."
-    }
+    "failureRule": "The first observed failing owner remains the reported label. Cancellable peers are stopped, generated-overlap is allowed to settle without forced termination, barrier B and receipt issuance are blocked, and completed/cancelled failures are reported. No timeout or failure authorizes repair, package construction, or registry mutation."
   },
   "bounds": {
     "registryAttempts": 6,

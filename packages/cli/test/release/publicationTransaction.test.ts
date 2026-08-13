@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -13,13 +12,11 @@ import {
   normalizeRegistryField,
   normalizeRegistryTag,
   parseNpmRegistryJson,
-  prepareDevelopmentPush,
   prepareMetadata,
   preflightPublication,
   publicationFailureResult,
   registryState,
   stageQualifiedCandidate,
-  validateDevelopmentPush,
   validateResult,
   withNpmCredentials,
 } from "../../scripts/publication-transaction.mjs";
@@ -67,94 +64,7 @@ function withTemporaryConstruction<T>(callback: (temporary: string) => T): T {
   }
 }
 
-function withDevelopmentPush<T>(
-  version: string,
-  callback: (fixture: {
-    root: string;
-    beforeCommit: string;
-    sourceCommit: string;
-    metadataCommit: string;
-  }) => T,
-): T {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-push-"));
-  const packagePath = path.join(root, "packages/cli/package.json");
-  const git = (args: string[]) => {
-    const invoked = spawnSync("git", args, { cwd: root, encoding: "utf8" });
-    expect(invoked.status, invoked.stderr).toBe(0);
-    return invoked.stdout.trim();
-  };
-  const commit = (message: string) => {
-    git(["add", "."]);
-    git([
-      "-c", "user.name=Agentera Test",
-      "-c", "user.email=test@example.invalid",
-      "-c", "commit.gpgsign=false",
-      "commit", "-m", message,
-    ]);
-    return git(["rev-parse", "HEAD"]);
-  };
-  try {
-    fs.mkdirSync(path.dirname(packagePath), { recursive: true });
-    fs.writeFileSync(packagePath, `${JSON.stringify(manifest("development"), null, 2)}\n`);
-    git(["init", "-q"]);
-    const beforeCommit = commit("baseline");
-    fs.writeFileSync(path.join(root, "source.txt"), "integrated source\n");
-    const sourceCommit = commit("integrate source");
-    if (version === "3.0.0-dev.33") {
-      expect(prepareDevelopmentPush({ repo: root })).toMatchObject({
-        version,
-        phase: "development-push-preparation",
-        outcome: "prepared",
-      });
-    } else {
-      fs.writeFileSync(packagePath, `${JSON.stringify({
-        ...manifest("development"),
-        version,
-        agentera: { gitRef: sourceCommit },
-      }, null, 2)}\n`);
-    }
-    const metadataCommit = commit("prepare development metadata");
-    return callback({ root, beforeCommit, sourceCommit, metadataCommit });
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-}
-
 describe("publication contract", () => {
-  it("accepts one committed dev.N increment after serialized source integration", () => {
-    withDevelopmentPush("3.0.0-dev.33", ({ root, beforeCommit, metadataCommit }) => {
-      expect(validateDevelopmentPush({ beforeCommit, metadataCommit }, { repo: root })).toMatchObject({
-        version: "3.0.0-dev.33",
-        phase: "development-push",
-        outcome: "passed",
-      });
-    });
-  });
-
-  it("rejects a skipped development integer before qualification", () => {
-    withDevelopmentPush("3.0.0-dev.34", ({ root, beforeCommit, metadataCommit }) => {
-      expect(() => validateDevelopmentPush({ beforeCommit, metadataCommit }, { repo: root }))
-        .toThrow("is not the next development version '3.0.0-dev.33'");
-    });
-  });
-
-  it("rejects another version allocation when no source commit follows metadata", () => {
-    withDevelopmentPush("3.0.0-dev.33", ({ root }) => {
-      expect(() => prepareDevelopmentPush({ repo: root })).toThrow(
-        "requires an integrated source commit after the previous metadata commit",
-      );
-    });
-  });
-
-  it("rejects a metadata push with no source commit after the previous remote head", () => {
-    withDevelopmentPush("3.0.0-dev.33", ({ root, sourceCommit, metadataCommit }) => {
-      expect(() => validateDevelopmentPush(
-        { beforeCommit: sourceCommit, metadataCommit },
-        { repo: root },
-      )).toThrow("requires an integrated source commit after the previous feat/v3 head");
-    });
-  });
-
   it("isolates npm children from caller tokens and configuration", () => {
     const environment = npmChildEnvironment({
       HOME: "/private/home",
@@ -386,7 +296,7 @@ describe.each(["development", "stable"] as const)("%s publication adapter", (ada
     expect(calls[0]).toContain(adapterName === "development" ? "pack-package.mjs" : "pnpm test");
   });
 
-  it("rejects a constructed package whose identity differs from committed metadata", () => {
+  it("rejects a constructed package whose identity differs from expected metadata", () => {
     const expected = manifest(adapterName);
     const packed = { ...packedManifest(expected.version), name: "not-agentera" };
 
@@ -520,7 +430,7 @@ describe("npm registry response normalization", () => {
     expect(normalizeRegistryField(fixture, "next")).toBe(PUBLISHED_VERSION);
   });
 
-  it("treats an absent first-use candidate tag as untagged", () => {
+  it("treats an absent first-use staging tag as untagged", () => {
     expect(normalizeRegistryTag(
       { latest: "0.0.2", next: "3.0.0-dev.41" },
       "candidate-3.0.0-dev.45",
@@ -660,7 +570,7 @@ describe.each([
         inspectPublic: () => publicState,
         inspectCandidate: () => {
           candidateQueries += 1;
-          throw new Error("candidate tag must not be queried");
+          throw new Error("staging tag must not be queried");
         },
         publishPackage: () => { publishOrTagEffects += 1; },
         smokePackage: () => { smokes += 1; return version; },
@@ -812,7 +722,7 @@ describe.each([
       }),
     ).rejects.toMatchObject({
       publicationPhase: "convergence",
-      nextAction: expect.stringContaining("Retry the same committed version"),
+      nextAction: expect.stringContaining("Retry the same verified version"),
     });
     expect(publishes).toBe(1);
   });

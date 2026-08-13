@@ -9,10 +9,10 @@ user home or project outside a temp directory.
 | --- | --- |
 | `HOME` | Sandbox home (`$SANDBOX/home`) |
 | `XDG_CONFIG_HOME` | OpenCode and XDG paths (`$SANDBOX/xdg-config`) |
-| `AGENTERA_BOOTSTRAP_SOURCE_ROOT` | Repo root for L1 repo-built CLI (optional for L2 npx) |
+| `AGENTERA_BOOTSTRAP_SOURCE_ROOT` | Repo root for the source-build CLI (optional for npm package execution) |
 | `AGENTERA_UPDATE_CHANNEL` | Per-scenario channel override |
 | `npm_config_cache` | Pin/offline npx cache (`$SANDBOX/npm-cache`) |
-| `AGENTERA_NPM_PIN` | L2 exact package pin (e.g. `agentera@3.0.0-next.0`) |
+| `AGENTERA_NPM_PIN` | Exact npm package pin (e.g. `agentera@3.0.0-next.0`) |
 
 ## Scripts
 

@@ -190,9 +190,16 @@ function sourceQualificationEnvironment(repo: string) {
     GITHUB_ACTIONS: "true",
     GITHUB_SHA: git(repo, "rev-parse", "HEAD"),
     GITHUB_REPOSITORY: "jgabor/agentera",
-    GITHUB_WORKFLOW: "Qualify release candidate",
-    GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/qualify-candidate.yml@refs/heads/feat/v3",
+    GITHUB_WORKFLOW: "Verify package",
+    GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/qualify.yml@refs/heads/feat/v3",
     GITHUB_RUN_ID: "123",
+  };
+}
+
+function developmentCandidateEnvironment(repo: string, runNumber = "1") {
+  return {
+    ...sourceQualificationEnvironment(repo),
+    GITHUB_RUN_NUMBER: runNumber,
   };
 }
 
@@ -334,6 +341,10 @@ function candidateExecution(candidateDirectory: string, version = "3.0.0-dev.41"
         candidateDirectory,
         "--with-dry-run",
         "--json",
+        "--package-version",
+        version,
+        "--git-ref",
+        expect.stringMatching(/^[0-9a-f]{40}$/),
       ]);
       fs.writeFileSync(artifact, bytes);
       return JSON.stringify({ dry: observation, packed: { ...observation, artifact } });
@@ -403,6 +414,93 @@ describe("release qualification receipts", () => {
 
     expect(replay.reused).toBe(true);
     expect(replay.receipt.receiptSha256).toBe(first.receiptSha256);
+  });
+
+  it("applies package metadata overrides only in isolated construction", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-override-test-"));
+    temporary.push(root);
+    const outputDirectory = path.join(root, "candidate");
+    const manifestPath = path.join(REPO_ROOT, "packages/cli/package.json");
+    const before = fs.readFileSync(manifestPath);
+    const sourceCommit = "a".repeat(40);
+    const result = spawnSync(process.execPath, [
+      "scripts/pack-package.mjs",
+      "--output-dir", outputDirectory,
+      "--with-dry-run",
+      "--json",
+      "--package-version", "3.0.0-dev.73",
+      "--git-ref", sourceCommit,
+    ], { cwd: path.join(REPO_ROOT, "packages/cli"), encoding: "utf8", timeout: 120_000 });
+
+    expect(result.status, result.stderr).toBe(0);
+    const packed = JSON.parse(result.stdout).packed;
+    expect(packed.version).toBe("3.0.0-dev.73");
+    const extraction = path.join(root, "extracted");
+    fs.mkdirSync(extraction);
+    const extracted = spawnSync("tar", ["-xzf", packed.artifact, "-C", extraction], { encoding: "utf8" });
+    expect(extracted.status, extracted.stderr).toBe(0);
+    expect(JSON.parse(fs.readFileSync(path.join(extraction, "package/package.json"), "utf8")))
+      .toMatchObject({ version: "3.0.0-dev.73", agentera: { gitRef: sourceCommit } });
+    expect(fs.readFileSync(manifestPath)).toEqual(before);
+  });
+
+  it("keeps package metadata override flags narrow and paired", () => {
+    const packageRoot = path.join(REPO_ROOT, "packages/cli");
+    const cases = [
+      [["--dry-run", "--package-version", "3.0.0-dev.73"], "must be supplied together"],
+      [["--dry-run", "--package-version", "3.1.0-dev.73", "--git-ref", "a".repeat(40)], "must match 3.0.0-dev.N"],
+      [["--dry-run", "--package-version", "3.0.0-dev.73", "--git-ref", "A".repeat(40)], "lowercase commit SHA"],
+      [["--dry-run", "--unexpected"], "unexpected argument"],
+    ] as const;
+    for (const [args, error] of cases) {
+      const result = spawnSync(process.execPath, ["scripts/pack-package.mjs", ...args], {
+        cwd: packageRoot,
+        encoding: "utf8",
+      });
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(error);
+    }
+  });
+
+  it("binds development CI package verification to run allocation, source SHA, and checkout HEAD", async () => {
+    const { repo, candidateDirectory } = fixture();
+    await sourceReceipt(repo, candidateDirectory);
+    const head = git(repo, "rev-parse", "HEAD");
+    const environment = developmentCandidateEnvironment(repo);
+    const issue = (targetVersion: string, sourceCommit: string, candidateEnvironment = environment) => issueCandidateReceipt({
+      repo,
+      candidateDirectory,
+      adapterName: "development",
+      targetVersion,
+      sourceCommit,
+      environment: candidateEnvironment,
+      metadataRun: () => "{}",
+      ...candidateExecution(candidateDirectory, targetVersion),
+    });
+
+    expect(() => issue("3.0.0-dev.74", head)).toThrow("target version must equal 3.0.0-dev.73");
+    expect(() => issue("3.0.0-dev.73", "0".repeat(40))).toThrow("source commit must equal GITHUB_SHA");
+    expect(() => issue(
+      "3.0.0-dev.73",
+      "0".repeat(40),
+      { ...environment, GITHUB_SHA: "0".repeat(40) },
+    )).toThrow("checkout HEAD must equal GITHUB_SHA");
+
+    const accepted = issue("3.0.0-dev.73", head);
+    expect(accepted.receipt).toMatchObject({
+      version: "3.0.0-dev.73",
+      sourceCommit: head,
+      metadataCommit: head,
+    });
+    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" })).not.toThrow();
+    expect(() => issue("3.0.0-dev.74", head)).toThrow("target version must equal 3.0.0-dev.73");
+    expect(issue("3.0.0-dev.73", head)).toMatchObject({ reused: true });
+    expect(() => issueCiAttestation({
+      repo,
+      candidateDirectory,
+      adapterName: "development",
+      environment,
+    })).not.toThrow();
   });
 
   it.runIf(process.platform !== "win32")("invalidates source receipt reuse after a committed executable-bit change", async () => {
@@ -698,14 +796,14 @@ describe("release qualification receipts", () => {
       gates: GOVERNED_GATES,
       environment: {},
       runDag,
-    })).rejects.toThrow("source receipt authority requires the contracted GitHub Actions qualification workflow");
+    })).rejects.toThrow("source receipt authority requires the contracted GitHub Actions verification workflow");
     await expect(issueSourceReceipt({
       repo,
       candidateDirectory,
       gates: GOVERNED_GATES,
       environment: { ...sourceQualificationEnvironment(repo), GITHUB_SHA: "0".repeat(40) },
       runDag,
-    })).rejects.toThrow("source receipt checkout SHA does not match the committed qualification source");
+    })).rejects.toThrow("source receipt checkout SHA does not match the committed verification source");
     expect(invocations).toBe(0);
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
@@ -858,7 +956,7 @@ describe("release qualification receipts", () => {
     fs.renameSync(artifact, artifactBacking);
     fs.symlinkSync(artifactBacking, artifact);
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
-      .toThrow("candidate artifact must be a regular file");
+      .toThrow("package artifact must be a regular file");
     fs.unlinkSync(artifact);
     fs.renameSync(artifactBacking, artifact);
 
@@ -867,7 +965,7 @@ describe("release qualification receipts", () => {
     fs.renameSync(candidateFile, outsideReceipt);
     fs.symlinkSync(outsideReceipt, candidateFile);
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
-      .toThrow("candidate receipt must be a regular file inside the external candidate directory");
+      .toThrow("package receipt must be a regular file inside the artifact directory");
     fs.unlinkSync(candidateFile);
     fs.renameSync(outsideReceipt, candidateFile);
 
@@ -885,11 +983,11 @@ describe("release qualification receipts", () => {
       metadataRun: () => { throw new Error("invalid replay must not rerun metadata"); },
       run: () => { throw new Error("invalid replay must not reconstruct bytes"); },
       smokeRun: () => { throw new Error("invalid replay must not rerun smoke"); },
-    })).toThrow("candidate receipt gate 'release-metadata' has invalid execution evidence");
+    })).toThrow("package receipt gate 'release-metadata' has invalid execution evidence");
     expect(fs.readFileSync(artifact)).toEqual(retained.artifact);
   });
 
-  it("preserves the local smoke owner and writes no candidate receipt on failure", async () => {
+  it("preserves the local smoke owner and writes no package receipt on failure", async () => {
     const { repo, candidateDirectory } = fixture();
     await sourceReceipt(repo, candidateDirectory);
     const execution = candidateExecution(candidateDirectory);
@@ -974,15 +1072,15 @@ describe("release qualification receipts", () => {
     })).toThrow("does not match the stable shim packaged inputs");
   });
 
-  it("rejects a missing candidate directory without creating it", () => {
+  it("rejects a missing external artifact directory without creating it", () => {
     const { repo, candidateDirectory } = fixture();
 
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
-      .toThrow("candidate directory is missing");
+      .toThrow("artifact directory is missing");
     expect(fs.existsSync(candidateDirectory)).toBe(false);
   });
 
-  it("binds a candidate receipt to the retained immutable artifact bytes", async () => {
+  it("binds a package receipt to the retained immutable artifact bytes", async () => {
     const { repo, candidateDirectory, sourceCommit } = fixture();
     const source = await sourceReceipt(repo, candidateDirectory);
     const artifact = Buffer.from("exact candidate bytes");
@@ -993,7 +1091,7 @@ describe("release qualification receipts", () => {
       kind: "candidate",
       sourceReceiptSha256: source.receiptSha256,
       metadataCommit: git(repo, "rev-parse", "HEAD"),
-      sourceCommit,
+      sourceCommit: git(repo, "rev-parse", "HEAD"),
       adapter: "development",
       package: "agentera",
       version: "3.0.0-dev.41",
@@ -1062,8 +1160,8 @@ describe("release qualification receipts", () => {
       GITHUB_ACTIONS: "true",
       GITHUB_SHA: candidate.metadataCommit as string,
       GITHUB_REPOSITORY: "jgabor/agentera",
-      GITHUB_WORKFLOW: "Qualify release candidate",
-      GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/qualify-candidate.yml@refs/heads/feat/v3",
+      GITHUB_WORKFLOW: "Verify package",
+      GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/qualify.yml@refs/heads/feat/v3",
       GITHUB_RUN_ID: "123",
     };
     issueCiAttestation({ repo, candidateDirectory, adapterName: "development", environment });
@@ -1082,6 +1180,19 @@ describe("release qualification receipts", () => {
       environment,
       sourceRunId: "456",
     })).toThrow("CI attestation is not bound");
+
+    const mismatchedSource = structuredClone(candidate);
+    mismatchedSource.sourceCommit = sourceCommit;
+    mismatchedSource.receiptSha256 = sha256(canonicalJson({ ...mismatchedSource, receiptSha256: undefined }));
+    delete mismatchedSource.receiptSha256;
+    mismatchedSource.receiptSha256 = sha256(canonicalJson(mismatchedSource));
+    expect(() => issueCiAttestation({
+      repo,
+      candidateDirectory,
+      adapterName: "development",
+      environment,
+      receipt: mismatchedSource,
+    })).toThrow("package receipt commits");
 
     const attestation = issueCiAttestation({ repo, candidateDirectory, adapterName: "development", environment });
     for (const [field, value] of Object.entries({
@@ -1109,12 +1220,12 @@ describe("release qualification receipts", () => {
 
     fs.chmodSync(path.join(candidateDirectory, filename), 0o644);
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, receipt: candidate, adapterName: "development" }))
-      .toThrow("candidate artifact permissions changed after qualification");
+      .toThrow("package artifact permissions changed after verification");
     fs.chmodSync(path.join(candidateDirectory, filename), 0o644);
     fs.appendFileSync(path.join(candidateDirectory, filename), "changed");
     fs.chmodSync(path.join(candidateDirectory, filename), 0o444);
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, receipt: candidate, adapterName: "development" }))
-      .toThrow("candidate artifact changed after qualification");
+      .toThrow("package artifact changed after verification");
   });
 });
 
@@ -1230,7 +1341,7 @@ describe("explicit preparation", () => {
     await sourceReceipt(repo, candidateDirectory);
     const manifestPath = path.join(repo, "packages/cli/package.json");
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-    manifest.description = "changed after source qualification";
+    manifest.description = "changed after source verification";
     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     const before = fs.readFileSync(manifestPath);
 

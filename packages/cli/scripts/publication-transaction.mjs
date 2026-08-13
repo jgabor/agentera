@@ -4,7 +4,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isDeepStrictEqual } from "node:util";
 
 import {
   formatConstruction,
@@ -202,129 +201,6 @@ function emit(receipt, json, verbose = false) {
 
 function readManifest(adapter, projectRoot = repoRoot) {
   return JSON.parse(fs.readFileSync(path.join(projectRoot, adapter.manifestPath), "utf8"));
-}
-
-function readManifestAtCommit(adapter, commit, projectRoot = repoRoot) {
-  const contents = run("git", ["show", `${commit}:${adapter.manifestPath}`], { cwd: projectRoot });
-  return JSON.parse(contents);
-}
-
-function isDevelopmentMetadataCommit(adapter, commit, projectRoot = repoRoot) {
-  const parentRecord = run("git", ["rev-list", "--parents", "-n", "1", commit], {
-    cwd: projectRoot,
-  }).split(/\s+/);
-  if (parentRecord.length !== 2) return false;
-  const parent = parentRecord[1];
-  const changedPaths = run("git", ["diff", "--name-only", parent, commit, "--"], {
-    cwd: projectRoot,
-  }).split("\n").filter(Boolean);
-  const manifest = readManifestAtCommit(adapter, commit, projectRoot);
-  return changedPaths.length === 1
-    && changedPaths[0] === adapter.manifestPath
-    && manifest.agentera?.gitRef === parent;
-}
-
-export function prepareDevelopmentPush(options = {}) {
-  const projectRoot = options.repo ?? repoRoot;
-  const adapter = PACKAGE_ADAPTERS.development;
-  const status = run("git", ["status", "--porcelain", "--untracked-files=normal"], {
-    cwd: projectRoot,
-  });
-  if (status) throw new Error("development push preparation requires a clean committed source tree");
-  const sourceCommit = run("git", ["rev-parse", "HEAD"], { cwd: projectRoot });
-  if (isDevelopmentMetadataCommit(adapter, sourceCommit, projectRoot)) {
-    throw new Error(
-      "development push preparation requires an integrated source commit after the previous metadata commit",
-    );
-  }
-  const prepared = prepareMetadata("development", readManifest(adapter, projectRoot), sourceCommit);
-  if (!options.check) {
-    fs.writeFileSync(
-      path.join(projectRoot, adapter.manifestPath),
-      `${JSON.stringify(prepared.manifest, null, 2)}\n`,
-    );
-  }
-  return result(
-    "development",
-    prepared.manifest.version,
-    "development-push-preparation",
-    options.check ? "passed" : "prepared",
-    options.check
-      ? `write and commit only ${adapter.manifestPath}`
-      : `commit only ${adapter.manifestPath}, then push feat/v3 once`,
-    undefined,
-    { executed: options.check ? "validated local allocation" : "updated local metadata" },
-  );
-}
-
-export function validateDevelopmentPush(request, options = {}) {
-  const projectRoot = options.repo ?? repoRoot;
-  const adapter = PACKAGE_ADAPTERS.development;
-  const beforeCommit = request.beforeCommit;
-  const metadataCommit = request.metadataCommit;
-  for (const [label, commit] of [["before commit", beforeCommit], ["metadata commit", metadataCommit]]) {
-    if (typeof commit !== "string" || !/^[0-9a-f]{40}$/.test(commit) || /^0+$/.test(commit)) {
-      throw new Error(`${label} must be a nonzero 40-character commit SHA`);
-    }
-  }
-  const head = run("git", ["rev-parse", "HEAD"], { cwd: projectRoot });
-  if (head !== metadataCommit) {
-    throw new Error("development push metadata commit must equal the checked-out HEAD");
-  }
-  const parentRecord = run("git", ["rev-list", "--parents", "-n", "1", metadataCommit], {
-    cwd: projectRoot,
-  }).split(/\s+/);
-  if (parentRecord.length !== 2) {
-    throw new Error("development push must end with one non-merge metadata commit");
-  }
-  const sourceCommit = parentRecord[1];
-  if (sourceCommit === beforeCommit) {
-    throw new Error(
-      "development push requires an integrated source commit after the previous feat/v3 head",
-    );
-  }
-  const ancestor = spawnSync("git", ["merge-base", "--is-ancestor", beforeCommit, sourceCommit], {
-    cwd: projectRoot,
-    env: npmChildEnvironment(process.env),
-    stdio: "ignore",
-  });
-  if (ancestor.status !== 0) {
-    throw new Error("development push must fast-forward from the previous feat/v3 head");
-  }
-  const previousManifest = readManifestAtCommit(adapter, beforeCommit, projectRoot);
-  const sourceManifest = readManifestAtCommit(adapter, sourceCommit, projectRoot);
-  const committedManifest = readManifestAtCommit(adapter, metadataCommit, projectRoot);
-  const workingManifest = readManifest(adapter, projectRoot);
-  if (previousManifest.version !== sourceManifest.version) {
-    throw new Error("integrated source must retain the previous feat/v3 development version");
-  }
-  const expected = prepareTargetMetadata(
-    "development",
-    sourceManifest,
-    committedManifest.version,
-    sourceCommit,
-  ).manifest;
-  if (!isDeepStrictEqual(committedManifest, expected)) {
-    throw new Error("development metadata commit may change only version and agentera.gitRef");
-  }
-  if (!isDeepStrictEqual(workingManifest, committedManifest)) {
-    throw new Error("working development manifest differs from the metadata commit");
-  }
-  const changedPaths = run("git", ["diff", "--name-only", sourceCommit, metadataCommit, "--"], {
-    cwd: projectRoot,
-  }).split("\n").filter(Boolean);
-  if (changedPaths.length !== 1 || changedPaths[0] !== adapter.manifestPath) {
-    throw new Error(`final development metadata commit must change only ${adapter.manifestPath}`);
-  }
-  return result(
-    "development",
-    committedManifest.version,
-    "development-push",
-    "passed",
-    "qualify and publish the exact committed candidate",
-    undefined,
-    { executed: "validated serialized dev.N increment" },
-  );
 }
 
 function metadataCommitted(adapter) {
@@ -621,7 +497,7 @@ function assertRegistryCompatible(
   mutationAttempted = false,
 ) {
   const correction = mutationAttempted
-    ? "No rollback was attempted; inspect the conflicting registry state and retry the same committed version."
+    ? "No rollback was attempted; inspect the conflicting registry state and retry the same verified version."
     : "No registry mutation was attempted.";
   if (state.exists && state.integrity !== integrity) {
     throw publicationError(
@@ -744,7 +620,7 @@ async function waitForConvergence(manifest, adapter, integrity, dependencies = {
   throw publicationError(
     `registry did not converge after ${attempts} attempts: ${observed}; @${adapter.expectedTag} points to ${state?.expectedTagVersion ?? "nothing"}`,
     "convergence",
-    "Retry the same committed version; publication will replay without republishing once registry state matches.",
+    "Retry the same verified version; publication will replay without republishing once registry state matches.",
   );
 }
 
@@ -821,7 +697,7 @@ export async function executePublication(adapterName, manifest, packed, dependen
     throw publicationError(
       `exact-version smoke failed: ${error.message}`,
       "smoke",
-      "No rollback was attempted; correct the smoke failure and retry the same committed version.",
+      "No rollback was attempted; correct the smoke failure and retry the same verified version.",
     );
   }
   record(
@@ -880,7 +756,7 @@ export async function stageQualifiedCandidate(adapterName, candidateDirectory, o
     if (publicState.exists && publicState.tagged) {
       const output = smokePublishedCandidate({ manifest, adapter });
       return [
-        result(adapterName, manifest.version, "staging", "replayed", "candidate is already promoted", "matching public tag required no upload"),
+        result(adapterName, manifest.version, "staging", "replayed", "package artifact is already promoted", "matching public tag required no upload"),
         result(adapterName, manifest.version, "registry-smoke", "passed", "run no additional mutation", output),
       ];
     }
@@ -919,7 +795,7 @@ export async function promoteQualifiedCandidate(adapterName, candidateDirectory,
     if (publicState.exists && publicState.tagged) {
       const output = smokePublishedCandidate({ manifest, adapter });
       return [
-        result(adapterName, manifest.version, "promotion", "replayed", "candidate is already promoted", "matching public tag required no mutation"),
+        result(adapterName, manifest.version, "promotion", "replayed", "package artifact is already promoted", "matching public tag required no mutation"),
         result(adapterName, manifest.version, "registry-smoke", "passed", "run no additional mutation", output),
       ];
     }
@@ -928,9 +804,9 @@ export async function promoteQualifiedCandidate(adapterName, candidateDirectory,
     assertRegistryCompatible(manifest, stagingAdapter, candidate.receipt.artifact.integrity, staged, "promotion");
     if (!staged.exists || !staged.tagged) {
       throw publicationError(
-        `exact candidate ${manifest.name}@${manifest.version} is not staged on @${candidate.receipt.candidateTag}`,
+        `${manifest.name}@${manifest.version} is not staged on @${candidate.receipt.candidateTag}`,
         "promotion",
-        "Stage and complete exact-version qualification before promoting the public tag; no registry mutation was attempted.",
+        "Stage the package and complete the staged package migration smoke test before promoting the public tag; no registry mutation was attempted.",
       );
     }
     const credentialsRoot = path.join(state.root, "mutation-credentials");
@@ -968,7 +844,7 @@ export function smokeQualifiedCandidate(adapterName, candidateDirectory, options
       adapter,
       candidate.receipt.artifact.integrity,
       publicState,
-      "exact-version qualification",
+      "staged package migration smoke",
     );
     if (!publicState.tagged) {
       const stagingAdapter = candidateAdapter(adapter, candidate.receipt.candidateTag);
@@ -978,13 +854,13 @@ export function smokeQualifiedCandidate(adapterName, candidateDirectory, options
         stagingAdapter,
         candidate.receipt.artifact.integrity,
         staged,
-        "exact-version qualification",
+        "staged package migration smoke",
       );
       if (!staged.exists || !staged.tagged) {
         throw publicationError(
-          `exact candidate ${manifest.name}@${manifest.version} is not staged on @${candidate.receipt.candidateTag}`,
-          "exact-version-l2",
-          "Stage the same exact candidate before retrying qualified publication; no rollback was attempted.",
+          `${manifest.name}@${manifest.version} is not staged on @${candidate.receipt.candidateTag}`,
+          "candidate-migration-smoke",
+          "Stage the same package before retrying publication; no rollback was attempted.",
         );
       }
     }
@@ -993,7 +869,7 @@ export function smokeQualifiedCandidate(adapterName, candidateDirectory, options
       result(
         adapterName,
         manifest.version,
-        "exact-version-l2",
+        "candidate-migration-smoke",
         "passed",
         "continue to promotion",
         output,
@@ -1006,16 +882,14 @@ export function smokeQualifiedCandidate(adapterName, candidateDirectory, options
 
 async function main() {
   const [phase, adapterName, ...rest] = process.argv.slice(2);
-  if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "prepare-push", "validate-push", "stage", "smoke", "promote"].includes(phase)) {
+  if (!PACKAGE_ADAPTERS[adapterName] || !["prepare", "stage", "smoke", "promote"].includes(phase)) {
     throw new Error(
-      "usage: publication-transaction.mjs <prepare|prepare-push|validate-push|stage|smoke|promote> <development|stable> [--candidate-dir DIR] [--approve] [--json|--verbose]",
+      "usage: publication-transaction.mjs <prepare|stage|smoke|promote> <development|stable> [--candidate-dir DIR] [--approve] [--json|--verbose]",
     );
   }
   const flags = parseReleaseFlags(rest, {
-    boolean: phase === "prepare" || phase === "prepare-push"
+    boolean: phase === "prepare"
       ? ["--check", "--json", "--verbose"]
-      : phase === "validate-push"
-        ? ["--json", "--verbose"]
       : ["--approve", "--json", "--verbose"],
     value: phase === "prepare"
       ? [
@@ -1023,10 +897,6 @@ async function main() {
           "--source-commit",
           ...(adapterName === "development" ? ["--candidate-dir"] : []),
         ]
-      : phase === "prepare-push"
-        ? []
-      : phase === "validate-push"
-        ? ["--before-commit", "--metadata-commit"]
       : ["--candidate-dir", "--source-run-id"],
   });
   const json = Boolean(flags.get("--json"));
@@ -1040,29 +910,16 @@ async function main() {
     }), json);
     return;
   }
-  if (phase === "prepare-push") {
-    if (adapterName !== "development") throw new Error("prepare-push supports only the development adapter");
-    emit(prepareDevelopmentPush({ check: Boolean(flags.get("--check")) }), json);
-    return;
-  }
-  if (phase === "validate-push") {
-    if (adapterName !== "development") throw new Error("validate-push supports only the development adapter");
-    emit(validateDevelopmentPush({
-      beforeCommit: flags.get("--before-commit"),
-      metadataCommit: flags.get("--metadata-commit"),
-    }), json);
-    return;
-  }
   const candidateDirectory = flags.get("--candidate-dir");
-  if (!candidateDirectory) throw new Error(`${phase} requires --candidate-dir DIR for the retained exact candidate`);
+  if (!candidateDirectory) throw new Error(`${phase} requires --candidate-dir DIR for the verified artifact`);
   if (!flags.get("--approve")) {
-    throw new Error(`${phase} requires --approve and an immutable candidate-bound approval receipt`);
+    throw new Error(`${phase} requires --approve and an immutable artifact-bound approval receipt`);
   }
   const sourceRunId = flags.get("--source-run-id");
   const manifest = readManifest(PACKAGE_ADAPTERS[adapterName]);
   const started = performance.now();
   emit(
-    result(adapterName, manifest.version, phase, "started", "validate the exact candidate before registry inspection", undefined, {
+    result(adapterName, manifest.version, phase, "started", "validate the verified artifact before registry inspection", undefined, {
       executed: "pending",
     }),
     json,
@@ -1088,7 +945,7 @@ async function main() {
   } catch (error) {
     const publicationFailure = error instanceof Error ? error : new Error(String(error));
     publicationFailure.publicationPhase ??= phase;
-    publicationFailure.nextAction ??= "Correct the reported failure and retry the same exact candidate.";
+    publicationFailure.nextAction ??= "Correct the reported failure and retry the same verified artifact.";
     throw publicationFailure;
   }
 }

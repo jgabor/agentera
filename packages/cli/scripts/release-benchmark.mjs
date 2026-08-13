@@ -22,8 +22,8 @@ import {
 
 const scriptPath = fileURLToPath(import.meta.url);
 const QUALIFICATION_BUDGET_MS = RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
-const EXACT_VERSION_PROPAGATION_ATTEMPTS = 10;
-const EXACT_VERSION_PROPAGATION_RETRY_MS = 5_000;
+const CANDIDATE_PROPAGATION_ATTEMPTS = 10;
+const CANDIDATE_PROPAGATION_RETRY_MS = 5_000;
 let failureWasEmitted = false;
 
 function benchmarkError(message, owner) {
@@ -125,10 +125,10 @@ function receiptOwners(receipt, reused) {
  */
 export async function runQualificationBenchmark(options = {}) {
   const repetitions = options.repetitions ?? RELEASE_CONTRACT.benchmark.repetitions;
-  if (repetitions !== 3) throw new Error("qualification benchmark requires exactly three cold-cache repetitions");
+  if (repetitions !== 3) throw new Error("package verification benchmark requires exactly three cold-cache repetitions");
   for (const name of ["preflight", "source", "candidate"]) {
     if (typeof options[`run${name[0].toUpperCase()}${name.slice(1)}`] !== "function") {
-      throw new Error(`qualification benchmark requires run${name[0].toUpperCase()}${name.slice(1)}`);
+      throw new Error(`package verification benchmark requires run${name[0].toUpperCase()}${name.slice(1)}`);
     }
   }
   const clock = options.clock ?? (() => performance.now());
@@ -242,9 +242,9 @@ function defaultCommandRunner(specification) {
   return { stdout: invocation.stdout, stderr: invocation.stderr };
 }
 
-function isTransientExactVersionPropagationFailure(specification, error) {
+function isTransientCandidateMigrationFailure(specification, error) {
   const detail = error instanceof Error ? error.message : String(error);
-  return specification.name === "exact-version-l2"
+  return specification.name === "candidate-migration-smoke"
     && specification.env?.AGENTERA_SANDBOX_TIER === "L2"
     && detail.includes("ETARGET")
     && detail.includes("No matching version found");
@@ -256,15 +256,15 @@ async function runPublicationCommand(specification, commandRunner, timeoutMs, re
       return await commandRunner({ ...specification, timeoutMs });
     } catch (error) {
       if (
-        attempt >= EXACT_VERSION_PROPAGATION_ATTEMPTS
-        || !isTransientExactVersionPropagationFailure(specification, error)
+        attempt >= CANDIDATE_PROPAGATION_ATTEMPTS
+        || !isTransientCandidateMigrationFailure(specification, error)
       ) {
         throw error;
       }
-      if (remaining() <= EXACT_VERSION_PROPAGATION_RETRY_MS) {
+      if (remaining() <= CANDIDATE_PROPAGATION_RETRY_MS) {
         throw error;
       }
-      await wait(EXACT_VERSION_PROPAGATION_RETRY_MS);
+      await wait(CANDIDATE_PROPAGATION_RETRY_MS);
       timeoutMs = remaining();
       if (timeoutMs <= 0) {
         throw error;
@@ -292,7 +292,7 @@ function publicationPhases(
   candidate,
   sourceRunId,
   environment,
-  l2Environment,
+  candidateEnvironment,
 ) {
   const transaction = (name, phase) => ({
     name,
@@ -302,27 +302,27 @@ function publicationPhases(
     cwd: REPO_ROOT,
     env: environment,
   });
-  const exactVersionL2 = adapterName === "development"
+  const candidateMigrationSmoke = adapterName === "development"
     ? {
-        name: "exact-version-l2",
+        name: "candidate-migration-smoke",
         command: "bash",
         args: [path.join(REPO_ROOT, "scripts/sandbox/v2v3-upgrade-harness.sh"), "happy-path-clean"],
         cwd: REPO_ROOT,
         env: {
-          ...l2Environment,
+          ...candidateEnvironment,
           REPO_ROOT,
           AGENTERA_SANDBOX_TIER: "L2",
           AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`,
         },
       }
     : {
-        ...transaction("exact-version-l2", "smoke"),
-        name: "exact-version-l2",
+        ...transaction("candidate-migration-smoke", "smoke"),
+        name: "candidate-migration-smoke",
         env: npmChildEnvironment(environment),
       };
   return [
     transaction("stage", "stage"),
-    exactVersionL2,
+    candidateMigrationSmoke,
     transaction("promote", "promote"),
   ];
 }
@@ -337,7 +337,7 @@ function successfulTransaction(specification, output) {
   );
   if (!completed) {
     throw benchmarkError(
-      `qualified publication owner '${specification.name}' returned no successful transaction result`,
+      `publication owner '${specification.name}' returned no successful transaction result`,
       specification.name,
     );
   }
@@ -353,7 +353,7 @@ function publicationReceipt(candidate, sourceRunId, phases, started, ended, outc
   const elapsedMs = Math.max(0, Math.floor(ended - started));
   const ownerElapsedMs = phases.reduce((total, phase) => total + phase.elapsedMs, 0);
   if (ownerElapsedMs > elapsedMs) {
-    throw benchmarkError("qualified publication component timings exceed total elapsed time", "qualified-publication");
+    throw benchmarkError("publication component timings exceed total elapsed time", "qualified-publication");
   }
   const receipt = {
     schemaVersion: "agentera.qualifiedPublicationTiming.v1",
@@ -373,7 +373,7 @@ function publicationReceipt(candidate, sourceRunId, phases, started, ended, outc
     withinBudget: elapsedMs < RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs,
     executed: "ordered",
     reused: phases.length === 3
-      && phases.filter((phase) => phase.name !== "exact-version-l2").every((phase) => phase.reused),
+      && phases.filter((phase) => phase.name !== "candidate-migration-smoke").every((phase) => phase.reused),
     phases,
     ownerElapsedMs,
     unattributedElapsedMs: elapsedMs - ownerElapsedMs,
@@ -396,20 +396,20 @@ function assertPublicationCandidate(candidate) {
     || typeof candidate?.artifact?.integrity !== "string"
     || typeof candidate?.artifact?.sha256 !== "string"
   ) {
-    throw new Error("qualified publication requires a valid content-bound candidate receipt");
+    throw new Error("publication requires a valid content-bound package artifact receipt");
   }
   return candidate;
 }
 
-/** Run one approved, content-bound stage/L2/promote publication envelope. */
+/** Run one approved, content-bound stage/smoke/promote envelope. */
 export async function runQualifiedPublication(options = {}) {
   const adapterName = options.adapterName;
   if (!RELEASE_CONTRACT.packages[adapterName]) {
-    throw new Error("qualified publication requires adapterName development or stable");
+    throw new Error("publication requires adapterName development or stable");
   }
-  if (!options.candidateDirectory) throw new Error("qualified publication requires candidateDirectory");
+  if (!options.candidateDirectory) throw new Error("publication requires candidateDirectory");
   if (options.sourceRunId !== undefined && !/^[1-9]\d{0,19}$/.test(options.sourceRunId)) {
-    throw new Error("qualified publication sourceRunId must be a positive GitHub Actions run ID");
+    throw new Error("publication sourceRunId must be a positive GitHub Actions run ID");
   }
   const loaded = options.candidate
     ?? validateCandidateReceipt({ candidateDirectory: options.candidateDirectory, adapterName });
@@ -419,8 +419,8 @@ export async function runQualifiedPublication(options = {}) {
   const emit = options.emit ?? (() => {});
   const wait = options.sleep ?? sleep;
   const environment = options.environment ?? process.env;
-  const l2State = adapterName === "development"
-    ? isolatedNpmState("agentera-qualified-l2-", {
+  const candidateState = adapterName === "development"
+    ? isolatedNpmState("agentera-qualified-candidate-", {
         environment,
         ignoreScripts: false,
         registryInGlobalConfig: true,
@@ -432,7 +432,7 @@ export async function runQualifiedPublication(options = {}) {
     candidate,
     options.sourceRunId,
     environment,
-    l2State?.environment,
+    candidateState?.environment,
   );
   const budgetMs = RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs;
   const phases = [];
@@ -441,7 +441,7 @@ export async function runQualifiedPublication(options = {}) {
   const now = () => {
     const value = clock();
     if (!Number.isFinite(value) || value < lastClock) {
-      throw benchmarkError("qualified publication requires a monotonic clock", "qualified-publication");
+      throw benchmarkError("publication requires a monotonic clock", "qualified-publication");
     }
     lastClock = value;
     return value;
@@ -452,7 +452,7 @@ export async function runQualifiedPublication(options = {}) {
       const phaseStarted = now();
       const remainingMs = budgetMs - (phaseStarted - started);
       if (remainingMs <= 0) {
-        throw benchmarkError(`qualified publication exceeded its ${budgetMs}ms budget before ${specification.name}`, specification.name);
+        throw benchmarkError(`publication exceeded its ${budgetMs}ms budget before ${specification.name}`, specification.name);
       }
       emit({ event: "started", phase: specification.name });
       try {
@@ -477,7 +477,7 @@ export async function runQualifiedPublication(options = {}) {
           phase.outcome = "failed";
           phases.push(phase);
           throw benchmarkError(
-            `qualified publication exceeded its ${budgetMs}ms budget during ${specification.name}`,
+            `publication exceeded its ${budgetMs}ms budget during ${specification.name}`,
             specification.name,
           );
         }
@@ -502,7 +502,7 @@ export async function runQualifiedPublication(options = {}) {
     const ended = now();
     if (ended - started >= budgetMs) {
       throw benchmarkError(
-        `qualified publication exceeded its ${budgetMs}ms budget during final reconciliation`,
+        `publication exceeded its ${budgetMs}ms budget during final reconciliation`,
         "qualified-publication",
       );
     }
@@ -527,7 +527,7 @@ export async function runQualifiedPublication(options = {}) {
     }
     throw error;
   } finally {
-    if (l2State) fs.rmSync(l2State.root, { recursive: true, force: true });
+    if (candidateState) fs.rmSync(candidateState.root, { recursive: true, force: true });
   }
 }
 
@@ -545,7 +545,7 @@ export function formatPublicationReceipt(receipt) {
   const failure = receipt.firstFailure
     ? `; first failure ${receipt.firstFailure.owner}: ${receipt.firstFailure.detail}`
     : "";
-  return `qualified publication ${receipt.outcome}; ${phases}; total ${receipt.elapsedMs}ms ${bound} ${receipt.budgetMs}ms; reconciled ${receipt.reconciled}${failure}; receipt ${receipt.receiptSha256}`;
+  return `publication ${receipt.outcome}; ${phases}; total ${receipt.elapsedMs}ms ${bound} ${receipt.budgetMs}ms; reconciled ${receipt.reconciled}${failure}; receipt ${receipt.receiptSha256}`;
 }
 
 async function main() {

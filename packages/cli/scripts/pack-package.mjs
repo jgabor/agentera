@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { parseReleaseFlags } from "./release-arguments.mjs";
 import {
   formatConstruction,
   normalizeConstruction,
@@ -19,12 +20,17 @@ const home = path.join(temporary, "home");
 const cache = path.join(temporary, "cache");
 const npmrc = path.join(temporary, "npmrc");
 const globalNpmrc = path.join(temporary, "global-npmrc");
-const dryRun = process.argv.includes("--dry-run");
-const withDryRun = process.argv.includes("--with-dry-run");
-const json = process.argv.includes("--json");
-const verbose = process.argv.includes("--verbose");
-const outputIndex = process.argv.indexOf("--output-dir");
-const outputDir = outputIndex >= 0 ? path.resolve(process.argv[outputIndex + 1]) : packageRoot;
+const flags = parseReleaseFlags(process.argv.slice(2), {
+  boolean: ["--dry-run", "--with-dry-run", "--json", "--verbose"],
+  value: ["--output-dir", "--package-version", "--git-ref"],
+});
+const dryRun = flags.has("--dry-run");
+const withDryRun = flags.has("--with-dry-run");
+const json = flags.has("--json");
+const verbose = flags.has("--verbose");
+const outputDir = flags.has("--output-dir") ? path.resolve(flags.get("--output-dir")) : packageRoot;
+const packageVersion = flags.get("--package-version");
+const gitRef = flags.get("--git-ref");
 
 function run(command, args, cwd) {
   const result = spawnSync(command, args, {
@@ -71,7 +77,7 @@ function npmEnvironment() {
 }
 
 try {
-  if (withDryRun && (dryRun || outputIndex < 0 || !json)) {
+  if (withDryRun && (dryRun || !flags.has("--output-dir") || !json)) {
     throw new Error("--with-dry-run requires --output-dir and --json, and cannot be combined with --dry-run");
   }
   fs.mkdirSync(home, { recursive: true, mode: 0o700 });
@@ -81,6 +87,22 @@ try {
   fs.mkdirSync(construction, { recursive: true });
   for (const file of ["package.json", "README.md"]) {
     fs.copyFileSync(path.join(packageRoot, file), path.join(construction, file));
+  }
+  if ((packageVersion === undefined) !== (gitRef === undefined)) {
+    throw new Error("--package-version and --git-ref must be supplied together");
+  }
+  if (packageVersion !== undefined) {
+    if (!/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(packageVersion)) {
+      throw new Error("--package-version must match 3.0.0-dev.N");
+    }
+    if (!/^[0-9a-f]{40}$/.test(gitRef)) {
+      throw new Error("--git-ref must be a 40-character lowercase commit SHA");
+    }
+    const manifestPath = path.join(construction, "package.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    manifest.version = packageVersion;
+    manifest.agentera = { ...manifest.agentera, gitRef };
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   }
   fs.copyFileSync(path.join(repoRoot, "LICENSE"), path.join(construction, "LICENSE"));
   run(process.execPath, ["scripts/build-package.mjs", "--output-root", construction], packageRoot);

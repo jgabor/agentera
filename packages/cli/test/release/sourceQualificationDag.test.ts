@@ -454,7 +454,7 @@ describe("source qualification DAG", () => {
     } else {
       await expect(operation).rejects.toMatchObject({
         owner: "reader-barrier",
-        message: "source qualification requires 6000ms for barrier B plus 4000ms reconciliation; 9999ms remain",
+        message: "source verification requires 6000ms for barrier B plus 4000ms reconciliation; 9999ms remain",
       });
       expect(phases).toHaveLength(3);
     }

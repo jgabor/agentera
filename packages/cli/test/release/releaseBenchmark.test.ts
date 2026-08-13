@@ -100,7 +100,7 @@ describe("release qualification benchmark coordinator", () => {
     });
   });
 
-  it("preserves the first candidate owner when candidate qualification fails", async () => {
+  it("preserves the first package verification owner when package verification fails", async () => {
     const events: any[] = [];
     await expect(runQualificationBenchmark({
       ...phases({ preflight: 1, source: 20, candidate: 10 }),
@@ -154,7 +154,7 @@ describe("release qualification benchmark coordinator", () => {
       .toMatchObject({ phase: "capacity-barrier", elapsedMs: 10 });
   });
 
-  it("fails closed on a full qualification budget overrun", async () => {
+  it("fails closed on a full source verification budget overrun", async () => {
     await expect(runQualificationBenchmark(phases({ preflight: 1, source: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs - 1, candidate: 1 }))).rejects.toThrow(
       "full-qualification",
     );
@@ -185,13 +185,13 @@ function transactionOutput(phase: string, reused: boolean) {
   };
 }
 
-describe("qualified publication timing coordinator", () => {
-  it("measures the actual stage, independent L2, and promote commands under 120 seconds", async () => {
+describe("publication timing coordinator", () => {
+  it("measures the actual stage, independent staged package migration smoke, and promote commands under 120 seconds", async () => {
     let now = 0;
-    const durations = new Map([["stage", 11], ["exact-version-l2", 23], ["promote", 17]]);
+    const durations = new Map([["stage", 11], ["candidate-migration-smoke", 23], ["promote", 17]]);
     const calls: string[] = [];
     const tokenVisibility: boolean[] = [];
-    let l2ConfigRoot = "";
+    let candidateConfigRoot = "";
     const receipt = await runQualifiedPublication({
       adapterName: "development",
       candidateDirectory: "/retained/candidate",
@@ -208,13 +208,13 @@ describe("qualified publication timing coordinator", () => {
       runCommand: (command: { name: string; env: NodeJS.ProcessEnv }) => {
         calls.push(command.name);
         tokenVisibility.push(Boolean(command.env.NPM_TOKEN));
-        if (command.name === "exact-version-l2") {
+        if (command.name === "candidate-migration-smoke") {
           const userConfig = command.env.NPM_CONFIG_USERCONFIG!;
           const globalConfig = command.env.NPM_CONFIG_GLOBALCONFIG!;
-          l2ConfigRoot = path.dirname(userConfig);
-          expect(path.dirname(globalConfig)).toBe(l2ConfigRoot);
-          expect(command.env.HOME).toBe(path.join(l2ConfigRoot, "home"));
-          expect(command.env.NPM_CONFIG_CACHE).toBe(path.join(l2ConfigRoot, "cache"));
+          candidateConfigRoot = path.dirname(userConfig);
+          expect(path.dirname(globalConfig)).toBe(candidateConfigRoot);
+          expect(command.env.HOME).toBe(path.join(candidateConfigRoot, "home"));
+          expect(command.env.NPM_CONFIG_CACHE).toBe(path.join(candidateConfigRoot, "cache"));
           expect(command.env.NPM_TOKEN).toBeUndefined();
           expect(command.env.NODE_AUTH_TOKEN).toBeUndefined();
           expect(command.env.npm_config_registry).toBeUndefined();
@@ -224,16 +224,16 @@ describe("qualified publication timing coordinator", () => {
           expect(fs.statSync(globalConfig).mode & 0o777).toBe(0o600);
         }
         now += durations.get(command.name)!;
-        return command.name === "exact-version-l2"
-          ? { stdout: "L2 passed", stderr: "" }
+        return command.name === "candidate-migration-smoke"
+          ? { stdout: "staged package migration smoke passed", stderr: "" }
           : transactionOutput(command.name, false);
       },
     });
 
-    expect(calls).toEqual(["stage", "exact-version-l2", "promote"]);
+    expect(calls).toEqual(["stage", "candidate-migration-smoke", "promote"]);
     expect(tokenVisibility).toEqual([true, false, true]);
-    expect(l2ConfigRoot).toContain("agentera-qualified-l2-");
-    expect(fs.existsSync(l2ConfigRoot)).toBe(false);
+    expect(candidateConfigRoot).toContain("agentera-qualified-candidate-");
+    expect(fs.existsSync(candidateConfigRoot)).toBe(false);
     expect(receipt).toMatchObject({
       outcome: "passed",
       elapsedMs: 51,
@@ -288,7 +288,7 @@ describe("qualified publication timing coordinator", () => {
       runCommand: (command: { name: string }) => {
         calls.push(command.name);
         now += 5;
-        if (command.name === "exact-version-l2") {
+        if (command.name === "candidate-migration-smoke") {
           const error = new Error("consumer failed in /private/candidate");
           (error as Error & { owner?: string }).owner = "consumer-smoke";
           throw error;
@@ -301,12 +301,12 @@ describe("qualified publication timing coordinator", () => {
         detail: "consumer failed in <private>",
       },
     });
-    expect(calls).toEqual(["stage", "exact-version-l2"]);
+    expect(calls).toEqual(["stage", "candidate-migration-smoke"]);
   });
 
   it("retries only transient exact-version registry propagation before promotion", async () => {
     let now = 0;
-    let l2Attempts = 0;
+    let candidateAttempts = 0;
     const calls: string[] = [];
     const receipt = await runQualifiedPublication({
       adapterName: "development",
@@ -317,16 +317,16 @@ describe("qualified publication timing coordinator", () => {
       runCommand: (command: { name: string }) => {
         calls.push(command.name);
         now += 5;
-        if (command.name === "exact-version-l2" && ++l2Attempts < 3) {
+        if (command.name === "candidate-migration-smoke" && ++candidateAttempts < 3) {
           throw new Error("npm error code ETARGET\nnpm error notarget No matching version found");
         }
-        return command.name === "exact-version-l2"
-          ? { stdout: "L2 passed", stderr: "" }
+        return command.name === "candidate-migration-smoke"
+          ? { stdout: "staged package migration smoke passed", stderr: "" }
           : transactionOutput(command.name, false);
       },
     });
 
-    expect(calls).toEqual(["stage", "exact-version-l2", "exact-version-l2", "exact-version-l2", "promote"]);
+    expect(calls).toEqual(["stage", "candidate-migration-smoke", "candidate-migration-smoke", "candidate-migration-smoke", "promote"]);
     expect(receipt.outcome).toBe("passed");
     expect(receipt.withinBudget).toBe(true);
   });
@@ -345,8 +345,8 @@ describe("qualified publication timing coordinator", () => {
       },
       runCommand: (command: { name: string }) => {
         now += 5;
-        return command.name === "exact-version-l2"
-          ? { stdout: "L2 passed", stderr: "" }
+        return command.name === "candidate-migration-smoke"
+          ? { stdout: "staged package migration smoke passed", stderr: "" }
           : transactionOutput(command.name, false);
       },
     });
@@ -357,7 +357,7 @@ describe("qualified publication timing coordinator", () => {
     expect(receipt.reconciled).toBe(true);
   });
 
-  it("replays without source qualification or registry mutation", async () => {
+  it("replays without source verification or registry mutation", async () => {
     let now = 0;
     const commands: Array<{ name: string; args: string[] }> = [];
     const receipt = await runQualifiedPublication({
@@ -368,14 +368,14 @@ describe("qualified publication timing coordinator", () => {
       runCommand: (command: { name: string; args: string[] }) => {
         commands.push(command);
         now += 7;
-        return command.name === "exact-version-l2"
-          ? { stdout: "L2 replay verification passed", stderr: "" }
+        return command.name === "candidate-migration-smoke"
+          ? { stdout: "staged package migration replay verification passed", stderr: "" }
           : transactionOutput(command.name, true);
       },
     });
 
     expect(receipt.reused).toBe(true);
-    expect(commands.map((command) => command.name)).toEqual(["stage", "exact-version-l2", "promote"]);
+    expect(commands.map((command) => command.name)).toEqual(["stage", "candidate-migration-smoke", "promote"]);
     expect(JSON.stringify(commands)).not.toContain("release-qualification.mjs");
     expect(JSON.stringify(commands)).not.toContain("source-qualification");
   });
