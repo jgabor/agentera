@@ -1,0 +1,29 @@
+id: aglveetddu
+artifact: plan
+record:
+  plan: bcpkchatfu
+  name: Verify personal glossary delivery under current contracts
+  status: complete
+  depends_on:
+    - qalythqtiq
+  acceptance:
+    - GIVEN the current source tree WHEN targeted personal-glossary tests, source/package parity, typecheck, build, compact, and capability validation run THEN all pass.
+    - GIVEN agentera@next resolves to this feat/v3 commit WHEN the package runs outside the checkout THEN representative glossary read, decision, review, and publication paths match the local CLI.
+    - GIVEN current routine development publication WHEN delivery evidence is assessed THEN obsolete source-receipt and immutable-candidate requirements are not claimed as completed.
+    - GIVEN verification results WHEN independently audited THEN the evidence supports superseding onlyyjethm and bbkwyfhhnc without a release, push, or registry mutation.
+  evidence:
+    - Current source verification passed 690 glossary/Profile tests across 21 files, 25 source/package parity tests, typecheck, build, compact with zero over-limit artifacts, capability contract 3/3, Profile capability validation, and the glossary quality gate at 20/20 discovery, 20/20 scope, 19/20 inferred review, and 99/100 explicit admission.
+    - The package test assertions passed 40/40, but the legacy package-owner command exceeded its obsolete 60-second wall-clock budget at 236.834 seconds and exited nonzero; this timing-policy result is retained as a caveat rather than claimed as a package-qualification pass.
+    - Published agentera@next 3.0.0-dev.74 identifies the current feat/v3 source. In clean temporary projects, local and published CLIs matched exit codes and structured outcomes for candidate reads, abstaining and malformed decisions, review queue and empty review reads, unauthorized no-op publication, and malformed publication input.
+    - Current routine feat/v3 CI builds one isolated tarball, validates version and source binding, executes a version smoke, and publishes the same bytes. It intentionally omits the former source-receipt, immutable-candidate, attestation, benchmark, and approval path; no such evidence is claimed.
+    - Verification caused no implementation, documentation, release, push, registry, or real-profile mutation. The unrelated retrospective report remained byte-identical.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: current-contract-audit-1
+      source: independent audit of current-contract glossary verification
+      recorded_at: 2026-08-14 00:21
+      writer_command: agentera state plan record-evaluation

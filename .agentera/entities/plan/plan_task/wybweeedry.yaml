@@ -1,13 +1,13 @@
 id: wybweeedry
 artifact: plan
 record:
-  name: Prove release readiness and update delivery surfaces
+  name: Confirm current delivery readiness
   depends_on:
-    - bbkwyfhhnc
+    - aglveetddu
   status: pending
   acceptance:
-    - GIVEN source and package evidence WHEN release, metadata, compact, and dry-pack gates run THEN all pass without reconstructing the candidate.
-    - GIVEN behavior changed WHEN delivery surfaces are reviewed THEN commands, privacy, review, compatibility, and inferred-admission hold are accurate.
-    - GIVEN task state changed WHEN commits are inspected THEN updates are folded into substantive tasks with no bookkeeping-only commit.
-    - GIVEN readiness passes WHEN delivery concludes THEN versions stay within the 3.0 boundary and no external mutation occurs.
+    - GIVEN current source and published-package evidence WHEN delivery readiness is reviewed THEN glossary commands, privacy, review, compatibility, and inferred-admission behavior remain accurate.
+    - GIVEN routine feat/v3 publication now owns only isolated construction, manifest binding, executable smoke, and npm upload WHEN readiness is assessed THEN no obsolete receipt, immutable-candidate, metadata-preparation, or dry-pack gate is required.
+    - GIVEN replacement task state and delivery documentation WHEN inspected THEN they agree with the current workflow and preserve the recorded package-owner timing caveat without overclaiming.
+    - GIVEN readiness is confirmed WHEN delivery concludes THEN versions remain within the 3.0 boundary and no new release, push, registry, or profile mutation occurs.
   plan: bcpkchatfu

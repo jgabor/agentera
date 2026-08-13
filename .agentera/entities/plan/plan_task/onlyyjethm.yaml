@@ -4,7 +4,7 @@ record:
   name: Qualify source integration
   depends_on:
     - qalythqtiq
-  status: pending
+  status: superseded
   acceptance:
     - GIVEN source behavior is complete WHEN source, type, build, compact, profile, and contract gates run THEN all pass from the local artifact.
     - GIVEN a gate fails WHEN reported THEN its discovery, loading, execution, or integration owner is explicit and earlier evidence is not end-to-end success.
@@ -22,3 +22,6 @@ record:
     - Validator-owned nonforgeable assembly snapshots and deep-freezes observations, assembles and cross-validates without caller evidence overrides; ordinary validation and unchanged Barrier B independently re-observe artifacts. Canonical no-receipt qualification passed 10/10 in 397.361s with 22.639s margin; package 44/44, focused source 54/54, typecheck, and Audit PASS. Budgets and receipt order are unchanged; no receipt, candidate, registry, activation, or publication effects occurred. Clean source receipt remains pending after commit.
     - Shared packages/cli/scripts/git-source-tree.mjs identity now hashes deterministic paths, stage-zero modes, and blob or target bytes for generated output and source receipts. core.symlinks=false clean regular-file surrogates for index 120000 canonicalize as symlinks; true/default regular replacements mismatch. Committed executable, symlink, and surrogate-target changes invalidate receipts; irrelevant chmod and core.filemode=false remain stable. Digest-valid legacy and stale receipts reject. Focused release/generated checks passed 91 tests with one platform skip; typecheck and Audit PASS. No receipt, candidate, registry, activation, or publication effect occurred. Final clean source receipt must be reissued after commit.
     - Second rebase onto feat/v3 dev.72 required source-evidence assembly, structured schema parity, and current-generation review fixture corrections; focused release/runtime 247, runtime matrix 3, source/package parity 25, typecheck, build, compact, and capability checks passed; independent Audit PASS. Final clean source/candidate qualification is intentionally deferred to the feat/v3 release workflow per user instruction.
+  superseded_by:
+    - aglveetddu
+  superseded_reason: Routine feat/v3 CI no longer issues source receipts; current-contract glossary verification replaces this obsolete qualification task.
