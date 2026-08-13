@@ -1,0 +1,13 @@
+id: mxrlnxyoqp
+artifact: plan
+record:
+  name: Audit delivery and synchronize state
+  depends_on:
+    - opbthhevqj
+  status: pending
+  acceptance:
+    - GIVEN the integrated change WHEN independently audited once THEN unsupported-reference removal, coverage ownership, package isolation, timing evidence, and unrelated-work preservation receive a PASS or actionable findings.
+    - GIVEN an audit finding that affects acceptance WHEN corrected THEN only one bounded correction cycle runs and the affected checks pass again.
+    - GIVEN final evidence WHEN state is synchronized THEN task outcomes, surprises, progress, TODO status, and maintained documentation agree through their owning writers.
+    - GIVEN delivery completes WHEN repository status is inspected THEN unrelated user changes remain untouched and no release, publication, registry, tag, or push effect occurred.
+  plan: lolaymslep

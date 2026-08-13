@@ -31,7 +31,7 @@ record:
       present: true
       description: "[fix:3.0.0] Replan candidate projection symlink confinement"
       status: resolved
-      order: 98
+      order: 111
       severity: degraded
   lifecycle:
     operation: resolve

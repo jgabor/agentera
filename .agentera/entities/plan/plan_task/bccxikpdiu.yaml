@@ -1,0 +1,24 @@
+id: bccxikpdiu
+artifact: plan
+record:
+  name: Reduce and repartition semantic parity
+  depends_on:
+    - gqxfymtkrb
+  status: complete
+  acceptance:
+    - GIVEN help, state, cursor, Plan, glossary, routing, and upgrade semantics WHEN detailed branches are tested THEN each lives with its feature owner and is not exhaustively repeated against equivalent constructed and extracted trees.
+    - GIVEN retained extracted-package parity WHEN reviewed THEN every scenario names a package-sensitive failure mode that source feature tests cannot prove.
+    - GIVEN independent cold commands WHEN parity executes THEN bounded scheduling overlaps safe reads while mutating workflows use isolated state and preserve deterministic results.
+    - GIVEN Profile Full and producer-readiness workflows WHEN coverage is mapped THEN exhaustive behavior executes once and package coverage uses only representative success and fail-closed paths.
+    - GIVEN refactored testable units WHEN focused regressions run THEN each has one passing case and one failure or preservation case without reducing asserted behavior.
+  plan: lolaymslep
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Unchanged sourcePackageParity.test.ts still runs exhaustive duplicated semantic matrices, serial cold processes, Profile Full, and producer readiness.
+    provenance:
+      attempt_id: audit-2
+      source: Bounded correction evidence jwontcgdzf resolving audit ses_0029712b3ffeHZ7e0YAyIZYRjK
+      recorded_at: 2026-08-14 01:34
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,24 @@
+id: xxqrbtkqjy
+artifact: plan
+record:
+  name: Remove unsupported active references
+  depends_on:
+    - gqxfymtkrb
+  status: complete
+  acceptance:
+    - GIVEN active Agentera code, tests, docs, and package inputs WHEN searched after cleanup THEN Orca and any other unsupported external-project names are absent without replacement aliases, journal concepts, comments, or compatibility shims.
+    - GIVEN a fresh Git root with unrelated existing user files WHEN classification and first Plan initialization run THEN files remain byte-identical until the authorized Agentera publication and no migration is recommended.
+    - GIVEN an external runtime or compatibility name remains WHEN reviewed THEN a current Agentera contract identifies its supported, retired-import, or migration purpose.
+    - GIVEN machine-specific path literals WHEN generic portability checks already cover the class THEN redundant personal literals are removed; any retained literal has a documented Agentera-owned reason.
+    - GIVEN focused cleanup regressions WHEN they run THEN each changed behavioral unit has one passing case and one fail-closed or preservation case.
+  plan: lolaymslep
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Active Orca references remain in sourcePackageParity.test.ts and planEntities.test.ts; internal Agentera replacement journals are legitimate recovery state and excluded from this correction.
+    provenance:
+      attempt_id: audit-2
+      source: Bounded correction evidence hcdefutebn resolving audit ses_0029712b3ffeHZ7e0YAyIZYRjK
+      recorded_at: 2026-08-14 01:34
+      writer_command: agentera state plan record-evaluation

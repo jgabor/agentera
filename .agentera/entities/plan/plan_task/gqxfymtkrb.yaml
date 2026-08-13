@@ -1,0 +1,23 @@
+id: gqxfymtkrb
+artifact: plan
+record:
+  name: Freeze boundaries, ownership, and baseline
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN every external proper name in active Agentera surfaces WHEN the inventory is reviewed THEN each name is linked to a production, public-support, migration, or build contract or marked for removal.
+    - GIVEN the two parity suites and related feature tests WHEN scenarios are compared THEN every behavior has a proposed single primary owner and duplicated cold-process executions are counted.
+    - GIVEN the current verification commands WHEN three controlled serial measurements run without competing owners THEN wall time, test count, and slowest scenarios are recorded for comparison.
+    - GIVEN parallel execution WHEN agents receive work THEN reference cleanup, package-boundary restoration, and source-semantic refactoring have non-overlapping write ownership and shared contract edits are reserved for integration.
+  plan: lolaymslep
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: baseline-1
+      source: Prime review of analyze session ses_002ac0bacffeIlLEvahs3ySzYI baseline report
+      recorded_at: 2026-08-14 01:08
+      writer_command: agentera state plan record-evaluation

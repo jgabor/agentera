@@ -22,7 +22,7 @@ record:
       present: true
       description: "[fix:3.0.0] Reject recurring glossary noise classes instead of exemplars"
       status: resolved
-      order: 96
+      order: 109
       severity: degraded
   lifecycle:
     operation: resolve

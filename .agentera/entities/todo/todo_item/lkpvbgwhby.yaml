@@ -32,7 +32,7 @@ record:
       present: true
       description: "[fix:3.0.0] Restore generated-overlap package verification to its governed wall-time budget."
       status: resolved
-      order: 104
+      order: 107
       severity: critical
   lifecycle:
     operation: resolve

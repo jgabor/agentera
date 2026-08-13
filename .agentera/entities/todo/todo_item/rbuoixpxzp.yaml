@@ -21,7 +21,7 @@ record:
       present: true
       description: "[fix:3.0.0] Preserve Codex session-level transported author provenance"
       status: resolved
-      order: 95
+      order: 108
       severity: degraded
   lifecycle:
     operation: resolve

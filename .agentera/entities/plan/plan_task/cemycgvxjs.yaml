@@ -1,0 +1,24 @@
+id: cemycgvxjs
+artifact: plan
+record:
+  name: Restore distribution-only package verification
+  depends_on:
+    - gqxfymtkrb
+  status: complete
+  acceptance:
+    - GIVEN package verification WHEN its inventory runs THEN it proves construction, deterministic bytes, layout, modes, portability, isolated installation, and one representative extracted invocation without replaying exhaustive command matrices.
+    - GIVEN a semantic scenario already owned by source or feature tests WHEN package tests are inventoried THEN no second exhaustive copy remains in the package owner.
+    - GIVEN a malformed or incomplete distribution WHEN package verification runs THEN it fails at the package boundary before publication evidence can pass.
+    - GIVEN the package owner runs under governed conditions WHEN complete THEN all retained tests pass within the existing wall-time budget.
+    - GIVEN changed package-boundary units WHEN focused tests run THEN each has one passing case and one failing distribution case where applicable.
+  plan: lolaymslep
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Audit session ses_0029712b3ffeHZ7e0YAyIZYRjK
+      recorded_at: 2026-08-14 01:21
+      writer_command: agentera state plan record-evaluation

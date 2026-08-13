@@ -1,0 +1,16 @@
+id: opbthhevqj
+artifact: plan
+record:
+  name: Integrate contracts and verify runtime reduction
+  depends_on:
+    - xxqrbtkqjy
+    - cemycgvxjs
+    - bccxikpdiu
+  status: in_progress
+  acceptance:
+    - GIVEN all parallel workstreams WHEN integrated THEN verification policy, maintainer documentation, routing expectations, and test ownership describe the same source and package boundaries.
+    - GIVEN active surfaces WHEN the external-reference inventory reruns THEN unsupported names are absent and every retained external name has a current Agentera relationship.
+    - GIVEN source and package verification WHEN run from clean controlled state THEN functional checks, typecheck, build, compact validation, and capability-contract validation pass.
+    - GIVEN three controlled serial timing runs WHEN compared with the recorded baseline THEN package verification remains within its governed budget and retained semantic parity is at least 70 percent faster without fewer mapped behaviors.
+    - GIVEN ownership diagnostics WHEN they inspect the final suite THEN no scenario or test file has conflicting primary owners.
+  plan: lolaymslep

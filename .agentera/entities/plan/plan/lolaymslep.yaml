@@ -1,0 +1,36 @@
+id: lolaymslep
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-14
+    status: open
+    reviewed: 2026-08-14
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: "Plan: Remove unrelated references and bound parity verification"
+  what: Remove unsupported external-project references from active Agentera surfaces, restore verification-owner boundaries, and replace duplicated exhaustive source/package matrices with focused feature coverage and bounded package-sensitive evidence.
+  why: Unrelated names create false product concepts, while duplicated parity suites repeat nearly identical cold-process behavior and consume more than 300 seconds in one source test. The cleanup should reduce confusion and feedback time without weakening package, migration, privacy, or recovery confidence.
+  constraints: Preserve documented runtime, historical-import, migration, package, privacy, and state contracts. Do not replace removed names with fictional concepts, weaken assertions, rewrite Git history, directly edit typed state entities, publish, push, tag, or mutate registry state. Keep workstreams file-disjoint until integration and retain the existing package wall-time authority.
+  overall_acceptance: GIVEN active Agentera code, tests, docs, and verification policy WHEN the plan completes THEN unsupported external-project references and redundant personal-machine literals are absent or explicitly contract-backed, each semantic behavior has one primary test owner, extracted-package evidence covers only package-sensitive risks, the package owner passes its governed budget, and controlled parity timing is at least 70 percent below the recorded 310-second baseline without lost behavioral coverage.
+  scope:
+    included:
+      - Active source, test, documentation, configuration, and package-surface references to external names or machine-specific literals.
+      - Source, package, and feature-test ownership; duplicated parity scenarios; cold-process scheduling; fixture isolation; timing evidence.
+      - Verification policy, maintainer documentation, conservative routing, and typed closeout state.
+    excluded:
+      - Retirement of OpenCode, Codex, Cursor, Copilot, historical Claude import, Profilera compatibility, npm, GitHub, Node.js, pnpm, or other documented Agentera contracts.
+      - Git-history rewriting, direct edits to writer-owned entity files, unrelated product behavior, release publication, registry mutation, tags, or pushes.
+    deferred:
+      - Redaction of immutable historical state when no existing typed writer lawfully supports it.
+      - General test-suite optimization outside the duplicated source/package parity boundary.
+  design: "First establish a contract-backed external-name inventory, scenario ownership map, and controlled timing baseline. Then run three file-disjoint workstreams in parallel: active-reference cleanup, package-boundary restoration, and source-semantic parity reduction. After all three converge, integrate policy and documentation, measure the retained gates under controlled conditions, and finish with one independent audit plus typed state synchronization."
+  unknowns:
+    - question: Which extracted-package scenarios still prove a risk that byte identity, source feature tests, and one package smoke cannot prove?
+      affects_task: 4
+      resolve_by: Map every current parity scenario to its production risk and canonical source test before deleting or retaining it; retain only evidence with a package-sensitive failure mode.
+    - question: Can current typed historical records containing unsupported names be changed through an existing lawful writer without erasing immutable evidence?
+      affects_task: 2
+      resolve_by: Inspect the applicable typed writer contracts; if no lawful operation exists, limit the zero-reference gate to active product surfaces and leave history unchanged.
+  surprises:
+    []
+  previous_plan_archived: bcpkchatfu
