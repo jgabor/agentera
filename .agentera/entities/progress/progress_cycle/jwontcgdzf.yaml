@@ -1,0 +1,13 @@
+id: jwontcgdzf
+artifact: progress
+record:
+  timestamp: 2026-08-14 01:33
+  type: test
+  phase: build
+  what: Removed the redundant source/package semantic integration suite and its direct ownership and routing references.
+  context:
+    intent: Record verification of the bounded correction for task bccxikpdiu.
+    constraints: Progress record only; no implementation, plan task, evaluation, TODO, documentation, or commit changes.
+    scope: task bccxikpdiu
+  verified: "sourcePackageParity.test.ts was deleted (2,145 lines), and direct ownership and conservative-routing references were removed. Targeted ownership and precommit tests passed 127/127; typecheck passed; verification policy validation and inventory passed with 251 tests and no sourcePackageParity path; active path search returned no matches; git diff --check passed. Caveat: the initial unstaged run failed because package fixture source identity still saw the index entry for the deleted file; the same tests passed in the staged-deletion lifecycle used by pre-commit."
+  publication_order: 161

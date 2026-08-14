@@ -206,7 +206,6 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
     "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
     "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts",
-    "packages/cli/test/integration/sourcePackageParity.test.ts",
     "packages/cli/test/packaging/packageSetup.ts",
     "scripts/precommit-vitest.sh",
   ])("routes lane-defining surface %s conservatively", (surface) => {

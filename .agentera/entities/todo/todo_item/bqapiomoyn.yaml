@@ -1,0 +1,37 @@
+id: bqapiomoyn
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Restore the full source verification owner
+  requirements:
+    - Repair the retained-reference inventory failure for references/cli/update-channels.yaml without weakening reference-consumer validation.
+    - Repair the release qualification environment-authority failures without weakening attestation trust boundaries.
+  acceptance:
+    - GIVEN the intended staged source tree WHEN pnpm -C packages/cli test runs THEN all source-owned files pass with only the platform-authorized skip.
+    - GIVEN retained-reference validation WHEN update-channels consumers are inspected THEN one exact reader or parser satisfies the declared authority.
+    - GIVEN release qualification tests WHEN environment authority is supplied THEN valid contracted identity passes and mismatched identity still fails.
+  release_blocker: false
+  severity: critical
+  readiness:
+    capability: build
+    reason: The full source owner repeatedly fails outside the parity-cleanup surfaces.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 1
+    order_reason: Restore the required source verification gate before plan closeout.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Restore the full source verification owner"
+      status: resolved
+      order: 113
+      severity: critical
+  lifecycle:
+    operation: resolve
+    reason: Restored retained-reference and release-qualification fixtures; focused and full source owners pass
+    date: 2026-08-14

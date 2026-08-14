@@ -266,7 +266,7 @@ function readPackageJson(root: string): JsonObject | null {
   return readJson(candidate);
 }
 
-function readUpdateChannels(root: string): JsonObject | null {
+export function readUpdateChannels(root: string): JsonObject | null {
   const candidate = path.join(root, "references/cli/update-channels.yaml");
   if (!fs.existsSync(candidate)) {
     return null;

@@ -378,7 +378,7 @@ independent:
 
 | Owner | Entry point | Owns |
 | ----- | ----------- | ---- |
-| Source | `pnpm -C packages/cli test` (`test:source`) | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, semantic command parity, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
+| Source | `pnpm -C packages/cli test` (`test:source`) | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, detailed command and failure behavior in feature-owned tests, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
 | Stress | `pnpm -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
 | Performance | `pnpm -C packages/cli run test:performance` | Machine-sensitive budget evidence, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
 | Capacity | `pnpm -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
@@ -393,9 +393,9 @@ symlink replacement.
 It builds in two distinct metacharacter-bearing roots, packs each construction
 once with lifecycle scripts disabled, rejects any byte or manifest difference,
 scans the extracted tree for both absolute roots, and extracts once. Source integration
-uses the same fixture for command parity, with a private package copy for tests
-that exercise fail-closed mutations. `packageVerification.test.ts` consumes the
-canonical fixture for distribution assertions and one extracted smoke.
+does not repeat that extracted package command matrix. Feature-owned source tests
+cover detailed command and failure behavior. `packageVerification.test.ts`
+consumes the canonical fixture for distribution assertions and one extracted smoke.
 `copyBundleSafety.test.ts` consumes it for focused staging preflight and
 filesystem-side-effect failures. A failing lane labels its own boundary and
 does not invoke the other lane.
@@ -407,14 +407,15 @@ serial pre-change runs at 611.675, 386.578, and 307.207 seconds under heavy
 contention. On the same 16-thread Ryzen 7 9800X3D host with Node 22.23.2, pnpm
 10.30.3, existing dependencies and caches, and no intentionally concurrent
 verification, the final two-construction fixture took 12.376, 11.666, and
-11.047 seconds in three serial end-to-end runs. Its measured owner times were
-11.415, 10.789, and 10.202 seconds. Earlier single-construction calibration is
+11.047 seconds in three serial end-to-end runs. After the package owner was
+reduced to its distribution-only inventory, three controlled runs took 5.558,
+5.489, and 5.471 seconds. Their measured owner times were 4.752, 4.698, and
+4.672 seconds. Earlier single-construction calibration is
 retained in the policy but is explicitly superseded as final-snapshot evidence:
   the 10,000 ms limit rejected a passing 10.429-second owner, while the
   15,000 ms limit passed owner runs of 9.859, 8.962, and 13.069 seconds. The
-policy takes the smaller of the baseline minimum and 125 percent of the current
-12.376-second maximum rounded up to the next five seconds. This yields the
-governed 20,000 ms limit.
+policy combines the controlled maximum with the remote cold-run evidence. The
+remote headroom governs the current 60,000 ms limit.
 The controlled shell timings include command-launch overhead, so they
 conservatively bound the owner process measured by `verify-lane.mjs`. An invalid
 limit fails before test execution. A successful test process that exceeds the
@@ -571,10 +572,10 @@ inputs.
 - `test/integration/runtimeBootstrapMatrix.test.ts` owns the complete 190-row
   source/package bootstrap matrix, classifications, protected-root proof, and
   pre-child rejection evidence.
-- `test/integration/sourcePackageParity.test.ts` owns extracted command and
-  failure semantics that must remain equal to the source runtime.
-- `test/packaging/packageVerification.test.ts` owns distribution observations
-  and one extracted smoke. It intentionally avoids command/failure matrices.
+- Feature-owned source tests under `test/cli/`, `test/state/`, `test/upgrade/`,
+  and related areas own detailed command and failure behavior.
+- `test/packaging/packageVerification.test.ts` contains five distribution-only
+  tests, including one extracted smoke. It does not own command/failure matrices.
 - `test/packaging/copyBundleSafety.test.ts` owns focused bundle-staging
   containment, collision, registry-shape, and fail-before-side-effect coverage.
 - `test/verification/laneOwnership.test.ts` locks the lane configs, scripts,

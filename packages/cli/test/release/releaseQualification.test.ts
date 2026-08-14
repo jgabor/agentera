@@ -14,6 +14,7 @@ import {
   issueCandidateReceipt,
   issueCiAttestation,
   issueSourceReceipt,
+  qualificationWorkflowIdentity,
   RELEASE_CONTRACT,
   runSourceReceiptCheckCommand,
   sha256,
@@ -186,12 +187,13 @@ function git(root: string, ...args: string[]): string {
 }
 
 function sourceQualificationEnvironment(repo: string) {
+  const workflow = qualificationWorkflowIdentity("development");
   return {
     GITHUB_ACTIONS: "true",
     GITHUB_SHA: git(repo, "rev-parse", "HEAD"),
-    GITHUB_REPOSITORY: "jgabor/agentera",
-    GITHUB_WORKFLOW: "Verify package",
-    GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/qualify.yml@refs/heads/feat/v3",
+    GITHUB_REPOSITORY: workflow.repository,
+    GITHUB_WORKFLOW: workflow.workflow,
+    GITHUB_WORKFLOW_REF: workflow.workflowRef,
     GITHUB_RUN_ID: "123",
   };
 }
@@ -801,6 +803,13 @@ describe("release qualification receipts", () => {
       repo,
       candidateDirectory,
       gates: GOVERNED_GATES,
+      environment: { ...sourceQualificationEnvironment(repo), GITHUB_WORKFLOW: "Other workflow" },
+      runDag,
+    })).rejects.toThrow("CI attestation must originate from the contracted verification repository, workflow, workflow ref, and run identity");
+    await expect(issueSourceReceipt({
+      repo,
+      candidateDirectory,
+      gates: GOVERNED_GATES,
       environment: { ...sourceQualificationEnvironment(repo), GITHUB_SHA: "0".repeat(40) },
       runDag,
     })).rejects.toThrow("source receipt checkout SHA does not match the committed verification source");
@@ -1156,14 +1165,7 @@ describe("release qualification receipts", () => {
       receiptSha256: approval.receiptSha256,
       candidateReceiptSha256: candidate.receiptSha256,
     });
-    const environment = {
-      GITHUB_ACTIONS: "true",
-      GITHUB_SHA: candidate.metadataCommit as string,
-      GITHUB_REPOSITORY: "jgabor/agentera",
-      GITHUB_WORKFLOW: "Verify package",
-      GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/qualify.yml@refs/heads/feat/v3",
-      GITHUB_RUN_ID: "123",
-    };
+    const environment = sourceQualificationEnvironment(repo);
     issueCiAttestation({ repo, candidateDirectory, adapterName: "development", environment });
     expect(validateCiAttestation({
       repo,

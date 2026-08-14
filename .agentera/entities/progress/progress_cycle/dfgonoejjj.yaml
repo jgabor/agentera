@@ -1,0 +1,14 @@
+id: dfgonoejjj
+artifact: progress
+record:
+  timestamp: 2026-08-14 01:14
+  type: test
+  phase: build
+  what: Verified feature-owned semantic coverage for plan task bccxikpdiu.
+  context:
+    intent: Record required verification evidence for Agentera plan task bccxikpdiu without changing task state or implementation files.
+    constraints: Progress record only; preserve unrelated state and leave plan task, TODO, changelog, and commits unchanged.
+    unknowns: Audit must decide whether the Orca Journal-shaped fixture conflicts with cleanup acceptance.
+  discovered: "The scenario owner map concludes that mutation and retrieval authority, TODO bounds and cursor safety, plan replacement and fresh behavior, Prime mixed history, startup and bundled authority validation, Profile Full and producer readiness, routing, and v2 upgrade convergence each have a feature-owned source test. Caveat for audit: the added fresh Plan test summary described an Orca Journal-shaped fixture, which may conflict with the cleanup acceptance and should be reviewed before reducing sourcePackageParity."
+  verified: For task bccxikpdiu, `corepack pnpm -C packages/cli run test:source -- test/state/planEntities.test.ts` passed 63/63 tests in 27.26s; `git diff --check -- packages/cli/test/state/planEntities.test.ts` passed. The scenario owner map concluded that every requested detailed semantic area has a clear feature-owned source test, with the fresh Plan initialization and unrelated-artifact preservation gap filled in planEntities.test.ts.
+  publication_order: 158

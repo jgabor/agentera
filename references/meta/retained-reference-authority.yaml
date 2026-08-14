@@ -80,7 +80,7 @@ inventory:
     classification: current
     production_owner: { module: packages/cli/src/release/releaseMetadata.ts, symbol: readReleaseMetadata }
     consumers:
-      - { kind: validator, module: packages/cli/src/release/releaseMetadata.ts, symbol: readReleaseMetadata, consumption: loads }
+      - { kind: validator, module: packages/cli/src/release/releaseMetadata.ts, symbol: readUpdateChannels, consumption: loads }
   - path: references/cli/vocabulary-index.yaml
     classification: current
     production_owner: { module: packages/cli/src/validate/vocabularyAuthority.ts, symbol: validateVocabularyAuthority }

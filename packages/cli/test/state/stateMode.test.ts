@@ -40,14 +40,11 @@ afterEach(() => {
 });
 
 describe("state mode marker boundary", () => {
-  it("classifies an Orca Journal-shaped Git root as fresh without adopting user documents", () => {
+  it("classifies a Git root with unrelated user files as fresh without adopting them", () => {
     const root = project();
     initializeGit(root);
-    for (const name of ["ARCHITECTURE.md", "MVP.md", "ROADMAP.md"]) {
-      fs.writeFileSync(path.join(root, name), `# ${name}\n`);
-    }
-    fs.writeFileSync(path.join(root, "TODO.md"), "| Task | Status |\n| --- | --- |\n| Draft | open |\n");
-    fs.mkdirSync(path.join(root, "reports"));
+    fs.writeFileSync(path.join(root, "README.md"), "# Existing project\n");
+    fs.writeFileSync(path.join(root, "config.json"), '{"enabled":true}\n');
     const write = vi.spyOn(fs, "writeFileSync");
     const mkdir = vi.spyOn(fs, "mkdirSync");
     const rename = vi.spyOn(fs, "renameSync");

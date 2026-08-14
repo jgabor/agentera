@@ -15,7 +15,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | Performance owner | Machine-sensitive cold-process budgets on one worker, including one bounded evidence record with runner authority | `pnpm -C packages/cli test:performance` |
 | Capacity owner | Large deterministic scale coverage that is too heavy for source correctness or performance timing | `pnpm -C packages/cli test:capacity` |
 | Performance integration | Real supported owner command plus independent stdout-contract validation; scheduled/release policy surface | `pnpm -C packages/cli test:performance:integration` |
-| Package boundary | Focused bundle safety plus one tarball build, generated-surface no-drift checks, authority-derived inventory, extraction, install, and minimum isolated invocation conjunctions | `pnpm -C packages/cli run verify:package` |
+| Package boundary | Distribution-only checks from the canonical two-construction fixture, focused bundle safety, exact package inventory and integrity, path independence, and one extracted smoke | `pnpm -C packages/cli run verify:package` |
 | Repo-state fixtures | Pinned `.agentera/` + `TODO.md` variants via `useFixtureProject(name)` | `packages/cli/test/fixtures/repo-state/` |
 | Repo gate | Committed `.agentera/*` and `TODO.md` within `uniform_10_40_50` | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
 | Release gate | Version-bearing surfaces and governed provenance aligned in the live checkout | `agentera check validate release-metadata --format json` |

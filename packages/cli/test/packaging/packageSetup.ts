@@ -263,8 +263,6 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
       ...pathNeedles("construction-root-secondary", secondConstructionRoot),
       ...pathNeedles("extraction-root-primary", extractedPackage),
       ...pathNeedles("actual-home", os.homedir()),
-      ...pathNeedles("developer-home-explicit", "/home/jgabor"),
-      ...pathNeedles("prohibited-intermediate-tier", "/home/jgabor/.local/share/agentera/intermediate/tiers"),
     ];
     const pathMatches = assertNoForbiddenPathMatches(extractedPackage, pathScanNeedles);
     // Both constructed and extracted runtimes use the checkout's already

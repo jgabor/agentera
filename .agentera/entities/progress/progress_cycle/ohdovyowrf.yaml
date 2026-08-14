@@ -1,0 +1,15 @@
+id: ohdovyowrf
+artifact: progress
+record:
+  timestamp: 2026-08-14 02:10
+  type: fix
+  phase: build
+  what: Restored the full source verification owner after the parity-boundary integration exposed stale authority fixtures.
+  context:
+    intent: Record durable root-cause and final verification evidence for the bounded resolution of task opbthhevqj.
+    constraints: No release, stress, performance, capacity, publication, push, version, or profile changes. Preserve the blocked task lifecycle for coordinator action.
+    scope: Retained-reference consumer ownership, release-qualification environment fixtures, and the integrated package-verification reduction.
+  discovered: "The retained-reference failure was an inventory granularity mismatch: readReleaseMetadata consumed update-channels.yaml through readUpdateChannels, but the exact-reader validator could not prove the wrapper's private helper call. The 29 release failures shared one stale fixture: tests supplied the retired Verify package workflow name after the development contract changed to Publish development package."
+  verified: Focused failing files passed 56/56; related release metadata, publication orchestration, and validate checks passed 73/73; typecheck and build passed; retained-reference validation, compact, capability contract, and diff checks passed. The one final canonical staged source owner passed 244 files with 4053 tests passed and 1 authorized skip in 292.53s.
+  next: Coordinator must replace or otherwise lawfully close blocked task opbthhevqj because its two evaluation attempts remain exhausted; no task transition was attempted.
+  publication_order: 164

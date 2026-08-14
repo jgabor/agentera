@@ -156,6 +156,7 @@
 - [x] [id:psteyugpzv] [fix:3.0.0] Replan explicit-definition parser segmentation
 - [x] [id:swighbbfpu] [fix:3.0.0] Replan candidate projection symlink confinement
 - [x] [id:upinmywhig] [fix] Align packaging guide with routine feat/v3 publication
+- [x] [id:bqapiomoyn] [fix:3.0.0] Restore the full source verification owner
 
 ## → Critical
 

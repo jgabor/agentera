@@ -484,7 +484,6 @@ describe("verification lane ownership", () => {
     ]);
     expect(inventory.files.source).toEqual(expect.arrayContaining([
       "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts",
-      "packages/cli/test/integration/sourcePackageParity.test.ts",
     ]));
     expect(inventory.integrations).toEqual({
       performance: "packages/cli/test/integration/performanceOwner.integration.mjs",

@@ -1,0 +1,12 @@
+id: ztkwcluixz
+artifact: progress
+record:
+  timestamp: 2026-08-14 01:15
+  type: test
+  phase: build
+  what: Verified task xxqrbtkqjy removed unsupported active external references while preserving fresh-project behavior.
+  context:
+    intent: Record required verification evidence for task xxqrbtkqjy.
+    scope: Task xxqrbtkqjy verification only; preserve implementation files, plan task state, TODO, changelog, commits, and unrelated state.
+  verified: "Task xxqrbtkqjy: `pnpm exec vp test run test/cli/freshPlanInitialization.test.ts test/state/stateMode.test.ts --maxWorkers=2` passed 2 files and 19 tests; `pnpm run typecheck` passed; `git diff --check -- packages/cli/test/cli/freshPlanInitialization.test.ts packages/cli/test/state/stateMode.test.ts packages/cli/test/packaging/packageSetup.ts` passed; `rg -n -i 'orca|journal|/home/jgabor' packages/cli/test/cli/freshPlanInitialization.test.ts packages/cli/test/state/stateMode.test.ts packages/cli/test/packaging/packageSetup.ts` returned no matches, confirming no Orca, journal, or personal-path references in owned files. Implementation verification caused no external effects; no commit, push, or publication occurred."
+  publication_order: 160

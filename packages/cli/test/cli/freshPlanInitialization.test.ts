@@ -67,13 +67,13 @@ function capture(root: string, args: string[], stdin = ""): { rc: number; out: s
   }
 }
 
-function orcaJournal(root: string): void {
-  for (const name of ["ARCHITECTURE.md", "MVP.md", "ROADMAP.md"]) {
-    fs.writeFileSync(path.join(root, name), `# ${name}\n`);
-  }
-  fs.writeFileSync(path.join(root, "TODO.md"), "| Task | Status |\n| --- | --- |\n| Draft | open |\n");
-  fs.mkdirSync(path.join(root, "reports"));
-  fs.writeFileSync(path.join(root, "reports", "journal.md"), "# Orca Journal\n");
+function userFiles(root: string): Map<string, Buffer> {
+  const files = new Map([
+    ["README.md", Buffer.from("# Existing project\n")],
+    ["config.json", Buffer.from('{"enabled":true}\n')],
+  ]);
+  for (const [name, bytes] of files) fs.writeFileSync(path.join(root, name), bytes);
+  return files;
 }
 
 beforeEach(() => {
@@ -111,9 +111,9 @@ afterEach(() => {
 });
 
 describe("fresh Plan initialization", () => {
-  it("keeps the Orca Journal sequence read-only until one atomic Plan publication", () => {
+  it("keeps unrelated user files unchanged through read-only startup and atomic Plan publication", () => {
     const root = project();
-    orcaJournal(root);
+    const existingFiles = userFiles(root);
     const before = snapshot(root);
 
     const startup = capture(root, ["prime", "--context", "plan", "--format", "json"]);
@@ -142,6 +142,7 @@ describe("fresh Plan initialization", () => {
     expect(applied.json?.initialization.marker.record).toEqual({ schemaVersion: "agentera.stateMode.v1", mode: "entities" });
     expect(detectStateMode(root)).toBe("entities");
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+    for (const [name, bytes] of existingFiles) expect(fs.readFileSync(path.join(root, name))).toEqual(bytes);
 
     const initialized = capture(root, ["prime", "--context", "plan", "--format", "json"]);
     expect(initialized.rc, initialized.err).toBe(0);

@@ -138,15 +138,15 @@ owners:
           minimum_ms: 307207
           note: Task 1 recorded a contention fingerprint, so the minimum is a historical ceiling rather than a direct target.
         controlled_measurement:
-          measured_on: 2026-08-10
+          measured_on: 2026-08-14
           command: pnpm -C packages/cli run verify:package
-          serial_runs_ms: [12376, 11666, 11047]
-          owner_wall_time_runs_ms: [11415, 10789, 10202]
-          minimum_ms: 11047
-          median_ms: 11666
-          maximum_ms: 12376
-          test_files: 2
-          passed_tests: 11
+          serial_runs_ms: [5558, 5489, 5471]
+          owner_wall_time_runs_ms: [4752, 4698, 4672]
+          minimum_ms: 5471
+          median_ms: 5489
+          maximum_ms: 5558
+          test_files: 3
+          passed_tests: 12
           fixture_construction_cycles: 2
           deterministic_pack_runs: 2
           extracted_smoke_runs: 1
@@ -156,10 +156,6 @@ owners:
             logical_cpus: 16
             node: 22.23.2
             pnpm: 10.30.3
-            load_average_at_start:
-              - [15.69, 16.16, 15.30]
-              - [13.97, 15.76, 15.18]
-              - [12.79, 15.38, 15.07]
           conditions: Serial commands with existing dependencies and caches, no intentional verification overlap, and two independent construction roots per command.
         remote_cold_measurement:
           measured_on: 2026-08-12
@@ -254,7 +250,6 @@ conservative_routing:
     - packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs
     - packages/cli/test/helpers/runtimeProofCliBoundary.mjs
     - packages/cli/test/integration/runtimeBootstrapMatrix.test.ts
-    - packages/cli/test/integration/sourcePackageParity.test.ts
     - references/analysis/verification-policy.yaml
     - scripts/precommit-vitest.sh
   prefixes:

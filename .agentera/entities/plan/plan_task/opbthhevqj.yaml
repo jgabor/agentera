@@ -6,7 +6,7 @@ record:
     - xxqrbtkqjy
     - cemycgvxjs
     - bccxikpdiu
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN all parallel workstreams WHEN integrated THEN verification policy, maintainer documentation, routing expectations, and test ownership describe the same source and package boundaries.
     - GIVEN active surfaces WHEN the external-reference inventory reruns THEN unsupported names are absent and every retained external name has a current Agentera relationship.
@@ -14,3 +14,14 @@ record:
     - GIVEN three controlled serial timing runs WHEN compared with the recorded baseline THEN package verification remains within its governed budget and retained semantic parity is at least 70 percent faster without fewer mapped behaviors.
     - GIVEN ownership diagnostics WHEN they inspect the final suite THEN no scenario or test file has conflicting primary owners.
   plan: lolaymslep
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Full source owner failed again in canonical staged-deletion lifecycle: 242 files passed, 2 failed; 4023 tests passed, 30 failed, 1 skipped in 318.25s. Failures matched prior run: retained-reference inventory and 29 release-qualification environment-authority failures. Index restored exactly."
+    provenance:
+      attempt_id: integration-2
+      source: Build session ses_002859358ffeEM6XXdDyr4eGYC final staged source verification
+      recorded_at: 2026-08-14 01:56
+      writer_command: agentera state plan record-evaluation
+  evidence: "Bounded resolution after two failed evaluations: retained-reference validation now names the exact update-channel loader, release qualification fixtures derive the contracted development workflow identity, focused tests passed 56/56 plus 73 related release/CLI tests, typecheck and build passed, retained-reference, compact, and capability-contract checks passed, and the final canonical staged source owner passed 244 files with 4053 tests passed and 1 authorized skip in 292.53s. Task status remains blocked for coordinator replacement because evaluation attempts are exhausted."

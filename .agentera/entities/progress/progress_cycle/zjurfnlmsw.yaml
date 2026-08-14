@@ -1,0 +1,16 @@
+id: zjurfnlmsw
+artifact: progress
+record:
+  timestamp: 2026-08-14 01:40
+  type: test
+  phase: build
+  what: Integrated verification ownership and controlled timing evidence for task opbthhevqj.
+  context:
+    intent: Align shared verification contracts and documentation with the cleaned source and package suite, then record controlled evidence.
+    constraints: No commit, push, publication, registry mutation, plan evaluation, or direct entity edit.
+    unknowns: The full source suite remains unverified in this cycle.
+    scope: Task opbthhevqj documentation, policy timing evidence, ownership checks, and verification.
+  discovered: Deleting sourcePackageParity removes its recurring 310.44s runtime, a 100% reduction. Detailed behavior remains owned by mapped feature source tests; package verification owns distribution risk and one extracted smoke, not replacement semantic parity.
+  verified: "`pnpm -C packages/cli exec vp test run --config vite.config.ts test/verification/laneOwnership.test.ts test/scripts/precommitVitest.test.ts` passed 127/127 after staging the intended deletion (the first unstaged attempt failed because package source identity still saw the deleted index path); the final rerun also passed 127/127. `pnpm -C packages/cli exec vp test run --config vite.config.ts test/cli/freshPlanInitialization.test.ts test/state/stateMode.test.ts` passed 19/19. `pnpm -C packages/cli run typecheck`, `pnpm -C packages/cli build`, `node packages/cli/dist/bin/agentera.js check compact`, and `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json` passed. Three serial `pnpm -C packages/cli run verify:package` runs passed 12/12 in 3 files: owner/command wall times 4752/5558ms, 4698/5489ms, and 4672/5471ms, each below 60000ms. `pnpm -C packages/cli exec vp test run --config vite.config.ts test/integration/sourcePackageParity.test.ts` returned expected exit 1 with no test files, proving deletion without executing the former suite. `rg -n -i '\\borca\\b' packages/cli/src packages/cli/test packages/cli/scripts docs skills references registry.json` returned no matches. `git diff --check` passed. Full source, release, stress, performance, and capacity owners were not run; the full source suite was not needed after targeted checks."
+  next: Prime can evaluate task completion and coordinate the later commit.
+  publication_order: 163
