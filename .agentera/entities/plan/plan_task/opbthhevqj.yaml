@@ -6,7 +6,7 @@ record:
     - xxqrbtkqjy
     - cemycgvxjs
     - bccxikpdiu
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN all parallel workstreams WHEN integrated THEN verification policy, maintainer documentation, routing expectations, and test ownership describe the same source and package boundaries.
     - GIVEN active surfaces WHEN the external-reference inventory reruns THEN unsupported names are absent and every retained external name has a current Agentera relationship.
@@ -25,3 +25,6 @@ record:
       recorded_at: 2026-08-14 01:56
       writer_command: agentera state plan record-evaluation
   evidence: "Bounded resolution after two failed evaluations: retained-reference validation now names the exact update-channel loader, release qualification fixtures derive the contracted development workflow identity, focused tests passed 56/56 plus 73 related release/CLI tests, typecheck and build passed, retained-reference, compact, and capability-contract checks passed, and the final canonical staged source owner passed 244 files with 4053 tests passed and 1 authorized skip in 292.53s. Task status remains blocked for coordinator replacement because evaluation attempts are exhausted."
+  superseded_by:
+    - urqezmimcc
+  superseded_reason: Replacement preserves integration evidence and passes after repairing source-owner fixtures and the stale attestation workflow identity.

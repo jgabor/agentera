@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: lolaymslep
   name: Confirm integrated verification after source-owner repair
-  status: in_progress
+  status: complete
   depends_on:
     - xxqrbtkqjy
     - cemycgvxjs
@@ -22,12 +22,12 @@ record:
     - The packaging guide now binds manual CI attestation to Publish development package, matching package-publication.json and qualify.yml; markdown lint, the targeted docs-contract check, the focused 13-test publication orchestration suite, compact, and diff checks passed.
     - No release, publication, registry, tag, push, version, profile, or unrelated-report mutation occurred; the preserved report SHA-256 remains 14b888fc9a484c7bb6e9b243e21bde6fa47ceafaf96623c137beadd2fdc39fea.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: docs/packaging/v3-packaging.md still names the retired Verify package workflow instead of the contracted Publish development package identity
     provenance:
-      attempt_id: integration-replacement-1
-      source: independent integration replacement audit
-      recorded_at: 2026-08-14 02:15
+      attempt_id: integration-replacement-2
+      source: bounded re-audit after attestation guide correction
+      recorded_at: 2026-08-14 02:21
       writer_command: agentera state plan record-evaluation
