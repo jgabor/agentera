@@ -1,0 +1,15 @@
+id: chltljchph
+artifact: progress
+record:
+  timestamp: 2026-08-14 02:19
+  type: docs
+  phase: build
+  what: Corrected the packaging guide's manual CI attestation workflow identity after the independent audit found one stale name.
+  context:
+    intent: Record durable correction and verification evidence for task urqezmimcc without changing its evaluation or lifecycle.
+    constraints: Keep runtime attestation validation fail-closed. Do not rerun broad owners or mutate release, publication, registry, tag, push, version, profile, or unrelated report state.
+    scope: One workflow name in docs/packaging/v3-packaging.md plus typed task evidence.
+  discovered: The failed audit came from one stale documentation literal. The package-publication contract and qualify workflow already agreed on Publish development package, and runtime validation already enforced that identity.
+  verified: Markdown lint passed; the targeted docs-contract check matched docs, package-publication.json, and qualify.yml; publicationOrchestration.test.ts passed 13/13; compact and diff checks passed; the unrelated report SHA-256 remained 14b888fc9a484c7bb6e9b243e21bde6fa47ceafaf96623c137beadd2fdc39fea.
+  next: Return task urqezmimcc for independent evaluation. Its status remains in_progress and no completion transition was attempted.
+  publication_order: 165

@@ -287,7 +287,7 @@ and receipts plus a CI attestation from the source verification run. Stable
 publication from `main` retains explicit protected-environment review. OIDC
 provenance remains deferred.
 
-The manual CI attestation binds `jgabor/agentera`, the `Verify package`
+The manual CI attestation binds `jgabor/agentera`, the `Publish development package`
 workflow, `.github/workflows/qualify.yml@refs/heads/feat/v3`, and
 the numeric source run ID. The full `refs/heads/...` contract is the branch
 authority. This attestation and approval flow is not part of routine `feat/v3`

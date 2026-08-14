@@ -1,0 +1,33 @@
+id: urqezmimcc
+artifact: plan
+record:
+  plan: lolaymslep
+  name: Confirm integrated verification after source-owner repair
+  status: in_progress
+  depends_on:
+    - xxqrbtkqjy
+    - cemycgvxjs
+    - bccxikpdiu
+  acceptance:
+    - GIVEN the integrated source, package, policy, and documentation changes WHEN current owners run THEN source, package, typecheck, build, compact, capability-contract, retained-reference, and ownership checks pass.
+    - GIVEN the former semantic parity suite WHEN current ownership is inspected THEN detailed behavior remains feature-owned and no replacement duplicate matrix exists.
+    - GIVEN controlled timing evidence WHEN compared with the baseline THEN package verification stays within its governed budget and the deleted recurring parity owner contributes zero runtime without lost mapped behavior.
+    - GIVEN stale retained-reference and release workflow fixtures WHEN corrected THEN exact-reader and attestation trust boundaries remain fail-closed.
+    - GIVEN final integration evidence WHEN audited THEN no release, publication, registry, tag, push, profile, or unrelated-report mutation occurred.
+  evidence:
+    - The canonical staged full source owner passed 244 files with 4053 tests passed and one authorized skip in 292.53 seconds after focused failing files passed 56/56 and related release/CLI tests passed 73/73.
+    - Typecheck, build, retained-reference validation, compact, capability-contract, diff, ownership, and targeted behavior checks passed; three serial package-owner runs passed under 6 seconds each against the unchanged 60-second budget.
+    - The 2145-line duplicated source/package parity suite is absent, detailed semantics remain in feature-owned tests, and package verification retains five distribution-specific scenarios including malformed-boundary rejection and one extracted smoke.
+    - The exact update-channel reader is now declared and release tests derive the current contracted workflow identity while retaining mismatched-workflow rejection.
+    - The packaging guide now binds manual CI attestation to Publish development package, matching package-publication.json and qualify.yml; markdown lint, the targeted docs-contract check, the focused 13-test publication orchestration suite, compact, and diff checks passed.
+    - No release, publication, registry, tag, push, version, profile, or unrelated-report mutation occurred; the preserved report SHA-256 remains 14b888fc9a484c7bb6e9b243e21bde6fa47ceafaf96623c137beadd2fdc39fea.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: docs/packaging/v3-packaging.md still names the retired Verify package workflow instead of the contracted Publish development package identity
+    provenance:
+      attempt_id: integration-replacement-1
+      source: independent integration replacement audit
+      recorded_at: 2026-08-14 02:15
+      writer_command: agentera state plan record-evaluation
