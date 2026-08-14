@@ -1,0 +1,29 @@
+id: ypcmtzrbfh
+artifact: health
+record:
+  date: 2026-08-14
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: the parity-verification plan completed with current artifacts, verified owner boundaries, and no closure findings."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Plan lolaymslep has 7/7 terminal tasks. The limited terminal-open audit found all delegated documentation, policy, test, TODO, plan, and progress artifacts current and committed; the unrelated report remains unchanged.
+      findings:
+        []
+  trends:
+    improved: Semantic behavior now has feature-owned coverage, while package verification is distribution-only and completes well within budget.
+    degraded: None in the limited terminal-plan closure scope.
+    new_findings: None.
+    resolved: Stale publication identities and source-owner fixtures were corrected without weakening fail-closed boundaries.
+    carried_forward: The archived personal-glossary plan retains truthful frozen task state; profile-derived state remains stale and outside this plan.
+  patterns:
+    - Terminal closure followed Audit PASS, typed artifact_freshness health publication, then plan lifecycle completion.
+  appended_at: 2026-08-14T00:39:08.707Z
