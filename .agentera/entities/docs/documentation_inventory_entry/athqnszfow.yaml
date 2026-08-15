@@ -1,7 +1,7 @@
 id: athqnszfow
 artifact: docs
 record:
-  document: Glossary entry authority — shared shape, shipped producers, and deferred consumer semantics
+  document: Glossary entry authority, shipped producer path, and deferred inferred admission
   path: references/artifacts/glossary-entry-contract.yaml
-  last_updated: 2026-07-26
+  last_updated: 2026-08-15
   status: current

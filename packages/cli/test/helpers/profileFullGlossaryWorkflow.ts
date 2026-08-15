@@ -94,6 +94,13 @@ export interface ProfileFullWorkflowObservation {
   projectGlossaryTrapSurvived: boolean;
 }
 
+export interface ProductionGlossaryWorkflowObservation {
+  generationBound: boolean;
+  outcome: string;
+  privacyBounded: boolean;
+  recovery: string;
+}
+
 interface WorkflowFault {
   exactRead?: boolean;
   decision?: boolean;
@@ -135,8 +142,116 @@ function mapping(value: unknown): Mapping {
 }
 
 function json(result: ReturnType<typeof invoke>): Mapping {
-  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
   return mapping(JSON.parse(result.stdout));
+}
+
+export function runProductionGlossaryWorkflow(
+  executable: string,
+  root: string,
+): ProductionGlossaryWorkflowObservation {
+  fs.mkdirSync(root, { recursive: true });
+  fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, ".agentera", "state-mode.yaml"),
+    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
+  );
+  const instructionRoot = path.join(root, "instruction-project");
+  const configurationRoot = path.join(root, "configuration-project");
+  fs.mkdirSync(instructionRoot, { recursive: true });
+  fs.mkdirSync(configurationRoot, { recursive: true });
+  fs.writeFileSync(path.join(instructionRoot, "AGENTS.md"), "# Rules\nKeep signal-braid explicit.\n");
+  fs.writeFileSync(path.join(configurationRoot, "AGENTS.md"), "# Rules\nVerify signal-braid before delivery.\n");
+
+  const refreshArgs = [
+    "report", "refresh", "--format", "json",
+    "--project-root", instructionRoot,
+    "--project-root", configurationRoot,
+    "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor",
+    "--accept-coverage-gap",
+  ];
+  const withoutConsent = invoke(executable, refreshArgs, root);
+  assert.equal(withoutConsent.status, 2, withoutConsent.stderr || withoutConsent.stdout);
+  const recovery = mapping(JSON.parse(withoutConsent.stdout));
+  assert.deepEqual(recovery.privacy, {
+    local_history_read: false,
+    local_history_write: false,
+    tier_write: false,
+    required_consent: "local-history",
+    provided_consent: null,
+  });
+
+  const refresh = json(invoke(executable, [...refreshArgs, "--consent", "local-history"], root));
+  assert.equal(refresh.status, "pass");
+  assert.deepEqual(mapping(refresh.privacy), {
+    local_history_read: true,
+    local_history_write: false,
+    tier_write: true,
+    projection_write: true,
+    required_consent: "local-history",
+    provided_consent: "local-history",
+    historical_imports: [],
+    historical_import_warning: null,
+  });
+  const generation = mapping(refresh.projection).generation;
+
+  const listResult = invoke(
+    executable,
+    ["report", "personal-glossary-candidates", "list", "--limit", "20", "--format", "json"],
+    root,
+  );
+  const list = json(listResult);
+  assert.equal(list.generation, generation);
+  const recurring = (list.entries as Mapping[]).find((entry) => entry.source_family === "recurring");
+  assert(recurring, `production refresh did not retain a recurring candidate: ${listResult.stdout}`);
+  for (const privateValue of [instructionRoot, configurationRoot, "Keep signal-braid explicit."]) {
+    assert.equal(listResult.stdout.includes(privateValue), false);
+  }
+
+  const exact = json(invoke(executable, [
+    "report", "personal-glossary-candidates", "get",
+    "--candidate-id", String(recurring.candidate_id),
+    "--candidate-revision", String(recurring.candidate_revision),
+    "--generation", String(list.generation),
+    "--policy-version", String(list.policy_version),
+    "--format", "json",
+  ], root));
+  const entry = mapping(exact.entry);
+  assert.equal(exact.candidate_projection_sha256, list.candidate_projection_sha256);
+
+  const decision = json(invoke(
+    executable,
+    ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
+    root,
+    JSON.stringify({
+      schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
+      candidate_id: entry.candidate_id,
+      candidate_revision: entry.candidate_revision,
+      candidate_capsule_sha256: entry.capsule_sha256,
+      candidate_projection_sha256: exact.candidate_projection_sha256,
+      generation: exact.generation,
+      policy_version: exact.policy_version,
+      classification: {
+        term: entry.term,
+        meaning: entry.meaning,
+        scope: entry.scope,
+        permanence: "durable",
+        consistency: "consistent",
+        confidence: 100,
+      },
+    }),
+  ));
+  assert.equal(decision.status, "review_required");
+  assert.equal(mapping(decision.decision).outcome, "review_required");
+
+  return {
+    generationBound:
+      exact.generation === list.generation &&
+      exact.candidate_projection_sha256 === list.candidate_projection_sha256,
+    outcome: String(decision.status),
+    privacyBounded: true,
+    recovery: String(recovery.recovery),
+  };
 }
 
 function servedContract(executable: string, root: string): ServedProfileFullContract {
@@ -540,7 +655,26 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   const emptyRoot = path.join(root, "empty");
   const emptyContract = setup(executable, emptyRoot);
   writeExistingProfile(emptyContract.profilePath, initialBase, establishedOwned);
-  persistProjection(emptyRoot, [], currentTierGeneration(emptyRoot, "empty"));
+  fs.writeFileSync(path.join(emptyRoot, "AGENTS.md"), "# Rules\nUse ordinary words.\n");
+  const emptyRefresh = json(invoke(executable, [
+    "report", "refresh", "--consent", "local-history", "--format", "json",
+    "--project-root", emptyRoot,
+    "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor",
+    "--accept-coverage-gap",
+  ], emptyRoot));
+  assert.equal(emptyRefresh.status, "pass");
+  const emptyList = json(invoke(
+    executable,
+    ["report", "personal-glossary-candidates", "list", "--limit", "20", "--format", "json"],
+    emptyRoot,
+  ));
+  assert.deepEqual(emptyList.entries, []);
+  const mining = mapping(mapping(emptyList.summary).mining);
+  for (const family of ["explicit", "recurring"]) {
+    const counts = mapping(mining[family]);
+    assert.equal(typeof counts.candidate_count, "number");
+    assert.equal(typeof counts.abstention_count, "number");
+  }
   const empty = runFullCycle(executable, emptyRoot, emptyContract, regeneratedBase, new Map(), false);
   assert.equal(empty.candidateReadFailures, 0);
   assert.equal(empty.published, 0);

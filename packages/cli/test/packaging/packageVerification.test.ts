@@ -6,6 +6,8 @@ import path from "node:path";
 import YAML from "yaml";
 import { describe, expect, inject, it } from "vitest";
 
+import { runProductionGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
+
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
@@ -172,5 +174,15 @@ describe("npm distribution boundary", () => {
       capability_context: { capability: string };
     };
     expect(payload.capability_context.capability).toBe("status");
+  });
+
+  it("matches the source personal glossary production workflow", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    expect(runProductionGlossaryWorkflow(bin, path.join(fixture.root, "glossary-production"))).toEqual({
+      generationBound: true,
+      outcome: "review_required",
+      privacyBounded: true,
+      recovery: "agentera report refresh --consent local-history",
+    });
   });
 });

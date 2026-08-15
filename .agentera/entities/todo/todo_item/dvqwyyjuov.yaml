@@ -15,12 +15,16 @@ record:
     - GIVEN the replacement task is evaluated WHEN verification runs THEN active contention, orphan recovery, and unsafe-lock rejection each have paired regression evidence.
   release_blocker: true
   severity: degraded
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Recover orphaned personal glossary refresh locks"
+      status: resolved
+      order: 114
       severity: degraded
-      status: open
-      order: 3
+  lifecycle:
+    operation: resolve
+    reason: Ownership-aware replacement task ayoqkafpkq passed independent evaluation and restored executable orphan-lock recovery.
+    date: 2026-08-15

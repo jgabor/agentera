@@ -11,7 +11,7 @@ import {
   compareGlossaryUnicodeStrings,
   glossaryCanonicalSha256,
 } from "../registries/glossaryTermIdentity.js";
-import { defaultProfileDir, type Env } from "./extractCorpus/core.js";
+import { defaultProfileDir } from "./extractCorpus/core.js";
 import {
   EXCERPT_OMISSION_REASONS,
   containsPersonalGlossarySensitiveContent,
@@ -20,6 +20,22 @@ import {
   validPersonalGlossarySafeExcerpt,
   type ExcerptOmissionReason,
 } from "./personalGlossaryCandidateProjectionExcerpts.js";
+import type {
+  PersonalGlossaryCandidateProjection,
+  PersonalGlossaryCandidateProjectionInput,
+  PersonalGlossaryCandidateProjectionMaintenanceInput,
+  PersonalGlossaryCandidateProjectionMaintenanceResult,
+  PersonalGlossaryCandidateProjectionReadResult,
+  PersonalGlossaryCandidateProjectionReport,
+  PersonalGlossaryCandidateProjectionStorageOptions,
+  PersonalGlossaryMiningFamilySummary,
+  PersonalGlossaryMiningSummary,
+  PersonalGlossaryProjectionCandidateInput,
+  PersonalGlossarySafeExcerpt,
+  PersonalGlossaryProjectionSourceFamily as SourceFamily,
+  ProjectedPersonalGlossaryCandidate,
+} from "./personalGlossaryCandidateProjectionModel.js";
+export type * from "./personalGlossaryCandidateProjectionModel.js";
 
 const PROJECTION_SCHEMA_VERSION = "agentera.personalGlossaryCandidateProjection.v1";
 const PROJECTION_REPORT_SCHEMA_VERSION = "agentera.personalGlossaryCandidateProjectionReport.v1";
@@ -28,117 +44,7 @@ const PROJECT_IDENTITY_SCHEMA_VERSION = "agentera.personalGlossaryProjectionProj
 const PROJECTION_OWNER = "deterministic_discovery_projection";
 const SHA256_RE = /^[a-f0-9]{64}$/u;
 const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
-type SourceFamily = "explicit" | "recurring";
 type Mapping = Record<string, unknown>;
-
-export interface PersonalGlossaryProjectionCandidateInput {
-  capsule: GlossaryEvidenceCapsule;
-  /** Transient diversity labels. Projection fields persist only their hashed identities. */
-  project_ids: readonly string[];
-  /** Candidate-adjacent source text. Sensitive excerpts are omitted completely. */
-  excerpts?: readonly string[];
-}
-
-export interface PersonalGlossaryCandidateProjectionInput {
-  generation: string;
-  policy_version: string;
-  /** Stable source-generation time used to derive the excerpt expiry. */
-  retained_at: string;
-  candidates: readonly PersonalGlossaryProjectionCandidateInput[];
-  mining_summary?: PersonalGlossaryMiningSummary;
-}
-
-export interface PersonalGlossarySafeExcerpt {
-  text: string;
-  expires_at: string;
-  redacted: boolean;
-}
-
-export interface ProjectedPersonalGlossaryCandidate {
-  capsule: GlossaryEvidenceCapsule;
-  source_family: SourceFamily;
-  project_keys: string[];
-  safe_excerpt: PersonalGlossarySafeExcerpt | null;
-}
-
-export interface PersonalGlossaryCandidateProjectionReport {
-  schema_version: typeof PROJECTION_REPORT_SCHEMA_VERSION;
-  input_count: number;
-  duplicate_count: number;
-  unique_count: number;
-  retained_count: number;
-  dropped_count: number;
-  cap: { maximum: number; applied: boolean };
-  allocation: { algorithm: string; tie_break: string; tie_breaks_resolved: number };
-  source_families: Array<{
-    family: SourceFamily;
-    available: number;
-    retained: number;
-    dropped: number;
-  }>;
-  projects: { available: number; retained: number; dropped: number };
-  coverage: {
-    status: "complete" | "degraded";
-    reasons: string[];
-    uncovered_source_families: SourceFamily[];
-    uncovered_projects: number;
-  };
-  excerpts: {
-    provided: number;
-    retained: number;
-    redacted: number;
-    truncated: number;
-    expired: number;
-    omissions: Record<ExcerptOmissionReason, number>;
-  };
-  mining_summary: PersonalGlossaryMiningSummary;
-}
-
-export interface PersonalGlossaryMiningFamilySummary {
-  candidate_count: number;
-  abstention_count: number;
-  abstentions_by_reason: Record<string, number>;
-}
-
-export interface PersonalGlossaryMiningSummary {
-  schema_version: typeof MINING_SUMMARY_SCHEMA_VERSION;
-  explicit: PersonalGlossaryMiningFamilySummary;
-  recurring: PersonalGlossaryMiningFamilySummary;
-  total_candidate_count: number;
-  total_abstention_count: number;
-}
-
-export interface PersonalGlossaryCandidateProjection {
-  schema_version: typeof PROJECTION_SCHEMA_VERSION;
-  owner: typeof PROJECTION_OWNER;
-  generation: string;
-  policy_version: string;
-  retained_at: string;
-  candidates: ProjectedPersonalGlossaryCandidate[];
-  report: PersonalGlossaryCandidateProjectionReport;
-  projection_sha256: string;
-}
-
-export interface PersonalGlossaryCandidateProjectionStorageOptions {
-  env?: Env;
-  platform?: NodeJS.Platform;
-}
-
-export interface PersonalGlossaryCandidateProjectionReadResult {
-  status: "current" | "missing" | "corrupt";
-  projection: PersonalGlossaryCandidateProjection | null;
-}
-
-export interface PersonalGlossaryCandidateProjectionMaintenanceInput extends PersonalGlossaryCandidateProjectionStorageOptions {
-  now: string;
-  /** Set only after the local host has authenticated the current user's purge action. */
-  current_user_purge_authorized?: boolean;
-}
-
-export interface PersonalGlossaryCandidateProjectionMaintenanceResult {
-  status: "missing" | "corrupt" | "unchanged" | "changed" | "purged";
-  expired_excerpts: number;
-}
 
 interface ProjectionContract {
   candidatesMax: number;

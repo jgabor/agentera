@@ -505,6 +505,17 @@ function projectionSummary(view: CandidateReadView): Mapping {
     source_families: report.source_families.map((family) => ({ ...family })),
     projects: { ...report.projects },
     coverage: { ...report.coverage, reasons: [...report.coverage.reasons] },
+    mining: {
+      ...report.mining_summary,
+      explicit: {
+        ...report.mining_summary.explicit,
+        abstentions_by_reason: { ...report.mining_summary.explicit.abstentions_by_reason },
+      },
+      recurring: {
+        ...report.mining_summary.recurring,
+        abstentions_by_reason: { ...report.mining_summary.recurring.abstentions_by_reason },
+      },
+    },
     abstentions: {
       candidate_selection: {
         count: report.dropped_count,

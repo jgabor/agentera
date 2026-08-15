@@ -6,7 +6,10 @@ import path from "node:path";
 import YAML from "yaml";
 import { expect, it } from "vitest";
 
-import { runServedProfileFullWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
+import {
+  runProductionGlossaryWorkflow,
+  runServedProfileFullWorkflow,
+} from "../helpers/profileFullGlossaryWorkflow.js";
 
 const PACKAGE_ROOT = path.resolve(import.meta.dirname, "../..");
 
@@ -25,6 +28,12 @@ it("drives Profile Full behavior from a transient local executable's served inst
     expect(fs.statSync(executable).isFile()).toBe(true);
 
     const workflowRoot = path.join(root, "workflow");
+    expect(runProductionGlossaryWorkflow(executable, path.join(root, "production"))).toEqual({
+      generationBound: true,
+      outcome: "review_required",
+      privacyBounded: true,
+      recovery: "agentera report refresh --consent local-history",
+    });
     const observation = runServedProfileFullWorkflow(executable, workflowRoot);
     expect(observation).toMatchObject({
       initialBaseHasNoGlossary: true,

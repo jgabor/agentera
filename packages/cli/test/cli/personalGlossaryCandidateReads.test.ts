@@ -310,9 +310,15 @@ describe("agentera report personal-glossary-candidates", () => {
         provenance_kind: "personal_explicit_definition",
         scope: "personal",
       },
-      summary: {
-        coverage: { status: "complete" },
-        abstentions: {
+       summary: {
+         coverage: { status: "complete" },
+         mining: {
+           total_candidate_count: 3,
+           total_abstention_count: 0,
+           explicit: { candidate_count: 2, abstention_count: 0 },
+           recurring: { candidate_count: 1, abstention_count: 0 },
+         },
+         abstentions: {
           candidate_selection: { count: 0 },
           safe_context: { count: expect.any(Number) },
         },

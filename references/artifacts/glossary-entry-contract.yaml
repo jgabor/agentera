@@ -59,6 +59,17 @@ term_occurrence:
 
 personal_mining_authority:
   status: active_partial
+  design_proposal_reconciliation:
+    proposal: docs/notes/personal-glossary-mining-design.md
+    proposal_authority: non_authoritative_external_note_not_tracked_in_this_checkout
+    implementation_status: shipped_with_inferred_admission_deferred
+    shipped:
+      - consented_refresh_produces_generation_bound_candidate_projection
+      - fixed_key_aggregate_candidate_and_abstention_explanations
+      - profile_full_preserves_existing_glossary_before_authorized_publication
+    deferred:
+      - inferred_automatic_admission
+    canonical_status: this_contract
   implementation_boundary: >-
      This section settles personal glossary mining identity, evidence provenance,
       consent, privacy, lifecycle, bounded explicit-discovery, public receipt construction,
@@ -67,7 +78,9 @@ personal_mining_authority:
        validation of host semantic evidence, explicit authorized personal
        publication, and Profile Full integration. It does not perform host
        semantic classification, project or public-state candidate reads, or
-       project glossary integration.
+       project glossary integration. The consented refresh command is the shipped
+       projection producer. Inferred candidates remain review-required or abstain;
+       they are not automatically admitted.
   preserved_decisions: [prmnztjytv, mcsmqqitnm, zyvgyvjnsv]
   replacement:
     shared_primitive: shared_primitive

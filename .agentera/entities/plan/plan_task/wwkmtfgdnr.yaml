@@ -4,7 +4,7 @@ record:
   name: Prove the production workflow and align documentation
   depends_on:
     - hwuksgjxwu
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a non-empty consented refresh WHEN the production workflow runs without manually seeded state THEN candidate list, exact read, and a representative inferred decision complete with review_required.
     - GIVEN mining yields no retained candidates WHEN refresh and Profile Full consume the result THEN bounded candidate and abstention counts explain the empty result while the existing profile glossary is preserved.

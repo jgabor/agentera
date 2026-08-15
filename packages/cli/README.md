@@ -114,6 +114,20 @@ details.
 
 ## Private personal glossary candidate reads
 
+An explicitly consented refresh is the production candidate producer:
+
+```bash
+npx -y agentera@next report refresh --consent local-history
+```
+
+After publishing bounded evidence, the same refresh mines explicit and recurring
+signals and writes one private projection bound to that evidence generation.
+Candidate-list summaries include fixed-key aggregate candidate and abstention
+counts for each mining family. They do not expose rejected terms, sources,
+anchors, projects, paths, or excerpts. If projection publication fails, the
+evidence remains current and the nonzero response gives the same consented
+refresh command as recovery.
+
 The user-local candidate projection has a separate read-only surface. It does
 not need a project checkout and never reads a project glossary.
 

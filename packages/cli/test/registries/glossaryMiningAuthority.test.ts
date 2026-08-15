@@ -114,6 +114,16 @@ describe("personal glossary mining authority", () => {
     const authority = YAML.parse(fs.readFileSync(glossaryEntryAuthorityPath(), "utf8"));
     expect(authority.personal_mining_authority).toMatchObject({
       status: "active_partial",
+      design_proposal_reconciliation: {
+        implementation_status: "shipped_with_inferred_admission_deferred",
+        shipped: [
+          "consented_refresh_produces_generation_bound_candidate_projection",
+          "fixed_key_aggregate_candidate_and_abstention_explanations",
+          "profile_full_preserves_existing_glossary_before_authorized_publication",
+        ],
+        deferred: ["inferred_automatic_admission"],
+        canonical_status: "this_contract",
+      },
       explicit_discovery: {
         status: "active",
         grammar: { forms: expect.any(Array) },

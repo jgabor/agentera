@@ -23,7 +23,10 @@
   generation. Projection failures keep evidence current, return nonzero with
   separate evidence and projection outcomes, and provide the consented retry command.
   Refresh ownership now rejects active or unknown owners and safely reclaims a
-  lock only after its recorded process is proven dead.
+  lock only after its recorded process is proven dead. Candidate lists expose
+  privacy-safe fixed-key aggregate candidate and abstention counts, while Profile
+  Full preserves an existing Glossary when mining returns no candidates. Inferred
+  candidates remain review-only and are not automatically admitted.
 - Every passing `feat/v3` push now publishes one CI-allocated rolling
   `3.0.0-dev.N` package to npm `@next` without a metadata-only commit. The
   bounded workflow builds one isolated tarball, validates and smokes those exact

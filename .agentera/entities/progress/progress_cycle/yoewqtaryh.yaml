@@ -1,0 +1,15 @@
+id: yoewqtaryh
+artifact: progress
+record:
+  timestamp: 2026-08-15 18:18
+  type: feat
+  phase: build
+  what: Proved source and packed personal-glossary refresh workflows and aligned aggregate explanation and deferral documentation.
+  context:
+    intent: Verify that normal consented refresh produces the projection consumed by candidate reads and Profile Full without manually seeded production state.
+    constraints: No inferred automatic admission, project glossary access, new namespace, dependency, release, version, push, stale Profile refresh, or unrelated runtime-policy repair.
+    scope: Source and extracted-package production workflow regressions, empty-mining Profile preservation, candidate-list aggregate explanations, canonical producer documentation, and final verification.
+  discovered: Candidate-list reads omitted the projection's already validated fixed-key mining summary, and the preceding projection work had moved one glossary source file above the enforced 1000-line bound. Returning the safe aggregate and moving projection data types into a dedicated model restored the documented behavior and source gate without changing mining policy.
+  verified: Focused glossary, projection, Profile Full, contract, evaluation, and monolith tests passed in targeted runs (129 tests before the type-only split and 50 after it). Typecheck, build, frozen glossary evaluation, Profile capability validation, capability-contract validation, compact, and package verification passed; package verification passed 13 extracted-package tests. The complete source owner passed 4090 tests with one skip and failed only the recorded three retiredRuntimeSurfacePolicy tests.
+  next: Keep task wwkmtfgdnr in_progress until Prime records the independent audit PASS.
+  publication_order: 173

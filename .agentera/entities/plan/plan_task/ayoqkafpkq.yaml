@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: ofiklbscmo
   name: Recover orphaned glossary refresh ownership
-  status: in_progress
+  status: complete
   depends_on:
     - wyenmnxxgf
   acceptance:
@@ -15,3 +15,13 @@ record:
   evidence:
     - Audit task hwuksgjxwu attempt audit-2 found that an empty exclusive refresh lock can survive process termination and permanently block the documented recovery command.
     - TODO dvqwyyjuov records the release-blocking orphaned-lock recovery requirement.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Audit session ses_ffa3993e2ffeSNw6NNs4SdKZCN replacement task ayoqkafpkq evaluation
+      recorded_at: 2026-08-15 17:46
+      writer_command: agentera state plan record-evaluation
