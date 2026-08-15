@@ -11,3 +11,13 @@ record:
     - GIVEN the built and packed v3 CLI WHEN package verification runs THEN no v1 support surface ships and fresh reset behavior matches source behavior.
     - GIVEN the breaking contract WHEN user documentation and release notes are read THEN v1 is clearly unsupported, reset is explicitly destructive, v2 migration remains supported, and suite metadata stays within 3.0.0.
   plan: gornhwivrn
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: UPGRADE.md incorrectly says preview returns an apply command; release-metadata and verify:release remain pending until substantive commit establishes governed gitRef. Audit ses_ff84adc98ffe9te5s4UdEspAXP.
+    provenance:
+      attempt_id: audit-xidheuvbyi-1
+      source: audit ses_ff84adc98ffe9te5s4UdEspAXP
+      recorded_at: 2026-08-16 01:18
+      writer_command: agentera state plan record-evaluation

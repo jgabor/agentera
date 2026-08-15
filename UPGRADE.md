@@ -208,11 +208,30 @@ create dual authority, or add a repair or import command.
 
 ## Unsupported legacy state
 
-Pending v1 Markdown, partial, corrupt, and unknown marker-absent state are not
-automatic mutation inputs. `state migrate`, `state backfill`, projection repair,
-v1 conversion, restore, and downgrade are unsupported. Only
-`npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run`
-may inventory cutover input; it cannot publish it.
+Agentera product v1 is unsupported. V3 does not migrate, convert, import, back
+up, restore, or retain v1 state. Current schema identifiers that end in `.v1`
+are not product-v1 evidence and remain supported.
+
+When v3 detects product-v1 evidence, ordinary commands stop without mutation.
+The only continuation is a fresh-v3 reset. Preview the exact bounded project,
+profile, installation, and runtime effects first:
+
+```bash
+npx -y agentera@next upgrade --reset-product-v1 --dry-run --format json
+```
+
+To apply after review, rerun the same scoped command and replace `--dry-run`
+with `--yes --authorization TOKEN`, using the unchanged authorization digest.
+
+This reset is destructive and irreversible. It deletes all Agentera state in
+the listed scopes, retains no backup, and initializes fresh v3 installation
+state. Review `irreversible_loss`, every deletion, and every recreation in the
+preview before applying it. Do not use the reset for v2 projects. Supported v2
+state continues to use the one-way v2-to-v3 preview and apply commands above.
+
+Partial, corrupt, and unknown marker-absent state is not an automatic mutation
+input. `state migrate`, `state backfill`, projection repair, v1 conversion,
+restore, and downgrade are unsupported.
 
 ## Verification and recovery
 

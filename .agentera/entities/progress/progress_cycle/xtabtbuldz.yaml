@@ -1,0 +1,12 @@
+id: xtabtbuldz
+artifact: progress
+record:
+  timestamp: 2026-08-16 01:20
+  type: fix
+  phase: build
+  what: Corrected the product-v1 reset guide after audit so apply reruns the same reviewed scoped command with dry-run replaced by explicit yes and the unchanged authorization token.
+  context:
+    intent: Retry plan gornhwivrn task xidheuvbyi after audit ses_ff84adc98ffe9te5s4UdEspAXP without changing task status.
+  verified: Retired-runtime documentation and package-authority policy passed 1 file and 194 tests. Package verification passed 3 files and 14 tests, including source/extracted reset parity. Git diff check passed. Release metadata remains pending until the substantive package-source commit exists and can own agentera.gitRef provenance.
+  next: Create the substantive task commit without changing agentera.gitRef; use that commit SHA for the separately authorized metadata follow-up.
+  publication_order: 186

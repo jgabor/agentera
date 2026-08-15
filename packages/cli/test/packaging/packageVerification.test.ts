@@ -55,15 +55,70 @@ function validateDistributionInventory(files: Set<string>, surfaces: BundleSurfa
   }
 }
 
-function packageEnvironment(): NodeJS.ProcessEnv {
+function packageEnvironment(home = path.join(fixture.root, "isolated-home"), profile?: string): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const key of Object.keys(env)) {
     if (/^AGENTERA_.*SOURCE.*ROOT$/.test(key)) delete env[key];
   }
   delete env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   delete env.AGENTERA_HOME;
-  env.HOME = path.join(fixture.root, "isolated-home");
+  env.HOME = home;
+  if (profile) env.AGENTERA_PROFILE_DIR = profile;
+  else delete env.AGENTERA_PROFILE_DIR;
   return env;
+}
+
+function runResetWorkflow(bin: string, root: string) {
+  const project = path.join(root, "project");
+  const install = path.join(root, "install");
+  const home = path.join(root, "home");
+  const profile = path.join(root, "profile");
+  fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+  fs.mkdirSync(install, { recursive: true });
+  fs.mkdirSync(home, { recursive: true });
+  fs.mkdirSync(profile, { recursive: true });
+  fs.writeFileSync(path.join(project, ".agentera", "PROGRESS.md"), "# Product v1 progress\n");
+  fs.writeFileSync(path.join(project, ".agentera", "progress.yaml"), "schemaVersion: agentera.progress.v1\ncycles: []\n");
+  fs.writeFileSync(path.join(project, "keep.txt"), "user owned\n");
+  fs.writeFileSync(path.join(profile, "state"), "legacy profile\n");
+  spawnSync("git", ["init", "-q", project], { encoding: "utf8" });
+
+  const common = ["upgrade", "--reset-product-v1", "--project", project, "--install-root", install, "--home", home];
+  const previewResult = spawnSync(process.execPath, [bin, ...common, "--dry-run", "--format", "json"], {
+    cwd: project,
+    env: packageEnvironment(home, profile),
+    encoding: "utf8",
+  });
+  expect(previewResult.status, `reset preview failed:\n${previewResult.stdout}\n${previewResult.stderr}`).toBe(0);
+  const preview = JSON.parse(previewResult.stdout);
+  const applyResult = spawnSync(
+    process.execPath,
+    [bin, ...common, "--yes", "--authorization", preview.authorization, "--format", "json"],
+    { cwd: project, env: packageEnvironment(home, profile), encoding: "utf8" },
+  );
+  expect(applyResult.status, `reset apply failed:\n${applyResult.stdout}\n${applyResult.stderr}`).toBe(0);
+  const applied = JSON.parse(applyResult.stdout);
+
+  return {
+    preview: {
+      schemaVersion: preview.schemaVersion,
+      status: preview.status,
+      mutation_performed: preview.mutation_performed,
+      deletionIds: preview.deletions.map((item: { id: string }) => item.id),
+      recreationIds: preview.recreations.map((item: { id: string }) => item.id),
+      irreversibleLossCount: preview.irreversible_loss.length,
+    },
+    applied: { status: applied.status, effects_performed: applied.effects_performed },
+    result: {
+      productV1Removed: !fs.existsSync(path.join(project, ".agentera", "PROGRESS.md")),
+      currentSchemaRemoved: !fs.existsSync(path.join(project, ".agentera", "progress.yaml")),
+      unrelatedPreserved: fs.readFileSync(path.join(project, "keep.txt"), "utf8"),
+      profileRemoved: !fs.existsSync(profile),
+      canonicalSkillInstalled: fs.existsSync(path.join(install, "skills", "agentera", "SKILL.md")),
+      canonicalSkillLinked: fs.realpathSync(path.join(home, ".agents", "skills", "agentera"))
+        === fs.realpathSync(path.join(install, "skills", "agentera")),
+    },
+  };
 }
 
 describe("npm distribution boundary", () => {
@@ -153,6 +208,7 @@ describe("npm distribution boundary", () => {
     expect([...files].some((file) => file.endsWith(".map"))).toBe(false);
     expect([...files].some((file) => file.startsWith("bundle/skills/agentera/agents/"))).toBe(false);
     for (const retired of [
+      "dist/cli/commands/prime/v1Migration.js",
       "dist/registries/runtimeAdapterRegistry.js",
       "bundle/references/adapters/runtime-adapter-registry.yaml",
       "bundle/references/adapters/opencode.md",
@@ -183,6 +239,23 @@ describe("npm distribution boundary", () => {
       outcome: "review_required",
       privacyBounded: true,
       recovery: "agentera report refresh --consent local-history",
+    });
+  });
+
+  it("matches source preview and destructive fresh reset behavior", () => {
+    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const packageBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const source = runResetWorkflow(sourceBin, path.join(fixture.root, "source-reset"));
+    const packed = runResetWorkflow(packageBin, path.join(fixture.root, "packed-reset"));
+
+    expect(packed).toEqual(source);
+    expect(packed.result).toEqual({
+      productV1Removed: true,
+      currentSchemaRemoved: true,
+      unrelatedPreserved: "user owned\n",
+      profileRemoved: true,
+      canonicalSkillInstalled: true,
+      canonicalSkillLinked: true,
     });
   });
 });

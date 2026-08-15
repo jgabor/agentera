@@ -1,0 +1,12 @@
+id: hazoadycap
+artifact: progress
+record:
+  timestamp: 2026-08-16 01:14
+  type: test
+  phase: build
+  what: Added packed/source parity evidence for product-v1 reset preview and apply, documented the unsupported and irreversible v1 reset contract, and preserved the supported v2-to-v3 path and 3.0.0 suite boundary.
+  context:
+    intent: Execute only plan gornhwivrn task xidheuvbyi without changing task status or committing.
+  verified: Focused product-v1 authority, reset, and v2 entity-cutover verification passed 3 files and 53 tests. The retired-runtime policy passed 1 file and 194 tests. Full source passed 249 files and 4085 tests with 1 skipped. Typecheck and build passed. Package verification passed 3 files and 14 tests, including extracted-package reset parity and retired v1Migration.js exclusion. Compact and capability-contract validation passed. Package dry-run passed with 477 files and no warnings. Release-metadata validation remained blocked because agentera.gitRef cannot match governed package-source changes before the assigned owner commits them; no registry or publication mutation ran.
+  next: Assigned owner reviews and commits the task changes, updates agentera.gitRef to that substantive commit, then reruns release-metadata and canonical release verification before any separately authorized publication work.
+  publication_order: 185
