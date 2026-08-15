@@ -6,7 +6,7 @@ record:
     - wyenmnxxgf
     - hwuksgjxwu
     - wwkmtfgdnr
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN implementation and verification are complete WHEN governed plan, TODO, progress, docs, health, and Git state are read THEN they agree with current behavior.
     - GIVEN unrelated work or baseline failures remain WHEN state is reconciled THEN they are preserved and not falsely resolved.
