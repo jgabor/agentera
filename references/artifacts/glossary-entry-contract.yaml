@@ -746,6 +746,16 @@ personal_mining_authority:
       concurrency:
         serialization: profile_local_exclusive_refresh_commit
         lock_lifetime: before_evidence_publication_through_projection_binding_verification
+        ownership:
+          record: exact_regular_file_with_pid_random_token_and_creation_time
+          publication: prewritten_record_hard_linked_to_exclusive_canonical_path
+          inspection: no_follow_regular_file_with_stable_filesystem_identity
+          liveness: only_esrch_proves_owner_death
+          pid_reuse: live_or_indeterminate_pid_fails_closed
+          reclaim: one_exclusive_identity_checked_claim_replaces_only_a_proven_dead_owner
+          release: matching_token_record_and_filesystem_identity_only
+          unsafe: [malformed, foreign, symlink, non_file, changed_identity, indeterminate_owner]
+          recovery: inspect_exact_profile_local_lock_and_remove_only_after_verifying_no_refresh_owns_it_then_rerun_consented_refresh
         contender:
           refresh_outcome: failure
           process_exit: nonzero
@@ -782,6 +792,9 @@ personal_mining_authority:
         a nonzero refresh result but does not roll back the published evidence.
         Authorized refreshes serialize evidence and projection commit; a
         contender fails without reading history or writing evidence or projection.
+        The documented consented refresh reclaims a valid orphan only after owner
+        death is proven. Unknown ownership fails closed, and release removes only
+        the caller's unchanged token and filesystem identity.
         A retry may replace only the exact configured owned regular projection
         file; it rejects symlinks, non-files, path mismatches, and path escapes.
         The refresh runtime mines and publishes this projection after evidence

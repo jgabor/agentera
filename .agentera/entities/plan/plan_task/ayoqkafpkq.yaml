@@ -1,0 +1,17 @@
+id: ayoqkafpkq
+artifact: plan
+record:
+  plan: ofiklbscmo
+  name: Recover orphaned glossary refresh ownership
+  status: in_progress
+  depends_on:
+    - wyenmnxxgf
+  acceptance:
+    - GIVEN an active refresh owns the user-local lock WHEN another refresh starts THEN the contender fails before history reads or evidence and projection writes and cannot remove the active owner's lock.
+    - GIVEN an interrupted refresh leaves an owned orphaned lock WHEN the documented consented refresh command runs THEN exactly one contender safely reclaims it and publishes a projection bound to current evidence.
+    - GIVEN malformed, foreign, symlinked, non-file, changed-identity, or indeterminate lock state WHEN refresh runs THEN it fails closed with actionable recovery and leaves evidence, projection, review, profile, and project state unchanged.
+    - GIVEN a refresh releases ownership WHEN the persisted owner no longer matches its token and filesystem identity THEN it cannot remove a successor's lock.
+    - GIVEN active contention, orphan recovery, competing reclaimers, and unsafe lock state WHEN focused regressions run THEN each behavior has paired pass and fail evidence without weakening deterministic replay.
+  evidence:
+    - Audit task hwuksgjxwu attempt audit-2 found that an empty exclusive refresh lock can survive process termination and permanently block the documented recovery command.
+    - TODO dvqwyyjuov records the release-blocking orphaned-lock recovery requirement.

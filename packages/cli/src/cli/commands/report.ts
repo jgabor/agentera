@@ -9,7 +9,7 @@ import { usageMain, corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { extractCorpusMain } from "../../analytics/extractCorpus.js";
 import {
   acquirePersonalGlossaryRefreshCommitLock,
-  PersonalGlossaryRefreshCommitBusyError,
+  PersonalGlossaryRefreshCommitLockError,
   produceCurrentPersonalGlossaryProjection,
   releasePersonalGlossaryRefreshCommitLock,
 } from "../../analytics/personalGlossaryRefreshProjection.js";
@@ -269,8 +269,8 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
     try {
       refreshLock = acquirePersonalGlossaryRefreshCommitLock();
     } catch (error) {
-      if (!(error instanceof PersonalGlossaryRefreshCommitBusyError)) throw error;
-      const recovery = "npx -y agentera@next report refresh --consent local-history";
+      if (!(error instanceof PersonalGlossaryRefreshCommitLockError)) throw error;
+      const recovery = error.recovery;
       const currentGeneration = readCurrentGeneration(tiersDir);
       const projection = {
         status: "failed",

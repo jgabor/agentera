@@ -1,0 +1,15 @@
+id: badmrdaxbt
+artifact: progress
+record:
+  timestamp: 2026-08-15 17:38
+  type: fix
+  phase: build
+  what: Recovered orphaned personal-glossary refresh ownership without weakening active contention or profile confinement.
+  context:
+    intent: Let the documented consented refresh recover only a proven dead profile-local owner and publish a current-generation projection.
+    constraints: Keep task ayoqkafpkq in progress for Prime audit; leave TODO dvqwyyjuov open and predecessor hwuksgjxwu unchanged.
+    scope: A prewritten PID, random-token, and creation-time lock record; no-follow stable-identity inspection; exclusive reclaim claim; exact-record and inode-checked release; focused authority and regression updates.
+  discovered: The empty exclusive file had no evidence that distinguished a live owner from a terminated process. A prewritten regular ownership record can publish atomically by hard link, while a separate owned reclaim claim serializes dead-owner replacement and itself remains recoverable after interruption.
+  verified: Four focused source files passed 184 tests, including active contention, interrupted-owner command recovery, competing reclaimers, malformed, foreign, symlinked, non-file, changed-identity, indeterminate-owner, successor-safe release, and deterministic replay. Typecheck and build passed. A compiled-CLI smoke reclaimed a terminated owner, published and read generation 93d892cfea0ad0ccc17471a8, and removed the lock. Capability-contract validation and compact checks passed.
+  next: Keep ayoqkafpkq in_progress until Prime persists the audit verdict; do not resolve dvqwyyjuov or supersede hwuksgjxwu before that PASS.
+  publication_order: 172

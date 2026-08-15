@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -372,6 +373,80 @@ describe("cmdReport", () => {
     expect(projection.generation).toBe(current.manifest.generation);
     expect(JSON.parse(winner.out).projection.generation).toBe(current.manifest.generation);
     expect(fs.existsSync(path.join(path.dirname(projectionPath), ".refresh.lock"))).toBe(false);
+  });
+
+  it("reclaims an interrupted refresh and publishes the current generation", () => {
+    const source = path.join(tmp, "AGENTS.md");
+    const output = path.join(tmp, "intermediate", "corpus.json");
+    fs.writeFileSync(source, "# rules\nprefer the recovered shape.\n");
+    const lockPath = path.join(path.dirname(personalGlossaryCandidateProjectionPath()), ".refresh.lock");
+    fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    const script = [
+      "const fs=require('node:fs')",
+      "const record={schema_version:'agentera.personalGlossaryRefreshLock.v1',pid:process.pid,token:'00000000-0000-4000-8000-000000000002',created_at:'2026-08-15T12:00:00.000Z'}",
+      "fs.writeFileSync(process.argv[1],JSON.stringify(record)+'\\n',{mode:0o600,flag:'wx'})",
+    ].join(";");
+    const interrupted = spawnSync(process.execPath, ["-e", script, lockPath]);
+    expect(interrupted.status).toBe(0);
+    expect(() => process.kill(interrupted.pid!, 0)).toThrow(expect.objectContaining({ code: "ESRCH" }));
+
+    const result = run({
+      action: "refresh",
+      consent: "local-history",
+      format: "json",
+      output,
+      projectRoot: [tmp],
+      codexSessionsDir: path.join(tmp, "stores", "codex"),
+      opencodeConversationsDir: path.join(tmp, "stores", "opencode.db"),
+      copilotConversationsDir: path.join(tmp, "stores", "copilot"),
+      cursorProjectsDir: path.join(tmp, "stores", "cursor-projects"),
+      cursorChatsDir: path.join(tmp, "stores", "cursor-chats"),
+      noCodex: true,
+      noOpencode: true,
+      noCopilot: true,
+      noCursor: true,
+    });
+    const current = readCurrentGeneration(path.join(tmp, "intermediate", "tiers"))!;
+    const projection = readPersonalGlossaryCandidateProjection().projection!;
+    expect(result.rc).toBe(0);
+    expect(JSON.parse(result.out).projection.generation).toBe(current.manifest.generation);
+    expect(projection.generation).toBe(current.manifest.generation);
+    expect(fs.existsSync(lockPath)).toBe(false);
+  });
+
+  it("fails before history or derived-state writes for an unsafe refresh lock", () => {
+    const output = path.join(tmp, "intermediate", "corpus.json");
+    const lockPath = path.join(path.dirname(personalGlossaryCandidateProjectionPath()), ".refresh.lock");
+    const profileMarker = path.join(tmp, "PROFILE.md");
+    const reviewMarker = path.join(path.dirname(lockPath), "reviews.json");
+    const projectMarker = path.join(tmp, ".agentera", "project-marker");
+    fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    fs.mkdirSync(path.dirname(projectMarker), { recursive: true });
+    fs.writeFileSync(profileMarker, "profile unchanged\n");
+    fs.writeFileSync(reviewMarker, "reviews unchanged\n");
+    fs.writeFileSync(projectMarker, "project unchanged\n");
+    fs.writeFileSync(lockPath, "foreign\n");
+    const result = run({
+      action: "refresh",
+      consent: "local-history",
+      format: "json",
+      output,
+      projectRoot: [tmp],
+      noCodex: true,
+      noOpencode: true,
+      noCopilot: true,
+      noCursor: true,
+    });
+    const payload = JSON.parse(result.out);
+    expect(result.rc).toBe(1);
+    expect(payload.privacy).toMatchObject({ local_history_read: false, tier_write: false, projection_write: false });
+    expect(payload.projection.recovery).toContain("remove it only after verifying no refresh owns it");
+    expect(readCurrentGeneration(path.join(tmp, "intermediate", "tiers"))).toBeNull();
+    expect(fs.existsSync(personalGlossaryCandidateProjectionPath())).toBe(false);
+    expect(fs.readFileSync(lockPath, "utf8")).toBe("foreign\n");
+    expect(fs.readFileSync(profileMarker, "utf8")).toBe("profile unchanged\n");
+    expect(fs.readFileSync(reviewMarker, "utf8")).toBe("reviews unchanged\n");
+    expect(fs.readFileSync(projectMarker, "utf8")).toBe("project unchanged\n");
   });
 
   it("rejects an unknown action", () => {

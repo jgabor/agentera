@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers, readCurrentGeneration } from "../../src/analytics/extractCorpus/evidenceTiers.js";
@@ -12,7 +13,13 @@ import {
   projectPersonalGlossaryCandidates,
   readPersonalGlossaryCandidateProjection,
 } from "../../src/analytics/personalGlossaryCandidateProjection.js";
-import { produceCurrentPersonalGlossaryProjection } from "../../src/analytics/personalGlossaryRefreshProjection.js";
+import {
+  acquirePersonalGlossaryRefreshCommitLock,
+  PersonalGlossaryRefreshCommitBusyError,
+  PersonalGlossaryRefreshCommitLockError,
+  produceCurrentPersonalGlossaryProjection,
+  releasePersonalGlossaryRefreshCommitLock,
+} from "../../src/analytics/personalGlossaryRefreshProjection.js";
 import { main } from "../../src/cli/dispatch.js";
 
 const PUBLISHED_AT = "2026-08-12T10:11:12.000Z";
@@ -73,6 +80,23 @@ function publish(seed = "initial"): string {
     adapterVersion: ADAPTER_VERSION,
     publishedAt: PUBLISHED_AT,
   }).generation;
+}
+
+function refreshLockPath(): string {
+  return path.join(path.dirname(personalGlossaryCandidateProjectionPath()), ".refresh.lock");
+}
+
+function leaveInterruptedLock(): void {
+  const lockPath = refreshLockPath();
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  const script = [
+    "const fs=require('node:fs')",
+    "const record={schema_version:'agentera.personalGlossaryRefreshLock.v1',pid:process.pid,token:'00000000-0000-4000-8000-000000000001',created_at:'2026-08-15T12:00:00.000Z'}",
+    "fs.writeFileSync(process.argv[1],JSON.stringify(record)+'\\n',{mode:0o600,flag:'wx'})",
+  ].join(";");
+  const child = spawnSync(process.execPath, ["-e", script, lockPath]);
+  expect(child.status).toBe(0);
+  expect(() => process.kill(child.pid!, 0)).toThrow(expect.objectContaining({ code: "ESRCH" }));
 }
 
 function run(argv: string[]): { rc: number; out: string; err: string } {
@@ -186,5 +210,118 @@ describe("refresh candidate projection production", () => {
     const read = run(["report", "personal-glossary-candidates", "list", "--format", "json"]);
     expect(read.rc).toBe(1);
     expect(JSON.parse(read.out).error.recovery).toContain("report refresh --consent local-history");
+  });
+});
+
+describe("personal glossary refresh ownership", () => {
+  it("keeps an active owner's lock when a contender fails", () => {
+    const owner = acquirePersonalGlossaryRefreshCommitLock();
+    const bytes = fs.readFileSync(owner.path);
+    expect(() => acquirePersonalGlossaryRefreshCommitLock()).toThrow(PersonalGlossaryRefreshCommitBusyError);
+    expect(fs.readFileSync(owner.path)).toEqual(bytes);
+    releasePersonalGlossaryRefreshCommitLock(owner);
+    expect(fs.existsSync(owner.path)).toBe(false);
+  });
+
+  it("reclaims an interrupted owner and preserves deterministic replay", () => {
+    const generation = publish();
+    leaveInterruptedLock();
+    const owner = acquirePersonalGlossaryRefreshCommitLock();
+    expect(JSON.parse(fs.readFileSync(owner.path, "utf8")).pid).toBe(process.pid);
+    expect(produceCurrentPersonalGlossaryProjection({ tiersDir }).generation).toBe(generation);
+    const first = fs.readFileSync(personalGlossaryCandidateProjectionPath());
+    expect(produceCurrentPersonalGlossaryProjection({ tiersDir }).status).toBe("unchanged_replay");
+    expect(fs.readFileSync(personalGlossaryCandidateProjectionPath())).toEqual(first);
+    releasePersonalGlossaryRefreshCommitLock(owner);
+  });
+
+  it("allows only one competing reclaimer to replace an orphan", () => {
+    leaveInterruptedLock();
+    const claimPath = `${refreshLockPath()}.reclaim`;
+    const originalLink = fs.linkSync;
+    let contenderError: unknown;
+    let interleaved = false;
+    const link = vi.spyOn(fs, "linkSync").mockImplementation(((from, to) => {
+      originalLink(from, to);
+      if (!interleaved && String(to) === claimPath) {
+        interleaved = true;
+        try {
+          acquirePersonalGlossaryRefreshCommitLock();
+        } catch (error) {
+          contenderError = error;
+        }
+      }
+    }) as typeof fs.linkSync);
+    let winner;
+    try {
+      winner = acquirePersonalGlossaryRefreshCommitLock();
+    } finally {
+      link.mockRestore();
+    }
+    expect(contenderError).toBeInstanceOf(PersonalGlossaryRefreshCommitBusyError);
+    expect(JSON.parse(fs.readFileSync(winner!.path, "utf8")).token).toBe(winner!.record.token);
+    releasePersonalGlossaryRefreshCommitLock(winner!);
+  });
+
+  it.each([
+    ["malformed", () => fs.writeFileSync(refreshLockPath(), "not json\n")],
+    ["foreign", () => fs.writeFileSync(refreshLockPath(), JSON.stringify({ pid: process.pid }) + "\n")],
+    ["symlinked", () => fs.symlinkSync(path.join(root, "outside"), refreshLockPath())],
+    ["non-file", () => fs.mkdirSync(refreshLockPath())],
+  ] as const)("fails closed for %s lock state", (_label, arrange) => {
+    fs.mkdirSync(path.dirname(refreshLockPath()), { recursive: true });
+    fs.writeFileSync(path.join(root, "outside"), "unchanged\n");
+    arrange();
+    expect(() => acquirePersonalGlossaryRefreshCommitLock()).toThrow(PersonalGlossaryRefreshCommitLockError);
+    expect(fs.readFileSync(path.join(root, "outside"), "utf8")).toBe("unchanged\n");
+    expect(readCurrentGeneration(tiersDir)).toBeNull();
+    expect(fs.existsSync(personalGlossaryCandidateProjectionPath())).toBe(false);
+  });
+
+  it("fails closed when owner liveness is indeterminate", () => {
+    leaveInterruptedLock();
+    const kill = vi.spyOn(process, "kill").mockImplementation(() => {
+      const error = new Error("not permitted") as NodeJS.ErrnoException;
+      error.code = "EPERM";
+      throw error;
+    });
+    try {
+      expect(() => acquirePersonalGlossaryRefreshCommitLock()).toThrow("owner liveness is indeterminate");
+    } finally {
+      kill.mockRestore();
+    }
+  });
+
+  it("fails closed when the inspected owner changes identity", () => {
+    leaveInterruptedLock();
+    const lockPath = refreshLockPath();
+    const moved = `${lockPath}.moved`;
+    const originalOpen = fs.openSync;
+    let replaced = false;
+    const open = vi.spyOn(fs, "openSync").mockImplementation(((target, flags, mode) => {
+      if (!replaced && String(target) === lockPath && flags === (fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0))) {
+        replaced = true;
+        fs.renameSync(lockPath, moved);
+        fs.writeFileSync(lockPath, fs.readFileSync(moved));
+      }
+      return originalOpen(target, flags, mode);
+    }) as typeof fs.openSync);
+    try {
+      expect(() => acquirePersonalGlossaryRefreshCommitLock()).toThrow("changed identity during inspection");
+    } finally {
+      open.mockRestore();
+    }
+  });
+
+  it("does not release a successor with a different filesystem identity", () => {
+    const first = acquirePersonalGlossaryRefreshCommitLock();
+    const displaced = `${first.path}.displaced`;
+    fs.renameSync(first.path, displaced);
+    const successor = acquirePersonalGlossaryRefreshCommitLock();
+    const successorBytes = fs.readFileSync(successor.path);
+    releasePersonalGlossaryRefreshCommitLock(first);
+    expect(fs.readFileSync(successor.path)).toEqual(successorBytes);
+    releasePersonalGlossaryRefreshCommitLock(successor);
+    fs.rmSync(displaced);
   });
 });
