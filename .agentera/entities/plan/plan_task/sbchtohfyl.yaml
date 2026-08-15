@@ -7,7 +7,7 @@ record:
     - lawzauospk
     - ysvjypbeyr
     - ijkabqqhqq
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN Tasks 1 through 4 are complete WHEN affected tests run THEN every changed suite passes.
     - GIVEN targeted checks pass WHEN the authoritative source gate runs THEN `pnpm -C packages/cli test:source` passes without invoking excluded owners.
