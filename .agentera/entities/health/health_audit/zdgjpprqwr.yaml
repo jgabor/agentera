@@ -1,0 +1,29 @@
+id: zdgjpprqwr
+artifact: health
+record:
+  date: 2026-08-15
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: the personal-glossary production plan completed with current implementation, contract, tests, documentation, and governed state."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Plan ofiklbscmo has four complete tasks and one superseded predecessor. The limited closure audit found all delegated source, contract, test, README, changelog, TODO, plan, and progress artifacts current.
+      findings:
+        []
+  trends:
+    improved: Consented refresh now produces a current private projection with explainable aggregates and recoverable ownership-aware serialization.
+    degraded: None in the limited terminal-plan closure scope.
+    new_findings: None.
+    resolved: Concurrent stale projection publication and orphaned refresh-lock recovery were corrected and independently verified.
+    carried_forward: Three known retiredRuntimeSurfacePolicy baseline failures remain; profile state is stale; the ignored external design note is unchanged.
+  patterns:
+    - Terminal closure followed task PASS evidence, replacement supersession, package workflow verification, and limited closure Audit PASS.
+  appended_at: 2026-08-15T16:32:28.419Z
