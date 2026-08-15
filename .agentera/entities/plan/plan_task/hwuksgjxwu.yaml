@@ -4,7 +4,7 @@ record:
   name: Produce the current projection during refresh
   depends_on:
     - wyenmnxxgf
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN a successful consented refresh with eligible evidence WHEN refresh completes THEN candidate list and exact read operate on a projection bound to the new current generation.
     - GIVEN explicit and recurring evidence WHEN mining runs THEN both candidate families participate in deterministic bounded selection.
@@ -13,12 +13,12 @@ record:
     - GIVEN missing, stale, malformed, unsafe, or conflicting derived state WHEN refresh runs THEN effects follow the settled authority, no profile or project state changes, and paired pass/fail regressions cover each boundary.
   plan: ofiklbscmo
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: "Concurrent refresh race: the producer checks the current generation before persistence but does not bind or lock the projection commit, so another refresh can advance current.json before the first refresh writes a now-stale projection and reports success."
+    last_failure_evidence: An orphaned profile-local refresh lock has no owner or liveness data, so an interrupted refresh permanently blocks the documented consented recovery command. Active contention is safe, but stale-lock recovery is not actionable.
     provenance:
-      attempt_id: audit-1
-      source: Audit session ses_ffa3993e2ffeSNw6NNs4SdKZCN task hwuksgjxwu evaluation
-      recorded_at: 2026-08-15 16:58
+      attempt_id: audit-2
+      source: Audit session ses_ffa3993e2ffeSNw6NNs4SdKZCN corrected task hwuksgjxwu evaluation
+      recorded_at: 2026-08-15 17:16
       writer_command: agentera state plan record-evaluation

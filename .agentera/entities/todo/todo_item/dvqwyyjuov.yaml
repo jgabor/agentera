@@ -1,0 +1,26 @@
+id: dvqwyyjuov
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Recover orphaned personal glossary refresh locks
+  requirements:
+    - Distinguish an active personal glossary refresh owner from an orphaned exact owned lock without weakening fail-closed active contention.
+    - Reclaim only a proven orphaned user-local refresh lock and preserve evidence, candidate projection, review, profile, and project state.
+    - Return an executable recovery path after interruption and add a deterministic interruption regression.
+  acceptance:
+    - GIVEN an active refresh owns the lock WHEN another refresh starts THEN the contender fails before history reads or evidence and projection writes.
+    - GIVEN an interrupted refresh leaves an orphaned owned lock WHEN the documented consented refresh command runs THEN it safely reclaims the lock and can publish a current projection.
+    - GIVEN malformed, foreign, symlinked, or unverifiable lock state WHEN refresh runs THEN it fails closed without changing evidence, projection, review, profile, or project state.
+    - GIVEN the replacement task is evaluated WHEN verification runs THEN active contention, orphan recovery, and unsafe-lock rejection each have paired regression evidence.
+  release_blocker: true
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Recover orphaned personal glossary refresh locks"
+      severity: degraded
+      status: open
+      order: 3

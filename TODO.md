@@ -11,6 +11,7 @@
 
 - [ ] [id:kbjrvrilzj] [feat:3.0.0] Add general transactional TODO batch apply after the decision-required reconciliation transaction. `agentera state todo apply --input <path|->` must compose create, patch, severity changes, supersede, resolve, reopen, and dependency edits atomically, including local symbolic references between new items. Reuse the canonical snapshot, CAS, idempotency, receipt, and recovery primitive; prove one preview, one apply, and one validation replace serial CRUD without partial publication. Partial for Decision `kpybrsfywb`: this improves arbitrary batch workflows but does not own Markdown reconciliation or release correctness.
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status orientation informational until the user expresses execution intent. Render `next_action` and wait for free-form acceptance; do not open a native Proceed/Cancel question merely because the suggestion is state-changing. After explicit acceptance, apply the ordinary confirmation boundary before dispatch. Add host-contract regressions for bare status, explicit build requests, accepted suggestions, cancellation, and autonomous orchestration.
+- [ ] [id:dvqwyyjuov] [fix:3.0.0] Recover orphaned personal glossary refresh locks
 
 ## → Normal
 
