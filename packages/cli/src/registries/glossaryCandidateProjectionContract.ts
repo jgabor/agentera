@@ -31,6 +31,7 @@ export function personalGlossaryCandidateProjectionContract(
   const retention = mapping(privacy?.retention);
   const projectIdentity = mapping(selection?.project_identity);
   const persistence = mapping(projection?.persistence);
+  const miningSummary = mapping(projection?.mining_summary);
   const families = mapping(selection?.source_families);
   const sourceFamilies = Object.fromEntries(
     Object.entries(families ?? {}).flatMap(([family, values]) =>
@@ -71,6 +72,10 @@ export function personalGlossaryCandidateProjectionContract(
         : "",
     excerptSensitiveContentAction:
       typeof contentExclusion?.excerpt_action === "string" ? contentExclusion.excerpt_action : "",
+    miningSummarySchemaVersion:
+      typeof miningSummary?.schema_version === "string" ? miningSummary.schema_version : "",
+    explicitAbstentionKeys: strings(miningSummary?.explicit_abstention_keys),
+    recurringAbstentionKeys: strings(miningSummary?.recurring_abstention_keys),
     candidateReadCommand: projectGlossaryDevelopmentValue(
       retrievalCommand?.canonical,
       "candidate_retrieval.command",

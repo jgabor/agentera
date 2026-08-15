@@ -4,7 +4,7 @@ record:
   name: Settle refresh and explanation authority
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a consented evidence refresh succeeds WHEN glossary production is evaluated THEN the contract requires one projection bound to that exact generation and policy.
     - GIVEN mining candidates and abstentions WHEN the projection is produced THEN it retains reconciled fixed-key aggregate counts without sensitive identities or content.
@@ -13,12 +13,12 @@ record:
     - GIVEN inferred candidates WHEN admission policy is validated THEN they remain review-only, with one passing and one failing contract case for each testable rule.
   plan: ofiklbscmo
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "Criterion 4 conflict: the malformed-projection replacement rule rejects symlinks and path escapes, while the governing filesystem authority says configured paths are used as provided and disclaims symlink/no-follow confinement."
     provenance:
-      attempt_id: audit-1
-      source: Audit session ses_ffa3993e2ffeSNw6NNs4SdKZCN task wyenmnxxgf evaluation
-      recorded_at: 2026-08-15 16:18
+      attempt_id: audit-2
+      source: Audit session ses_ffa3993e2ffeSNw6NNs4SdKZCN corrected task wyenmnxxgf evaluation
+      recorded_at: 2026-08-15 16:28
       writer_command: agentera state plan record-evaluation

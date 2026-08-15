@@ -1,0 +1,15 @@
+id: wfpgtpznbd
+artifact: progress
+record:
+  timestamp: 2026-08-15 16:50
+  type: feat
+  phase: build
+  what: Connected consented evidence refresh to deterministic personal glossary projection production for the newly published current generation.
+  context:
+    intent: Produce the private current-generation projection during refresh and preserve truthful partial-failure behavior.
+    constraints: No Profile Full refresh, inferred auto-admission, project glossary access, project-state effects, new namespace, dependency, release, version, or push.
+    scope: Refresh producer seam, projection aggregate report and safe replacement, refresh and candidate-read reporting, focused authority alignment, and regressions.
+  discovered: The existing explicit and recurring miners and bounded selector were complete; refresh only needed one producer seam, deterministic use of the tier manifest publication time, fixed-key count reconciliation, and the settled replacement-only persistence path.
+  verified: Focused refresh, projection, mining, candidate-read, report, and authority tests passed 337 tests. Typecheck and build passed. Local compiled refresh published matching evidence and projection generations, and local candidate list read that projection. Capability-contract validation passed. The broad source lane emitted only the three recorded retiredRuntimeSurfacePolicy failures before timing out; no additional failure was observed.
+  next: Keep task hwuksgjxwu in_progress until Prime records the independent audit verdict.
+  publication_order: 170

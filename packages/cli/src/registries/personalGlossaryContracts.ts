@@ -29,6 +29,9 @@ export interface PersonalGlossaryCandidateProjectionContract {
   storageFile: string;
   candidateSecretReason: string;
   excerptSensitiveContentAction: string;
+  miningSummarySchemaVersion: string;
+  explicitAbstentionKeys: string[];
+  recurringAbstentionKeys: string[];
   candidateReadCommand: string;
   candidateReadSchemaVersion: string;
   candidateReadDefaultLimit: number;

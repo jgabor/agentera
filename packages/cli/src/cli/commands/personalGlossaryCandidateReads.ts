@@ -579,7 +579,7 @@ function currentProjection(
       : {
         class: "projection_unavailable" as const,
         message: "the current personal glossary candidate projection is unavailable or invalid",
-        recovery: "Create or repair a current bounded candidate projection, then retry; no projection bytes were changed.",
+        recovery: "Run `npx -y agentera@next report refresh --consent local-history`, then retry; no projection bytes were changed.",
       };
   failure(
     io,

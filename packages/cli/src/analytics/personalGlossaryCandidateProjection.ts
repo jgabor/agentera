@@ -23,6 +23,7 @@ import {
 
 const PROJECTION_SCHEMA_VERSION = "agentera.personalGlossaryCandidateProjection.v1";
 const PROJECTION_REPORT_SCHEMA_VERSION = "agentera.personalGlossaryCandidateProjectionReport.v1";
+const MINING_SUMMARY_SCHEMA_VERSION = "agentera.personalGlossaryMiningSummary.v1";
 const PROJECT_IDENTITY_SCHEMA_VERSION = "agentera.personalGlossaryProjectionProjectIdentity.v1";
 const PROJECTION_OWNER = "deterministic_discovery_projection";
 const SHA256_RE = /^[a-f0-9]{64}$/u;
@@ -44,6 +45,7 @@ export interface PersonalGlossaryCandidateProjectionInput {
   /** Stable source-generation time used to derive the excerpt expiry. */
   retained_at: string;
   candidates: readonly PersonalGlossaryProjectionCandidateInput[];
+  mining_summary?: PersonalGlossaryMiningSummary;
 }
 
 export interface PersonalGlossarySafeExcerpt {
@@ -89,6 +91,21 @@ export interface PersonalGlossaryCandidateProjectionReport {
     expired: number;
     omissions: Record<ExcerptOmissionReason, number>;
   };
+  mining_summary: PersonalGlossaryMiningSummary;
+}
+
+export interface PersonalGlossaryMiningFamilySummary {
+  candidate_count: number;
+  abstention_count: number;
+  abstentions_by_reason: Record<string, number>;
+}
+
+export interface PersonalGlossaryMiningSummary {
+  schema_version: typeof MINING_SUMMARY_SCHEMA_VERSION;
+  explicit: PersonalGlossaryMiningFamilySummary;
+  recurring: PersonalGlossaryMiningFamilySummary;
+  total_candidate_count: number;
+  total_abstention_count: number;
 }
 
 export interface PersonalGlossaryCandidateProjection {
@@ -134,6 +151,9 @@ interface ProjectionContract {
   storageFile: string;
   candidateSecretReason: string;
   excerptSensitiveContentAction: string;
+  miningSummarySchemaVersion: string;
+  explicitAbstentionKeys: string[];
+  recurringAbstentionKeys: string[];
 }
 
 interface MergedCandidate {
@@ -190,6 +210,9 @@ function projectionContract(): ProjectionContract {
     contract.storageFile !== "candidate-projection.json" ||
     contract.candidateSecretReason !== "secret_content" ||
     contract.excerptSensitiveContentAction !== "omit_complete_excerpt_before_projection" ||
+    contract.miningSummarySchemaVersion !== MINING_SUMMARY_SCHEMA_VERSION ||
+    contract.explicitAbstentionKeys.length !== 24 ||
+    contract.recurringAbstentionKeys.length !== 12 ||
     JSON.stringify(Object.keys(families)) !== JSON.stringify(["explicit", "recurring"]) ||
     JSON.stringify(families.explicit) !== JSON.stringify(["personal_explicit_definition"]) ||
     JSON.stringify(families.recurring) !==
@@ -198,6 +221,68 @@ function projectionContract(): ProjectionContract {
     throw new TypeError("personal glossary candidate projection contract is invalid");
   }
   return contract;
+}
+
+function zeroReasons(keys: readonly string[]): Record<string, number> {
+  return Object.fromEntries(keys.map((key) => [key, 0]));
+}
+
+function projectionMiningSummary(
+  input: PersonalGlossaryCandidateProjectionInput,
+  contract: ProjectionContract,
+): PersonalGlossaryMiningSummary {
+  if (input.mining_summary) return input.mining_summary;
+  let explicit = 0;
+  let recurring = 0;
+  for (const candidate of input.candidates) {
+    if (candidate.capsule.provenance_kind === "personal_explicit_definition") explicit += 1;
+    else recurring += 1;
+  }
+  return {
+    schema_version: MINING_SUMMARY_SCHEMA_VERSION,
+    explicit: {
+      candidate_count: explicit,
+      abstention_count: 0,
+      abstentions_by_reason: zeroReasons(contract.explicitAbstentionKeys),
+    },
+    recurring: {
+      candidate_count: recurring,
+      abstention_count: 0,
+      abstentions_by_reason: zeroReasons(contract.recurringAbstentionKeys),
+    },
+    total_candidate_count: explicit + recurring,
+    total_abstention_count: 0,
+  };
+}
+
+function validMiningFamily(value: unknown, keys: readonly string[]): boolean {
+  const family = mapping(value);
+  const reasons = mapping(family?.abstentions_by_reason);
+  return family !== null && reasons !== null &&
+    exactKeys(family, ["candidate_count", "abstention_count", "abstentions_by_reason"]) &&
+    nonNegativeInteger(family.candidate_count) && nonNegativeInteger(family.abstention_count) &&
+    exactKeys(reasons, keys) && Object.values(reasons).every(nonNegativeInteger) &&
+    family.abstention_count === Object.values(reasons).reduce<number>((sum, count) => sum + Number(count), 0);
+}
+
+function validMiningSummary(
+  value: unknown,
+  inputCount: number,
+  contract: ProjectionContract,
+): value is PersonalGlossaryMiningSummary {
+  const summary = mapping(value);
+  if (summary === null || !exactKeys(summary, [
+    "schema_version", "explicit", "recurring", "total_candidate_count", "total_abstention_count",
+  ]) || summary.schema_version !== MINING_SUMMARY_SCHEMA_VERSION ||
+    !validMiningFamily(summary.explicit, contract.explicitAbstentionKeys) ||
+    !validMiningFamily(summary.recurring, contract.recurringAbstentionKeys) ||
+    !nonNegativeInteger(summary.total_candidate_count) ||
+    !nonNegativeInteger(summary.total_abstention_count)) return false;
+  const explicit = summary.explicit as PersonalGlossaryMiningFamilySummary;
+  const recurring = summary.recurring as PersonalGlossaryMiningFamilySummary;
+  return summary.total_candidate_count === explicit.candidate_count + recurring.candidate_count &&
+    summary.total_candidate_count === inputCount &&
+    summary.total_abstention_count === explicit.abstention_count + recurring.abstention_count;
 }
 
 function sourceFamily(
@@ -403,6 +488,10 @@ export function projectPersonalGlossaryCandidates(
   if (!Array.isArray(input.candidates)) {
     throw new TypeError("projection candidates must be a list");
   }
+  const miningSummary = projectionMiningSummary(input, contract);
+  if (!validMiningSummary(miningSummary, input.candidates.length, contract)) {
+    throw new TypeError("candidate mining summary is invalid");
+  }
   const merged = mergeCandidates(input, contract);
   const selected = selectCandidates(merged.candidates, contract);
   const availableByFamily = countByFamily(merged.candidates);
@@ -487,6 +576,7 @@ export function projectPersonalGlossaryCandidates(
       expired: 0,
       omissions,
     },
+    mining_summary: miningSummary,
   };
   const projection = {
     schema_version: PROJECTION_SCHEMA_VERSION,
@@ -579,6 +669,7 @@ function validProjectionReport(value: unknown): value is PersonalGlossaryCandida
       "projects",
       "coverage",
       "excerpts",
+      "mining_summary",
     ]) ||
     report.schema_version !== PROJECTION_REPORT_SCHEMA_VERSION ||
     ![
@@ -621,6 +712,7 @@ function validProjectionReport(value: unknown): value is PersonalGlossaryCandida
       (family) => family !== "explicit" && family !== "recurring",
     ) ||
     !nonNegativeInteger(coverage.uncovered_projects) ||
+    !validMiningSummary(report.mining_summary, Number(report.input_count), projectionContract()) ||
     excerpts === null ||
     !exactKeys(excerpts, [
       "provided",
@@ -907,6 +999,41 @@ export function persistPersonalGlossaryCandidateProjection(
     }
   }
   privateWrite(pathname, text);
+  return { status: "changed", path: pathname };
+}
+
+/** Persist after explicit refresh consent, replacing only a malformed owned regular file. */
+export function persistPersonalGlossaryCandidateProjectionAfterRefresh(
+  projection: PersonalGlossaryCandidateProjection,
+  options: PersonalGlossaryCandidateProjectionStorageOptions = {},
+): { status: "changed" | "unchanged_replay"; path: string } {
+  if (!validProjection(projection)) throw new TypeError("candidate projection is invalid");
+  const pathname = personalGlossaryCandidateProjectionPath(options);
+  const root = path.resolve(
+    defaultProfileDir(options.env ?? process.env, options.platform ?? process.platform),
+    "intermediate",
+    "personal-glossary",
+  );
+  if (path.resolve(pathname) !== path.join(root, projectionContract().storageFile)) {
+    throw new TypeError("candidate projection path escapes its configured storage root");
+  }
+  try {
+    const metadata = fs.lstatSync(pathname);
+    if (metadata.isSymbolicLink() || !metadata.isFile()) {
+      throw new TypeError("candidate projection replacement requires the exact regular file");
+    }
+    const text = `${canonicalGlossaryJson(projection)}\n`;
+    const current = readPersonalGlossaryCandidateProjection(options);
+    if (current.status === "current" && fs.readFileSync(pathname, "utf8") === text) {
+      ensurePrivateProjectionMode(pathname);
+      return { status: "unchanged_replay", path: pathname };
+    }
+    privateWrite(pathname, text);
+    return { status: "changed", path: pathname };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+  privateWrite(pathname, `${canonicalGlossaryJson(projection)}\n`);
   return { status: "changed", path: pathname };
 }
 

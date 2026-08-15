@@ -94,7 +94,9 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   );
   const errors: string[] = [];
   if (
-    refreshProduction?.status !== "contract_only_pending_runtime_wiring" ||
+    refreshProduction?.status !== "active" ||
+    refreshProduction?.runtime !==
+      "packages/cli/src/analytics/personalGlossaryRefreshProjection.ts#produceCurrentPersonalGlossaryProjection" ||
     refreshProduction?.trigger !== "explicit_consented_evidence_refresh_success" ||
     refreshProjection?.count !== "exactly_one" ||
     refreshProjection?.generation_binding !== "exact_published_evidence_generation" ||

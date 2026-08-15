@@ -4,7 +4,7 @@ record:
   name: Produce the current projection during refresh
   depends_on:
     - wyenmnxxgf
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a successful consented refresh with eligible evidence WHEN refresh completes THEN candidate list and exact read operate on a projection bound to the new current generation.
     - GIVEN explicit and recurring evidence WHEN mining runs THEN both candidate families participate in deterministic bounded selection.

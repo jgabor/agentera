@@ -18,6 +18,10 @@
 
 ### Changed
 
+- Consented `agentera report refresh --consent local-history` now publishes the
+  deterministic personal-glossary candidate projection for the new evidence
+  generation. Projection failures keep evidence current, return nonzero with
+  separate evidence and projection outcomes, and provide the consented retry command.
 - Every passing `feat/v3` push now publishes one CI-allocated rolling
   `3.0.0-dev.N` package to npm `@next` without a metadata-only commit. The
   bounded workflow builds one isolated tarball, validates and smokes those exact

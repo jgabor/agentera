@@ -9,6 +9,7 @@ import { MAX_CORPUS_READ_BYTES, usageMain } from "../../src/analytics/usageStats
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers, readSignalTier } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
+import { personalGlossaryCandidateProjectionPath } from "../../src/analytics/personalGlossaryCandidateProjection.js";
 
 function run(args: ReportArgs): { rc: number; out: string; err: string } {
   let out = "";
@@ -247,12 +248,54 @@ describe("cmdReport", () => {
     expect(payload.command).toBe("stats refresh");
     expect(payload.status).toBe("pass");
     expect(payload.privacy.tier_write).toBe(true);
+    expect(payload.privacy.projection_write).toBe(true);
+    expect(payload.evidence.status).toBe("published");
+    expect(payload.projection.status).toBe("published");
     // No monolithic corpus.json written — tiers are the canonical output.
     expect(fs.existsSync(outp)).toBe(false);
     const tiersDir = path.join(tmp, "intermediate", "tiers");
     const tier = readSignalTier(tiersDir);
     expect(tier).not.toBeNull();
     expect(tier!.manifest.total_records).toBeGreaterThanOrEqual(1);
+  });
+
+  it("fails refresh truthfully when an unsafe projection target rejects replacement", () => {
+    fs.writeFileSync(path.join(tmp, "AGENTS.md"), "# rules\nprefer X.\n");
+    const projectionPath = personalGlossaryCandidateProjectionPath();
+    const outside = path.join(tmp, "outside-projection");
+    fs.mkdirSync(path.dirname(projectionPath), { recursive: true });
+    fs.writeFileSync(outside, "outside unchanged\n");
+    fs.symlinkSync(outside, projectionPath);
+
+    const { rc, out } = run({
+      action: "refresh",
+      consent: "local-history",
+      format: "json",
+      output: path.join(tmp, "intermediate", "corpus.json"),
+      projectRoot: [tmp],
+      codexSessionsDir: path.join(tmp, "stores", "codex"),
+      opencodeConversationsDir: path.join(tmp, "stores", "opencode.db"),
+      copilotConversationsDir: path.join(tmp, "stores", "copilot"),
+      cursorProjectsDir: path.join(tmp, "stores", "cursor-projects"),
+      cursorChatsDir: path.join(tmp, "stores", "cursor-chats"),
+      noCodex: true,
+      noOpencode: true,
+      noCopilot: true,
+      noCursor: true,
+    });
+    const payload = JSON.parse(out);
+    expect(rc).toBe(1);
+    expect(payload).toMatchObject({
+      status: "fail",
+      evidence: { status: "published" },
+      projection: {
+        status: "failed",
+        recovery: "npx -y agentera@next report refresh --consent local-history",
+      },
+      privacy: { tier_write: true, projection_write: false },
+    });
+    expect(fs.readFileSync(outside, "utf8")).toBe("outside unchanged\n");
+    expect(readSignalTier(path.join(tmp, "intermediate", "tiers"))).not.toBeNull();
   });
 
   it("rejects an unknown action", () => {

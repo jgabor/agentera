@@ -7,10 +7,12 @@ import { expanduser } from "../../core/paths.js";
 
 import { usageMain, corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { extractCorpusMain } from "../../analytics/extractCorpus.js";
+import { produceCurrentPersonalGlossaryProjection } from "../../analytics/personalGlossaryRefreshProjection.js";
 import {
   tiersDirForCorpusPath,
   assessTiers,
   readBoundedMetadata,
+  readCurrentGeneration,
 } from "../../analytics/extractCorpus/index.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
@@ -263,7 +265,27 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       out: (t) => (engineOut += t + "\n"),
       err: (t) => (engineErr += t + "\n"),
     });
-    const refreshStatus = rc === 0 ? "pass" : rc === 4 ? "flagged" : "fail";
+    let projection: Record<string, unknown> = { status: "not_attempted" };
+    let finalRc = rc;
+    const currentGeneration = rc === 0
+      ? readCurrentGeneration(tiersDirForCorpusPath(corpusPath))
+      : null;
+    if (rc === 0) {
+      try {
+        const produced = produceCurrentPersonalGlossaryProjection({
+          tiersDir: tiersDirForCorpusPath(corpusPath),
+        });
+        projection = { ...produced, write_status: produced.status, status: "published" };
+      } catch (error) {
+        finalRc = 1;
+        projection = {
+          status: "failed",
+          reason: (error as Error).message,
+          recovery: "npx -y agentera@next report refresh --consent local-history",
+        };
+      }
+    }
+    const refreshStatus = finalRc === 0 ? "pass" : rc === 4 ? "flagged" : "fail";
     const payload = {
       command: "stats refresh",
       status: refreshStatus,
@@ -272,6 +294,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
         local_history_read: true,
         local_history_write: false,
         tier_write: rc === 0,
+        projection_write: projection.status === "published",
         required_consent: "local-history",
         provided_consent: "local-history",
         historical_imports: args.importSources ?? [],
@@ -281,6 +304,14 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       },
       corpus_path: corpusPath,
       tier_path: tiersDirForCorpusPath(corpusPath),
+      evidence: {
+        status: rc === 0 ? "published" : "failed",
+        ...(currentGeneration ? {
+          generation: currentGeneration.manifest.generation,
+          published_at: currentGeneration.manifest.published_at,
+        } : {}),
+      },
+      projection,
       engine: { command: engineCommand, exit_code: rc, stdout: engineOut.split("\n").filter((l) => l), stderr: engineErr.split("\n").filter((l) => l) },
     };
     if (outputFormat === "json") {
@@ -289,8 +320,11 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       out(`agentera stats refresh: ${payload.status}\ncorpus=${corpusPath}\ntiers=${tiersDirForCorpusPath(corpusPath)}\n`);
       if (engineOut) out(engineOut);
       if (engineErr) err(engineErr);
+      if (projection.status === "failed") {
+        err(`candidate projection failed: ${String(projection.reason)}\nRecovery: ${String(projection.recovery)}\n`);
+      }
     }
-    return rc;
+    return finalRc;
   }
 
   if (action !== null) {

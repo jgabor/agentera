@@ -736,7 +736,8 @@ personal_mining_authority:
        writes, profile publication, project-glossary access, or project-state
         effects.
     refresh_production:
-      status: contract_only_pending_runtime_wiring
+      status: active
+      runtime: packages/cli/src/analytics/personalGlossaryRefreshProjection.ts#produceCurrentPersonalGlossaryProjection
       trigger: explicit_consented_evidence_refresh_success
       projection:
         count: exactly_one
@@ -769,7 +770,8 @@ personal_mining_authority:
         a nonzero refresh result but does not roll back the published evidence.
         A retry may replace only the exact configured owned regular projection
         file; it rejects symlinks, non-files, path mismatches, and path escapes.
-        Runtime wiring is owned by the next implementation task.
+        The refresh runtime mines and publishes this projection after evidence
+        publication succeeds.
     selection:
       candidates_max: 50
       project_ids_max_per_candidate: 100
