@@ -1,0 +1,16 @@
+id: wutzchcwys
+artifact: progress
+record:
+  timestamp: 2026-08-15 17:32
+  type: test
+  phase: build
+  what: Completed plan bqvoorlkei by simplifying three sampled CLI test files without changing production behavior.
+  context:
+    intent: Remove unnecessary fixture publication and duplicate semantic and version checks while preserving regression coverage.
+    constraints: Limit changes to the three sampled test files; preserve security and behavioral assertions; add no abstraction.
+    unknowns: None.
+    scope: packages/cli/test/cli/personalGlossaryPublish.test.ts, packages/cli/test/eval/semanticEval.test.ts, and packages/cli/test/cli/version.test.ts.
+  discovered: The reviewed duplicate setup and assertions could be removed locally without production changes or broader suite cleanup.
+  verified: "Focused result: 57 tests passed. pnpm -C packages/cli test: 4,065 passed and one skipped. Audit found no material issues. Commit hook passed."
+  next: Archive the completed plan and fast-forward local feat/v3.
+  publication_order: 169

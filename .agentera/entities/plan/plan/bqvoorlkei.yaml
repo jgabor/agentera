@@ -4,7 +4,7 @@ record:
   header:
     level: light
     created: 2026-08-15
-    status: open
+    status: archived
     title: "Plan: Simplify sampled CLI tests"
   what: Simplify the four duplicated or unnecessary test paths identified in the random review while preserving their behavioral and regression coverage.
   why: Reduce avoidable filesystem work, repeated fixture evaluation, duplicate command dispatch, and redundant helper assertions so the sampled tests are cheaper and easier to maintain.
