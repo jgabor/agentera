@@ -1,0 +1,15 @@
+id: pyykeqjbbs
+artifact: progress
+record:
+  timestamp: 2026-08-15 22:24
+  type: fix
+  phase: build
+  what: Closed the product-v1 reset selector-granularity gap by distinguishing whole-path deletion from bounded in-file selector deletion.
+  context:
+    intent: Address only audit ses_ff8f26858ffeKIXAP6YCFnvX2f selector-granularity blocker for task sogipwntmd.
+    constraints: No reset effects, task-status change, commit, amend, push, or unrelated compatibility work.
+    scope: Runtime diagnostic contains selectors, configuration keys, preview authorization, and validated scope handoff.
+  discovered: Shared Codex configuration must be authorization evidence without becoming a whole-file deletion target. Selector-backed targets now carry contains or key selectors, a file-content digest, and an explicit remove_in_file_selector operation.
+  verified: "pnpm -C packages/cli exec vp test run test/cli/productV1Eol.test.ts test/upgrade/productV1ResetAuthority.test.ts: 2 files and 12 tests passed. pnpm -C packages/cli run typecheck: passed. pnpm -C packages/cli build: passed. Built-local selector smoke found five selector targets in shared Codex config, zero whole-file removals, no unrelated content authorization, stale apply exit 2 after file change, validated_scope present, and effects_performed false. pnpm -C packages/cli test: 249 files passed, 4100 tests passed, 1 skipped."
+  next: Task gfpcbfrnfk can consume authorization.validated_scope immediately before effects and execute only remove_path targets or the exact remove_in_file_selector operation after revalidation.
+  publication_order: 179

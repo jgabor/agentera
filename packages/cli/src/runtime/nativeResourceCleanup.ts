@@ -51,9 +51,10 @@ export interface NativeResourceVocabularyDefinition {
   historicalIds: string[];
 }
 
-interface NativeResourceCleanupConfigurationDefinition {
+export interface NativeResourceCleanupConfigurationDefinition {
   id: string;
   host: string;
+  destination: string;
   key: string;
 }
 
@@ -429,6 +430,7 @@ export function loadNativeResourceCleanupContract(
     configuration: (data.configuration_inventory as Record<string, unknown>[]).map((unit) => ({
       id: unit.id as string,
       host: unit.host as string,
+      destination: unit.destination as string,
       key: unit.key as string,
     })),
   };

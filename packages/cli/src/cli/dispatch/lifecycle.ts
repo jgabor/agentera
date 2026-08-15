@@ -251,6 +251,8 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     runtime: null,
     legacyCleanup: null,
     format: "text",
+    productV1Reset: false,
+    authorization: null,
   };
   let jsonFlag = false;
   let i = 0;
@@ -297,6 +299,10 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
         });
       }
       args.legacyCleanup = selectedResource.id;
+    } else if (a === "--reset-product-v1") {
+      args.productV1Reset = true;
+    } else if ((v = value("--authorization")) !== null) {
+      args.authorization = v;
     } else if ((v = value("--only")) !== null) {
       if (v !== "artifacts" && v !== "runtime" && v !== "cleanup") {
         return emitInvalidInput(io, {
@@ -356,6 +362,18 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     }
   }
   if (jsonFlag) args.format = "json";
+  if (args.productV1Reset) {
+    const incompatible = args.channel !== null || (args.only?.length ?? 0) > 0 || args.force || args.verify || args.legacyCleanup !== null;
+    if (incompatible || args.dryRun === args.yes || (args.yes && !args.authorization) || (!args.yes && args.authorization)) {
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: {
+          class: "invalid_request",
+          message: "product-v1 reset requires either --dry-run preview or --yes --authorization TOKEN apply, without other upgrade modes",
+        },
+      });
+    }
+  }
   try {
     return cmdUpgrade(args, io);
   } catch (exc) {

@@ -1,0 +1,15 @@
+id: fduiedswaz
+artifact: progress
+record:
+  timestamp: 2026-08-15 22:11
+  type: feat
+  phase: build
+  what: Delivered bounded product-v1 reset preview and scope-bound apply authorization without deletion or initialization effects.
+  context:
+    intent: Implement plan gornhwivrn task sogipwntmd only.
+    constraints: Preserve v2-to-v3 behavior and current .v1 schema identifiers; do not delete, initialize, change task status, commit, or push.
+    scope: Current reviewed project plus declared profile, installation, and runtime roots.
+  discovered: Reset authorization must include recursive path and file-content evidence so additions or changes under a reviewed deletion root invalidate the token. Runtime configuration selectors remain explicit and symlinks are listed but never traversed.
+  verified: "Focused reset and authority tests: 2 files, 11 tests passed. Focused reset plus governed runtime-owner tests: 4 files, 214 tests passed. Typecheck passed. Build passed with bundled data surfaces. Built-local smoke returned 4 deletions, 3 recreations, stale authorization exit 2, unchanged external symlink target, and authorized apply with effects_performed false. Full source lane rerun passed 249 files, 4099 tests, 1 skipped. The first full-lane attempt had one transient git-status race with a concurrent temporary fixture; its owner test passed alone before the successful full rerun."
+  next: Task gfpcbfrnfk can consume the validated authorization and implement deletion plus canonical fresh-v3 initialization, with immediate scope revalidation before effects.
+  publication_order: 178

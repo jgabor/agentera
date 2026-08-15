@@ -90,6 +90,17 @@ describe("product v1 reset authority", () => {
     }
   });
 
+  it("rejects targets outside their declared roots", () => {
+    const target = mutatedAuthority((data) => {
+      data.scope_inventory[0].targets = ["../outside"];
+    });
+    try {
+      expect(() => loadProductV1ResetAuthority(target, REPO_ROOT)).toThrow("must stay within its declared root");
+    } finally {
+      fs.rmSync(path.dirname(target), { recursive: true, force: true });
+    }
+  });
+
   it("reconciles the installation trigger with the package inventory", () => {
     const target = mutatedAuthority((data) => {
       data.trigger_evidence.installation_package.selector = "schemaVersion";

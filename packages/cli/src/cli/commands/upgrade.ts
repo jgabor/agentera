@@ -17,6 +17,7 @@ import {
 import { detectStateMode } from "../../state/stateMode.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
+import { authorizeProductV1Reset, previewProductV1Reset } from "../../upgrade/productV1Reset.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type UpgradeDependencies = {
@@ -37,6 +38,8 @@ export interface UpgradeArgs {
   legacyCleanup?: UpgradeOrchestratorArgs["legacyCleanup"];
   verify?: boolean;
   format?: string;
+  productV1Reset?: boolean;
+  authorization?: string | null;
 }
 
 /** Canonical stable-channel update entry point. */
@@ -97,6 +100,28 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const orchestratorArgs = toOrchestratorArgs(args);
+
+  if (args.productV1Reset) {
+    const options = { project: args.project, installRoot: args.installRoot, home: args.home };
+    const result = args.yes
+      ? authorizeProductV1Reset(options, args.authorization ?? "")
+      : previewProductV1Reset(options);
+    if (args.format === "json") out(JSON.stringify(result, null, 2) + "\n");
+    else if ("deletions" in result) {
+      const lines = ["Product-v1 reset preview (no mutation)", `Authorization: ${result.authorization}`, "Roots:"];
+      for (const [name, root] of Object.entries(result.roots)) lines.push(`  ${name}: ${root}`);
+      lines.push("Deletions:");
+      for (const item of result.deletions) for (const target of item.targets) {
+        lines.push(`  ${item.id}: ${target.path ?? target.declared}${target.selector ? ` (${target.selector.kind}:${target.selector.value})` : ""}`);
+        for (const entry of target.entries ?? []) lines.push(`    ${entry.type}: ${entry.path}`);
+      }
+      lines.push("Recreations:");
+      for (const item of result.recreations) for (const target of item.targets) lines.push(`  ${item.id}: ${target.declared} under ${item.root}`);
+      lines.push("Irreversible loss:", ...result.irreversible_loss.map((loss) => `  ${loss}`));
+      out(lines.join("\n") + "\n");
+    } else out(`Product-v1 reset scope authorized: ${result.authorization}\nNo effects were performed.\n`);
+    return 0;
+  }
 
   if (orchestratorArgs.runtime) {
     err(

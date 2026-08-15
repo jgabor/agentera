@@ -37,7 +37,7 @@ export function productV1Evidence(projectRoot: string): string[] {
   return evidence;
 }
 
-/** Read-only EOL gate. Reset preview and apply are delivered by later tasks. */
+/** Read-only EOL gate. */
 export function enforceProductV1Eol(projectRoot: string, format: Format, io: Io = {}): number | null {
   const evidence = productV1Evidence(path.resolve(projectRoot));
   if (evidence.length === 0) return null;
@@ -47,11 +47,11 @@ export function enforceProductV1Eol(projectRoot: string, format: Format, io: Io 
     message: "Agentera product v1 is end-of-life and cannot be used by the v3 CLI.",
     evidence,
     reset_workflow: [
-      "Preview the declared product-v1 reset scope when the reset workflow is available.",
+      "Run agentera upgrade --reset-product-v1 --dry-run --format json.",
       "Review every deletion, recreation, and irreversible loss in that preview.",
       "Explicitly approve apply to remove scoped Agentera state and initialize fresh v3 state.",
     ],
-    recovery: "Wait for the product-v1 reset preview and apply workflow; this command did not change state.",
+    recovery: "Preview the product-v1 reset, then apply with --yes and the preview authorization; this command did not change state.",
   };
   if (format === "json" || format === "yaml") {
     emitStructured({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error }, format, io.out ?? ((text) => process.stdout.write(text)));

@@ -59,7 +59,8 @@ export function printUpgradeHelp(): string {
   return [
     "usage: agentera upgrade [-h] [--project PROJECT] [--install-root INSTALL_ROOT]",
     "                        [--home HOME] [--channel {stable,development}]",
-    "                        [--legacy-cleanup RESOURCE_ID]",
+    "                        [--legacy-cleanup RESOURCE_ID] [--reset-product-v1]",
+    "                        [--authorization TOKEN]",
     "                        [--only {artifacts,runtime,cleanup}] [--dry-run] [--yes]",
     "                        [--force] [--verify] [--format {text,json}]",
     "",
@@ -70,9 +71,11 @@ export function printUpgradeHelp(): string {
     "  --home HOME           Home directory for shared-skill detection and explicit native resource cleanup",
     "  --channel CHANNEL     Update channel: stable (2.x) or development (3.x npm)",
     "  --legacy-cleanup ID   Select one declared native Agentera resource for cleanup",
+    "  --reset-product-v1    Preview or authorize the bounded destructive product-v1 reset",
+    "  --authorization TOKEN Bind product-v1 apply to the exact reviewed preview scope",
     "  --only PHASE          Upgrade phase to include; may be repeated",
     "  --dry-run             Strict read-only preview; no files, locks, caches, native commands, or telemetry",
-    "  --yes                 Explicitly approve app/project migration or selected legacy cleanup",
+    "  --yes                 Explicitly approve migration, selected cleanup, or an authorized product-v1 reset",
     "  --force               Replace only where the migration contract explicitly permits it",
     "  --verify              Verify the current install; full v2-to-v3 apply verifies state and startup automatically",
     "  --format {text,json}  Structured output format",
@@ -88,6 +91,10 @@ export function printUpgradeHelp(): string {
     "  Current runtime selectors and native plugin, hook, agent, command, descriptor, and marketplace writes are retired.",
     `  Native resource cleanup preview: ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --dry-run")}`,
     `  Native resource cleanup apply:   ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --yes")}`,
+    "",
+    "product-v1 reset (irreversible, no backup or restore):",
+    `  Preview: ${preCutoverCommand("upgrade --reset-product-v1 --dry-run --format json")}`,
+    `  Authorize: ${preCutoverCommand("upgrade --reset-product-v1 --yes --authorization TOKEN --format json")}`,
   ].join("\n");
 }
 

@@ -5,9 +5,19 @@ record:
   depends_on:
     - hnuteafsqb
     - jsjdrbcrzf
-  status: pending
+  status: complete
   acceptance:
     - GIVEN v1 evidence WHEN reset is previewed THEN the output lists every scoped deletion, recreation, root, and irreversible loss without mutation.
     - GIVEN the reviewed scope changes before apply WHEN reset is approved THEN apply rejects before effects and requires a new preview.
     - GIVEN symlinks, aliases, or paths outside declared roots WHEN preview or apply resolves scope THEN no external target is authorized.
   plan: gornhwivrn
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Reset preview authorized whole-file deletion for runtime resources with in-file contains selectors, including Codex config. Audit ses_ff8f26858ffeKIXAP6YCFnvX2f.
+    provenance:
+      attempt_id: audit-sogipwntmd-2
+      source: audit ses_ff8f26858ffeKIXAP6YCFnvX2f
+      recorded_at: 2026-08-15 22:26
+      writer_command: agentera state plan record-evaluation

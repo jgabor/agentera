@@ -90,7 +90,8 @@ export function main(argv: string[], io: Io = {}): number {
     });
   }
 
-  if (command !== "--version" && command !== "version") {
+  const productV1Reset = command === "upgrade" && rest.includes("--reset-product-v1");
+  if (command !== "--version" && command !== "version" && !productV1Reset) {
     const failure = enforceProductV1Eol(
       migrationProject(args),
       requestedMigrationFailureFormat(args),
