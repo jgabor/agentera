@@ -4,7 +4,7 @@ record:
   name: Prove bounded profile-signal access directly
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a bounded profile-signal read WHEN filesystem access is observed THEN the signal tier is read and no full-evidence shard is accessed.
     - GIVEN explicit evidence-anchor resolution WHEN filesystem access is observed THEN only the owning full-evidence shard is read.
@@ -12,3 +12,13 @@ record:
     - GIVEN profile sufficiency behavior WHEN the affected suite runs THEN its existing current, missing, legacy, capped, and uncapped outcomes remain covered.
     - GIVEN test proportionality WHEN access cases are counted THEN one bounded-read and one explicit-resolution case prove the distinct contracts.
   plan: jslzlbvbjz
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-ijkabqqhqq-1
+      source: "task audit: bounded signal and owning-shard access passed"
+      recorded_at: 2026-08-15 18:32
+      writer_command: agentera state plan record-evaluation
