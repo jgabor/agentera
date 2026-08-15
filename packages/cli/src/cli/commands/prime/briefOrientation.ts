@@ -740,7 +740,7 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   if ("attention" in payload) out.attention = briefAttention(payload.attention);
   if ("source" in payload) out.source = briefSource(payload.source);
   if ("docs" in payload) out.docs = briefDocs(payload.docs, projection);
-  for (const conditional of ["v1_migration", "objective"] as const) {
+  for (const conditional of ["objective"] as const) {
     if (conditional in payload) out[conditional] = payload[conditional];
   }
   if (isObject(payload.plan)) out.plan = briefPlan(payload.plan, projection);

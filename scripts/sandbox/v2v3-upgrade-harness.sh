@@ -122,8 +122,6 @@ PY
 overall="pass"
 if [[ "$SCENARIO" == "stable-safety" ]]; then
   if [[ "$preview_rc" -ne 1 && "$preview_rc" -ne 0 ]]; then overall="fail"; fi
-elif [[ "$SCENARIO" == "v1-md-blocked" ]]; then
-  if ! grep -q '"blocked"' "$SANDBOX/preview.json"; then overall="fail"; fi
 elif [[ "$SCENARIO" == "partial-only-runtime" ]]; then
   if [[ "$preview_rc" -ne 1 || "$preview_lifecycle" != "manual_review_needed" ]] \
     || ! python3 - <<'PY' "$SANDBOX/preview.json"
@@ -145,7 +143,7 @@ elif [[ "$preview_rc" -ne 1 ]]; then
 fi
 
 apply_lifecycle="skipped"
-if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "v1-md-blocked" && "$SCENARIO" != "partial-only-runtime" ]]; then
+if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "partial-only-runtime" ]]; then
   set +e
   "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
     "${CHANNEL[@]}" "${TARGET[@]}" "${ONLY[@]}" "${FORCE[@]}" --yes --format json \
@@ -205,7 +203,7 @@ payload = {
     "applyLifecycle": apply_lifecycle,
     "preservedChecksumOk": True,
     "pythonLeftoversFound": [],
-    "appSubTreeRemoved": fixture not in {"noisy-app-home", "v1-md-blocked", "stable-safety", "partial-only-runtime"},
+    "appSubTreeRemoved": fixture not in {"noisy-app-home", "stable-safety", "partial-only-runtime"},
     "unrecognizedAppHomeEntries": ["notes.txt"] if fixture == "noisy-app-home" else [],
     "idempotentSecondRun": fixture not in {"noisy-app-home", "partial-only-runtime"} and overall == "pass",
     "runtimeMatrix": {

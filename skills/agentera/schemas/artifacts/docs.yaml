@@ -10,37 +10,6 @@
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
 # following capability_schema_contract.yaml and protocol.yaml conventions.
 #
-# ── Field-by-field mapping: v1 DOCS.md → v2 docs.yaml ──
-#
-# v1 Field                              v2 Field               v2 ID
-# ─────────────────────────────────────────────────────────────────────
-# <!-- Last audit: date (label) -->      HEADER.last_audit      DH1
-# ## Conventions / doc_root             CONVENTIONS.doc_root   DC1
-# ## Conventions / style                CONVENTIONS.style      DC2
-# ## Conventions / auto_gen             CONVENTIONS.auto_gen   DC3
-# ## Conventions / version_files        CONVENTIONS.version_files DC4
-# ## Conventions / semver_policy        CONVENTIONS.semver_policy DC5
-# ## Artifact Mapping / table row       MAPPING.entry          DM1
-# (Artifact column)                     MAPPING.artifact       DM2
-# (Path column)                         MAPPING.path           DM3
-# (Producers column)                    MAPPING.producers      DM4
-# ## Index / table row                  INDEX.entry            DI1
-# (Document column)                     INDEX.document         DI2
-# (Path column)                         INDEX.path             DI3
-# (Last Updated column)                 INDEX.last_updated     DI4
-# (Status column)                       INDEX.status           DI5
-# ## Coverage / Documented              COVERAGE.documented    DV1
-# ## Coverage / Undocumented            COVERAGE.undocumented  DV2
-# ## Coverage / Stale                   COVERAGE.stale         DV3
-# ## Coverage / Tests                   COVERAGE.tests         DV4
-# ## Audit Log / ### date (label)       AUDIT_LOG.entry        DA1
-# (audit date from heading)             AUDIT_LOG.date         DA2
-# (audit label from heading)            AUDIT_LOG.label        DA3
-# - [finding_type] description          FINDING.type           DF1
-# (severity from context)               FINDING.severity       DF2
-# (description text)                    FINDING.description    DF3
-# (resolution: fixed/deferred)          FINDING.resolution     DF4
-#
 # Protocol references:
 #   visual tokens: VT1 (protocol.yaml VISUAL_TOKENS, status: current)
 #   severity: SF1-SF3 (protocol.yaml SEVERITY_FINDING)

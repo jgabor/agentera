@@ -6,7 +6,6 @@ import { TODO_SEVERITY_ORDER } from "../todoSeverity.js";
 
 export function buildOrientationAttention(state: OrientationState): string[] {
   const {
-    v1_migration: v1Migration,
     project_integration: projectIntegration,
     health,
     plan,
@@ -41,11 +40,6 @@ export function buildOrientationAttention(state: OrientationState): string[] {
   const coverageAttention = corpusCoverageAttention(corpusCoverage);
   if (coverageAttention) {
     attention.push(coverageAttention);
-  }
-  if (v1Migration.detected && projectIntegration.recommendation !== "upgrade") {
-    attention.push(
-      `degraded: v1 artifacts detected; preview \`${v1Migration.dry_run_command}\`; files=${v1Migration.affected_files.join(", ")}`,
-    );
   }
   if (health.stale) {
     const auditId = health.id ?? "unknown";

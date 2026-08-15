@@ -557,8 +557,8 @@ export function validateGlossaryEntryContract(
   }
   if (
     confirmedVariantGuard?.owner !==
-      "packages/cli/src/validate/v1LegacyCruft.ts#scanPost30CruftViolations" ||
-    confirmedVariantGuard?.validation_surface !== "packages/cli/test/cli/v1LegacyCruft.test.ts" ||
+      "packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations" ||
+    confirmedVariantGuard?.validation_surface !== "packages/cli/test/cli/glossaryVariantGuard.test.ts" ||
     confirmedVariantGuard?.loader !==
       "packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument" ||
     confirmedVariantGuard?.matching !== "exact_case_sensitive_boundary_aware_literal" ||
@@ -595,7 +595,7 @@ export function validateGlossaryEntryContract(
     !nonEmpty(confirmedVariantGuard?.exclusion_rule)
   ) {
     errors.push(
-      "confirmed variant guard must reuse validated project glossary pairs and bounded legacy-cruft exclusions",
+      "confirmed variant guard must reuse validated project glossary pairs and bounded exclusions",
     );
   }
   if (

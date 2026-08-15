@@ -78,7 +78,7 @@ print("assert_preserved_checksums: ok")
 PY
 fi
 
-if [[ "$SCENARIO" != "noisy-app-home" && "$SCENARIO" != "v1-md-blocked" && "$SCENARIO" != "partial-only-runtime" ]]; then
+if [[ "$SCENARIO" != "noisy-app-home" && "$SCENARIO" != "partial-only-runtime" ]]; then
   if [[ -d "$APP_HOME/app" ]]; then
     echo "assert_app_subtree_removed: app/ still present under $APP_HOME" >&2
     exit 1
@@ -111,7 +111,7 @@ payload = json.load(open(sys.argv[1]))
 scenario, rc = sys.argv[2], int(sys.argv[3])
 pending = payload.get("summary", {}).get("pending", 0)
 lifecycle = payload.get("lifecycleStatus")
-if scenario in {"noisy-app-home", "v1-md-blocked", "partial-only-runtime"}:
+if scenario in {"noisy-app-home", "partial-only-runtime"}:
     print("assert_upgrade_idempotent: skipped for scenario", scenario)
 else:
     if pending != 0 or lifecycle != "no_changes_needed" or rc != 0:

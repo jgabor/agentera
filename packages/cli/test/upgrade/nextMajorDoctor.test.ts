@@ -9,7 +9,6 @@ import { loadUpdateChannelsAuthority } from "../../src/upgrade/channels.js";
 import {
   NEXT_MAJOR_LINE_CAP,
   NEXT_MAJOR_SECTION_HEADER,
-  V1_NEXT_MAJOR_FALLBACK,
   formatNextMajorDoctorLines,
   isStableSuccessorAnnounced,
   loadChannelNextMajor,
@@ -248,20 +247,6 @@ describe("resolveNextMajorDoctorLines", () => {
       runningDistributionMajor: 3,
     });
     expect(lines).toBeNull();
-  });
-
-  it("uses hardcoded v1→v2 fallback for distribution major 1", () => {
-    const lines = resolveNextMajorDoctorLines({
-      sourceRoot: REPO_ROOT,
-      home: tmp,
-      channel: "stable",
-      runningVersion: "1.18.0",
-      runningDistributionMajor: 1,
-    });
-    expect(lines).toHaveLength(NEXT_MAJOR_LINE_CAP);
-    expect(lines?.[1]).toBe(`Current: ${V1_NEXT_MAJOR_FALLBACK.currentVersion} (stable channel)`);
-    expect(lines?.[2]).toBe(`Next: ${V1_NEXT_MAJOR_FALLBACK.version} (stable channel)`);
-    expect(lines?.[4]).toContain(V1_NEXT_MAJOR_FALLBACK.previewCommand);
   });
 
   it("fails when rendered section exceeds the six-line cap", () => {

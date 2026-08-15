@@ -311,19 +311,6 @@ describe("buildUpgradePlan", () => {
     expect(JSON.stringify(snapshotTree(tmp))).toBe(before);
   });
 
-  it("rejects unresolved v1 Markdown with a manual handoff", () => {
-    const appHome = path.join(home, "agentera");
-    managedV2(appHome);
-    const project = copyFixture("v2-v1-md-project", path.join(tmp, "v1-readiness"));
-    const unresolved = buildUpgradePlan({ installRoot: appHome, home, project, channel: "development", dryRun: true, only: ["artifacts"] });
-    expect(unresolved.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({
-      status: "blocked",
-      action: "resolve-v1-state",
-      message: expect.stringMatching(/manual/i),
-    });
-
-  });
-
   it.each(["npm", "source"] as const)("selects marker-absent v2 project state under %s v3 execution without preview writes", (execution) => {
     const bundle = path.join(tmp, "npx-bundle");
     fs.mkdirSync(path.join(bundle, "skills", "agentera"), { recursive: true });

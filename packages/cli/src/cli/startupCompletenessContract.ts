@@ -10,7 +10,6 @@ export const STARTUP_AVAILABLE_STATE_FIELDS = [
   "app_home",
   "mode",
   "profile",
-  "v1_migration",
   "health",
   "todo",
   "plan",

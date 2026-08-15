@@ -362,9 +362,9 @@ export async function runProducerReadinessWorkflow(
     path.join(project, "src/reintroduced.ts"),
     "export type Broken = ProjectVariant;\n",
   );
-  const guard = await load(executable, "validate/v1LegacyCruft.js");
+  const guard = await load(executable, "validate/glossaryVariantGuard.js");
   const confirmedVariantViolations = guard
-    .scanPost30CruftViolations(project)
+    .scanConfirmedVariantViolations(project)
     .filter((message: string) => message.includes("ProjectVariant")).length;
   const profileUnchanged = fs.readFileSync(profile.profilePath).equals(profileBeforeProject);
 

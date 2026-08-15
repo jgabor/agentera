@@ -55,7 +55,7 @@ jobs:
           AGENTERA_SANDBOX_TIER: L1
         run: |
           set -euo pipefail
-          for scenario in happy-path-clean stable-safety v1-md-blocked noisy-app-home codex-plugin-vs-copied partial-only-runtime; do
+          for scenario in happy-path-clean stable-safety noisy-app-home codex-plugin-vs-copied partial-only-runtime; do
             bash scripts/sandbox/v2v3-upgrade-harness.sh "$scenario"
           done
       - name: Upload sandbox reports

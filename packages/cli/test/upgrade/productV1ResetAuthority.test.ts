@@ -6,11 +6,11 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
-import { detectV1ArtifactPairs, V1_ARTIFACT_PAIRS } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import {
   PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH,
   isProductV1PackageVersion,
   loadProductV1ResetAuthority,
+  productV1ArtifactPairs,
   productV1ProjectTriggerPaths,
 } from "../../src/upgrade/productV1ResetAuthority.js";
 
@@ -35,7 +35,7 @@ describe("product v1 reset authority", () => {
   it("owns the historical artifact pairs and declares one bounded owner for every reset effect", () => {
     const authority = loadProductV1ResetAuthority();
 
-    expect(V1_ARTIFACT_PAIRS).toEqual(authority.projectArtifacts.map(({ path, currentPath }) => [path, currentPath]));
+    expect(productV1ArtifactPairs()).toEqual(authority.projectArtifacts.map(({ path, currentPath }) => [path, currentPath]));
     expect(productV1ProjectTriggerPaths()).toEqual([
       ".agentera/PROGRESS.md",
       ".agentera/PLAN.md",
@@ -61,7 +61,8 @@ describe("product v1 reset authority", () => {
     try {
       fs.writeFileSync(path.join(root, ".agentera/progress.yaml"), "schemaVersion: agentera.progress.v1\ncycles: []\n");
       fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-      expect(detectV1ArtifactPairs(root)).toEqual([]);
+      expect(productV1ProjectTriggerPaths()).not.toContain(".agentera/progress.yaml");
+      expect(productV1ProjectTriggerPaths()).not.toContain(".agentera/state-mode.yaml");
       expect(isProductV1PackageVersion("2.7.9")).toBe(false);
       expect(isProductV1PackageVersion("3.0.0-dev.72")).toBe(false);
     } finally {

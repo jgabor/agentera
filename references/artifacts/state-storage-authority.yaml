@@ -1279,11 +1279,6 @@ entity_migration:
       phase_filters: >-
         Every --only apply is invalid during a v2-to-v3 boundary. Read-only
         filtered preview may remain available.
-      legacy_projection: >-
-        Canonical v2 YAML and already-resolved v1 conversions are inventoried
-        directly. A pending v1 Markdown conversion is not projected through a
-        prerequisite write during planning and therefore blocks the composed
-        apply before effects.
       lifecycle_normalization: >-
         Deterministic legacy plan lifecycle normalization is part of entity
         projection during cutover. Upgrade retains the original legacy YAML as

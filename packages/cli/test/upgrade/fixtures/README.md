@@ -30,7 +30,6 @@ tests (`tests/test_upgrade_cli.py`, `hooks/codex-hooks.json`) and existing trees
 | --- | --- |
 | happy-path-clean | yaml-project + app-home + runtime-python |
 | stable-safety | same as happy-path (stable channel in harness) |
-| v1-md-blocked | v1-md-project + app-home |
 | noisy-app-home | app-home-noisy + yaml-project |
 | legacy-home-retirement | legacy-agents-home |
 | codex-plugin-vs-copied | codex-full + app-home + yaml-project |

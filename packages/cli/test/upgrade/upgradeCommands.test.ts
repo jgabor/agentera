@@ -26,7 +26,7 @@ describe("buildUpgradeCommands", () => {
     expect(cmds.applyCommand).toContain("--yes");
   });
 
-  it("omits install-root for project-only v1 migration hints", () => {
+  it("omits install-root for project-only upgrades", () => {
     const channel = resolveUpdateChannel({
       channel: "stable",
       sourceRoot: REPO_ROOT,

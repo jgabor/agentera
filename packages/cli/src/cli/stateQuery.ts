@@ -34,7 +34,7 @@ export const ROUTINE_STRUCTURED_FIELDS = [
  *  `state_presence` (missing-vs-empty) and named recovery commands, not by
  *  trimming this set. */
 export const PRIME_STRUCTURED_FIELDS = [
-  "command", "outcome", "app_home", "app", "mode", "v1_migration", "health",
+  "command", "outcome", "app_home", "app", "mode", "health",
   "todo", "plan", "docs", "progress", "objective", "state_presence", "shared_skill", "project_integration", "attention",
   "history",
   "decision_attention", "next_action", "orchestration_context", "closeout_context",

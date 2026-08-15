@@ -306,14 +306,6 @@ describe("status capability self-contained startup", () => {
           ].join("\n"),
         ),
     ],
-    [
-      "upgrade",
-      () =>
-        writeProjectFile(
-          ".agentera/PROGRESS.md",
-          "# Progress\n\n## Cycle 1 · 2026-01-01 00:00 · feat\n\n**What**: fixture\n",
-        ),
-    ],
     ["incomplete-state", () => writeProjectFile(".agentera/progress.yaml", "cycles: []\n")],
   ] as const)("keeps safety rails and routing markers for $0 state", (name, setup) => {
     setup();
@@ -363,16 +355,8 @@ describe("status capability self-contained startup", () => {
     expect(state.project_integration).not.toHaveProperty("retry");
     if (name === "flagged") expect(state.attention.length).toBeGreaterThan(0);
     if (name === "waiting") expect(state.next_action.object).toBeTruthy();
-    if (name === "upgrade") {
-      expect(state.project_integration.recommendation).toBe("upgrade");
-      expect(state.project_integration.dry_run_command).toContain("upgrade");
-      expect(state.project_integration.dry_run_command).toContain("--dry-run");
-      expect(state.project_integration.apply_command).toContain("upgrade");
-      expect(state.project_integration.apply_command).toContain("--yes");
-    } else {
-      expect(state.project_integration).not.toHaveProperty("dry_run_command");
-      expect(state.project_integration).not.toHaveProperty("apply_command");
-    }
+    expect(state.project_integration).not.toHaveProperty("dry_run_command");
+    expect(state.project_integration).not.toHaveProperty("apply_command");
     if (name === "incomplete-state") expect(capsule.startup.outcome).toBe("blocked");
   });
 
@@ -572,19 +556,6 @@ describe("status capability self-contained startup", () => {
     expect(statusState(returning.payload).state_presence.available.progress).toBe(true);
     expect(returning.payload.capability_context.startup.raw_artifact_read_policy).toContain("included bounded state");
     expect(returning.payload.capability_context.startup.availability).toEqual(expect.any(Array));
-  });
-
-  it("renders an upgrade recommendation and executable commands strictly from status_context", () => {
-    writeProjectFile(
-      ".agentera/PROGRESS.md",
-      "# Progress\n\n## Cycle 1 · 2026-01-01 00:00 · feat\n\n**What**: fixture\n",
-    );
-    const dashboard = renderStatusDashboard(statusState(runStatus().payload));
-    const integration = dashboard.project_integration as Record<string, unknown>;
-
-    expect(integration.recommendation).toBe("upgrade");
-    expect(integration.dry_run_command).toEqual(expect.stringContaining("--dry-run"));
-    expect(integration.apply_command).toEqual(expect.stringContaining("--yes"));
   });
 
   it("bounds adversarial UTF-8 state without moving diagnostics to stdout", () => {

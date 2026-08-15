@@ -74,7 +74,6 @@ export function projectPublicOrientationAttention(state: OrientationState): stri
  *  still populates them, so explicit `--fields <name>` selection, the text
  *  briefing, and downstream state consumers are unaffected. */
 const OMITTABLE_DEFAULT_CONDITIONAL_TOP_FIELDS: readonly string[] = [
-  "v1_migration",
   "docs",
   "objective",
 ];
@@ -88,9 +87,6 @@ function isConditionalFieldPresent(field: string, payload: Record<string, unknow
   if (value === null || value === undefined) return false;
   if (typeof value !== "object" || Array.isArray(value)) return true;
   const obj = value as Record<string, unknown>;
-  // v1_migration: present when v1 artifacts are detected (detected !== true is
-  // the default state; recover via `agentera upgrade --dry-run`).
-  if (field === "v1_migration") return obj.detected === true;
   // docs: present when a docs mapping artifact exists (exists !== true is the
   // absent state; recover via the canonical docs list command).
   if (field === "docs") return obj.exists === true;
@@ -164,15 +160,14 @@ export function buildOrientationJsonPayload(
       : "caller-owned README-style prime orientation dashboard";
   const access =
     command === "status"
-      ? "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime"
-      : "single installed CLI call; app/v1/profile safety included; no preflight glob/read/import/doctor calls during normal prime";
+      ? "single installed CLI call; app/reset/profile safety included; no preflight glob/read/import/doctor calls during normal prime"
+      : "single installed CLI call; app/reset/profile safety included; no preflight glob/read/import/doctor calls during normal prime";
   return {
     command,
     outcome: startup.outcome,
     app_home: appHome,
     app: bundlePublic,
     mode: state.mode,
-    v1_migration: state.v1_migration,
     shared_skill: state.shared_skill,
     project_integration: state.project_integration,
     ...(state.todo_reconciliation?.status === "action_required" ? { todo_reconciliation: state.todo_reconciliation } : {}),
@@ -301,7 +296,7 @@ export function emitPrime(
   if (retiredRejection !== null) return retiredRejection;
   const requested = requestedFields(fieldsArg);
   // The default bare briefing first omits inactive conditional top-level fields
-  // (v1_migration/docs/objective when default) so startup does not carry
+  // (docs/objective when default) so startup does not carry
   // default-only payload, then — for the bare default only — projects the full
   // payload to a bounded decision brief (Plan Task 3). Explicit `--fields`
   // selection and `--context` use their governed payloads. Dashboard history is

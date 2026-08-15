@@ -142,29 +142,4 @@ describe("plan lifecycle migration", () => {
     expect(discoverPlanArtifacts(current).archived.map((artifact) => path.basename(artifact.path))).toEqual(initialOrder);
   });
 
-  it("blocks v1 plan conversion without writing v2 state", () => {
-    const project = path.join(tmp, "project");
-    const legacyPlan = path.join(project, ".agentera", "PLAN.md");
-    fs.mkdirSync(path.dirname(legacyPlan), { recursive: true });
-    fs.writeFileSync(legacyPlan, [
-      "<!-- Level: light -->",
-      "<!-- Created: 2026-07-12 -->",
-      "<!-- Status: completed -->",
-      "# Plan: Migrator fixture",
-      "### Task 1: Preserve task evidence",
-      "**Status**: complete",
-      "",
-    ].join("\n"));
-
-    const migration = planArtifactsPhase(project);
-    expect(migration.items).toContainEqual(expect.objectContaining({ action: "manual-v1-handoff", source: ".agentera/PLAN.md", status: "blocked" }));
-    applyMigrationPhases(migrationCtx(project, project, tmp, REPO_ROOT), {
-      artifacts: migration,
-      runtime: { name: "runtime", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 }, items: [], message: "" },
-      cleanup: { name: "cleanup", status: "noop", summary: { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 }, items: [], message: "" },
-    }, ["artifacts"]);
-
-    expect(fs.existsSync(path.join(project, ".agentera", "plan.yaml"))).toBe(false);
-    expect(fs.readFileSync(legacyPlan, "utf8")).toContain("Status: completed");
-  });
 });

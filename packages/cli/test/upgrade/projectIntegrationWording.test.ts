@@ -8,10 +8,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE } from "../../src/upgrade/doctor.js";
 import { summarizeProjectIntegration } from "../../src/upgrade/projectIntegration.js";
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
-import { detectV1ArtifactPairs } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
-import { resolveInvokedUpdateChannel } from "../../src/upgrade/channels.js";
-import { classifyInstall } from "../../src/upgrade/compatibility.js";
-import { isStableSuccessorAnnounced } from "../../src/upgrade/nextMajorDoctor.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const FIXTURES = path.resolve(
@@ -109,27 +105,6 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.recommendation).toBe("upgrade");
     expect(summary.message).toContain("app bundle needs update");
     expect(summary.message).toContain("Preview");
-  });
-
-  it("recommends upgrade for v1 Markdown project", () => {
-    const project = path.join(tmp, "v1-project");
-    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
-    fs.writeFileSync(
-      path.join(project, ".agentera", "PROGRESS.md"),
-      "# Progress\n\n## Cycle 1 · 2026-01-01 00:00 · feat\n\n**What**: fixture\n",
-    );
-    fs.mkdirSync(path.join(tmp, "app-home"), { recursive: true });
-
-    const summary = summarizeProjectIntegration(
-      baseArgs(project, {
-        bundleStatus: "up_to_date",
-        crossMajorBoundary: false,
-      }),
-    );
-
-    expect(summary.recommendation).toBe("upgrade");
-    expect(summary.message).toContain("project state needs migration");
-    expect(summary.dry_run_command).toContain("upgrade");
   });
 
   it("recommends upgrade for python-managed project hooks", () => {
@@ -252,38 +227,6 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.aggregate_status).toBe("stay");
     expect(summary.exit).toEqual({ code: 0, meaning: "no_changes_needed" });
     expect(summary.retry.guidance).toContain("No retry");
-  });
-
-  it("reuses an enclosing V1 scan and selected channel without changing output", () => {
-    const project = path.join(tmp, "precomputed-v1");
-    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
-    fs.writeFileSync(path.join(project, ".agentera/PLAN.md"), "# Legacy plan\n");
-    const args = baseArgs(project, { bundleStatus: APP_UP_TO_DATE });
-    const detected = detectV1ArtifactPairs(project);
-
-    const standalone = summarizeProjectIntegration(args);
-    const resolvedChannel = resolveInvokedUpdateChannel({
-      channel: standalone.update_channel,
-      env: args.env,
-      home: args.home,
-      sourceRoot: args.sourceRoot,
-    });
-    const reused = summarizeProjectIntegration({
-      ...args,
-      channel: standalone.update_channel,
-      resolvedChannel,
-      installClassification: classifyInstall({ appHome: args.installRoot, sourceRoot: args.sourceRoot }),
-      successorAnnounced: isStableSuccessorAnnounced(args.sourceRoot, "stable"),
-      precomputedV1Artifacts: detected,
-    });
-
-    expect(detected).toEqual([".agentera/PLAN.md"]);
-    expect(reused).toEqual(standalone);
-    expect(summarizeProjectIntegration({
-      ...args,
-      channel: standalone.update_channel,
-      precomputedV1Artifacts: [],
-    }).pending_artifacts).toBe(standalone.pending_artifacts - 1);
   });
 
 });

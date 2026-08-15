@@ -46,7 +46,7 @@ seed_happy_path() {
 }
 
 case "$SCENARIO" in
-  v2-yaml-project|v2-app-home|v2-runtime-python|v2-app-home-noisy|v2-legacy-agents-home|v2-runtime-codex-full|v2-full-artifacts|v2-v1-md-project|v2-runtime-opencode|v2-v1-stale-surfaces)
+  v2-yaml-project|v2-app-home|v2-runtime-python|v2-app-home-noisy|v2-legacy-agents-home|v2-runtime-codex-full|v2-full-artifacts|v2-runtime-opencode|v2-v1-stale-surfaces)
     case "$SCENARIO" in
       v2-yaml-project) copy_fixture "$SCENARIO" "$SANDBOX/project" ;;
       v2-app-home|v2-app-home-noisy|v2-legacy-agents-home)
@@ -60,7 +60,6 @@ case "$SCENARIO" in
         fi
         ;;
       v2-full-artifacts) copy_fixture "$SCENARIO" "$SANDBOX/project" ;;
-      v2-v1-md-project) copy_fixture "$SCENARIO" "$SANDBOX/project" ;;
     esac
     ;;
   v2-runtime-cursor-full)
@@ -69,10 +68,6 @@ case "$SCENARIO" in
     ;;
   happy-path-clean|stable-safety|partial-only-runtime|v2-python-control|full-runtime-matrix)
     seed_happy_path
-    ;;
-  v1-md-blocked)
-    copy_fixture v2-v1-md-project "$SANDBOX/project"
-    copy_fixture v2-app-home "$HOME/.local/share/agentera"
     ;;
   noisy-app-home)
     copy_fixture v2-app-home-noisy "$HOME/.local/share/agentera"

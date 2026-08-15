@@ -10,31 +10,7 @@
 # bounded current writer intent for Build and never delivers or persists it in
 # plan state. Prime projects generic review attention without lifecycle details.
 #
-# The active authority is one progress_cycle entity per writer-owned file. The
-# numbered projection model below is retained only as an exact legacy migration
-# input schema; it is not an ordinary read or write contract after cutover.
-#
-# ── Field-by-field mapping: v1 PROGRESS.md → v2 progress.yaml ──
-#
-# v1 Field                              v2 Field               v2 ID
-# ─────────────────────────────────────────────────────────────────────
-# ## Cycle N · date · type-prefix       CYCLE.number           PR1
-# (date from heading)                   CYCLE.timestamp        PR2
-# (type-prefix from heading)            CYCLE.type             PR3
-# **Phase**: <phase>                    CYCLE.phase            PR4
-# **What**: <text>                      CYCLE.what             PR5
-# **Inspiration**: <text>               CYCLE.inspiration      PR6
-# **Discovered**: <text>                CYCLE.discovered       PR7
-# **Verified**: <text>                  CYCLE.verified         PR8
-# **Next**: <text>                      CYCLE.next             PR9
-# **Context**: <text>                   CYCLE.context          PR10
-# (intent from Context)                 CONTEXT.intent         PT1
-# (constraints from Context)            CONTEXT.constraints    PT2
-# (unknowns from Context)               CONTEXT.unknowns       PT3
-# (scope from Context)                  CONTEXT.scope          PT4
-# ## Archived Cycles                    (implicit section)     —
-# - Cycle N (date): summary            ARCHIVE.summary        PA1
-#
+# The active authority is one progress_cycle entity per writer-owned file.
 # Protocol references:
 #   phase: PH1-PH5 (protocol.yaml PHASES)
 #   type: conventional commit prefix (feat/fix/docs/refactor/chore/test)

@@ -226,7 +226,7 @@ export function scanLegacyCapabilityAgentPaths(agentsDir: string): string[] {
   return hits.sort();
 }
 
-/** Scan a tree for reintroduced Swedish-verb agents (v1LegacyCruft-style guard). */
+/** Scan a tree for reintroduced Swedish-verb agents. */
 export function scanLegacySwedishVerbAgentViolations(root: string): string[] {
   const resolved = resolvePath(root);
   const violations: string[] = [];

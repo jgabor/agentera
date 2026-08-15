@@ -1988,8 +1988,8 @@ ownership_contracts:
         collision, or malformed existing state is a conflict and must never be
         repaired or overwritten implicitly.
     confirmed_variant_guard:
-      owner: packages/cli/src/validate/v1LegacyCruft.ts#scanPost30CruftViolations
-      validation_surface: packages/cli/test/cli/v1LegacyCruft.test.ts
+      owner: packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations
+      validation_surface: packages/cli/test/cli/glossaryVariantGuard.test.ts
       loader: packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument
       source_rule: >-
         Resolve the glossary through the canonical artifact registry and consume

@@ -2,8 +2,6 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import YAML from "yaml";
-
 import { resolvePath } from "../core/paths.js";
 import { confirmedVariantGuardContract } from "../registries/glossaryEntryContract.js";
 import { containsGlossaryTerm } from "../registries/glossaryTermOccurrence.js";
@@ -19,45 +17,13 @@ const TEXT_EXTENSIONS = new Set([
   ".md", ".mjs", ".py", ".rs", ".sh", ".toml", ".ts", ".tsx", ".txt",
   ".xml", ".yaml", ".yml",
 ]);
-const RERUN = "pnpm -C packages/cli exec vitest run test/cli/v1LegacyCruft.test.ts";
+const RERUN = "pnpm -C packages/cli exec vitest run test/cli/glossaryVariantGuard.test.ts";
 
 interface ConfirmedVariant {
   variant: string;
   canonical: string;
   approvalDigest: string;
   evidence: Array<{ source_path: string; line: number; source_record_sha256: string }>;
-}
-
-function fixedLegacyViolations(root: string): string[] {
-  const violations: string[] = [];
-  if (fs.existsSync(path.join(root, "skills/hej"))) violations.push("skills/hej/ bridge directory present");
-  if (fs.existsSync(path.join(root, "references/v1-section-mapping.md"))) {
-    violations.push("references/v1-section-mapping.md present");
-  }
-  if (fs.existsSync(path.join(root, ".opencode/commands/hej.md"))) {
-    violations.push(".opencode/commands/hej.md legacy bridge command present");
-  }
-  const marketplacePath = path.join(root, ".claude-plugin/marketplace.json");
-  if (fs.existsSync(marketplacePath)) {
-    const marketplace = JSON.parse(fs.readFileSync(marketplacePath, "utf8"));
-    const names = (marketplace.plugins ?? []).map((item: { name?: string }) => item.name);
-    if (names.includes("status")) violations.push(".claude-plugin/marketplace.json still lists hej plugin");
-  }
-  const codexPath = path.join(root, ".codex-plugin/plugin.json");
-  if (fs.existsSync(codexPath)) {
-    const codex = JSON.parse(fs.readFileSync(codexPath, "utf8"));
-    const names = (codex.skillMetadata ?? []).map((item: { name?: string }) => item.name);
-    if (names.includes("status")) violations.push(".codex-plugin/plugin.json still lists hej skillMetadata");
-  }
-  const packageRegistryPath = path.join(root, "references/adapters/package-registry.yaml");
-  if (fs.existsSync(packageRegistryPath)) {
-    const registry = YAML.parse(fs.readFileSync(packageRegistryPath, "utf8"));
-    const versionFiles: string[] = registry.records?.[0]?.docs_targets?.version_files ?? [];
-    if (versionFiles.includes("skills/hej/SKILL.md")) {
-      violations.push("package-registry docs_targets still lists skills/hej/SKILL.md");
-    }
-  }
-  return violations;
 }
 
 function confirmedVariants(document: ProjectGlossaryDocument): ConfirmedVariant[] {
@@ -139,9 +105,9 @@ function variantViolations(
   return violations.sort();
 }
 
-export function scanPost30CruftViolations(root: string): string[] {
+export function scanConfirmedVariantViolations(root: string): string[] {
   const resolved = resolvePath(root);
-  const violations = fixedLegacyViolations(resolved);
+  const violations: string[] = [];
   try {
     const loaded = loadProjectGlossaryDocument(resolved);
     if (loaded) violations.push(...variantViolations(resolved, loaded.document, loaded.path));

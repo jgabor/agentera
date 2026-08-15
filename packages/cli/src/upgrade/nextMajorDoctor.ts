@@ -38,22 +38,6 @@ export interface NextMajorDoctorContext {
   env?: Record<string, string | undefined>;
 }
 
-/** v1 installs predate the channel authority; hardcoded stable-line successor mapping. */
-export const V1_NEXT_MAJOR_FALLBACK: NextMajorBlock & { currentVersion: string; currentChannel: UpdateChannelName } = {
-  concept: "forward_successor_line",
-  currentVersion: "1.x",
-  currentChannel: "stable",
-  channel: "stable",
-  version: "2.x",
-  announced: true,
-  npmOnlyAdvisory: "",
-  guideUrl:
-    "https://github.com/jgabor/agentera/blob/main/UPGRADE.md#recommended-upgrade-v1--v2-stable-channel",
-  previewCommand: "npx -y agentera@latest upgrade --dry-run",
-  irreversibleAdvisory:
-    "Forward migration upgrades artifact format from Markdown to YAML; review the preview before applying.",
-};
-
 function parseNextMajorBlock(raw: unknown): NextMajorBlock | null {
   if (raw === null || raw === undefined) {
     return null;
@@ -177,15 +161,6 @@ export function resolveNextMajorDoctorLines(ctx: NextMajorDoctorContext): string
   const runningDistributionMajor =
     ctx.runningDistributionMajor ??
     (install?.kind === "v2_managed_app_home" ? 2 : cliDistributionMajor(sourceRoot));
-
-  if (runningDistributionMajor === 1) {
-    const block = V1_NEXT_MAJOR_FALLBACK;
-    return formatNextMajorDoctorLines({
-      currentVersion: block.currentVersion,
-      currentChannel: block.currentChannel,
-      block,
-    });
-  }
 
   const authorityBlock = loadChannelNextMajor(sourceRoot, successorChannel);
   if (!authorityBlock || !authorityBlock.announced) {

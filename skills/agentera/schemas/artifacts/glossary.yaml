@@ -83,5 +83,5 @@ ADVICE_RESOLUTION:
 CONFIRMED_VARIANT_GUARD:
   authority: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.project.confirmed_variant_guard
   implementation: active
-  validation_surface: packages/cli/test/cli/v1LegacyCruft.test.ts
+  validation_surface: packages/cli/test/cli/glossaryVariantGuard.test.ts
   consumer_lookup: forbidden

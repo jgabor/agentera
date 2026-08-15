@@ -70,7 +70,7 @@ describe("staged package migration contract", () => {
     expect(harness).toContain('payload.get("status") == "success"');
     expect(harness).toContain('(payload.get("startup_validation") or {}).get("status") == "passed"');
     expect(harness).toContain('(payload.get("state_validation") or {}).get("status") == "passed"');
-    expect(harness).toContain('SCENARIO" != "stable-safety" && "$SCENARIO" != "v1-md-blocked" && "$SCENARIO" != "partial-only-runtime"');
+    expect(harness).toContain('SCENARIO" != "stable-safety" && "$SCENARIO" != "partial-only-runtime"');
     expect(harness).toContain('apply_lifecycle="skipped"');
     expect(harness).toContain('fixture not in {"noisy-app-home", "partial-only-runtime"}');
     expect(harness).toContain('fixture not in {"noisy-app-home", "partial-only-runtime"}');

@@ -7,31 +7,6 @@
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
 # following capability_schema_contract.yaml and protocol.yaml conventions.
 #
-# ── Field-by-field mapping: v1 EXPERIMENTS.md → v2 experiments.yaml ──
-#
-# v1 Field                              v2 Field               v2 ID
-# ─────────────────────────────────────────────────────────────────────
-# ## Experiment N · date · label        EXPERIMENT.number      EX1
-# (date from heading)                   EXPERIMENT.date        EX2
-# (label from heading)                  EXPERIMENT.label       EX3
-# **Hypothesis**: <text>                EXPERIMENT.hypothesis  EX4
-# **Method**: <text>                    EXPERIMENT.method      EX5
-# **Change**: <text>                    EXPERIMENT.change      EX6
-# **Metric**: <text> + tables           EXPERIMENT.metric      EX7
-# **Regression**: <text>                EXPERIMENT.regression  EX8
-# **Status**: kept/discarded/baseline   EXPERIMENT.status      EX9
-# **Conclusion**: <text>                EXPERIMENT.conclusion  EX10
-# **Next**: <text>                      EXPERIMENT.next        EX11
-# **Escalation**: <text>                EXPERIMENT.escalation  EX12
-# **Target progress**: <text>           EXPERIMENT.target_progress EX13
-# **Brainstorm iteration log**          EXPERIMENT.iteration_log EX14
-# ## Closure · date                     CLOSURE.date           EC1
-# **Final value**: <value>              CLOSURE.final_value    EC2
-# **Target**: <target>                  CLOSURE.target         EC3
-# **Reason**: <text>                    CLOSURE.reason         EC4
-# ## Archived Experiments               (implicit section)     —
-# - EXP-N: result summary              ARCHIVE.summary        EA1
-#
 # Protocol references:
 #   status visual tokens: VT1-VT3 (protocol.yaml VISUAL_TOKENS)
 #   trend tokens: VT12-VT13 (protocol.yaml VISUAL_TOKENS)

@@ -51,19 +51,6 @@ afterEach(() => {
 });
 
 describe("prime channel-aware migration and app_home gates", () => {
-  it("v1_migration commands use npm entrypoints, not uvx", () => {
-    const project = path.join(tmp, "project");
-    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
-    fs.writeFileSync(path.join(project, ".agentera", "PROGRESS.md"), "# progress\n");
-    process.chdir(project);
-
-    const state = collectOrientationState({ home, env: process.env });
-    expect(state.v1_migration.detected).toBe(true);
-    expect(state.v1_migration.dry_run_command).toContain("npx -y agentera@next");
-    expect(state.v1_migration.dry_run_command).not.toContain("uvx");
-    expect(state.v1_migration.apply_command).toContain("--yes");
-  });
-
   it("does not suggest v2→v3 preview while stable successor is unannounced", () => {
     const unannouncedRoot = path.join(tmp, "unannounced-prime");
     fs.mkdirSync(path.join(unannouncedRoot, ".git"), { recursive: true });

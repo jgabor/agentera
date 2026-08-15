@@ -1,0 +1,12 @@
+id: nzhducgkgk
+artifact: progress
+record:
+  timestamp: 2026-08-16 00:31
+  type: feat
+  phase: build
+  what: Retired product-v1 compatibility surfaces while preserving the reset detector, destructive reset, supported v2-to-v3 migration, current .v1 schema identifiers, and confirmed glossary-variant enforcement under a nonlegacy owner.
+  context:
+    intent: Execute plan gornhwivrn task ndafvzczzu only; do not change task status.
+  verified: "Focused retirement, reset, glossary, schema-boundary, v2 migration, prime, and upgrade tests: 87 passed. Corrected focused source-owner regressions: 253 passed. Full source: 249 files passed, 4086 tests passed, 1 skipped. Typecheck passed. Build passed. Package verification: 3 files and 13 tests passed. Built-local prime rejects v1_migration; glossary help names the glossary variant guard. Compact and capability contract passed. Retained-reference validation and git diff check passed."
+  next: Plan task xidheuvbyi can run final release documentation and broad release-readiness checks.
+  publication_order: 183

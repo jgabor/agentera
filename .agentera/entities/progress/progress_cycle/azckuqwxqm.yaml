@@ -1,0 +1,12 @@
+id: azckuqwxqm
+artifact: progress
+record:
+  timestamp: 2026-08-16 00:51
+  type: fix
+  phase: build
+  what: Closed audit ses_ff871f88affenP6o548hmJ6tXX residuals by removing the v1 next-major fallback, active /hej bridge vocabulary, eight artifact-schema conversion comment blocks, and the retired v1 Markdown sandbox scenario from fresh-checkout CI surfaces.
+  context:
+    intent: Retry plan gornhwivrn task ndafvzczzu after audit failure without changing task status.
+  verified: "Focused next-major, sandbox, schema, product-v1 reset, glossary, and v2 migration tests: 7 files and 72 tests passed. Retired-runtime policy regression: 1 file and 194 tests passed. Sandbox scripts passed bash syntax checks; happy-path seeding succeeded; retired v1-md-blocked seeding returned unknown-scenario exit 2. Staged fresh-checkout grep found no v1-md-blocked or v2-v1-md-project references outside historical state. Full source: 249 files passed, 4085 tests passed, 1 skipped. Typecheck, build, package verification (3 files, 13 tests), compact, capability contract, built-output residual scan, and diff check passed."
+  next: Re-audit plan task ndafvzczzu; task status remains unchanged.
+  publication_order: 184

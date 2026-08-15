@@ -35,7 +35,7 @@ normalization_rules:
     avoid: Calling host coding agents peers or extension hosts of Agentera; implying Agentera is a module loaded into the host.
   - rule: /agentera is the main invocation.
     use: /agentera, $agentera for Codex-specific docs
-    avoid: /hej except as a legacy bridge.
+    avoid: /hej.
   - rule: The CLI source and rendered dashboard are different.
     use: agentera prime source data, status dashboard rendered briefing
     avoid: Treating raw CLI labels as the user-facing dashboard.
@@ -72,7 +72,7 @@ plain_language:
       avoid: Bare freshness checkpoint
     - use: Agentera app files need repair
       avoid: bundle freshness gap in user-facing diagnostics
-    - use: v1 migration check
+    - use: product-v1 state requires an explicit reset
       avoid: Bare upgrade guard in onboarding or recovery text
     - use: checkpoint commit
       avoid: Bare checkpoint

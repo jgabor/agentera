@@ -480,7 +480,7 @@
     "passes": [
       "Package owner passed all three repetitions.",
       "Typecheck, top-level parity with origin/main present, build, and compact passed when run independently.",
-      "Sandbox L1 stable-safety and v1-md-blocked passed.",
+      "Sandbox L1 stable-safety passed.",
       "Stress and typecheck completed in all three release-conjunction repetitions."
     ],
     "unobserved": [

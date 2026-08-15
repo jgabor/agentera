@@ -135,7 +135,7 @@ consumers:
       - development
   prime:
     owns:
-      - channel-aware v1 migration and app-home gate command strings.
+      - channel-aware app-home gate command strings.
     may_resolve_channels:
       - stable
       - development

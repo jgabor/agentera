@@ -7,25 +7,6 @@
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
 # following capability_schema_contract.yaml and protocol.yaml conventions.
 #
-# ── Field-by-field mapping: v1 VISION.md → v2 vision.yaml ──
-#
-# v1 Field                              v2 Field               v2 ID
-# ─────────────────────────────────────────────────────────────────────
-# # <project name>                       HEADER.project_name    VN1
-# ## North Star                          NORTH_STAR.content     VN2
-# ## Who It's For / ### persona name     PERSONA.entry          VN3
-# (persona heading)                      PERSONA.name           VN4
-# (persona prose)                        PERSONA.description    VN5
-# ## Principles / - principle            PRINCIPLE.entry        VN6
-# (bold name + description)              PRINCIPLE.name         VN7
-# (principle prose)                      PRINCIPLE.description  VN8
-# ## Direction                           DIRECTION.content      VN9
-# ## Identity / ### Personality          IDENTITY.personality   VN10
-# ## Identity / ### Voice                IDENTITY.voice         VN11
-# ## Identity / ### Emotional register   IDENTITY.emotional_register VN12
-# ## Identity / ### Naming               IDENTITY.naming        VN13
-# ## The Tension                         TENSION.content        VN14
-#
 # Protocol references:
 #   No protocol primitives directly. Vision defines project-level identity
 #   that capabilities reference for voice and personality consistency.

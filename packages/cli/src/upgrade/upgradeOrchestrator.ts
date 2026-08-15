@@ -32,7 +32,6 @@ import {
   MIGRATION_STATUSES,
   applyMigrationPhases,
   delegatePlanLifecycleToEntityCutover,
-  detectV1ArtifactPairs,
   dryRunMigration,
   hasPendingPlanLifecycleMigration,
   type MigrationPhase,
@@ -230,7 +229,6 @@ function migrationPhaseToOrchestrator(phase: MigrationPhase): UpgradeOrchestrato
 function entityReadinessPhase(
   project: string,
   sourceRoot: string,
-  pendingV1Artifacts: boolean,
   selected: boolean,
   apply: boolean,
   activeUpgradeLockPaths: readonly string[],
@@ -263,13 +261,6 @@ function entityReadinessPhase(
         status: "blocked",
         action: "entity-cutover-required",
         message: "marker-absent projects require one full cross-major upgrade; filtered apply is unavailable",
-      }]);
-    }
-    if (pendingV1Artifacts) {
-      return summarizeOrchestratorPhase("entities", [{
-        status: "blocked",
-        action: "resolve-v1-state",
-        message: "pending v1 Markdown state is not a supported automatic source; preserve it and follow the manual v1 recovery instructions in UPGRADE.md",
       }]);
     }
     const empty = cutover.entityCount === 0;
@@ -424,7 +415,6 @@ function buildUpgradePlanUnlocked(
     installAppContentIfMissing: false,
   };
   const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
-  const pendingV1Artifacts = detectV1ArtifactPairs(project).length > 0;
   const pendingPlanLifecycleMigration = hasPendingPlanLifecycleMigration(project);
   const crossMajorMigration =
     crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
@@ -438,7 +428,7 @@ function buildUpgradePlanUnlocked(
     ...planLegacyCapabilityAgentCleanupItems(migrationCtx),
   ].some((item) => item.status !== "noop");
   const runMigration =
-    crossMajorMigration || projectEntityCutover || pendingRuntimeSync || pendingV1Artifacts || pendingPlanLifecycleMigration || pendingCleanup;
+    crossMajorMigration || projectEntityCutover || pendingRuntimeSync || pendingPlanLifecycleMigration || pendingCleanup;
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
@@ -452,7 +442,7 @@ function buildUpgradePlanUnlocked(
   const entitySelected = entityBoundary && (!filteredEntityBoundary || (!args.yes && Boolean(args.only?.includes("artifacts"))));
   const partialStateApply = filteredEntityBoundary && !entitySelected;
   let entityPhase = entitySelected || partialStateApply || (entityAuthorityActive && crossMajorMigration)
-    ? entityReadinessPhase(project, sourceRoot, pendingV1Artifacts, entitySelected, Boolean(args.yes), activeUpgradeLockPaths)
+    ? entityReadinessPhase(project, sourceRoot, entitySelected, Boolean(args.yes), activeUpgradeLockPaths)
     : null;
   const entityCutoverPending = entityPhase?.items.some(({ action }) => action === "entity-cutover") ?? false;
   if (migrationPreview && (entityAuthorityActive || (args.yes && entityCutoverPending))) {

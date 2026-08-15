@@ -37,7 +37,6 @@ import {
   planInstalledHooksRetirementItems,
 } from "./installedHooksRetirement.js";
 import type { ResolvedUpdateChannel } from "./channels.js";
-import { productV1ArtifactPairs } from "./productV1ResetAuthority.js";
 
 /**
  * v2→v3 migration phases: artifacts (noop for YAML), runtime rewire, cleanup.
@@ -45,8 +44,6 @@ import { productV1ArtifactPairs } from "./productV1ResetAuthority.js";
 
 export const MIGRATION_STATUSES = ["pending", "applied", "noop", "blocked", "failed"] as const;
 export type MigrationStatus = (typeof MIGRATION_STATUSES)[number];
-
-export const V1_ARTIFACT_PAIRS = productV1ArtifactPairs();
 
 export interface MigrationPhaseItem {
   status: MigrationStatus;
@@ -260,17 +257,6 @@ export function summarizePhase(
   return { name, status, summary, items, message };
 }
 
-export function detectV1ArtifactPairs(project: string): string[] {
-  const root = resolvePath(project);
-  const found: string[] = [];
-  for (const [md, yaml] of V1_ARTIFACT_PAIRS) {
-    if (isFile(path.join(root, md)) && !isFile(path.join(root, yaml))) {
-      found.push(md);
-    }
-  }
-  return found;
-}
-
 function listV2YamlArtifacts(project: string): string[] {
   const root = resolvePath(project);
   const agenteraDir = path.join(root, ".agentera");
@@ -303,17 +289,9 @@ export function planArtifactsPhase(project: string): MigrationPhase {
     ]);
   }
 
-  const v1Pairs = detectV1ArtifactPairs(root);
-  const v1Items = v1Pairs.map((source) => ({
-    status: "blocked" as const,
-    action: "manual-v1-handoff",
-    source,
-    message: "v1 Markdown state is unsupported; convert it with a v2 CLI before running the v2-to-v3 upgrade",
-  }));
-
   const yamlArtifacts = listV2YamlArtifacts(root);
   const lifecycleItems = lifecyclePlanArtifacts(root);
-  if (yamlArtifacts.length === 0 && v1Items.length === 0 && lifecycleItems.length === 0) {
+  if (yamlArtifacts.length === 0 && lifecycleItems.length === 0) {
     return summarizePhase("artifacts", [], "no project artifacts found");
   }
 
@@ -321,7 +299,6 @@ export function planArtifactsPhase(project: string): MigrationPhase {
     lifecycleItems.flatMap((item) => item.source ? [item.source] : []),
   );
   const items: MigrationPhaseItem[] = [
-    ...v1Items,
     ...yamlArtifacts.filter((source) => !lifecycleSources.has(source)).map((source) => ({
       status: "noop" as const,
       action: "preserve",

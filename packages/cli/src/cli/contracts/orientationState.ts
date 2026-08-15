@@ -23,17 +23,6 @@ export interface ProfileSummary {
   bounded_signals?: JsonObject;
 }
 
-export interface V1MigrationSummary {
-  detected: boolean;
-  affected_files: string[];
-  dry_run_command: string | null;
-  apply_command: string | null;
-  requires_confirmation: boolean;
-  update_channel: string;
-  local_dry_run_command?: string | null;
-  local_apply_command?: string | null;
-}
-
 export interface PlanSummary {
   id?: JsonValue;
   artifact?: JsonValue;
@@ -213,7 +202,6 @@ export interface OrientationState {
   profile_dict: ProfileSummary;
   profile_status: ProfileValidityStatus;
   profile: string;
-  v1_migration: V1MigrationSummary;
   project_integration: ProjectIntegrationSummary;
   state_cutover: {
     status: "complete" | "fresh_uninitialized" | "required" | "invalid_lifecycle";

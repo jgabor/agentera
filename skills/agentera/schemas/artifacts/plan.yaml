@@ -7,40 +7,7 @@
 # The active authority uses one plan or plan_task entity per writer-owned file.
 # The aggregate model below is the complete atomic plan-create input. Its task
 # numbers and numeric/string dependency references are create-local symbols,
-# not persisted identities. Fields explicitly labeled migration-only remain
-# compatibility input and are not ordinary post-cutover entity contracts.
-#
-# ── Legacy migration-input mapping: v1 PLAN.md → v2 plan.yaml ──
-#
-# The ordinal task fields in this mapping are create-local symbolic references.
-# They are valid only inside one atomic `state plan create --input` document and
-# are removed when the writer publishes plan and plan_task entities.
-#
-# v1 Field                              v2 Field               v2 ID
-# ─────────────────────────────────────────────────────────────────────
-# <!-- Level: light/full -->            HEADER.level           PL1
-# <!-- Created: date -->                HEADER.created         PL2
-# <!-- Status: active/completed -->     HEADER.status          PL3 (normalized)
-# <!-- Reviewed: date -->               HEADER.reviewed        PL4
-# <!-- Critic issues: N found... -->    HEADER.critic_issues   PL5
-# <!-- Revised: description -->         HEADER.revised         PL6
-# # Plan: <title>                       HEADER.title           PL7
-# ## What                               PLAN.what              PL8
-# ## Why                                PLAN.why               PL9
-# ## Constraints                        PLAN.constraints       PL10
-# ## Scope / **In**: <list>             SCOPE.included         PL11
-# ## Scope / **Out**: <list>            SCOPE.excluded         PL12
-# ## Scope / **Deferred**: <list>       SCOPE.deferred         PL13
-# ## Design                             PLAN.design            PL14
-# ### Task N: <name>                    TASK.number            PL15 (create-local only)
-# (task name from heading)              TASK.name              PL16
-# **Depends on**: <text>                TASK.depends_on        PL17
-# **Status**: <status>                  TASK.status            PL18
-# **Acceptance**: <criteria list>       TASK.acceptance        PL19
-# ## Overall Acceptance                 PLAN.overall_acceptance PL20
-# ## Surprises                          PLAN.surprises         PL21
-# ## Unknowns                           UNKNOWN.entry          PU1
-# ## Rejected Review Findings           REJECTED.entry         PR1
+# not persisted identities.
 #
 # Protocol references:
 #   status visual tokens: VT1-VT4 (protocol.yaml VISUAL_TOKENS)
@@ -726,7 +693,6 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/upgrade/migrateArtifacts*.ts
       - packages/cli/src/upgrade/upgradeOrchestrator.ts
       - packages/cli/src/upgrade/doctor.ts
-      - packages/cli/src/cli/commands/prime/v1Migration.ts
       - packages/cli/src/state/entityMigration*.ts
       - packages/cli/src/state/canonicalMigrationRecord.ts
     schemas:

@@ -9,7 +9,6 @@ import {
   applyCleanupPhase,
   applyMigrationPhases,
   applyRuntimeRetirementPhase,
-  detectV1ArtifactPairs,
   dryRunMigration,
   planArtifactsPhase,
   planCleanupPhase,
@@ -53,15 +52,6 @@ describe("planArtifactsPhase", () => {
     expect(phase.items.some((item) => item.source === ".agentera/progress.yaml")).toBe(true);
   });
 
-  it("blocks v1 Markdown without offering an automatic conversion", () => {
-    const project = copyFixture("v2-v1-md-project", path.join(tmp, "v1-md"));
-    const phase = planArtifactsPhase(project);
-    expect(phase.status).toBe("blocked");
-    expect(detectV1ArtifactPairs(project)).toEqual([".agentera/PROGRESS.md"]);
-    expect(phase.items[0]?.action).toBe("manual-v1-handoff");
-    expect(phase.items[0]?.message).toContain("v2 CLI");
-    expect(fs.existsSync(path.join(project, ".agentera/progress.yaml"))).toBe(false);
-  });
 });
 
 describe("planRuntimeRetirementPhase", () => {

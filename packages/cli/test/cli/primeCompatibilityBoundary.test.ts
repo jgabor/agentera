@@ -90,7 +90,7 @@ describe("prime runtime compatibility boundary", () => {
   it("keeps inactive conditional fields out of the default briefing", () => {
     const { payload } = primePayload();
     expect(payload).toHaveProperty("state_presence");
-    for (const field of ["v1_migration", "docs", "objective"]) {
+    for (const field of ["docs", "objective"]) {
       expect(payload).not.toHaveProperty(field);
     }
   });
@@ -145,18 +145,11 @@ describe("prime runtime compatibility boundary", () => {
   });
 
   it("returns each omitted conditional field when explicitly selected", () => {
-    for (const field of ["v1_migration", "docs", "objective"]) {
+    for (const field of ["docs", "objective"]) {
       const { payload } = primePayload(field);
       expect(payload).toHaveProperty(field);
       expect(payload).toHaveProperty("command");
     }
-  });
-
-  it("emits detected v1 migration state in the default briefing", () => {
-    fs.mkdirSync(path.join(process.cwd(), ".agentera"), { recursive: true });
-    fs.writeFileSync(path.join(process.cwd(), ".agentera", "PROGRESS.md"), "# progress\n");
-    const { payload } = primePayload();
-    expect(payload.v1_migration).toMatchObject({ detected: true });
   });
 
   it("names CLI recovery commands for omitted startup detail", () => {

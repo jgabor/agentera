@@ -2,7 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { detectV1ArtifactPairs } from "../../../upgrade/migrateArtifactsV2ToV3.js";
 import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
 import type { SchemaInfo } from "../../appContext.js";
 import {
@@ -15,7 +14,6 @@ import { profileSignalsStatus } from "../../../analytics/profileSignals.js";
 import type { NextAction, OrientationState, ProfileSummary, ReadinessHint } from "../../contracts/orientationState.js";
 import { statusBundleContext } from "./bundleStatus.js";
 import type { PrimeOpts } from "./types.js";
-import { v1MigrationSummary } from "./v1Migration.js";
 import { diagnoseCanonicalSkill } from "../../../setup/sharedSkill.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
 import { acquireProfile } from "../../profileAcquisition.js";
@@ -77,8 +75,6 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const boundedSignals = profileSignalsStatus(env, process.platform);
   const { tiers_dir: _tiersDir, signal_path: _signalPath, ...publicBoundedSignals } = boundedSignals;
   profileDict.bounded_signals = publicBoundedSignals as unknown as ProfileSummary["bounded_signals"];
-  const v1Artifacts = detectV1ArtifactPairs(project);
-  const v1Migration = v1MigrationSummary(v1Artifacts, { sourceRoot, home, env });
   const entity = collectEntityOrientation(project, sourceRoot);
   const cutover = stateCutover(project, sourceRoot);
   const plan = entity.plan;
@@ -107,7 +103,6 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     resolvedChannel: channel,
     installClassification: install,
     successorAnnounced,
-    precomputedV1Artifacts: v1Artifacts,
   });
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, entity.todoReadiness);
   const reconciliationReadiness = entity.todoReconciliation?.status === "action_required"
@@ -136,7 +131,6 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile_dict: profileDict,
     profile_status: profileStatus,
     profile,
-    v1_migration: v1Migration,
     project_integration: projectIntegration,
     state_cutover: cutover,
     shared_skill: sharedSkill,
@@ -168,7 +162,6 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     profile_dict: profileDict,
     profile_status: profileStatus,
     profile,
-    v1_migration: v1Migration,
     project_integration: projectIntegration,
     state_cutover: cutover,
     shared_skill: sharedSkill,

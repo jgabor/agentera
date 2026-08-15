@@ -11,7 +11,6 @@ import { resolveNpxPlatformStatus } from "./npxPlatformStatus.js";
 import { classifyInstall, crossMajorBoundaryApplies, type InstallClassification } from "./compatibility.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import {
-  detectV1ArtifactPairs,
   planRuntimeRetirementPhase,
   type MigrationContext,
   type MigrationPhaseItem,
@@ -64,8 +63,6 @@ export interface ProjectIntegrationArgs {
   installClassification?: InstallClassification;
   /** Successor gate already observed by an enclosing doctor status. */
   successorAnnounced?: boolean;
-  /** V1 artifact scan already performed by an enclosing orientation collection. */
-  precomputedV1Artifacts?: readonly string[];
   /** App retry command from doctor; retained separately from lifecycle guidance. */
   retryCommand?: string | null;
 }
@@ -243,7 +240,6 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
         channel,
       })
     : null;
-  const v1Artifacts = args.precomputedV1Artifacts ?? detectV1ArtifactPairs(args.project);
   const pendingProjectMigration = pendingRuntimeMigrationItems({
     appHome: integrationTargets.installRoot,
     project: args.project,
@@ -266,7 +262,6 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
       : appNeedsUpgrade(classificationBundleStatus);
 
   const appPending =
-    v1Artifacts.length +
     pendingProjectMigration.length +
     (needsAppUpgrade ? 1 : 0) +
     (crossMajorMigration ? 1 : 0);
@@ -286,7 +281,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
       : "stay";
   const scenarioFacts: IntegrationScenarioFacts = {
     bundleStatus: classificationBundleStatus,
-    pendingArtifactCount: v1Artifacts.length + pendingProjectMigration.length,
+    pendingArtifactCount: pendingProjectMigration.length,
     crossMajor,
     crossMajorMigration,
     crossMajorNeedsPreview: Boolean(majorBoundaryBlock) || (crossMajor && !crossMajorMigration),
@@ -317,7 +312,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   return {
     recommendation: aggregateStatus === "upgrade" ? "upgrade" : "stay",
     message,
-    pending_artifacts: v1Artifacts.length + pendingProjectMigration.length,
+    pending_artifacts: pendingProjectMigration.length,
     dry_run_command: cmds?.dryRunCommand ?? null,
     apply_command: cmds?.applyCommand ?? null,
     update_channel: hasUpgradeWork ? cmdsChannel.channel : channel.channel,

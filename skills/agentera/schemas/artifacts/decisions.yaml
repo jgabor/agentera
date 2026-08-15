@@ -5,26 +5,7 @@
 # for context on why choices were made.
 #
 # The active authority uses writer-owned decision, revision, and satisfaction
-# entity files. The numbered projection model below is retained only as an exact
-# legacy migration input schema; it is not an ordinary post-cutover contract.
-#
-# ── Field-by-field mapping: v1 DECISIONS.md → v2 decisions.yaml ──
-#
-# v1 Field                              v2 Field               v2 ID
-# ─────────────────────────────────────────────────────────────────────
-# ## Decision N · date                  DECISION.number        DC1
-# (date from heading)                   DECISION.date          DC2
-# **Question**: <text>                  DECISION.question      DC3
-# **Context**: <text>                   DECISION.context       DC4
-# **Alternatives**: (list)              ALTERNATIVE entry      DA1
-# (named alt, e.g. "[Foo], chosen")     ALTERNATIVE.name       DA2
-# (chosen/rejected status)              ALTERNATIVE.status     DA3
-# **Choice**: <text>                    DECISION.choice        DC5
-# **Reasoning**: <text>                 DECISION.reasoning     DC6
-# **Confidence**: <label>               DECISION.confidence    DC7
-# **Feeds into**: <text>               DECISION.feeds_into     DC8
-# ## Archived Decisions                 (implicit section)     —
-# - Decision N (date): [Choice] — ...  ARCHIVE.summary        DR1
+# entity files.
 #
 # Protocol references:
 #   confidence: DL1-DL3 (protocol.yaml DECISION_LABELS)

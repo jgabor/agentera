@@ -5,9 +5,19 @@ record:
   depends_on:
     - jsjdrbcrzf
     - gfpcbfrnfk
-  status: pending
+  status: complete
   acceptance:
     - GIVEN reset behavior owns the unsupported boundary WHEN v3 surfaces are inspected THEN no v1 converter, bridge, handoff, migration projection, fixture, or two-hop guidance remains.
     - GIVEN current schemas use .v1 identifiers WHEN compatibility is removed THEN their names and supported behavior remain unchanged.
     - GIVEN glossary variant enforcement was previously coupled to legacy scanning WHEN retirement completes THEN that current behavior remains under a nonlegacy owner.
   plan: gornhwivrn
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Active next-major v1 fallback, /hej bridge vocabulary, eight v1 conversion schema mappings, and stale v1-md-blocked CI sandbox remain. Audit ses_ff871f88affenP6o548hmJ6tXX.
+    provenance:
+      attempt_id: audit-ndafvzczzu-2
+      source: audit ses_ff871f88affenP6o548hmJ6tXX
+      recorded_at: 2026-08-16 00:54
+      writer_command: agentera state plan record-evaluation

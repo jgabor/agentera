@@ -4,7 +4,7 @@ export type UpgradeOnlyPhase = "artifacts" | "runtime" | "cleanup";
 
 export interface BuildUpgradeCommandsArgs {
   project: string;
-  /** When omitted, upgrade commands target --project only (v1 migration hints). */
+  /** When omitted, upgrade commands target only the project. */
   installRoot?: string | null;
   channel: ResolvedUpdateChannel;
   only?: readonly UpgradeOnlyPhase[] | null;

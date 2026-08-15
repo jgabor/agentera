@@ -33,14 +33,6 @@ function minimalOrientationState(corpusCoverage: OrientationState["corpus_covera
     profile_dict: { status: "loaded", path: "/tmp/PROFILE.md" },
     profile_status: "valid",
     profile: "/tmp/PROFILE.md",
-    v1_migration: {
-      detected: false,
-      affected_files: [],
-      dry_run_command: null,
-      apply_command: null,
-      requires_confirmation: false,
-      update_channel: "next",
-    },
     project_integration: {
       recommendation: "none",
       message: "",
