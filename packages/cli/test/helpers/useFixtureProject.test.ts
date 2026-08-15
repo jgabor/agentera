@@ -3,7 +3,6 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { checkCompaction } from "../../src/hooks/compaction/index.js";
 import {
   REPO_STATE_FIXTURE_NAMES,
   cleanupFixtureProject,
@@ -25,7 +24,7 @@ describe("useFixtureProject", () => {
     }
   });
 
-  it("returns independent temp copies for the same variant", () => {
+  it("returns independent temp copies and cleans them up", () => {
     const a = useFixtureProject("ok");
     const b = useFixtureProject("ok");
     cleanups.push(a, b);
@@ -35,41 +34,7 @@ describe("useFixtureProject", () => {
     fs.writeFileSync(marker, "# mutated\n");
     expect(fs.readFileSync(path.join(b, "TODO.md"), "utf8")).toContain("Open item one");
     expect(fs.readFileSync(marker, "utf8")).toBe("# mutated\n");
-  });
-
-  it("todo-resolved-over-limit exceeds the 10/40/50 total cap by 6", () => {
-    const root = useFixtureProject("todo-resolved-over-limit");
-    cleanups.push(root);
-    const op = checkCompaction(root).find((o) => o.status.artifact === "todo#Resolved");
-    expect(op?.action).toBe("over_limit");
-    expect(op?.status.over_limit_count).toBe(6);
-  });
-
-  it("progress-at-cap is within limits at 50 total entries", () => {
-    const root = useFixtureProject("progress-at-cap");
-    cleanups.push(root);
-    const op = checkCompaction(root).find((o) => o.status.artifact === "progress");
-    expect(op?.status.total_count).toBe(50);
-    expect(op?.action).toBe("ok");
-  });
-
-  it("progress-over-limit reports a safe refusal when archives are unavailable", () => {
-    const root = useFixtureProject("progress-over-limit");
-    cleanups.push(root);
-    const op = checkCompaction(root).find((o) => o.status.artifact === "progress");
-    expect(op?.action).toBe("refused");
-    expect(op?.status.total_count).toBe(55);
-    expect(op?.status.projection_recovery).toMatchObject({
-      status: "degraded",
-      refused_count: 45,
-      retained_full: 45,
-    });
-  });
-
-  it("invalid-progress-yaml classifies progress as error", () => {
-    const root = useFixtureProject("invalid-progress-yaml");
-    cleanups.push(root);
-    const op = checkCompaction(root).find((o) => o.status.artifact === "progress");
-    expect(op?.action).toBe("error");
+    cleanupFixtureProject(a);
+    expect(fs.existsSync(a)).toBe(false);
   });
 });

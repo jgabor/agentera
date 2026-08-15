@@ -90,6 +90,19 @@ describe("checkCompaction (repo-state fixtures)", () => {
     expect(progressOp?.action).toBe("ok");
     expect(progressOp?.status.over_limit_count).toBe(0);
   });
+
+  it("refuses progress-over-limit when archives are unavailable", () => {
+    const root = useFixtureProject("progress-over-limit");
+    fixtureRoots.push(root);
+    const progressOp = checkCompaction(root).find((o) => o.status.artifact === "progress");
+    expect(progressOp?.action).toBe("refused");
+    expect(progressOp?.status.total_count).toBe(55);
+    expect(progressOp?.status.projection_recovery).toMatchObject({
+      status: "degraded",
+      refused_count: 45,
+      retained_full: 45,
+    });
+  });
 });
 
 describe("progress.yaml over-limit gate", () => {

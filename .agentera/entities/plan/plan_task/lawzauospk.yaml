@@ -4,7 +4,7 @@ record:
   name: Restore test ownership and filesystem hygiene
   depends_on:
     []
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN fixture-helper coverage WHEN it runs THEN it verifies enumeration, independent copies, and cleanup without owning duplicate compaction behavior.
     - GIVEN over-limit refusal and recovery behavior WHEN helper assertions are removed THEN equivalent assertions exist in the compaction owner first.

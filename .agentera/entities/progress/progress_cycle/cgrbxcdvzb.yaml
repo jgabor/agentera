@@ -1,0 +1,15 @@
+id: cgrbxcdvzb
+artifact: progress
+record:
+  timestamp: 2026-08-15 18:15
+  type: test
+  phase: build
+  what: Restored test ownership and filesystem hygiene while leaving task lawzauospk in progress for Orchestrate audit evaluation.
+  context:
+    intent: Keep fixture helpers focused on fixture lifecycle and preserve distinct compaction-owner invariants.
+    constraints: Test-only change; no production behavior, dependencies, versions, or release surfaces changed.
+    unknowns: "Resolved: progress refusal and recovery counts now have explicit compaction-owner coverage before helper duplication was removed."
+    scope: packages/cli/test/helpers/useFixtureProject.test.ts, hooks/compaction.test.ts, lint/monolithLint.test.ts, and cli/repositoryNativeRetirement.test.ts.
+  verified: pnpm -C packages/cli exec vp test run test/helpers/useFixtureProject.test.ts test/hooks/compaction.test.ts test/lint/monolithLint.test.ts test/cli/repositoryNativeRetirement.test.ts --config vite.config.ts passed 4 files and 27 tests; git diff --check passed; git status showed no test-created checkout residue.
+  next: Orchestrate must persist the audit evaluation before changing task lawzauospk from in_progress to complete.
+  publication_order: 171

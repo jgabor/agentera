@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
@@ -153,7 +154,7 @@ describe("repository-native retirement inventory", () => {
   });
 
   it("flags a reintroduced current descriptor directory while allowing migration-only history", () => {
-    const root = fs.mkdtempSync(path.join(import.meta.dirname, "native-descriptor-"));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "native-descriptor-"));
     try {
       fs.mkdirSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents"), { recursive: true });
       fs.writeFileSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents/build.toml"), "historical\n");
