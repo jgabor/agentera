@@ -1,22 +1,24 @@
 import { describe, expect, it } from "vitest";
 
+import type { JsonObject } from "../../src/core/jsonValue.js";
 import { buildReport, evaluateFixture } from "../../src/eval/semanticEval.js";
 import { validateFixtureText } from "../../src/eval/semanticFixtures.js";
+
+const defaultExpectedFacts: JsonObject = {
+  required_output: ["⧉ realisera", "Task 2"],
+  forbidden_output: ["/realisera"],
+  required_artifacts: [{ path: ".agentera/plan.yaml", contains: ["Task 2"] }],
+  artifact_expectations: { writes: "none" },
+};
 
 function fixtureText(opts: {
   output?: string;
   toolTrace?: string[] | null;
-  required?: string;
-  forbidden?: string;
-  artifactPath?: string;
-  artifactContains?: string;
+  expectedFacts?: JsonObject;
 } = {}): string {
   const output = opts.output ?? "suggest ⧉ realisera for Task 2";
   const toolTrace = opts.toolTrace ?? null;
-  const required = opts.required ?? "Task 2";
-  const forbidden = opts.forbidden ?? "/realisera";
-  const artifactPath = opts.artifactPath ?? ".agentera/plan.yaml";
-  const artifactContains = opts.artifactContains ?? "Task 2";
+  const expectedFacts = opts.expectedFacts ?? defaultExpectedFacts;
   let toolTraceSection = "";
   if (toolTrace !== null) {
     toolTraceSection = `\n## Tool Trace\n\`\`\`json\n{"calls": ${JSON.stringify(toolTrace)}}\n\`\`\`\n`;
@@ -34,12 +36,8 @@ function fixtureText(opts: {
     toolTraceSection +
     "\n## Expected Facts\n" +
     "```json\n" +
-    "{\n" +
-    `  "required_output": ["⧉ realisera", "${required}"],\n` +
-    `  "forbidden_output": ["${forbidden}"],\n` +
-    `  "required_artifacts": [{"path": "${artifactPath}", "contains": ["${artifactContains}"]}],\n` +
-    '  "artifact_expectations": {"writes": "none"}\n' +
-    "}\n" +
+    JSON.stringify(expectedFacts, null, 2) +
+    "\n" +
     "```\n"
   );
 }
@@ -64,7 +62,12 @@ describe("required output assertion", () => {
     });
   });
   it("fails and reports missing text", () => {
-    const facts = factMap(fixtureText({ output: "suggest ⧉ realisera", required: "Task 999" }));
+    const facts = factMap(
+      fixtureText({
+        output: "suggest ⧉ realisera",
+        expectedFacts: { ...defaultExpectedFacts, required_output: ["⧉ realisera", "Task 999"] },
+      }),
+    );
     expect(facts["required_output[1]"]).toEqual({
       fact: "required_output[1]",
       status: "fail",
@@ -99,7 +102,11 @@ describe("seeded artifact assertion", () => {
     });
   });
   it("fails when seeded path missing", () => {
-    expect(factMap(fixtureText({ artifactPath: ".agentera/progress.yaml" }))["required_artifacts[0]"]).toEqual({
+    const expectedFacts = {
+      ...defaultExpectedFacts,
+      required_artifacts: [{ path: ".agentera/progress.yaml", contains: ["Task 2"] }],
+    };
+    expect(factMap(fixtureText({ expectedFacts }))["required_artifacts[0]"]).toEqual({
       fact: "required_artifacts[0]",
       status: "fail",
       detail: "seeded artifact '.agentera/progress.yaml' is missing",
@@ -109,42 +116,87 @@ describe("seeded artifact assertion", () => {
 
 describe("tool trace assertion", () => {
   it("passes a required tool call", () => {
-    const text = fixtureText({ toolTrace: ["uv run scripts/agentera hej"] }).replace(
-      '"artifact_expectations": {"writes": "none"}',
-      '"required_tool_calls": ["agentera hej"], "artifact_expectations": {"writes": "none"}',
-    );
+    const text = fixtureText({
+      toolTrace: ["uv run scripts/agentera hej"],
+      expectedFacts: { ...defaultExpectedFacts, required_tool_calls: ["agentera hej"] },
+    });
     expect(factMap(text)["required_tool_calls[0]"]).toEqual({
       fact: "required_tool_calls[0]",
       status: "pass",
       detail: "tool trace contains 'agentera hej'",
     });
   });
+  it("fails a missing required tool call", () => {
+    const text = fixtureText({
+      toolTrace: ["uv run scripts/agentera status"],
+      expectedFacts: { ...defaultExpectedFacts, required_tool_calls: ["agentera hej"] },
+    });
+    expect(factMap(text)["required_tool_calls[0]"]).toEqual({
+      fact: "required_tool_calls[0]",
+      status: "fail",
+      detail: "tool trace does not contain 'agentera hej'",
+    });
+  });
+  it("passes a forbidden tool call absent from the trace", () => {
+    const text = fixtureText({
+      toolTrace: ["uv run scripts/agentera hej"],
+      expectedFacts: { ...defaultExpectedFacts, forbidden_tool_calls: ["agentera plan"] },
+    });
+    expect(factMap(text)["forbidden_tool_calls[0]"]).toEqual({
+      fact: "forbidden_tool_calls[0]",
+      status: "pass",
+      detail: "tool trace omits forbidden 'agentera plan'",
+    });
+  });
   it("fails a forbidden tool call present in the trace", () => {
     const text = fixtureText({
       toolTrace: ["uv run scripts/agentera hej", "uv run scripts/agentera plan"],
-    }).replace(
-      '"artifact_expectations": {"writes": "none"}',
-      '"forbidden_tool_calls": ["agentera plan"], "artifact_expectations": {"writes": "none"}',
-    );
+      expectedFacts: { ...defaultExpectedFacts, forbidden_tool_calls: ["agentera plan"] },
+    });
     expect(factMap(text)["forbidden_tool_calls[0]"]).toEqual({
       fact: "forbidden_tool_calls[0]",
       status: "fail",
       detail: "tool trace contains forbidden 'agentera plan'",
     });
   });
+  it("passes an exact tool-call count", () => {
+    const text = fixtureText({
+      toolTrace: ["uv run scripts/agentera hej"],
+      expectedFacts: { ...defaultExpectedFacts, tool_call_counts: { "agentera hej": 1 } },
+    });
+    expect(factMap(text)["tool_call_counts[agentera hej]"]).toEqual({
+      fact: "tool_call_counts[agentera hej]",
+      status: "pass",
+      detail: "tool trace contains 1 call(s) matching 'agentera hej'; expected 1",
+    });
+  });
   it("fails a duplicate tool-call count", () => {
     const text = fixtureText({
       toolTrace: ["uv run scripts/agentera hej", "uv run scripts/agentera hej"],
-    }).replace(
-      '"artifact_expectations": {"writes": "none"}',
-      '"tool_call_counts": {"agentera hej": 1}, "artifact_expectations": {"writes": "none"}',
-    );
+      expectedFacts: { ...defaultExpectedFacts, tool_call_counts: { "agentera hej": 1 } },
+    });
     expect(factMap(text)["tool_call_counts[agentera hej]"]).toEqual({
       fact: "tool_call_counts[agentera hej]",
       status: "fail",
       detail: "tool trace contains 2 call(s) matching 'agentera hej'; expected 1",
     });
   });
+});
+
+it("round-trips special characters in expected facts", () => {
+  const special = 'quote " slash \\ newline\n```json';
+  const expectedFacts: JsonObject = {
+    required_output: [special],
+    forbidden_output: [special],
+    required_artifacts: [{ path: special, contains: [special] }],
+    required_tool_calls: [special],
+    forbidden_tool_calls: [special],
+    tool_call_counts: { [special]: 1 },
+    artifact_expectations: { writes: [{ path: special, contains: [special] }] },
+  };
+  const [fixture, errors] = validateFixtureText(fixtureText({ expectedFacts }));
+  expect(errors).toEqual([]);
+  expect(fixture?.expectedFacts).toEqual(expectedFacts);
 });
 
 describe("report summaries", () => {
@@ -173,7 +225,14 @@ describe("report summaries", () => {
 
   it("fails and reports the first failing fact", () => {
     const [fixture, errors] = validateFixtureText(
-      fixtureText({ output: "suggest ⧉ realisera", required: "Task 999", artifactPath: ".agentera/MISSING.md" }),
+      fixtureText({
+        output: "suggest ⧉ realisera",
+        expectedFacts: {
+          ...defaultExpectedFacts,
+          required_output: ["⧉ realisera", "Task 999"],
+          required_artifacts: [{ path: ".agentera/MISSING.md", contains: ["Task 2"] }],
+        },
+      }),
     );
     expect(errors).toEqual([]);
     const result = evaluateFixture(fixture!, "fixture.md");

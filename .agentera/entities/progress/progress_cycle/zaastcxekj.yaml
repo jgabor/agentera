@@ -1,0 +1,14 @@
+id: zaastcxekj
+artifact: progress
+record:
+  timestamp: 2026-08-15 18:22
+  type: test
+  phase: build
+  what: packages/cli/test/eval/semanticEval.test.ts now renders all expected fact families from one JSON value and covers special-character serialization.
+  context:
+    intent: Make semantic fixtures structured without changing production behavior.
+    constraints: Keep task ysvjypbeyr in_progress until Orchestrate persists audit evaluation.
+    scope: packages/cli/test/eval/semanticEval.test.ts only.
+  verified: pnpm -C packages/cli exec vp test run test/eval/semanticEval.test.ts passed 15 tests in 1 file.
+  next: Orchestrate must persist audit evaluation before setting task ysvjypbeyr complete.
+  publication_order: 172
