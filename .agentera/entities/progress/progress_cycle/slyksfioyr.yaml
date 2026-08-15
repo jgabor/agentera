@@ -1,0 +1,16 @@
+id: slyksfioyr
+artifact: progress
+record:
+  timestamp: 2026-08-15 15:44
+  type: fix
+  phase: build
+  what: Resynchronized CHANGELOG bootstrap scalar authority after an upstream five-line insertion shifted exact line regions.
+  context:
+    intent: Restore the post-rebase source gate without weakening the closed bootstrap-authority inventory or scalar-classification boundary.
+    constraints: Preserve upstream release changes, exact path-region-digest review, and the blocked task state; do not change versions or publish.
+    unknowns: The complete source owner did not finish within a 300-second local command window.
+    scope: CHANGELOG scalar regions in references/adapters/package-registry.yaml.
+  discovered: All 437 source diagnostics came from 134 CHANGELOG declarations still targeting pre-insertion line regions. Their normalized digests and categories matched the same scalars exactly five lines later, so the scanner and digest construction were correct.
+  verified: The retired runtime policy passed 194/194; package-registry tests passed 21/21; typecheck passed; package verification passed 12/12 in 4836ms under its 60000ms budget.
+  next: Coordinator should rerun the complete source owner without this session's 300-second command cap; both local all-source attempts were terminated by the caller timeout before a result.
+  publication_order: 168
