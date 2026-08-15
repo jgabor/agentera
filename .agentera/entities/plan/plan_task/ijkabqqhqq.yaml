@@ -4,7 +4,7 @@ record:
   name: Prove bounded profile-signal access directly
   depends_on:
     []
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a bounded profile-signal read WHEN filesystem access is observed THEN the signal tier is read and no full-evidence shard is accessed.
     - GIVEN explicit evidence-anchor resolution WHEN filesystem access is observed THEN only the owning full-evidence shard is read.

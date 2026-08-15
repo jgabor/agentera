@@ -1,0 +1,14 @@
+id: nqjnygozlq
+artifact: progress
+record:
+  timestamp: 2026-08-15 18:29
+  type: test
+  phase: build
+  what: Added direct filesystem-read assertions for bounded profile signals and explicit evidence-anchor resolution.
+  context:
+    intent: Prove the distinct bounded signal-tier and owning evidence-shard access contracts.
+    constraints: Keep task ijkabqqhqq in progress pending audit evaluation.
+    scope: packages/cli/test/analytics/profileSignals.test.ts
+  verified: pnpm -C packages/cli run test:source -- test/analytics/profileSignals.test.ts passed 1 file and 15 tests.
+  next: Orchestrate must persist audit evaluation before task ijkabqqhqq can complete.
+  publication_order: 173

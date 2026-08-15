@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
@@ -21,7 +21,10 @@ let tmp: string;
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "profile-signals-"));
 });
-afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
+afterEach(() => {
+  vi.restoreAllMocks();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
 
 /** Build a full evidence record shaped like the extraction adapters emit. */
 function fullRecord(opts: {
@@ -84,8 +87,12 @@ function publish(records: JsonObjectLocal[], tiersDir = tmp): { generation: stri
 describe("readProfileSignals — bounded input", () => {
   it("reads profile-relevant signals without loading full evidence", () => {
     const records = representativeRecords();
-    publish(records);
+    const publication = publish(records);
+    const readFile = vi.spyOn(fs, "readFileSync");
     const result = readProfileSignals(tmp);
+    const paths = readFile.mock.calls.map(([file]) => path.resolve(String(file)));
+    expect(paths).toContain(path.join(tmp, "generations", publication.generation, "signal.json"));
+    expect(paths.filter((file) => file.includes(`${path.sep}full-evidence${path.sep}`))).toEqual([]);
     expect(result.state).toBe("current");
     expect(result.signals.length).toBeGreaterThan(0);
     // Only profile-relevant signal types are returned (no record_identity, no tool_call).
@@ -100,16 +107,6 @@ describe("readProfileSignals — bounded input", () => {
       expect(sig.source_kind).toBeTruthy();
       expect(sig.timestamp).toBeTruthy();
       expect(sig.source_product).toBeTruthy();
-    }
-  });
-
-  it("does not load any full-evidence shards during signal read", () => {
-    const records = representativeRecords();
-    publish(records);
-    // readProfileSignals reads the signal tier only — verify full-evidence
-    // shards are not accessed by checking the result has no transcript data.
-    const result = readProfileSignals(tmp);
-    for (const sig of result.signals) {
       expect((sig as unknown as Record<string, unknown>).data).toBeUndefined();
     }
   });
@@ -118,11 +115,25 @@ describe("readProfileSignals — bounded input", () => {
 describe("resolveProfileEvidence — evidence resolution", () => {
   it("resolves a signal's evidence anchor to its retained full record", () => {
     const records = representativeRecords();
-    publish(records);
+    const publication = publish(records);
     const signals = readProfileSignals(tmp);
     const decision = signals.signals.find((s) => s.signal_type === "decision");
     expect(decision).toBeDefined();
+    const manifest = JSON.parse(fs.readFileSync(
+      path.join(tmp, "generations", publication.generation, "manifest.json"),
+      "utf8",
+    )) as { shards: Array<{ path: string; source_ids: string[] }> };
+    expect(manifest.shards.length).toBeGreaterThan(1);
+    const owner = manifest.shards.find((shard) => shard.source_ids.includes(decision!.evidence_anchor));
+    expect(owner).toBeDefined();
+    const readFile = vi.spyOn(fs, "readFileSync");
     const full = resolveProfileEvidence(decision!.evidence_anchor, tmp);
+    const shardReads = readFile.mock.calls
+      .map(([file]) => path.resolve(String(file)))
+      .filter((file) => file.includes(`${path.sep}full-evidence${path.sep}`));
+    expect(shardReads).toEqual([
+      path.join(tmp, "generations", publication.generation, owner!.path),
+    ]);
     expect(full).not.toBeNull();
     expect((full as JsonObjectLocal).source_id).toBe(decision!.evidence_anchor);
     expect((full as JsonObjectLocal).source_kind).toBe("conversation_turn");
