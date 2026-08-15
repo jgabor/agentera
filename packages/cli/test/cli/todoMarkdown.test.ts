@@ -39,10 +39,11 @@ describe("parseTodoMarkdownListItem", () => {
       public_description: "[fix:3.0.0] Legacy title",
       title: "Legacy title",
     });
-    expect(parseTodoMarkdownListItem("- [ ] [fix:3.0.0] Keep follow-up `abcdefghij` open")).toMatchObject({
+    const referenced = parseTodoMarkdownListItem("- [ ] [fix:3.0.0] Keep follow-up `abcdefghij` open");
+    expect(referenced).toMatchObject({
       title: "Keep follow-up `abcdefghij` open",
     });
-    expect(parseTodoMarkdownListItem("- [ ] [fix:3.0.0] Keep follow-up `abcdefghij` open")).not.toHaveProperty("id");
+    expect(referenced).not.toHaveProperty("id");
   });
 
   it("returns null for non-list lines", () => {

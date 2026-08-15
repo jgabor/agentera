@@ -127,7 +127,7 @@ function projectionWithCapsule(capsule: ReturnType<typeof explicit>) {
   return rehashProjection(changed);
 }
 
-describe("bounded personal glossary candidate projection", () => {
+describe("personal glossary candidate projection", () => {
   it("allocates capped candidates deterministically, retains both families, and reports ties and coverage", () => {
     const candidates = [
       ...Array.from({ length: 51 }, (_, index) => candidate(explicit(index), ["project-abundant"])),
@@ -181,7 +181,9 @@ describe("bounded personal glossary candidate projection", () => {
       ),
     ).toThrow("candidate project identities are outside their bound");
   });
+});
 
+describe("personal glossary candidate projection security", () => {
   it.each([
     ["term", "sk_live_secretcandidate123", "safe candidate meaning"],
     ["password meaning", "safe-candidate", "password=Secret-value-42"],
@@ -326,7 +328,9 @@ describe("bounded personal glossary candidate projection", () => {
       expect(fs.readFileSync(safePersisted.path, "utf8")).toContain(safeExcerpt);
     },
   );
+});
 
+describe("personal glossary candidate projection bounds", () => {
   it("enforces the project cap after merging duplicate candidates", () => {
     const capsule = explicit(150);
     const projectIds = Array.from({ length: 101 }, (_, index) => `project-merged-${index}`);
@@ -348,7 +352,9 @@ describe("bounded personal glossary candidate projection", () => {
       ),
     ).toThrow("candidate project identities are outside their bound");
   });
+});
 
+describe("personal glossary candidate projection excerpt security", () => {
   it("omits actual quoted sensitive values while retaining field-name prose", () => {
     const capsule = explicit(175);
     const rawPassword = "raw-password-987";
@@ -384,7 +390,9 @@ describe("bounded personal glossary candidate projection", () => {
     expect(conceptual.candidates[0]?.safe_excerpt).toMatchObject({ redacted: false });
     expect(conceptual.report.excerpts).toMatchObject({ retained: 1, redacted: 0 });
   });
+});
 
+describe("personal glossary candidate projection persistence", () => {
   it.each([
     [
       "capsule generation",
@@ -529,7 +537,9 @@ describe("bounded personal glossary candidate projection", () => {
     ).toEqual({ status: "corrupt", expired_excerpts: 0 });
     expect(fs.readFileSync(obstructedProfile, "utf8")).toBe("host-owned obstruction");
   });
+});
 
+describe("personal glossary candidate projection retained content security", () => {
   it("omits sensitive excerpts completely and persists only complete safe context", () => {
     const capsule = explicit(200);
     const sensitiveValue = "top-secret";
@@ -628,7 +638,9 @@ describe("bounded personal glossary candidate projection", () => {
       "stored candidate projection is corrupt",
     );
   });
+});
 
+describe("personal glossary candidate projection maintenance", () => {
   it("expires safe excerpts and applies the local-host-authorized purge without a public read surface", () => {
     const capsule = explicit(300);
     const projection = projectPersonalGlossaryCandidates(

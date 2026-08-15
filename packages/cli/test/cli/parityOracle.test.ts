@@ -23,42 +23,28 @@ const RULES = {
 } as const;
 
 describe("normalizeEnvelope() — timestamp rule", () => {
-  it("reduces a UTC ISO 8601 timestamp to the date", () => {
-    expect(normalizeEnvelope("2026-06-04T11:45:30.123Z", null, RULES)).toBe("2026-06-04");
-    expect(normalizeEnvelope("2026-06-04T11:45:30Z", null, RULES)).toBe("2026-06-04");
-  });
-
-  it("reduces an offset ISO 8601 timestamp to the date", () => {
-    expect(normalizeEnvelope("2026-06-04T11:45:30+00:00", null, RULES)).toBe("2026-06-04");
-    expect(normalizeEnvelope("2026-06-04T11:45:30-05:00", null, RULES)).toBe("2026-06-04");
-  });
-
-  it("passes a date-only string through unchanged", () => {
-    expect(normalizeEnvelope("2026-06-04", null, RULES)).toBe("2026-06-04");
-  });
-
-  it("passes a non-ISO string through unchanged", () => {
-    expect(normalizeEnvelope("hello world", null, RULES)).toBe("hello world");
+  it.each([
+    ["UTC with milliseconds", "2026-06-04T11:45:30.123Z", "2026-06-04"],
+    ["UTC without milliseconds", "2026-06-04T11:45:30Z", "2026-06-04"],
+    ["positive offset", "2026-06-04T11:45:30+00:00", "2026-06-04"],
+    ["negative offset", "2026-06-04T11:45:30-05:00", "2026-06-04"],
+    ["date only", "2026-06-04", "2026-06-04"],
+    ["non-ISO text", "hello world", "hello world"],
+  ])("normalizes %s", (_label, input, expected) => {
+    expect(normalizeEnvelope(input, null, RULES)).toBe(expected);
   });
 });
 
 describe("normalizeEnvelope() — hash rule", () => {
-  it("reduces a 16-char hex hash to 0x + first 8 hex chars (lowercase)", () => {
-    expect(normalizeEnvelope("abcdef0123456789", null, RULES)).toBe("0xabcdef01");
-  });
-
-  it("reduces an uppercase hex hash to lowercase", () => {
-    expect(normalizeEnvelope("ABCDEF0123456789", null, RULES)).toBe("0xabcdef01");
-  });
-
-  it("strips algorithm prefixes before truncation", () => {
-    expect(normalizeEnvelope("sha256:abcdef0123456789", null, RULES)).toBe("0xabcdef01");
-    expect(normalizeEnvelope("sha1:abcdef0123456789", null, RULES)).toBe("0xabcdef01");
-    expect(normalizeEnvelope("md5:abcdef0123456789", null, RULES)).toBe("0xabcdef01");
-  });
-
-  it("passes short strings through unchanged", () => {
-    expect(normalizeEnvelope("abc", null, RULES)).toBe("abc");
+  it.each([
+    ["bare lowercase", "abcdef0123456789", "0xabcdef01"],
+    ["bare uppercase", "ABCDEF0123456789", "0xabcdef01"],
+    ["sha256 prefix", "sha256:abcdef0123456789", "0xabcdef01"],
+    ["sha1 prefix", "sha1:abcdef0123456789", "0xabcdef01"],
+    ["md5 prefix", "md5:abcdef0123456789", "0xabcdef01"],
+    ["short text", "abc", "abc"],
+  ])("normalizes %s", (_label, input, expected) => {
+    expect(normalizeEnvelope(input, null, RULES)).toBe(expected);
   });
 });
 
@@ -98,11 +84,8 @@ describe("normalizeEnvelope() — recursion", () => {
     expect(out.commands[0].trust_hash).toBe("0xdeadbeef");
   });
 
-  it("passes non-string scalars through unchanged", () => {
-    expect(normalizeEnvelope(42, null, RULES)).toBe(42);
-    expect(normalizeEnvelope(null, null, RULES)).toBe(null);
-    expect(normalizeEnvelope(true, null, RULES)).toBe(true);
-    expect(normalizeEnvelope(false, null, RULES)).toBe(false);
+  it.each([42, null, true, false])("passes the scalar %s through unchanged", (input) => {
+    expect(normalizeEnvelope(input, null, RULES)).toBe(input);
   });
 });
 
@@ -214,38 +197,23 @@ describe("effectiveDriftDirection() — version_break lift", () => {
     version_break: false,
   };
 
-  it("passes equal through unchanged", () => {
-    const direction: DriftDirection = effectiveDriftDirection(baseRow, {
-      direction: "equal",
-      missingKeys: [],
-      extraKeys: [],
-      forbiddenHits: [],
-      literalMismatches: [],
-    });
-    expect(direction).toBe("equal");
-  });
-
-  it("lifts ts_smaller to intentional_version_break when version_break=true", () => {
-    const direction = effectiveDriftDirection(
-      { ...baseRow, version_break: true },
-      { direction: "ts_smaller", missingKeys: ["x"], extraKeys: [], forbiddenHits: [], literalMismatches: [] },
-    );
-    expect(direction).toBe("intentional_version_break");
-  });
-
-  it("lifts python_smaller to intentional_version_break when version_break=true", () => {
-    const direction = effectiveDriftDirection(
-      { ...baseRow, version_break: true },
-      { direction: "python_smaller", missingKeys: [], extraKeys: ["x"], forbiddenHits: [], literalMismatches: [] },
-    );
-    expect(direction).toBe("intentional_version_break");
-  });
-
-  it("does NOT lift ts_smaller when version_break=false", () => {
-    const direction = effectiveDriftDirection(
-      { ...baseRow, version_break: false },
-      { direction: "ts_smaller", missingKeys: ["x"], extraKeys: [], forbiddenHits: [], literalMismatches: [] },
-    );
-    expect(direction).toBe("ts_smaller");
+  it.each<[string, boolean, DriftDirection, DriftDirection]>([
+    ["equal without a version break", false, "equal", "equal"],
+    ["ts_smaller with a version break", true, "ts_smaller", "intentional_version_break"],
+    ["python_smaller with a version break", true, "python_smaller", "intentional_version_break"],
+    ["ts_smaller without a version break", false, "ts_smaller", "ts_smaller"],
+  ])("classifies %s", (_label, versionBreak, direction, expected) => {
+    expect(
+      effectiveDriftDirection(
+        { ...baseRow, version_break: versionBreak },
+        {
+          direction,
+          missingKeys: direction === "ts_smaller" ? ["x"] : [],
+          extraKeys: direction === "python_smaller" ? ["x"] : [],
+          forbiddenHits: [],
+          literalMismatches: [],
+        },
+      ),
+    ).toBe(expected);
   });
 });

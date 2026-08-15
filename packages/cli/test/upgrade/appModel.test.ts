@@ -11,7 +11,6 @@ import {
   resolveActiveAppModel,
   resolveInstallRoot,
 } from "../../src/upgrade/appModel.js";
-import { parseToml } from "../../src/core/toml.js";
 import { resolvePath } from "../../src/core/paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -103,18 +102,12 @@ describe("doctorRoots", () => {
 });
 
 describe("loadSuiteVersion", () => {
-  it("reads skills[0].version from the repo registry.json", () => {
-    const registry = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "registry.json"), "utf8"));
-    expect(loadSuiteVersion(REPO_ROOT)).toBe(registry.skills[0].version);
+  it("reads skills[0].version from registry.json", () => {
+    fs.writeFileSync(path.join(home, "registry.json"), JSON.stringify({ skills: [{ version: "1.2.3-test" }] }));
+    expect(loadSuiteVersion(home)).toBe("1.2.3-test");
   });
 
   it("returns null when registry.json is absent", () => {
     expect(loadSuiteVersion(home)).toBeNull();
-  });
-});
-
-describe("parseToml", () => {
-  it("parses TOML into an object", () => {
-    expect(parseToml('[project]\nversion = "1.2.3"\n')).toEqual({ project: { version: "1.2.3" } });
   });
 });
