@@ -1,0 +1,38 @@
+id: gornhwivrn
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-15
+    status: open
+    reviewed: 2026-08-15
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    title: "Plan: End v1 support and require fresh v3 state"
+  what: Declare Agentera product v1 unsupported in v3. Detect product-v1 evidence, block ordinary execution without mutation, and require an explicitly approved reset that removes all Agentera state in the current project and known user installation scopes before canonical fresh-v3 initialization.
+  why: V1 was short-lived and has no known external users. Removing its migration and compatibility surface reduces permanent complexity, while one bounded destructive reset path prevents stale or mixed state from entering v3.
+  constraints: Keep v2-to-v3 migration supported. Preserve current schema identifiers ending in .v1. Never treat a read-only command as deletion consent. Reset only the reviewed current project and known Agentera profile, installation, and runtime roots; do not scan arbitrary projects or unrelated home paths. Do not retain v1 backups or offer conversion, import, rollback, or restore.
+  overall_acceptance: GIVEN product-v1 evidence exists WHEN the user previews and explicitly approves the v3 reset THEN all Agentera state in the declared scopes is removed, canonical fresh-v3 state is initialized, ordinary v3 startup passes, unrelated paths remain unchanged, and no v1 compatibility surface ships.
+  scope:
+    included:
+      - Product-v1 detection and EOL behavior
+      - Destructive reset preview, authorization, containment, apply, recovery, and fresh-v3 initialization
+      - Current-project state, TODO state, known personal profile state, managed installation state, and legacy runtime registrations
+      - Removal of v1 migration, bridge, startup projection, documentation, fixtures, and package surfaces
+      - Regression coverage for v2 migration, current v3 behavior, package contents, and schema-version distinction
+    excluded:
+      - Migration, conversion, import, backup, rollback, or restoration of v1 data
+      - Filesystem-wide discovery or reset of other projects
+      - Removal or renaming of current schemas merely because their identifiers end in .v1
+      - Changes to the supported v2-to-v3 migration contract
+    deferred:
+      []
+  design: Establish one authoritative product-generation inventory, use it to gate ordinary execution, require a reviewed destructive reset before mutation, remove and recreate state through existing ownership boundaries, and then delete the compatibility contracts that no longer have a supported user path. Verification proves containment, restart safety, fresh-state equivalence, unaffected v2 behavior, and package retirement.
+  unknowns:
+    - question: Which historical paths and ownership signals uniquely prove Agentera product v1 without confusing current schema version v1 or unrelated user files?
+      affects_task: 1
+      resolve_by: Reconcile the historical v1 upgrader, retired-resource authority, current v3 detector, and package inventory into one closed reset inventory before downstream behavior is implemented.
+    - question: What exact observable state does the canonical fresh-v3 initializer create versus leave absent until first use?
+      affects_task: 4
+      resolve_by: Compare a separately initialized clean v3 fixture with reset output and make that equivalence the reset acceptance oracle.
+  surprises:
+    []

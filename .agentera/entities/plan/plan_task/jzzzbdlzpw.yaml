@@ -1,0 +1,16 @@
+id: jzzzbdlzpw
+artifact: plan
+record:
+  name: Synchronize final project state
+  depends_on:
+    - hnuteafsqb
+    - jsjdrbcrzf
+    - sogipwntmd
+    - gfpcbfrnfk
+    - ndafvzczzu
+    - xidheuvbyi
+  status: pending
+  acceptance:
+    - GIVEN all implementation tasks pass WHEN project state is synchronized through authoritative writers THEN plan status, documentation inventory, TODO state, and changelog describe the shipped contract without obsolete v1 work.
+    - GIVEN final source, type, build, compact, capability-contract, and package gates WHEN they complete THEN all required owners pass with no unverified release boundary.
+  plan: gornhwivrn

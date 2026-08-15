@@ -1,0 +1,15 @@
+id: bzhuaesble
+artifact: progress
+record:
+  timestamp: 2026-08-15 20:46
+  type: feat
+  phase: build
+  what: Established the authoritative product-v1 EOL reset inventory for plan gornhwivrn task hnuteafsqb.
+  context:
+    intent: Record the completed and verified authority implementation required before orchestration audit.
+    constraints: Progress entry only; no code, plan task status, commit, or push changes.
+    scope: Plan gornhwivrn, task hnuteafsqb.
+  discovered: Legacy runtime identities also existed in supported v2, so they remain reset-scope targets and cannot independently prove product v1. Current schema identifiers ending in .v1 are explicitly non-trigger evidence.
+  verified: "Focused verification passed 3 files and 31 tests: pnpm -C packages/cli exec vp test run --config vite.config.ts test/upgrade/productV1ResetAuthority.test.ts test/upgrade/migrateArtifactsV2ToV3.test.ts test/validate/retainedReferenceAuthority.test.ts. pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli build passed. The built-local node packages/cli/dist/bin/agentera.js prime --format json smoke returned outcome ok, project recommendation stay, and zero pending artifacts. node packages/cli/dist/bin/agentera.js check compact passed with zero errors and changes. pnpm -C packages/cli run verify:package passed 3 files and 13 tests. git diff --check passed."
+  next: Audit task hnuteafsqb without changing its status until orchestration handles lifecycle.
+  publication_order: 175

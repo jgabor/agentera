@@ -1,0 +1,12 @@
+id: gfpcbfrnfk
+artifact: plan
+record:
+  name: Reset all scoped Agentera state and initialize fresh v3
+  depends_on:
+    - sogipwntmd
+  status: pending
+  acceptance:
+    - GIVEN approved v1 reset with coexisting legacy or current state WHEN apply completes THEN all Agentera project, TODO, profile, installation, and runtime state in scope is removed with no retained v1 backup.
+    - GIVEN deletion completes WHEN initialization runs THEN the result is observably equivalent to a separate canonical fresh-v3 initialization.
+    - GIVEN interruption at any reset stage WHEN the same approved operation is retried THEN it converges to one valid fresh-v3 state without touching unrelated paths.
+  plan: gornhwivrn

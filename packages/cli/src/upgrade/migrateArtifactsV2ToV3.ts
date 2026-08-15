@@ -37,6 +37,7 @@ import {
   planInstalledHooksRetirementItems,
 } from "./installedHooksRetirement.js";
 import type { ResolvedUpdateChannel } from "./channels.js";
+import { productV1ArtifactPairs } from "./productV1ResetAuthority.js";
 
 /**
  * v2→v3 migration phases: artifacts (noop for YAML), runtime rewire, cleanup.
@@ -45,14 +46,7 @@ import type { ResolvedUpdateChannel } from "./channels.js";
 export const MIGRATION_STATUSES = ["pending", "applied", "noop", "blocked", "failed"] as const;
 export type MigrationStatus = (typeof MIGRATION_STATUSES)[number];
 
-export const V1_ARTIFACT_PAIRS: ReadonlyArray<readonly [string, string]> = [
-  [".agentera/PROGRESS.md", ".agentera/progress.yaml"],
-  [".agentera/PLAN.md", ".agentera/plan.yaml"],
-  [".agentera/DECISIONS.md", ".agentera/decisions.yaml"],
-  [".agentera/HEALTH.md", ".agentera/health.yaml"],
-  [".agentera/DOCS.md", ".agentera/docs.yaml"],
-  ["VISION.md", ".agentera/vision.yaml"],
-];
+export const V1_ARTIFACT_PAIRS = productV1ArtifactPairs();
 
 export interface MigrationPhaseItem {
   status: MigrationStatus;

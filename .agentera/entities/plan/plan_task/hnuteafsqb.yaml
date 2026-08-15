@@ -1,0 +1,22 @@
+id: hnuteafsqb
+artifact: plan
+record:
+  name: Establish the v1 EOL reset authority
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN historical product-v1 surfaces and current .v1 schemas WHEN the inventory is validated THEN only product-generation evidence can trigger reset.
+    - GIVEN project, profile, installation, and runtime state WHEN reset scope is projected THEN every deletion and recreation has one declared owner and bounded root.
+    - GIVEN clean v2 or v3 state WHEN evaluated against the authority THEN no v1 reset is requested.
+  plan: gornhwivrn
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-hnuteafsqb-1
+      source: audit ses_ff94084d8ffewFAVXbi8I1qXHl
+      recorded_at: 2026-08-15 20:48
+      writer_command: agentera state plan record-evaluation

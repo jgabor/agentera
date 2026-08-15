@@ -1,0 +1,13 @@
+id: xidheuvbyi
+artifact: plan
+record:
+  name: Prove reset safety, regressions, and release readiness
+  depends_on:
+    - gfpcbfrnfk
+    - ndafvzczzu
+  status: pending
+  acceptance:
+    - GIVEN representative v1, mixed, v2, v3, symlink, and interrupted fixtures WHEN focused verification runs THEN each behavior has proportional passing and failing evidence.
+    - GIVEN the built and packed v3 CLI WHEN package verification runs THEN no v1 support surface ships and fresh reset behavior matches source behavior.
+    - GIVEN the breaking contract WHEN user documentation and release notes are read THEN v1 is clearly unsupported, reset is explicitly destructive, v2 migration remains supported, and suite metadata stays within 3.0.0.
+  plan: gornhwivrn

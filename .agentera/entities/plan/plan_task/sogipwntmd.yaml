@@ -1,0 +1,13 @@
+id: sogipwntmd
+artifact: plan
+record:
+  name: Deliver bounded reset preview and authorization
+  depends_on:
+    - hnuteafsqb
+    - jsjdrbcrzf
+  status: pending
+  acceptance:
+    - GIVEN v1 evidence WHEN reset is previewed THEN the output lists every scoped deletion, recreation, root, and irreversible loss without mutation.
+    - GIVEN the reviewed scope changes before apply WHEN reset is approved THEN apply rejects before effects and requires a new preview.
+    - GIVEN symlinks, aliases, or paths outside declared roots WHEN preview or apply resolves scope THEN no external target is authorized.
+  plan: gornhwivrn

@@ -14,6 +14,11 @@ inventory:
     production_owner: { module: packages/cli/src/registries/packageRegistry.ts, symbol: loadRegistry }
     consumers:
       - { kind: runtime, module: packages/cli/src/registries/packageRegistry.ts, symbol: loadRegistry, consumption: loads }
+  - path: references/adapters/product-v1-reset.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/upgrade/productV1ResetAuthority.ts, symbol: loadProductV1ResetAuthority }
+    consumers:
+      - { kind: runtime, module: packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts, symbol: V1_ARTIFACT_PAIRS, consumption: loads }
   - path: references/analysis/evidence-tier-authority.yaml
     classification: current
     production_owner: { module: packages/cli/src/registries/evidenceTierContract.ts, symbol: loadEvidenceTierContract }

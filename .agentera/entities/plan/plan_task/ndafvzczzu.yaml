@@ -1,0 +1,13 @@
+id: ndafvzczzu
+artifact: plan
+record:
+  name: Retire v1 compatibility and preserve unrelated contracts
+  depends_on:
+    - jsjdrbcrzf
+    - gfpcbfrnfk
+  status: pending
+  acceptance:
+    - GIVEN reset behavior owns the unsupported boundary WHEN v3 surfaces are inspected THEN no v1 converter, bridge, handoff, migration projection, fixture, or two-hop guidance remains.
+    - GIVEN current schemas use .v1 identifiers WHEN compatibility is removed THEN their names and supported behavior remain unchanged.
+    - GIVEN glossary variant enforcement was previously coupled to legacy scanning WHEN retirement completes THEN that current behavior remains under a nonlegacy owner.
+  plan: gornhwivrn

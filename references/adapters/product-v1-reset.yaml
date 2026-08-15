@@ -1,0 +1,101 @@
+schema_version: agentera.productV1ResetInventory.v1
+status: product_v1_eol
+policy:
+  trigger: any_declared_product_v1_generation_evidence
+  schema_identifier_suffix_is_evidence: false
+  discovery: declared_roots_only
+  preserve_unlisted_state: true
+
+source_authorities:
+  retired_resources: references/adapters/runtime-retired-resources.yaml
+  package_inventory: references/adapters/package-registry.yaml
+  runtime_lifecycle: references/adapters/runtime-lifecycle-authority.yaml
+
+trigger_evidence:
+  project_artifacts:
+    - id: project.progress_markdown
+      generation: product_v1
+      triggers_reset: true
+      path: .agentera/PROGRESS.md
+      current_path: .agentera/progress.yaml
+    - id: project.plan_markdown
+      generation: product_v1
+      triggers_reset: true
+      path: .agentera/PLAN.md
+      current_path: .agentera/plan.yaml
+    - id: project.decisions_markdown
+      generation: product_v1
+      triggers_reset: true
+      path: .agentera/DECISIONS.md
+      current_path: .agentera/decisions.yaml
+    - id: project.health_markdown
+      generation: product_v1
+      triggers_reset: true
+      path: .agentera/HEALTH.md
+      current_path: .agentera/health.yaml
+    - id: project.docs_markdown
+      generation: product_v1
+      triggers_reset: true
+      path: .agentera/DOCS.md
+      current_path: .agentera/docs.yaml
+    - id: project.design_markdown
+      generation: product_v1
+      triggers_reset: true
+      path: .agentera/DESIGN.md
+      current_path: .agentera/design.yaml
+    - id: project.vision_markdown
+      generation: product_v1
+      triggers_reset: false
+      path: VISION.md
+      current_path: .agentera/vision.yaml
+  installation_package:
+    id: installation.package-major-1
+    generation: product_v1
+    triggers_reset: true
+    authority: references/adapters/package-registry.yaml
+    manifest: registry.json
+    selector: skills[0].version
+    predicate: semver_major_equals_1
+  runtime_resources:
+    authority: references/adapters/runtime-retired-resources.yaml
+    role: reset_scope_only
+    reason: Runtime identities also existed in supported v2, so identity or content alone cannot prove product v1.
+
+scope_inventory:
+  - id: project.state
+    action: delete
+    owner: project_state_reset
+    bounded_root: project
+    targets: [.agentera, TODO.md, VISION.md]
+  - id: profile.state
+    action: delete
+    owner: profile_state_reset
+    bounded_root: profile_root
+    targets: [.]
+  - id: installation.state
+    action: delete
+    owner: installation_state_reset
+    bounded_root: install_root
+    targets: [.]
+  - id: runtime.resources
+    action: delete
+    owner: runtime_retired_resource_reset
+    bounded_root: runtime_declared_roots
+    targets:
+      - "references/adapters/runtime-retired-resources.yaml#diagnostic_inventory"
+      - "references/adapters/runtime-retired-resources.yaml#configuration_inventory"
+  - id: project.fresh-v3
+    action: recreate
+    owner: canonical_fresh_v3_initializer
+    bounded_root: project
+    targets: [.agentera]
+  - id: installation.current-package
+    action: recreate
+    owner: package_inventory_installer
+    bounded_root: install_root
+    targets: ["references/adapters/package-registry.yaml#records[agentera].bundle_surfaces"]
+  - id: runtime.canonical-skill
+    action: recreate
+    owner: runtime_lifecycle_installer
+    bounded_root: runtime_declared_roots
+    targets: ["references/adapters/runtime-lifecycle-authority.yaml#canonical_skill"]

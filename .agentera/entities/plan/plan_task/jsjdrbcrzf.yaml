@@ -1,0 +1,12 @@
+id: jsjdrbcrzf
+artifact: plan
+record:
+  name: Gate v3 execution on product-v1 evidence
+  depends_on:
+    - hnuteafsqb
+  status: pending
+  acceptance:
+    - GIVEN v1 evidence WHEN an ordinary stateful or read-only v3 command runs THEN it reports v1 EOL and the reset workflow without changing bytes.
+    - GIVEN v1 evidence WHEN help or version is requested THEN the command remains available without state mutation.
+    - GIVEN no v1 evidence WHEN v2 migration or current v3 startup runs THEN existing behavior is unchanged.
+  plan: gornhwivrn
