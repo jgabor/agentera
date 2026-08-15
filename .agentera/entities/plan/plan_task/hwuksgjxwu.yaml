@@ -12,3 +12,13 @@ record:
     - GIVEN projection production fails WHEN refresh reports failure THEN current evidence remains readable, stale projections cannot pass as current, and recovery names an executable consented command.
     - GIVEN missing, stale, malformed, unsafe, or conflicting derived state WHEN refresh runs THEN effects follow the settled authority, no profile or project state changes, and paired pass/fail regressions cover each boundary.
   plan: ofiklbscmo
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "Concurrent refresh race: the producer checks the current generation before persistence but does not bind or lock the projection commit, so another refresh can advance current.json before the first refresh writes a now-stale projection and reports success."
+    provenance:
+      attempt_id: audit-1
+      source: Audit session ses_ffa3993e2ffeSNw6NNs4SdKZCN task hwuksgjxwu evaluation
+      recorded_at: 2026-08-15 16:58
+      writer_command: agentera state plan record-evaluation

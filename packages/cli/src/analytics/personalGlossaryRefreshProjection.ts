@@ -1,9 +1,13 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { personalGlossaryCandidateProjectionContract } from "../registries/glossaryCandidateProjectionContract.js";
 import { PERSONAL_GLOSSARY_MINING_POLICY_VERSION } from "../registries/glossaryMiningAuthority.js";
 import { readCurrentGeneration } from "./extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "./personalGlossaryExplicitMining.js";
 import { mineRecurringGlossaryCandidates } from "./personalGlossaryRecurrence.js";
 import {
+  personalGlossaryCandidateProjectionPath,
   persistPersonalGlossaryCandidateProjectionAfterRefresh,
   projectPersonalGlossaryCandidates,
   type PersonalGlossaryCandidateProjectionStorageOptions,
@@ -24,6 +28,51 @@ export interface PersonalGlossaryRefreshProjectionResult {
   candidate_count: number;
   abstention_count: number;
   path: string;
+}
+
+export interface PersonalGlossaryRefreshCommitLock {
+  descriptor: number;
+  path: string;
+}
+
+export class PersonalGlossaryRefreshCommitBusyError extends Error {
+  constructor() {
+    super("another consented refresh is still publishing the current candidate projection");
+    this.name = "PersonalGlossaryRefreshCommitBusyError";
+  }
+}
+
+/** Exclude another consented refresh until evidence and its projection are committed together. */
+export function acquirePersonalGlossaryRefreshCommitLock(
+  options: PersonalGlossaryCandidateProjectionStorageOptions = {},
+): PersonalGlossaryRefreshCommitLock {
+  const directory = path.dirname(personalGlossaryCandidateProjectionPath(options));
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  fs.chmodSync(directory, 0o700);
+  const lockPath = path.join(directory, ".refresh.lock");
+  try {
+    const descriptor = fs.openSync(
+      lockPath,
+      fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL,
+      0o600,
+    );
+    return { descriptor, path: lockPath };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      throw new PersonalGlossaryRefreshCommitBusyError();
+    }
+    throw error;
+  }
+}
+
+export function releasePersonalGlossaryRefreshCommitLock(
+  lock: PersonalGlossaryRefreshCommitLock,
+): void {
+  try {
+    fs.unlinkSync(lock.path);
+  } finally {
+    fs.closeSync(lock.descriptor);
+  }
 }
 
 function familySummary(
@@ -94,6 +143,10 @@ export function produceCurrentPersonalGlossaryProjection(
     mining_summary: miningSummary,
   });
   const persisted = persistPersonalGlossaryCandidateProjectionAfterRefresh(projection, options);
+  const committed = readCurrentGeneration(options.tiersDir);
+  if (!committed || committed.manifest.generation !== projection.generation) {
+    throw new TypeError("current evidence generation changed before projection commit completed");
+  }
   return {
     status: persisted.status,
     generation: projection.generation,

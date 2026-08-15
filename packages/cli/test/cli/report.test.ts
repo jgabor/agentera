@@ -7,9 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cmdReport, statsCorpusPath, statsExistingCorpusStatus, ReportArgs } from "../../src/cli/commands/report.js";
 import { MAX_CORPUS_READ_BYTES, usageMain } from "../../src/analytics/usageStats.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
-import { publishEvidenceTiers, readSignalTier } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { publishEvidenceTiers, readCurrentGeneration, readSignalTier } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
-import { personalGlossaryCandidateProjectionPath } from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import {
+  personalGlossaryCandidateProjectionPath,
+  readPersonalGlossaryCandidateProjection,
+} from "../../src/analytics/personalGlossaryCandidateProjection.js";
 
 function run(args: ReportArgs): { rc: number; out: string; err: string } {
   let out = "";
@@ -296,6 +299,79 @@ describe("cmdReport", () => {
     });
     expect(fs.readFileSync(outside, "utf8")).toBe("outside unchanged\n");
     expect(readSignalTier(path.join(tmp, "intermediate", "tiers"))).not.toBeNull();
+  });
+
+  it("rejects an interleaved refresh before it can overwrite the winning current projection", () => {
+    const source = path.join(tmp, "AGENTS.md");
+    const output = path.join(tmp, "intermediate", "corpus.json");
+    const args: ReportArgs = {
+      action: "refresh",
+      consent: "local-history",
+      format: "json",
+      output,
+      projectRoot: [tmp],
+      codexSessionsDir: path.join(tmp, "stores", "codex"),
+      opencodeConversationsDir: path.join(tmp, "stores", "opencode.db"),
+      copilotConversationsDir: path.join(tmp, "stores", "copilot"),
+      cursorProjectsDir: path.join(tmp, "stores", "cursor-projects"),
+      cursorChatsDir: path.join(tmp, "stores", "cursor-chats"),
+      noCodex: true,
+      noOpencode: true,
+      noCopilot: true,
+      noCursor: true,
+    };
+    fs.writeFileSync(source, "# rules\nprefer the first shape.\n");
+    expect(run(args).rc).toBe(0);
+    const projectionPath = personalGlossaryCandidateProjectionPath();
+    const priorProjection = fs.readFileSync(projectionPath);
+    fs.writeFileSync(source, "# rules\nprefer the winning shape.\n");
+
+    const tiersDir = path.join(tmp, "intermediate", "tiers");
+    const currentPath = path.join(tiersDir, "current.json");
+    const originalRename = fs.renameSync;
+    let interleaved = false;
+    let projectionAfterLoser: Buffer | null = null;
+    let loser: ReturnType<typeof run> | null = null;
+    const rename = vi.spyOn(fs, "renameSync").mockImplementation(((from, to) => {
+      originalRename(from, to);
+      if (!interleaved && String(to) === currentPath) {
+        interleaved = true;
+        loser = run(args);
+        projectionAfterLoser = fs.readFileSync(projectionPath);
+      }
+    }) as typeof fs.renameSync);
+
+    let winner: ReturnType<typeof run>;
+    try {
+      winner = run(args);
+    } finally {
+      rename.mockRestore();
+    }
+
+    expect(winner.rc).toBe(0);
+    expect(loser).not.toBeNull();
+    const loserPayload = JSON.parse(loser!.out);
+    const current = readCurrentGeneration(tiersDir)!;
+    const projection = readPersonalGlossaryCandidateProjection().projection!;
+    expect(loser!.rc).toBe(1);
+    expect(loserPayload).toMatchObject({
+      status: "fail",
+      evidence: { status: "readable", generation: current.manifest.generation },
+      projection: {
+        status: "failed",
+        reason: "another consented refresh is still publishing the current candidate projection",
+        recovery: "npx -y agentera@next report refresh --consent local-history",
+      },
+      privacy: {
+        local_history_read: false,
+        tier_write: false,
+        projection_write: false,
+      },
+    });
+    expect(projectionAfterLoser).toEqual(priorProjection);
+    expect(projection.generation).toBe(current.manifest.generation);
+    expect(JSON.parse(winner.out).projection.generation).toBe(current.manifest.generation);
+    expect(fs.existsSync(path.join(path.dirname(projectionPath), ".refresh.lock"))).toBe(false);
   });
 
   it("rejects an unknown action", () => {

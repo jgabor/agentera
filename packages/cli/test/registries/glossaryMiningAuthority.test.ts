@@ -560,6 +560,14 @@ describe("personal glossary mining authority", () => {
       "personal_mining_authority refresh production must report evidence and projection outcomes separately and preserve published evidence on projection failure",
     ],
     [
+      "serialized refresh commit lifetime",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.refresh_production.concurrency.lock_lifetime =
+          "projection_write_only";
+      },
+      "personal_mining_authority refresh production must serialize evidence and projection commit and fail contenders without writes",
+    ],
+    [
       "safe derived replacement",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.refresh_production.safe_replacement.reject =

@@ -743,6 +743,18 @@ personal_mining_authority:
         count: exactly_one
         generation_binding: exact_published_evidence_generation
         policy_binding: exact_personal_mining_policy_version
+      concurrency:
+        serialization: profile_local_exclusive_refresh_commit
+        lock_lifetime: before_evidence_publication_through_projection_binding_verification
+        contender:
+          refresh_outcome: failure
+          process_exit: nonzero
+          local_history_read: false
+          tier_write: false
+          projection_status: failed
+          projection_write: false
+          evidence_status: current_generation_remains_readable
+          recovery: npx -y agentera@next report refresh --consent local-history
       partial_failure:
         refresh_outcome: failure
         process_exit: nonzero
@@ -768,6 +780,8 @@ personal_mining_authority:
         A successful consented evidence refresh requires one projection bound to
         that exact published generation and mining policy. Projection failure is
         a nonzero refresh result but does not roll back the published evidence.
+        Authorized refreshes serialize evidence and projection commit; a
+        contender fails without reading history or writing evidence or projection.
         A retry may replace only the exact configured owned regular projection
         file; it rejects symlinks, non-files, path mismatches, and path escapes.
         The refresh runtime mines and publishes this projection after evidence

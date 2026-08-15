@@ -7,7 +7,12 @@ import { expanduser } from "../../core/paths.js";
 
 import { usageMain, corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { extractCorpusMain } from "../../analytics/extractCorpus.js";
-import { produceCurrentPersonalGlossaryProjection } from "../../analytics/personalGlossaryRefreshProjection.js";
+import {
+  acquirePersonalGlossaryRefreshCommitLock,
+  PersonalGlossaryRefreshCommitBusyError,
+  produceCurrentPersonalGlossaryProjection,
+  releasePersonalGlossaryRefreshCommitLock,
+} from "../../analytics/personalGlossaryRefreshProjection.js";
 import {
   tiersDirForCorpusPath,
   assessTiers,
@@ -259,31 +264,83 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       return 0;
     }
     // consent === "local-history": extract local history into bounded tiers.
+    const tiersDir = tiersDirForCorpusPath(corpusPath);
+    let refreshLock;
+    try {
+      refreshLock = acquirePersonalGlossaryRefreshCommitLock();
+    } catch (error) {
+      if (!(error instanceof PersonalGlossaryRefreshCommitBusyError)) throw error;
+      const recovery = "npx -y agentera@next report refresh --consent local-history";
+      const currentGeneration = readCurrentGeneration(tiersDir);
+      const projection = {
+        status: "failed",
+        reason: error.message,
+        recovery,
+      };
+      const payload = {
+        command: "stats refresh",
+        status: "fail",
+        exit_signal: null,
+        privacy: {
+          local_history_read: false,
+          local_history_write: false,
+          tier_write: false,
+          projection_write: false,
+          required_consent: "local-history",
+          provided_consent: "local-history",
+          historical_imports: args.importSources ?? [],
+          historical_import_warning: args.importSources?.includes("claude")
+            ? "Claude transcripts can contain secrets, file contents, and command output. Import is local and read-only."
+            : null,
+        },
+        corpus_path: corpusPath,
+        tier_path: tiersDir,
+        evidence: {
+          status: currentGeneration ? "readable" : "unavailable",
+          ...(currentGeneration ? {
+            generation: currentGeneration.manifest.generation,
+            published_at: currentGeneration.manifest.published_at,
+          } : {}),
+        },
+        projection,
+        engine: { command: engineCommand, exit_code: null, stdout: [], stderr: [] },
+      };
+      if (outputFormat === "json") {
+        out(JSON.stringify(payload, null, 2) + "\n");
+      } else {
+        out(`agentera stats refresh: fail\ncorpus=${corpusPath}\ntiers=${tiersDir}\n`);
+        err(`candidate projection failed: ${projection.reason}\nRecovery: ${recovery}\n`);
+      }
+      return 1;
+    }
     let engineOut = "";
     let engineErr = "";
-    const rc = extractCorpusMain(engineArgv, {
-      out: (t) => (engineOut += t + "\n"),
-      err: (t) => (engineErr += t + "\n"),
-    });
+    let rc: number;
     let projection: Record<string, unknown> = { status: "not_attempted" };
-    let finalRc = rc;
-    const currentGeneration = rc === 0
-      ? readCurrentGeneration(tiersDirForCorpusPath(corpusPath))
-      : null;
-    if (rc === 0) {
-      try {
-        const produced = produceCurrentPersonalGlossaryProjection({
-          tiersDir: tiersDirForCorpusPath(corpusPath),
-        });
-        projection = { ...produced, write_status: produced.status, status: "published" };
-      } catch (error) {
-        finalRc = 1;
-        projection = {
-          status: "failed",
-          reason: (error as Error).message,
-          recovery: "npx -y agentera@next report refresh --consent local-history",
-        };
+    let finalRc: number;
+    let currentGeneration;
+    try {
+      rc = extractCorpusMain(engineArgv, {
+        out: (t) => (engineOut += t + "\n"),
+        err: (t) => (engineErr += t + "\n"),
+      });
+      finalRc = rc;
+      currentGeneration = rc === 0 ? readCurrentGeneration(tiersDir) : null;
+      if (rc === 0) {
+        try {
+          const produced = produceCurrentPersonalGlossaryProjection({ tiersDir });
+          projection = { ...produced, write_status: produced.status, status: "published" };
+        } catch (error) {
+          finalRc = 1;
+          projection = {
+            status: "failed",
+            reason: (error as Error).message,
+            recovery: "npx -y agentera@next report refresh --consent local-history",
+          };
+        }
       }
+    } finally {
+      releasePersonalGlossaryRefreshCommitLock(refreshLock);
     }
     const refreshStatus = finalRc === 0 ? "pass" : rc === 4 ? "flagged" : "fail";
     const payload = {
@@ -303,7 +360,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
           : null,
       },
       corpus_path: corpusPath,
-      tier_path: tiersDirForCorpusPath(corpusPath),
+      tier_path: tiersDir,
       evidence: {
         status: rc === 0 ? "published" : "failed",
         ...(currentGeneration ? {

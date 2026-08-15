@@ -1,0 +1,15 @@
+id: crfluqlbco
+artifact: progress
+record:
+  timestamp: 2026-08-15 17:11
+  type: fix
+  phase: build
+  what: Serialized consented personal-glossary refresh commits so a concurrent contender fails before evidence or projection writes and cannot publish stale success.
+  context:
+    intent: Bind every reported projection success to the current evidence generation at refresh commit completion.
+    constraints: Keep the correction to the refresh commit seam, its glossary authority, and deterministic regressions; preserve evidence readability, replay, confinement, privacy reporting, and profile and project boundaries.
+    scope: One profile-local exclusive refresh lock held from before evidence publication through post-persist generation verification, contender failure reporting, and focused authority and CLI tests.
+  discovered: A projection-only generation check could still race because current.json and the projection are separate atomic publications. The existing exclusive-file pattern closes the actual authorized-refresh boundary only when held across both publications.
+  verified: The deterministic interleaving regression advanced the winner evidence pointer while its refresh lock was held, then proved the contender returned exit 1 with the consented recovery command, left the prior projection bytes unchanged, and the winner finished with matching current evidence and projection generations. Seven focused files passed 339 tests. Typecheck and build passed. A compiled-CLI refresh and candidate-list smoke returned 0 with one matching generation. Capability-contract validation and compact checks passed.
+  next: Keep task hwuksgjxwu in_progress until Prime records the independent re-evaluation.
+  publication_order: 171

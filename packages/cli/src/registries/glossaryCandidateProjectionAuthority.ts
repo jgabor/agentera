@@ -66,6 +66,8 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   const projection = mapping(mining?.candidate_projection);
   const refreshProduction = mapping(projection?.refresh_production);
   const refreshProjection = mapping(refreshProduction?.projection);
+  const refreshConcurrency = mapping(refreshProduction?.concurrency);
+  const refreshContender = mapping(refreshConcurrency?.contender);
   const partialFailure = mapping(refreshProduction?.partial_failure);
   const safeReplacement = mapping(refreshProduction?.safe_replacement);
   const selection = mapping(projection?.selection);
@@ -105,6 +107,23 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   ) {
     errors.push(
       "personal_mining_authority refresh production must require one projection bound to the exact evidence generation and mining policy",
+    );
+  }
+  if (
+    refreshConcurrency?.serialization !== "profile_local_exclusive_refresh_commit" ||
+    refreshConcurrency?.lock_lifetime !==
+      "before_evidence_publication_through_projection_binding_verification" ||
+    refreshContender?.refresh_outcome !== "failure" ||
+    refreshContender?.process_exit !== "nonzero" ||
+    refreshContender?.local_history_read !== false ||
+    refreshContender?.tier_write !== false ||
+    refreshContender?.projection_status !== "failed" ||
+    refreshContender?.projection_write !== false ||
+    refreshContender?.evidence_status !== "current_generation_remains_readable" ||
+    refreshContender?.recovery !== "npx -y agentera@next report refresh --consent local-history"
+  ) {
+    errors.push(
+      "personal_mining_authority refresh production must serialize evidence and projection commit and fail contenders without writes",
     );
   }
   if (
