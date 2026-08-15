@@ -544,10 +544,25 @@ personal_mining_authority:
         outcomes: ordinary_permissions_and_io
         same_user_path_manipulation: outside_agentera_threat_model
         symlink_confinement: not_claimed
+        malformed_candidate_projection_replacement_exception:
+          scope: malformed_candidate_projection_replacement_only
+          authorization: explicit_consented_refresh_only
+          precondition: existing_owned_regular_file_is_malformed
+          target: exact_configured_candidate_projection_file
+          inspection: lstat_exact_target_without_following_symlinks
+          required_type: regular_file
+          reject: [symlink, non_regular_file, configured_path_mismatch, path_escape]
+          operation: atomic_regular_file_replacement
+          outside_scope: configured_path_use_as_provided
         rule: >-
           Agentera uses the configured profile path as provided. The host
           filesystem owns permissions, symlink behavior, and same-user path
-          manipulation. Agentera does not add realpath or no-follow confinement.
+          manipulation. Agentera does not add realpath or no-follow confinement
+          except when an explicit consented refresh replaces its malformed
+          candidate projection. That operation inspects only the exact configured
+          target without following a final symlink, requires a regular file, and
+          rejects symlinks, non-files, target mismatches, and path escapes. All
+          other operations keep the configured-path behavior above.
       rule: >-
         Agentera deliberately selects only the configured user profile path for
         mining records. It never selects .agentera, TODO.md, progress, the
@@ -740,6 +755,7 @@ personal_mining_authority:
         precondition: existing_owned_regular_file_is_malformed
         operation: atomic_regular_file_replacement
         reject: [symlink, non_regular_file, configured_path_mismatch, path_escape]
+        filesystem_exception: personal_mining_authority.privacy.storage.filesystem.malformed_candidate_projection_replacement_exception
         replaceable_state: [candidate_projection]
         preserved_state:
           - current_evidence_generation

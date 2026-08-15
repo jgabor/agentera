@@ -1,0 +1,16 @@
+id: mygrwmxubk
+artifact: progress
+record:
+  timestamp: 2026-08-15 16:24
+  type: fix
+  phase: build
+  what: Resolved the contradictory glossary filesystem authority with a replacement-only no-follow exception for malformed candidate projections.
+  context:
+    intent: Correct the accepted audit finding without adding refresh runtime wiring.
+    constraints: Preserve general configured-path behavior outside malformed candidate-projection replacement during explicit consented refresh.
+    unknowns: "Resolved: the governing filesystem authority now requires exact-target no-follow regular-file inspection and rejects symlinks and path escapes for this replacement only."
+    scope: Glossary authority YAML, its validator, paired mutation tests, and governed correction state only.
+  discovered: The prior projection-local retry rule could not prove its boundary because the governing privacy storage rule disclaimed all no-follow confinement.
+  verified: corepack pnpm -C packages/cli exec vp test run test/registries/glossaryMiningAuthority.test.ts passed 1 file and 98 tests; pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli build passed; local vocabularyAuthority and capability-contract validation passed.
+  next: Re-evaluate task wyenmnxxgf and leave it in_progress until Prime records the evaluator verdict.
+  publication_order: 169

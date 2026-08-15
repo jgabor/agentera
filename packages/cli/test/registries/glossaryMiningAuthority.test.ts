@@ -568,6 +568,38 @@ describe("personal glossary mining authority", () => {
       "personal_mining_authority refresh replacement must target only the exact owned regular projection and preserve evidence, review, profile, and project state",
     ],
     [
+      "malformed projection filesystem exception removal",
+      (authority: Record<string, any>) => {
+        delete authority.personal_mining_authority.privacy.storage.filesystem
+          .malformed_candidate_projection_replacement_exception;
+      },
+      "personal_mining_authority filesystem exception must confine malformed projection replacement to the exact configured regular file with no-follow inspection",
+    ],
+    [
+      "malformed projection exact configured target",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.privacy.storage.filesystem.malformed_candidate_projection_replacement_exception.target =
+          "resolved_candidate_projection_file";
+      },
+      "personal_mining_authority filesystem exception must confine malformed projection replacement to the exact configured regular file with no-follow inspection",
+    ],
+    [
+      "malformed projection no-follow inspection",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.privacy.storage.filesystem.malformed_candidate_projection_replacement_exception.inspection =
+          "stat_following_symlinks";
+      },
+      "personal_mining_authority filesystem exception must confine malformed projection replacement to the exact configured regular file with no-follow inspection",
+    ],
+    [
+      "malformed projection escape rejection",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.privacy.storage.filesystem.malformed_candidate_projection_replacement_exception.reject =
+          ["non_regular_file"];
+      },
+      "personal_mining_authority filesystem exception must confine malformed projection replacement to the exact configured regular file with no-follow inspection",
+    ],
+    [
       "fixed-key private mining summary",
       (authority: Record<string, any>) => {
         authority.personal_mining_authority.candidate_projection.mining_summary.forbidden_content =

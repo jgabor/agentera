@@ -89,6 +89,9 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   const privacy = mapping(mining?.privacy);
   const contentExclusion = mapping(privacy?.content_exclusion);
   const storageFilesystem = mapping(mapping(privacy?.storage)?.filesystem);
+  const malformedProjectionReplacementException = mapping(
+    storageFilesystem?.malformed_candidate_projection_replacement_exception,
+  );
   const errors: string[] = [];
   if (
     refreshProduction?.status !== "contract_only_pending_runtime_wiring" ||
@@ -125,6 +128,8 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
       "configured_path_mismatch",
       "path_escape",
     ]) ||
+    safeReplacement?.filesystem_exception !==
+      "personal_mining_authority.privacy.storage.filesystem.malformed_candidate_projection_replacement_exception" ||
     !sameStrings(safeReplacement?.replaceable_state, ["candidate_projection"]) ||
     !sameStrings(safeReplacement?.preserved_state, [
       "current_evidence_generation",
@@ -136,6 +141,30 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   ) {
     errors.push(
       "personal_mining_authority refresh replacement must target only the exact owned regular projection and preserve evidence, review, profile, and project state",
+    );
+  }
+  if (
+    malformedProjectionReplacementException?.scope !==
+      "malformed_candidate_projection_replacement_only" ||
+    malformedProjectionReplacementException?.authorization !== "explicit_consented_refresh_only" ||
+    malformedProjectionReplacementException?.precondition !==
+      "existing_owned_regular_file_is_malformed" ||
+    malformedProjectionReplacementException?.target !==
+      "exact_configured_candidate_projection_file" ||
+    malformedProjectionReplacementException?.inspection !==
+      "lstat_exact_target_without_following_symlinks" ||
+    malformedProjectionReplacementException?.required_type !== "regular_file" ||
+    !sameStrings(malformedProjectionReplacementException?.reject, [
+      "symlink",
+      "non_regular_file",
+      "configured_path_mismatch",
+      "path_escape",
+    ]) ||
+    malformedProjectionReplacementException?.operation !== "atomic_regular_file_replacement" ||
+    malformedProjectionReplacementException?.outside_scope !== "configured_path_use_as_provided"
+  ) {
+    errors.push(
+      "personal_mining_authority filesystem exception must confine malformed projection replacement to the exact configured regular file with no-follow inspection",
     );
   }
   if (
