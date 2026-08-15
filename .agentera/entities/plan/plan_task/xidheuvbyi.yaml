@@ -5,19 +5,19 @@ record:
   depends_on:
     - gfpcbfrnfk
     - ndafvzczzu
-  status: pending
+  status: complete
   acceptance:
     - GIVEN representative v1, mixed, v2, v3, symlink, and interrupted fixtures WHEN focused verification runs THEN each behavior has proportional passing and failing evidence.
     - GIVEN the built and packed v3 CLI WHEN package verification runs THEN no v1 support surface ships and fresh reset behavior matches source behavior.
     - GIVEN the breaking contract WHEN user documentation and release notes are read THEN v1 is clearly unsupported, reset is explicitly destructive, v2 migration remains supported, and suite metadata stays within 3.0.0.
   plan: gornhwivrn
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: UPGRADE.md incorrectly says preview returns an apply command; release-metadata and verify:release remain pending until substantive commit establishes governed gitRef. Audit ses_ff84adc98ffe9te5s4UdEspAXP.
     provenance:
-      attempt_id: audit-xidheuvbyi-1
+      attempt_id: audit-xidheuvbyi-2
       source: audit ses_ff84adc98ffe9te5s4UdEspAXP
-      recorded_at: 2026-08-16 01:18
+      recorded_at: 2026-08-16 01:58
       writer_command: agentera state plan record-evaluation
