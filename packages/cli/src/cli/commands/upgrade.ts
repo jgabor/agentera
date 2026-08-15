@@ -17,7 +17,7 @@ import {
 import { detectStateMode } from "../../state/stateMode.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
-import { authorizeProductV1Reset, previewProductV1Reset } from "../../upgrade/productV1Reset.js";
+import { applyProductV1Reset, previewProductV1Reset } from "../../upgrade/productV1Reset.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type UpgradeDependencies = {
@@ -104,7 +104,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   if (args.productV1Reset) {
     const options = { project: args.project, installRoot: args.installRoot, home: args.home };
     const result = args.yes
-      ? authorizeProductV1Reset(options, args.authorization ?? "")
+      ? applyProductV1Reset(options, args.authorization ?? "")
       : previewProductV1Reset(options);
     if (args.format === "json") out(JSON.stringify(result, null, 2) + "\n");
     else if ("deletions" in result) {
@@ -119,7 +119,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
       for (const item of result.recreations) for (const target of item.targets) lines.push(`  ${item.id}: ${target.declared} under ${item.root}`);
       lines.push("Irreversible loss:", ...result.irreversible_loss.map((loss) => `  ${loss}`));
       out(lines.join("\n") + "\n");
-    } else out(`Product-v1 reset scope authorized: ${result.authorization}\nNo effects were performed.\n`);
+    } else out(`Product-v1 reset complete: ${result.authorization}\nFresh v3 state initialized.\n`);
     return 0;
   }
 

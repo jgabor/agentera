@@ -4,9 +4,19 @@ record:
   name: Reset all scoped Agentera state and initialize fresh v3
   depends_on:
     - sogipwntmd
-  status: pending
+  status: complete
   acceptance:
     - GIVEN approved v1 reset with coexisting legacy or current state WHEN apply completes THEN all Agentera project, TODO, profile, installation, and runtime state in scope is removed with no retained v1 backup.
     - GIVEN deletion completes WHEN initialization runs THEN the result is observably equivalent to a separate canonical fresh-v3 initialization.
     - GIVEN interruption at any reset stage WHEN the same approved operation is retried THEN it converges to one valid fresh-v3 state without touching unrelated paths.
   plan: gornhwivrn
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Reset failed to remove exact TOML section with trailing comment, trusted stale journal scope on retry, and could not recover truncated non-atomic journal. Audit ses_ff8c4fe56ffecZH25QngEwyEEL.
+    provenance:
+      attempt_id: audit-gfpcbfrnfk-2
+      source: audit ses_ff8c4fe56ffecZH25QngEwyEEL
+      recorded_at: 2026-08-16 00:05
+      writer_command: agentera state plan record-evaluation

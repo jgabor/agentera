@@ -1,0 +1,15 @@
+id: bjbvjgaxzq
+artifact: progress
+record:
+  timestamp: 2026-08-16 00:02
+  type: fix
+  phase: build
+  what: Published shared TOML selector edits through same-directory staging and atomic rename while preserving the original file mode.
+  context:
+    intent: Resolve the remaining accepted selector-publication finding from audit ses_ff8c4fe56ffecZH25QngEwyEEL.
+    constraints: Keep reset scope and semantics unchanged; preserve adjacent shared-file content and current uncommitted audit state.
+    scope: Plan gornhwivrn task gfpcbfrnfk selector publication and its interruption regression only.
+  discovered: A deterministic reset-owned sidecar lets interruption leave the original shared file intact. Retry removes that sidecar before validation, and successful completion removes any remaining selector staging before the reset journal.
+  verified: "Focused product-v1 EOL test: 1 file and 11 tests passed. Typecheck and build passed. Built-local isolated git-project reset passed with adjacent TOML intact, mode 0640 preserved, and no selector staging or journal remaining. Full source: 249 files passed, 4105 tests passed, 1 skipped. Package owner: 3 files and 13 tests passed. Compact and git diff --check passed."
+  next: Re-audit the accepted selector-publication finding; do not change task or plan status as part of this correction.
+  publication_order: 182

@@ -468,6 +468,8 @@ records:
           reason: Imports constructor-closure state modules for atomic writes, but does not construct command guidance.
         - path: packages/cli/src/upgrade/appContentRefresh.ts
           reason: Imports constructor-closure upgrade modules for app refresh, but does not construct command guidance.
+        - path: packages/cli/src/upgrade/productV1Reset.ts
+          reason: Applies the bounded reset and canonical initializers, but does not construct command guidance.
         - path: packages/cli/src/upgrade/installedHooksRetirement.ts
           reason: Imports constructor-closure upgrade modules for retired-hook handling, but does not construct command guidance.
         - path: packages/cli/src/upgrade/legacyAgentCleanup.ts

@@ -1,0 +1,15 @@
+id: nnwniqxfvh
+artifact: progress
+record:
+  timestamp: 2026-08-15 22:53
+  type: feat
+  phase: build
+  what: Implemented the approved product-v1 reset apply path with exact shared-file selector removal, scoped state deletion, canonical fresh-v3 installation, and restart convergence.
+  context:
+    intent: Reset all approved Agentera project, TODO, profile, installation, and runtime state, then produce canonical fresh-v3 state without backup or broad deletion.
+    constraints: Preserve v2-to-v3 behavior, current .v1 schemas, unrelated paths, and content outside exact reviewed selectors. Use isolated fixtures only.
+    scope: Plan gornhwivrn task gfpcbfrnfk only.
+  discovered: A reset journal inside the project root is required to retry the same authorization after earlier effects remove the original v1 evidence. The journal is removed after successful initialization.
+  verified: "Focused reset and authority tests: 13 passed. Typecheck passed. Build passed. Built-local isolated reset smoke passed. Full source lane: 249 files passed, 4101 tests passed, 1 skipped. Package owner: 3 files and 13 tests passed. git diff --check passed."
+  next: Execute task ndafvzczzu, Retire v1 compatibility and preserve unrelated contracts.
+  publication_order: 180

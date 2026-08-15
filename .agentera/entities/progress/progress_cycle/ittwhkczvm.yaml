@@ -1,0 +1,15 @@
+id: ittwhkczvm
+artifact: progress
+record:
+  timestamp: 2026-08-15 23:25
+  type: fix
+  phase: build
+  what: Corrected the audited product-v1 reset boundaries for commented TOML sections, retry target validation, and atomic journal recovery.
+  context:
+    intent: Resolve only the reproduced destructive-boundary defects from audit ses_ff8c4fe56ffecZH25QngEwyEEL.
+    constraints: Keep canonical fresh-v3 initialization and selector-granular scope; preserve unrelated content; do not retire compatibility or change task status.
+    scope: Exact TOML section identity, atomic reset journal publication and recovery, and snapshot validation before retry effects.
+  discovered: Retry safety requires a durable stage plus authorization-bound original and selector-result hashes. Prepared retries require exact snapshots, deleting retries allow only unchanged approved subsets, and initialization retries require completed deletions.
+  verified: "Focused destructive-boundary and authority tests: 17 passed. Typecheck passed. Build passed. Two built-local isolated repros passed. Full source lane: 249 files passed, 4105 tests passed, 1 skipped. Package owner: 3 files and 13 tests passed. Compact and git diff --check passed."
+  next: Re-audit plan gornhwivrn task gfpcbfrnfk against audit ses_ff8c4fe56ffecZH25QngEwyEEL; do not advance task status before a passing evaluation.
+  publication_order: 181
