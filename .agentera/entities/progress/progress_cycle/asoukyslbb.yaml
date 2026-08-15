@@ -1,0 +1,15 @@
+id: asoukyslbb
+artifact: progress
+record:
+  timestamp: 2026-08-15 21:37
+  type: fix
+  phase: build
+  what: Closed the product-v1 reset activation, package-publication, scalar-classification, and repository-native retirement authorities after audit failure.
+  context:
+    intent: Resolve only audit ses_ff92eef44ffe2k6HQMEwqOsL24 authority-closure blockers and reverify the original gate.
+    constraints: No reset preview/apply, compatibility retirement, task status change, commit, amend, or push.
+    scope: Activation tuple and census authority, package selector classification, retirement edge inventory, and gate verification.
+  discovered: The nine audited closure failures came from one missing canonical reference tuple, stale census pins, one unclassified package-registry selector, and an unrecorded lifecycle-authority edge. The full lane also exposed one stale package-publication digest assertion, which now follows the governed total.
+  verified: "pnpm -C packages/cli exec vp test run test/integration/runtimeBootstrapMatrix.test.ts test/runtime/retiredRuntimeSurfacePolicy.test.ts test/cli/activationConjunction.test.ts test/cli/repositoryNativeRetirement.test.ts: 4 files, 247 tests passed. pnpm -C packages/cli exec vp test run test/cli/productV1Eol.test.ts test/upgrade/productV1ResetAuthority.test.ts test/cli/freshPlanInitialization.test.ts test/upgrade/upgradeEntityCutover.test.ts: 4 files, 47 tests passed. pnpm -C packages/cli test: 249 files passed, 4096 tests passed, 1 skipped, zero failures. pnpm -C packages/cli run typecheck: passed. pnpm -C packages/cli build: passed. node packages/cli/dist/bin/agentera.js check validate retained-references --format json: pass, zero violations. Built-local fixture smoke: product-v1 command exited 1/product_v1_eol; help and version exited 0; fixture bytes unchanged."
+  next: Prime should reaudit task jsjdrbcrzf and retain task lifecycle ownership.
+  publication_order: 177

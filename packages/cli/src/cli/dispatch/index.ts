@@ -40,6 +40,7 @@ import {
   requestedMigrationFailureFormat,
   requiresCompletedEntityCutover,
 } from "../migrationRequired.js";
+import { enforceProductV1Eol } from "../productV1Eol.js";
 
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
@@ -87,6 +88,15 @@ export function main(argv: string[], io: Io = {}): number {
         recovery: `Run ${example}; no state was changed by the rejected command.`,
       },
     });
+  }
+
+  if (command !== "--version" && command !== "version") {
+    const failure = enforceProductV1Eol(
+      migrationProject(args),
+      requestedMigrationFailureFormat(args),
+      io,
+    );
+    if (failure !== null) return failure;
   }
 
   // Retained-reference validation audits package source, not project state. It

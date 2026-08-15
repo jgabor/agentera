@@ -4,9 +4,19 @@ record:
   name: Gate v3 execution on product-v1 evidence
   depends_on:
     - hnuteafsqb
-  status: pending
+  status: complete
   acceptance:
     - GIVEN v1 evidence WHEN an ordinary stateful or read-only v3 command runs THEN it reports v1 EOL and the reset workflow without changing bytes.
     - GIVEN v1 evidence WHEN help or version is requested THEN the command remains available without state mutation.
     - GIVEN no v1 evidence WHEN v2 migration or current v3 startup runs THEN existing behavior is unchanged.
   plan: gornhwivrn
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Source lane has nine authority-closure failures: activation census/manifest, bootstrap scalar classification, and repository-native ownership edge. Audit ses_ff92eef44ffe2k6HQMEwqOsL24."
+    provenance:
+      attempt_id: audit-jsjdrbcrzf-2
+      source: audit ses_ff92eef44ffe2k6HQMEwqOsL24
+      recorded_at: 2026-08-15 21:41
+      writer_command: agentera state plan record-evaluation

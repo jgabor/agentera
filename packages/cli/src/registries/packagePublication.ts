@@ -70,12 +70,12 @@ export const ACTIVATION_CENSUS_AUTHORITY: Readonly<{
     cli: { count: 27, sha256: "986a637f5c11c57ab7a897a01bd291d0811846e5339c3831c715932cf9659ad4" },
     capability: { count: 12, sha256: "007e1157a892fec54182b1803aeaa442cf8e2e332e6a055c3bd020e2b0731867" },
     runtime: { count: 81, sha256: "03fe600a3a27f05daf0d1b59c16b00bedc354a13c70ea60be0b457175fdf743c" },
-    reference: { count: 25, sha256: "2094946cd6e189c6ab3db16dd0725596cec759abcea88d8335b05215b65ccfc2" },
+    reference: { count: 26, sha256: "aa1ad513d89b66c9133a8572cef2dce760e76d6ee39d2ffa2d4e312578dcc847" },
     state: { count: 38, sha256: "7ab0dd6ef1b1b1ce66bd9ea94d1de3d542528233e928a44102e289bf12416681" },
     package: { count: 67, sha256: "d73cd86fed39057cf9ae73e462a59e842372392b1e88846f2b220378a2ff75cc" },
     bootstrap: { count: 34, sha256: "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e" },
   },
-  total: { count: 284, sha256: "3f30b26839aec47639f2197c9efda5caf2a73d5afca9fb38ff9a341e18a72b98" },
+  total: { count: 285, sha256: "042700a26b34afba57b60eaf4a4529d9e02ce39d8574e6883dfb892eebc64fd5" },
 });
 
 /** Each dimension names the production contract it observes independently. */

@@ -1,0 +1,15 @@
+id: nlumjgfuok
+artifact: progress
+record:
+  timestamp: 2026-08-15 21:05
+  type: feat
+  phase: build
+  what: Gated ordinary v3 execution on authoritative product-v1 project and installation evidence while preserving help, version, v2 migration, and current v3 startup.
+  context:
+    intent: Implement plan gornhwivrn task jsjdrbcrzf only.
+    constraints: No reset preview/apply, lifecycle status change, commit, push, profile refresh, or unrelated compatibility deletion.
+    scope: CLI execution gate, product-v1 evidence detection, and focused regression tests.
+  discovered: "The source lane still has authority-census failures caused by the task-1 product-v1 reset authority: the focused rerun reports 9 failures across activation census, runtime bootstrap policy, and repository-native retirement inventory."
+  verified: "pnpm -C packages/cli exec vp test run test/cli/productV1Eol.test.ts test/upgrade/productV1ResetAuthority.test.ts test/cli/freshPlanInitialization.test.ts test/upgrade/upgradeEntityCutover.test.ts: 4 files, 47 tests passed. pnpm -C packages/cli exec vp test run test/cli/productV1Eol.test.ts test/cli/validate.test.ts: 2 files, 40 tests passed. pnpm -C packages/cli run typecheck: passed. pnpm -C packages/cli build: passed. Built-CLI fixture probe: blocked status 1/product_v1_eol, help 0, version 0, bytesUnchanged true. pnpm -C packages/cli test: failed; 4075 passed and 21 failed before the source-root cache correction. Focused rerun of the remaining affected suites: 238 passed, 9 failed on the existing product-v1 authority inventory/census."
+  next: Prime should audit task jsjdrbcrzf and keep task lifecycle ownership; reconcile the existing task-1 authority census failures in the appropriate scope before relying on the full source lane.
+  publication_order: 176

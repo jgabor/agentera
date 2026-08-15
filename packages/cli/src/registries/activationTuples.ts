@@ -96,6 +96,15 @@ const addedTuples: ActivationCanonicalTuple[] = [
   { class: "package", surface_id: "generated:build-source-identity", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: ".agentera-build-source.json", semantic_selector_if_any: JSON.stringify({ path: ".agentera-build-source.json", selector: null, format: "json", classification: "active", reason: "Build-generated source identity binds constructed dist and bundle output to one Git commit, tree, and exact working-tree digest; no source copy exists." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
   {
     class: "reference",
+    surface_id: "references/adapters/product-v1-reset.yaml",
+    owner_path: "packages/cli/src/upgrade/productV1ResetAuthority.ts",
+    owner_symbol_or_selector: "loadProductV1ResetAuthority",
+    owner_selector: "references/adapters/product-v1-reset.yaml",
+    semantic_selector_if_any: null,
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
+  },
+  {
+    class: "reference",
     surface_id: "references/analysis/personal-glossary-evaluation-authority.yaml",
     owner_path: "packages/cli/src/eval/glossaryEvaluation.ts",
     owner_symbol_or_selector: "loadGlossaryEvaluationAuthority",
@@ -137,12 +146,12 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
     cli: { count: 27, sha256: "9d0db6cafe592da30ea3469c91dc514bdd1b3b22e8229a0519e680cbcb01c2fa" },
     capability: { count: 12, sha256: "892e6e5e2a57b41064bc44fa2946453225f1b1195aff77aad05365fd0a1071c2" },
     runtime: { count: 81, sha256: "99b2abff3ebff889b54b1781c563ab4b32609a479c4e90d6aad854f48fba7edc" },
-    reference: { count: 25, sha256: "2a40b8a8585933417a6e66a350c9ad68050288600cdac1e7f44b914e7022565c" },
+    reference: { count: 26, sha256: "0daf0d131217064bb66d667be2b88c81bf928369fac321bce8023c9039d9ddfe" },
     state: { count: 38, sha256: "697de8dcd13ac521124c35058ba222aa5cb6cae546f00bb54652ceaca4b662aa" },
     package: { count: 67, sha256: "5dbe325af5ffb29a1ea50534070d08fcff647d4d9ef5654b4ce03d76eeaa8adb" },
     bootstrap: { count: 34, sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc" },
   },
-  total: { count: 284, sha256: "6b0d109f9d833598dcd1ec5b21cbc57e80ee8f21a0e5b61ca8aa420c6d32eb60" },
+  total: { count: 285, sha256: "3be47d6d1928df8b7f16d494aaa57939404d690b35ef81254f2c62506fd5f984" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string { return JSON.stringify(value); }
 export function digestCanonicalTuples(values: readonly ActivationCanonicalTuple[]): string {
