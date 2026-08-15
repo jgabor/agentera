@@ -1,0 +1,14 @@
+id: pjntxldsgr
+artifact: plan
+record:
+  name: Consolidate repeated scenario execution
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the prime-boundary scenarios WHEN their assertions run THEN every distinct announced, unannounced, bundled, and source-checkout outcome remains covered.
+    - GIVEN equivalent served Build instructions WHEN source and served parity is checked THEN one served result supports all equivalent assertions unless repeatability is an explicit invariant.
+    - GIVEN corrupt or missing startup evidence WHEN degradation is checked THEN each distinct input condition is evaluated once and all existing reason and recovery assertions remain.
+    - GIVEN the affected tests WHEN they run THEN diagnostics remain specific enough to identify the failing scenario.
+    - GIVEN test proportionality WHEN scenarios are counted THEN one execution exists per distinct input, with extras only for a named isolation invariant.
+  plan: jslzlbvbjz

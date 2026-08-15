@@ -1,0 +1,15 @@
+id: gonxotyinh
+artifact: progress
+record:
+  timestamp: 2026-08-15 18:07
+  type: test
+  phase: build
+  what: Consolidated repeated source-test scenarios without removing distinct prime-boundary, served Build parity, or startup degradation assertions.
+  context:
+    intent: Run each distinct test input once while preserving all assertions and scenario diagnostics.
+    constraints: Test-only change; preserve production behavior, dependencies, and explicit semantic fan-out only.
+    unknowns: "Resolved: no current repeatability or cross-call isolation invariant requires duplicate execution."
+    scope: Three affected CLI source-test files.
+  verified: "corepack pnpm -C packages/cli exec vp test run --config vite.config.ts test/cli/primeMajorBoundaryGate.test.ts test/state/startupAnalysisBenchmark.test.ts test/state/write/capabilityProse.test.ts: 3 files passed, 25 tests passed."
+  next: Continue plan jslzlbvbjz with the remaining pending task selected by Orchestrate.
+  publication_order: 170

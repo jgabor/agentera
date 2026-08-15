@@ -1,0 +1,35 @@
+id: jslzlbvbjz
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-15
+    status: open
+    reviewed: 2026-08-15
+    critic_issues: 6 found, 6 addressed, 0 dismissed
+    title: "Plan: Simplify source tests without weakening coverage"
+  what: Remove redundant execution, misplaced coverage, brittle fixture construction, and misleading assertions from the reviewed test sample.
+  why: Make source verification cheaper and easier to maintain while preserving every current semantic invariant.
+  constraints: Preserve production behavior, dependencies, migration and ownership boundaries, fail-closed behavior, and authoritative source verification. Treat timing as diagnostic only. Do not change version metadata, publish, or push.
+  overall_acceptance: GIVEN the simplifications are complete WHEN targeted tests and the source owner gate run THEN all meaningful invariants remain covered, verification passes, and repeated or brittle test machinery is reduced without unrelated changes.
+  scope:
+    included:
+      - Repeated prime-boundary, served-instruction, and startup-analysis scenarios
+      - Fixture-helper and compaction ownership
+      - Monolith diagnostics and repository-retirement filesystem hygiene
+      - Semantic-evaluation fixture construction
+      - Bounded profile-signal access proof
+    excluded:
+      - Production behavior changes
+      - Unrelated test cleanup
+      - Package, capacity, performance, release, publication, and push workflows
+      - Version metadata changes
+    deferred:
+      []
+  design: Consolidate equivalent scenarios, keep each invariant with its authoritative owner, represent fixtures as structured data, prove bounded access through observable behavior, and finish with one source-owned verification and state synchronization pass.
+  unknowns:
+    - question: Do any repeated prime or served-instruction invocations intentionally prove repeatability or cross-call isolation?
+      affects_task: 1
+      resolve_by: Review the named test contracts before consolidation and retain repeated execution only where it protects an explicit isolation invariant.
+  surprises:
+    []

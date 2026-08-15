@@ -1,0 +1,17 @@
+id: sbchtohfyl
+artifact: plan
+record:
+  name: Verify outcomes and synchronize state
+  depends_on:
+    - pjntxldsgr
+    - lawzauospk
+    - ysvjypbeyr
+    - ijkabqqhqq
+  status: pending
+  acceptance:
+    - GIVEN Tasks 1 through 4 are complete WHEN affected tests run THEN every changed suite passes.
+    - GIVEN targeted checks pass WHEN the authoritative source gate runs THEN `pnpm -C packages/cli test:source` passes without invoking excluded owners.
+    - GIVEN no production source changes WHEN verification completes THEN standalone typecheck is omitted; if production source changed, its required typecheck passes.
+    - GIVEN the sampled timing command WHEN it is repeated once THEN the before and after results are reported as diagnostic evidence rather than a gate.
+    - GIVEN verification succeeds WHEN state is synchronized THEN only this plan and its tasks are updated through typed writers, with progress or TODO changed only when its writer contract specifically requires it.
+  plan: jslzlbvbjz

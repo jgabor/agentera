@@ -52,7 +52,10 @@ function documentedFullPlan(): string {
   return match![1];
 }
 
+let servedBuildInstructionsCache: string | undefined;
+
 function servedBuildInstructions(): string {
+  if (servedBuildInstructionsCache !== undefined) return servedBuildInstructionsCache;
   let output = "";
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-build-prime-"));
   const previous = process.cwd();
@@ -76,7 +79,8 @@ function servedBuildInstructions(): string {
       },
     );
     expect(rc, output).toBe(0);
-    return (JSON.parse(output) as Record<string, any>).capability_context.instructions as string;
+    servedBuildInstructionsCache = (JSON.parse(output) as Record<string, any>).capability_context.instructions as string;
+    return servedBuildInstructionsCache;
   } finally {
     process.chdir(previous);
     fs.rmSync(root, { recursive: true, force: true });

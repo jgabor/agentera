@@ -72,19 +72,13 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
     expect(fs.readFileSync(outPath, "utf8").endsWith("\n")).toBe(true);
   });
 
-  it("degrades gracefully on an unreadable corpus file", () => {
+  it("degrades with the projected reason and recovery for a corrupt legacy corpus", () => {
     const corpusPath = path.join(tmp, "bad.json");
     fs.writeFileSync(corpusPath, "not json{");
     const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
     expect(inter.total_records_read).toBe(0);
-    expect(inter.runtime_coverage[0].runtime).toBe("local-corpus");
-  });
-
-  it("degrades with contract-projected reason and recovery on a corrupt legacy corpus", () => {
-    const corpusPath = path.join(tmp, "bad.json");
-    fs.writeFileSync(corpusPath, "not json{");
-    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
     const cov = inter.runtime_coverage[0];
+    expect(cov.runtime).toBe("local-corpus");
     expect(cov.reason).toBe("unreadable_or_schema_divergent");
     expect(cov.recovery).toBeTruthy();
   });
@@ -105,7 +99,7 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
     expect(cov.recovery).toMatch(/do not/i);
   });
 
-  it("degrades with no_evidence reason and recovery when no corpus and no tiers exist", () => {
+  it("degrades with no_evidence and preserved recovery when no corpus or tiers exist", () => {
     const corpusPath = path.join(tmp, "never-existed.json");
     const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
     expect(inter.total_records_read).toBe(0);
@@ -113,12 +107,6 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
     expect(cov.runtime).toBe("local-corpus");
     expect(cov.reason).toBe("no_evidence");
     expect(cov.recovery).toBeTruthy();
-  });
-
-  it("preserves recovery guidance through boundedRuntimeStatus in the intermediate", () => {
-    const corpusPath = path.join(tmp, "missing.json");
-    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
-    const cov = inter.runtime_coverage[0];
     // The recovery field survives the boundedRuntimeStatus normalization.
     expect(typeof cov.recovery).toBe("string");
     expect(cov.recovery!.length).toBeGreaterThan(0);

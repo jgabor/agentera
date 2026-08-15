@@ -71,7 +71,7 @@ describe("prime major-boundary gate", () => {
       setSuccessorAnnouncedOverrideForTests(false);
     });
 
-    it("surfaces block reason and stays (pass)", () => {
+    it("stays and surfaces the block reason instead of upgrade", () => {
       const appHome = process.env.AGENTERA_HOME as string;
       managedApp(appHome, "2.7.0");
       const project = path.join(tmp, "project");
@@ -84,29 +84,7 @@ describe("prime major-boundary gate", () => {
       expect(state.project_integration).not.toHaveProperty("pending_runtime");
       expect(state.project_integration.major_boundary_block).toBeTruthy();
       expect(state.project_integration.major_boundary_block).toContain("v3 successor line is not announced yet");
-    });
-
-    it("does not recommend upgrade (fail)", () => {
-      const appHome = process.env.AGENTERA_HOME as string;
-      managedApp(appHome, "2.7.0");
-      const project = path.join(tmp, "project-fail");
-      fs.mkdirSync(project, { recursive: true });
-      process.chdir(project);
-
-      const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
-
       expect(state.project_integration.recommendation).not.toBe("upgrade");
-    });
-
-    it("next_action surfaces block reason, not Upgrade (pass)", () => {
-      const appHome = process.env.AGENTERA_HOME as string;
-      managedApp(appHome, "2.7.0");
-      const project = path.join(tmp, "project-na");
-      fs.mkdirSync(project, { recursive: true });
-      process.chdir(project);
-
-      const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
-
       const nextAction = state.next_action.recommended;
       expect(nextAction.object).toBe("Complete Agentera entity-state cutover");
       expect(nextAction.capability).toBe("status");
@@ -120,7 +98,7 @@ describe("prime major-boundary gate", () => {
       setSuccessorAnnouncedOverrideForTests(true);
     });
 
-    it("recommends upgrade as before (pass)", () => {
+    it("recommends upgrade without a block reason", () => {
       const appHome = process.env.AGENTERA_HOME as string;
       managedApp(appHome, "2.7.0");
       const project = path.join(tmp, "project-announced");
@@ -131,17 +109,6 @@ describe("prime major-boundary gate", () => {
 
       expect(state.project_integration.recommendation).toBe("upgrade");
       expect(state.project_integration.major_boundary_block).toBeFalsy();
-    });
-
-    it("next_action recommends upgrade (pass)", () => {
-      const appHome = process.env.AGENTERA_HOME as string;
-      managedApp(appHome, "2.7.0");
-      const project = path.join(tmp, "project-na-announced");
-      fs.mkdirSync(project, { recursive: true });
-      process.chdir(project);
-
-      const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
-
       const nextAction = state.next_action.recommended;
       expect(nextAction.object).toBe("Complete Agentera entity-state cutover");
       expect(nextAction.capability).toBe("status");
@@ -149,7 +116,7 @@ describe("prime major-boundary gate", () => {
   });
 
   describe("v3 self-contained npm bundle", () => {
-    it("does not surface a block reason (pass)", () => {
+    it("does not surface a block reason or await the successor announcement", () => {
       const bundle = path.join(tmp, "npx-bundle");
       npxBundle(bundle, "3.0.0-next.1");
       process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
@@ -161,26 +128,13 @@ describe("prime major-boundary gate", () => {
       const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
 
       expect(state.project_integration.major_boundary_block).toBeFalsy();
-    });
-
-    it("next_action does not surface a block reason (pass)", () => {
-      const bundle = path.join(tmp, "npx-bundle-na");
-      npxBundle(bundle, "3.0.0-next.1");
-      process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
-      const appHome = process.env.AGENTERA_HOME as string;
-      const project = path.join(tmp, "project-npx-na");
-      fs.mkdirSync(project, { recursive: true });
-      process.chdir(project);
-
-      const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
-
       const nextAction = state.next_action.recommended;
       expect(nextAction.object).not.toBe("Await v3 successor announcement");
     });
   });
 
   describe("source checkout", () => {
-    it("does not surface a block reason (pass)", () => {
+    it("does not surface a block reason", () => {
       const appHome = process.env.AGENTERA_HOME as string;
       const project = path.join(tmp, "project-source");
       fs.mkdirSync(project, { recursive: true });

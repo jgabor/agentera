@@ -1,0 +1,13 @@
+id: ysvjypbeyr
+artifact: plan
+record:
+  name: Make semantic fixtures structured
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN expected semantic facts WHEN a fixture is rendered THEN required and forbidden output, artifacts, tool calls, call counts, and write expectations come from one structured value.
+    - GIVEN special characters in expected values WHEN the fixture is rendered and parsed THEN they round-trip without formatting-sensitive replacement.
+    - GIVEN existing fact families WHEN evaluation runs THEN fact identifiers, outcomes, details, and first-failure ordering remain covered.
+    - GIVEN test proportionality WHEN cases are counted THEN each testable fact family has one passing and one failing case, with extras only for distinct ordering or serialization behavior.
+  plan: jslzlbvbjz
