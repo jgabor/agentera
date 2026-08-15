@@ -1,0 +1,29 @@
+id: qqfswlsdfa
+artifact: health
+record:
+  date: 2026-08-15
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: redundant test execution decreased while source verification and task evaluations remained current."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal closure for plan jslzlbvbjz passed. All 5 tasks have current PASS evaluations, delegated test artifacts changed since plan creation, the source gate passed 246 files and 4,059 tests with 1 skip, and the worktree was clean. This is not a codebase-wide audit.
+      findings:
+        []
+  trends:
+    improved: The diagnostic sample fell from 7.46s total and 4.38s execution to 5.35s total and 2.12s execution without becoming a timing gate.
+    degraded: None in this limited closure scope.
+    new_findings: None.
+    resolved: Duplicate execution, misplaced coverage, brittle semantic fixtures, and unsupported profile-access claims were corrected.
+    carried_forward: Decision and vision detail remain deferred; profile detail remains deferred and stale without refresh approval.
+  patterns:
+    - Build progress was followed by independent PASS evaluation before task completion.
+  appended_at: 2026-08-15T16:51:00.181Z
