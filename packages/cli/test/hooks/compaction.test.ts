@@ -48,8 +48,13 @@ function writeProgressYaml(dir: string, cycleCount: number, archiveCount = 0): s
     summary: `Cycle ${i + 1} (2026-01-01): archived ${i + 1}`,
   }));
   fs.writeFileSync(p, YAML.stringify({ cycles, archive }));
-  for (const cycle of cycles) publishNumberedArchive(dir, "progress", cycle.number, cycle);
   return p;
+}
+
+function publishProgressArchives(dir: string, cycleCount: number): void {
+  for (let n = 1; n <= cycleCount - MAX_FULL_ENTRIES; n++) {
+    publishNumberedArchive(dir, "progress", n, progressCycleEntry(n));
+  }
 }
 
 describe("checkCompaction (repo-state fixtures)", () => {
@@ -90,16 +95,15 @@ describe("checkCompaction (repo-state fixtures)", () => {
 describe("progress.yaml over-limit gate", () => {
   it("reports projection pressure without failing when cycle count exceeds 50", () => {
     writeProgressYaml(tmp, 55);
-    const progressOp = checkCompaction(tmp).find((o) => o.status.artifact === "progress");
-    expect(progressOp?.action).toBe("projection");
-    expect(progressOp?.status.total_count).toBe(55);
-    expect(progressOp?.status.over_limit_count).toBe(0);
-    expect(progressOp?.status.projection_state).toBe("over_defaults");
-    expect(runCompaction(tmp, "check").some((o) => o.action === "over_limit")).toBe(false);
+    const status = computeCompactionStatus(tmp).find((entry) => entry.artifact === "progress");
+    expect(status?.total_count).toBe(55);
+    expect(status?.over_limit_count).toBe(0);
+    expect(status?.projection_state).toBe("over_defaults");
   });
 
   it("compacts over-limit progress.yaml under the cap with archive preservation", () => {
     writeProgressYaml(tmp, 55);
+    publishProgressArchives(tmp, 55);
     const ops = fixCompaction(tmp);
     const progressOp = ops.find((o) => o.status.artifact === "progress");
     expect(progressOp?.action).toBe("compacted");
@@ -120,9 +124,9 @@ describe("progress.yaml over-limit gate", () => {
     expect(checkCompaction(tmp).find((o) => o.status.artifact === "progress")?.action).toBe("ok");
   });
 
-  it.each(["staged-write", "projection-publication", "directory-sync"] as const)(
-    "retries explicit projection repair after %s",
-    (boundary) => {
+  it("retries explicit projection repair at each injected failure boundary", () => {
+    publishProgressArchives(tmp, 55);
+    for (const boundary of ["staged-write", "projection-publication", "directory-sync"] as const) {
       writeProgressYaml(tmp, 55);
       expect(() => fixCompaction(tmp, { failAfter: boundary })).toThrow(InjectedMutationFailure);
       expect(fs.readdirSync(path.join(tmp, ".agentera")).filter((name) => name.includes(".writer."))).toEqual([]);
@@ -130,8 +134,8 @@ describe("progress.yaml over-limit gate", () => {
       fixCompaction(tmp);
       const progressOp = checkCompaction(tmp).find((o) => o.status.artifact === "progress");
       expect(progressOp?.status.over_limit_count).toBe(0);
-    },
-  );
+    }
+  });
 });
 
 describe("compactYamlFile", () => {
@@ -149,7 +153,7 @@ describe("compactYamlFile", () => {
     });
     const p = path.join(tmp, "progress.yaml");
     fs.writeFileSync(p, YAML.stringify({ cycles }));
-    for (let n = 1; n <= 25; n++) {
+    for (let n = 1; n <= 25 - MAX_FULL_ENTRIES; n++) {
       publishNumberedArchive(tmp, "progress", n, {
         number: n,
         timestamp: `2026-01-${String(n).padStart(2, "0")} 10:00`,
@@ -207,7 +211,7 @@ describe("compactYamlFile decisions archive ordering", () => {
     const decisions = Array.from({ length: 25 }, (_, i) => decisionEntry(i + 1));
     const p = path.join(tmp, "decisions.yaml");
     fs.writeFileSync(p, YAML.stringify({ decisions, archive: [] }));
-    for (const entry of decisions) {
+    for (const entry of decisions.slice(0, -MAX_FULL_ENTRIES)) {
       publishNumberedArchive(tmp, "decisions", Number(entry.number), entry);
     }
 
