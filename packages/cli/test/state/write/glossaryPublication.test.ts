@@ -26,7 +26,9 @@ function project(): string {
   return root;
 }
 
-function finding(root: string, term = "JsonValue", concept = "structured value"): TerminologyDriftFinding {
+function auditedProposal(root: string): TerminologyDriftFinding {
+  const term = "JsonValue";
+  const concept = "structured value";
   const file = `${concept.replaceAll(" ", "-")}.ts`;
   fs.writeFileSync(path.join(root, file), `export type ${term} = Legacy${term};\n`);
   return assessTerminologyDrift({
@@ -45,36 +47,30 @@ function finding(root: string, term = "JsonValue", concept = "structured value")
   })[0]!;
 }
 
-function terminologySet(
+function proposal(
   root: string,
-  canonical: string,
-  variant: string,
-  concept: string,
+  canonical = "JsonValue",
+  concept = "structured value",
+  variant = `Legacy${canonical}`,
 ): TerminologyDriftFinding {
-  const slug = concept.replaceAll(" ", "-");
-  const canonicalFile = `${slug}-canonical.ts`;
-  const canonicalExtraFile = `${slug}-canonical-extra.ts`;
-  const variantFile = `${slug}-variant.ts`;
-  fs.writeFileSync(path.join(root, canonicalFile), `export type ${canonical} = string;\n`);
-  fs.writeFileSync(path.join(root, canonicalExtraFile), `export type CanonicalAlias = ${canonical};\n`);
-  fs.writeFileSync(path.join(root, variantFile), `export type ${variant} = string;\n`);
-  return assessTerminologyDrift({
-    projectRoot: root,
-    concepts: [{
-      concept,
-      confidence: 84,
-      severity: "warning",
-      terms: [
-        { term: canonical, evidence: [
-          { source_path: canonicalFile, line: 1 },
-          { source_path: canonicalExtraFile, line: 1 },
-        ] },
-        { term: variant, evidence: [{ source_path: variantFile, line: 1 }] },
-      ],
-    }],
-    deliberateDecisionConcepts: new Set(),
-    trackedIssueConcepts: new Set(),
-  })[0]!;
+  const sourcePath = `${concept.replaceAll(" ", "-")}.ts`;
+  const lines = [`export type ${canonical} = ${variant};`, `export type CanonicalAlias = ${canonical};`];
+  fs.writeFileSync(path.join(root, sourcePath), `${lines.join("\n")}\n`);
+  const evidence = (line: number) => ({
+    source_path: sourcePath,
+    line,
+    source_record_sha256: crypto.createHash("sha256").update(lines[line - 1]!).digest("hex"),
+  });
+  const value: Omit<TerminologyDriftFinding, "proposal_digest"> = {
+    family: "terminology_drift",
+    concept,
+    proposed_canonical_term: canonical,
+    canonical_evidence: [evidence(1), evidence(2)],
+    variants: [{ term: variant, evidence: [evidence(1)] }],
+    severity: "warning",
+    confidence: 84,
+  };
+  return { ...value, proposal_digest: terminologyProposalDigest(value) };
 }
 
 function request(proposal: TerminologyDriftFinding, confirmedBy = "user"): Record<string, unknown> {
@@ -137,20 +133,20 @@ describe("typed project glossary publication", () => {
     expect(explained.guidance.join(" ")).toMatch(/confirmation.*user.*proposal digest/i);
   });
 
-  it("atomically publishes a separate immutable approval and shared-only entry", () => {
+  it("publishes genuine audit output as a separate immutable approval and shared-only entry", () => {
     const root = project();
-    const proposal = finding(root);
-    const result = run(root, request(proposal));
+    const audited = auditedProposal(root);
+    const result = run(root, request(audited));
 
     expect(result.rc, result.err).toBe(0);
     expect(result.json).toMatchObject({ artifact: "glossary", operation: { dry_run: false, idempotent_replay: false } });
     const document = glossary(root);
     expect(document).toMatchObject({ schema_version: "agentera.projectGlossary.v1" });
     expect(document.approvals).toEqual([{
-      proposal_digest: proposal.proposal_digest,
-      proposal,
+      proposal_digest: audited.proposal_digest,
+      proposal: audited,
       confirmation: {
-        proposal_digest: proposal.proposal_digest,
+        proposal_digest: audited.proposal_digest,
         confirmed_by: "user",
         confirmed_at: "2026-07-26T14:00:00Z",
       },
@@ -173,7 +169,7 @@ describe("typed project glossary publication", () => {
     const docsPath = path.join(root, ".agentera/docs.yaml");
     const docsBytes = "mapping:\n  - artifact: DESIGN.md\n    path: docs/design.md\ncoverage:\n  status: partial\n";
     fs.writeFileSync(docsPath, docsBytes);
-    expect(run(root, request(finding(root))).rc).toBe(0);
+    expect(run(root, request(proposal(root))).rc).toBe(0);
 
     const previousCwd = process.cwd();
     let out = "";
@@ -221,7 +217,7 @@ describe("typed project glossary publication", () => {
     }],
   ])("rejects %s before effects with recovery", (_label, mutate) => {
     const root = project();
-    const value: any = request(finding(root));
+    const value: any = request(proposal(root));
     mutate(value);
     const result = run(root, value);
     expect(result.rc).not.toBe(0);
@@ -248,7 +244,7 @@ describe("typed project glossary publication", () => {
     }],
   ])("rejects an Audit-inemittable %s even when self-digested", (_label, mutate) => {
     const root = project();
-    const value: any = request(finding(root));
+    const value: any = request(proposal(root));
     if (_label === "weaker canonical term") {
       fs.writeFileSync(path.join(root, "extra.ts"), "export type JsonValue = string;\n");
       const line = fs.readFileSync(path.join(root, "extra.ts"), "utf8").trimEnd();
@@ -267,8 +263,8 @@ describe("typed project glossary publication", () => {
 
   it.each(["stale", "missing", "outside"])("rejects %s source-line evidence before effects", (condition) => {
     const root = project();
-    const proposal: any = finding(root);
-    const source = path.join(root, proposal.canonical_evidence[0].source_path);
+    const value: any = proposal(root);
+    const source = path.join(root, value.canonical_evidence[0].source_path);
     if (condition === "stale") fs.writeFileSync(source, "export type JsonValue = Changed;\n");
     if (condition === "missing") fs.unlinkSync(source);
     if (condition === "outside") {
@@ -278,7 +274,7 @@ describe("typed project glossary publication", () => {
       fs.unlinkSync(source);
       fs.symlinkSync(path.join(outside, "terms.ts"), source);
     }
-    const result = run(root, request(proposal));
+    const result = run(root, request(value));
     expect(result.rc).not.toBe(0);
     expect(result.json?.error.recovery).toMatch(/rerun audit|restore/i);
     expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
@@ -286,10 +282,10 @@ describe("typed project glossary publication", () => {
 
   it("rejects malformed existing state and case-insensitive term conflicts without changing bytes", () => {
     const root = project();
-    expect(run(root, request(finding(root))).rc).toBe(0);
+    expect(run(root, request(proposal(root))).rc).toBe(0);
     const target = path.join(root, ".agentera/glossary.yaml");
     const before = fs.readFileSync(target, "utf8");
-    const conflicting = finding(root, "JSONVALUE", "different concept");
+    const conflicting = proposal(root, "JSONVALUE", "different concept");
     const conflict = run(root, request(conflicting));
     expect(conflict.rc).not.toBe(0);
     expect(conflict.json?.error.class).toBe("conflict");
@@ -308,11 +304,11 @@ describe("typed project glossary publication", () => {
     ["case-normalized variant", "RequestEnvelope", "legacyjsonvalue", "legacyjsonvalue"],
   ])("rejects cross-set %s before effects with both canonical sets in recovery", (_label, canonical, variant, collision) => {
     const root = project();
-    const first = request(terminologySet(root, "JsonValue", "LegacyJsonValue", "structured value"));
+    const first = request(proposal(root, "JsonValue", "structured value", "LegacyJsonValue"));
     expect(run(root, first).rc).toBe(0);
     const target = path.join(root, ".agentera/glossary.yaml");
     const before = fs.readFileSync(target, "utf8");
-    const second = request(terminologySet(root, canonical, variant, `second ${_label}`));
+    const second = request(proposal(root, canonical, `second ${_label}`, variant));
 
     const result = run(root, second);
     expect(result.rc).not.toBe(0);
@@ -327,11 +323,11 @@ describe("typed project glossary publication", () => {
 
   it("rejects a Greek final-sigma canonical collision before effects", () => {
     const root = project();
-    expect(run(root, request(terminologySet(root, "ΟΣ", "παλιό", "greek first"))).rc).toBe(0);
+    expect(run(root, request(proposal(root, "ΟΣ", "greek first", "παλιό"))).rc).toBe(0);
     const target = path.join(root, ".agentera/glossary.yaml");
     const before = fs.readFileSync(target, "utf8");
 
-    const result = run(root, request(terminologySet(root, "οσ", "νεότερο", "greek second")));
+    const result = run(root, request(proposal(root, "οσ", "greek second", "νεότερο")));
     expect(result.rc).not.toBe(0);
     expect(result.json?.error.class).toBe("conflict");
     expect(fs.readFileSync(target, "utf8")).toBe(before);
@@ -339,11 +335,11 @@ describe("typed project glossary publication", () => {
 
   it("rejects an equivalent canonical/variant identity at proposal validation", () => {
     const root = project();
-    const proposal = terminologySet(root, "ΟΣ", "παλιό", "equivalent Greek identity");
-    proposal.variants[0]!.term = "οσ";
-    proposal.proposal_digest = terminologyProposalDigest(proposal);
-    const value: any = request(proposal);
-    value.confirmation.proposal_digest = proposal.proposal_digest;
+    const valueProposal = proposal(root, "ΟΣ", "equivalent Greek identity", "παλιό");
+    valueProposal.variants[0]!.term = "οσ";
+    valueProposal.proposal_digest = terminologyProposalDigest(valueProposal);
+    const value: any = request(valueProposal);
+    value.confirmation.proposal_digest = valueProposal.proposal_digest;
 
     const result = run(root, value);
     expect(result.rc).not.toBe(0);
@@ -357,7 +353,7 @@ describe("typed project glossary publication", () => {
     ["changed matching entry", (document: any) => { document.entries[0].meaning = "changed"; }],
   ])("rejects malformed existing %s instead of repairing it", (_label, mutate) => {
     const root = project();
-    const first = request(finding(root));
+    const first = request(proposal(root));
     expect(run(root, first).rc).toBe(0);
     const target = path.join(root, ".agentera/glossary.yaml");
     const document = glossary(root);
@@ -373,8 +369,8 @@ describe("typed project glossary publication", () => {
 
   it("no-ops exact replay and preserves unrelated approvals and entries", () => {
     const root = project();
-    const first = request(finding(root));
-    const second = request(finding(root, "RequestEnvelope", "request envelope"));
+    const first = request(proposal(root));
+    const second = request(proposal(root, "RequestEnvelope", "request envelope"));
     expect(run(root, first).rc).toBe(0);
     const firstDocument = glossary(root);
     expect(run(root, second).rc).toBe(0);
@@ -390,7 +386,7 @@ describe("typed project glossary publication", () => {
 
   it("no-ops replay when request and persisted mapping keys are reordered", () => {
     const root = project();
-    const first = request(finding(root));
+    const first = request(proposal(root));
     expect(run(root, first).rc).toBe(0);
     const target = path.join(root, ".agentera/glossary.yaml");
     const reorderedDocument = reverseMappingKeys(glossary(root));
@@ -405,7 +401,7 @@ describe("typed project glossary publication", () => {
 
   it("validates and reports dry-run without writing", () => {
     const root = project();
-    const result = run(root, request(finding(root)), ["--dry-run"]);
+    const result = run(root, request(proposal(root)), ["--dry-run"]);
     expect(result.rc, result.err).toBe(0);
     expect(result.json?.operation).toMatchObject({ dry_run: true, changed: true });
     expect(result.json?.candidate).toMatchObject({ schema_version: "agentera.projectGlossary.v1" });
