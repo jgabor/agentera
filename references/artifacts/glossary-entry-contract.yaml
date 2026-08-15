@@ -719,7 +719,41 @@ personal_mining_authority:
        candidate_retrieval operation. It does not add project or public-state
        candidate reads, host classification, CLI admission, review-disposition
        writes, profile publication, project-glossary access, or project-state
-       effects.
+        effects.
+    refresh_production:
+      status: contract_only_pending_runtime_wiring
+      trigger: explicit_consented_evidence_refresh_success
+      projection:
+        count: exactly_one
+        generation_binding: exact_published_evidence_generation
+        policy_binding: exact_personal_mining_policy_version
+      partial_failure:
+        refresh_outcome: failure
+        process_exit: nonzero
+        evidence_status: published
+        projection_status: failed
+        tier_write_reporting: evidence_published_projection_not_written
+        current_generation: published_evidence_remains_current
+      safe_replacement:
+        authorization: explicit_consented_refresh_only
+        target: exact_configured_candidate_projection_file
+        precondition: existing_owned_regular_file_is_malformed
+        operation: atomic_regular_file_replacement
+        reject: [symlink, non_regular_file, configured_path_mismatch, path_escape]
+        replaceable_state: [candidate_projection]
+        preserved_state:
+          - current_evidence_generation
+          - review_records
+          - personal_profile
+          - project_state
+          - project_glossary
+      rule: >-
+        A successful consented evidence refresh requires one projection bound to
+        that exact published generation and mining policy. Projection failure is
+        a nonzero refresh result but does not roll back the published evidence.
+        A retry may replace only the exact configured owned regular projection
+        file; it rejects symlinks, non-files, path mismatches, and path escapes.
+        Runtime wiring is owned by the next implementation task.
     selection:
       candidates_max: 50
       project_ids_max_per_candidate: 100
@@ -742,7 +776,68 @@ personal_mining_authority:
         Each selection round prefers the represented source family with the
         fewest retained candidates, then the candidate whose represented project
         has the fewest retained candidates. A capped or uncovered family or
-        project reports degraded coverage with retained and dropped counts.
+         project reports degraded coverage with retained and dropped counts.
+    mining_summary:
+      schema_version: agentera.personalGlossaryMiningSummary.v1
+      location: report.mining_summary
+      family_fields: [candidate_count, abstention_count, abstentions_by_reason]
+      explicit_abstention_keys:
+        - attributed_quotation
+        - ambiguous_reference
+        - conflicting_meaning
+        - empty_meaning
+        - empty_term
+        - example_context
+        - hypothetical_definition
+        - malformed_span
+        - meaning_bound_exceeded
+        - negated_definition
+        - indirect_question
+        - future_definition
+        - project_only_scope
+        - question_definition
+        - retracted_definition
+        - sarcasm_marker
+        - stale_anchor
+        - structural_fragment
+        - term_bound_exceeded
+        - unsafe_syntax
+        - uncertain_scope
+        - unresolved_anchor
+        - provenance_incomplete
+        - user_authorship_required
+      recurring_abstention_keys:
+        - agent_only_evidence
+        - copied_content
+        - provenance_missing
+        - insufficient_independent_origins
+        - insufficient_projects
+        - insufficient_sessions
+        - conversation_evidence_incomplete
+        - conversation_evidence_bound_exceeded
+        - project_only_scope
+        - noise_term
+        - too_many_qualifying_origins
+        - user_authorship_required
+      reconciliation:
+        fixed_keys: all_keys_present_as_nonnegative_integers
+        family_abstentions: abstention_count_equals_sum_of_reason_counts
+        total_candidates: total_equals_explicit_plus_recurring_candidate_counts
+        total_abstentions: total_equals_explicit_plus_recurring_abstention_counts
+        projection_input: report_input_count_equals_total_candidate_count
+      forbidden_content:
+        - terms
+        - source_ids
+        - evidence_anchors
+        - project_ids
+        - project_keys
+        - paths
+        - excerpts
+      rule: >-
+        Persist the fixed explicit and recurring keys even when their count is
+        zero. Reconcile family and total counts before publication. This summary
+        contains counts only and never retains candidate, source, project, path,
+        anchor, or content identity.
     excerpts:
       source_max_utf8_bytes: 4096
       max_per_candidate: 1
@@ -823,9 +918,10 @@ personal_mining_authority:
         meaning, project label, project key, raw evidence identity, excerpt text,
         or a per-row expanded command.
       abstentions: >-
-        Upstream mining abstentions are not retained in a candidate projection and
-        are never reconstructed. This read reports only bounded projection-local
-        candidate-selection and safe-context omission counts.
+        The projection retains only the reconciled fixed-key aggregate mining
+        summary from candidate_projection.mining_summary. It never retains or
+        reconstructs individual upstream abstentions. Reads may return those
+        counts with projection-local selection and safe-context omission counts.
       coverage: >-
         Coverage remains the validated current projection report and is not
         recomputed from a list filter or page.

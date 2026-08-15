@@ -1,0 +1,14 @@
+id: wwkmtfgdnr
+artifact: plan
+record:
+  name: Prove the production workflow and align documentation
+  depends_on:
+    - hwuksgjxwu
+  status: pending
+  acceptance:
+    - GIVEN a non-empty consented refresh WHEN the production workflow runs without manually seeded state THEN candidate list, exact read, and a representative inferred decision complete with review_required.
+    - GIVEN mining yields no retained candidates WHEN refresh and Profile Full consume the result THEN bounded candidate and abstention counts explain the empty result while the existing profile glossary is preserved.
+    - GIVEN the packed CLI runs the same scenarios WHEN source and package results are compared THEN generation bindings, outcomes, privacy bounds, and recovery agree.
+    - GIVEN the shipped behavior WHEN documentation is read THEN the design note, CLI guide, contract, and changelog consistently describe the producer path, aggregate explanations, and inferred-admission deferral.
+    - GIVEN verification runs WHEN delivery is assessed THEN focused glossary tests, typecheck, build, glossary evaluation, capability validation, compact checks, and package verification pass, and the broad source lane adds no failure beyond the recorded three-test baseline signature.
+  plan: ofiklbscmo

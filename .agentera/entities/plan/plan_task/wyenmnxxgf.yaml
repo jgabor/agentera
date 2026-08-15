@@ -1,0 +1,14 @@
+id: wyenmnxxgf
+artifact: plan
+record:
+  name: Settle refresh and explanation authority
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a consented evidence refresh succeeds WHEN glossary production is evaluated THEN the contract requires one projection bound to that exact generation and policy.
+    - GIVEN mining candidates and abstentions WHEN the projection is produced THEN it retains reconciled fixed-key aggregate counts without sensitive identities or content.
+    - GIVEN evidence publication succeeds but projection production fails WHEN refresh returns THEN it exits nonzero, reports evidence success and projection failure separately, and leaves the evidence generation current.
+    - GIVEN the owned derived projection is malformed WHEN an authorized refresh retries THEN only safely replaceable derived state changes and review, profile, and project state remain untouched.
+    - GIVEN inferred candidates WHEN admission policy is validated THEN they remain review-only, with one passing and one failing contract case for each testable rule.
+  plan: ofiklbscmo

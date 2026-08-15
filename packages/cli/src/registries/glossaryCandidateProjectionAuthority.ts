@@ -18,13 +18,61 @@ function nonEmpty(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+const EXPLICIT_ABSTENTION_KEYS = [
+  "attributed_quotation",
+  "ambiguous_reference",
+  "conflicting_meaning",
+  "empty_meaning",
+  "empty_term",
+  "example_context",
+  "hypothetical_definition",
+  "malformed_span",
+  "meaning_bound_exceeded",
+  "negated_definition",
+  "indirect_question",
+  "future_definition",
+  "project_only_scope",
+  "question_definition",
+  "retracted_definition",
+  "sarcasm_marker",
+  "stale_anchor",
+  "structural_fragment",
+  "term_bound_exceeded",
+  "unsafe_syntax",
+  "uncertain_scope",
+  "unresolved_anchor",
+  "provenance_incomplete",
+  "user_authorship_required",
+] as const;
+
+const RECURRING_ABSTENTION_KEYS = [
+  "agent_only_evidence",
+  "copied_content",
+  "provenance_missing",
+  "insufficient_independent_origins",
+  "insufficient_projects",
+  "insufficient_sessions",
+  "conversation_evidence_incomplete",
+  "conversation_evidence_bound_exceeded",
+  "project_only_scope",
+  "noise_term",
+  "too_many_qualifying_origins",
+  "user_authorship_required",
+] as const;
+
 /** Validate the authority-owned bounds for the internal candidate projection. */
 export function validatePersonalCandidateProjectionAuthority(authority: Mapping): string[] {
   const mining = mapping(authority.personal_mining_authority);
   const projection = mapping(mining?.candidate_projection);
+  const refreshProduction = mapping(projection?.refresh_production);
+  const refreshProjection = mapping(refreshProduction?.projection);
+  const partialFailure = mapping(refreshProduction?.partial_failure);
+  const safeReplacement = mapping(refreshProduction?.safe_replacement);
   const selection = mapping(projection?.selection);
   const sourceFamilies = mapping(selection?.source_families);
   const projectIdentity = mapping(selection?.project_identity);
+  const miningSummary = mapping(projection?.mining_summary);
+  const summaryReconciliation = mapping(miningSummary?.reconciliation);
   const excerpts = mapping(projection?.excerpts);
   const excerptCompatibility = mapping(excerpts?.compatibility);
   const retention = mapping(projection?.retention);
@@ -41,6 +89,87 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
   const privacy = mapping(mining?.privacy);
   const contentExclusion = mapping(privacy?.content_exclusion);
   const storageFilesystem = mapping(mapping(privacy?.storage)?.filesystem);
+  const errors: string[] = [];
+  if (
+    refreshProduction?.status !== "contract_only_pending_runtime_wiring" ||
+    refreshProduction?.trigger !== "explicit_consented_evidence_refresh_success" ||
+    refreshProjection?.count !== "exactly_one" ||
+    refreshProjection?.generation_binding !== "exact_published_evidence_generation" ||
+    refreshProjection?.policy_binding !== "exact_personal_mining_policy_version" ||
+    !nonEmpty(refreshProduction?.rule)
+  ) {
+    errors.push(
+      "personal_mining_authority refresh production must require one projection bound to the exact evidence generation and mining policy",
+    );
+  }
+  if (
+    partialFailure?.refresh_outcome !== "failure" ||
+    partialFailure?.process_exit !== "nonzero" ||
+    partialFailure?.evidence_status !== "published" ||
+    partialFailure?.projection_status !== "failed" ||
+    partialFailure?.tier_write_reporting !== "evidence_published_projection_not_written" ||
+    partialFailure?.current_generation !== "published_evidence_remains_current"
+  ) {
+    errors.push(
+      "personal_mining_authority refresh production must report evidence and projection outcomes separately and preserve published evidence on projection failure",
+    );
+  }
+  if (
+    safeReplacement?.authorization !== "explicit_consented_refresh_only" ||
+    safeReplacement?.target !== "exact_configured_candidate_projection_file" ||
+    safeReplacement?.precondition !== "existing_owned_regular_file_is_malformed" ||
+    safeReplacement?.operation !== "atomic_regular_file_replacement" ||
+    !sameStrings(safeReplacement?.reject, [
+      "symlink",
+      "non_regular_file",
+      "configured_path_mismatch",
+      "path_escape",
+    ]) ||
+    !sameStrings(safeReplacement?.replaceable_state, ["candidate_projection"]) ||
+    !sameStrings(safeReplacement?.preserved_state, [
+      "current_evidence_generation",
+      "review_records",
+      "personal_profile",
+      "project_state",
+      "project_glossary",
+    ])
+  ) {
+    errors.push(
+      "personal_mining_authority refresh replacement must target only the exact owned regular projection and preserve evidence, review, profile, and project state",
+    );
+  }
+  if (
+    miningSummary?.schema_version !== "agentera.personalGlossaryMiningSummary.v1" ||
+    miningSummary?.location !== "report.mining_summary" ||
+    !sameStrings(miningSummary?.family_fields, [
+      "candidate_count",
+      "abstention_count",
+      "abstentions_by_reason",
+    ]) ||
+    !sameStrings(miningSummary?.explicit_abstention_keys, EXPLICIT_ABSTENTION_KEYS) ||
+    !sameStrings(miningSummary?.recurring_abstention_keys, RECURRING_ABSTENTION_KEYS) ||
+    summaryReconciliation?.fixed_keys !== "all_keys_present_as_nonnegative_integers" ||
+    summaryReconciliation?.family_abstentions !== "abstention_count_equals_sum_of_reason_counts" ||
+    summaryReconciliation?.total_candidates !==
+      "total_equals_explicit_plus_recurring_candidate_counts" ||
+    summaryReconciliation?.total_abstentions !==
+      "total_equals_explicit_plus_recurring_abstention_counts" ||
+    summaryReconciliation?.projection_input !== "report_input_count_equals_total_candidate_count" ||
+    !sameStrings(miningSummary?.forbidden_content, [
+      "terms",
+      "source_ids",
+      "evidence_anchors",
+      "project_ids",
+      "project_keys",
+      "paths",
+      "excerpts",
+    ]) ||
+    !nonEmpty(miningSummary?.rule)
+  ) {
+    errors.push(
+      "personal_mining_authority candidate projection must retain reconciled fixed-key aggregate mining counts without sensitive identity or content",
+    );
+  }
   if (
     projection?.status !== "active" ||
     projection?.runtime !==
@@ -113,8 +242,7 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     currentGeneration?.unavailable_behavior !== "current_generation_unavailable" ||
     currentGeneration?.stale_projection_behavior !== "projection_stale" ||
     !nonEmpty(retrieval?.rule) ||
-    retrievalCommand?.canonical !==
-      "npx -y agentera@next report personal-glossary-candidates" ||
+    retrievalCommand?.canonical !== "npx -y agentera@next report personal-glossary-candidates" ||
     retrievalCommand?.namespace !== "report" ||
     retrievalCommand?.format !== "json" ||
     retrievalCommand?.project_checkout !== "not_required" ||
@@ -197,9 +325,9 @@ export function validatePersonalCandidateProjectionAuthority(authority: Mapping)
     !nonEmpty(storageFilesystem?.rule) ||
     !nonEmpty(persistence?.rule)
   ) {
-    return [
+    errors.push(
       "personal_mining_authority candidate projection must bound deterministic allocation, private retrieval, content exclusion, safe excerpts, host-filesystem storage, retention, and user-local replay",
-    ];
+    );
   }
-  return [];
+  return errors;
 }

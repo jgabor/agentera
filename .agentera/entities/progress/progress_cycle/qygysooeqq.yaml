@@ -1,0 +1,15 @@
+id: qygysooeqq
+artifact: progress
+record:
+  timestamp: 2026-08-15 16:12
+  type: feat
+  phase: build
+  what: Settled the personal glossary refresh-to-projection authority, privacy-safe aggregate explanation contract, partial-failure semantics, and safe derived-state replacement boundary.
+  context:
+    intent: Define and validate the authority required before production glossary refresh wiring.
+    constraints: No refresh runtime wiring, Profile Full refresh, project glossary access, broad documentation, or repair of the three known retired-runtime baseline failures.
+    unknowns: "Resolved: malformed derived projection replacement is authorized only for the exact configured owned regular file during an explicit consented refresh."
+    scope: Glossary authority YAML, authority validation, and proportional contract tests only.
+  verified: Focused glossary contract tests passed (142 tests), TypeScript typecheck passed, the package built, and local capability-contract validation passed.
+  next: Implement production refresh-to-projection wiring in task hwuksgjxwu without changing the settled authority.
+  publication_order: 168

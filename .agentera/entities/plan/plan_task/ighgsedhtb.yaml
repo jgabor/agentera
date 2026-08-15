@@ -1,0 +1,15 @@
+id: ighgsedhtb
+artifact: plan
+record:
+  name: Reconcile final state
+  depends_on:
+    - wyenmnxxgf
+    - hwuksgjxwu
+    - wwkmtfgdnr
+  status: pending
+  acceptance:
+    - GIVEN implementation and verification are complete WHEN governed plan, TODO, progress, docs, health, and Git state are read THEN they agree with current behavior.
+    - GIVEN unrelated work or baseline failures remain WHEN state is reconciled THEN they are preserved and not falsely resolved.
+    - GIVEN any acceptance criterion changed or lacks evidence WHEN final reconciliation runs THEN the affected task remains open.
+    - GIVEN all evidence is complete WHEN the plan closes THEN no contradictory glossary claim or version beyond 3.0 remains.
+  plan: ofiklbscmo

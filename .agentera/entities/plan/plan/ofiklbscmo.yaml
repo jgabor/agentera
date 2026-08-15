@@ -1,0 +1,38 @@
+id: ofiklbscmo
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-15
+    status: open
+    reviewed: 2026-08-15
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    title: "Plan: Complete personal glossary projection production"
+  what: Connect consented evidence refresh to the existing personal glossary miners and candidate projection. Preserve bounded mining explanations through candidate reads and Profile Full while keeping inferred terms review-only.
+  why: The mining, projection, review, and publication components exist, but normal production refresh never creates the projection that Profile Full consumes. Users can refresh evidence and still have no usable glossary candidates or explanation for an empty result.
+  constraints: Add no CLI namespace or runtime dependency. Never read or mutate project glossary state. Profile Full never refreshes or rescans history. Preserve successfully published evidence tiers if projection production fails. Persist only bounded aggregate abstention counts, never terms, source IDs, anchors, projects, paths, or excerpts. Keep inferred automatic admission disabled. Preserve review records and existing profile entries during recovery. Keep versions within 3.0. Treat the three existing retiredRuntimeSurfacePolicy failures as baseline evidence, not part of this implementation. Do not release, publish, tag, or push.
+  overall_acceptance: GIVEN an explicitly consented refresh publishes a bounded evidence generation WHEN personal glossary mining runs THEN a matching private projection and bounded explanation are available to candidate reads and Profile Full, failures preserve valid evidence and expose recovery, project state remains untouched, inferred terms remain review-only, and identical inputs converge.
+  scope:
+    included:
+      - Production refresh-to-projection flow.
+      - Explicit and recurring mining with current-generation projection binding.
+      - Privacy-safe aggregate mining explanations.
+      - Retry, stale-state, and corrupt-derived-state behavior.
+      - Candidate-read recovery guidance.
+      - Source and packaged end-to-end verification.
+      - Contract, CLI documentation, design-note status, changelog, and governed state alignment.
+    excluded:
+      - Inferred automatic admission.
+      - Project glossary proposals, reads, or writes.
+      - Interactive CLI prompts, legacy corpus scans, or new command namespaces.
+      - Repair of unrelated runtime-policy test failures.
+      - Release, registry, tag, push, or version changes.
+    deferred:
+      - Any future policy that permits inferred candidates to publish without review.
+  design: A consented refresh first publishes bounded evidence. It then derives explicit and recurring candidates from that current generation, creates one private generation-bound projection, and reports evidence and projection outcomes separately. The projection retains only safe candidate data and fixed-key aggregate reason counts. Candidate reads and Profile Full consume that projection without refreshing history. Projection failure does not roll back valid evidence, but refresh fails clearly and provides recovery.
+  unknowns:
+    - question: Can a malformed derived projection be safely replaced during an explicitly consented refresh without affecting review records or profile state?
+      affects_task: 1
+      resolve_by: Establish an authority rule and adversarial tests that permit replacement only for the exact owned regular projection file while rejecting symlinks, unsafe paths, and unrelated storage.
+  surprises:
+    []

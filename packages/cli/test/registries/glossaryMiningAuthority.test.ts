@@ -461,7 +461,8 @@ describe("personal glossary mining authority", () => {
     [
       "review record legacy compatibility",
       (authority: Record<string, any>) => {
-        authority.personal_mining_authority.review_records.persistence.compatibility.migration_operation = "read_upgrade";
+        authority.personal_mining_authority.review_records.persistence.compatibility.migration_operation =
+          "read_upgrade";
       },
       "personal_mining_authority review records must remain bounded, current-user local, privacy-safe, replay-safe, and independently retained",
     ],
@@ -536,6 +537,62 @@ describe("personal glossary mining authority", () => {
       "personal_mining_authority must keep inferred automatic admission disabled and bind the evaluation authority",
     ],
   ])("rejects drift in %s", (_name, mutate, expected) => {
+    const pathname = authorityFixture(mutate);
+    expect(validateGlossaryEntryContract(pathname)).toContain(expected);
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
+  it.each([
+    [
+      "exact refresh projection binding",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.refresh_production.projection.count =
+          "at_most_one";
+      },
+      "personal_mining_authority refresh production must require one projection bound to the exact evidence generation and mining policy",
+    ],
+    [
+      "separate partial-failure status",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.refresh_production.partial_failure.refresh_outcome =
+          "success";
+      },
+      "personal_mining_authority refresh production must report evidence and projection outcomes separately and preserve published evidence on projection failure",
+    ],
+    [
+      "safe derived replacement",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.refresh_production.safe_replacement.reject =
+          ["non_regular_file"];
+      },
+      "personal_mining_authority refresh replacement must target only the exact owned regular projection and preserve evidence, review, profile, and project state",
+    ],
+    [
+      "fixed-key private mining summary",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.candidate_projection.mining_summary.forbidden_content =
+          ["terms"];
+      },
+      "personal_mining_authority candidate projection must retain reconciled fixed-key aggregate mining counts without sensitive identity or content",
+    ],
+    [
+      "inferred automatic admission",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.admission.inferred_automatic_admission = "enabled";
+      },
+      "personal_mining_authority must keep inferred automatic admission disabled and bind the evaluation authority",
+    ],
+    [
+      "inferred review admission",
+      (authority: Record<string, any>) => {
+        authority.personal_mining_authority.admission.inferred_review = "forbidden";
+      },
+      "personal_mining_authority must keep inferred automatic admission disabled and bind the evaluation authority",
+    ],
+  ])("pairs a passing authority with a failing %s case", (_name, mutate, expected) => {
+    const canonical = glossaryEntryAuthorityPath();
+    expect(validateGlossaryEntryContract(canonical)).not.toContain(expected);
+
     const pathname = authorityFixture(mutate);
     expect(validateGlossaryEntryContract(pathname)).toContain(expected);
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
@@ -931,7 +988,11 @@ describe("personal glossary review approval receipts", () => {
     ).toContain("review approval receipt has forbidden fields: unexpected");
     expect(
       validatePersonalReviewApprovalReceipt(
-        reviewReceipt({ disposition: "correct", corrected_meaning: null, corrected_scope: "personal" }),
+        reviewReceipt({
+          disposition: "correct",
+          corrected_meaning: null,
+          corrected_scope: "personal",
+        }),
         reviewVerification,
       ),
     ).toContain("review approval receipt corrected_meaning is invalid");
@@ -967,7 +1028,9 @@ describe("personal glossary review approval receipts", () => {
     ).toContain("review approval receipt nonce was replayed with changed content");
 
     const privateReplayKey = "nonce-digest-a";
-    const privateIndex = new Map([[privateReplayKey, personalReviewApprovalReceiptDigest(receipt)]]);
+    const privateIndex = new Map([
+      [privateReplayKey, personalReviewApprovalReceiptDigest(receipt)],
+    ]);
     expect(personalReviewApprovalReplayStatus(receipt, privateIndex, privateReplayKey)).toBe(
       "exact_replay",
     );

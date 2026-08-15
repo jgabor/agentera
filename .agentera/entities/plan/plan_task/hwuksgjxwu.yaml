@@ -1,0 +1,14 @@
+id: hwuksgjxwu
+artifact: plan
+record:
+  name: Produce the current projection during refresh
+  depends_on:
+    - wyenmnxxgf
+  status: pending
+  acceptance:
+    - GIVEN a successful consented refresh with eligible evidence WHEN refresh completes THEN candidate list and exact read operate on a projection bound to the new current generation.
+    - GIVEN explicit and recurring evidence WHEN mining runs THEN both candidate families participate in deterministic bounded selection.
+    - GIVEN the same generation and policy are processed again WHEN projection publication repeats THEN bytes and identity converge without duplicate effects.
+    - GIVEN projection production fails WHEN refresh reports failure THEN current evidence remains readable, stale projections cannot pass as current, and recovery names an executable consented command.
+    - GIVEN missing, stale, malformed, unsafe, or conflicting derived state WHEN refresh runs THEN effects follow the settled authority, no profile or project state changes, and paired pass/fail regressions cover each boundary.
+  plan: ofiklbscmo
