@@ -1,0 +1,14 @@
+id: pdtywvwwqe
+artifact: plan
+record:
+  name: Simplify the four sampled test paths
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a glossary publication case does not require an evidence generation WHEN its setup runs THEN no evidence tier is published for that case.
+    - GIVEN semantic evaluation checks the default fixture WHEN the tests run THEN the exact read-only fact and report-summary coverage both remain present without evaluating that fixture in a separate duplicate case.
+    - GIVEN version output and error behavior are tested WHEN the version suite runs THEN one dispatch covers successful output, status, and empty error output.
+    - GIVEN version help is requested through both supported forms WHEN the suite runs THEN public command help and alias-specific coverage remain without a duplicate direct helper check.
+    - GIVEN the refactor is complete WHEN focused tests and the CLI suite run THEN all checks pass without weakened assertions.
+  plan: bqvoorlkei

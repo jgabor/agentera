@@ -16,9 +16,10 @@ function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }
 
 describe("cli dispatch: --version / version command", () => {
   it("prints version for --version flag", () => {
-    const { rc, out } = capture((io) => main(["node", "agentera", "--version"], io));
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "--version"], io));
     expect(rc).toBe(0);
     expect(out.trim()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(err).toBe("");
   });
 
   it("prints version for version subcommand", () => {
@@ -35,12 +36,6 @@ describe("cli dispatch: --version / version command", () => {
     const parsed = JSON.parse(out.trim());
     expect(parsed).toHaveProperty("version");
     expect(parsed.version).toMatch(/^\d+\.\d+\.\d+/);
-  });
-
-  it("returns 0 and does not produce error output", () => {
-    const { rc, err } = capture((io) => main(["node", "agentera", "--version"], io));
-    expect(rc).toBe(0);
-    expect(err).toBe("");
   });
 
   it("rejects unknown arguments after --version", () => {
@@ -80,12 +75,6 @@ describe("cli help: --version in top-level help", () => {
     const text = printTopLevelHelp();
     expect(text).toContain("--version");
     expect(text).toContain("print the installed Agentera CLI version and exit");
-  });
-
-  it("returns help text for printCommandHelp('version')", () => {
-    const text = printCommandHelp("version");
-    expect(text).not.toBeNull();
-    expect(text).toContain("Print the installed Agentera CLI version");
   });
 
   it("returns help text for printCommandHelp('--version')", () => {

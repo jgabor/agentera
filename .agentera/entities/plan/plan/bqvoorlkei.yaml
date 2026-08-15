@@ -1,0 +1,24 @@
+id: bqvoorlkei
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-08-15
+    status: open
+    title: "Plan: Simplify sampled CLI tests"
+  what: Simplify the four duplicated or unnecessary test paths identified in the random review while preserving their behavioral and regression coverage.
+  why: Reduce avoidable filesystem work, repeated fixture evaluation, duplicate command dispatch, and redundant helper assertions so the sampled tests are cheaper and easier to maintain.
+  constraints: Preserve existing behavioral and security coverage. Limit changes to the sampled glossary publication, semantic evaluation, and version tests. Do not change production behavior, expand into suite-wide cleanup, or add new abstractions. Run focused checks before the broader CLI test suite.
+  overall_acceptance: GIVEN the four simplifications are complete WHEN the affected and broader CLI tests run THEN they pass with the same behavioral guarantees and less duplicated work.
+  scope:
+    included:
+      - Avoid evidence publication in glossary cases that do not consume it.
+      - Consolidate duplicate read-only semantic evaluation coverage.
+      - Consolidate duplicate version dispatch coverage.
+      - Remove the redundant direct version-help assertion while retaining public behavior and alias coverage.
+    excluded:
+      - Production behavior changes.
+      - Simplification outside the sampled tests.
+      - New helpers or abstractions.
+  surprises:
+    []

@@ -107,16 +107,6 @@ describe("seeded artifact assertion", () => {
   });
 });
 
-describe("read-only writes assertion", () => {
-  it("passes for read-only writes", () => {
-    expect(factMap(fixtureText())["artifact_expectations.writes"]).toEqual({
-      fact: "artifact_expectations.writes",
-      status: "pass",
-      detail: "fixture expects no artifact writes; offline eval performed none",
-    });
-  });
-});
-
 describe("tool trace assertion", () => {
   it("passes a required tool call", () => {
     const text = fixtureText({ toolTrace: ["uv run scripts/agentera hej"] }).replace(
@@ -165,6 +155,11 @@ describe("report summaries", () => {
     const report = buildReport([result]);
     expect(report.status).toBe("pass");
     expect(report.passed).toBe(1);
+    expect(result.checked_facts.find((f: any) => f.fact === "artifact_expectations.writes")).toEqual({
+      fact: "artifact_expectations.writes",
+      status: "pass",
+      detail: "fixture expects no artifact writes; offline eval performed none",
+    });
     expect(new Set(result.checked_facts.map((f: any) => f.fact))).toEqual(
       new Set([
         "required_output[0]",

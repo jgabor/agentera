@@ -50,7 +50,6 @@ const REVIEW_SUBJECT = "user:current";
 const REVIEW_KEY_PAIR = generateKeyPairSync("ed25519");
 
 let profileDir: string;
-let currentGeneration: string;
 let previousProfileDir: string | undefined;
 let previousProfileraProfileDir: string | undefined;
 let restoreEvaluationRunner: (() => void) | undefined;
@@ -62,7 +61,6 @@ beforeEach(() => {
   previousProfileraProfileDir = process.env.PROFILERA_PROFILE_DIR;
   process.env.AGENTERA_PROFILE_DIR = profileDir;
   delete process.env.PROFILERA_PROFILE_DIR;
-  currentGeneration = publishEvidence([]).generation;
 });
 
 afterEach(() => {
@@ -254,6 +252,7 @@ function reviewedFixture(disposition: "accept" | "correct"): {
   authorization: { review_id: string; review_record_sha256: string };
 } {
   writeProfile();
+  const currentGeneration = publishEvidence([]).generation;
   const capsule = createGlossaryEvidenceCapsule({
     term: `reviewed inferred ${disposition}`,
     meaning: "A reviewed inferred meaning.",
@@ -300,6 +299,7 @@ function nonPublishableReviewedFixture(disposition: "reject" | "defer"): {
   authorization: { review_id: string; review_record_sha256: string };
 } {
   writeProfile();
+  const currentGeneration = publishEvidence([]).generation;
   const capsule = createGlossaryEvidenceCapsule({
     term: `non-publishable inferred ${disposition}`,
     meaning: "A non-publishable reviewed meaning.",
