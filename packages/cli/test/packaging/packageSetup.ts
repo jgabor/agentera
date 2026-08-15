@@ -12,6 +12,12 @@ import {
   sameGeneratedSourceIdentity,
 } from "../../scripts/generated-output.mjs";
 import { waitForVerificationBarrier } from "../../scripts/verification-barrier.mjs";
+import { DEVELOPMENT_RUNTIME_REQUIRED_FILES } from "../../src/core/developmentInvocation.js";
+import {
+  finalizePackageOwnerEvidence,
+  writeContentAddressedOwnerEvidence,
+  writeContentAddressedPackageIdentity,
+} from "../../src/validate/activationArtifactEvidence.js";
 
 export interface PackFile {
   path: string;
@@ -201,7 +207,7 @@ function stageConstructionInputs(packageRoot: string, constructionRoot: string):
   fs.copyFileSync(path.resolve(packageRoot, "../..", "LICENSE"), path.join(constructionRoot, "LICENSE"));
 }
 
-export default function setup({ provide }: GlobalSetupContext): () => void {
+export default async function setup({ provide }: GlobalSetupContext): Promise<() => void> {
   waitForVerificationBarrier();
   const packageRoot = path.resolve(import.meta.dirname, "../..");
   const checkoutRoot = path.resolve(packageRoot, "../..");
@@ -273,7 +279,7 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
     // The source construction deliberately has no installed dependencies, so give
     // it the checkout's already-installed dependency graph after packing it.
     fs.symlinkSync(path.join(packageRoot, "node_modules"), path.join(constructionRoot, "node_modules"), "dir");
-    provide("packageFixture", {
+    const fixture: PackageFixture = {
       root,
       constructionRoot,
       packageRoot: extractedPackage,
@@ -298,7 +304,24 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
         ].sort(),
         secondManifest,
       },
-    });
+    };
+    const evidenceOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT;
+    const identityOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_IDENTITY_OUTPUT;
+    const snapshotOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_SNAPSHOT_OUTPUT;
+    if (evidenceOutput || identityOutput || snapshotOutput) {
+      if (!evidenceOutput || !identityOutput || !snapshotOutput) {
+        throw new Error("package verification boundary failed: activation package outputs must be configured together");
+      }
+      const { evidence, packageIdentity } = await finalizePackageOwnerEvidence({
+        root: checkoutRoot,
+        fixture,
+        requiredFiles: DEVELOPMENT_RUNTIME_REQUIRED_FILES,
+        snapshotDirectory: snapshotOutput,
+      });
+      writeContentAddressedOwnerEvidence(evidenceOutput, evidence);
+      writeContentAddressedPackageIdentity(identityOutput, packageIdentity);
+    }
+    provide("packageFixture", fixture);
   } catch (error) {
     fs.rmSync(root, { recursive: true, force: true });
     throw error;
