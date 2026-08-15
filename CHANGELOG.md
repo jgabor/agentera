@@ -92,6 +92,11 @@
 
 ### Fixed
 
+- Fixed TODO reconciliation so typed writes use canonical severity headings and
+  insert missing bands before later sections. Duplicate, mismatched, or
+  out-of-order headings now return one bounded actionable diagnosis through
+  TODO reads, Prime, Doctor, and state validation, and block writes before effects.
+  Recognized v2 `## Resolved` headings normalize during entity cutover.
 - Fixed large unsafe inactive TODO status startup to fit its 22,500-byte JSON limit with bounded recovery details.
 - Fixed fresh projects so they can initialize Plan entity state without a legacy upgrade route.
 - Fixed `agentera doctor --format json` to report bounded, read-only retirement

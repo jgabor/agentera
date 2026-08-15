@@ -51,7 +51,7 @@ function todoId(index: number): string {
 
 function precreatedTodoProject(count: number, options: { explicit?: boolean; duplicateDescription?: boolean } = {}): string {
   const root = project();
-  const rows: string[] = ["# TODO", "", "Unrelated project note.", "", "## → Critical"];
+  const rows: string[] = ["# TODO", "", "Unrelated project note.", "", "## ⇶ Critical"];
   const directory = path.join(root, ".agentera/entities/todo/todo_item");
   fs.mkdirSync(directory, { recursive: true });
   for (let index = 0; index < count; index += 1) {
@@ -437,6 +437,9 @@ describe("one-way Git entity cutover", () => {
 
   it("completes the pinned v2 compaction lifecycle without changing preserved aggregate bytes", () => {
     const root = compactedProject();
+    const rawTodo = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+    expect(rawTodo).toMatch(/^## Resolved$/m);
+    expect(rawTodo).not.toMatch(/^## ✓ Resolved$/m);
     const protectedExperiments = treeBytes(V2_COMPACTION_OUTPUT, ".agentera/optimera");
     initializeGit(root);
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v2-compaction-home-"));
@@ -531,7 +534,10 @@ describe("one-way Git entity cutover", () => {
     expect(capture(root, ["prime"]).code).toBe(0);
     expect(capture(root, ["prime", "--format", "json"]).code).toBe(0);
     assertSourcesUnchanged(null);
-    const todoAfter = sha256(fs.readFileSync(path.join(root, "TODO.md")));
+    const migratedTodo = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+    expect(migratedTodo).toMatch(/^## ✓ Resolved$/m);
+    expect(migratedTodo).not.toMatch(/^## Resolved$/m);
+    const todoAfter = sha256(Buffer.from(migratedTodo));
     expect(todoAfter).not.toBe(todoBefore);
 
     const repeatedPreview = previewUpgrade(root, appHome, home);

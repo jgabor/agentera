@@ -3,6 +3,9 @@
 ## ⇶ Critical
 
 - [ ] [id:huiepnrwav] [fix:3.0.0] At the explicitly approved stable cutover, promote the TypeScript package to npm `@latest`, update channel authority and bundled bootstrap from `agentera@next` to bare `agentera`, replace the v2 Python delivery path with an explicit deprecation response, and delete the quarantined v2 parsers, migrations, cleanup-only compatibility, native rewrite paths, retired Python, and shim delegation sources identified by TODO `fxddfkldsr`. Remove remaining native runtime hooks and run the clean, v2, partial, and v3 bootstrap matrix against `@latest`. Do not change stable-channel resolution or delete compatibility before the approval gate and final activation conjunction pass.
+- [ ] [id:bxqzpnnhpn] [fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted.
+- [ ] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
+- [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
 
 ## ⇉ Degraded
 
@@ -157,11 +160,3 @@
 - [x] [id:swighbbfpu] [fix:3.0.0] Replan candidate projection symlink confinement
 - [x] [id:upinmywhig] [fix] Align packaging guide with routine feat/v3 publication
 - [x] [id:bqapiomoyn] [fix:3.0.0] Restore the full source verification owner
-
-## → Critical
-
-- [ ] [id:bxqzpnnhpn] [fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted.
-- [ ] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
-- [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures before CLI dispatch.
-
-## → Degraded

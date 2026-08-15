@@ -229,6 +229,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
       reconciliationState: todoReconciliation.state,
       reconciliationCounts: todoReconciliation.counts,
       reconciliationOmittedCount: todoReconciliation.omitted_count,
+      ...(todoReconciliation.risks ? { reconciliationRisks: todoReconciliation.risks } : {}),
       previewCommand: todoReconciliation.preview_command,
       applyCommand: todoReconciliation.apply_command,
       recoveryCommand: todoReconciliation.recovery_command,

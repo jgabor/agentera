@@ -123,6 +123,21 @@ function errorCounts(error: unknown): JsonObject {
   };
 }
 
+function errorRisks(error: unknown): JsonObject | undefined {
+  return error instanceof StateWriteInputError && mapping(error.body.diagnosis) ? error.body.diagnosis : undefined;
+}
+
+function errorInspection(state: "unsafe_inactive" | "unsafe_active", error: unknown): TodoReconciliationInspection {
+  const risks = errorRisks(error);
+  const result = inspection(state, errorCounts(error), risks);
+  if (risks?.classification === "todo_severity_heading_structure" && error instanceof StateWriteInputError) {
+    result.preview_command = null;
+    result.apply_command = null;
+    result.recovery_command = error.body.recovery ?? result.recovery_command;
+  }
+  return result;
+}
+
 /** Read-only classification shared by prime, doctor, and whole-state validation. */
 export function inspectTodoReconciliationState(
   root: string,
@@ -156,7 +171,7 @@ export function inspectTodoReconciliationState(
       const safety = inactiveTodoActivationSafety(scan, entities);
       return inspection(safety.safe ? "inactive" : "unsafe_inactive", safety.counts, safety.safe ? undefined : safety.risks);
     } catch (error) {
-      return inspection("unsafe_inactive", errorCounts(error));
+      return errorInspection("unsafe_inactive", error);
     }
   }
   try {
@@ -165,7 +180,7 @@ export function inspectTodoReconciliationState(
     const unsafe = numberValue(counts.duplicate) > 0 || numberValue(counts.stale) > 0 || numberValue(counts.conflicting) > 0;
     return inspection(unsafe ? "unsafe_active" : "healthy_active", counts);
   } catch (error) {
-    return inspection("unsafe_active", errorCounts(error));
+    return errorInspection("unsafe_active", error);
   }
 }
 

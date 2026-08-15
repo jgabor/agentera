@@ -585,7 +585,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(capture(root, ["state", "todo", "update", "--id", dependent.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ dependencies: [{ artifact: "todo", id: dependency.id }], queue_rank: 1 }) }).rc).toBe(0);
     expect(capture(root, ["state", "todo", "update", "--id", resolvedCandidate.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 2 }) }).rc).toBe(0);
     expect(capture(root, ["state", "todo", "update", "--id", fallback.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 3 }) }).rc).toBe(0);
-    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Critical\n- [ ] [id:${fallback.id}] [task:3.0.0] Projected critical fallback\n\n## → Normal\n- [ ] [id:${dependent.id}] [task:3.0.0] Must wait for projected dependency\n- [x] [id:${resolvedCandidate.id}] [task:3.0.0] Open entity resolved by Markdown\n\n## ✓ Resolved\n- [ ] [id:${dependency.id}] [task:3.0.0] Resolved entity reopened by Markdown\n`);
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## ⇶ Critical\n- [ ] [id:${fallback.id}] [task:3.0.0] Projected critical fallback\n\n## → Normal\n- [ ] [id:${dependent.id}] [task:3.0.0] Must wait for projected dependency\n- [x] [id:${resolvedCandidate.id}] [task:3.0.0] Open entity resolved by Markdown\n\n## ✓ Resolved\n- [ ] [id:${dependency.id}] [task:3.0.0] Resolved entity reopened by Markdown\n`);
     const before = files(root);
 
     const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
@@ -1139,7 +1139,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(capture(root, ["state", "todo", "update", "--id", first.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
     expect(capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 2, gate: { state: "pending", reason: "Approval required.", recovery: "Obtain approval." } }) }).rc).toBe(0);
     const markdown = path.join(root, "TODO.md");
-    fs.writeFileSync(markdown, `# TODO\n\n## → Critical\n- [ ] [id:${second.id}] [task:3.0.0] Human changed second row\n\n## → Normal\n- [ ] [id:${first.id}] [task:3.0.0] First public row\n`);
+    fs.writeFileSync(markdown, `# TODO\n\n## ⇶ Critical\n- [ ] [id:${second.id}] [task:3.0.0] Human changed second row\n\n## → Normal\n- [ ] [id:${first.id}] [task:3.0.0] First public row\n`);
 
     const list = capture(root, ["state", "todo", "list", "--format", "json"]);
     expect(list.rc, list.err || list.out).toBe(0);
@@ -1369,7 +1369,8 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(files(root)).toEqual(activeBytes);
     expect(capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() }).rc).toBe(0);
 
-    fs.appendFileSync(path.join(root, "TODO.md"), "\n## → Degraded\n- [ ] [fix:3.0.0] New ID-less managed row\n");
+    const activeMarkdown = path.join(root, "TODO.md");
+    fs.writeFileSync(activeMarkdown, fs.readFileSync(activeMarkdown, "utf8").replace("## → Normal\n", "## → Normal\n- [ ] [fix:3.0.0] New ID-less managed row\n"));
     const beforeReject = files(root);
     const rejected = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: null });
     expect(rejected.rc).toBe(2);
@@ -1463,7 +1464,7 @@ describe("TODO item and documentation inventory entity authority", () => {
         const activation = JSON.parse(fs.readFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), "utf8"));
         activation.retained_legacy_rows = [todoLegacyRowFingerprint("normal", "- [ ] [task:3.0.0] Keep current open text"), todoLegacyRowFingerprint("resolved", "- [x] [fix:3.0.0] Keep completed Markdown state")];
         fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), `${JSON.stringify(activation)}\n`);
-      } else fs.appendFileSync(todoPath, "\n## → Degraded\n- [ ] [fix:3.0.0] Unproven row\n");
+      } else fs.writeFileSync(todoPath, fs.readFileSync(todoPath, "utf8").replace("## → Normal\n", "## → Normal\n- [ ] [fix:3.0.0] Unproven row\n"));
       const before = files(root);
       const rejected = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
       expect(rejected.rc, kind).toBe(2);
@@ -1833,7 +1834,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     const root = project(); const item = todo(root, "Managed identity"); const markdown = path.join(root, "TODO.md");
     fs.appendFileSync(markdown, "\n## Notes\n- [ ] ordinary unchecked note\n");
     expect(capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() }).rc).toBe(0);
-    fs.appendFileSync(markdown, "\n## → Degraded\n- [ ] [fix:3.0.0] Missing managed identity\n"); const before = files(root);
+    fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace("## → Normal\n", "## → Normal\n- [ ] [fix:3.0.0] Missing managed identity\n")); const before = files(root);
     const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: null });
     expect(rejected.rc).toBe(2); expect(rejected.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("[id:abcdefghij]") }); expect(files(root)).toEqual(before);
   });
@@ -2438,6 +2439,74 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
     expect(diagnosis).not.toHaveProperty("items");
     expect(JSON.stringify(diagnosis)).not.toContain("Keep current open text");
     for (const count of Object.values(diagnosis.counts)) expect(count).toBeLessThanOrEqual(20);
+  });
+
+  it("diagnoses malformed severity structure on reads and shared inspection surfaces, then rejects writes without effects", () => {
+    const root = project();
+    const item = todo(root, "PRIVATE_STRUCTURE_ROW_TEXT");
+    fs.writeFileSync(path.join(root, "TODO.md"), [
+      "# TODO",
+      "",
+      "## → Normal",
+      `- [ ] [id:${item.id}] [task:3.0.0] PRIVATE_STRUCTURE_ROW_TEXT`,
+      "",
+      "## ✓ Resolved",
+      "",
+      "## → Critical",
+      "",
+    ].join("\n"));
+    const before = files(root);
+
+    const list = capture(root, ["state", "todo", "list", "--format", "json"]);
+    const get = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
+    for (const read of [list, get]) {
+      expect(read.rc, read.err || read.out).toBe(0);
+      expect(read.json.reconciliation).toMatchObject({
+        status: "conflict",
+        action_required: true,
+        diagnosis: {
+          classification: "todo_severity_heading_structure",
+          diagnostics: [
+            expect.objectContaining({ code: "todo_severity_heading_mismatch", classification: "glyph_name_mismatch", line: 8, expected_heading: "## ⇶ Critical" }),
+            expect.objectContaining({ code: "todo_severity_heading_out_of_order", classification: "out_of_order", line: 8, expected_heading: "## ⇶ Critical" }),
+          ],
+          omitted_count: 0,
+        },
+      });
+      expect(JSON.stringify(read.json.reconciliation)).not.toContain("PRIVATE_STRUCTURE_ROW_TEXT");
+    }
+
+    const prime = capture(root, ["prime", "--format", "json"]);
+    const doctor = capture(root, ["doctor", "--format", "json"]);
+    const validation = capture(root, ["check", "validate", "state", "--format", "json"]);
+    expect(prime.json.todo_reconciliation).toMatchObject({
+      state: "unsafe_active",
+      status: "action_required",
+      preview_command: null,
+      apply_command: null,
+      risks: { classification: "todo_severity_heading_structure", diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]) },
+    });
+    expect(doctor.json.signals.find((entry: any) => entry.kind === "todo_reconciliation")).toMatchObject({
+      reconciliationState: "unsafe_active",
+      previewCommand: null,
+      applyCommand: null,
+      reconciliationRisks: { classification: "todo_severity_heading_structure", diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]) },
+    });
+    expect(validation.rc).toBe(1);
+    expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({
+      code: "todo_reconciliation_unsafe_active",
+      diagnosis: expect.objectContaining({ risks: expect.objectContaining({ classification: "todo_severity_heading_structure", diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]) }) }),
+    })]));
+    expect(files(root)).toEqual(before);
+
+    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Should not be written" });
+    expect(rejected.rc).toBe(2);
+    expect(rejected.json.error).toMatchObject({
+      class: "conflict",
+      message: "TODO.md managed severity section structure is malformed",
+      diagnosis: { classification: "todo_severity_heading_structure" },
+    });
+    expect(files(root)).toEqual(before);
   });
 
   it("classifies invalid reconciliation lifecycle metadata without generic corruption", () => {

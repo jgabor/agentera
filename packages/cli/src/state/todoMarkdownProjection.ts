@@ -3,6 +3,7 @@ import fs from "node:fs";
 import type { JsonObject } from "../core/jsonValue.js";
 import { renderTodoPublicRecord } from "../cli/todoMarkdown.js";
 import { reject } from "./write/errors.js";
+import { TODO_SEVERITY_HEADINGS, todoSeveritySectionForHeading } from "./todoSeverityHeadings.js";
 
 const TODO_MARKDOWN_MAX_BYTES = 1024 * 1024;
 interface ExistingRow { id: string; line: number; section: string; snapshot: { order?: number } }
@@ -19,17 +20,25 @@ export function readTodoMarkdown(target: string): { bytes: Buffer; text: string 
 }
 
 function sectionFor(record: JsonObject): string { return record.status === "resolved" ? "resolved" : String(record.severity); }
-function headingFor(section: string): string { return section === "resolved" ? "## ✓ Resolved" : `## → ${section[0]!.toUpperCase()}${section.slice(1)}`; }
+function headingFor(section: string): string { return TODO_SEVERITY_HEADINGS.find((entry) => entry.section === section)!.heading; }
 function rowFor(id: string, record: JsonObject): string { return `- [${record.status === "resolved" ? "x" : " "}] [id:${id}] ${renderTodoPublicRecord(record)}`; }
 
 export function renderManagedMarkdown(markdown: string, records: Map<string, JsonObject>, existing: Map<string, ExistingRow>): string {
   const byLine = new Map([...existing.values()].map((row) => [row.line, row])); const retained = new Set<string>();
   const lines = markdown.split(/\r?\n/).flatMap((line, index) => { const row = byLine.get(index); if (!row) return [line]; const record = records.get(row.id); if (!record || sectionFor(record) !== row.section) return []; retained.add(row.id); return [rowFor(row.id, record)]; });
-  for (const section of ["critical", "degraded", "normal", "annoying", "resolved"]) {
+  for (const { section } of TODO_SEVERITY_HEADINGS) {
     const ids = [...records.entries()].filter(([id, record]) => !retained.has(id) && sectionFor(record) === section).sort(([left], [right]) => { const a = existing.get(left); const b = existing.get(right); return (a?.section === section ? a.snapshot.order! : Number.MAX_SAFE_INTEGER) - (b?.section === section ? b.snapshot.order! : Number.MAX_SAFE_INTEGER) || left.localeCompare(right); }).map(([id]) => id);
     if (!ids.length) continue;
     let heading = lines.findIndex((line) => line.trim().toLowerCase() === headingFor(section).toLowerCase());
-    if (heading < 0) { if (lines.at(-1)?.trim()) lines.push(""); lines.push(headingFor(section)); heading = lines.length - 1; }
+    if (heading < 0) {
+      const order = TODO_SEVERITY_HEADINGS.findIndex((entry) => entry.section === section);
+      const later = lines.findIndex((line) => {
+        const found = todoSeveritySectionForHeading(line);
+        return found !== null && TODO_SEVERITY_HEADINGS.findIndex((entry) => entry.section === found) > order;
+      });
+      if (later >= 0) { lines.splice(later, 0, headingFor(section), ""); heading = later; }
+      else { if (lines.at(-1)?.trim()) lines.push(""); lines.push(headingFor(section)); heading = lines.length - 1; }
+    }
     let insert = heading + 1; while (insert < lines.length && !/^##\s+/.test(lines[insert]!.trim())) insert += 1;
     while (insert > heading + 1 && !lines[insert - 1]!.trim()) insert -= 1;
     lines.splice(insert, 0, ...ids.map((id) => rowFor(id, records.get(id)!)));

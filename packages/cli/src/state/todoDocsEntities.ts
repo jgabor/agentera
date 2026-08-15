@@ -29,6 +29,7 @@ import { loadTodoReconciliationActivation, todoLegacyRowFingerprint, todoReconci
 import { normalizeTodoOwnerCorrectionEvidence, planTodoOwnerCorrection, planTodoRepair } from "./todoReconciliationRepair.js";
 import { readTodoMarkdown, renderManagedMarkdown } from "./todoMarkdownProjection.js";
 import { inactiveTodoActivationSafety, rejectUnsafeInactiveTodoActivation, unsafeInactiveDuplicateDiagnosis } from "./todoActivationSafety.js";
+import { assertTodoSeverityHeadingStructure, todoSeveritySectionForHeading } from "./todoSeverityHeadings.js";
 
 const ID = /^[a-z]{10}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -178,13 +179,13 @@ export function managedRows(
   activation: TodoReconciliationActivation | null,
   entities: readonly TodoEntityView[],
 ): ManagedRowScan {
-  const result = new Map<string, ManagedRow>();
+  assertTodoSeverityHeadingStructure(markdown); const result = new Map<string, ManagedRow>();
   const order = new Map<string, number>();
   const legacy: LegacyRow[] = [];
   let section: string | null = null;
   markdown.split(/\r?\n/).forEach((line, index) => {
     const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
-    if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : heading === "notes" ? null : section;
+    if (heading) section = todoSeveritySectionForHeading(line) ?? (heading === "notes" ? null : section);
     const item = parseTodoMarkdownListItem(line.trim());
     if (!item) return;
     const severity = section ? markdownSeverity(section) : null;
@@ -314,16 +315,16 @@ function inspectTodoReadView(
     rows = managedRows(markdown, activation, todoEntities).rows;
   } catch (error) {
     if (error instanceof StateWriteInputError && /Markdown/i.test(error.body.message)) throw error;
-    return {
+    const diagnosis = error instanceof StateWriteInputError && mapping(error.body.diagnosis) ? error.body.diagnosis : undefined; return {
       rows: new Map(),
       drift: {
         schema_version: RECONCILIATION_VERSION,
-        status: "unsafe",
+        status: "conflict", action_required: true,
         read_effect: "none",
         next_write_boundary: "atomic_reconciliation",
         authority: todoAuthority(),
         counts: { managed: 0, drifted: 0, conflicts: 1 },
-        items: [],
+        items: [], ...(diagnosis ? { diagnosis } : {}),
       },
     };
   }
@@ -676,6 +677,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const correctingOwners = artifact === "todo" && req.spec.verb === "correct-owners";
     const ownerEvidence = correctingOwners ? normalizeTodoOwnerCorrectionEvidence(req.input ?? {}) : null;
     const pending = todoBinding ? inspectTodoReconciliation(pinnedRoot, todoBinding) : [];
+    if (artifact === "todo") assertTodoSeverityHeadingStructure(readTodoMarkdown(todoPublicPath(pinnedRoot, sourceRoot)).text);
     const initialActivation = artifact === "todo" ? loadTodoReconciliationActivation(pinnedRoot) : null;
     if (artifact === "todo" && ["activate", "repair", "correct-owners"].includes(req.spec.verb)) {
       const repairing = req.spec.verb === "repair";

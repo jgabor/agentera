@@ -5,6 +5,7 @@ import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMa
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { reject } from "./write/errors.js";
 import { todoLegacyRowFingerprint, TODO_OWNER_CORRECTION_INPUT_VERSION, TODO_OWNER_CORRECTION_PREVIEW_COMMAND, TODO_REPAIR_PREVIEW_COMMAND, type TodoReconciliationActivation } from "./todoReconciliationActivation.js";
+import { assertTodoSeverityHeadingStructure, todoSeveritySectionForHeading } from "./todoSeverityHeadings.js";
 
 const RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
 const DIAGNOSTIC_LIMIT = 20;
@@ -83,10 +84,11 @@ export function normalizeTodoOwnerCorrectionEvidence(input: Record<string, unkno
   };
 }
 function scanRows(markdown: string): { managed: Map<string, ManagedRow[]>; legacy: Row[] } {
+  assertTodoSeverityHeadingStructure(markdown);
   const managed = new Map<string, ManagedRow[]>(); const legacy: Row[] = []; const order = new Map<string, number>(); let section: string | null = null;
   markdown.split(/\r?\n/).forEach((line, index) => {
     const heading = line.trim().match(/^##\s+(.+)$/)?.[1]?.toLowerCase();
-    if (heading) section = heading.includes("critical") ? "critical" : heading.includes("degraded") ? "degraded" : heading.includes("annoying") ? "annoying" : heading.includes("resolved") ? "resolved" : heading.includes("normal") ? "normal" : heading === "notes" ? null : section;
+    if (heading) section = todoSeveritySectionForHeading(line) ?? (heading === "notes" ? null : section);
     const item = parseTodoMarkdownListItem(line.trim()); if (!item) return;
     const rowSeverity = section ? severity(section) : null;
     if (item.id && !rowSeverity && section !== "resolved") reject({ class: "conflict", message: `TODO repair found managed ID '${item.id}' outside a managed section`, recovery: `Move '${item.id}' under one declared TODO severity or the resolved section, then preview repair again; no state was changed.` });

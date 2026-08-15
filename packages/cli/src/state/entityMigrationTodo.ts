@@ -144,7 +144,7 @@ export function todoReconciliationMigrationPlan(
     return match ? [[Number(match[1]) - 1, entry] as const] : [];
   }));
   if (byLine.size !== rows.length) return undefined;
-  const lines = todo.bytes.toString("utf8").split(/\r?\n/);
+  const lines = todo.bytes.toString("utf8").split(/\r?\n/).map((line) => line === "## Resolved" ? "## ✓ Resolved" : line);
   for (const row of rows) {
     const entry = byLine.get(row.index);
     if (!entry?.proposed_target) return undefined;
