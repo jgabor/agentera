@@ -6,6 +6,8 @@ const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { isolatedEnv, seedOpencodeManySessions } from "./extractCorpusFixtures.js";
+
 import {
   buildCorpus,
   COVERAGE_EXIT_FLAGGED,
@@ -112,21 +114,6 @@ function seedOpencode(dbp: string): void {
   db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run("m2", "s1", "assistant", 1700000002, null, null);
   db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run("p1", "m1", "text", "why should we avoid this approach?", null, 1700000001);
   db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run("p2", "m2", "text", "Because of the tradeoff.", null, 1700000002);
-  db.close();
-}
-
-function seedOpencodeManySessions(dbp: string, count: number, baseTime = 1_700_000_000): void {
-  const db = new DatabaseSync(dbp);
-  db.exec("CREATE TABLE session(id TEXT, cwd TEXT, time_created INTEGER)");
-  db.exec("CREATE TABLE message(id TEXT, sessionID TEXT, role TEXT, time_created INTEGER, content TEXT, data TEXT)");
-  db.exec("CREATE TABLE part(id TEXT, messageID TEXT, type TEXT, text TEXT, data TEXT, time_created INTEGER)");
-  for (let i = 0; i < count; i++) {
-    const sid = `s${i}`;
-    const ts = baseTime + i;
-    db.prepare("INSERT INTO session VALUES (?,?,?)").run(sid, "/proj", ts);
-    db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run(`m${i}`, sid, "user", ts, null, null);
-    db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run(`p${i}`, `m${i}`, "text", "hello", null, ts);
-  }
   db.close();
 }
 
@@ -647,17 +634,6 @@ describe("dedupeRecords", () => {
   });
 });
 
-function isolatedEnv(root: string): Record<string, string> {
-  return {
-    HOME: root,
-    XDG_DATA_HOME: path.join(root, ".local", "share"),
-    CURSOR_HOME: path.join(root, ".cursor"),
-    CURSOR_CONFIG_HOME: path.join(root, ".config", "cursor"),
-    COPILOT_HOME: path.join(root, ".copilot"),
-    AGENTERA_HOME: root,
-  };
-}
-
 describe("coverage audit", () => {
   it("flags available-but-skipped runtimes without accept flag", () => {
     const dbp = path.join(tmp, "opencode.db");
@@ -923,112 +899,5 @@ describe("buildCorpus + extractCorpusMain", () => {
     );
     expect(rc).toBe(2);
     expect(error).toContain("requires explicit --import-source claude");
-  });
-});
-
-describe("SQLite cap overrides and truncation", () => {
-  it("sets runtime_statuses truncated_at when session cap is exceeded", () => {
-    const dbp = path.join(tmp, "opencode.db");
-    seedOpencodeManySessions(dbp, 65);
-    const corpus = buildCorpus({
-      projectRoots: [tmp],
-      codexSessionsDir: null,
-      claudeProjectsDir: null,
-      opencodeConversationsDir: dbp,
-      sqliteCaps: { maxSessions: 60, maxRows: 100_000 },
-    });
-    const opencodeStatus = corpus.metadata.runtime_statuses.find((s: { runtime: string }) => s.runtime === "opencode");
-    expect(opencodeStatus?.truncated_at).toBe(new Date(1_700_000_000 * 1000).toISOString());
-    expect(opencodeStatus?.truncation_cap).toBe("sessions");
-    expect(opencodeStatus?.truncation_limit).toBe(60);
-  });
-
-  it("honors --max-sqlite-sessions override", () => {
-    const dbp = path.join(tmp, "opencode.db");
-    seedOpencodeManySessions(dbp, 65);
-    const tiersDir = path.join(tmp, "out", "tiers");
-    let errLog = "";
-    const rc = extractCorpusMain(
-      [
-        "--tier-output",
-        tiersDir,
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-        "--max-sqlite-sessions",
-        "100",
-      ],
-      { out: () => {}, err: (t) => (errLog += t + "\n"), env: isolatedEnv(tmp), cwd: tmp },
-    );
-    expect(rc).toBe(0);
-    const tier = readSignalTier(tiersDir);
-    expect(tier).not.toBeNull();
-    const opencodeStatus = tier!.manifest.corpus_metadata?.runtime_statuses?.find(
-      (s: { runtime?: string }) => s.runtime === "opencode",
-    );
-    expect(opencodeStatus?.truncated_at).toBeUndefined();
-    expect(errLog).not.toContain("SQLite extraction truncated");
-  });
-
-  it("honors AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS env override", () => {
-    const dbp = path.join(tmp, "opencode.db");
-    seedOpencodeManySessions(dbp, 65);
-    const tiersDir = path.join(tmp, "out", "tiers");
-    const rc = extractCorpusMain(
-      [
-        "--tier-output",
-        tiersDir,
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-      ],
-      {
-        out: () => {},
-        err: () => {},
-        env: { ...isolatedEnv(tmp), AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS: "100" },
-        cwd: tmp,
-      },
-    );
-    expect(rc).toBe(0);
-    const tier = readSignalTier(tiersDir);
-    expect(tier).not.toBeNull();
-    const opencodeStatus = tier!.manifest.corpus_metadata?.runtime_statuses?.find(
-      (s: { runtime?: string }) => s.runtime === "opencode",
-    );
-    expect(opencodeStatus?.truncated_at).toBeUndefined();
-  });
-
-  it("emits user-visible truncation warning after extraction", () => {
-    const dbp = path.join(tmp, "opencode.db");
-    seedOpencodeManySessions(dbp, 65);
-    const tiersDir = path.join(tmp, "out", "tiers");
-    let errLog = "";
-    const rc = extractCorpusMain(
-      [
-        "--tier-output",
-        tiersDir,
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-      ],
-      { out: () => {}, err: (t) => (errLog += t + "\n"), env: isolatedEnv(tmp), cwd: tmp },
-    );
-    expect(rc).toBe(0);
-    expect(errLog).toContain("SQLite extraction truncated");
-    expect(errLog).toContain("opencode:");
-    expect(errLog).toContain("sessions limit=60");
-    expect(errLog).toContain(new Date(1_700_000_000 * 1000).toISOString());
   });
 });
