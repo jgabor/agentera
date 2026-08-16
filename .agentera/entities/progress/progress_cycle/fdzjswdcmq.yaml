@@ -1,0 +1,13 @@
+id: fdzjswdcmq
+artifact: progress
+record:
+  timestamp: 2026-08-16 02:01
+  type: chore
+  phase: build
+  what: Synchronized final project state for the product-v1 EOL and fresh-v3 reset contract without changing plan or task status.
+  context:
+    intent: Confirm active documentation inventory, open TODO state, changelog, and final release evidence for plan gornhwivrn task jzzzbdlzpw.
+    constraints: Use typed state authority, preserve historical records, and leave terminal evaluation and closure to Prime.
+  verified: "Exact prior release-gate pointer: progress ckcjxnxhlu. That canonical record reports verify:release gate identity 9d22ed14096ffc9946ecb1a6b95a320813935f8a7e4fa1cfdae353fd9dbceb67 with all 11 owners passed: source, stress, performance, capacity, package, generated-overlap, typecheck, build, compact, capability-contract, and activation-conjunction; it also records no receipt, candidate, registry, activation, or publication side effects. Typed plan inspection confirmed all six implementation tasks passed and this synchronization task remains pending. Typed TODO inspection found four clean open items, none contradicting the product-v1 EOL/reset contract. Typed documentation inventory inspection found no obsolete product-v1 entry. CHANGELOG.md, UPGRADE.md, and packages/cli/README.md already state that product v1 is unsupported, the reset is separately previewed, authorized, destructive, irreversible, and backup-free, v2-to-v3 migration remains supported, and current .v1 schema identifiers remain valid. Local compact check passed before this append with zero over-limit artifacts, formatting failures, protected overflow, errors, or changes."
+  next: Prime owns task evaluation and terminal plan closure; do not rerun the full release gate unless governed source changes.
+  publication_order: 189
