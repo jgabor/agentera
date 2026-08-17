@@ -1,0 +1,16 @@
+id: ulmrnzvsxl
+artifact: progress
+record:
+  timestamp: 2026-08-17 23:31
+  type: test
+  phase: audit
+  what: Verified the complete three-improvement test simplification without changing features or verification ownership.
+  context:
+    intent: Record final governed verification for plan task glrezhnuai while leaving task status and evaluation to the orchestrator.
+    constraints: Preserve prior pending status and evaluation state; include exact checks, measured savings, and caveats.
+    scope: Lane policy, all changed source-test families, full source tests, typecheck, package boundary, and live state compact gate.
+  inspiration: The initial /usr/bin/time focused attempt did not run because /usr/bin/time is absent. A corepack pnpm full-test attempt did not run because Corepack selected pnpm 11.3.0 instead of required 10.30.3; the required direct pnpm command then passed.
+  discovered: "Measured delivery savings: Profile Full median fell from 47.593s to 27.290s, a 42.66% same-machine improvement against the 40% target; 9 Git setups in 7 files removed 27 configuration subprocesses. No target remains unmet."
+  verified: "node packages/cli/scripts/verify-lane.mjs inventory: 256 files (249 source, 1 stress, 1 performance, 2 capacity, 3 package), no mixed files; node packages/cli/scripts/verify-lane.mjs validate: passed. Focused corepack pnpm -C packages/cli exec vp test run --config vite.config.ts plus 12 changed-family files: 12 files passed, 252 passed/1 skipped, 99s wall; this includes pass/failure workflow outcomes, Windows cancellation, symlink-swap failures, 7 Git fixture files, and Profile Full. pnpm -C packages/cli test: 249 files, 4,085 passed/1 skipped, 288s wall. pnpm -C packages/cli run typecheck: passed, 1s wall. pnpm -C packages/cli run verify:package: 3 files and 14 tests passed, owner 9.268s, shell 11s; retained extracted production workflow passed."
+  next: Orchestrator owns glrezhnuai completion and evaluation.
+  publication_order: 195
