@@ -1,0 +1,35 @@
+id: ztkgkllvru
+artifact: todo
+record:
+  kind: refactor
+  target_version: null
+  title: Retire the unused durability diagnostic
+  requirements:
+    - Remove agentera check durability dispatch, help, implementation, state-authority contract, package-registry references, and dedicated tests.
+    - Remove legacy number, limit, and optional-selector grammar rather than retaining a compatibility shell.
+    - Keep ordinary entity list/get and state validation as the supported local diagnostics.
+    - Update active user-facing documentation and changelog while preserving historical records.
+  acceptance:
+    - CLI and check help no longer advertise or dispatch durability.
+    - Active source, contracts, registries, and tests contain no durability command surface.
+    - Targeted source and package verification passes.
+  release_blocker: false
+  severity: normal
+  readiness:
+    capability: build
+    reason: The approved cleanup retires an unused public diagnostic instead of maintaining conflicting grammar.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 86
+    order_reason: Run after the existing open queue; this cleanup is independent of the other approved items.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor] Retire the unused durability diagnostic"
+      severity: normal
+      status: open
+      order: 29

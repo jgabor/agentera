@@ -42,6 +42,9 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
+- [ ] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
+- [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
+- [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 
 ## ⇢ Annoying
 

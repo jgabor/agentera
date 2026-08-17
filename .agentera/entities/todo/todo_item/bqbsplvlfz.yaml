@@ -1,0 +1,36 @@
+id: bqbsplvlfz
+artifact: todo
+record:
+  kind: refactor
+  target_version: null
+  title: Separate objective and experiment IDs from fixed artifact paths
+  requirements:
+    - Introduce protocol artifact identity independent of fixed default paths.
+    - Remove .agentera/objective.yaml and .agentera/experiments.yaml as current default aliases.
+    - Preserve canonical entity reads and writes plus explicit scoped legacy migration and compaction recognition.
+    - Make startup-analysis redaction recognize real entity and scoped paths without inventing root files.
+  acceptance:
+    - Generic validation and path classification do not treat either root pseudo-path as canonical.
+    - Objective and experiment entity operations retain existing behavior.
+    - Supported scoped migration and compaction fixtures pass.
+    - Source, capability-contract, compact, and package checks pass.
+  release_blocker: false
+  severity: normal
+  readiness:
+    capability: build
+    reason: Objective and experiment drift share one path-keyed identity abstraction and should be corrected together.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 87
+    order_reason: Run after the existing open queue; this cleanup is independent of durability retirement.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor] Separate objective and experiment IDs from fixed artifact paths"
+      severity: normal
+      status: open
+      order: 30

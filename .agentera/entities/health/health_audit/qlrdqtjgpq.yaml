@@ -1,0 +1,55 @@
+id: qlrdqtjgpq
+artifact: health
+record:
+  date: 2026-08-17
+  dimensions:
+    - pattern_consistency
+    - prose_health
+  findings_summary:
+    critical: 0
+    warning: 3
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: three scoped inconsistencies remain."
+  grades:
+    pattern_consistency: B
+    prose_health: B
+  dimension_details:
+    - name: pattern_consistency
+      grade: B
+      summary: Two active contracts disagree with runtime storage and grammar.
+      findings:
+        - title: Durability selectors disagree
+          severity: warning
+          confidence: 95
+          location: packages/cli/src/cli/commands/durability.ts:28
+          evidence: Help and authority make selectors optional and advertise --number; runtime requires --artifact plus --id and rejects --number.
+          impact: Automation follows invalid grammar.
+          suggested_action: Retire the diagnostic or align one minimal entity-ID contract.
+        - title: Objective path aliases are stale
+          severity: warning
+          confidence: 95
+          location: packages/cli/src/registries/artifactProtocolIds.ts:13
+          evidence: Fixed protocol paths use root objective and experiments files; authorities use objective-scoped paths and current writes use entities.
+          impact: Validation and compaction recognize different locations.
+          suggested_action: Separate artifact IDs from fixed paths and remove root aliases.
+    - name: prose_health
+      grade: B
+      summary: USAGE.md mapping names refresh as producer, but plain report text writes it.
+      findings:
+        - title: USAGE.md producer is inaccurate
+          severity: warning
+          confidence: 90
+          location: .agentera/docs.yaml:43
+          evidence: report refresh writes evidence tiers; usageStats writes USAGE.md during ready text reporting.
+          impact: The documented side effect is misleading.
+          suggested_action: Correct the producer or remove persistent Markdown output.
+  trends:
+    improved: Packaging guidance distinguishes routine publication from manual recovery.
+    degraded: None observed.
+    new_findings: Three scoped consistency findings.
+    resolved: None.
+    carried_forward: Packaging guide remains the generated-output runbook.
+  patterns:
+    - Entity storage replaced several former fixed-file assumptions.
+  appended_at: 2026-08-17T16:16:42.654Z

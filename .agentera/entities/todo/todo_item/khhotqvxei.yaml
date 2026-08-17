@@ -1,0 +1,36 @@
+id: khhotqvxei
+artifact: todo
+record:
+  kind: refactor
+  target_version: null
+  title: Make usage analytics output stdout-only
+  requirements:
+    - Stop generating USAGE.md and retire AGENTERA_USAGE_DIR from active analytics behavior.
+    - Preserve agentera report text and JSON analytics over existing bounded evidence tiers, with text emitted to stdout.
+    - Do not delete or rewrite existing user USAGE.md files during doctor, upgrade, or handoff workflows.
+    - Remove the obsolete docs mapping and reconcile prior decisions that intentionally retained persistent USAGE.md output.
+  acceptance:
+    - Ready text and JSON reporting produce equivalent analytics without writing USAGE.md.
+    - Missing or stale evidence retains current privacy-safe recovery behavior.
+    - Upgrade and doctor tests prove existing USAGE.md files are preserved.
+    - Active source, tests, docs, and decisions consistently describe stdout-only reporting.
+  release_blocker: false
+  severity: normal
+  readiness:
+    capability: build
+    reason: The approved cleanup removes an unconsumed generated report while preserving analytics and user files.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 88
+    order_reason: Run after the existing open queue; this behavior change has its own compatibility boundary.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor] Make usage analytics output stdout-only"
+      severity: normal
+      status: open
+      order: 31
