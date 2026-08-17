@@ -4,9 +4,19 @@ record:
   name: Consolidate equivalent Git fixtures
   depends_on:
     []
-  status: pending
+  status: complete
   acceptance:
     - GIVEN tests with equivalent repository identity setup WHEN their fixtures run THEN they use real temporary Git repositories and commits with unchanged observable results.
     - GIVEN specialized branch, hook, symlink, file-mode, or conflict scenarios WHEN migration is considered THEN their distinct behavior remains local and preserved.
     - GIVEN migrated fixtures WHEN process calls are inspected THEN repeated identity and signing configuration subprocesses are eliminated.
   plan: tvfqppsoeu
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: orchestrate audit attempt 1
+      recorded_at: 2026-08-17 22:44
+      writer_command: agentera state plan record-evaluation

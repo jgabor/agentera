@@ -7,7 +7,7 @@ import YAML from "yaml";
 import { expect, it } from "vitest";
 
 import {
-  runProductionGlossaryWorkflow,
+  invokeInProcess,
   runServedProfileFullWorkflow,
 } from "../helpers/profileFullGlossaryWorkflow.js";
 
@@ -28,12 +28,6 @@ it("drives Profile Full behavior from a transient local executable's served inst
     expect(fs.statSync(executable).isFile()).toBe(true);
 
     const workflowRoot = path.join(root, "workflow");
-    expect(runProductionGlossaryWorkflow(executable, path.join(root, "production"))).toEqual({
-      generationBound: true,
-      outcome: "review_required",
-      privacyBounded: true,
-      recovery: "agentera report refresh --consent local-history",
-    });
     const observation = runServedProfileFullWorkflow(executable, workflowRoot);
     expect(observation).toMatchObject({
       initialBaseHasNoGlossary: true,
@@ -69,16 +63,11 @@ it("drives Profile Full behavior from a transient local executable's served inst
       path.join(isolationRoot, ".agentera", "state-mode.yaml"),
       "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
     );
-    const schema = spawnSync(
-      process.execPath,
-      [executable, "schema", "--format", "json"],
-      { cwd: isolationRoot, encoding: "utf8" },
-    );
+    const schema = invokeInProcess(["schema", "--format", "json"], isolationRoot);
     expect(schema.status, schema.stderr || schema.stdout).toBe(0);
-    const buildPrime = spawnSync(
-      process.execPath,
-      [executable, "prime", "--context", "build", "--format", "json"],
-      { cwd: isolationRoot, encoding: "utf8" },
+    const buildPrime = invokeInProcess(
+      ["prime", "--context", "build", "--format", "json"],
+      isolationRoot,
     );
     expect(buildPrime.status, buildPrime.stderr || buildPrime.stdout).toBe(0);
     expect(JSON.parse(buildPrime.stdout)).toMatchObject({ capability_context: { capability: "build" } });

@@ -1,0 +1,16 @@
+id: lthxeqrkho
+artifact: progress
+record:
+  timestamp: 2026-08-17 23:16
+  type: test
+  phase: build
+  what: Reduced Profile Full focused source-test median wall time from 47.593s to 27.290s, a 42.66% improvement, by removing duplicate production coverage and moving non-startup scenario commands in process.
+  context:
+    intent: Reduce Profile Full workflow test cost by at least 40% without weakening semantic or package coverage.
+    constraints: No portable timing gate; preserve package determinism and production workflow coverage.
+    unknowns: Resolved the same-machine baseline unknown with three pre-change and three post-change samples.
+    scope: Profile Full source workflow test and shared test helper only.
+  discovered: "Same-machine baseline wall samples: 47.593s, 47.682s, 47.544s. Post-change samples: 27.290s, 27.275s, 27.405s."
+  verified: pnpm exec vp test run test/cli/profileFullGlossaryWorkflow.test.ts passed for all final samples; pnpm -C packages/cli run verify:package passed 14 tests; pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli test passed 4085 tests with 1 skipped. Every focused pass/failure observation and authority-isolation failure remains asserted; one subprocess smoke remains; package verification still owns the extracted-package production workflow.
+  next: Leave task status and evaluation pending for orchestrator resolution.
+  publication_order: 194

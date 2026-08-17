@@ -17,6 +17,7 @@ import {
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlossaryExplicitMining.js";
 import { personalProfileGrounding } from "../../src/analytics/personalGlossaryProfile.js";
+import { main } from "../../src/cli/dispatch/index.js";
 import {
   createGlossaryEvidenceCapsule,
   type GlossaryEvidenceCapsule,
@@ -54,6 +55,12 @@ interface CandidateOutcome {
   result: Mapping;
 }
 
+interface CliResult {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+}
+
 interface WorkflowResult {
   candidateReadFailures: number;
   candidateReadCount: number;
@@ -68,6 +75,7 @@ interface WorkflowResult {
   abstained: number;
   questionPrompts: number;
   publicationStatuses: string[];
+  authorizedPublications: Array<{ receipt: GlossaryHostClassificationReceipt; decision: Mapping }>;
 }
 
 export interface ProfileFullWorkflowObservation {
@@ -136,12 +144,34 @@ function invoke(executable: string, args: string[], root: string, input?: string
   });
 }
 
+export function invokeInProcess(args: string[], root: string, input?: string) {
+  let stdout = "";
+  let stderr = "";
+  const cwd = process.cwd();
+  const env = { ...process.env };
+  try {
+    process.chdir(root);
+    for (const key of Object.keys(process.env)) delete process.env[key];
+    Object.assign(process.env, isolatedEnv(root));
+    const status = main(["node", "agentera", ...args], {
+      out: (text) => { stdout += text; },
+      err: (text) => { stderr += text; },
+      stdin: input === undefined ? undefined : () => input,
+    });
+    return { status, stdout, stderr };
+  } finally {
+    process.chdir(cwd);
+    for (const key of Object.keys(process.env)) delete process.env[key];
+    Object.assign(process.env, env);
+  }
+}
+
 function mapping(value: unknown): Mapping {
   assert(value !== null && typeof value === "object" && !Array.isArray(value), "expected a JSON mapping");
   return value as Mapping;
 }
 
-function json(result: ReturnType<typeof invoke>): Mapping {
+function json(result: CliResult): Mapping {
   assert.equal(result.status, 0, `${result.stderr}${result.stdout}`);
   return mapping(JSON.parse(result.stdout));
 }
@@ -254,8 +284,9 @@ export function runProductionGlossaryWorkflow(
   };
 }
 
-function servedContract(executable: string, root: string): ServedProfileFullContract {
-  const prime = invoke(executable, ["prime", "--context", "profile", "--format", "json"], root);
+function servedContract(root: string): ServedProfileFullContract {
+  const args = ["prime", "--context", "profile", "--format", "json"];
+  const prime = invokeInProcess(args, root);
   assert.equal(prime.status, 0, prime.stderr || prime.stdout);
   const context = mapping(JSON.parse(prime.stdout)).capability_context;
   const instructions = mapping(context).instructions;
@@ -450,6 +481,7 @@ function runFullCycle(
     abstained: 0,
     questionPrompts: 0,
     publicationStatuses: [],
+    authorizedPublications: [],
   };
   let captured: string | null = null;
   let list: Mapping | null = null;
@@ -471,7 +503,7 @@ function runFullCycle(
       assert(afterBase.startsWith(base), "Profile Full must write its base before reading personal candidates");
       assert.equal(captureOwnedGlossary(afterBase), captured, "candidate retrieval must not replace the owned section");
       result.candidateReadCount += 1;
-      const read = invoke(executable, [
+      const read = invokeInProcess([
         "report", "personal-glossary-candidates", "list", "--limit", String(contract.candidateListLimit), "--format", "json",
       ], root);
       if (read.status !== 0) {
@@ -494,7 +526,7 @@ function runFullCycle(
         const capsule = capsules.get(candidateId);
         assert(capsule, `test fixture has no capsule for ${candidateId}`);
         result.exactReadCount += 1;
-        const exactRead = invoke(executable, [
+        const exactRead = invokeInProcess([
           "report", "personal-glossary-candidates", "get",
           "--candidate-id", candidateId,
           "--candidate-revision", String(summary.candidate_revision),
@@ -512,9 +544,8 @@ function runFullCycle(
         assert.equal(entry.term, capsule.term);
         assert.equal(entry.meaning, capsule.meaning);
         result.decisionCount += 1;
-        const decisionRead = invoke(executable, [
-          "report", "personal-glossary-decision", "--input", "-", "--format", "json",
-        ], root, JSON.stringify({
+        const decisionArgs = ["report", "personal-glossary-decision", "--input", "-", "--format", "json"];
+        const decisionInput = JSON.stringify({
           schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
           candidate_id: entry.candidate_id,
           candidate_revision: entry.candidate_revision,
@@ -530,8 +561,11 @@ function runFullCycle(
             consistency: "consistent",
             ...(fault.decision ? {} : { confidence: 80 }),
           },
-        }));
-        if (decisionRead.status !== 0) {
+        });
+        const decisionRead = capsule.provenance_kind === "personal_explicit_definition" && !fault.decision
+          ? invoke(executable, decisionArgs, root, decisionInput)
+          : invokeInProcess(decisionArgs, root, decisionInput);
+        if (decisionRead.status !== 0 || JSON.parse(decisionRead.stdout).status === "fail") {
           result.decisionFailures += 1;
           continue;
         }
@@ -550,7 +584,7 @@ function runFullCycle(
           continue;
         }
         if (status !== "review_required") continue;
-        const queued = json(invoke(executable, [
+        const queued = json(invokeInProcess([
           "report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json",
         ], root, JSON.stringify({
           schema_version: "agentera.personalGlossaryReviewQueueRequest.v1",
@@ -569,16 +603,19 @@ function runFullCycle(
         if (outcome.result.status !== "automatic_admission") continue;
         assert.equal(outcome.result.reason, "explicit_current_authorized");
         const decision = mapping(outcome.result.decision);
+        result.authorizedPublications.push({ receipt: outcome.receipt, decision });
         result.publicationCount += 1;
-        const publishedRead = invoke(executable, [
-          "report", "personal-glossary-publish", "--input", "-", "--format", "json",
-        ], root, JSON.stringify({
+        const publishArgs = ["report", "personal-glossary-publish", "--input", "-", "--format", "json"];
+        const publishInput = JSON.stringify({
           schema_version: "agentera.personalGlossaryPublishRequest.v1",
           receipt: outcome.receipt,
           decision,
           as_of: fault.publication ? "not-a-calendar-date" : AS_OF,
-        }));
-        if (publishedRead.status !== 0) {
+        });
+        const publishedRead = fault.publication
+          ? invokeInProcess(publishArgs, root, publishInput)
+          : invoke(executable, publishArgs, root, publishInput);
+        if (publishedRead.status !== 0 || JSON.parse(publishedRead.stdout).status === "fail") {
           result.publicationFailures += 1;
           continue;
         }
@@ -591,10 +628,10 @@ function runFullCycle(
   return result;
 }
 
-function setup(executable: string, root: string): ServedProfileFullContract {
+function setup(_executable: string, root: string): ServedProfileFullContract {
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-  return servedContract(executable, root);
+  return servedContract(root);
 }
 
 function writeExistingProfile(profilePath: string, base: string, section: string): void {
@@ -656,7 +693,7 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   const emptyContract = setup(executable, emptyRoot);
   writeExistingProfile(emptyContract.profilePath, initialBase, establishedOwned);
   fs.writeFileSync(path.join(emptyRoot, "AGENTS.md"), "# Rules\nUse ordinary words.\n");
-  const emptyRefresh = json(invoke(executable, [
+  const emptyRefresh = json(invokeInProcess([
     "report", "refresh", "--consent", "local-history", "--format", "json",
     "--project-root", emptyRoot,
     "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor",
@@ -799,8 +836,16 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert(mixedProfile.includes("inferred term") === false, "review-only terms must not publish");
   assert(fs.statSync(glossaryTrap).isDirectory(), "project glossary trap must remain untouched");
   const beforeReplay = mixedProfile;
-  const replay = runFullCycle(executable, mixedRoot, mixedContract, regeneratedBase, mixedCapsules, true);
-  assert.deepEqual(replay.publicationStatuses, ["unchanged_replay"]);
+  const replayRequest = mixed.authorizedPublications[0]!;
+  const replay = json(invoke(executable, [
+    "report", "personal-glossary-publish", "--input", "-", "--format", "json",
+  ], mixedRoot, JSON.stringify({
+    schema_version: "agentera.personalGlossaryPublishRequest.v1",
+    receipt: replayRequest.receipt,
+    decision: replayRequest.decision,
+    as_of: AS_OF,
+  })));
+  assert.equal(replay.status, "unchanged_replay");
   assert.equal(fs.readFileSync(mixedContract.profilePath, "utf8"), beforeReplay);
 
   const questionsRoot = path.join(root, "questions");
@@ -844,7 +889,7 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
     questionPrompts: questions.questionPrompts,
     questionPromptMaximum: questionsContract.questionReviewMaximum,
     fallbackUsedDurableQueue: fallback.queued === 1 && fallback.questionPrompts === 0,
-    replayed: replay.publicationStatuses[0] === "unchanged_replay",
+    replayed: replay.status === "unchanged_replay",
     projectGlossaryTrapSurvived: fs.statSync(glossaryTrap).isDirectory(),
   };
 }
