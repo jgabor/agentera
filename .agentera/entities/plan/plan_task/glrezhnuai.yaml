@@ -1,0 +1,14 @@
+id: glrezhnuai
+artifact: plan
+record:
+  name: Verify and record the simplification
+  depends_on:
+    - lqvvnzggrf
+    - awofvgmnfi
+    - apcjyefepu
+  status: pending
+  acceptance:
+    - GIVEN tasks 1 through 3 are complete WHEN focused checks run THEN each changed test family passes with pass and failure coverage proportional to the changed behavior.
+    - GIVEN the complete change WHEN lane validation, source tests, typecheck, and package verification run THEN all required owners pass without ownership drift.
+    - GIVEN baseline runtime and process evidence WHEN final evidence is recorded THEN the achieved savings and any unmet target are stated without claiming unmeasured improvement.
+  plan: tvfqppsoeu

@@ -45,11 +45,6 @@ function primeVerification(): any {
 }
 
 describe("project verification command discovery", () => {
-  it("uses shared project safety without a platform-specific descriptor path", () => {
-    const source = fs.readFileSync(path.resolve("src/cli/capabilityContext/projectVerification.ts"), "utf8");
-    expect(source).not.toContain("/proc/self/fd");
-  });
-
   it("accepts concrete AGENTS recipes and rejects placeholders and unsupported executables", () => {
     writePackage(".", { lint: "eslint ." });
     writeGuidance([

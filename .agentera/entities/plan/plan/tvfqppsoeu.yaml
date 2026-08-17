@@ -1,0 +1,35 @@
+id: tvfqppsoeu
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-17
+    status: open
+    reviewed: 2026-08-17
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    title: "Plan: Simplify CLI tests without regressions"
+  what: Reduce source-test runtime and maintenance cost while preserving observable behavior and verification ownership.
+  why: The audit found one slow duplicated workflow, repeated Git setup, and brittle source-spelling assertions that can be simplified without weakening regression evidence.
+  constraints: Preserve behavioral assertions, one realistic process-boundary smoke where required, real temporary Git repositories, package determinism, and the existing performance, stress, capacity, and package-owner boundaries. Keep timing comparisons machine-local and keep any shared Git helper narrow.
+  overall_acceptance: GIVEN all tasks are complete WHEN source and package verification run THEN existing behavior and owner boundaries pass, the Profile Full focused test is materially faster on the same machine, repeated equivalent Git setup is reduced, and behavior-preserving internal renames do not fail ordinary behavioral tests.
+  scope:
+    included:
+      - Profile Full source-workflow test cost
+      - equivalent temporary Git repository setup
+      - ordinary implementation-spelling assertions
+      - targeted and full verification evidence
+    excluded:
+      - performance sample reduction
+      - stress repetition reduction
+      - capacity fixture reduction
+      - package determinism reduction
+      - unrelated test-file consolidation
+    deferred:
+      - the separately tracked runtime bootstrap package-verification budget
+  design: First remove duplicated high-cost evidence while retaining one realistic boundary check. Next reduce repeated fixture setup only where semantics match. Then replace implementation-coupled checks with observable contracts. Finish by comparing evidence and running every affected verification owner.
+  unknowns:
+    - question: Will removing duplicate Profile Full coverage alone meet the runtime target?
+      affects_task: 1
+      resolve_by: Measure before and after on the same machine; use cheaper matrix execution only if the focused test does not improve by at least 40 percent.
+  surprises:
+    []

@@ -1,0 +1,12 @@
+id: apcjyefepu
+artifact: plan
+record:
+  name: Replace implementation-spelling assertions
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN each ordinary source-text assertion WHEN it is changed or removed THEN an existing or new observable assertion covers the same regression.
+    - GIVEN behavior-preserving internal renames WHEN affected tests run THEN they do not fail solely because implementation spelling changed.
+    - GIVEN text is itself the declared contract WHEN static authority, vocabulary, retirement, or inventory tests run THEN that contract coverage remains intact.
+  plan: tvfqppsoeu

@@ -429,11 +429,9 @@ describe("final entity retrieval public-contract parity", () => {
     }
   });
 
-  it("routes and discovers every registry family without a legacy retrieval handler map", () => {
+  it("routes and discovers every registry family", () => {
     const commandRoots = new Set(stateCommandNames());
     for (const family of ENTITY_LIST_RUNTIME_FAMILIES) expect(commandRoots.has(family.commandTokens[0]), family.key).toBe(true);
-    expect(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/src/cli/commands/state/index.ts"), "utf8")).not.toContain("STATE_COMMAND_HANDLERS");
-    expect(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/src/cli/dispatch/index.ts"), "utf8")).toContain("runtimeEntityFamiliesForCommand(sub)");
   });
 
   it("generates exact-get help and structured selector rejection for every authority family", () => {

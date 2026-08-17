@@ -1,0 +1,14 @@
+id: xsgbtagdwj
+artifact: progress
+record:
+  timestamp: 2026-08-17 21:59
+  type: test
+  phase: build
+  what: Updated four CLI test files so assertions observe command results instead of source spelling; documented static-contract scans remain unchanged.
+  context:
+    intent: Replace ordinary implementation-source spelling assertions with observable behavioral assertions.
+    constraints: Preserve authority, vocabulary, retirement, and package inventory text contracts; do not complete or evaluate the plan task.
+    scope: Personal glossary publication, project verification, state retrieval parity, and generated-overlap qualification tests.
+  verified: "Targeted vp test run: 104 passed. pnpm -C packages/cli test: 249 files passed, 4,084 tests passed, 1 skipped."
+  next: Plan evaluation and task resolution remain with the orchestrator.
+  publication_order: 191

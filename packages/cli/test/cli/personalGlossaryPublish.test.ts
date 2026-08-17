@@ -819,20 +819,19 @@ describe("agentera report personal-glossary-publish", () => {
     }
   });
 
-  it("bounds input and has no interactive or sensitive output path", () => {
+  it("rejects oversized input without effects or reflecting input", () => {
     writeProfile();
     const before = noEffectSnapshot();
     const overBound = run(
       ["report", "personal-glossary-publish", "--input", "-", "--format", "json"],
       "x".repeat(16_385),
     );
-    expect(overBound.rc).toBe(2);
+    expect(overBound).toMatchObject({ rc: 2, err: "" });
+    expect(JSON.parse(overBound.out)).toMatchObject({
+      status: "fail",
+      error: { class: "invalid_format" },
+    });
+    expect(overBound.out).not.toContain("xxxxxxxx");
     expectNoEffects(before);
-
-    const source = fs.readFileSync(path.join(ROOT, "packages/cli/src/cli/commands/personalGlossaryPublish.ts"), "utf8");
-    expect(source).toContain("Buffer.allocUnsafe(maxBytes + 1)");
-    expect(source).toContain("fs.readSync(fd");
-    expect(source).not.toContain("readline");
-    expect(source).not.toContain("prompt(");
   });
 });

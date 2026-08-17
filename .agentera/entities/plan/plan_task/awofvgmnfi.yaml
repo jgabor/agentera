@@ -1,0 +1,12 @@
+id: awofvgmnfi
+artifact: plan
+record:
+  name: Consolidate equivalent Git fixtures
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN tests with equivalent repository identity setup WHEN their fixtures run THEN they use real temporary Git repositories and commits with unchanged observable results.
+    - GIVEN specialized branch, hook, symlink, file-mode, or conflict scenarios WHEN migration is considered THEN their distinct behavior remains local and preserved.
+    - GIVEN migrated fixtures WHEN process calls are inspected THEN repeated identity and signing configuration subprocesses are eliminated.
+  plan: tvfqppsoeu

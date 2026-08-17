@@ -1,0 +1,12 @@
+id: lqvvnzggrf
+artifact: plan
+record:
+  name: Reduce Profile Full workflow cost
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN the existing workflow observations WHEN the focused source test runs THEN every current pass and failure scenario remains asserted.
+    - GIVEN production package coverage already exists WHEN duplication is removed THEN one source process-boundary smoke and the extracted-package workflow still pass.
+    - GIVEN same-machine baseline measurements WHEN the focused test is measured after the change THEN median wall time improves by at least 40 percent without a portable timing gate.
+  plan: tvfqppsoeu

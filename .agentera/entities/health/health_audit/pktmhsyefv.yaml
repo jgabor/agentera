@@ -1,0 +1,49 @@
+id: pktmhsyefv
+artifact: health
+record:
+  date: 2026-08-17
+  dimensions:
+    - test_health
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: "stable: strong lane ownership, with avoidable source-run cost. [post-audit-flagged]"
+  grades:
+    test_health: B
+  dimension_details:
+    - name: test_health
+      grade: B
+      summary: Reviewed all 256 test files. Isolation and owner boundaries are sound; source execution and maintenance can be cheaper.
+      findings:
+        - title: Source runs invoke package setup
+          severity: warning
+          confidence: 99
+          location: packages/cli/vite.config.ts:19
+          evidence: Excluded package tests still run packageSetup.
+          impact: Two builds and packs burden every source run.
+          suggested_action: Remove packageSetup from source globalSetup; retain package-owner setup.
+        - title: Profile workflow duplicates slow process coverage
+          severity: warning
+          confidence: 95
+          location: packages/cli/test/cli/profileFullGlossaryWorkflow.test.ts:16
+          evidence: One source test rebuilds and runs repeated subprocess workflows.
+          impact: Targeted test takes about 52 seconds.
+          suggested_action: Use in-process matrix checks plus one subprocess smoke; retain package workflow.
+        - title: Git fixture setup is duplicated
+          severity: info
+          confidence: 90
+          location: packages/cli/test/build/generatedOutputPublication.test.ts:32
+          evidence: Seventeen local wrappers repeat identity setup.
+          impact: Extra subprocesses and drift.
+          suggested_action: Add one narrow real-Git fixture helper.
+  trends:
+    improved: Owner isolation is explicit.
+    degraded: No regression observed.
+    new_findings: Three efficiency opportunities.
+    resolved: None.
+    carried_forward: Preserve stress, performance, capacity, and deterministic package evidence.
+  patterns:
+    - Temporary fixtures isolate mutable state.
+  appended_at: 2026-08-17T19:18:55.198Z

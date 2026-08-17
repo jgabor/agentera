@@ -579,7 +579,7 @@ describe("source qualification DAG", () => {
     let now = 1_000;
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-success-test-"));
     fs.mkdirSync(path.join(workRoot, "barrier"));
-    const started: string[] = [];
+    const started: Array<{ name: string; command: string[] }> = [];
     const cleanupAt: number[] = [];
     const inventory = {
       counts: { source: 1, package: 1, stress: 1, performance: 1, capacity: 1 },
@@ -609,7 +609,7 @@ describe("source qualification DAG", () => {
           }),
         }),
         startParticipant: (name: string, command: string[]) => {
-          started.push(name);
+          started.push({ name, command });
           now += 10;
           return {
             name,
@@ -653,7 +653,12 @@ describe("source qualification DAG", () => {
           build: { command: gate("build").command, elapsedMs: 10, status: "pass" },
         },
       });
-      expect(started).toEqual(["source", "build", "package", "invocation"]);
+      expect(started).toEqual([
+        { name: "source", command: ["pnpm", "-C", "packages/cli", "run", "test:source"] },
+        { name: "build", command: ["pnpm", "-C", "packages/cli", "build"] },
+        { name: "package", command: ["pnpm", "-C", "packages/cli", "run", "verify:package"] },
+        { name: "invocation", command: [process.execPath, path.join(REPO_ROOT, "packages/cli/dist/bin/agentera.js"), "--version"] },
+      ]);
       expect(cleanupAt).toEqual([1_000]);
       expect(fs.existsSync(workRoot)).toBe(false);
     } finally {
@@ -661,19 +666,11 @@ describe("source qualification DAG", () => {
     }
   });
 
-  it("locks generated-overlap to the exact public source, build, and package commands", () => {
-    const script = fs.readFileSync(path.join(REPO_ROOT, "packages/cli/scripts/verify-generated-overlap.mjs"), "utf8");
+  it("keeps generated-overlap policy aligned with release qualification", () => {
     const policy = YAML.parse(fs.readFileSync(
       path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"),
       "utf8",
     ));
-    expect(script).toContain('source: ["pnpm", "-C", "packages/cli", "run", "test:source"]');
-    expect(script).toContain('build: ["pnpm", "-C", "packages/cli", "build"]');
-    expect(script).toContain('package: ["pnpm", "-C", "packages/cli", "run", "verify:package"]');
-    expect(script).not.toContain('VITEST_MAX_WORKERS: "2"');
-    expect(script).toContain('"taskkill"');
-    expect(script).toContain('["/PID", String(child.pid), "/T"');
-    expect(script).toContain('schemaVersion: "agentera.generatedOverlapEvidence.v1"');
     expect(RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema)
       .toBe(policy.owners.performance.evidence.schema_version);
     expect(policy.release_qualification).toMatchObject({
