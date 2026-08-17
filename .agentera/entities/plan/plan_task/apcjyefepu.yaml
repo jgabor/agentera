@@ -4,19 +4,19 @@ record:
   name: Replace implementation-spelling assertions
   depends_on:
     []
-  status: pending
+  status: complete
   acceptance:
     - GIVEN each ordinary source-text assertion WHEN it is changed or removed THEN an existing or new observable assertion covers the same regression.
     - GIVEN behavior-preserving internal renames WHEN affected tests run THEN they do not fail solely because implementation spelling changed.
     - GIVEN text is itself the declared contract WHEN static authority, vocabulary, retirement, or inventory tests run THEN that contract coverage remains intact.
   plan: tvfqppsoeu
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Windows process-tree cancellation lost behavioral coverage; ordinary source-spelling assertions remain in buildExecutionRequest, personalGlossaryReviewRecords, and personalGlossaryDecision tests.
     provenance:
-      attempt_id: audit-1
-      source: orchestrate audit attempt 1
-      recorded_at: 2026-08-17 22:06
+      attempt_id: audit-2
+      source: orchestrate audit attempt 2
+      recorded_at: 2026-08-17 22:28
       writer_command: agentera state plan record-evaluation

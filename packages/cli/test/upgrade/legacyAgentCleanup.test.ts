@@ -26,6 +26,7 @@ import {
   planCleanupPhase,
 } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
+import { gitCommitArgs } from "../helpers/git.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -45,11 +46,8 @@ function initializeGit(root: string): void {
     if (result.status !== 0) throw new Error(String(result.stderr));
   };
   run("init", "--quiet");
-  run("config", "user.name", "Upgrade Test");
-  run("config", "user.email", "upgrade@example.invalid");
-  run("config", "commit.gpgsign", "false");
   run("add", ".");
-  run("commit", "--quiet", "-m", "v2 state");
+  run(...gitCommitArgs("--quiet", "-m", "v2 state"));
 }
 
 function managedV2(appHome: string): void {

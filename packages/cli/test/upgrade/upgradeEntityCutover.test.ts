@@ -16,6 +16,7 @@ import { FORWARD_MANIFEST, applyPreparedEntityCutover, prepareEntityCutoverForUp
 import { previewEntityMigration } from "../../src/state/entityMigrationPreview.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
+import { gitCommitArgs } from "../helpers/git.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const FIXTURE = path.join(import.meta.dirname, "fixtures/v2-yaml-project");
@@ -95,11 +96,8 @@ function git(root: string, ...args: string[]): string {
 
 function initializeGit(root: string): void {
   git(root, "init", "--quiet");
-  git(root, "config", "user.name", "Upgrade Test");
-  git(root, "config", "user.email", "upgrade@example.invalid");
-  git(root, "config", "commit.gpgsign", "false");
   git(root, "add", ".");
-  git(root, "commit", "--quiet", "-m", "v2 state");
+  git(root, ...gitCommitArgs("--quiet", "-m", "v2 state"));
 }
 
 function applyUpgrade(

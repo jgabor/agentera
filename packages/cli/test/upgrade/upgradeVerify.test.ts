@@ -16,6 +16,7 @@ import {
 } from "../../src/cli/commands/upgradeVerify.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
+import { gitCommitArgs } from "../helpers/git.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -216,11 +217,8 @@ describe("verify", () => {
     const project = path.join(tmp, "v2-project");
     fs.cpSync(path.join(REPO_ROOT, "packages/cli/test/upgrade/fixtures/v2-yaml-project"), project, { recursive: true });
     execFileSync("git", ["init", "--quiet"], { cwd: project });
-    execFileSync("git", ["config", "user.name", "Upgrade Verify Test"], { cwd: project });
-    execFileSync("git", ["config", "user.email", "upgrade-verify@example.invalid"], { cwd: project });
-    execFileSync("git", ["config", "commit.gpgsign", "false"], { cwd: project });
     execFileSync("git", ["add", "."], { cwd: project });
-    execFileSync("git", ["commit", "--quiet", "-m", "v2 state"], { cwd: project });
+    execFileSync("git", gitCommitArgs("--quiet", "-m", "v2 state"), { cwd: project });
 
     const { rc, out, err } = capture([
       "node",

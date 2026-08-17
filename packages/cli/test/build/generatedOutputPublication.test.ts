@@ -20,6 +20,7 @@ import {
   writeGenerationIdentity,
 } from "../../scripts/generated-output.mjs";
 import { gitSourceTreeDigest } from "../../scripts/git-source-tree.mjs";
+import { gitCommitArgs } from "../helpers/git.js";
 
 const roots: string[] = [];
 
@@ -43,12 +44,9 @@ function sourceIdentityRepository(fileMode: boolean): { root: string; packageRoo
   fs.writeFileSync(path.join(root, ".gitignore"), "packages/cli/.agentera-generated/\n");
   fs.writeFileSync(file, "mode-bound bytes\n");
   git(root, ["init", "--quiet"]);
-  git(root, ["config", "user.name", "Agentera test"]);
-  git(root, ["config", "user.email", "agentera-test@example.invalid"]);
-  git(root, ["config", "commit.gpgsign", "false"]);
   git(root, ["config", "core.filemode", String(fileMode)]);
   git(root, ["add", "."]);
-  git(root, ["commit", "--quiet", "-m", "fixture"]);
+  git(root, gitCommitArgs("--quiet", "-m", "fixture"));
   return { root, packageRoot, file };
 }
 
@@ -59,12 +57,9 @@ function symlinkIdentityRepository(): { root: string; packageRoot: string; file:
   fs.mkdirSync(packageRoot, { recursive: true });
   fs.writeFileSync(path.join(root, ".gitignore"), "packages/cli/.agentera-generated/\n");
   git(root, ["init", "--quiet"]);
-  git(root, ["config", "user.name", "Agentera test"]);
-  git(root, ["config", "user.email", "agentera-test@example.invalid"]);
-  git(root, ["config", "commit.gpgsign", "false"]);
   fs.symlinkSync("target-a", file);
   git(root, ["add", "."]);
-  git(root, ["commit", "--quiet", "-m", "symlink fixture"]);
+  git(root, gitCommitArgs("--quiet", "-m", "symlink fixture"));
   return { root, packageRoot, file };
 }
 
@@ -76,14 +71,11 @@ function symlinkSurrogateIdentityRepository(): { root: string; packageRoot: stri
   fs.writeFileSync(path.join(root, ".gitignore"), "packages/cli/.agentera-generated/\n");
   fs.writeFileSync(file, "target-a");
   git(root, ["init", "--quiet"]);
-  git(root, ["config", "user.name", "Agentera test"]);
-  git(root, ["config", "user.email", "agentera-test@example.invalid"]);
-  git(root, ["config", "commit.gpgsign", "false"]);
   git(root, ["config", "core.symlinks", "false"]);
   git(root, ["add", ".gitignore"]);
   const object = git(root, ["hash-object", "-w", "source-link"]);
   git(root, ["update-index", "--add", "--cacheinfo", `120000,${object},source-link`]);
-  git(root, ["commit", "--quiet", "-m", "symlink surrogate fixture"]);
+  git(root, gitCommitArgs("--quiet", "-m", "symlink surrogate fixture"));
   return { root, packageRoot, file };
 }
 

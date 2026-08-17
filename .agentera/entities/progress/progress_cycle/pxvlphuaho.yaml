@@ -1,0 +1,14 @@
+id: pxvlphuaho
+artifact: progress
+record:
+  timestamp: 2026-08-17 22:38
+  type: test
+  phase: build
+  what: Consolidated equivalent Git identity setup in 7 test files with gitCommitArgs. Removed 27 user.name, user.email, and commit.gpgsign configuration subprocesses across 9 repository setups.
+  context:
+    intent: Eliminate repeated Git fixture identity configuration subprocesses without changing repository behavior.
+    constraints: Use real temporary repositories and commits; preserve specialized Git scenarios locally; do not resolve or evaluate the plan task.
+    scope: 7 migrated test files, 9 repository setups, and one narrow argument helper.
+  discovered: Specialized file-mode, symlink, environment-isolation, branch, hook, conflict, and repository-configuration semantics remain local; only equivalent commit identity and signing options moved to the shared helper.
+  verified: "pnpm -C packages/cli exec vp test run test/build/generatedOutputPublication.test.ts test/upgrade/upgradeOrchestrator.test.ts test/upgrade/upgradeEntityCutover.test.ts test/upgrade/exitCodes.test.ts test/upgrade/idempotency.test.ts test/upgrade/legacyAgentCleanup.test.ts test/upgrade/upgradeVerify.test.ts: 7 files passed, 145 tests passed, 1 skipped. pnpm -C packages/cli run typecheck: passed. pnpm -C packages/cli test: 249 files passed, 4085 tests passed, 1 skipped."
+  publication_order: 193

@@ -25,6 +25,7 @@ import {
   renderUpgradePlan,
   validateUpgradeApply,
 } from "../../src/upgrade/upgradeOrchestrator.js";
+import { gitCommitArgs } from "../helpers/git.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -56,11 +57,8 @@ function git(root: string, ...args: string[]): void {
 
 function initializeGit(root: string): void {
   git(root, "init", "--quiet");
-  git(root, "config", "user.name", "Upgrade Test");
-  git(root, "config", "user.email", "upgrade@example.invalid");
-  git(root, "config", "commit.gpgsign", "false");
   git(root, "add", ".");
-  git(root, "commit", "--quiet", "--allow-empty", "-m", "v2 state");
+  git(root, ...gitCommitArgs("--quiet", "--allow-empty", "-m", "v2 state"));
 }
 
 function snapshotTree(root: string): Record<string, string> {

@@ -25,6 +25,7 @@ import {
   checksumManifest,
   listProjectArtifactRelPaths,
 } from "./helpers/preservation.js";
+import { gitCommitArgs } from "../helpers/git.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -59,11 +60,8 @@ function seedLayout(sandbox: string): { appHome: string; project: string } {
     if (result.status !== 0) throw new Error(String(result.stderr));
   };
   git("init", "--quiet");
-  git("config", "user.name", "Upgrade Test");
-  git("config", "user.email", "upgrade@example.invalid");
-  git("config", "commit.gpgsign", "false");
   git("add", ".");
-  git("commit", "--quiet", "-m", "v2 state");
+  git(...gitCommitArgs("--quiet", "-m", "v2 state"));
   return { appHome, project };
 }
 
