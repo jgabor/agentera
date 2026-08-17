@@ -3,22 +3,35 @@ artifact: todo
 record:
   severity: degraded
   status: open
-  description: "[feat:3.0.0] Add general transactional TODO batch apply after the decision-required reconciliation transaction. `agentera state todo apply --input <path|->` must compose create, patch, severity changes, supersede, resolve, reopen, and dependency edits atomically, including local symbolic references between new items. Reuse the canonical snapshot, CAS, idempotency, receipt, and recovery primitive; prove one preview, one apply, and one validation replace serial CRUD without partial publication. Partial for Decision `kpybrsfywb`: this improves arbitrary batch workflows but does not own Markdown reconciliation or release correctness."
   readiness:
     capability: build
-    reason: General batch composition is optional workflow efficiency and must reuse, not own, the decision-required reconciliation transaction.
+    reason: Repository history since 2026-08-02 contains repeated commits with multiple substantive TODO changes, including linked new items.
     dependencies:
       - artifact: todo
         id: frpdshynmd
     blocked: null
     gate: null
     queue_rank: 10
-    order_reason: Add arbitrary batch composition after the critical reconciliation transaction is complete; it no longer blocks Decision kpybrsfywb.
+    order_reason: Reuse the completed reconciliation transaction for the common batch operations proven by repository history.
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[feat:3.0.0] Add general transactional TODO batch apply after the decision-required reconciliation transaction. `agentera state todo apply --input <path|->` must compose create, patch, severity changes, supersede, resolve, reopen, and dependency edits atomically, including local symbolic references between new items. Reuse the canonical snapshot, CAS, idempotency, receipt, and recovery primitive; prove one preview, one apply, and one validation replace serial CRUD without partial publication. Partial for Decision `kpybrsfywb`: this improves arbitrary batch workflows but does not own Markdown reconciliation or release correctness."
+      description: "[feat:3.0.0] Apply common multi-item TODO changes atomically."
       severity: degraded
       status: open
       order: 1
+  kind: feat
+  target_version: 3.0.0
+  requirements:
+    - Compose multiple create, update, set-severity, and resolve operations in one apply request.
+    - Support local references between new items so one new TODO can depend on another.
+    - Reuse the canonical reconciliation snapshot, CAS, idempotency, receipt, and recovery primitive.
+    - Do not add reopen or supersede batch behavior without separate evidence.
+  acceptance:
+    - One preview, one apply, and one validation replace serial creates, updates, severity changes, and resolutions without partial publication.
+    - A multi-create request can link one new TODO to another with stable local references.
+    - Stale or divergent state fails before effects and retries converge.
+    - Tests cover representative historical multi-item create, resolve, severity, and mixed-update workflows.
+  release_blocker: false
+  title: Apply common multi-item TODO changes atomically.

@@ -3,21 +3,34 @@ artifact: todo
 record:
   severity: degraded
   status: open
-  description: "[fix:3.0.0] Keep initial status orientation informational until the user expresses execution intent. Render `next_action` and wait for free-form acceptance; do not open a native Proceed/Cancel question merely because the suggestion is state-changing. After explicit acceptance, apply the ordinary confirmation boundary before dispatch. Add host-contract regressions for bare status, explicit build requests, accepted suggestions, cancellation, and autonomous orchestration."
   readiness:
     capability: build
-    reason: Four of eight reviewed root sessions dismissed the immediate post-prime build question; the status and host handoff contract owns that repeated interaction.
+    reason: Immediate native confirmation caused observed handoff dismissal, while current authority already treats clear free-form acceptance as confirmation.
     dependencies:
       []
     blocked: null
     gate: null
     queue_rank: 20
-    order_reason: Resolve the concrete user-facing handoff friction after publication parsing and before the broader activation-conjunction gate.
+    order_reason: Fix the repeated user-facing handoff friction after the critical startup correctness work.
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] Keep initial status orientation informational until the user expresses execution intent. Render `next_action` and wait for free-form acceptance; do not open a native Proceed/Cancel question merely because the suggestion is state-changing. After explicit acceptance, apply the ordinary confirmation boundary before dispatch. Add host-contract regressions for bare status, explicit build requests, accepted suggestions, cancellation, and autonomous orchestration."
+      description: "[fix:3.0.0] Keep initial status handoffs informational."
       severity: degraded
       status: open
       order: 2
+  kind: fix
+  target_version: 3.0.0
+  requirements:
+    - Render next_action with a free-form continuation prompt even when the suggested capability may mutate state, unless the user requested bounded choices.
+    - Treat clear acceptance of the one named suggestion as confirmation and invoke it once without a second status prompt.
+    - Treat direct capability routes as consent, stop on decline, and ask one clarification for an ambiguous reply.
+    - Leave any additional mutation confirmation to the invoked capability and keep autonomous orchestration outside this status-handoff contract.
+  acceptance:
+    - Served status instructions, the shared skill, and CLI vocabulary define the same informational first handoff.
+    - Clear acceptance invokes the named capability once without a second status confirmation.
+    - Decline, ambiguity, and direct-route behavior are covered by focused served-contract tests.
+    - No status schema or host-native prompt implementation is added, and orchestration behavior is unchanged.
+  release_blocker: false
+  title: Keep initial status handoffs informational.

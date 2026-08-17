@@ -3,25 +3,38 @@ artifact: todo
 record:
   severity: critical
   status: open
-  description: "[fix:3.0.0] At the explicitly approved stable cutover, promote the TypeScript package to npm `@latest`, update channel authority and bundled bootstrap from `agentera@next` to bare `agentera`, replace the v2 Python delivery path with an explicit deprecation response, and delete the quarantined v2 parsers, migrations, cleanup-only compatibility, native rewrite paths, retired Python, and shim delegation sources identified by TODO `fxddfkldsr`. Remove remaining native runtime hooks and run the clean, v2, partial, and v3 bootstrap matrix against `@latest`. Do not change stable-channel resolution or delete compatibility before the approval gate and final activation conjunction pass."
   readiness:
     capability: build
-    reason: Decision imumkmffwh requires upgrade-only compatibility to be deleted at stable cutover, but the externally visible cutover remains explicitly approval-gated.
+    reason: The final irreversible transaction must publish the exact approved TypeScript cutover candidate and verify @latest convergence.
     dependencies:
       - artifact: todo
-        id: odiytubocn
+        id: lqqmlchlyr
     blocked: null
     gate:
       state: pending
-      reason: Stable dist-tag promotion and deletion of the final compatibility boundary require explicit user approval after all decision lanes pass.
-      recovery: Obtain explicit stable-cutover approval after TODO odiytubocn passes, then run the documented release transaction.
+      reason: npm @latest promotion requires the exact verified candidate and explicit final release approval.
+      recovery: Complete TODO lqqmlchlyr, obtain explicit final release approval, and run the documented stable publication transaction.
     queue_rank: 200
-    order_reason: Execute last, only after the activation gate proves runtime, reference, and state boundaries are complete.
+    order_reason: Execute last, after the stable path and approved immutable candidate are complete.
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] At the explicitly approved stable cutover, promote the TypeScript package to npm `@latest`, update channel authority and bundled bootstrap from `agentera@next` to bare `agentera`, replace the v2 Python delivery path with an explicit deprecation response, and delete the quarantined v2 parsers, migrations, cleanup-only compatibility, native rewrite paths, retired Python, and shim delegation sources identified by TODO `fxddfkldsr`. Remove remaining native runtime hooks and run the clean, v2, partial, and v3 bootstrap matrix against `@latest`. Do not change stable-channel resolution or delete compatibility before the approval gate and final activation conjunction pass."
+      description: "[fix:3.0.0] Promote the verified TypeScript cutover candidate to npm @latest."
       severity: critical
       status: open
-      order: 1
+      order: 6
+  kind: fix
+  target_version: 3.0.0
+  requirements:
+    - Require the completed immutable candidate-preparation dependency and explicit final release approval.
+    - Publish or promote the exact verified TypeScript candidate without rebuilding it or rolling tags back.
+    - Wait for package and dist-tag convergence, then run the clean, v2, partial, and v3 bootstrap matrix against @latest.
+    - Close only when channel authority, bare agentera bootstrap, Python deprecation, and compatibility-removal boundaries agree.
+  acceptance:
+    - The exact approved candidate is available on npm @latest with matching identity and integrity.
+    - Stable package and dist-tag checks converge without reconstruction or rollback.
+    - The documented bootstrap matrix passes against @latest.
+    - Final source, package, channel, and deprecation state agree before closeout.
+  release_blocker: true
+  title: Promote the verified TypeScript cutover candidate to npm @latest.

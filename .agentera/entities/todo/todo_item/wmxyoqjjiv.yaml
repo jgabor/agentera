@@ -3,12 +3,32 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[fix:3.0.0] Harden `loadSuiteVersion` (`appModel.ts:72-95`) to surface WHY it returned null on a corrupted/missing `registry.json` version-authority file. Current swallow-all catch at line 81 returns null silently for JSON parse failures, missing `skills` array, wrong `authority.selector`, and missing file — none of which reach the operator. Add structured diagnostic strings (e.g., `version_authority_file_missing`, `version_authority_parse_failed`, `skills_array_empty`, `selector_mismatch`) so callers like `cliDistributionMajor`'s secondary-signal fallback can distinguish \"v2 with no package.json\" from \"v3 with corrupted registry.json.\" Surfaced during the `cliDistributionMajor` plan (Step 2, scope-boundary decision: kept out of plan scope; tracks as separate concern). (Branch: `feat/v3` — implement on `feat/v3`.)"
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] Harden `loadSuiteVersion` (`appModel.ts:72-95`) to surface WHY it returned null on a corrupted/missing `registry.json` version-authority file. Current swallow-all catch at line 81 returns null silently for JSON parse failures, missing `skills` array, wrong `authority.selector`, and missing file — none of which reach the operator. Add structured diagnostic strings (e.g., `version_authority_file_missing`, `version_authority_parse_failed`, `skills_array_empty`, `selector_mismatch`) so callers like `cliDistributionMajor`'s secondary-signal fallback can distinguish \"v2 with no package.json\" from \"v3 with corrupted registry.json.\" Surfaced during the `cliDistributionMajor` plan (Step 2, scope-boundary decision: kept out of plan scope; tracks as separate concern). (Branch: `feat/v3` — implement on `feat/v3`.)"
+      description: "[fix:3.0.0] Return typed loadSuiteVersion failure classifications."
       severity: normal
       status: open
       order: 7
+  kind: fix
+  target_version: 3.0.0
+  requirements:
+    - Distinguish missing version-authority files, parse failures, empty skills data, and selector mismatches instead of returning an unexplained null.
+    - Keep classification inside loadSuiteVersion and its direct callers; do not own executable-entrypoint JSON rendering.
+    - Preserve the valid-version success path and the v2 fallback distinction.
+  acceptance:
+    - Every supported version-authority failure has a stable typed classification.
+    - Doctor and version-resolution callers can distinguish corrupt v3 state from a valid missing legacy signal.
+    - Focused tests cover each classification and the unchanged success path.
+  release_blocker: true
+  title: Return typed loadSuiteVersion failure classifications.
+  readiness:
+    capability: build
+    reason: Typed version-authority classifications are required before the executable bootstrap boundary can render truthful JSON failures.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 7
+    order_reason: Implement before critical TODO opybnibysh, which consumes these classifications.
