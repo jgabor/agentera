@@ -1,0 +1,29 @@
+id: vcvfgbcxsi
+artifact: health
+record:
+  date: 2026-08-17
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: the test-simplification plan completed with current verification and state evidence."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited closure audit for plan tvfqppsoeu passed. All four tasks have latest PASS evaluations. Test, progress, and plan evidence changed on or after plan creation. Final verification passed focused families, lane ownership, source tests, typecheck, and package verification. Build and compact also passed, with their omission from the final progress verified field retained as a nonblocking attribution caveat.
+      findings:
+        []
+  trends:
+    improved: Profile Full median fell 42.66%; nine Git setups removed 27 configuration subprocesses; observable behavior replaced implementation spelling checks.
+    degraded: None in this limited closure scope.
+    new_findings: None.
+    resolved: All planned test simplification tasks passed evaluation.
+    carried_forward: Decisions, vision, and profile detail remain deferred; stale profile state does not affect this test-only closure.
+  patterns:
+    - Behavioral checks retain process and package boundaries while reducing redundant work.
+  appended_at: 2026-08-17T21:41:48.259Z
