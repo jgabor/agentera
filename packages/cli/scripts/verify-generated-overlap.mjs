@@ -80,11 +80,11 @@ export async function writeActivationEvidence({ repoRoot, generationRoot, genera
   };
 }
 
-function killGroup(child, signal) {
+export function killGroup(child, signal, { platform = process.platform, run = spawnSync } = {}) {
   if (!child.pid) return;
   try {
-    if (process.platform === "win32") {
-      const tree = spawnSync(
+    if (platform === "win32") {
+      const tree = run(
         "taskkill",
         ["/PID", String(child.pid), "/T", ...(signal === "SIGKILL" ? ["/F"] : [])],
         { windowsHide: true, stdio: "ignore" },

@@ -10,3 +10,13 @@ record:
     - GIVEN behavior-preserving internal renames WHEN affected tests run THEN they do not fail solely because implementation spelling changed.
     - GIVEN text is itself the declared contract WHEN static authority, vocabulary, retirement, or inventory tests run THEN that contract coverage remains intact.
   plan: tvfqppsoeu
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Windows process-tree cancellation lost behavioral coverage; ordinary source-spelling assertions remain in buildExecutionRequest, personalGlossaryReviewRecords, and personalGlossaryDecision tests.
+    provenance:
+      attempt_id: audit-1
+      source: orchestrate audit attempt 1
+      recorded_at: 2026-08-17 22:06
+      writer_command: agentera state plan record-evaluation

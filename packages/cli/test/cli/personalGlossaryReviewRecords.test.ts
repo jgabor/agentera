@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   personalGlossaryReviewRecordsPath,
@@ -31,8 +31,6 @@ import { canonicalGlossaryJson, glossaryCanonicalSha256 } from "../../src/regist
 
 const POLICY = "agentera.personalGlossaryMiningPolicy.v1";
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
-const ROOT = path.resolve(import.meta.dirname, "../../../..");
-const COMMAND_SOURCE = path.join(ROOT, "packages/cli/src/cli/commands/personalGlossaryReviewRecords.ts");
 const REVIEW_SUBJECT = "user:current";
 const REVIEW_KEY_PAIR = generateKeyPairSync("ed25519");
 
@@ -749,13 +747,29 @@ describe("agentera report personal-glossary-reviews", () => {
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
   });
 
-  it("uses bounded descriptor reads for untrusted queue input", () => {
-    const source = fs.readFileSync(COMMAND_SOURCE, "utf8");
-    expect(source).toContain("Buffer.allocUnsafe(maxBytes + 1)");
-    expect(source).toContain("fs.lstatSync(source");
-    expect(source).toContain("fs.fstatSync(descriptor");
-    expect(source).toContain("fs.constants.O_NOFOLLOW");
-    expect(source).not.toContain("fs.readFileSync(source");
-    expect(source).not.toContain("fs.readFileSync(0");
+  it("rejects queue input replaced by a symlink while it is opened", () => {
+    const capsule = candidate(8);
+    const projection = persist([capsule]);
+    const input = path.join(profileDir, "review-request.json");
+    const original = path.join(profileDir, "original-review-request.json");
+    fs.writeFileSync(input, request(receipt(capsule, projection)));
+    const nativeOpen = fs.openSync;
+    const open = vi.spyOn(fs, "openSync").mockImplementation(((target, flags, mode) => {
+      if (target === input) {
+        fs.renameSync(input, original);
+        fs.symlinkSync(original, input);
+      }
+      return nativeOpen(target, flags, mode);
+    }) as typeof fs.openSync);
+    try {
+      const result = run([
+        "report", "personal-glossary-reviews", "queue", "--input", input, "--format", "json",
+      ]);
+      expect(result).toMatchObject({ rc: 2, err: "" });
+      expect(JSON.parse(result.out)).toMatchObject({ error: { class: "invalid_format" } });
+      expect(fs.existsSync(personalGlossaryReviewRecordsPath())).toBe(false);
+    } finally {
+      open.mockRestore();
+    }
   });
 });

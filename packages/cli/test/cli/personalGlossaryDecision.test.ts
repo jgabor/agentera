@@ -42,10 +42,6 @@ const SOURCE_BUILD_RUNNER_URL = pathToFileURL(SOURCE_BUILD_RUNNER).href;
 setGlossaryEvaluationRunnerForTest(SOURCE_BUILD_RUNNER);
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const AUTHORITY_PATH = path.join(ROOT, "references/artifacts/glossary-entry-contract.yaml");
-const DECISION_COMMAND_SOURCE = path.join(
-  ROOT,
-  "packages/cli/src/cli/commands/personalGlossaryDecision.ts",
-);
 const ADMISSION_REASON_PAIRS = Object.entries(GLOSSARY_ADMISSION_REASONS_BY_OUTCOME).flatMap(
   ([outcome, reasons]) => reasons.map((reason) => ({ outcome, reason })),
 );
@@ -1032,15 +1028,30 @@ describe("agentera report personal-glossary-decision", () => {
     }
   });
 
-  it("uses max-plus-one descriptor reads instead of unbounded file or stdin reads", () => {
-    const source = fs.readFileSync(DECISION_COMMAND_SOURCE, "utf8");
-    expect(source).toContain("Buffer.allocUnsafe(maxBytes + 1)");
-    expect(source).toContain("fs.readSync(fd");
-    expect(source).toContain("fs.lstatSync(source");
-    expect(source).toContain("fs.fstatSync(fd");
-    expect(source).toContain("fs.constants.O_NOFOLLOW");
-    expect(source).not.toContain("fs.readFileSync(source");
-    expect(source).not.toContain("fs.readFileSync(0");
+  it("rejects decision input replaced by a symlink while it is opened", () => {
+    const { capsule, projection } = explicitFixture();
+    const input = path.join(profileDir, "decision-request.json");
+    const original = path.join(profileDir, "original-decision-request.json");
+    fs.writeFileSync(input, request(receiptFor(capsule, projection)));
+    const before = noEffectSnapshot();
+    const nativeOpen = fs.openSync;
+    const open = vi.spyOn(fs, "openSync").mockImplementation(((target, flags, mode) => {
+      if (target === input) {
+        fs.renameSync(input, original);
+        fs.symlinkSync(original, input);
+      }
+      return nativeOpen(target, flags, mode);
+    }) as typeof fs.openSync);
+    try {
+      const result = run([
+        "report", "personal-glossary-decision", "--input", input, "--format", "json",
+      ]);
+      expect(result).toMatchObject({ rc: 2, err: "" });
+      expect(JSON.parse(result.out)).toMatchObject({ error: { class: "invalid_format" } });
+      expectNoEffects(before);
+    } finally {
+      open.mockRestore();
+    }
   });
 
   it("returns a no-effect abstention for an unknown host receipt field", () => {

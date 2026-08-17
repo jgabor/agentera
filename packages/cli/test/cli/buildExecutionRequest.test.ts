@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildExecutionContext } from "../../src/cli/capabilityContext/build.js";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
@@ -19,7 +19,6 @@ import { planLifecycleState } from "../../src/cli/planLifecycleState.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const BUILD_REQUEST_SOURCE = path.join(REPO_ROOT, "packages/cli/src/cli/commands/prime/buildExecutionRequest.ts");
 const VALID_YAML = [
   "schema_version: agentera.buildExecutionRequest.v1",
   "scope: Repair bounded startup",
@@ -138,14 +137,23 @@ describe("Build execution request parser", () => {
     expect(result.out).not.toContain("Repair bounded startup");
   });
 
-  it("uses bounded descriptor reads for production file and stdin acquisition", () => {
-    const source = fs.readFileSync(BUILD_REQUEST_SOURCE, "utf8");
-    expect(source).toContain("fs.readSync(fd");
-    expect(source).toContain("fs.lstatSync(source");
-    expect(source).toContain("fs.fstatSync(fd");
-    expect(source).toContain("fs.constants.O_NOFOLLOW");
-    expect(source).not.toContain("fs.readFileSync(source");
-    expect(source).not.toContain("fs.readFileSync(0");
+  it("rejects a file replaced by a symlink while it is opened", () => {
+    const input = path.join(tmp, "request.yaml");
+    const original = path.join(tmp, "original-request.yaml");
+    fs.writeFileSync(input, VALID_YAML);
+    const nativeOpen = fs.openSync;
+    const open = vi.spyOn(fs, "openSync").mockImplementation(((target, flags, mode) => {
+      if (target === input) {
+        fs.renameSync(input, original);
+        fs.symlinkSync(original, input);
+      }
+      return nativeOpen(target, flags, mode);
+    }) as typeof fs.openSync);
+    try {
+      expect(() => loadBuildExecutionRequest(input)).toThrow(BuildExecutionRequestError);
+    } finally {
+      open.mockRestore();
+    }
   });
 });
 

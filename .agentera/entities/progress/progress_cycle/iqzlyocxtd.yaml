@@ -1,0 +1,15 @@
+id: iqzlyocxtd
+artifact: progress
+record:
+  timestamp: 2026-08-17 22:24
+  type: test
+  phase: build
+  what: Replaced the three remaining ordinary production-source spelling checks with file-acquisition race outcomes and added an injected Windows process-runner seam that proves tree cancellation.
+  context:
+    intent: Correct only the accepted evaluation gaps after code attempt 146f53c1.
+    constraints: Preserve the failed evaluation, retain true static contracts, append progress through the typed writer, and commit without pushing.
+    scope: Windows generated-overlap cancellation coverage and three implementation-coupled CLI source assertions.
+  discovered: The remaining direct checked-in text reads cover declared authority, vocabulary, retirement, or inventory contracts and remain unchanged.
+  verified: "Focused command: corepack pnpm -C packages/cli exec vp test run --config vite.config.ts test/cli/buildExecutionRequest.test.ts test/cli/personalGlossaryReviewRecords.test.ts test/cli/personalGlossaryDecision.test.ts test/release/sourceQualificationDag.test.ts. Result: 4 files and 106 tests passed. Semantic observations: the injected win32 runner received taskkill /PID 4321 /T without fallback child.kill; each affected CLI rejected a request path replaced by a symlink between path inspection and open; existing exact-bound and max-plus-one outcomes remain. Broader commands: corepack pnpm -C packages/cli run typecheck passed; pnpm -C packages/cli test passed 249 files with 4,085 tests passed and 1 skipped. The first broad run reached the local 180-second shell timeout; the clean rerun completed in 337.88 seconds."
+  next: The orchestrator retains task evaluation and status transitions; the recorded failed evaluation remains pending.
+  publication_order: 192

@@ -9,7 +9,7 @@ import {
   RELEASE_CONTRACT,
   runSourceQualificationDag,
 } from "../../scripts/release-qualification.mjs";
-import { generatedOverlapParticipantEnvironment, runGeneratedOverlap } from "../../scripts/verify-generated-overlap.mjs";
+import { generatedOverlapParticipantEnvironment, killGroup, runGeneratedOverlap } from "../../scripts/verify-generated-overlap.mjs";
 import { sealGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
@@ -664,6 +664,28 @@ describe("source qualification DAG", () => {
     } finally {
       fs.rmSync(workRoot, { recursive: true, force: true });
     }
+  });
+
+  it("cancels the complete Windows child process tree", () => {
+    const invocations: unknown[][] = [];
+    const childSignals: string[] = [];
+    killGroup({
+      pid: 4321,
+      kill: (signal: string) => childSignals.push(signal),
+    }, "SIGTERM", {
+      platform: "win32",
+      run: (...args: unknown[]) => {
+        invocations.push(args);
+        return { status: 0 };
+      },
+    });
+
+    expect(invocations).toEqual([[
+      "taskkill",
+      ["/PID", "4321", "/T"],
+      { windowsHide: true, stdio: "ignore" },
+    ]]);
+    expect(childSignals).toEqual([]);
   });
 
   it("keeps generated-overlap policy aligned with release qualification", () => {
