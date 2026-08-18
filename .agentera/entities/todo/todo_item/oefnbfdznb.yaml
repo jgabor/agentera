@@ -26,12 +26,16 @@ record:
     gate: null
     queue_rank: 5
     order_reason: Fail closed at the compatibility boundary before another development-channel release.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration."
+      status: resolved
+      order: 116
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: "`prime --dashboard --fields plan,progress,docs --format json` now exits 2 with migration guidance; the unfiltered alias remains parseable."
+    date: 2026-08-18

@@ -39,4 +39,4 @@ record:
       description: "[fix:3.0.0] Prepare one verified TypeScript stable-cutover candidate after approval."
       severity: critical
       status: open
-      order: 4
+      order: 3

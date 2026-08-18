@@ -85,6 +85,19 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     err("Error: prime --dashboard/--orientation and prime --guidance are mutually exclusive\n");
     return 2;
   }
+  if (dashboard && args.fields !== undefined) {
+    const migrationCommand = preCutoverCommand("prime --context status --format json");
+    return rejectInput({
+      class: "mutually_exclusive",
+      message: "Deprecated prime --dashboard --fields selectors are not supported during status-capsule migration",
+      example: migrationCommand,
+      diagnosis: {
+        migration_command: migrationCommand,
+        consumer_path: "capability_context.context.status_context",
+      },
+      recovery: `Run '${migrationCommand}' and read capability_context.context.status_context; no state was changed.`,
+    });
+  }
   const retiredFieldRejection = rejectRetiredPrimeFields(command, format, args.fields, out, err);
   if (retiredFieldRejection !== null) return retiredFieldRejection;
   if (guidance) {

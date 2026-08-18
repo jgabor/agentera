@@ -34,4 +34,4 @@ record:
       description: "[fix:3.0.0] Emit typed JSON bootstrap-authority failures at the executable entrypoint."
       severity: critical
       status: open
-      order: 2
+      order: 1

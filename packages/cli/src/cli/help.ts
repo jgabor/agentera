@@ -512,10 +512,11 @@ export function printPrimeHelp(): string {
     "  --context CAPABILITY  Emit startup context for a capability (e.g. plan)",
     "  --input FILE|-         Transient agentera.buildExecutionRequest.v1 input; valid only with --context build",
     "  --guidance            Emit static routing guidance",
-    "  --dashboard           Emit the prime orientation dashboard",
-    "  --orientation         Emit orientation briefing sections",
+    "  --dashboard           Deprecated status-capsule alias; incompatible with --fields",
+    "  --orientation         Deprecated dashboard alias; incompatible with --fields",
     "  --fields FIELDS       Comma-separated field filter for JSON/YAML output",
     "",
+    "Dashboard consumers must use `npx -y agentera@next prime --context status --format json` and read capability_context.context.status_context.",
     "JSON output uses bounded surfaces: bare prime is at most 12000 UTF-8 bytes and status context at most 22500; startup contains one availability projection and aggregate outcome, while schema discovery owns writer detail.",
   ].join("\n");
 }

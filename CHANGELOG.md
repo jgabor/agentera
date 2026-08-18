@@ -101,6 +101,11 @@
 
 ### Fixed
 
+- Fixed deprecated `prime --dashboard --fields` requests to return a typed
+  migration failure instead of successful partial JSON; unfiltered dashboard
+  aliases remain status capsules, and consumers are directed to
+  `npx -y agentera@next prime --context status --format json` and
+  `capability_context.context.status_context`.
 - Fixed `prime --context status --format json` so oversized current health
   audits return `health.exists: true`, `status: summary_only`, and exact
   `state health list/get` recovery instead of appearing absent.

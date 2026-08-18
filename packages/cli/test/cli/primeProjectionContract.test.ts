@@ -101,6 +101,28 @@ afterEach(() => {
 });
 
 describe("prime projection contract", () => {
+  it("fails closed when legacy dashboard fields no longer address the status capsule", () => {
+    const result = capture((out, err) => main([
+      "node", "agentera", "prime", "--dashboard", "--fields", "plan,progress,docs", "--format", "json",
+    ], { out, err }));
+
+    expect(result.rc).toBe(2);
+    expect(result.err).toBe("");
+    expect(JSON.parse(result.out)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: {
+        class: "mutually_exclusive",
+        message: expect.stringContaining("prime --dashboard --fields"),
+        example: "npx -y agentera@next prime --context status --format json",
+        diagnosis: {
+          migration_command: "npx -y agentera@next prime --context status --format json",
+          consumer_path: "capability_context.context.status_context",
+        },
+      },
+    });
+  });
+
   it("keeps a bounded functional entity-mode startup and retrieval smoke", () => {
     const contract = authority();
     const count = 25;

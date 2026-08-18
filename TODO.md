@@ -2,7 +2,6 @@
 
 ## ⇶ Critical
 
-- [ ] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures at the executable entrypoint.
 - [ ] [id:pqpzmhdpsj] [fix:3.0.0] Prepare the stable TypeScript publication contract on main.
 - [ ] [id:lqqmlchlyr] [fix:3.0.0] Prepare one verified TypeScript stable-cutover candidate after approval.
@@ -166,3 +165,4 @@
 - [x] [id:bqapiomoyn] [fix:3.0.0] Restore the full source verification owner
 - [x] [id:dvqwyyjuov] [fix:3.0.0] Recover orphaned personal glossary refresh locks
 - [x] [id:bxqzpnnhpn] [fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted.
+- [x] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
