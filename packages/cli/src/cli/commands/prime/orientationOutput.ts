@@ -256,6 +256,13 @@ export function buildStatusContextState(
       worst: state.health.worst ?? null,
       trajectory: state.health.trajectory ?? null,
       degrading: Boolean(state.health.degrading),
+      ...(state.health.omitted === true ? {
+        detail_availability: state.health.detail_availability,
+        omitted: true,
+        omitted_count: state.health.omitted_count,
+        omission_reason: state.health.omission_reason,
+        retrieval: state.health.retrieval,
+      } : {}),
     },
     todo: { ...state.counts, detail: state.todo_detail },
     plan: {

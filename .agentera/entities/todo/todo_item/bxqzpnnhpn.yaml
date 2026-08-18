@@ -25,12 +25,16 @@ record:
     gate: null
     queue_rank: 4
     order_reason: Restore truthful bounded state before consumer migration and stable release.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Keep Prime health availability truthful when bounded current-audit detail is omitted."
+      status: resolved
+      order: 115
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: Prime status now returns summary-only health with exact typed recovery when current audit detail is omitted
+    date: 2026-08-18

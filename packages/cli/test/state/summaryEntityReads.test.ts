@@ -228,6 +228,40 @@ describe("summary entity ordinary reads", () => {
     } finally { process.chdir(previous); }
   });
 
+  it("reports oversized current health as summary-only with exact typed recovery", () => {
+    const root = project();
+    for (let index = 0; index < 10; index++) {
+      appendHealthEntity(request(root, "health", "append", {
+        ...audit(),
+        dimensions_detail: [{ name: "architecture_alignment", grade: "A", summary: "x".repeat(20_000), findings: [] }],
+      }), { id: `${String.fromCharCode(97 + index).repeat(10)}`, sourceRoot: SOURCE_ROOT });
+    }
+
+    const status = cli(root, ["prime", "--context", "status", "--format", "json"]);
+    expect(status.rc, status.err || status.out).toBe(0);
+    const response = JSON.parse(status.out);
+    const payload = response.capability_context.context.status_context;
+    expect(response.capability_context.startup).toMatchObject({ outcome: "degraded" });
+    expect(payload.health).toEqual({
+      exists: true,
+      status: "summary_only",
+      id: null,
+      grade: null,
+      worst: null,
+      trajectory: null,
+      degrading: false,
+      detail_availability: "omitted",
+      omitted: true,
+      omitted_count: 10,
+      omission_reason: "startup_health_detail",
+      retrieval: {
+        list: "npx -y agentera@next state health list --limit 20 --format json",
+        get: "npx -y agentera@next state health get --id ID --format json",
+      },
+    });
+    expect(Buffer.byteLength(status.out, "utf8")).toBeLessThanOrEqual(22_500);
+  });
+
   it("keeps canonical full and compacted history evidence in bare prime", () => {
     const fullRoot = project(); full(fullRoot);
     const fullPrime = cli(fullRoot, ["prime", "--format", "json"]);

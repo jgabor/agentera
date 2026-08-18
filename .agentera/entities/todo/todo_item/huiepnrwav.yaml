@@ -23,7 +23,7 @@ record:
       description: "[fix:3.0.0] Promote the verified TypeScript cutover candidate to npm @latest."
       severity: critical
       status: open
-      order: 6
+      order: 5
   kind: fix
   target_version: 3.0.0
   requirements:

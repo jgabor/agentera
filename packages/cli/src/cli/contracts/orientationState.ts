@@ -95,6 +95,11 @@ export interface HealthSummary {
   stale_threshold_cycles?: number;
   cycles_since_audit?: number | null;
   degraded_history?: JsonObject;
+  detail_availability?: "omitted";
+  omitted?: boolean;
+  omitted_count?: number;
+  omission_reason?: string;
+  retrieval?: JsonObject;
   triggering_axis?: string;
   suggested_action?: string;
 }

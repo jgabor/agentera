@@ -58,11 +58,23 @@ function terminal(status: unknown): boolean {
   return ["complete", "completed", "closed", "done", "resolved", "retired", "superseded"].includes(String(status ?? "").toLowerCase());
 }
 
-function healthSummary(latest: JsonObject | undefined, history: JsonObject | undefined): HealthSummary {
+function healthSummary(latest: JsonObject | undefined, history: JsonObject | undefined, currentCount: number): HealthSummary {
   if (!latest) {
+    const omission = currentCount > 0 ? {
+      detail_availability: "omitted" as const,
+      omitted: true,
+      omitted_count: currentCount,
+      omission_reason: "startup_health_detail",
+      retrieval: {
+        list: preCutoverCommand("state health list --limit 20 --format json"),
+        get: preCutoverCommand("state health get --id ID --format json"),
+      },
+    } : {};
     return history
-      ? { exists: true, status: "degraded", startup_outcome: "degraded", degraded_history: history }
-      : { exists: false, status: "absent", startup_outcome: "ok" };
+      ? { exists: true, status: "degraded", startup_outcome: "degraded", degraded_history: history, ...omission }
+      : currentCount > 0
+        ? { exists: true, status: "summary_only", startup_outcome: "degraded", ...omission }
+        : { exists: false, status: "absent", startup_outcome: "ok" };
   }
   const healthRecord = record(latest);
   const grades = healthRecord.grades && typeof healthRecord.grades === "object" && !Array.isArray(healthRecord.grades)
@@ -229,7 +241,9 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   );
   const progressFullCount = discovery.entities.filter((entry) => entry.boundary === "progress_cycle").length;
   const decisionFullCount = discovery.entities.filter((entry) => entry.boundary === "decision").length;
-  const healthFullCount = discovery.entities.filter((entry) => entry.boundary === "health_audit").length;
+  const healthFullCount = discovery.entities.filter((entry) =>
+    entry.artifact === "health" && entry.boundary === "health_audit" && entry.classification === "valid"
+  ).length;
   const progressSummaryCount = discovery.entities.filter((entry) => entry.boundary === "progress_summary").length;
   const decisionSummaryCount = discovery.entities.filter((entry) => entry.boundary === "decision_summary").length;
   const healthSummaryCount = discovery.entities.filter((entry) => entry.boundary === "health_summary").length;
@@ -308,7 +322,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     degraded_history: progressHistory!,
   } : { exists: false, status: "missing", cycle_count: 0 };
 
-  const health = healthSummary(fullHealthEntries[0], healthEntries.length ? healthHistory : undefined);
+  const health = healthSummary(fullHealthEntries[0], healthEntries.length ? healthHistory : undefined, healthFullCount);
 
   const activeObjective = selected(objectiveEntries, "objective");
   const closedObjectiveCount = Number((closedObjectiveList.counts as JsonObject | undefined)?.total ?? 0);

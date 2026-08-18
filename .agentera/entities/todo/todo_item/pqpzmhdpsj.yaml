@@ -32,4 +32,4 @@ record:
       description: "[fix:3.0.0] Prepare the stable TypeScript publication contract on main."
       severity: critical
       status: open
-      order: 4
+      order: 3

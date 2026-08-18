@@ -101,6 +101,9 @@
 
 ### Fixed
 
+- Fixed `prime --context status --format json` so oversized current health
+  audits return `health.exists: true`, `status: summary_only`, and exact
+  `state health list/get` recovery instead of appearing absent.
 - Fixed TODO reconciliation so typed writes use canonical severity headings and
   insert missing bands before later sections. Duplicate, mismatched, or
   out-of-order headings now return one bounded actionable diagnosis through
