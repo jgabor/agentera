@@ -45,4 +45,3 @@ record:
         Derive the supported root precedence from historical installer behavior before enabling cleanup, and reject unrelated inherited configuration.
   surprises:
     []
-  previous_plan_archived: zwubvaeive

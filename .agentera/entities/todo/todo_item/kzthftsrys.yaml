@@ -20,7 +20,7 @@ record:
       present: true
       description: "[test:3.0.0] Reduce batched runtime integration median below baseline"
       status: resolved
-      order: 117
+      order: 119
       severity: normal
   lifecycle:
     operation: resolve

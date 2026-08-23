@@ -19,7 +19,7 @@ record:
       present: true
       description: "[test:3.0.0] Preserve cold performance failure diagnostics"
       status: resolved
-      order: 119
+      order: 121
       severity: critical
   lifecycle:
     operation: resolve

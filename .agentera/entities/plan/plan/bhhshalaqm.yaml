@@ -39,4 +39,3 @@ record:
       resolve_by: Inspect the current evidence record and validators before moving the measurement; include only the minimal governed schema and consumer change if required.
   surprises:
     []
-  previous_plan_archived: zwubvaeive
