@@ -1,0 +1,13 @@
+id: dewllredyf
+artifact: plan
+record:
+  name: Deliver the shared batch boundary through update
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an existing singleton update invocation WHEN it runs after this task THEN its accepted input, mutation, output, and rejection behavior remain unchanged.
+    - GIVEN a valid versioned update batch WHEN it is previewed and the exact confirmation is applied THEN every requested patch publishes atomically with one receipt.
+    - GIVEN duplicate targets, an invalid patch, or stale or divergent state WHEN a batch is previewed or applied THEN no target changes and bounded recovery is returned.
+    - GIVEN supported parsing and contract rules WHEN tests run THEN each testable unit has one success and one rejection case, and transition compatibility evidence exists before downstream work starts.
+  plan: zwubvaeive

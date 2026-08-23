@@ -1,0 +1,15 @@
+id: vntesmhwpk
+artifact: plan
+record:
+  name: Verify delivery and synchronize final state
+  depends_on:
+    - dewllredyf
+    - elbpcppfyi
+    - ftikrbkztm
+  status: pending
+  acceptance:
+    - GIVEN all supported singleton and batch scenarios WHEN focused checks, type checking, build, package validation, and rebuilt-local-CLI checks run THEN they pass with matching schema, help, explain, source, and packaged behavior.
+    - GIVEN representative historical same-kind workflows WHEN exercised end to end THEN valid work has no partial publication and exact retries converge.
+    - GIVEN all implementation evidence passes WHEN project state is synchronized THEN plan evaluation and status, TODO kbjrvrilzj, progress, and decision evidence are current without claiming user satisfaction.
+    - GIVEN pre-existing unrelated worktree changes WHEN closeout is inspected THEN those changes remain intact.
+  plan: zwubvaeive

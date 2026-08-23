@@ -1,9 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-
 import YAML from "yaml";
-
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
@@ -30,18 +28,19 @@ import { normalizeTodoOwnerCorrectionEvidence, planTodoOwnerCorrection, planTodo
 import { readTodoMarkdown, renderManagedMarkdown } from "./todoMarkdownProjection.js";
 import { inactiveTodoActivationSafety, rejectUnsafeInactiveTodoActivation, unsafeInactiveDuplicateDiagnosis } from "./todoActivationSafety.js";
 import { assertTodoSeverityHeadingStructure, todoSeveritySectionForHeading } from "./todoSeverityHeadings.js";
-
-const ID = /^[a-z]{10}$/;
-const SHA256 = /^[a-f0-9]{64}$/;
-const TODO = { artifact: "todo", boundary: "todo_item", order: "severity_then_status_then_markdown_order_then_id" } as const;
-const DOCS = { artifact: "docs", boundary: "documentation_inventory_entry", order: "path_then_id" } as const;
+const ID = /^[a-z]{10}$/; const SHA256 = /^[a-f0-9]{64}$/; const TODO_UPDATE_BATCH_VERSION = "agentera.todoUpdateBatch.v1";
+const TODO = { artifact: "todo", boundary: "todo_item", order: "severity_then_status_then_markdown_order_then_id" } as const; const DOCS = { artifact: "docs", boundary: "documentation_inventory_entry", order: "path_then_id" } as const;
 interface Options { sourceRoot?: string; publicationContext?: EntityPublicationContext; candidate?: () => string; interruptAfterTarget?: number }
 interface Contract { authorityPath: string; entityRoot: string; defaultLimit: number; maximumLimit: number; maxUtf8Bytes: number }
-
 function mapping(value: unknown): value is JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value); }
+function updateBatch(input: JsonObject | null): Array<{ id: string; patch: JsonObject }> | null {
+  if (!input || input.schema_version !== TODO_UPDATE_BATCH_VERSION) return null;
+  const violations: string[] = []; if (Object.keys(input).sort().join(",") !== "schema_version,updates") violations.push("batch envelope must contain exactly schema_version and updates"); if (!Array.isArray(input.updates) || input.updates.length < 1 || input.updates.length > 256) violations.push("updates must contain 1 to 256 entries");
+  const normalized = (Array.isArray(input.updates) ? input.updates : []).map((value, index) => { if (!mapping(value) || Object.keys(value).sort().join(",") !== "id,patch" || !ID.test(String(value.id ?? "")) || !mapping(value.patch)) { violations.push(`updates[${index}] must contain exactly one bare id and one patch mapping`); return { id: "", patch: {} as JsonObject }; } violations.push(...todoInputViolations(value.patch, "update").map((item) => `updates[${index}].patch: ${item}`)); return { id: String(value.id), patch: value.patch }; });
+  const seen = new Set<string>(); for (const { id } of normalized) { if (id && seen.has(id)) violations.push(`duplicate update target '${id}'`); seen.add(id); } if (violations.length) reject({ class: "schema_violation", message: "todo update batch input is invalid", violations, recovery: "Correct the strict agentera.todoUpdateBatch.v1 envelope, then preview it again; no state was changed." }); return normalized;
+}
 function relative(root: string, file: string): string { return path.relative(path.resolve(root), file).split(path.sep).join("/"); }
 function definition(artifact: "todo" | "docs") { return artifact === "todo" ? TODO : DOCS; }
-
 function contract(boundary: string, sourceRoot = resolveSourceRoot()): Contract {
   const { authorityPath, document: authority } = loadStateStorageAuthority(sourceRoot);
   const target = mapping(authority.entity_target) ? authority.entity_target : {};
@@ -52,12 +51,10 @@ function contract(boundary: string, sourceRoot = resolveSourceRoot()): Contract 
   if (typeof storage.canonical_root !== "string") throw new Error(`invalid entity authority '${authorityPath}'`);
   return { authorityPath, entityRoot: storage.canonical_root, defaultLimit: positive(retrieval.default_limit, "default_limit"), maximumLimit: positive(retrieval.maximum_limit, "maximum_limit"), maxUtf8Bytes: positive(retrieval.max_utf8_bytes, "max_utf8_bytes") };
 }
-
 function failure(kind: StateFailureClass, artifact: string, message: string, recovery: string, id?: string, exitCode: 1 | 2 = 1): StateRetrievalFailure {
   const family = kind === "cursor_invalid" || kind === "cursor_snapshot_unavailable" ? entityListFamily(artifact as "todo" | "docs") : undefined;
   return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: family?.syntax ?? `agentera state ${artifact} get --id ID --format json`, example: family?.example ?? `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`, recovery, artifact, ...(id ? { id } : {}) } }, exitCode);
 }
-
 export function relevant(root: string, sourceRoot: string, artifact?: "todo" | "docs", supplied?: EntityDiscoveryResult, sourceBinding?: MigrationSourceBindingContext): DiscoveredEntity[] {
   if (supplied) assertEntityDiscoveryOrigin(root, sourceRoot, supplied);
   const discovery = supplied ?? discoverEntities(root, sourceRoot, sourceBinding);
@@ -66,7 +63,6 @@ export function relevant(root: string, sourceRoot: string, artifact?: "todo" | "
   if (bad) throw failure(bad.classification === "duplicate" ? "ambiguous" : "corrupt", artifact ?? bad.artifact ?? "todo", `entity '${bad.relativePath}' is not canonical`, "Run agentera check validate state and resolve every invalid identity or record before retrying.", bad.id ?? undefined);
   return selected;
 }
-
 function selectedById(entities: DiscoveredEntity[], artifact: "todo" | "docs", id: string): DiscoveredEntity {
   if (!ID.test(id)) throw failure("invalid_request", artifact, `${artifact} ID '${id}' must be ten lowercase letters`, `Use a bare ${artifact} ID returned by create or list; numeric, prefixed, composite, path, and alias identities are invalid.`, id, 2);
   const boundary = definition(artifact).boundary;
@@ -74,28 +70,23 @@ function selectedById(entities: DiscoveredEntity[], artifact: "todo" | "docs", i
   if (matches.length !== 1) throw failure(matches.length ? "ambiguous" : "not_found", artifact, matches.length ? `${artifact} ID '${id}' has conflicting ownership` : `${artifact} ID '${id}' was not found`, `Run agentera state ${artifact} list --format json and select one canonical ID.`, id);
   return matches[0];
 }
-
 function recordViolations(artifact: "todo" | "docs", record: JsonObject, sourceRoot: string): string[] {
   const boundary = definition(artifact).boundary;
   const violations = [...canonicalEntityRecordViolations(boundary, record, sourceRoot), ...todoDocsRecordViolations(boundary, record, sourceRoot)];
   return [...new Set(violations)];
 }
-
 function assertState(root: string, sourceRoot: string, sourceBinding?: MigrationSourceBindingContext): void {
   const state = validateEntityState(root, sourceRoot, sourceBinding);
   if (!state.valid) reject({ class: "conflict", message: `canonical entity state is invalid: ${state.issues.map(({ message }) => message).join("; ")}`, recovery: "Run agentera check validate state and resolve every identity or record conflict before retrying; no state was changed." });
 }
-
 function markdownSeverity(section: string): string | null {
   return section === "critical" || section === "degraded" || section === "normal" || section === "annoying" ? section : null;
 }
-
 export function todoPublicPath(root: string, sourceRoot: string): string {
   const todo = loadArtifactRecord("todo", artifactSchemasDir(sourceRoot), registryModelPath(sourceRoot));
   if (!todo) throw new Error("artifact registry is missing the canonical 'todo' record");
   return resolveArtifactPath(todo, root, { strictWrite: true });
 }
-
 export function todoReconciliationBinding(root: string, sourceRoot: string): TodoReconciliationBinding {
   const publicPath = relative(root, todoPublicPath(root, sourceRoot));
   const docsRecord = loadArtifactRecord("docs", artifactSchemasDir(sourceRoot), registryModelPath(sourceRoot));
@@ -105,7 +96,6 @@ export function todoReconciliationBinding(root: string, sourceRoot: string): Tod
   const mappingSha256 = createHash("sha256").update(publicPath).update("\0").update(mapping).digest("hex");
   return { publicPath, mappingSha256 };
 }
-
 export function assertTodoReconciliationReadable(root: string, sourceRoot: string, id?: string): void {
   const directory = path.join(root, ".agentera/.todo-reconciliation");
   if (!fs.existsSync(directory) || !fs.readdirSync(directory).some((name) => name.endsWith(".json"))) return;
@@ -119,7 +109,6 @@ export function assertTodoReconciliationReadable(root: string, sourceRoot: strin
   }
   if (pending.length) throw failure("unsupported_state", "todo", `TODO reconciliation transaction '${pending[0]}' is pending; no mixed TODO state is readable`, "Retry the exact non-dry-run TODO mutation to complete recovery, then repeat this read.", id);
 }
-
 interface TodoPublicSnapshot { present: boolean; description?: string; severity?: string; status?: string; order?: number }
 export interface ManagedRow { id: string; line: number; section: string; sourceLine: string; snapshot: TodoPublicSnapshot; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> }
 interface LegacyRow { line: number; section: string; sourceLine: string; snapshot: TodoPublicSnapshot; item: NonNullable<ReturnType<typeof parseTodoMarkdownListItem>> }
@@ -128,7 +117,6 @@ type TodoEntityView = Pick<DiscoveredEntity, "boundary" | "id" | "record">;
 const RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
 const TODO_DRIFT_ITEM_LIMIT = 20;
 const PUBLIC_FIELDS = ["description", "severity", "status"] as const;
-
 interface TodoDriftItem {
   id: string;
   state: "markdown_only" | "entity_only" | "convergent" | "conflict";
@@ -140,11 +128,9 @@ interface TodoReadView {
   rows: Map<string, ManagedRow>;
   drift: JsonObject;
 }
-
 function publicSnapshot(record: JsonObject, order?: number): TodoPublicSnapshot {
   return { present: true, description: renderTodoPublicRecord(record), severity: String(record.severity), status: String(record.status), ...(order === undefined ? {} : { order }) };
 }
-
 function baseline(record: JsonObject): TodoPublicSnapshot | null {
   const reconciliation = mapping(record.reconciliation) ? record.reconciliation : null;
   const value = reconciliation?.schema_version === RECONCILIATION_VERSION && mapping(reconciliation.public) ? reconciliation.public : null;
@@ -156,7 +142,6 @@ function samePublic(left: TodoPublicSnapshot, right: TodoPublicSnapshot, include
   const fields = includeOrder ? ["present", "description", "severity", "status", "order"] : ["present", "description", "severity", "status"];
   return fields.every((field) => left[field as keyof TodoPublicSnapshot] === right[field as keyof TodoPublicSnapshot]);
 }
-
 function changedPublicFields(
   current: TodoPublicSnapshot,
   prior: TodoPublicSnapshot,
@@ -803,10 +788,25 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
         });
         context.assertValid(); return repairEnvelope(effect, false, false, transaction.id, transaction.targetCount, recovered);
       }
-      const activating = activation === null;
-      const scan = managedRows(markdown, activation, todoEntities);
-      const rows = scan.rows;
-      const reconciled = reconcileTodoRecords(todoEntities, rows, activating);
+      const activating = activation === null; const scan = managedRows(markdown, activation, todoEntities); const rows = scan.rows; const reconciled = reconcileTodoRecords(todoEntities, rows, activating); const batch = req.spec.verb === "update" ? updateBatch(req.input as JsonObject | null) : null;
+      if (batch) {
+        if (!req.dryRun && (!req.values.confirmed || !SHA256.test(String(req.values.effect_sha256 ?? "")))) reject({ class: "invalid_request", message: "todo update batch apply requires its preview effect SHA-256 and --yes", recovery: "Run the same batch input with --dry-run, review it, then repeat that input with the returned --effect-sha256 value and --yes; no state was changed." });
+        const requestedRecords: Array<{ id: string; record: JsonObject }> = [];
+        for (const { id, patch } of batch) { selectedById(todoEntities, "todo", id); const record = mutationRecord({ ...req, input: patch, values: { id }, callerPayload: patch }, reconciled.records.get(id)!, todoEntities.map((entity) => ({ ...entity, record: reconciled.records.get(entity.id!)! }))); reconciled.records.set(id, record); requestedRecords.push({ id, record }); }
+        const referenceEntities: TodoEntityView[] = [...reconciled.records].map(([todoId, record]) => ({ boundary: TODO.boundary, id: todoId, record }));
+        for (const [todoId, record] of reconciled.records) { const violations = recordViolations("todo", record, sourceRoot); if (violations.length) reject({ class: "schema_violation", message: "todo entity input is invalid", violations, recovery: "Correct the batch patch and preview the complete batch again; no state was changed." }); if (record.readiness !== undefined) assertTodoReferences(todoId, record, referenceEntities); }
+        const visibleRecords = new Map([...reconciled.records].filter(([todoId]) => reconciled.visible.has(todoId)));
+        const rendered = renderManagedMarkdown(markdown, visibleRecords, rows); const activationBytesAfter = activation ? loadedActivation!.bytes.toString("utf8") : todoReconciliationActivationBytes(scan.retainedLegacyRows); const activationAfter = activation ?? JSON.parse(activationBytesAfter) as TodoReconciliationActivation; const finalRows = managedRows(rendered, activationAfter, todoEntities).rows;
+        for (const [todoId, record] of reconciled.records) { const row = finalRows.get(todoId); reconciled.records.set(todoId, withBaseline(record, row ? rowSnapshot(row, record) : { present: false })); }
+        const targets: TodoReconciliationTarget[] = todoEntities.map((entity) => ({ path: entity.relativePath, before: exactDiscoveredEntityBytes(entity), after: canonicalEntityEnvelopeBytes({ id: entity.id!, artifact: "todo", record: reconciled.records.get(entity.id!)!, migrationProvenance: entity.migrationProvenance ?? undefined }) }));
+        if (activating) targets.push({ path: TODO_RECONCILIATION_ACTIVATION_PATH, before: null, after: activationBytesAfter });
+        targets.push({ path: publicRelative, before: publicExists ? markdownBefore : null, after: rendered });
+        const effectSha256 = createHash("sha256").update(canonicalRecordJson({ schema_version: TODO_UPDATE_BATCH_VERSION, input: req.input, mapping_sha256: todoBinding!.mappingSha256, targets: targets.map((target) => ({ path: target.path, before_sha256: target.before === null ? null : createHash("sha256").update(target.before).digest("hex"), after_sha256: createHash("sha256").update(target.after).digest("hex") })) })).digest("hex");
+        const applyCommand = `agentera state todo update --input <same-input> --effect-sha256 ${effectSha256} --yes --format json`; const response = { schemaVersion: "agentera.stateWrite.v1", command: "state todo update", status: "pass", artifact: "todo", records: requestedRecords.map(({ id }) => ({ id, record: reconciled.records.get(id)! })), operation: { verb: "update", dry_run: req.dryRun, idempotent_replay: false }, validation: { status: "pass", violations: [] }, effect_sha256: effectSha256, apply_command: req.dryRun ? applyCommand : null } as StateWriteEnvelope;
+        if (req.dryRun) return { ...response, reconciliation: { transaction_id: null, targets: targets.length, recovered } };
+        if (req.values.effect_sha256 !== effectSha256) reject({ class: "conflict", message: "TODO update batch effects changed after preview", recovery: "Rerun the same batch input with --dry-run, review the new bounded effect, then use its exact effect SHA-256; no state was changed." });
+        const transaction = publishTodoReconciliation(context, sourceRoot, todoBinding!, targets, { interruptAfterTarget: options.interruptAfterTarget, beforeCommit: () => { assertState(pinnedRoot, sourceRoot, sourceBinding); const currentBinding = todoReconciliationBinding(req.projectRoot, sourceRoot); if (currentBinding.publicPath !== todoBinding!.publicPath || currentBinding.mappingSha256 !== todoBinding!.mappingSha256) reject({ class: "conflict", message: "TODO reconciliation mapping changed during batch publication", recovery: "Preserve the changed docs mapping and retry after every transaction target is restored; no mapping bytes were overwritten." }); } }); context.assertValid(); return { ...response, reconciliation: { transaction_id: transaction.id, targets: transaction.targetCount, recovered } };
+      }
       let id: string; let requested: JsonObject; let selected: DiscoveredEntity | undefined;
       if (req.spec.verb === "create") {
         if (req.input) {

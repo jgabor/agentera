@@ -1,0 +1,34 @@
+id: zwubvaeive
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-23
+    status: open
+    reviewed: 2026-08-23
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    revised: Reframed contract-first phases as end-to-end verb-family slices so each task keeps intent, tests, and behavior aligned.
+    title: "Plan: Atomic same-kind TODO batches"
+  what: Let the existing TODO create, update, set-severity, and resolve commands accept atomic same-kind batch inputs while preserving all singleton behavior.
+  why: Implement firm Decision nvoxndralc and actionable TODO kbjrvrilzj so common repository changes need one preview, one apply, and one recoverable receipt instead of serial partial writes.
+  constraints: Keep singleton behavior unchanged. Support same-kind batches only for create, update, set-severity, and resolve. Reject duplicate targets, require effect-bound preview and explicit apply, reuse the existing reconciliation transaction, preserve unrelated user changes, add no dependency, and do not release, publish, push, or raise version metadata beyond 3.0.0.
+  overall_acceptance: GIVEN existing singleton commands and valid or invalid same-kind batch inputs WHEN the four supported verbs are previewed, applied, retried, and inspected through source and packaged CLIs THEN singleton behavior remains unchanged, valid batches publish all effects once, invalid or stale requests change nothing, create-local references resolve deterministically, contract surfaces agree, and typed state closes cleanly.
+  scope:
+    included:
+      - Versioned per-verb batch contracts and CLI discovery for create, update, set-severity, and resolve.
+      - Atomic preview, apply, retry, and receipt behavior through existing TODO reconciliation.
+      - Stable create-local dependency references and duplicate-target rejection.
+      - Source, package, and state verification with TODO and plan closeout.
+    excluded:
+      - Mixed-operation batches.
+      - Batch reopen or supersede behavior.
+      - A second transaction or publication path and new runtime dependencies.
+      - Version changes, npm publication, tags, or pushes.
+    deferred:
+      - Mixed-operation batching unless separate evidence justifies reopening the decision.
+  design: Deliver vertical behavior slices. First use update to prove the shared batch envelope, authorization, parser compatibility, and atomic receipt. Then add create-local identity relationships. Then extend the flag-only transitions without changing singleton forms. Each slice keeps declared contracts, executable expectations, and behavior aligned. Finish with package-wide parity and typed state synchronization.
+  unknowns:
+    - question: Can transition verbs accept a batch input while retaining exact flag-only singleton parsing and rejection behavior?
+      affects_task: 1
+      resolve_by: Use task 1 contract and parser evidence before tasks 2 and 3. If exact singleton behavior cannot remain, stop and re-invoke discuss and plan instead of changing the approved input shape.
+  surprises: ""

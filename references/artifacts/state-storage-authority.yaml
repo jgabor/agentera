@@ -2932,18 +2932,21 @@ mutation_grammar:
       verb: update
       class: record_payload
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, target_id_is_bare_ten_letters, typed_patch_is_valid, dependency_graph_is_valid]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, singleton_or_versioned_batch_shape_is_valid, target_ids_are_bare_ten_letters, duplicate_targets_are_absent, typed_patches_are_valid, dependency_graph_is_valid, batch_effect_is_previewed_and_confirmed]
       owned_fields: [id, artifact, status, public_order, lifecycle]
       input:
         mode: structured
-        root: TODO record patch
+        root: TODO record patch or agentera.todoUpdateBatch.v1 envelope
         sources: [file, stdin]
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, status, public_order, lifecycle]
-      recovery: Reread the TODO item, use its bare ID, supply only typed patch fields, and use null or an empty list only for declared clearable fields.
+      recovery: For one item, preserve the existing --id and patch form. For a batch, supply agentera.todoUpdateBatch.v1, preview with --dry-run, then repeat the same input with its effect SHA-256 and --yes.
       examples: ['npx -y agentera@next state todo update --id qjtrmnpvka --input todo-patch.yaml --format json']
-      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
-      fields: [{ flag: --id, field: id, kind: string, required: true }]
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --effect-sha256, field: effect_sha256, kind: string }
+        - { flag: --yes, field: confirmed, kind: boolean }
 
     - artifact: todo
       verb: set-severity

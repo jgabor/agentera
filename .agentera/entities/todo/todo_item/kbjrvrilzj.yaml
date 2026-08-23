@@ -17,21 +17,21 @@ record:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[feat:3.0.0] Apply common multi-item TODO changes atomically."
+      description: "[feat:3.0.0] Apply common same-kind TODO changes atomically."
       severity: degraded
       status: open
       order: 1
   kind: feat
   target_version: 3.0.0
   requirements:
-    - Compose multiple create, update, set-severity, and resolve operations in one apply request.
-    - Support local references between new items so one new TODO can depend on another.
-    - Reuse the canonical reconciliation snapshot, CAS, idempotency, receipt, and recovery primitive.
-    - Do not add reopen or supersede batch behavior without separate evidence.
+    - Extend create, update, set-severity, and resolve with strict verb-specific batch inputs while preserving singleton behavior.
+    - Reject duplicate targets and allocate all create IDs before resolving stable request-local references.
+    - Require one preview and effect-bound apply while reusing the canonical reconciliation snapshot, CAS, idempotency, receipt, and recovery primitive.
+    - Exclude mixed-operation, reopen, and supersede batches.
   acceptance:
-    - One preview, one apply, and one validation replace serial creates, updates, severity changes, and resolutions without partial publication.
-    - A multi-create request can link one new TODO to another with stable local references.
-    - Stale or divergent state fails before effects and retries converge.
-    - Tests cover representative historical multi-item create, resolve, severity, and mixed-update workflows.
+    - Each supported verb publishes multiple same-kind changes atomically after one preview and validation, without partial publication.
+    - Batch create supports dependencies between new items through stable request-local references.
+    - Stale or divergent state fails before effects, duplicate targets are rejected, and exact retries converge.
+    - Tests cover representative same-kind create, update, severity, and resolve workflows plus local references, conflicts, and retries.
   release_blocker: false
-  title: Apply common multi-item TODO changes atomically.
+  title: Apply common same-kind TODO changes atomically.

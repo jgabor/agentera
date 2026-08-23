@@ -1,0 +1,13 @@
+id: ftikrbkztm
+artifact: plan
+record:
+  name: Deliver atomic severity and resolve batches
+  depends_on:
+    - elbpcppfyi
+  status: pending
+  acceptance:
+    - GIVEN a valid same-kind severity or resolve batch WHEN preview and exact apply complete THEN every target transitions atomically with one receipt.
+    - GIVEN one invalid target, duplicate ID, invalid lifecycle transition, or stale state WHEN a transition batch is validated THEN no target changes.
+    - GIVEN existing singleton severity and resolve invocations WHEN they run THEN they remain flag-only with unchanged behavior.
+    - GIVEN severity and resolve batch rules WHEN tests run THEN each verb has one success and one rejection case per testable contract unit.
+  plan: zwubvaeive

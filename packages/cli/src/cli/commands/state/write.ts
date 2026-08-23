@@ -320,7 +320,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       example: exampleFor(artifact, verb),
     });
   const selectorFields = new Set(spec.fields.filter((field) => spec.selectors.includes(field.flag)).map((field) => field.field));
-  const correctionApplyFields = artifact === "todo" && verb === "correct-owners"
+  const correctionApplyFields = artifact === "todo" && (verb === "correct-owners" || verb === "update")
     ? new Set(["effect_sha256", "confirmed"])
     : new Set<string>();
   if (spec.inputRoot && Object.keys(values).some((field) => !selectorFields.has(field) && !correctionApplyFields.has(field)))
@@ -329,6 +329,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,
     });
   for (const field of fields.filter((candidate) => candidate.required)) {
+    if (artifact === "todo" && verb === "update" && field.field === "id" && inputSource) continue;
     if (mappingPath(values, field.field) === undefined) {
       invalid({
         class: "missing_argument",
@@ -339,6 +340,8 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       });
     }
   }
+  if (artifact === "todo" && verb === "update" && !inputSource && mappingPath(values, "id") === undefined)
+    invalid({ class: "missing_argument", message: "--id is required for todo update", syntax: "--id ID --input PATH", example: exampleFor(artifact, verb) });
   if (artifact === "decisions" && (verb === "update" || verb === "amend")) {
     const id = mappingPath(values, "id");
     const number = mappingPath(values, "number");
@@ -443,6 +446,8 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
             violations: [`CLI-owned field: ${owned}`],
           });
       }
+      if (parsed.artifact === "todo" && parsed.spec.verb === "update" && !parsed.values.id && input.schema_version !== "agentera.todoUpdateBatch.v1")
+        invalid({ class: "missing_argument", message: "--id is required for todo update", syntax: "--id ID --input PATH", example: exampleFor(parsed.artifact, parsed.spec.verb) });
       parsed.callerPayload = structuredClone(input);
     }
     const envelope = executeStateWrite({ ...parsed, input });

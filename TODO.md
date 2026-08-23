@@ -9,7 +9,7 @@
 
 ## ⇉ Degraded
 
-- [ ] [id:kbjrvrilzj] [feat:3.0.0] Apply common multi-item TODO changes atomically.
+- [ ] [id:kbjrvrilzj] [feat:3.0.0] Apply common same-kind TODO changes atomically.
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
 
 ## → Normal

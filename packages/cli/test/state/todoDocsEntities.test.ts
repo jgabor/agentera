@@ -381,6 +381,48 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(reopenedReplay.rc).toBe(0); expect(reopenedReplay.json.operation.idempotent_replay).toBe(true);
   });
 
+  it("previews and atomically applies a versioned TODO update batch", () => {
+    const root = project();
+    const create = (title: string) => todo(root, title).id as string;
+    const first = create("First batch item");
+    const second = create("Second batch item");
+    const input = { schema_version: "agentera.todoUpdateBatch.v1", updates: [
+      { id: first, patch: { title: "First updated item" } },
+      { id: second, patch: { title: "Second updated item" } },
+    ] };
+
+    const preview = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    expect(preview.json).toMatchObject({ effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/), apply_command: expect.stringContaining("--yes"), reconciliation: { transaction_id: null } });
+    expect(capture(root, ["state", "todo", "get", "--id", first, "--format", "json"]).json.entry.record.title).toBe("First batch item");
+
+    const applied = capture(root, ["state", "todo", "update", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(applied.rc, applied.err || applied.out).toBe(0);
+    expect(applied.json.reconciliation.transaction_id).toEqual(expect.any(String));
+    expect(applied.json.records.map((entry: any) => entry.record.title)).toEqual(["First updated item", "Second updated item"]);
+    const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+    expect(markdown).toContain("First updated item"); expect(markdown).toContain("Second updated item");
+  });
+
+  it("rejects invalid, duplicate, and stale TODO update batches without effects", () => {
+    const root = project();
+    const id = todo(root, "Batch target").id as string;
+    const entity = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
+    const before = fs.readFileSync(entity);
+    const duplicate = { schema_version: "agentera.todoUpdateBatch.v1", updates: [{ id, patch: { title: "One" } }, { id, patch: { title: "Two" } }] };
+    const rejectedDuplicate = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], duplicate);
+    expect(rejectedDuplicate.rc).toBe(2); expect(rejectedDuplicate.json.error.violations).toContain(`duplicate update target '${id}'`); expect(fs.readFileSync(entity)).toEqual(before);
+    const rejectedPatch = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], { schema_version: "agentera.todoUpdateBatch.v1", updates: [{ id, patch: { status: "resolved" } }] });
+    expect(rejectedPatch.rc).toBe(2); expect(fs.readFileSync(entity)).toEqual(before);
+
+    const input = { schema_version: "agentera.todoUpdateBatch.v1", updates: [{ id, patch: { title: "Batch title" } }] };
+    const preview = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { requirements: ["Concurrent change"] }).rc).toBe(0);
+    const afterConcurrent = fs.readFileSync(entity);
+    const stale = capture(root, ["state", "todo", "update", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(stale.rc).toBe(2); expect(stale.json.error.class).toBe("conflict"); expect(stale.json.error.recovery).toContain("no state was changed"); expect(fs.readFileSync(entity)).toEqual(afterConcurrent);
+  });
+
   it("replays all TODO lifecycle transitions exactly and rejects divergent retries without effects", () => {
     const root = project();
     const entityFile = (id: string): string => path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);

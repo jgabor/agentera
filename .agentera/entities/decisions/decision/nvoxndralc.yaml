@@ -1,0 +1,19 @@
+id: nvoxndralc
+artifact: decisions
+record:
+  date: 2026-08-23
+  question: How should Agentera expose atomic multi-item TODO changes?
+  context: TODO kbjrvrilzj required one mixed-operation request, but the existing public API uses operation-specific item verbs and already routes each mutation through one reconciliation transaction.
+  alternatives:
+    - name: Extend create, update, set-severity, and resolve with same-kind atomic batch inputs.
+      status: chosen
+    - name: Add one new mixed-operation state todo apply envelope.
+      status: rejected
+    - name: Allow an item verb to contain other operation types.
+      status: rejected
+    - name: Compose serial singleton commands.
+      status: rejected
+  choice: Keep singleton syntax unchanged. Let each supported verb accept a strict, versioned batch envelope through --input. Reject duplicate targets, allocate all create IDs before resolving request-local references, and require effect-bound preview and explicit apply. Do not support mixed-operation, reopen, or supersede batches.
+  reasoning: Operation-specific batches preserve truthful command names and existing automation while covering repeated same-kind repository workflows. Strict per-verb schemas avoid a generic union, duplicate rejection makes results order-independent, and the existing reconciliation journal supplies atomic publication, stale-state rejection, recovery, idempotency, and receipts without another transaction path.
+  confidence: firm
+  feeds_into: TODO kbjrvrilzj

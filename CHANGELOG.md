@@ -18,6 +18,8 @@
 
 ### Changed
 
+- `agentera state todo update` now accepts strict versioned same-kind batches
+  through `--input`, with effect-bound preview and atomic confirmed publication.
 - Consented `agentera report refresh --consent local-history` now publishes the
   deterministic personal-glossary candidate projection for the new evidence
   generation. Projection failures keep evidence current, return nonzero with

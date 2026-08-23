@@ -1,0 +1,16 @@
+id: gqtoqfokeu
+artifact: progress
+record:
+  timestamp: 2026-08-23 14:32
+  type: feat
+  phase: build
+  what: Added agentera.todoUpdateBatch.v1 handling in packages/cli/src/state/todoDocsEntities.ts.
+  context:
+    intent: Deliver the shared same-kind batch boundary through TODO update.
+    constraints: Preserve singleton behavior; reuse reconciliation CAS, journal, recovery, and receipt; do not implement later verbs.
+    unknowns: "Resolved: batch input is compatible with the exact required --id singleton explain and parser contract."
+    scope: TODO update parser, mutation transaction, contract authority, tests, and changelog.
+  discovered: Transition verbs can retain required flag-only singleton fields while accepting a versioned batch envelope by deferring only the selector requirement when --input is present; focused explain and singleton tests preserve the existing --id contract.
+  verified: "PASS: 5 focused tests in todoDocsEntities.test.ts and monolithLint.test.ts; pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; pnpm -C packages/cli run verify:package (14 tests); local capability-contract and compact checks. pnpm -C packages/cli test reached 4086 passed, 1 skipped, and 3 pre-existing retiredRuntimeSurfacePolicy.test.ts failures."
+  next: Implement batch create only in task elbpcppfyi after independent evaluation of this boundary.
+  publication_order: 196
