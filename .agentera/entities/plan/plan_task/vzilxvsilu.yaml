@@ -1,0 +1,14 @@
+id: vzilxvsilu
+artifact: plan
+record:
+  name: Restore and reconcile the glossary contract
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN a confirmed project glossary WHEN a retained drift variant is reintroduced outside approved evidence THEN the active CLI validation route fails with the canonical term, location, and correction.
+    - GIVEN no project glossary or no reintroduced variant WHEN the same validation route runs THEN it passes without creating or changing glossary state.
+    - GIVEN active Discuss, Plan, Build, and Prime behavior WHEN artifact discovery and contract validation run THEN consumer declarations and runtime integrations agree.
+    - GIVEN the current backlog and shipped documentation WHEN reconciliation completes THEN the three unmanaged glossary rows and retired validation terminology are absent without rewriting resolved history.
+    - GIVEN each changed behavior WHEN focused tests run THEN at least one passing and one failing case prove the validation boundary.
+  plan: prpojxblfj

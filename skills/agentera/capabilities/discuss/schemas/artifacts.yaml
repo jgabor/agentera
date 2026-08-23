@@ -49,3 +49,11 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Discuss reads this first to resolve project-local artifact mappings.
+  7:
+    id: A7
+    artifact: glossary
+    local_role: consumes
+    description: >-
+      Discuss consumes bounded read-only terminology advice at governed
+      meaning-sensitive events. It never reads the glossary path directly,
+      publishes project terminology, or mutates personal profile state.

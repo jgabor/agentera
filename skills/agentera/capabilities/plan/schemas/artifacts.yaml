@@ -64,3 +64,11 @@ ARTIFACTS:
     description: >-
       Plan reads this first to resolve project-local artifact mappings and
       reads the versioning block for version bump task generation.
+  10:
+    id: A10
+    artifact: glossary
+    local_role: consumes
+    description: >-
+      Plan consumes bounded read-only terminology advice at governed
+      meaning-sensitive events. It never reads the glossary path directly,
+      publishes terminology, or persists personal definitions in plan state.

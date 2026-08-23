@@ -1,0 +1,16 @@
+id: yyqxbudzfc
+artifact: progress
+record:
+  timestamp: 2026-08-24 01:55
+  type: fix
+  phase: build
+  what: Restored confirmed project-glossary variant enforcement through the canonical state validator and aligned active glossary consumer declarations.
+  context:
+    intent: Enforce confirmed glossary variants through the real active CLI, reconcile shipped consumer metadata and wording, and remove three stale unmanaged TODO rows.
+    constraints: No default docs mapping, new scanner, version change, release, publication, push, or completion of task vzilxvsilu. Preserve resolved typed history.
+    unknowns: Resolved validation ownership from the state-storage authority before implementation; no product unknown remains.
+    scope: State validation wiring, glossary authority and schemas, Discuss/Plan/Build/Prime declarations, focused and package tests, TODO reconciliation, changelog, and help.
+  discovered: The confirmed-variant scanner remained implemented but detached after retirement of its former compatibility owner; the state authority names check validate state as the active read-only project-state validator.
+  verified: Focused guard, authority, help, and cross-capability tests passed 126/126. The direct source owner passed 4,123 tests with 1 skipped across 249 files; package verification passed 14/14; typecheck, build, state validation, capability contract, vocabulary authority, cross-capability validation, and compact passed.
+  next: Coordinator evaluates task vzilxvsilu and owns any plan-task status or evaluation transition.
+  publication_order: 217

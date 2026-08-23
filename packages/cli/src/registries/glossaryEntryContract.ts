@@ -556,8 +556,9 @@ export function validateGlossaryEntryContract(
     );
   }
   if (
-    confirmedVariantGuard?.owner !==
-      "packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations" ||
+    confirmedVariantGuard?.owner !== "packages/cli/src/cli/commands/validate.ts#validateStatePayload" ||
+    confirmedVariantGuard?.scanner !== "packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations" ||
+    confirmedVariantGuard?.command !== "npx -y agentera@next check validate state --format json" ||
     confirmedVariantGuard?.validation_surface !== "packages/cli/test/cli/glossaryVariantGuard.test.ts" ||
     confirmedVariantGuard?.loader !==
       "packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument" ||
@@ -594,9 +595,7 @@ export function validateGlossaryEntryContract(
     ]) ||
     !nonEmpty(confirmedVariantGuard?.exclusion_rule)
   ) {
-    errors.push(
-      "confirmed variant guard must reuse validated project glossary pairs and bounded exclusions",
-    );
+    errors.push("confirmed variant guard must run through the active state validator and reuse validated project glossary pairs with bounded exclusions");
   }
   if (
     proposalValidation?.owner !== "audit" ||

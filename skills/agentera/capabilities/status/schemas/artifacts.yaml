@@ -71,3 +71,11 @@ ARTIFACTS:
     description: >-
       Status reports profile validity as valid, absent, or repair_needed and
       keeps freshness separate without exposing profile paths or content.
+  12:
+    id: A12
+    artifact: glossary
+    local_role: consumes
+    description: >-
+      Prime consumes only the bounded glossary caveat projection produced by
+      the active runtime integration. It does not read glossary entries,
+      resolve advice, publish terminology, or expose personal definitions.

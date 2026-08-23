@@ -113,6 +113,28 @@ describe("validateGraph", () => {
     expect(errors.some((e) => e.includes("producers"))).toBe(true);
   });
 
+  it("reports an active consumer missing from capability declarations", () => {
+    const schemas = path.join(tmp, "schemas");
+    const caps = path.join(tmp, "capabilities");
+    const model = path.join(tmp, "model.yaml");
+    writeYaml(model, minimalRegistryModel([
+      { artifact_id: "glossary", display_name: "GLOSSARY.md", default_path: ".agentera/glossary.yaml" },
+    ]));
+    writeYaml(
+      path.join(schemas, "glossary.yaml"),
+      schemaMeta("glossary", ".agentera/glossary.yaml", "build", ["build", "discuss"]),
+    );
+    writeYaml(
+      path.join(caps, "build", "schemas", "artifacts.yaml"),
+      capabilityArtifact("glossary", "produces_and_consumes"),
+    );
+    writeYaml(path.join(caps, "discuss", "schemas", "artifacts.yaml"), { ARTIFACTS: {} });
+
+    expect(validateGraph(schemas, caps, model)).toContain(
+      "GLOSSARY.md: registry consumers ['build', 'discuss'] do not match capability consumers ['build']",
+    );
+  });
+
   it("leaves declared-deferred relationships unimplemented", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");

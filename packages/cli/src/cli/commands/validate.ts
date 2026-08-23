@@ -34,6 +34,7 @@ import {
   loadTodoReadinessContract,
   TodoReadinessContractError,
 } from "../../registries/todoReadinessContract.js";
+import { scanConfirmedVariantViolations } from "../../validate/glossaryVariantGuard.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
 
@@ -541,6 +542,19 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
   const result = validateEntityState(projectRoot);
   const issues: JsonObject[] = [...result.issues as unknown as JsonObject[]];
   let additionalOmittedIssues = 0;
+  const glossaryViolations = scanConfirmedVariantViolations(projectRoot);
+  const glossaryIssueCapacity = Math.max(0, 100 - issues.length);
+  for (const message of glossaryViolations.slice(0, glossaryIssueCapacity)) {
+    issues.push({
+      code: message.startsWith("project glossary is malformed")
+        ? "invalid_project_glossary"
+        : "confirmed_glossary_variant",
+      artifact: "glossary",
+      message,
+      recovery: "Apply the reported correction, then rerun npx -y agentera@next check validate state --format json; no state was changed.",
+    });
+  }
+  additionalOmittedIssues += Math.max(0, glossaryViolations.length - glossaryIssueCapacity);
   let entityMode = false;
   try {
     const binding = detectStateModeBinding(projectRoot);

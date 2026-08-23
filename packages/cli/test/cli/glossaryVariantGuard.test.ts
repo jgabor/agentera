@@ -12,7 +12,7 @@ import { main } from "../../src/cli/dispatch.js";
 import { confirmedVariantGuardContract } from "../../src/registries/glossaryEntryContract.js";
 
 function project(): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-cruft-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-glossary-guard-"));
   fs.mkdirSync(path.join(root, ".agentera"));
   fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   return root;
@@ -78,11 +78,54 @@ function publishProposal(root: string, proposal: TerminologyDriftFinding): { rc:
   return { rc, json: JSON.parse(out) };
 }
 
+function validateState(root: string): { rc: number; json: any } {
+  let out = "";
+  const rc = main(
+    ["node", "agentera", "check", "validate", "state", "--cwd", root, "--format", "json"],
+    { out: (text) => { out += text; }, err: () => {} },
+  );
+  return { rc, json: JSON.parse(out) };
+}
+
+function snapshot(root: string): Record<string, string> {
+  const files: Array<[string, string]> = [];
+  const visit = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const target = path.join(directory, entry.name);
+      if (entry.isDirectory()) visit(target);
+      else if (entry.isFile()) files.push([path.relative(root, target), fs.readFileSync(target).toString("hex")]);
+    }
+  };
+  visit(root);
+  return Object.fromEntries(files);
+}
+
 describe("confirmed glossary variant guard", () => {
-  it("passes without a glossary", () => {
+  it("passes through the active state validator without a glossary or mutation", () => {
     const root = project();
     try {
+      const before = snapshot(root);
       expect(scanConfirmedVariantViolations(root)).toEqual([]);
+      expect(validateState(root)).toMatchObject({
+        rc: 0,
+        json: { command: "check validate state", status: "pass", valid: true, issues: [] },
+      });
+      expect(snapshot(root)).toEqual(before);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("passes through the active state validator when variants remain only in retained evidence", () => {
+    const root = project();
+    try {
+      publishConfirmedSet(root);
+      const before = snapshot(root);
+      expect(validateState(root)).toMatchObject({
+        rc: 0,
+        json: { status: "pass", valid: true, issue_count: 0, issues: [] },
+      });
+      expect(snapshot(root)).toEqual(before);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -113,8 +156,18 @@ describe("confirmed glossary variant guard", () => {
       expect(violations[0]).toContain("src/reintroduced.ts:1");
       expect(violations[0]).toContain(`approval ${digest}`);
       expect(violations[0]).toContain("terms.ts:1");
-      expect(violations[0]).toContain("pnpm -C packages/cli exec vitest run test/cli/glossaryVariantGuard.test.ts");
+      expect(violations[0]).toContain("npx -y agentera@next check validate state --format json");
       expect(scanConfirmedVariantViolations(root)).toEqual(violations);
+      const validation = validateState(root);
+      expect(validation.rc).toBe(1);
+      expect(validation.json).toMatchObject({ status: "fail", valid: false, issue_count: 1 });
+      expect(validation.json.issues[0]).toMatchObject({
+        code: "confirmed_glossary_variant",
+        artifact: "glossary",
+      });
+      expect(validation.json.issues[0].message).toContain("canonical term 'JsonValue'");
+      expect(validation.json.issues[0].message).toContain("src/reintroduced.ts:1");
+      expect(validation.json.issues[0].message).toContain("Correction: replace 'LegacyJsonValue' with 'JsonValue'");
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

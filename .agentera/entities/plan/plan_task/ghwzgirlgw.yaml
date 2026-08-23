@@ -1,0 +1,12 @@
+id: ghwzgirlgw
+artifact: plan
+record:
+  name: Refine non-glossary profile provenance work
+  depends_on:
+    - pnhkgbhewv
+  status: pending
+  acceptance:
+    - GIVEN the current bounded evidence model WHEN the remaining profile provenance TODO is rendered THEN it refers to the current bounded signal generation rather than a monolithic corpus.
+    - GIVEN the independently owned personal Glossary section WHEN the TODO scope is inspected THEN glossary confidence, permanence, and publication are explicitly excluded.
+    - GIVEN no implementation evidence for the underlying provenance defect WHEN reconciliation completes THEN the work remains open with precise behavioral acceptance rather than being closed speculatively.
+  plan: prpojxblfj

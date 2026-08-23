@@ -94,10 +94,11 @@ ARTIFACTS:
       Build alone publishes one explicitly user-confirmed terminology proposal
       through `npx -y agentera@next state glossary publish --input REQUEST`. The typed writer
       revalidates audit source evidence and atomically records the immutable
-      approval beside the shared-only project entry. Build does not consume the
-      glossary only to validate replay and preserve unrelated publication state.
-      Separately, at governed meaning-sensitive Build events it requests bounded
-      read-only advice through `npx -y agentera@next report glossary-advice --input REQUEST
+      approval beside the shared-only project entry. Publication replay may
+      re-read the project document only to validate the exact prior effect and
+      preserve unrelated publication state. At governed meaning-sensitive
+      Build events, Build consumes bounded read-only advice through
+      `npx -y agentera@next report glossary-advice --input REQUEST
       --format json`. Advice and progress caveats never publish terminology,
       approve a proposal, reuse confirmation, mutate personal profiles or docs
       mappings, or grant publication authority to another capability.

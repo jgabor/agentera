@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Reduce the focused runtimeBootstrapMatrix.test.ts package-verification wall time from about 128 seconds to a bounded release-gate budget without weakening the 190-row source/package bootstrap proof."
       severity: normal
       status: open
-      order: 21
+      order: 18

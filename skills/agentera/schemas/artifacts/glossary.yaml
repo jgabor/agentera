@@ -6,11 +6,12 @@ meta:
   description: >-
     Repository-scoped canonical terminology governed by the shared glossary
     entry and project publication contracts. Build atomically publishes an
-    explicitly confirmed audit proposal; audit and discuss remain read-only.
+    explicitly confirmed audit proposal. Discuss, Plan, Build, and Prime
+    consume the bounded runtime integrations without direct artifact mutation.
   artifact_type: agent_facing
   path: ".agentera/glossary.yaml"
   producer: build
-  consumers: [build]
+  consumers: [build, discuss, plan, status]
   format: yaml
   implementation_status: active
 
@@ -83,5 +84,8 @@ ADVICE_RESOLUTION:
 CONFIRMED_VARIANT_GUARD:
   authority: references/artifacts/glossary-entry-contract.yaml#ownership_contracts.project.confirmed_variant_guard
   implementation: active
+  owner: packages/cli/src/cli/commands/validate.ts#validateStatePayload
+  scanner: packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations
+  command: npx -y agentera@next check validate state --format json
   validation_surface: packages/cli/test/cli/glossaryVariantGuard.test.ts
   consumer_lookup: forbidden

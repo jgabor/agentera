@@ -464,6 +464,17 @@ describe("shared glossary entry authority", () => {
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
 
+  it("rejects a confirmed-variant guard detached from the active state validator", () => {
+    const pathname = malformedAuthority((authority) => {
+      authority.ownership_contracts.project.confirmed_variant_guard.owner =
+        "packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations";
+    });
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      "confirmed variant guard must run through the active state validator and reuse validated project glossary pairs with bounded exclusions",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
   it("rejects drift from the shared Unicode caseless-exact identity runtime", () => {
     const pathname = malformedAuthority((authority) => {
       authority.consumer_boundary.deterministic_judgments.term_identity_runtime =

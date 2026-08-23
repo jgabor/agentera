@@ -33,4 +33,4 @@ record:
       description: "[refactor] Separate objective and experiment IDs from fixed artifact paths"
       severity: normal
       status: open
-      order: 30
+      order: 27

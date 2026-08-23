@@ -1,0 +1,42 @@
+id: prpojxblfj
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-24
+    status: open
+    reviewed: 2026-08-24
+    critic_issues: 2 found, 1 addressed, 1 dismissed
+    title: "Plan: Reconcile glossary enforcement and related state"
+  what: Restore enforceable project-glossary validation, remove stale duplicate work, align active consumer declarations, and reconcile adjacent profile TODOs against verified behavior.
+  why: Current state says glossary delivery is complete while public TODOs duplicate resolved work and one promised enforcement path is no longer reachable through the active CLI.
+  constraints: Preserve resolved task history, personal-glossary privacy, project-over-personal precedence, typed writer authority, and package parity. Do not add a default docs mapping, automatic terminology scanner, version change, release, publication, or push.
+  overall_acceptance: GIVEN the orchestration completes WHEN current CLI behavior, public backlog, typed state, and packaged contracts are inspected THEN they agree on one enforceable glossary lifecycle with no stale open duplicates.
+  scope:
+    included:
+      - confirmed project-glossary variant enforcement through an active validation owner
+      - glossary consumer metadata and shipped documentation
+      - public and typed glossary backlog reconciliation
+      - optional profile-grounding TODO disposition
+      - non-glossary profile provenance TODO refinement
+      - source and package verification
+    excluded:
+      - automatic repository-wide terminology discovery
+      - rewriting resolved task history solely to modernize old wording
+      - default glossary path duplication in docs mapping
+      - release, publication, remote mutation, or version changes
+    deferred:
+      - implementation of non-glossary profile provenance behavior beyond refining its actionable TODO contract
+  design: First restore one authoritative validation route and reconcile the directly coupled glossary declarations and backlog. Then use executable evidence to close or narrow adjacent profile work. Finish by synchronizing state and proving source and packaged behavior agree.
+  unknowns:
+    - question: Which existing active validation owner is authoritative for confirmed source-term enforcement?
+      affects_task: 1
+      resolve_by: Read the current validation authority and integration tests before changing routing; use the named owner and avoid a new public command unless authority requires it.
+    - question: Does a supported request mode explicitly require profile grounding rather than treating it as optional context?
+      affects_task: 2
+      resolve_by: Trace the current request and startup contracts and use an end-to-end test to decide whether the TODO closes or narrows to a real missing mode.
+  rejected:
+    - issue: Rewrite every resolved glossary TODO description to match current command names and sequencing.
+      rationale: Resolved descriptions preserve historical scope; current truth should come from active contracts, successor work, and the public backlog rather than rewritten history.
+  surprises:
+    []

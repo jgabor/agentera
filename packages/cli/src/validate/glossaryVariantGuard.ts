@@ -17,7 +17,7 @@ const TEXT_EXTENSIONS = new Set([
   ".md", ".mjs", ".py", ".rs", ".sh", ".toml", ".ts", ".tsx", ".txt",
   ".xml", ".yaml", ".yml",
 ]);
-const RERUN = "pnpm -C packages/cli exec vitest run test/cli/glossaryVariantGuard.test.ts";
+const RERUN = "npx -y agentera@next check validate state --format json";
 
 interface ConfirmedVariant {
   variant: string;

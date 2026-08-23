@@ -1988,7 +1988,9 @@ ownership_contracts:
         collision, or malformed existing state is a conflict and must never be
         repaired or overwritten implicitly.
     confirmed_variant_guard:
-      owner: packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations
+      owner: packages/cli/src/cli/commands/validate.ts#validateStatePayload
+      scanner: packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations
+      command: npx -y agentera@next check validate state --format json
       validation_surface: packages/cli/test/cli/glossaryVariantGuard.test.ts
       loader: packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument
       source_rule: >-
@@ -2034,8 +2036,8 @@ ownership_contracts:
       failure_rule: >-
         Emit one deterministic violation per variant location with the canonical
         term, confirmed proposal evidence, offending source location, and the
-        runnable validation command. A malformed present glossary fails closed;
-        an absent glossary leaves the pre-existing legacy checks unchanged.
+        runnable active state-validation command. A malformed present glossary
+        fails closed; an absent glossary passes without mutation.
 
 consumer_boundary:
   contract_status: active

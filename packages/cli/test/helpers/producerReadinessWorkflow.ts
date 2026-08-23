@@ -358,14 +358,38 @@ export async function runProducerReadinessWorkflow(
   );
   assert(glossaryArtifact, `artifact discovery omitted glossary: ${discovery.stdout}`);
 
+  const beforeCleanValidation = digestTree(project);
+  const cleanValidation = invoke(
+    executable,
+    ["check", "validate", "state", "--format", "json"],
+    project,
+    env,
+  );
+  assert.equal(cleanValidation.status, 0, cleanValidation.stderr || cleanValidation.stdout);
+  assert.equal(JSON.parse(cleanValidation.stdout).status, "pass");
+  assert.equal(digestTree(project), beforeCleanValidation, "clean glossary validation mutated project state");
+
   fs.writeFileSync(
     path.join(project, "src/reintroduced.ts"),
     "export type Broken = ProjectVariant;\n",
   );
-  const guard = await load(executable, "validate/glossaryVariantGuard.js");
-  const confirmedVariantViolations = guard
-    .scanConfirmedVariantViolations(project)
-    .filter((message: string) => message.includes("ProjectVariant")).length;
+  const beforeFailedValidation = digestTree(project);
+  const failedValidation = invoke(
+    executable,
+    ["check", "validate", "state", "--format", "json"],
+    project,
+    env,
+  );
+  assert.notEqual(failedValidation.status, 0, "reintroduced confirmed variant passed state validation");
+  const failedValidationPayload = JSON.parse(failedValidation.stdout);
+  const confirmedVariantViolations = failedValidationPayload.issues
+    .filter((issue: any) =>
+      issue.code === "confirmed_glossary_variant" &&
+      String(issue.message).includes("ProjectVariant") &&
+      String(issue.message).includes("ProjectCanonical") &&
+      String(issue.message).includes("src/reintroduced.ts:1")
+    ).length;
+  assert.equal(digestTree(project), beforeFailedValidation, "failed glossary validation mutated project state");
   const profileUnchanged = fs.readFileSync(profile.profilePath).equals(profileBeforeProject);
 
   const trapTerm = "PRIVATE_CONSUMER_TRAP_7F31";

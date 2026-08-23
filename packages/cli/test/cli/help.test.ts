@@ -118,6 +118,8 @@ describe("cli help", () => {
     const glossary = printStateHelp("glossary");
     expect(glossary).toContain("agentera state glossary publish --input REQUEST.yaml");
     expect(glossary).toContain("proposal-specific user confirmation");
+    expect(glossary).toContain("Confirmed project variants are enforced by `agentera check validate state`");
+    expect(glossary).not.toContain(["v1", "LegacyCruft"].join(""));
     expect(glossary).not.toContain("state glossary list");
     expect(experiments).toContain("byte-equivalent identity retry is idempotent");
     expect(experiments).toContain("get requires one bare experiment ID");

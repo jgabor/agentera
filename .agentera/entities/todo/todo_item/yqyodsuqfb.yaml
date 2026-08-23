@@ -22,7 +22,7 @@ record:
       description: "[fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests."
       severity: normal
       status: open
-      order: 24
+      order: 21
   lifecycle:
     operation: set-severity
     reason: Moved from the duplicated Critical section to the Normal backlog.
