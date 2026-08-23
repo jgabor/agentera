@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Verify release after stale-lock repair
-  status: in_progress
+  status: blocked
   depends_on:
     - jpmwftenzl
   acceptance:
@@ -11,12 +11,12 @@ record:
     - GIVEN successful qualification WHEN its evidence is inspected THEN required gate records and receipts are valid and no publish or registry side effect occurs.
     - GIVEN all owners pass WHEN state is synchronized THEN the replacement final task and plan have current verified status with no unrelated worktree changes.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: The stale-lock repair raised entityStorage.ts from the governed 1000-entry maximum to 1012 entries, causing the source owner to fail before downstream release gates.
+    last_failure_evidence: Performance owner exited after the debugger fixture boundary, but durable evidence omitted the failing operation, raw stdout/stderr, child environment names, and effective process arguments; product regression is unproven and release acceptance remains unmet.
     provenance:
-      attempt_id: audit-vhh-1
-      source: orchestrate audit for task vhherytjfi
-      recorded_at: 2026-08-23 20:20
+      attempt_id: audit-vhh-2
+      source: orchestrate re-audit for task vhherytjfi
+      recorded_at: 2026-08-23 20:43
       writer_command: agentera state plan record-evaluation

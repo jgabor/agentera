@@ -1,0 +1,14 @@
+id: yqthtqlqjc
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:51
+  type: fix
+  phase: build
+  what: Corrected the cold archive performance fixture boundary and retained bounded failure evidence.
+  context:
+    intent: Preserve actionable cold-process failures and measure archive enumeration through its fixture-owned direct-list boundary.
+    constraints: Preserve the inspector, performance budgets, environment inheritance, and coordinator-owned task, plan, and TODO lifecycle fields.
+    scope: Plan task wkkkhpcfay.
+  discovered: The archive performance fixture invoked the CLI against marker-absent archive-only state. The CLI correctly rejected that unknown state after reaching the debugger fixture boundary; inherited debugger settings were not the cause.
+  verified: Helper regressions passed 6 tests. The supported performance owner passed its 35 cold samples within unchanged budgets. Typecheck and local build passed.
+  publication_order: 211

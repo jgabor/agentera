@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   collectGarbageThenReadBaseline,
+  coldCliFailureEvidence,
   EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT as MEASUREMENT_NODE_OPTIONS_LIMIT,
   measureColdCli,
   measureColdCliWithRetainedAllocation,
@@ -30,6 +31,28 @@ afterEach(() => {
 });
 
 describe("cold CLI heap measurement", () => {
+  it("reports bounded process-boundary evidence without environment values", () => {
+    const evidence = coldCliFailureEvidence({
+      operation: "prime --dashboard",
+      stdout: "x".repeat(5_000),
+      stderr: "debugger output",
+      childArgs: ["--inspect-brk=127.0.0.1:0", "--eval", "<inline-runner>"],
+      env: { NODE_OPTIONS: "secret option", NODE_INSPECT_RESUME_ON_START: "secret control" },
+      exitCode: 1,
+    });
+    expect(Buffer.byteLength(evidence, "utf8")).toBeLessThan(5_000);
+    expect(JSON.parse(evidence)).toMatchObject({
+      operation: "prime --dashboard",
+      exitCode: 1,
+      stderr: "debugger output",
+      childArgs: ["--inspect-brk=127.0.0.1:0", "--eval", "<inline-runner>"],
+      presentDebugEnvNames: ["NODE_INSPECT_RESUME_ON_START", "NODE_OPTIONS"],
+    });
+    expect(evidence).toContain("<truncated>");
+    expect(evidence).not.toContain("secret option");
+    expect(evidence).not.toContain("secret control");
+  });
+
   it("distinguishes local diagnostic evidence from the pinned remote runner identity", () => {
     const definition = YAML.parse(fs.readFileSync(VERIFICATION_POLICY_PATH, "utf8")).owners.performance;
     const runtime = { platform: "linux", architecture: "x64" };

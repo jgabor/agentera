@@ -1,0 +1,23 @@
+id: qtywxothpb
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Preserve cold performance failure diagnostics
+  requirements:
+    - Retain bounded raw stdout and stderr, failing operation, effective child arguments, and relevant environment variable names when a measured cold CLI fails after the debugger fixture boundary.
+    - Use the retained evidence to correct only the confirmed fixture or process-boundary defect without weakening performance budgets.
+  acceptance:
+    - A focused failure case proves the performance owner retains enough bounded diagnostics to distinguish fixture failure from product failure.
+    - The clean-boundary release DAG passes performance and all remaining owners without publication or registry side effects.
+  release_blocker: true
+  severity: critical
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Preserve cold performance failure diagnostics"
+      severity: critical
+      status: open
+      order: 6

@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
-import { measureColdCli } from "../helpers/coldCliMeasurement.js";
+import { measureColdCli, measureColdStateList } from "../helpers/coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
 import { performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
 
@@ -229,12 +229,7 @@ describe("entity authority performance", () => {
       fixtures[`archive_${scale}`] = { entries };
       for (let repetition = 1; repetition <= repetitions; repetition += 1) {
         const limits = targets[`archive_list_${scale}`];
-        const measured = await measureColdCli({
-          args: ["state", "progress", "list", "--limit", "100", "--format", "json"],
-          project: archiveProject,
-          home,
-          repoRoot: REPO_ROOT,
-        });
+        const measured = await measureColdStateList({ project: archiveProject, repoRoot: REPO_ROOT });
         runtime ??= measured.runtime;
         expect(measured.runtime).toEqual(runtime);
         const outputBytes = Buffer.byteLength(measured.stdout, "utf8");

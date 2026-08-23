@@ -1,0 +1,12 @@
+id: wkkkhpcfay
+artifact: plan
+record:
+  plan: bhhshalaqm
+  name: Diagnose cold performance fixture failure
+  status: in_progress
+  depends_on:
+    - jpmwftenzl
+  acceptance:
+    - GIVEN a measured cold CLI failure WHEN the performance helper reports it THEN bounded evidence includes the failing operation, raw stdout and stderr, effective child arguments, and relevant environment variable names.
+    - GIVEN the retained failure evidence WHEN the process boundary is corrected THEN the fix addresses only the confirmed fixture or inheritance defect and preserves the fixture-owned inspector and performance budgets.
+    - GIVEN the focused correction WHEN verification runs THEN helper regressions, performance-focused tests, typecheck, and build pass.
