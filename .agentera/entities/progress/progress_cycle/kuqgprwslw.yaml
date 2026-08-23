@@ -1,0 +1,13 @@
+id: kuqgprwslw
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:30
+  type: fix
+  phase: build
+  what: Aligned retired OpenCode plugin diagnostics and operator guidance.
+  context:
+    intent: Keep proven, unproven, and absent plugin states distinct without broadening automatic cleanup.
+  discovered: Proven plugin diagnosis can reuse the automatic-retirement fingerprint and ownership-journal qualification used by upgrade.
+  verified: Focused diagnostics and upgrade tests passed (50 tests); typecheck passed. The retired-runtime policy remains blocked by CHANGELOG scalar inventory drift and needs final inventory reconciliation.
+  next: Audit this task, then run final source and package verification.
+  publication_order: 203

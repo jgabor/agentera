@@ -1,0 +1,12 @@
+id: cixnremycy
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:39
+  type: fix
+  phase: audit
+  what: Reconciled the changelog scalar-classification inventory after the retirement guidance update.
+  context:
+    intent: Record the authoritative policy-lane recovery and the remaining time-bounded verification caveat.
+  verified: Focused upgrade tests passed 50/50, retiredRuntimeSurfacePolicy passed 194/194, typecheck and build passed, and README/UPGRADE doc lint passed. Full source verification exceeded the 300-second local timeout without reporting a test assertion failure.
+  next: Final verification should rerun the authoritative source lane with its full CI time budget, then package verification.
+  publication_order: 204

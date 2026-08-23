@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -11,6 +12,9 @@ import {
   retiredResourceDiagnosticIds,
 } from "../../src/runtime/nativeResourceCleanup.js";
 import { diagnoseRetiredResources } from "../../src/upgrade/retiredResourceDiagnostics.js";
+import { appendLifecycleOwnershipJournal, lifecycleOwnershipJournalPath } from "../../src/runtime/lifecycleOwnershipJournal.js";
+import { observeLifecyclePath } from "../../src/runtime/lifecyclePublication.js";
+import { LIFECYCLE_LEDGER_SCHEMA } from "../../src/runtime/lifecycleOperations.js";
 
 let root: string;
 let home: string;
@@ -173,6 +177,42 @@ describe("retired native resource doctor diagnostics", () => {
     expect(payload.signals.some((signal: { kind: string }) => signal.kind === "retired_native_resources")).toBe(false);
   });
 
+  it("reports a proven plugin as pending automatic removal through normal upgrade", () => {
+    const plugin = path.join(home, ".config", "opencode", "plugins", "agentera.js");
+    fs.mkdirSync(path.dirname(plugin), { recursive: true });
+    const historical = spawnSync("git", ["show", "aa33870df05d53745ebad5351b8a352b7dad7780:.opencode/plugins/agentera.js"], {
+      cwd: path.resolve(import.meta.dirname, "../../../.."),
+      encoding: null,
+    });
+    expect(historical.status).toBe(0);
+    fs.writeFileSync(plugin, historical.stdout);
+    const observed = observeLifecyclePath(plugin, [home]);
+    appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(installRoot), {
+      schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+      owner: "agentera",
+      records: [{
+        resourceId: "opencode.plugin",
+        destination: plugin,
+        kind: "file",
+        scope: "whole",
+        status: "managed",
+        fingerprint: observed.fingerprint!,
+        identity: observed.identity!,
+      }],
+    });
+
+    const { payload } = captureDoctor();
+    const resource = payload.retired_resources.resources[0];
+
+    expect(resource).toMatchObject({ id: "opencode.plugin.agentera", status: "pending_automatic_removal" });
+    expect(resource.next_action).toContain(" upgrade ");
+    expect(resource.next_action).not.toContain("--legacy-cleanup");
+    expect(resource).not.toHaveProperty("preview_command");
+    expect(payload.signals).toContainEqual(expect.objectContaining({
+      kind: "retired_native_resources_pending_automatic_removal",
+    }));
+  });
+
   it("runs an exact read-only diagnostic preview without accepting a cleanup selector", () => {
     const plugin = path.join(home, ".config", "opencode", "plugins", "agentera.js");
     fs.mkdirSync(path.dirname(plugin), { recursive: true });
@@ -188,6 +228,8 @@ describe("retired native resource doctor diagnostics", () => {
     expect(rc).toBe(1);
     expect(payload.retired_resources.selectedResourceId).toBe("opencode.plugin.agentera");
     expect(payload.retired_resources.resources.map((resource: { id: string }) => resource.id)).toEqual(["opencode.plugin.agentera"]);
+    expect(payload.retired_resources.resources[0]).toMatchObject({ status: "manual_review" });
+    expect(payload.retired_resources.resources[0]).not.toHaveProperty("next_action");
     expect(JSON.stringify(payload)).not.toContain("USER_SECRET_MUST_NOT_LEAK");
   });
 
@@ -253,7 +295,7 @@ describe("retired native resource doctor diagnostics", () => {
     expect(payload.status).toBe("manual_review_needed");
     expect(resources).toContainEqual(expect.objectContaining({
       id: "codex.agent-descriptor.build",
-      status: "action_required",
+      status: "manual_review",
       evidence: expect.objectContaining({ observation: "path_present", paths: [descriptor] }),
     }));
     expect(resources).toContainEqual(expect.objectContaining({

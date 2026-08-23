@@ -43,13 +43,12 @@ npx -y agentera@next doctor --format json
 ## Runtime integration
 
 Agentera 3.0 uses one portable integration for compatible runtimes: the shared
-skill at `~/.agents/skills/agentera` plus the Agentera CLI. Normal `upgrade`
-previews and applies only app/project migration; it has no current-runtime
-selector and creates no native plugin, hook, agent, command, descriptor, or
-marketplace file. See [UPGRADE.md](./UPGRADE.md) for the distinct one-way v2
-migration and explicit native-resource cleanup route. The guide shows separate
-`@next` preview and apply commands for each cleanup resource.
-The cleanup option pair is `--legacy-cleanup RESOURCE_ID --dry-run|--yes`.
+skill at `~/.agents/skills/agentera` plus the Agentera CLI. No OpenCode gate or
+`hook` command replaces the retired plugin. Normal `upgrade` automatically
+previews and removes a proven Agentera-installed copy of that plugin, with no
+separate cleanup selector. It preserves unproven files for manual review. See
+[UPGRADE.md](./UPGRADE.md) for the distinct one-way v2 migration and the
+explicit cleanup route for other retired native resources.
 
 `doctor` reports read-only app, project-state, shared-skill, and CLI evidence.
 `prime`, status, and project-integration output use the app/project recommendation

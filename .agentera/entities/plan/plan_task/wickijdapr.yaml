@@ -4,7 +4,7 @@ record:
   name: Align diagnostics and operator guidance
   depends_on:
     - acixwmoukf
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a proven plugin WHEN diagnosed before apply THEN status identifies pending automatic removal and points to normal upgrade.
     - GIVEN an unproven resource WHEN diagnosed THEN status requires manual review without suggesting automatic ownership.

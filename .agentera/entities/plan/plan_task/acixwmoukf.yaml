@@ -4,7 +4,7 @@ record:
   name: Integrate cleanup with normal upgrade
   depends_on:
     - hdktlehytj
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a proven retired plugin WHEN normal upgrade is previewed THEN removal is reported without filesystem mutation.
     - GIVEN a proven retired plugin WHEN normal upgrade is approved THEN it is removed without a legacy-cleanup selector, including on same-major v3 installations.
@@ -13,3 +13,13 @@ record:
     - GIVEN cleanup already completed WHEN upgrade runs again THEN the operation is a no-op.
     - GIVEN each upgrade behavior WHEN tested THEN coverage includes one passing and one refusal case.
   plan: gacnyrekma
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: agentera.inspekteraEvaluationReport.v1
+      recorded_at: 2026-08-23 20:11
+      writer_command: agentera state plan record-evaluation

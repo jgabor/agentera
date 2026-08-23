@@ -626,6 +626,9 @@ export function renderUpgradePlan(plan: UpgradePlanV2): string {
     lines.push(
       `  counts: pending=${cleanup.pending}, applied=${cleanup.applied}, noop=${cleanup.noop}, blocked=${cleanup.blocked_unowned + cleanup.action_required}`,
     );
+    if (cleanup.applied > 0 && plan.lifecycle.nativeResourceCleanup.resourceId === "opencode.plugin.agentera") {
+      lines.push("  Next: restart OpenCode to finish removing the retired plugin.");
+    }
   }
   if (plan.mode === "plan" && plan.summary.pending > 0 && plan.applyCommand) {
     lines.push("");

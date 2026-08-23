@@ -73,21 +73,23 @@ npx -y agentera@next state plan create --input PLAN.yaml --dry-run --format json
 npx -y agentera@next state plan create --input PLAN.yaml --format json
 ```
 
-`doctor --format json` also reports bounded `retired_resources` candidates. Each
-entry has an exact retired resource ID, a path-only or fingerprint-safe
-observation, and a read-only, ID-scoped preview command. The command repeats
-the ID and resolved app root as `doctor --install-root ROOT --retired-resource
-ID --format json`; it does not select `upgrade --legacy-cleanup` and cannot
-remove a resource. Doctor never includes resource contents, adopts a name
+`doctor --format json` also reports bounded `retired_resources` candidates. A
+proven Agentera-installed OpenCode plugin reports `pending_automatic_removal`
+and points to normal `upgrade`; it needs no separate cleanup selector. An
+unproven or uninspectable resource reports `manual_review` and a read-only,
+ID-scoped doctor command. Doctor never includes resource contents, adopts a name
 collision as Agentera-owned, or changes a diagnosed path. Absent resources
-report `clean`; present or uninspectable candidates require manual ownership
-review.
+report `clean`.
 
 Retries re-observe the current app/project state. Completed migration work
 converges to no change; interrupted v2 migration continues through the same full
 apply command.
 
 ## Native Agentera resource cleanup
+
+Normal upgrade retires only the proven OpenCode plugin automatically. Restart
+OpenCode after a successful removal. No OpenCode gate or `hook` command replaced
+the plugin; `npx -y agentera@next` remains the supported entry point.
 
 Cleanup is a distinct resource route, not a host selection. Codex, Cursor,
 OpenCode, and Copilot remain supported through the canonical shared skill and

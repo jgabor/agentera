@@ -31,6 +31,8 @@ import { diagnoseCanonicalSkill } from "../../setup/sharedSkill.js";
 import { diagnoseRetiredResources, type RetiredResourceDiagnosis } from "../../upgrade/retiredResourceDiagnostics.js";
 import { commandText } from "../../upgrade/upgradeCommands.js";
 import { inspectTodoReconciliationState } from "../../state/todoReconciliationInspection.js";
+import { classifyAutomaticRetirement } from "../../runtime/nativeResourceCleanup.js";
+import { lifecycleOwnershipJournalPath } from "../../runtime/lifecycleOwnershipJournal.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -87,12 +89,30 @@ function doctorRetiredResources(
 ): Record<string, unknown> {
   return {
     ...diagnosis,
-    resources: diagnosis.resources.map((resource) => ({
-      id: resource.id,
-      status: resource.status,
-      evidence: resource.evidence,
-      preview_command: previewCommand(resource, context),
-    })),
+    resources: diagnosis.resources.map((resource) => {
+      const qualification = classifyAutomaticRetirement(
+        resource.id,
+        resource.evidence.paths[0]!,
+        lifecycleOwnershipJournalPath(context.installRoot),
+      );
+      if (qualification.qualification === "qualified") {
+        return {
+          id: resource.id,
+          status: "pending_automatic_removal",
+          evidence: resource.evidence,
+          next_action: commandText([
+            "npx", "-y", "agentera@next", "upgrade", "--channel", "development",
+            "--project", context.project, "--install-root", context.installRoot, "--dry-run",
+          ]),
+        };
+      }
+      return {
+        id: resource.id,
+        status: "manual_review",
+        evidence: resource.evidence,
+        preview_command: previewCommand(resource, context),
+      };
+    }),
   };
 }
 
@@ -243,15 +263,27 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     resourceId: args.retiredResource ?? null,
   });
   const retiredResources = doctorRetiredResources(retiredDiagnosis, { home, project, installRoot });
-  if (retiredDiagnosis.status === "action_required") {
+  const retiredResourceEntries = retiredResources.resources as Array<{ id: string; status: string }>;
+  const manualReviewResources = retiredResourceEntries.filter((resource) => resource.status === "manual_review");
+  const pendingAutomaticResources = retiredResourceEntries.filter((resource) => resource.status === "pending_automatic_removal");
+  if (manualReviewResources.length > 0) {
     status.signals.push({
       status: APP_MANUAL_REVIEW_NEEDED,
       kind: "retired_native_resources",
       message: "retired native resource candidates need ownership review before cleanup",
-      resourceIds: retiredDiagnosis.resources.map((resource) => resource.id),
+      resourceIds: manualReviewResources.map((resource) => resource.id),
       omittedResourceCount: retiredDiagnosis.omittedResourceCount,
     });
     if (status.status === APP_UP_TO_DATE) status.status = APP_MANUAL_REVIEW_NEEDED;
+  }
+  if (pendingAutomaticResources.length > 0) {
+    status.signals.push({
+      status: APP_REPAIR_NEEDED,
+      kind: "retired_native_resources_pending_automatic_removal",
+      message: "proven retired OpenCode plugin is pending automatic removal by normal upgrade",
+      resourceIds: pendingAutomaticResources.map((resource) => resource.id),
+    });
+    if (status.status === APP_UP_TO_DATE) status.status = APP_REPAIR_NEEDED;
   }
   const sharedSkill = diagnoseCanonicalSkill(home);
   let smokeReport: JsonObject | null = null;

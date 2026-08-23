@@ -571,8 +571,11 @@ describe("buildUpgradePlan", () => {
 
     const applied = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", yes: true });
     expect(applied.lifecycle?.cleanupSummary.applied).toBe(1);
+    expect(renderUpgradePlan(applied)).toContain("restart OpenCode");
     expect(fs.existsSync(plugin)).toBe(false);
-    expect(buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", yes: true }).lifecycle?.status).toBe("noop");
+    const noop = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", yes: true });
+    expect(noop.lifecycle?.status).toBe("noop");
+    expect(renderUpgradePlan(noop)).not.toContain("restart OpenCode");
 
     fs.writeFileSync(plugin, historical.stdout);
     const replacementObservation = observeLifecyclePath(plugin, [home]);
