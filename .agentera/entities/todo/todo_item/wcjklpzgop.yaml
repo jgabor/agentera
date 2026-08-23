@@ -11,12 +11,16 @@ record:
     - The clean-boundary release DAG passes the stress owner and continues through its remaining owners without weakened assertions or budgets.
   release_blocker: true
   severity: critical
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make stale-lock races reach canonical duplicate detection"
+      status: resolved
+      order: 118
       severity: critical
-      status: open
-      order: 5
+  lifecycle:
+    operation: resolve
+    reason: Stale-lock timeout now rechecks durable duplicate identity; 100-race stress and the full release DAG pass.
+    date: 2026-08-23

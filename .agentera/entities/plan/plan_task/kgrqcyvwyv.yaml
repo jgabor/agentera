@@ -3,10 +3,20 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Complete qualification evidence
-  status: in_progress
+  status: complete
   depends_on:
     - wkkkhpcfay
   acceptance:
     - GIVEN the original successful qualification output WHEN durable evidence is appended THEN it includes the exact package-identity digest and tarball SHA-256 alongside the existing gate and evidence digests without rerunning qualification.
     - GIVEN the combined qualification evidence WHEN audited THEN all 11 gates, check-only receipt semantics, and false release side effects are independently substantiated.
     - GIVEN final PASS evidence WHEN state is synchronized THEN blocked predecessor final tasks are superseded, blocker TODOs are resolved, the plan is complete, and the worktree is clean.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-kgr-1
+      source: orchestrate audit for task kgrqcyvwyv
+      recorded_at: 2026-08-23 21:53
+      writer_command: agentera state plan record-evaluation

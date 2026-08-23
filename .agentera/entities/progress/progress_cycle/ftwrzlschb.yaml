@@ -1,0 +1,15 @@
+id: ftwrzlschb
+artifact: progress
+record:
+  timestamp: 2026-08-23 21:56
+  type: test
+  phase: audit
+  what: Completed the faster focused test verification plan with simpler ownership, fewer cold processes, retained observations, corrected contention behavior, bounded diagnostics, and a passing release conjunction.
+  context:
+    intent: Record the durable completion sweep for plan bhhshalaqm.
+    constraints: State and changelog only; no code, test, policy, lifecycle, qualification, push, or publication changes.
+    scope: Completed test simplification and final governed evidence.
+  discovered: Ordinary focused source verification now performs zero unrelated package constructions (progress fvcgbtlxbb). Runtime missing-surface evidence uses 2 cold processes instead of 16 while retaining all 16 independent observations (etkzlcmyyc). The user-approved sequential timings were 94.912s and 92.637s versus the 129.769s pre-batch baseline (jakkfsyrjq).
+  verified: The delivered work also corrected stale-lock same-ID contention so a committed competing entity yields the canonical duplicate-ID conflict (lacoobvbrn), and preserved bounded cold-process failure diagnostics (yqthtqlqjc and hwvgkezlnl). The uncontended check-only release run passed all 11 governed gates without release side effects; ngqpaojjqw records the gate results and tkojijifyn completes the package identity binding. Final evidence task kgrqcyvwyv passed, predecessor final tasks were superseded, TODOs wcjklpzgop and qtywxothpb were resolved, and plan bhhshalaqm is complete.
+  next: No plan work remains.
+  publication_order: 216

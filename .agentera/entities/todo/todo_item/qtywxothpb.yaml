@@ -12,12 +12,16 @@ record:
     - The clean-boundary release DAG passes performance and all remaining owners without publication or registry side effects.
   release_blocker: true
   severity: critical
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[test:3.0.0] Preserve cold performance failure diagnostics"
+      status: resolved
+      order: 119
       severity: critical
-      status: open
-      order: 6
+  lifecycle:
+    operation: resolve
+    reason: Cold performance failures now retain bounded end-to-end diagnostics; focused performance and the full release DAG pass.
+    date: 2026-08-23

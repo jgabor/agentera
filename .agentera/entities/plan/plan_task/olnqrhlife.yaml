@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Complete release qualification
-  status: blocked
+  status: superseded
   depends_on:
     - wkkkhpcfay
   acceptance:
@@ -20,3 +20,6 @@ record:
       source: orchestrate re-audit for task olnqrhlife
       recorded_at: 2026-08-23 21:47
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - kgrqcyvwyv
+  superseded_reason: Durable digest completion replaces the otherwise passing qualification task.

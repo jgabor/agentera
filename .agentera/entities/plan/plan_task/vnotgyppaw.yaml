@@ -7,7 +7,7 @@ record:
     - hhyrhisjfp
     - izsczmiboc
     - mcwhyujpxn
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN each changed behavior WHEN focused checks run THEN failures are corrected before broader owners start, and typecheck and build pass where the changed surfaces require them.
     - GIVEN a clean focused result WHEN final verification runs THEN the policy-owned release DAG is the sole final authority and no downstream owner runs after an owner failure.
@@ -24,3 +24,6 @@ record:
       source: orchestrate re-audit for task vnotgyppaw
       recorded_at: 2026-08-23 19:57
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - kgrqcyvwyv
+  superseded_reason: Complete passing qualification evidence replaces the exhausted initial final-verification task.

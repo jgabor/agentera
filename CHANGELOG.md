@@ -105,6 +105,8 @@
 
 ### Fixed
 
+- Fixed same-ID writer lock contention so a competing committed entity returns
+  the canonical duplicate-ID conflict instead of a generic lock timeout.
 - Fixed deprecated `prime --dashboard --fields` requests to return a typed
   migration failure instead of successful partial JSON; unfiltered dashboard
   aliases remain status capsules, and consumers are directed to

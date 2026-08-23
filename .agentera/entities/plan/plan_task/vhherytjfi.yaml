@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Verify release after stale-lock repair
-  status: blocked
+  status: superseded
   depends_on:
     - jpmwftenzl
   acceptance:
@@ -20,3 +20,6 @@ record:
       source: orchestrate re-audit for task vhherytjfi
       recorded_at: 2026-08-23 20:43
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - kgrqcyvwyv
+  superseded_reason: Complete passing qualification evidence replaces the source-size and performance-fixture verification attempt.

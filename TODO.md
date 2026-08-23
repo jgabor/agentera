@@ -6,8 +6,6 @@
 - [ ] [id:pqpzmhdpsj] [fix:3.0.0] Prepare the stable TypeScript publication contract on main.
 - [ ] [id:lqqmlchlyr] [fix:3.0.0] Prepare one verified TypeScript stable-cutover candidate after approval.
 - [ ] [id:huiepnrwav] [fix:3.0.0] Promote the verified TypeScript cutover candidate to npm @latest.
-- [ ] [id:wcjklpzgop] [fix:3.0.0] Make stale-lock races reach canonical duplicate detection
-- [ ] [id:qtywxothpb] [test:3.0.0] Preserve cold performance failure diagnostics
 
 ## ⇉ Degraded
 
@@ -170,3 +168,5 @@
 - [x] [id:mmesbicmmx] [fix:3.0.0] Fix interrupted recovery after prior TODO transition batches.
 - [x] [id:kbjrvrilzj] [feat:3.0.0] Apply common same-kind TODO changes atomically.
 - [x] [id:kzthftsrys] [test:3.0.0] Reduce batched runtime integration median below baseline
+- [x] [id:wcjklpzgop] [fix:3.0.0] Make stale-lock races reach canonical duplicate detection
+- [x] [id:qtywxothpb] [test:3.0.0] Preserve cold performance failure diagnostics
