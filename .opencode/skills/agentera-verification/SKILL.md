@@ -13,7 +13,7 @@ working on generated output and package construction.
 
 ## Environment
 
-- Use Node.js 22 or newer.
+- Use the Node.js 24 LTS version pinned in `.node-version`.
 - Use pnpm 10.30.3 through Corepack.
 - `.opencode/` may keep an ignored, checkout-local npm dependency boundary when
   its runtime code or tests require `@opencode-ai/plugin` types. Its manifest

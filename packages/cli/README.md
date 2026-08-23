@@ -248,7 +248,8 @@ state, candidate projection, or publication result.
 
 ## Contributors
 
-Requires Node.js 22+ and pnpm 10.30.3.
+Contributors use the Node.js 24 LTS version pinned in `.node-version` and pnpm
+10.30.3.
 
 ### Generated-output ownership and recovery
 

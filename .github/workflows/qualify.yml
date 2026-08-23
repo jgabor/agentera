@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         timeout-minutes: 1
         with:
-          node-version: 22.23.2
+          node-version-file: .node-version
       - name: Install dependencies
         timeout-minutes: 3
         env:

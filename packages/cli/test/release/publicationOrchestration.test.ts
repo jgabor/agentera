@@ -208,7 +208,7 @@ describe("package publication orchestration", () => {
     expect(publicationYaml.indexOf("release-qualification.mjs approval"))
       .toBeLessThan(publicationYaml.indexOf("release-benchmark.mjs publication"));
     expect(publicationYaml).not.toContain("release-benchmark.mjs qualification --adapter");
-    expect(publicationYaml).toContain("node-version: 22.23.2");
+    expect(publicationYaml.match(/node-version-file: \.node-version/g)).toHaveLength(2);
     expect(publicationYaml).toContain("COREPACK_HOME: ${{ runner.temp }}/corepack");
     expect(stableVerificationYaml.match(/COREPACK_HOME: \$\{\{ runner\.temp \}\}\/corepack/g)).toHaveLength(3);
   });

@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.23.2
+          node-version-file: .node-version
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
         env:

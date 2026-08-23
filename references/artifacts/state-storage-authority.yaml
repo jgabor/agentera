@@ -1143,7 +1143,7 @@ entity_target:
           mutation: read_only
   measurement_contract:
     status: implemented
-    environment: Linux, Node.js 22 or newer, one cold CLI process per sample
+    environment: Linux, Node.js 24 LTS, one cold CLI process per sample
     fixtures:
       small: 100 valid entities distributed across every active entity_target.entities boundary
       large: 1000 valid entities distributed across every active entity_target.entities boundary

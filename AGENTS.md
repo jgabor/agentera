@@ -133,8 +133,8 @@ editing files or checking credentials.
 
 ## Common commands
 
-Use Node.js 22 or newer and pnpm 10.30.3 through Corepack. Run commands from the
-repository root unless noted.
+Use the Node.js 24 LTS version pinned in `.node-version` and pnpm 10.30.3
+through Corepack. Run commands from the repository root unless noted.
 
 ```bash
 # CLI tests
