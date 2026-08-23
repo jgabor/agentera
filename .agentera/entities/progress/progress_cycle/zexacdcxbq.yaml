@@ -1,0 +1,15 @@
+id: zexacdcxbq
+artifact: progress
+record:
+  timestamp: 2026-08-23 16:38
+  type: test
+  phase: build
+  what: Corrected performance maxima target enumeration after audit attempt 1.
+  context:
+    intent: Make produced maxima cover every governed performance target without changing evidence limits, ownership, or budgets.
+    constraints: Preserve audit failure attempt 1 and keep task izsczmiboc in_progress for re-evaluation.
+    scope: Performance evidence target enumeration and its existing consumer regression.
+  discovered: The producer hard-coded five maxima targets while the measurement authority declares seven; archive_list_small and archive_list_large were omitted even though their samples were produced.
+  verified: The producer now derives maxima names from the already-loaded measurement targets, so the existing performance integration consumer checks all seven governed targets and 35 samples. The focused owner-policy suite passed 80/80, typecheck passed, and git diff --check passed. The local performance integration retry was rejected before measurement because active source verification in another checkout made the host non-isolated; it produced no local timing evidence.
+  next: Re-evaluate task izsczmiboc while it remains in_progress. Run performance authoritatively on the pinned GitHub-hosted Ubuntu 24.04 runner; any later local run is diagnostic only.
+  publication_order: 201

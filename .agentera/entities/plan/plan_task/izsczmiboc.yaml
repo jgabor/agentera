@@ -11,3 +11,13 @@ record:
     - GIVEN the 400-row migration fixture WHEN verification is inventoried THEN its full scale proof belongs to capacity and a smaller source case preserves boundary behavior.
     - GIVEN performance and capacity execution WHEN policy is validated THEN both retain their existing single-worker isolation, evidence requirements, and budgets.
   plan: bhhshalaqm
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Performance producer omits archive_list_small and archive_list_large from maxima target names; authoritative evidence validation rejects maxima that do not match declared samples.
+    provenance:
+      attempt_id: audit-izs-1
+      source: orchestrate audit for task izsczmiboc
+      recorded_at: 2026-08-23 16:34
+      writer_command: agentera state plan record-evaluation

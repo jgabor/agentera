@@ -258,13 +258,7 @@ describe("entity authority performance", () => {
       }
     }
 
-    const targetNames = [
-      "exact_get",
-      "bounded_list_small",
-      "bounded_list_large",
-      "startup_small",
-      "startup_large",
-    ];
+    const targetNames = Object.keys(targets);
     const maxima = Object.fromEntries(
       targetNames.map((targetName) => {
         const targetSamples = samples.filter((sample) =>
