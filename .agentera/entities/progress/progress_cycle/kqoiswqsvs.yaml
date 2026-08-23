@@ -1,0 +1,14 @@
+id: kqoiswqsvs
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:34
+  type: fix
+  phase: build
+  what: Corrected scalar progress verification projection for orchestration startup.
+  context:
+    intent: Fix the blocking progress-evidence projection defect after failed audit.
+    constraints: Keep task in progress, retain failed evaluation, and preserve object-shaped compatibility.
+    scope: Progress verification consumer and its narrow regression test.
+  verified: packages/cli/test/state/consumerMatrix.test.ts passed 4 tests; rebuilt node packages/cli/dist/bin/agentera.js prime --context orchestrate --format json reported verified_present=true, non_empty_evidence_present=true, non_empty_evidence_fields=[verified], and caveats=[].
+  next: Independent re-audit of task vntesmhwpk remains required.
+  publication_order: 204

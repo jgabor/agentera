@@ -26,11 +26,12 @@ export function progressVerificationSummary(progress: JsonObject): JsonObject {
   }
   const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
   const verified = latest.verified;
-  const latestVerification =
-    progress.latest_verification && typeof progress.latest_verification === "object" && !Array.isArray(progress.latest_verification)
-      ? progress.latest_verification
-      : {};
-  const projectedVerifiedPresent = latest.verified_present === true || latestVerification.present === true;
+  const latestVerification = progress.latest_verification;
+  const projectedVerifiedPresent =
+    latest.verified_present === true ||
+    (latestVerification && typeof latestVerification === "object" && !Array.isArray(latestVerification)
+      ? latestVerification.present === true
+      : hasRecordedValue(latestVerification));
   const verifiedPresent = hasRecordedValue(verified) || projectedVerifiedPresent;
   const cycle: JsonObject = {};
   for (const key of ["number", "timestamp", "type", "phase"]) {
@@ -46,8 +47,8 @@ export function progressVerificationSummary(progress: JsonObject): JsonObject {
     verified_present: verifiedPresent,
     non_empty_evidence_present: verifiedPresent,
     non_empty_evidence_fields: evidenceFields,
-    verified: hasRecordedValue(verified) ? verified : null,
-    verification_summary: hasRecordedValue(verified) ? verified : projectedVerifiedPresent ? { present: true } : null,
+    verified: hasRecordedValue(verified) ? verified : projectedVerifiedPresent ? latestVerification : null,
+    verification_summary: hasRecordedValue(verified) ? verified : projectedVerifiedPresent ? latestVerification : null,
     latest_progress_verification_pointer: pointer,
     caveats,
   };

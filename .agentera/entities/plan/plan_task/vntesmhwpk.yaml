@@ -13,3 +13,13 @@ record:
     - GIVEN all implementation evidence passes WHEN project state is synchronized THEN plan evaluation and status, TODO kbjrvrilzj, progress, and decision evidence are current without claiming user satisfaction.
     - GIVEN pre-existing unrelated worktree changes WHEN closeout is inspected THEN those changes remain intact.
   plan: zwubvaeive
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Orchestration startup reports verified evidence absent because progressVerificationSummary ignores scalar progress.latest_verification; audit citations packages/cli/src/cli/commands/prime/collectEntityOrientation.ts:315 and packages/cli/src/cli/capabilityContext/progress.ts:27.
+    provenance:
+      attempt_id: vntesmhwpk-audit-1
+      source: independent audit of commit a9444eba and progress jiqyabkrti
+      recorded_at: 2026-08-23 20:19
+      writer_command: agentera state plan record-evaluation

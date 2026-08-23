@@ -91,4 +91,21 @@ describe("state consumer matrix", () => {
       verification_summary: { present: true },
     });
   });
+
+  it("recognizes scalar verification evidence from prime projection", () => {
+    expect(
+      progressVerificationSummary({
+        exists: true,
+        latest: {},
+        latest_verification: "tests pass",
+      }),
+    ).toMatchObject({
+      verified_present: true,
+      non_empty_evidence_present: true,
+      non_empty_evidence_fields: ["verified"],
+      verified: "tests pass",
+      verification_summary: "tests pass",
+      caveats: [],
+    });
+  });
 });
