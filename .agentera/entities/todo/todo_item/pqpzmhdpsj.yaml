@@ -17,13 +17,74 @@ record:
   severity: critical
   readiness:
     capability: build
-    reason: The stable adapter still targets the Python-delegating shim, while the cutover TODO requires promotion of the TypeScript package.
+    reason: The stable TypeScript publication contract must wait until the fixed set of non-cutover TODOs open on 2026-08-23 is complete.
     dependencies:
-      []
+      - artifact: todo
+        id: opybnibysh
+      - artifact: todo
+        id: kbjrvrilzj
+      - artifact: todo
+        id: xghiltndjy
+      - artifact: todo
+        id: eeplkgxtyp
+      - artifact: todo
+        id: oqhtpagxmq
+      - artifact: todo
+        id: klgozfuekc
+      - artifact: todo
+        id: tlqsuofsyp
+      - artifact: todo
+        id: nrbyeelnak
+      - artifact: todo
+        id: kzajvenzel
+      - artifact: todo
+        id: wmxyoqjjiv
+      - artifact: todo
+        id: ojvhfbhdse
+      - artifact: todo
+        id: ronsoryeeh
+      - artifact: todo
+        id: ymoffilhgo
+      - artifact: todo
+        id: zxccscfiox
+      - artifact: todo
+        id: ttwpziwvol
+      - artifact: todo
+        id: ehudiaaepe
+      - artifact: todo
+        id: cybxkpsyut
+      - artifact: todo
+        id: savaekyuar
+      - artifact: todo
+        id: ocntbqcatr
+      - artifact: todo
+        id: jfxmrlnily
+      - artifact: todo
+        id: vhsrtulfio
+      - artifact: todo
+        id: azsvrmuhch
+      - artifact: todo
+        id: zeyfnbqdov
+      - artifact: todo
+        id: yqyodsuqfb
+      - artifact: todo
+        id: jyxnnzvysl
+      - artifact: todo
+        id: siuhfapafs
+      - artifact: todo
+        id: twzqqgumbv
+      - artifact: todo
+        id: qjaadvbyjx
+      - artifact: todo
+        id: ztkgkllvru
+      - artifact: todo
+        id: bqbsplvlfz
+      - artifact: todo
+        id: khhotqvxei
     blocked: null
     gate: null
-    queue_rank: 7
-    order_reason: Prepare the stable path after the current runtime correctness blockers and before any approval-gated cutover work.
+    queue_rank: 190
+    order_reason: Start the stable cutover only after the fixed 2026-08-23 non-cutover TODO snapshot is complete.
   status: open
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
