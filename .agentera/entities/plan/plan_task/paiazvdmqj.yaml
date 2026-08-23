@@ -11,3 +11,13 @@ record:
     - GIVEN the pinned compaction lifecycle WHEN source verification runs THEN one end-to-end preview, apply, validation, TODO migration, and aggregate-byte preservation path remains.
     - GIVEN focused recovery, summary-read, command-presentation, and replay suites WHEN duplicate lifecycle checks are removed THEN each unique behavior still has one passing and one failing case under its authoritative owner.
   plan: ewclribdyz
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Source and capacity owners failed before test collection because /tmp was full; no required behavioral assertion ran.
+    provenance:
+      attempt_id: audit-pai-1
+      source: orchestrate audit for task paiazvdmqj
+      recorded_at: 2026-08-24 01:04
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,14 @@
+id: ajdlgxngrf
+artifact: progress
+record:
+  timestamp: 2026-08-24 01:07
+  type: test
+  phase: audit
+  what: Executed the right-sized entity cutover source and capacity evidence on a task-owned alternate temporary directory after audit attempt audit-pai-1 could not collect tests on full /tmp.
+  context:
+    intent: Supply substantive executed owner evidence for all four acceptance criteria without changing the audited implementation or touching runtime-bootstrap work.
+  inspiration: Use an isolated task-owned TMPDIR on an existing filesystem instead of deleting unknown temporary data.
+  discovered: /var/tmp shares a filesystem with 255 GiB available. The focused source owner and exact 161-row capacity owner both pass there without implementation corrections.
+  verified: TMPDIR=/var/tmp/agentera-paiazvdmqj-3869423 pnpm -C packages/cli test:source -- packages/cli/test/upgrade/upgradeEntityCutover.test.ts packages/cli/test/state/summaryEntityReads.test.ts packages/cli/test/upgrade/lifecycleRecovery.test.ts packages/cli/test/upgrade/upgradeOrchestrator.test.ts passed 4 files and 79 tests in 54.62s. TMPDIR=/var/tmp/agentera-paiazvdmqj-3869423 pnpm -C packages/cli test:capacity -- packages/cli/test/capacity/entityCutoverCapacity.test.ts passed 1 file and 1 test in 34.58s. The source run executed the compact fixture, pinned lifecycle, focused recovery, summary-read, command-presentation, and replay evidence; the capacity run executed every exact 161-row assertion.
+  next: Orchestration can audit the executed evidence while task paiazvdmqj remains in_progress.
+  publication_order: 219
