@@ -1,0 +1,15 @@
+id: ipcrnxfrnb
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:36
+  type: fix
+  phase: build
+  what: Extracted the entity writer lock from entityStorage, restoring the monolith bound while preserving its public export and lock behavior.
+  context:
+    intent: Apply only the accepted writer-lock extraction and run the full clean release DAG once.
+    constraints: Do not change the durable post-timeout duplicate recheck, weaken gates, update task or plan status, resolve TODOs, push, or publish.
+    scope: Entity writer lock extraction and release qualification evidence.
+  discovered: The one clean release DAG reached the performance barrier after batch A, then a cold CLI process exited 1 after its debugger fixture boundary. Capacity and barrier B were deferred.
+  verified: entityStorage.ts now has 997 governed entries. The Vite+ monolith equivalent passed 1 test; entity and lock tests passed 43; stress passed 2; typecheck and build passed. The required release command exited 1 after 629098ms with gate identity 9d22ed14096ffc9946ecb1a6b95a320813935f8a7e4fa1cfdae353fd9dbceb67 and first failure performance. It issued no receipt or digest and reported no candidate, registry, activation, or publication side effect.
+  next: Diagnose the performance cold-process exit before another authorized full release run.
+  publication_order: 210

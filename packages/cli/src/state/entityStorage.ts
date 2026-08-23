@@ -14,7 +14,6 @@ import type { MigrationSourceBindingContext } from "./migrationSourceBinding.js"
 import { detectStateModeBinding } from "./stateMode.js";
 import { summaryMigrationProvenanceDeclaration, summaryMigrationProvenanceViolations, type SummaryMigrationProvenanceDeclaration } from "./summaryMigrationProvenance.js";
 import { validateCompactedSummarySourceRowAuthority } from "./summarySourceRowAuthority.js";
-import { acquireWriterLock } from "./write/lock.js";
 import { planTaskRecordViolations } from "./write/planEvaluation.js";
 import { planLineageIssues } from "./planLineageValidation.js";
 import { todoDocsRecordViolations } from "./todoDocsEntityValidation.js";
@@ -23,8 +22,9 @@ import { applyGlossaryCaveatLifecycleValidation, validateProgressGlossaryCaveat 
 import { progressPublicationOrderViolations } from "./progressPublicationOrder.js";
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 import { loadEntityGlossaryAuthority } from "./entityGlossaryAuthority.js";
+import { withEntityWriterLock } from "./entityWriterLock.js";
+export { withEntityWriterLock };
 const MAX_DIAGNOSTICS = 100;
-const heldEntityWriterLocks = new Set<string>();
 interface EntityDefinition {
   boundary: string;
   artifact: string;
@@ -896,21 +896,6 @@ function publishEntityLocked(
     throw new Error(`divergent content for existing entity ID '${request.id}' at '${relative(root, target)}'; keep the existing ID unchanged or allocate a new ID`);
   }
   return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: publicTarget, replay: false, publishedIdentity };
-}
-
-export function withEntityWriterLock<T>(context: EntityPublicationContext, run: () => T): T {
-  context.assertValid();
-  const root = context.pinnedPath();
-  if (heldEntityWriterLocks.has(root)) return run();
-  const lock = acquireWriterLock(root, 2000);
-  try {
-    heldEntityWriterLocks.add(root);
-    context.assertValid();
-    return run();
-  } finally {
-    heldEntityWriterLocks.delete(root);
-    lock.release();
-  }
 }
 
 export function publishEntityUnderLock(request: PublishEntityRequest): PublishEntityResult {
