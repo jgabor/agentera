@@ -4,7 +4,7 @@ record:
   name: Right-size entity cutover verification
   depends_on:
     - cjdqaqiqyd
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a compact hierarchical cutover fixture WHEN source verification runs THEN stable IDs, open and resolved status, prose, order, readiness, and duplicate-prevention behavior remain proven.
     - GIVEN the exact 161-row fixture WHEN capacity verification runs THEN every row reconciles without duplicate projection or resurrection and the scale proof remains deterministic.
@@ -12,12 +12,12 @@ record:
     - GIVEN focused recovery, summary-read, command-presentation, and replay suites WHEN duplicate lifecycle checks are removed THEN each unique behavior still has one passing and one failing case under its authoritative owner.
   plan: ewclribdyz
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Source and capacity owners failed before test collection because /tmp was full; no required behavioral assertion ran.
     provenance:
-      attempt_id: audit-pai-1
-      source: orchestrate audit for task paiazvdmqj
-      recorded_at: 2026-08-24 01:04
+      attempt_id: audit-pai-2
+      source: orchestrate re-audit for task paiazvdmqj
+      recorded_at: 2026-08-24 01:16
       writer_command: agentera state plan record-evaluation
