@@ -4,7 +4,7 @@ record:
   name: Batch runtime missing-surface evidence
   depends_on:
     - ktnrvrhoqs
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN eight required surfaces across source and package runtimes WHEN missing-surface evidence runs THEN it starts one source batch and one package batch instead of 16 cold children.
     - GIVEN each required surface WHEN its observation is inspected THEN all 16 results retain exit 64, invalid_authority classification, no child-start sentinel, and restored inputs.

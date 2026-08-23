@@ -248,6 +248,7 @@ conservative_routing:
     - packages/cli/test/helpers/sourceSubprocess.ts
     - packages/cli/test/helpers/runtimeBootstrapMatrix.ts
     - packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs
+    - packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs
     - packages/cli/test/helpers/runtimeProofCliBoundary.mjs
     - packages/cli/test/integration/runtimeBootstrapMatrix.test.ts
     - references/analysis/verification-policy.yaml

@@ -143,6 +143,7 @@ describe("verification lane ownership", () => {
   it.each([
     "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
     "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
+    "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs",
     "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
   ])("defers critical runtime-matrix helper %s to CI ownership", (helper) => {
     expect(productionRoute(helper)).toBe("ci_owned");
@@ -152,6 +153,7 @@ describe("verification lane ownership", () => {
     expect(productionRoute(
       "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
       "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
+      "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs",
       "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
     )).toBe("ci_owned");
     expect(productionRoute("packages/cli/test/helpers/entityAuthorityFixture.ts")).toBe("precommit");

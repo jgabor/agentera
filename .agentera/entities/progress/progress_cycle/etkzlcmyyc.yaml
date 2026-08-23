@@ -1,0 +1,15 @@
+id: etkzlcmyyc
+artifact: progress
+record:
+  timestamp: 2026-08-23 17:16
+  type: test
+  phase: build
+  what: Batched runtime missing-surface evidence into one source child and one package child while retaining 16 independent observations.
+  context:
+    intent: Reduce runtime integration wall time by batching missing-surface checks within each runtime trust boundary.
+    constraints: Keep source and package in separate child processes; preserve all per-surface assertions, fixture cleanup, product behavior, package budget, authority digest, and timeout.
+    scope: Runtime bootstrap integration missing-surface evidence and verification ownership policy.
+  discovered: The cold-child baseline used 16 processes. Equivalent focused integration runs measured 171.054s, 147.480s, and 131.452s, median 147.480s.
+  verified: "Post-change focused runs measured 121.790s, 118.106s, and 130.281s, median 121.790s (25.690s, 17.42% lower). Exactly 2 child processes ran: 1 source batch and 1 package batch. All 16 observations reported exit 64, invalid_authority, childStarted false, and restored true. The runtime matrix retained 190 rows, 9 protected roots per row, zero rejected child starts, hostile-path rejection, environment isolation, and separate source/package roots. Focused integration, 129 helper/policy assertions, typecheck, build, and 14 package parity assertions passed. The 240000ms timeout and runtime authority digest were unchanged."
+  next: Audit task mcwhyujpxn while it remains in_progress.
+  publication_order: 203

@@ -242,41 +242,32 @@ describe("source-owned runtime bootstrap integration", () => {
   });
 
   it("rejects every missing source and package surface before the CLI boundary", { timeout: 240_000 }, async () => {
-    const dispatcher = path.join(CHECKOUT_ROOT, "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs");
+    const dispatcher = path.join(CHECKOUT_ROOT, "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs");
     const project = path.join(fixture.root, "missing surface project");
     fs.mkdirSync(project);
-    const command = "npx -y agentera@next prime --context status --format json";
     expect(DEVELOPMENT_RUNTIME_REQUIRED_FILES).toHaveLength(8);
-    let attempts = 0;
+    let batches = 0;
     const missingSurfaceResults: unknown[] = [];
     for (const [runtime, root] of Object.entries({ source: fixture.constructionRoot, package: fixture.packageRoot })) {
-      for (const [index, relative] of DEVELOPMENT_RUNTIME_REQUIRED_FILES.entries()) {
-        attempts += 1;
-        const target = path.join(root, relative);
-        const held = path.join(fixture.root, `held-${runtime}-${index}`);
-        const sentinel = path.join(fixture.root, `missing-${runtime}-${index}.sentinel`);
-        fs.renameSync(target, held);
-        try {
-          const result = spawnSync(process.execPath, [
-            dispatcher,
-            JSON.stringify({ owner: "prime.status", source: command }),
-            command,
-            root,
-            project,
-            sentinel,
-            `${sentinel}.environment.json`,
-          ], { cwd: project, env: process.env, encoding: "utf8", shell: false });
-          expect(result.status, `${runtime}/${relative}`).toBe(64);
-          const classification = JSON.parse(result.stderr).classification;
-          expect(classification, `${runtime}/${relative}`).toBe("invalid_authority");
-          expect(fs.existsSync(sentinel), `${runtime}/${relative}`).toBe(false);
-          missingSurfaceResults.push({ runtime, relative, status: result.status, classification, childStarted: fs.existsSync(sentinel) });
-        } finally {
-          fs.renameSync(held, target);
-        }
+      batches += 1;
+      const result = spawnSync(process.execPath, [
+        dispatcher,
+        root,
+        JSON.stringify(DEVELOPMENT_RUNTIME_REQUIRED_FILES),
+      ], { cwd: project, env: process.env, encoding: "utf8", shell: false });
+      expect(result.status, runtime).toBe(0);
+      const observations = JSON.parse(result.stdout);
+      expect(observations, runtime).toHaveLength(8);
+      for (const observation of observations) {
+        expect(observation.status, `${runtime}/${observation.relative}`).toBe(64);
+        expect(observation.classification, `${runtime}/${observation.relative}`).toBe("invalid_authority");
+        expect(observation.childStarted, `${runtime}/${observation.relative}`).toBe(false);
+        expect(observation.restored, `${runtime}/${observation.relative}`).toBe(true);
+        missingSurfaceResults.push({ runtime, ...observation });
       }
     }
-    expect(attempts).toBe(16);
+    expect(batches).toBe(2);
+    expect(missingSurfaceResults).toHaveLength(16);
     expect(matrixSummary).toBeDefined();
     const productionInputs = loadActivationProductionInputs(CHECKOUT_ROOT, fixture.constructionRoot);
     const sourceEvidence = createSourceOwnerEvidence(CHECKOUT_ROOT, productionInputs, {

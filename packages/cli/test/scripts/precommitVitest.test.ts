@@ -204,6 +204,7 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     "packages/cli/test/scripts/precommitVitest.test.ts",
     "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
     "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
+    "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs",
     "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
     "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts",
     "packages/cli/test/packaging/packageSetup.ts",
@@ -225,6 +226,7 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     expect(runPrecommitVitest(
       "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
       "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
+      "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs",
       "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
     )).toEqual(ciOwned());
   });
