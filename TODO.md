@@ -11,6 +11,7 @@
 
 - [ ] [id:kbjrvrilzj] [feat:3.0.0] Apply common same-kind TODO changes atomically.
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
+- [ ] [id:mmesbicmmx] [fix:3.0.0] Fix interrupted recovery after prior TODO transition batches.
 
 ## → Normal
 

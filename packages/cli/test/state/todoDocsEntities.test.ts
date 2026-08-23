@@ -524,6 +524,27 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(recovered.rc, recovered.err || recovered.out).toBe(0); expect(recovered.json).toMatchObject({ effect_sha256: preview.json.effect_sha256, operation: { verb, dry_run: false, idempotent_replay: true }, reconciliation: { transaction_id: expect.any(String), recovered: [expect.any(String)] } });
   });
 
+  it.each(TODO_TRANSITION_VERBS)("recovers only an interrupted exact repeated %s batch retry", (verb) => {
+    const root = project(); const first = todo(root, `${verb} repeated first`).id as string; const second = todo(root, `${verb} repeated second`).id as string;
+    const priorInput = transitionBatchInput(verb, [first, second]); const priorPreview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], priorInput);
+    expect(capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", priorPreview.json.effect_sha256, "--yes", "--format", "json"], priorInput).rc).toBe(0);
+    if (verb === "resolve") for (const id of [first, second]) expect(capture(root, ["state", "todo", "reopen", "--id", id, "--reason", "Prepare repeated batch", "--date", "2026-08-24", "--format", "json"]).rc).toBe(0);
+    const input = transitionBatchInput(verb, [first, second]); const member = verb === "set-severity" ? "transitions" : "resolutions";
+    for (const entry of input[member] as Array<Record<string, unknown>>) { entry.reason = "Repeated batch"; entry.date = "2026-08-25"; if (verb === "set-severity") entry.severity = "critical"; }
+    const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", verb)!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
+    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/); binding.publicationContext.close();
+    const interrupted = files(root); const divergentInput = structuredClone(input); ((divergentInput[member] as Array<Record<string, unknown>>)[0]!).reason = "Divergent repeated retry";
+    const divergent = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], divergentInput);
+    expect(divergent.rc).toBe(2); expect(divergent.json.error.class).toBe("conflict"); expect(files(root)).toEqual(interrupted);
+    const recovered = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0); expect(recovered.json).toMatchObject({ effect_sha256: preview.json.effect_sha256, operation: { verb, idempotent_replay: true }, reconciliation: { recovered: [expect.any(String)] } });
+    expect(recovered.json.records.map(({ id }: { id: string }) => id)).toEqual([first, second]);
+    for (const id of [first, second]) { const record = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]).json.entry.record; expect(record.reconciliation.transition_batch).toMatchObject({ verb, effect_sha256: preview.json.effect_sha256, post_state_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) }); expect(record.lifecycle).toEqual({ operation: verb, reason: "Repeated batch", date: "2026-08-25" }); if (verb === "resolve") expect(record.status).toBe("resolved"); else expect(record.severity).toBe("critical"); }
+    expect(Object.keys(files(root)).filter((file) => file.startsWith(".agentera/.todo-reconciliation/") && file.endsWith(".json"))).toHaveLength(0); expect(recoveryFiles(root)).toEqual([]);
+  });
+
   it.each(TODO_TRANSITION_VERBS)("rejects exact %s batch replay after singleton post-state divergence", (verb) => {
     const root = project(); const first = todo(root, `${verb} divergence first`).id as string; const second = todo(root, `${verb} divergence second`).id as string;
     const input = transitionBatchInput(verb, [first, second]); const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);

@@ -4,7 +4,7 @@ record:
   name: Deliver atomic severity and resolve batches
   depends_on:
     - elbpcppfyi
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN a valid same-kind severity or resolve batch WHEN preview and exact apply complete THEN every target transitions atomically with one receipt.
     - GIVEN one invalid target, duplicate ID, invalid lifecycle transition, or stale state WHEN a transition batch is validated THEN no target changes.
@@ -12,12 +12,12 @@ record:
     - GIVEN severity and resolve batch rules WHEN tests run THEN each verb has one success and one rejection case per testable contract unit.
   plan: zwubvaeive
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Transition-batch replay can report success after later singleton divergence; resolve batches accept exact prior resolves instead of requiring open items; batch-only effect flags are accepted by singleton commands; per-verb failure and recovery coverage is incomplete.
+    last_failure_evidence: Interrupted recovery of a subsequent transition batch is digest-inconsistent when members carry prior transition receipts; focused coverage omits this repeated-batch case.
     provenance:
-      attempt_id: ftikrbkztm-audit-1
-      source: independent audit of commit 642a2481
-      recorded_at: 2026-08-23 17:51
+      attempt_id: ftikrbkztm-audit-2
+      source: independent re-audit of correction commit f9bc5154
+      recorded_at: 2026-08-23 18:34
       writer_command: agentera state plan record-evaluation

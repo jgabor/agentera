@@ -9,10 +9,12 @@ record:
     dependencies:
       - artifact: todo
         id: frpdshynmd
+      - artifact: todo
+        id: mmesbicmmx
     blocked: null
     gate: null
     queue_rank: 10
-    order_reason: Reuse the completed reconciliation transaction for the common batch operations proven by repository history.
+    order_reason: Resume the common batch operations after the isolated repeated-transition recovery blocker is resolved.
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:

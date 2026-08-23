@@ -1,0 +1,15 @@
+id: hrfwblaykr
+artifact: progress
+record:
+  timestamp: 2026-08-23 19:45
+  type: fix
+  phase: build
+  what: In packages/cli/src/state/todoDocsEntities.ts, removed prior transition-batch receipts from new authorized TODO post-states before effect hashing. packages/cli/test/state/todoDocsEntities.test.ts now proves repeated interrupted set-severity and resolve recovery.
+  context:
+    intent: Repair repeated transition-batch interruption recovery without weakening replay conflicts.
+    constraints: Preserve singleton behavior, existing journal recovery, mapping checks, update/create batches, null decision satisfaction, and independent evaluation state.
+    scope: packages/cli/src/state/todoDocsEntities.ts, packages/cli/test/state/todoDocsEntities.test.ts, and related pre-existing replacement state.
+  discovered: Repeated batch previews hashed old transition-batch receipt bytes, while recovery stripped the replacement receipt before recomputing the authorized effect.
+  verified: Focused recovery and post-state replay tests passed 4/4. Transition, update, create, singleton, recovery, grammar, help, and explain tests passed 162/162. Typecheck and build passed. Package verification passed 14/14. Capability contract passed 3/3. Compact passed with zero errors. Rebuilt-local help and set-severity/resolve explain checks passed. Full source passed 4,111 tests with one skip and only the same three pre-existing retired-runtime failures reproduced by the exact lane at 191/194.
+  next: Keep replacement task sssvtqdpbe in progress for independent evaluation. Keep predecessor ftikrbkztm blocked and TODOs mmesbicmmx and kbjrvrilzj open.
+  publication_order: 202

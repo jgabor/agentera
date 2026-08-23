@@ -1,0 +1,12 @@
+id: sssvtqdpbe
+artifact: plan
+record:
+  plan: zwubvaeive
+  name: Repair repeated transition-batch recovery
+  status: in_progress
+  depends_on:
+    - elbpcppfyi
+  acceptance:
+    - GIVEN members with prior transition receipts WHEN a second severity or resolve batch is interrupted and retried exactly THEN recovery converges without duplicates or residue.
+    - GIVEN a divergent retry or later singleton state WHEN an old batch is retried THEN it conflicts without changing any target.
+    - GIVEN both verbs and singleton compatibility WHEN focused and integration checks run THEN each recovery rule has one passing and one rejecting case and required gates pass.

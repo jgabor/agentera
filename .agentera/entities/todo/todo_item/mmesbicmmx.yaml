@@ -1,0 +1,34 @@
+id: mmesbicmmx
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Fix interrupted recovery after prior TODO transition batches.
+  requirements:
+    - Ensure an interrupted second set-severity or resolve batch can recover exactly when its members already carry a prior transition-batch receipt.
+    - Keep completed-batch replay bound to the authorized current post-state, so later singleton divergence still conflicts without effects.
+    - Reuse the existing effect-bound reconciliation journal and preserve singleton behavior.
+  acceptance:
+    - GIVEN members with prior transition-batch receipts WHEN a second same-kind batch is interrupted and retried exactly THEN recovery converges to the authorized result without duplicates or residue.
+    - GIVEN the interrupted second batch is retried with divergent input or effect authorization WHEN recovery is attempted THEN no additional target changes.
+    - GIVEN both set-severity and resolve repeated-batch cases WHEN focused tests run THEN each has a passing exact-recovery case and a rejecting divergent case.
+  release_blocker: false
+  severity: degraded
+  readiness:
+    capability: build
+    reason: Independent re-audit of plan task ftikrbkztm found repeated transition-batch recovery digest inconsistency after its retry budget was exhausted.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 9
+    order_reason: Repair the isolated recovery blocker before resuming the atomic same-kind TODO batch plan.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Fix interrupted recovery after prior TODO transition batches."
+      severity: degraded
+      status: open
+      order: 3
