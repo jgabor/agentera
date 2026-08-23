@@ -6,7 +6,7 @@ record:
     - hdktlehytj
     - acixwmoukf
     - wickijdapr
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the implementation WHEN focused ownership, upgrade, diagnostic, race, and idempotence checks run THEN they pass.
     - GIVEN the complete change WHEN source, type, build, and package gates run THEN they pass or every unrelated failure is evidenced.
@@ -15,12 +15,12 @@ record:
     - GIVEN final package inspection WHEN native integrations are checked THEN no plugin or hook surface has been reintroduced.
   plan: gacnyrekma
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: UPGRADE.md says normal upgrade has no native-resource operation set, but later documents and implements bounded automatic retirement of the proven OpenCode plugin.
     provenance:
-      attempt_id: audit-1
+      attempt_id: audit-2
       source: agentera.inspekteraEvaluationReport.v1
-      recorded_at: 2026-08-23 21:40
+      recorded_at: 2026-08-23 21:43
       writer_command: agentera state plan record-evaluation

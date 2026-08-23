@@ -1,0 +1,29 @@
+id: lnbelrvvms
+artifact: health
+record:
+  date: 2026-08-23
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: the bounded legacy OpenCode plugin retirement plan completed with current implementation, documentation, test, package, and state evidence."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited closure audit for plan gacnyrekma passed. All four tasks have latest PASS evaluations. Every delegated implementation, test, documentation, adapter, and progress artifact changed after plan creation. Final verification passed focused checks, the full source suite, typecheck, build, package checks, compact, capability validation, temporary-HOME lifecycle replay, and package inventory inspection.
+      findings:
+        []
+  trends:
+    improved: Normal upgrade now safely retires only journal-backed recognized copies of the historical plugin.
+    degraded: None in this limited closure scope.
+    new_findings: None.
+    resolved: All planned automatic-retirement tasks passed evaluation.
+    carried_forward: Decisions, vision, and profile detail remain deferred; stale profile-derived state was not checked or refreshed.
+  patterns:
+    - Positive ownership provenance and apply-time re-observation bound automatic cleanup.
+  appended_at: 2026-08-23T19:46:12.380Z
