@@ -10,6 +10,7 @@ import {
   LIFECYCLE_LEDGER_SCHEMA,
   type LifecycleOwnershipLedger,
 } from "../../src/runtime/lifecycleOperations.js";
+import { appendLifecycleOwnershipJournal } from "../../src/runtime/lifecycleOwnershipJournal.js";
 import { observeLifecyclePath } from "../../src/runtime/lifecyclePublication.js";
 import {
   applyNativeResourceCleanup,
@@ -110,14 +111,15 @@ function ledgerFor(
 }
 
 describe("native resource cleanup contract", () => {
-  it("loads bounded automatic retirement only for the proven OpenCode plugin", () => {
+  it("loads ledger-gated automatic retirement only for the proven OpenCode plugin", () => {
     const contract = loadNativeResourceCleanupContract();
 
     expect(contract.automaticRetirement).toEqual([expect.objectContaining({
-      id: "opencode.plugin.agentera.npx-bundle-20260823",
+      id: "opencode.plugin.agentera.lifecycle-20260710",
       resourceId: "opencode.plugin.agentera",
-      sizeBytes: 29257,
-      sha256: "14dc040a3e378b3dceed36067eddd2bc1271a89dd3282630af4d7332c559d6d9",
+      ownershipResourceId: "opencode.plugin",
+      sizeBytes: 29253,
+      sha256: "b75c17e44340a30624071567a461a6a7dcf1a426bc9dc2881d813ac0e802a20a",
     })]);
   });
 
@@ -129,6 +131,16 @@ describe("native resource cleanup contract", () => {
 
     expect(validateNativeResourceCleanupContractData(data)).toContain(
       "automatic_retirement must enable only opencode.plugin.agentera and fail closed",
+    );
+  });
+
+  it("rejects automatic retirement authority without the historical installer ledger", () => {
+    const data = contractData();
+    const automatic = data.automatic_retirement as Record<string, unknown>;
+    (automatic.ownership_evidence as Record<string, unknown>).match = "file_equality";
+
+    expect(validateNativeResourceCleanupContractData(data)).toContain(
+      "automatic_retirement must require the matching historical installer ownership journal",
     );
   });
 
@@ -228,7 +240,7 @@ describe("native resource cleanup contract", () => {
 });
 
 describe("automatic retirement classification", () => {
-  it("accepts a byte-proven variant", () => {
+  it("accepts a bounded variant only with matching per-install ownership evidence", () => {
     const proven = path.join(home, "proven.js");
     const content = Buffer.from("proven installer output\n");
     fs.writeFileSync(proven, content);
@@ -236,16 +248,31 @@ describe("automatic retirement classification", () => {
     contract.automaticRetirement = [{
       id: "proven",
       resourceId: "opencode.plugin.agentera",
+      ownershipResourceId: "opencode.plugin",
       kind: "file",
       sizeBytes: content.length,
       sha256: createHash("sha256").update(content).digest("hex"),
     }];
+    const journal = path.join(home, "ownership-journal");
 
-    expect(classifyAutomaticRetirement("opencode.plugin.agentera", proven, contract)).toEqual({
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", proven, null, contract)).toEqual({
+      qualification: "manual_review",
+      variantId: "proven",
+      reason: "ownership_evidence_missing",
+    });
+
+    appendLifecycleOwnershipJournal(journal, ledgerFor("opencode.plugin", "managed", proven));
+
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", proven, journal, contract)).toEqual({
       qualification: "qualified",
       variantId: "proven",
-      reason: "proven_variant",
+      reason: "proven_variant_and_ownership",
     });
+
+    fs.renameSync(proven, `${proven}.owned`);
+    fs.writeFileSync(proven, content);
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", proven, journal, contract).reason)
+      .toBe("ownership_evidence_mismatch");
   });
 
   it("rejects altered, unknown, non-regular, unreadable, and other resources", () => {
@@ -261,7 +288,7 @@ describe("automatic retirement classification", () => {
 
     const contract = loadNativeResourceCleanupContract();
     const read = vi.spyOn(fs, "readFileSync").mockImplementationOnce(() => { throw new Error("denied"); });
-    expect(classifyAutomaticRetirement("opencode.plugin.agentera", altered, contract).reason).toBe("unreadable");
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", altered, null, contract).reason).toBe("unreadable");
     read.mockRestore();
   });
 });

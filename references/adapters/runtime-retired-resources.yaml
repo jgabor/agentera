@@ -19,22 +19,27 @@ policy:
 automatic_retirement:
   enabled_resource_ids:
     - opencode.plugin.agentera
-  qualification: exact_sha256_from_bounded_positive_provenance
+  qualification: bounded_sha256_and_matching_installer_ledger
   result_without_match: manual_review
+  ownership_evidence:
+    journal_schema: agentera.lifecycleOwnershipJournalEvent.v1
+    ledger_schema: agentera.lifecycleOwnershipLedger.v1
+    ledger_resource_id: opencode.plugin
+    status: managed
+    scope: whole
+    match: exact_destination_kind_identity_and_fingerprint
   variants:
-    - id: opencode.plugin.agentera.npx-bundle-20260823
+    - id: opencode.plugin.agentera.lifecycle-20260710
       resource_id: opencode.plugin.agentera
       kind: file
-      size_bytes: 29257
-      sha256: 14dc040a3e378b3dceed36067eddd2bc1271a89dd3282630af4d7332c559d6d9
+      size_bytes: 29253
+      sha256: b75c17e44340a30624071567a461a6a7dcf1a426bc9dc2881d813ac0e802a20a
       provenance:
-        recovered_installed_copy: agentera.js.bak-20260823-pre-gate-repair
-        recovered_at: 2026-08-23
-        source_commit: d2eac39d^
+        source_commit: aa33870df05d53745ebad5351b8a352b7dad7780
         source_path: .opencode/plugins/agentera.js
-        transformation: The npm installer replaced only INSTALL_ROOT_CONTRACT.bundle_identity.managed_bundle_evidence[0], from scripts/agentera to npx -y agentera@next.
-        verification: The transformed source is byte-identical to the recovered installed copy and has the declared size and SHA-256.
-  boundary: Git history contains many source revisions and package construction transformed generated contract data. Only the recovered, byte-proven installer output above qualifies automatically; every other historical, altered, unknown, non-regular, or unreadable resource remains manual review.
+        transformation: None; the lifecycle installer used the exact source bytes.
+        verification: Git source has the declared size and SHA-256, and the historical lifecycle installer journal schema records per-install destination, file identity, and fingerprint.
+  boundary: A bounded official fingerprint is diagnostic evidence, not ownership. Automatic qualification additionally requires a current clean historical installer journal whose managed whole-resource record matches the exact destination, kind, identity, and fingerprint. The recovered 2026-08-23 npx-bundle copy has no matching ownership record and remains manual review, as do every other altered, unknown, non-regular, or unreadable resource.
 accepted_host_evidence:
   - host: codex
     state: supported

@@ -1,0 +1,14 @@
+id: ygoxxxmiwy
+artifact: progress
+record:
+  timestamp: 2026-08-23 19:51
+  type: fix
+  phase: build
+  what: Corrected the automatic-retirement authority so a bounded official OpenCode plugin fingerprint qualifies only with a matching clean historical installer ownership journal record for the same destination, file identity, and fingerprint.
+  context:
+    intent: Preserve user-owned OpenCode plugin state while retaining automatic retirement for installations with independent per-install ownership evidence.
+    unknowns: Historical installs made before the lifecycle ownership journal, and later byte-identical copies without a matching journal record, cannot be distinguished from user-owned state and remain manual review.
+  discovered: The historical lifecycle installer wrote an independent ownership journal for opencode.plugin. The v2 handoff manifest recorded only runtime adapter names and user-data inventory, while the recovered npx-bundle copy had no matching ownership record and cannot authorize automatic deletion.
+  verified: The focused native resource cleanup suite passed 61 tests, including present, absent, and stale ownership evidence; typecheck and build passed; compact reported no errors or over-limit artifacts.
+  next: Keep task hdktlehytj in progress for orchestrator evaluation. Task 2 remains executable only for a bounded fingerprint whose current resource matches the installer journal; all other copies must stay manual-review-only.
+  publication_order: 201

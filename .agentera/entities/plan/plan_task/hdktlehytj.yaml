@@ -4,10 +4,20 @@ record:
   name: Establish the automatic-retirement authority
   depends_on:
     []
-  status: complete
+  status: in_progress
   acceptance:
     - GIVEN official historical variants WHEN provenance is characterized THEN every automatically removable variant has bounded positive evidence.
     - GIVEN altered, unknown, non-regular, or unreadable resources WHEN classified THEN none qualify for removal.
     - GIVEN the retirement contract WHEN automatic cleanup is enabled THEN only opencode.plugin.agentera gains that behavior.
     - GIVEN each classification unit WHEN tested THEN coverage includes at least one accepted and one rejected case.
   plan: gacnyrekma
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Byte identity does not prove per-install ownership; require independent installer ledger or manifest evidence before automatic qualification.
+    provenance:
+      attempt_id: audit-1
+      source: agentera.inspekteraEvaluationReport.v1
+      recorded_at: 2026-08-23 19:40
+      writer_command: agentera state plan record-evaluation

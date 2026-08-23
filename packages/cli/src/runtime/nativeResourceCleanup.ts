@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import {
+  LIFECYCLE_LEDGER_SCHEMA,
   LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH,
   LIFECYCLE_MANUAL_REVIEW_GUIDANCE,
   applyLifecycleOperations,
@@ -20,6 +21,10 @@ import {
   type LifecycleOperationSpec,
   type LifecycleOwnershipLedger,
 } from "./lifecycleOperations.js";
+import {
+  LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA,
+  readLifecycleOwnershipJournal,
+} from "./lifecycleOwnershipJournal.js";
 import {
   LIFECYCLE_AUTHORITY_RELATIVE_PATH,
   NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH,
@@ -89,6 +94,7 @@ export interface NativeResourceCleanupContract {
 export interface AutomaticRetirementDefinition {
   id: string;
   resourceId: string;
+  ownershipResourceId: string;
   kind: "file";
   sizeBytes: number;
   sha256: string;
@@ -97,7 +103,7 @@ export interface AutomaticRetirementDefinition {
 export interface AutomaticRetirementClassification {
   qualification: "qualified" | "manual_review";
   variantId: string | null;
-  reason: "proven_variant" | "resource_not_enabled" | "not_regular_file" | "unreadable" | "unproven_content";
+  reason: "proven_variant_and_ownership" | "resource_not_enabled" | "not_regular_file" | "unreadable" | "unproven_content" | "ownership_evidence_missing" | "ownership_evidence_mismatch";
 }
 
 const REQUIRED_RESOURCE_VOCABULARY: Record<string, string> = {
@@ -205,11 +211,20 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
 
   const automatic = isMapping(value.automatic_retirement) ? value.automatic_retirement : {};
   const enabledResourceIds = stringList(automatic.enabled_resource_ids);
+  const ownershipEvidence = isMapping(automatic.ownership_evidence) ? automatic.ownership_evidence : {};
   const variants = Array.isArray(automatic.variants) ? automatic.variants : [];
   if (enabledResourceIds.length !== 1 || enabledResourceIds[0] !== "opencode.plugin.agentera"
-    || automatic.qualification !== "exact_sha256_from_bounded_positive_provenance"
+    || automatic.qualification !== "bounded_sha256_and_matching_installer_ledger"
     || automatic.result_without_match !== "manual_review") {
     errors.push("automatic_retirement must enable only opencode.plugin.agentera and fail closed");
+  }
+  if (ownershipEvidence.journal_schema !== LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA
+    || ownershipEvidence.ledger_schema !== LIFECYCLE_LEDGER_SCHEMA
+    || ownershipEvidence.ledger_resource_id !== "opencode.plugin"
+    || ownershipEvidence.status !== "managed"
+    || ownershipEvidence.scope !== "whole"
+    || ownershipEvidence.match !== "exact_destination_kind_identity_and_fingerprint") {
+    errors.push("automatic_retirement must require the matching historical installer ownership journal");
   }
   if (variants.length === 0 || variants.some((variant) => !isMapping(variant)
     || !requiredString(variant, "id")
@@ -475,6 +490,7 @@ export function loadNativeResourceCleanupContract(
     automaticRetirement: ((data.automatic_retirement as Record<string, unknown>).variants as Record<string, unknown>[]).map((variant) => ({
       id: variant.id as string,
       resourceId: variant.resource_id as string,
+      ownershipResourceId: ((data.automatic_retirement as Record<string, unknown>).ownership_evidence as Record<string, unknown>).ledger_resource_id as string,
       kind: "file",
       sizeBytes: variant.size_bytes as number,
       sha256: variant.sha256 as string,
@@ -485,28 +501,61 @@ export function loadNativeResourceCleanupContract(
 export function classifyAutomaticRetirement(
   resourceId: string,
   destination: string,
+  ownershipJournalPath: string | null = null,
   contract = loadNativeResourceCleanupContract(),
 ): AutomaticRetirementClassification {
   const variants = contract.automaticRetirement.filter((variant) => variant.resourceId === resourceId);
   if (variants.length === 0) return { qualification: "manual_review", variantId: null, reason: "resource_not_enabled" };
-  let stat: fs.Stats;
+  let stat: fs.BigIntStats;
   try {
-    stat = fs.lstatSync(destination);
+    stat = fs.lstatSync(destination, { bigint: true });
   } catch {
     return { qualification: "manual_review", variantId: null, reason: "unreadable" };
   }
   if (!stat.isFile()) return { qualification: "manual_review", variantId: null, reason: "not_regular_file" };
   let content: Buffer;
+  let descriptor: number | null = null;
   try {
-    content = fs.readFileSync(destination);
+    descriptor = fs.openSync(destination, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    const opened = fs.fstatSync(descriptor, { bigint: true });
+    if (!opened.isFile() || opened.dev !== stat.dev || opened.ino !== stat.ino) {
+      return { qualification: "manual_review", variantId: null, reason: "unreadable" };
+    }
+    content = fs.readFileSync(descriptor);
   } catch {
     return { qualification: "manual_review", variantId: null, reason: "unreadable" };
+  } finally {
+    if (descriptor !== null) fs.closeSync(descriptor);
   }
   const digest = createHash("sha256").update(content).digest("hex");
   const variant = variants.find((item) => item.sizeBytes === content.length && item.sha256 === digest);
-  return variant
-    ? { qualification: "qualified", variantId: variant.id, reason: "proven_variant" }
-    : { qualification: "manual_review", variantId: null, reason: "unproven_content" };
+  if (!variant) return { qualification: "manual_review", variantId: null, reason: "unproven_content" };
+  if (!ownershipJournalPath) {
+    return { qualification: "manual_review", variantId: variant.id, reason: "ownership_evidence_missing" };
+  }
+  let journal;
+  try {
+    journal = readLifecycleOwnershipJournal(ownershipJournalPath);
+  } catch {
+    return { qualification: "manual_review", variantId: variant.id, reason: "ownership_evidence_mismatch" };
+  }
+  if (journal.state === "absent") {
+    return { qualification: "manual_review", variantId: variant.id, reason: "ownership_evidence_missing" };
+  }
+  const destinationPath = path.resolve(destination);
+  const record = journal.state === "clean" && journal.ledger.records.find((item) =>
+    item.resourceId === variant.ownershipResourceId
+    && item.destination === destinationPath
+    && item.kind === "file"
+    && item.scope === "whole"
+    && item.status === "managed"
+    && item.fingerprint === `sha256:${digest}`
+    && item.identity?.device === stat.dev.toString()
+    && item.identity.inode === stat.ino.toString(),
+  );
+  return record
+    ? { qualification: "qualified", variantId: variant.id, reason: "proven_variant_and_ownership" }
+    : { qualification: "manual_review", variantId: variant.id, reason: "ownership_evidence_mismatch" };
 }
 
 export function nativeResourceCleanupIds(contract = loadNativeResourceCleanupContract()): string[] {
