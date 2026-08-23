@@ -964,7 +964,19 @@ function publishWithContext(
   model: EntityAuthority,
   context: EntityPublicationContext,
 ): PublishEntityResult {
-  return withEntityWriterLock(context, () => publishEntityLocked(request, model, context));
+  try {
+    return withEntityWriterLock(context, () => publishEntityLocked(request, model, context));
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("writer lock timeout at ")) {
+      const duplicate = discoverEntities(context.pinnedPath(), request.sourceRoot).entities.find(
+        ({ id, artifact, boundary }) => id === request.id && (artifact !== request.artifact || boundary !== request.boundary),
+      );
+      if (duplicate) {
+        throw new Error(`entity ID '${request.id}' already exists at '${duplicate.relativePath}' owned by boundary '${duplicate.boundary}'; allocate a new project-wide ID`);
+      }
+    }
+    throw error;
+  }
 }
 
 export function publishEntity(request: PublishEntityRequest): PublishEntityResult {

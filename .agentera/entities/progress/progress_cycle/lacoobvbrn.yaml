@@ -1,0 +1,14 @@
+id: lacoobvbrn
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:04
+  type: fix
+  phase: build
+  what: Corrected same-ID stale-lock contention so a loser that reaches the fixed writer-lock deadline reports the committed project-wide duplicate instead of a lock timeout.
+  context:
+    intent: Implement plan task jpmwftenzl without evaluating or closing task or plan state.
+    constraints: Keep the two-second production writer-lock deadline, canonical duplicate-ID error, stale-lock ownership safety, independent-ID concurrency, assertions, and budgets unchanged.
+    scope: packages/cli/src/state/entityStorage.ts and one typed progress cycle
+  discovered: The publication path discarded target identity when acquireWriterLock timed out. A competing writer could commit the requested ID while the loser remained in stale-lock contention, so the loser returned the generic timeout without re-reading durable entity identity.
+  verified: pnpm -C packages/cli exec vp test run test/state/entityStorage.test.ts test/state/write/lock.test.ts --config vite.config.ts passed 43 tests in 6.04s. pnpm -C packages/cli run test:stress passed its 100-race owner, 2 tests in 46.58s. pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli build passed. The first Corepack-prefixed build attempt failed because its child pnpm was v11.3.0; direct pnpm selected the repository-required 10.30.3 and passed.
+  publication_order: 208
