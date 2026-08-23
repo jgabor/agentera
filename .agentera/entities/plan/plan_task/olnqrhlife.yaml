@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Complete release qualification
-  status: in_progress
+  status: blocked
   depends_on:
     - wkkkhpcfay
   acceptance:
@@ -11,12 +11,12 @@ record:
     - GIVEN successful qualification WHEN evidence is inspected THEN all required gate records and receipts are valid and publication, registry, candidate, and activation side effects remain false.
     - GIVEN final PASS evidence WHEN state is synchronized THEN predecessor final tasks are superseded, blocker TODOs are resolved, the plan is complete, and the worktree has no unrelated changes.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Performance correctly rejected non-authoritative evidence while live source verification processes from another checkout contended the host; no internal DAG or product defect was found.
+    last_failure_evidence: The passing qualification progress omitted the package-identity digest and tarball SHA-256 from durable evidence, so the claimed evidence shape cannot be independently audited despite all 11 gates passing.
     provenance:
-      attempt_id: audit-oln-1
-      source: orchestrate audit for task olnqrhlife
-      recorded_at: 2026-08-23 21:27
+      attempt_id: audit-oln-2
+      source: orchestrate re-audit for task olnqrhlife
+      recorded_at: 2026-08-23 21:47
       writer_command: agentera state plan record-evaluation

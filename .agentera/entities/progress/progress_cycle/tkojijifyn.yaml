@@ -1,0 +1,15 @@
+id: tkojijifyn
+artifact: progress
+record:
+  timestamp: 2026-08-23 21:49
+  type: test
+  phase: audit
+  what: The original successful qualification now has a durable package-identity and tarball binding.
+  context:
+    intent: Supply the evidence-only correction required by task kgrqcyvwyv.
+    constraints: Do not rerun tests or qualification, change lifecycle state, resolve TODOs, push, or publish.
+    scope: Supplement existing progress ngqpaojjqw using only the original structured qualification output.
+  discovered: Progress ngqpaojjqw retained the successful gate, generation, activation, owner-evidence, and false side-effect context but omitted two package identity values present in the original structured output.
+  verified: No test or qualification command reran. The original structured command output for gate identity 9d22ed14096ffc9946ecb1a6b95a320813935f8a7e4fa1cfdae353fd9dbceb67 and generation 0474bf41-b200-4a1f-b2fd-7cd529e37093 records package identity 73733cbe793e888d33634ea5e85b6fc8322c819b13d7b4da67bda02ebfd11d23 and tarball SHA-256 bcecb3d11088c438083bcec1e89be5087c0667856936247bc658b3847a08af35. Combined with progress ngqpaojjqw, activation manifest digest 3a6a1820434cbac433f6bfe226f440bd7177dc7ee6e2e504c4b02560e4aa3d03 and package evidence digest 02b5d9c24304e62b6312ac5932aacf47b255b0651f61460c5280d808f80852e8 bind the same passing 11-gate check-only run. No receipt was issued; receipt, candidate, registry, activation, and publication side effects remained false.
+  next: Leave olnqrhlife blocked and kgrqcyvwyv in progress for independent audit; make no lifecycle or TODO change.
+  publication_order: 215
