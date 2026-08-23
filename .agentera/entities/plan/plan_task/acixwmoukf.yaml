@@ -1,0 +1,15 @@
+id: acixwmoukf
+artifact: plan
+record:
+  name: Integrate cleanup with normal upgrade
+  depends_on:
+    - hdktlehytj
+  status: pending
+  acceptance:
+    - GIVEN a proven retired plugin WHEN normal upgrade is previewed THEN removal is reported without filesystem mutation.
+    - GIVEN a proven retired plugin WHEN normal upgrade is approved THEN it is removed without a legacy-cleanup selector, including on same-major v3 installations.
+    - GIVEN the resource changes before removal WHEN apply re-observes it THEN deletion is refused.
+    - GIVEN an unproven resource WHEN upgrade runs THEN it is preserved, unrelated upgrade work is not rolled back, and manual review remains visible.
+    - GIVEN cleanup already completed WHEN upgrade runs again THEN the operation is a no-op.
+    - GIVEN each upgrade behavior WHEN tested THEN coverage includes one passing and one refusal case.
+  plan: gacnyrekma

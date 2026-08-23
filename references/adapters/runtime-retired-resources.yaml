@@ -16,6 +16,25 @@ policy:
     - resource_name
     - file_equality
   unsupported_platform_result: action_required
+automatic_retirement:
+  enabled_resource_ids:
+    - opencode.plugin.agentera
+  qualification: exact_sha256_from_bounded_positive_provenance
+  result_without_match: manual_review
+  variants:
+    - id: opencode.plugin.agentera.npx-bundle-20260823
+      resource_id: opencode.plugin.agentera
+      kind: file
+      size_bytes: 29257
+      sha256: 14dc040a3e378b3dceed36067eddd2bc1271a89dd3282630af4d7332c559d6d9
+      provenance:
+        recovered_installed_copy: agentera.js.bak-20260823-pre-gate-repair
+        recovered_at: 2026-08-23
+        source_commit: d2eac39d^
+        source_path: .opencode/plugins/agentera.js
+        transformation: The npm installer replaced only INSTALL_ROOT_CONTRACT.bundle_identity.managed_bundle_evidence[0], from scripts/agentera to npx -y agentera@next.
+        verification: The transformed source is byte-identical to the recovered installed copy and has the declared size and SHA-256.
+  boundary: Git history contains many source revisions and package construction transformed generated contract data. Only the recovered, byte-proven installer output above qualifies automatically; every other historical, altered, unknown, non-regular, or unreadable resource remains manual review.
 accepted_host_evidence:
   - host: codex
     state: supported

@@ -1,0 +1,16 @@
+id: xnefncbdho
+artifact: plan
+record:
+  name: Verify delivery and synchronize final state
+  depends_on:
+    - hdktlehytj
+    - acixwmoukf
+    - wickijdapr
+  status: pending
+  acceptance:
+    - GIVEN the implementation WHEN focused ownership, upgrade, diagnostic, race, and idempotence checks run THEN they pass.
+    - GIVEN the complete change WHEN source, type, build, and package gates run THEN they pass or every unrelated failure is evidenced.
+    - GIVEN a temporary historical installation WHEN preview, approved apply, and repeat upgrade are replayed THEN observed behavior matches the plan.
+    - GIVEN repository state and user-facing change records WHEN delivery closes THEN they describe the shipped behavior consistently.
+    - GIVEN final package inspection WHEN native integrations are checked THEN no plugin or hook surface has been reintroduced.
+  plan: gacnyrekma

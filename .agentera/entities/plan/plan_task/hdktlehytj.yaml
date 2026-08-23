@@ -1,0 +1,13 @@
+id: hdktlehytj
+artifact: plan
+record:
+  name: Establish the automatic-retirement authority
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN official historical variants WHEN provenance is characterized THEN every automatically removable variant has bounded positive evidence.
+    - GIVEN altered, unknown, non-regular, or unreadable resources WHEN classified THEN none qualify for removal.
+    - GIVEN the retirement contract WHEN automatic cleanup is enabled THEN only opencode.plugin.agentera gains that behavior.
+    - GIVEN each classification unit WHEN tested THEN coverage includes at least one accepted and one rejected case.
+  plan: gacnyrekma

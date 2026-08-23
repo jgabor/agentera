@@ -1,0 +1,13 @@
+id: xshoptwkss
+artifact: progress
+record:
+  timestamp: 2026-08-23 19:34
+  type: feat
+  phase: build
+  what: Established bounded SHA-256 provenance for automatic retirement of only opencode.plugin.agentera. Git history contains many source variants and package construction transformed generated data, so only recovered installer output SHA-256 14dc040a3e378b3dceed36067eddd2bc1271a89dd3282630af4d7332c559d6d9 qualifies; all other variants remain manual review.
+  context:
+    intent: Establish automatic-retirement authority for the legacy OpenCode plugin without weakening generic cleanup safety.
+    unknowns: All officially shipped and installer-generated variants cannot be proven completely; automatic qualification is bounded to one recovered byte-proven installer output.
+  discovered: Complete historical automatic coverage is not defensible from current evidence. Task 2 must integrate only the single proven variant and preserve manual review for every other resource.
+  verified: Focused nativeResourceCleanup tests passed 60/60; typecheck and build passed; the recovered backup size and SHA-256 matched the authority.
+  publication_order: 200

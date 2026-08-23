@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import YAML from "yaml";
 
 import {
@@ -12,6 +13,7 @@ import {
 import { observeLifecyclePath } from "../../src/runtime/lifecyclePublication.js";
 import {
   applyNativeResourceCleanup,
+  classifyAutomaticRetirement,
   loadNativeResourceCleanupContract,
   nativeResourceCleanupHistoricalIds,
   nativeResourceCleanupIds,
@@ -108,6 +110,28 @@ function ledgerFor(
 }
 
 describe("native resource cleanup contract", () => {
+  it("loads bounded automatic retirement only for the proven OpenCode plugin", () => {
+    const contract = loadNativeResourceCleanupContract();
+
+    expect(contract.automaticRetirement).toEqual([expect.objectContaining({
+      id: "opencode.plugin.agentera.npx-bundle-20260823",
+      resourceId: "opencode.plugin.agentera",
+      sizeBytes: 29257,
+      sha256: "14dc040a3e378b3dceed36067eddd2bc1271a89dd3282630af4d7332c559d6d9",
+    })]);
+  });
+
+  it("rejects automatic retirement authority for any additional resource", () => {
+    const data = contractData();
+    (data.automatic_retirement as Record<string, unknown>).enabled_resource_ids = [
+      "opencode.plugin.agentera", "opencode.command.agentera",
+    ];
+
+    expect(validateNativeResourceCleanupContractData(data)).toContain(
+      "automatic_retirement must enable only opencode.plugin.agentera and fail closed",
+    );
+  });
+
   it("records accepted supported-host evidence without retiring supported hosts", () => {
     const contract = loadNativeResourceCleanupContract();
     const source = fs.readFileSync(
@@ -200,6 +224,45 @@ describe("native resource cleanup contract", () => {
     expect(source).toContain("ownership_available: false");
     expect(source.match(/result_without_proof: action_required/g)).toHaveLength(3);
     expect(nativeResourceCleanupIds()).not.toContain("codex.config.agents.max_depth");
+  });
+});
+
+describe("automatic retirement classification", () => {
+  it("accepts a byte-proven variant", () => {
+    const proven = path.join(home, "proven.js");
+    const content = Buffer.from("proven installer output\n");
+    fs.writeFileSync(proven, content);
+    const contract = loadNativeResourceCleanupContract();
+    contract.automaticRetirement = [{
+      id: "proven",
+      resourceId: "opencode.plugin.agentera",
+      kind: "file",
+      sizeBytes: content.length,
+      sha256: createHash("sha256").update(content).digest("hex"),
+    }];
+
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", proven, contract)).toEqual({
+      qualification: "qualified",
+      variantId: "proven",
+      reason: "proven_variant",
+    });
+  });
+
+  it("rejects altered, unknown, non-regular, unreadable, and other resources", () => {
+    const altered = path.join(home, "altered.js");
+    fs.writeFileSync(altered, "altered\n");
+    const directory = path.join(home, "plugin");
+    fs.mkdirSync(directory);
+
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", altered).reason).toBe("unproven_content");
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", path.join(home, "missing.js")).reason).toBe("unreadable");
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", directory).reason).toBe("not_regular_file");
+    expect(classifyAutomaticRetirement("opencode.command.agentera", altered).reason).toBe("resource_not_enabled");
+
+    const contract = loadNativeResourceCleanupContract();
+    const read = vi.spyOn(fs, "readFileSync").mockImplementationOnce(() => { throw new Error("denied"); });
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", altered, contract).reason).toBe("unreadable");
+    read.mockRestore();
   });
 });
 

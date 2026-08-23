@@ -1,0 +1,14 @@
+id: wickijdapr
+artifact: plan
+record:
+  name: Align diagnostics and operator guidance
+  depends_on:
+    - acixwmoukf
+  status: pending
+  acceptance:
+    - GIVEN a proven plugin WHEN diagnosed before apply THEN status identifies pending automatic removal and points to normal upgrade.
+    - GIVEN an unproven resource WHEN diagnosed THEN status requires manual review without suggesting automatic ownership.
+    - GIVEN an absent plugin WHEN diagnosed THEN status is clean.
+    - GIVEN successful removal WHEN upgrade reports completion THEN it instructs the operator to restart OpenCode.
+    - GIVEN operator documentation WHEN reviewed THEN it requires no separate cleanup selector and states that no gate replaced the retired plugin.
+  plan: gacnyrekma

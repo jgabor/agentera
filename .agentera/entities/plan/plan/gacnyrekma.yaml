@@ -1,0 +1,48 @@
+id: gacnyrekma
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-23
+    status: open
+    reviewed: 2026-08-23
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    title: "Plan: Automatically retire the legacy OpenCode plugin"
+  what: |
+    Make normal Agentera upgrade automatically remove positively identified copies of the retired Agentera OpenCode plugin, including during same-major v3 repair. Dry-run reports the removal, approved apply performs it, and unproven resources remain untouched.
+  why: |
+    The retired plugin calls an unsupported private command and can intermittently block or bypass OpenCode writes. Agentera owns migration of this obsolete integration, and operators should not need a separate legacy-cleanup selector.
+  constraints: |
+    Keep npx -y agentera@next as the intended runtime entry point. Restrict the new automatic-retirement authority to opencode.plugin.agentera. Require positive bounded provenance before removal, preserve unknown, modified, non-regular, unreadable, or changed resources, keep dry-run read-only, and require ordinary upgrade approval before mutation. Do not restore or replace the artifact gate, broaden cleanup to other retired resources, publish, or release.
+  overall_acceptance: |
+    GIVEN a positively recognized retired Agentera OpenCode plugin remains in a supported historical installation location WHEN normal upgrade is previewed and then approved THEN preview reports the cleanup, apply removes the plugin without a legacy selector, repeat upgrade is a no-op, restart guidance is shown, and every unproven resource remains untouched with manual-review diagnostics.
+  scope:
+    included:
+      - A narrowly authorized provenance model for the retired OpenCode plugin
+      - Historical installation-location characterization
+      - Automatic cleanup during normal and same-major upgrade
+      - Dry-run, diagnostics, restart guidance, documentation, and package behavior
+      - Regression coverage for proven and unproven resources
+    excluded:
+      - A replacement OpenCode artifact gate
+      - Bash or command-mutation screening
+      - Automatic cleanup of other retired native resources
+      - Publication or release
+    deferred:
+      - Any future supported OpenCode enforcement integration
+  design: |
+    A bounded legacy-provenance authority classifies only the retired OpenCode plugin and supplies the normal upgrade planner. Preview reports the resulting action without mutation. Approved apply independently re-observes the current resource and removes it only while the same positive evidence still holds. Diagnostics distinguish pending automatic removal, preserved manual-review work, and clean absence.
+  unknowns:
+    - question: |
+        Can all officially shipped and installer-generated plugin variants be enumerated with defensible positive provenance?
+      affects_task: 1
+      resolve_by: |
+        Characterize source history, installer transformations, package artifacts, and recovered installations. Only proven variants qualify; incomplete coverage remains manual review.
+    - question: |
+        Which OpenCode configuration roots were actually targeted by historical Agentera installers?
+      affects_task: 2
+      resolve_by: |
+        Derive the supported root precedence from historical installer behavior before enabling cleanup, and reject unrelated inherited configuration.
+  surprises:
+    []
+  previous_plan_archived: zwubvaeive

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
@@ -82,6 +83,21 @@ export interface NativeResourceCleanupContract {
   diagnosticResources: RetiredResourceDiagnosticDefinition[];
   resources: NativeResourceCleanupDefinition[];
   configuration: NativeResourceCleanupConfigurationDefinition[];
+  automaticRetirement: AutomaticRetirementDefinition[];
+}
+
+export interface AutomaticRetirementDefinition {
+  id: string;
+  resourceId: string;
+  kind: "file";
+  sizeBytes: number;
+  sha256: string;
+}
+
+export interface AutomaticRetirementClassification {
+  qualification: "qualified" | "manual_review";
+  variantId: string | null;
+  reason: "proven_variant" | "resource_not_enabled" | "not_regular_file" | "unreadable" | "unproven_content";
 }
 
 const REQUIRED_RESOURCE_VOCABULARY: Record<string, string> = {
@@ -185,6 +201,29 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   const forbidden = stringList(policy.forbidden_ownership_evidence);
   for (const evidence of ["value_equality", "managed_marker", "resource_name", "file_equality"]) {
     if (!forbidden.includes(evidence)) errors.push(`policy must reject ${evidence} as ownership evidence`);
+  }
+
+  const automatic = isMapping(value.automatic_retirement) ? value.automatic_retirement : {};
+  const enabledResourceIds = stringList(automatic.enabled_resource_ids);
+  const variants = Array.isArray(automatic.variants) ? automatic.variants : [];
+  if (enabledResourceIds.length !== 1 || enabledResourceIds[0] !== "opencode.plugin.agentera"
+    || automatic.qualification !== "exact_sha256_from_bounded_positive_provenance"
+    || automatic.result_without_match !== "manual_review") {
+    errors.push("automatic_retirement must enable only opencode.plugin.agentera and fail closed");
+  }
+  if (variants.length === 0 || variants.some((variant) => !isMapping(variant)
+    || !requiredString(variant, "id")
+    || variant.resource_id !== "opencode.plugin.agentera"
+    || variant.kind !== "file"
+    || !Number.isInteger(variant.size_bytes)
+    || typeof variant.sha256 !== "string"
+    || !/^[a-f0-9]{64}$/.test(variant.sha256)
+    || !isMapping(variant.provenance)
+    || !requiredString(variant.provenance, "source_commit")
+    || !requiredString(variant.provenance, "source_path")
+    || !requiredString(variant.provenance, "transformation")
+    || !requiredString(variant.provenance, "verification"))) {
+    errors.push("automatic_retirement variants must have bounded positive provenance");
   }
 
   const hosts = Array.isArray(value.hosts) ? value.hosts : [];
@@ -433,7 +472,41 @@ export function loadNativeResourceCleanupContract(
       destination: unit.destination as string,
       key: unit.key as string,
     })),
+    automaticRetirement: ((data.automatic_retirement as Record<string, unknown>).variants as Record<string, unknown>[]).map((variant) => ({
+      id: variant.id as string,
+      resourceId: variant.resource_id as string,
+      kind: "file",
+      sizeBytes: variant.size_bytes as number,
+      sha256: variant.sha256 as string,
+    })),
   };
+}
+
+export function classifyAutomaticRetirement(
+  resourceId: string,
+  destination: string,
+  contract = loadNativeResourceCleanupContract(),
+): AutomaticRetirementClassification {
+  const variants = contract.automaticRetirement.filter((variant) => variant.resourceId === resourceId);
+  if (variants.length === 0) return { qualification: "manual_review", variantId: null, reason: "resource_not_enabled" };
+  let stat: fs.Stats;
+  try {
+    stat = fs.lstatSync(destination);
+  } catch {
+    return { qualification: "manual_review", variantId: null, reason: "unreadable" };
+  }
+  if (!stat.isFile()) return { qualification: "manual_review", variantId: null, reason: "not_regular_file" };
+  let content: Buffer;
+  try {
+    content = fs.readFileSync(destination);
+  } catch {
+    return { qualification: "manual_review", variantId: null, reason: "unreadable" };
+  }
+  const digest = createHash("sha256").update(content).digest("hex");
+  const variant = variants.find((item) => item.sizeBytes === content.length && item.sha256 === digest);
+  return variant
+    ? { qualification: "qualified", variantId: variant.id, reason: "proven_variant" }
+    : { qualification: "manual_review", variantId: null, reason: "unproven_content" };
 }
 
 export function nativeResourceCleanupIds(contract = loadNativeResourceCleanupContract()): string[] {
