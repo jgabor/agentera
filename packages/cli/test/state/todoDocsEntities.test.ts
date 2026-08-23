@@ -445,6 +445,42 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(Object.keys(files(root)).filter((file) => file.includes("/todo_item/"))).toHaveLength(2);
   });
 
+  it("rejects a stale TODO mapping at create-batch commit and permits only fresh recovery", () => {
+    const root = project();
+    const input = { schema_version: "agentera.todoCreateBatch.v1", creates: [
+      { local_ref: "one", record: { title: "Mapping-bound batch", kind: "feat", target_version: "3.0.0", severity: "normal", requirements: [], acceptance: [], release_blocker: false } },
+    ] };
+    const preview = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input);
+    const docs = path.join(root, ".agentera/docs.yaml");
+    const mapped = path.join(root, "mapped/WORK.md");
+    fs.mkdirSync(path.dirname(mapped), { recursive: true });
+    fs.writeFileSync(mapped, fs.readFileSync(path.join(root, "TODO.md")));
+    const concurrentMapping = dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] });
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.replaceVisible.bind(binding.publicationContext); let injected = false;
+    vi.spyOn(binding.publicationContext, "replaceVisible").mockImplementation((...args) => {
+      const result = original(...args);
+      if (!injected) { injected = true; fs.writeFileSync(docs, concurrentMapping); }
+      return result;
+    });
+    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "create")!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
+    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext })).toThrow(/mapping changed during create batch publication/);
+    binding.publicationContext.close();
+
+    expect(injected).toBe(true);
+    expect(fs.readFileSync(docs, "utf8")).toBe(concurrentMapping);
+    expect(Object.keys(files(root)).filter((file) => file.includes("/todo_item/"))).toHaveLength(0);
+    expect(Object.keys(files(root)).filter((file) => file.startsWith(".agentera/.todo-reconciliation/") && file.endsWith(".json"))).toHaveLength(0);
+    expect(recoveryFiles(root)).toEqual([]);
+
+    const fresh = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(fresh.rc, fresh.err || fresh.out).toBe(0);
+    expect(fresh.json.effect_sha256).not.toBe(preview.json.effect_sha256);
+    const recovered = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", fresh.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0);
+    expect(fs.readFileSync(mapped, "utf8")).toContain("Mapping-bound batch");
+  });
+
   it("rejects duplicate, missing, cyclic, and invalid TODO create batches without effects", () => {
     const cases = [
       { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "same", record: {} }, { local_ref: "same", record: {} }] },

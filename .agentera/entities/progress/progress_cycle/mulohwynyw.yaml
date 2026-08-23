@@ -1,0 +1,14 @@
+id: mulohwynyw
+artifact: progress
+record:
+  timestamp: 2026-08-23 16:54
+  type: fix
+  phase: build
+  what: Corrected TODO create-batch mapping revalidation and static help parity after failed evaluation elbpcppfyi-audit-1.
+  context:
+    intent: Address only the two accepted audit findings while preserving the original create-batch contract and task state.
+    constraints: Kept task elbpcppfyi in progress with its failed evaluation, preserved singleton and existing batch behavior, and added no transition batches, journal path, dependency, version, release, or push change.
+    scope: Create-batch commit-time docs-mapping binding and TODO static help with focused regressions.
+  verified: "Focused stale-mapping and help parity passed 113/113: a concurrent docs mapping change now rejects before create-batch success, rolls back every target without journal or recovery residue, and permits only a fresh preview/effect-confirmed apply; rebuilt help preserves singleton create and exposes strict agentera.todoCreateBatch.v1 preview and exact --effect-sha256/--yes apply. Original acceptance and existing behavior passed in todoDocsEntities 89/89 (create batch, local references, invalid graph and records, replay, update batch, singleton, recovery), mutationGrammar plus monolith 33/33, typecheck, build, package verification 14/14, capability contract 3/3, compact, and rebuilt-local create help/explain. The exact retired-runtime lane remained at its accepted baseline of 191 passed and 3 CHANGELOG-classification failures. A two-worker full source run passed 4,090 and skipped 5, with those same 3 retired-runtime test failures plus one load-only extractCorpusParity hook timeout; the exact extract parity rerun passed 5/5."
+  next: Keep task elbpcppfyi in progress for independent reevaluation; do not record PASS or complete it in this correction.
+  publication_order: 199

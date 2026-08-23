@@ -64,6 +64,15 @@ describe("cli help", () => {
     expect(decisions).toContain("agentera state decisions explain --verb VERB --format json");
   });
 
+  it("documents singleton and strict effect-bound TODO create forms", () => {
+    const text = printStateHelp("todo");
+    expect(text).toContain("agentera state todo create --input TODO.yaml --format json");
+    expect(text).toContain("agentera state todo create --input TODO-CREATE-BATCH.yaml --dry-run --format json");
+    expect(text).toContain("agentera state todo create --input TODO-CREATE-BATCH.yaml --effect-sha256 SHA256 --yes --format json");
+    expect(text).toContain("strict agentera.todoCreateBatch.v1 envelope");
+    expect(text).toContain("apply the same input with the returned --effect-sha256 and --yes");
+  });
+
   it("makes the offline routing evaluation discoverable from canonical route help", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "route", "--help"], io));
     expect(rc).toBe(0);
