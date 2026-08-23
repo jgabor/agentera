@@ -207,7 +207,7 @@ function stageConstructionInputs(packageRoot: string, constructionRoot: string):
   fs.copyFileSync(path.resolve(packageRoot, "../..", "LICENSE"), path.join(constructionRoot, "LICENSE"));
 }
 
-export default async function setup({ provide }: GlobalSetupContext): Promise<() => void> {
+export async function createPackageFixture(): Promise<{ fixture: PackageFixture; cleanup: () => void }> {
   waitForVerificationBarrier();
   const packageRoot = path.resolve(import.meta.dirname, "../..");
   const checkoutRoot = path.resolve(packageRoot, "../..");
@@ -321,12 +321,17 @@ export default async function setup({ provide }: GlobalSetupContext): Promise<()
       writeContentAddressedOwnerEvidence(evidenceOutput, evidence);
       writeContentAddressedPackageIdentity(identityOutput, packageIdentity);
     }
-    provide("packageFixture", fixture);
+    return { fixture, cleanup: () => fs.rmSync(root, { recursive: true, force: true }) };
   } catch (error) {
     fs.rmSync(root, { recursive: true, force: true });
     throw error;
   }
-  return () => fs.rmSync(root, { recursive: true, force: true });
+}
+
+export default async function setup({ provide }: GlobalSetupContext): Promise<() => void> {
+  const { fixture, cleanup } = await createPackageFixture();
+  provide("packageFixture", fixture);
+  return cleanup;
 }
 
 declare module "vitest" {

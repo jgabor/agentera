@@ -4,7 +4,7 @@ record:
   name: Align scale and timing evidence ownership
   depends_on:
     - ddsmbqcrhb
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the archive timing measurement WHEN its evidence contract is assessed THEN it either fits the current performance record or receives the minimal governed schema, validator, and consumer update before ownership changes.
     - GIVEN ordinary source verification WHEN it runs THEN it contains behavior and byte checks but no machine-sensitive latency or heap budget assertion.
@@ -12,12 +12,12 @@ record:
     - GIVEN performance and capacity execution WHEN policy is validated THEN both retain their existing single-worker isolation, evidence requirements, and budgets.
   plan: bhhshalaqm
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Performance producer omits archive_list_small and archive_list_large from maxima target names; authoritative evidence validation rejects maxima that do not match declared samples.
     provenance:
-      attempt_id: audit-izs-1
-      source: orchestrate audit for task izsczmiboc
-      recorded_at: 2026-08-23 16:34
+      attempt_id: audit-izs-2
+      source: orchestrate re-audit for task izsczmiboc
+      recorded_at: 2026-08-23 16:44
       writer_command: agentera state plan record-evaluation

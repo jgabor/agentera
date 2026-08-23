@@ -1,0 +1,15 @@
+id: fvcgbtlxbb
+artifact: progress
+record:
+  timestamp: 2026-08-23 16:50
+  type: test
+  phase: build
+  what: Localized package-backed source setup to the source-owned runtime integration.
+  context:
+    intent: Remove package construction from ordinary source setup while preserving runtime parity and package-owner determinism.
+    constraints: Keep runtimeBootstrapMatrix source-owned, package verification behavior and its 60000ms budget unchanged, and task ktnrvrhoqs in_progress for orchestrator audit.
+    scope: Source global setup, canonical package fixture lifecycle, runtime integration, and proportional setup policy coverage.
+  discovered: vite.config.ts applied packageSetup.ts to every source invocation even though only runtimeBootstrapMatrix.test.ts consumed packageFixture.
+  verified: laneOwnership.test.ts passed 80/80 in 29.026 seconds with zero package constructions because vite.config.ts now runs sourceSetup.ts only. runtimeBootstrapMatrix.test.ts created one canonical fixture with two constructions, retained all 3 source/package parity tests, cleaned it through afterAll, and passed in 137.170 seconds. verify:package retained two byte-identical constructions and passed 14/14 with owner wall time 18469ms against the unchanged 60000ms budget. Typecheck, build, verify-lane validate, compact, and capability-contract checks passed.
+  next: Orchestrator should audit task ktnrvrhoqs while it remains in_progress; do not batch missing-surface processes until task mcwhyujpxn.
+  publication_order: 202

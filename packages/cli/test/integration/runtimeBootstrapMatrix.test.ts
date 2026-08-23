@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-import { describe, expect, inject, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
   assertProtectedRootAuthority,
@@ -49,10 +49,18 @@ import {
   loadActivationProductionInputs,
   validateActivationConjunction,
 } from "../../src/validate/activationConjunction.js";
+import { createPackageFixture, type PackageFixture } from "../packaging/packageSetup.js";
 
-const fixture = inject("packageFixture");
+let fixture: PackageFixture;
+let cleanupPackageFixture: (() => void) | undefined;
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
 let matrixSummary: ReturnType<typeof runRuntimeBootstrapMatrix> | undefined;
+
+beforeAll(async () => {
+  ({ fixture, cleanup: cleanupPackageFixture } = await createPackageFixture());
+});
+
+afterAll(() => cleanupPackageFixture?.());
 
 function rootEntries(paths: ProtectedRootPaths): Array<readonly [string, string]> {
   return [

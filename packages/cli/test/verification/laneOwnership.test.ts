@@ -531,10 +531,16 @@ describe("verification lane ownership", () => {
     const packageJson = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"));
     const contract = fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8");
     const performanceIntegration = fs.readFileSync(path.join(PACKAGE_ROOT, "test/integration/performanceOwner.integration.mjs"), "utf8");
+    const sourceConfig = fs.readFileSync(path.join(PACKAGE_ROOT, "vite.config.ts"), "utf8");
+    const runtimeIntegration = fs.readFileSync(path.join(PACKAGE_ROOT, "test/integration/runtimeBootstrapMatrix.test.ts"), "utf8");
     expect(packageJson.scripts.test).toBe("pnpm run test:source");
     expect(packageJson.scripts["test:performance:integration"]).toBe("node test/integration/performanceOwner.integration.mjs");
     expect(packageJson.scripts["test:capacity"]).toBe("node scripts/verify-lane.mjs capacity");
     expect(packageJson.scripts["verify:package"]).toBe("node scripts/verify-lane.mjs package");
+    expect(sourceConfig).toContain('globalSetup: ["./test/sourceSetup.ts"]');
+    expect(sourceConfig).not.toContain('"./test/packaging/packageSetup.ts"');
+    expect(runtimeIntegration).toContain("await createPackageFixture()");
+    expect(runtimeIntegration).toContain("afterAll(() => cleanupPackageFixture?.())");
     expect(PRODUCTION_POLICY.policies).toEqual(POLICY_OWNERS);
     expect(contract).toContain("fast: [source]");
     expect(contract).toContain("prefix: packages/cli/test/capacity/");

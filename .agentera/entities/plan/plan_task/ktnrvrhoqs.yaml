@@ -4,7 +4,7 @@ record:
   name: Localize package-backed source setup
   depends_on:
     - ddsmbqcrhb
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a focused source test that does not require packaged runtime evidence WHEN it runs THEN it performs zero package constructions.
     - GIVEN the source-owned runtime integration WHEN it runs THEN it obtains and cleans up one local package fixture and preserves every source/package parity assertion.
