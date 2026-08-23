@@ -1,0 +1,14 @@
+id: gnthgknjkj
+artifact: progress
+record:
+  timestamp: 2026-08-23 19:35
+  type: test
+  phase: audit
+  what: Recorded the governed release DAG owner failure for final verification continuation.
+  context:
+    intent: Preserve durable final-authority evidence without evaluating tasks or running downstream owners.
+    constraints: Keep task vnotgyppaw in_progress; preserve superseded mcwhyujpxn and complete PASS replacement haifwrwdrr histories.
+  discovered: The performance owner failed before producing a completed gate because a cold CLI child inherited an active Node inspector, printed Debugger listening/attached, and exited 1 at the fixture boundary.
+  verified: pnpm -C packages/cli run verify:release exited 1 after 388267ms. Conjunction status fail; gate_count 11; gates completed 0; first_failure performance; owner packages/cli/scripts/verify-lane.mjs#performance; settled failures performance:failed; completed none. The authoritative runner stopped the DAG, so all downstream owners remained deferred and no downstream checks were run.
+  next: Correct the performance owner runner condition, then rerun only the policy-owned release DAG.
+  publication_order: 206
