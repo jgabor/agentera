@@ -4,7 +4,7 @@ record:
   name: Right-size runtime bootstrap verification
   depends_on:
     - cjdqaqiqyd
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN ordinary source verification WHEN runtime bootstrap runs THEN a bounded smoke proves accepted startup, wrong-channel rejection, missing-surface rejection before child start, and protected-root preservation for source and package representations.
     - GIVEN the exhaustive runtime matrix and package evidence WHEN verification inventory runs THEN every required row, missing surface, parity check, and adversarial evidence case executes under its existing capacity, package, or release owner.
@@ -15,3 +15,13 @@ record:
     - "Bounded source command `TMPDIR=/var/tmp/agentera-xglpiuqkvh-source2-$PPID pnpm -C packages/cli run test:source -- test/integration/runtimeBootstrapMatrix.test.ts test/verification/laneOwnership.test.ts` passed: 2 files, 84 passed, 1 release-only skipped, 22.59s."
     - "Release-evidence focused command with `AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT` passed: 1 file, 3 passed, 1 bounded-only skipped, 99.68s; all 190 governed rows, 16 missing surfaces, parity, and adversarial evidence executed."
     - "`TMPDIR=/var/tmp/agentera-xglpiuqkvh-package-$PPID pnpm -C packages/cli run verify:package` passed: 3 files, 14 tests, 11.00s Vitest, 11.352s owner wall time. `pnpm -C packages/cli run typecheck` passed. `node packages/cli/scripts/verify-lane.mjs validate --json` passed."
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-xgl-1
+      source: orchestrate audit for task xglpiuqkvh
+      recorded_at: 2026-08-24 01:28
+      writer_command: agentera state plan record-evaluation
