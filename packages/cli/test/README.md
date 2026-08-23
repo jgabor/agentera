@@ -11,7 +11,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 
 | Layer | Proves | Entry point |
 | ----- | ------ | ----------- |
-| Source Vitest | Detailed hook/CLI behavior from fixtures and tmp project trees; no checkout generated-output writes. A source test may compare a settled bundled schema when that checkout generation already exists. | `pnpm -C packages/cli test` |
+| Source Vitest | Detailed hook/CLI behavior from fixtures and tmp project trees; runtime bootstrap uses one accepted and one rejected smoke per source/package representation. No checkout generated-output writes. A source test may compare a settled bundled schema when that checkout generation already exists. | `pnpm -C packages/cli test` |
 | Performance owner | Machine-sensitive cold-process budgets on one worker, including one bounded evidence record with runner authority | `pnpm -C packages/cli test:performance` |
 | Capacity owner | Large deterministic scale coverage that is too heavy for source correctness or performance timing | `pnpm -C packages/cli test:capacity` |
 | Performance integration | Real supported owner command plus independent stdout-contract validation; scheduled/release policy surface | `pnpm -C packages/cli test:performance:integration` |
@@ -47,6 +47,9 @@ boundary.
 
 Release source verification uses the policy-owned DAG. One generated-overlap
 process is the sole origin for source, package, build, and overlap evidence. It
+runs the exhaustive governed runtime-bootstrap matrix, every missing surface,
+and the adversarial activation-evidence cases instead of repeating them in
+ordinary source verification. It
 runs beside isolated stress and typecheck owners. After those three batch owners
 pass and the generated generation settles without leases, performance runs alone
 with one worker in fresh state on the pinned remote runner, and records runner

@@ -4,10 +4,14 @@ record:
   name: Right-size runtime bootstrap verification
   depends_on:
     - cjdqaqiqyd
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN ordinary source verification WHEN runtime bootstrap runs THEN a bounded smoke proves accepted startup, wrong-channel rejection, missing-surface rejection before child start, and protected-root preservation for source and package representations.
     - GIVEN the exhaustive runtime matrix and package evidence WHEN verification inventory runs THEN every required row, missing surface, parity check, and adversarial evidence case executes under its existing capacity, package, or release owner.
     - GIVEN the owner reassignment WHEN all affected lanes run THEN no obligation is omitted or executed redundantly in routine source verification.
     - GIVEN each retained runtime testable unit WHEN coverage is counted THEN it has one passing and one failing case, with larger matrices retained only where the governing contract enumerates them.
   plan: ewclribdyz
+  evidence:
+    - "Bounded source command `TMPDIR=/var/tmp/agentera-xglpiuqkvh-source2-$PPID pnpm -C packages/cli run test:source -- test/integration/runtimeBootstrapMatrix.test.ts test/verification/laneOwnership.test.ts` passed: 2 files, 84 passed, 1 release-only skipped, 22.59s."
+    - "Release-evidence focused command with `AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT` passed: 1 file, 3 passed, 1 bounded-only skipped, 99.68s; all 190 governed rows, 16 missing surfaces, parity, and adversarial evidence executed."
+    - "`TMPDIR=/var/tmp/agentera-xglpiuqkvh-package-$PPID pnpm -C packages/cli run verify:package` passed: 3 files, 14 tests, 11.00s Vitest, 11.352s owner wall time. `pnpm -C packages/cli run typecheck` passed. `node packages/cli/scripts/verify-lane.mjs validate --json` passed."

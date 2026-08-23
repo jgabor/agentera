@@ -512,6 +512,7 @@ function isolatedEnvironment(paths: {
 export function runRuntimeBootstrapMatrix(
   fixture: PackageFixture,
   checkoutRoot: string,
+  options: { bounded?: boolean } = {},
 ): RuntimeBootstrapMatrixSummary {
   const started = performance.now();
   const timing: RuntimeBootstrapMatrixTimingAccumulator = {
@@ -550,6 +551,7 @@ export function runRuntimeBootstrapMatrix(
   };
   let evidenceSequence = 0;
 
+  const projectStates = options.bounded ? (["v3"] as const) : BOOTSTRAP_PROJECT_STATE_IDS;
   for (const { id: runtime, root: originalRoot } of runtimeBindings) {
     const setupStarted = performance.now();
     const runtimeRoot = path.join(matrixRoot, `${runtime} install ${DANGER}`);
@@ -577,7 +579,7 @@ export function runRuntimeBootstrapMatrix(
     const env = isolatedEnvironment(paths);
     timing.setupMs += elapsedMs(setupStarted);
 
-    for (const projectState of BOOTSTRAP_PROJECT_STATE_IDS) {
+    for (const projectState of projectStates) {
       const quotedSeparator = projectState === "clean" ? "\n" : projectState === "v2" ? "\r" : "";
       const quotedPathKind = projectState === "clean" ? "lf" : projectState === "v2" ? "cr" : null;
       const project = path.join(matrixRoot, `${runtime} ${projectState} project${quotedSeparator}${DANGER}`);
@@ -703,30 +705,35 @@ export function runRuntimeBootstrapMatrix(
       }
 
       const recommended = primePayload.capability_context.context.status_context.next_action.capability;
-      const startupCommand = preCutoverCommand(`prime --context ${recommended} --format json`);
-      assertAcceptedApplicability("recommended-startup", projectState);
-      const startup = dispatch("recommended-startup", { owner: `prime.recommended.${recommended}`, source: startupCommand }, startupCommand, { accepted: true, classification: "accepted" });
-      expect(JSON.parse(startup.stdout).capability_context.startup.outcome).toBe(expectedOutcome);
+      let startupPayload: unknown = null;
+      let doctorPayload: any = null;
+      const recoveries: string[] = [];
+      const recoveryObservations: unknown[] = [];
+      if (!options.bounded) {
+        const startupCommand = preCutoverCommand(`prime --context ${recommended} --format json`);
+        assertAcceptedApplicability("recommended-startup", projectState);
+        const startup = dispatch("recommended-startup", { owner: `prime.recommended.${recommended}`, source: startupCommand }, startupCommand, { accepted: true, classification: "accepted" });
+        startupPayload = JSON.parse(startup.stdout);
+        expect((startupPayload as any).capability_context.startup.outcome).toBe(expectedOutcome);
 
-      const doctorCommand = commandText([
+        const doctorCommand = commandText([
         "npx", "-y", "agentera@next", "doctor", "--format", "json",
         "--home", home, "--project", project, "--install-root", paths.appHome,
       ]);
-      const doctorId = quotedPathKind ? `doctor-quoted-${quotedPathKind}` : "doctor";
+        const doctorId = quotedPathKind ? `doctor-quoted-${quotedPathKind}` : "doctor";
       assertAcceptedApplicability(doctorId, projectState);
-      const doctor = dispatch(doctorId, { owner: "doctor.status", source: doctorCommand }, doctorCommand, {
+        const doctor = dispatch(doctorId, { owner: "doctor.status", source: doctorCommand }, doctorCommand, {
         accepted: true,
         classification: "accepted",
         argv: ["doctor", "--format", "json", "--home", home, "--project", project, "--install-root", paths.appHome],
       });
-      const doctorPayload = JSON.parse(doctor.stdout);
-      expect(doctorPayload).toMatchObject({ status: "up_to_date", shared_skill: { status: "pass" } });
+        doctorPayload = JSON.parse(doctor.stdout);
+        expect(doctorPayload).toMatchObject({ status: "up_to_date", shared_skill: { status: "pass" } });
 
-      const recoveries = readOnlyRecoveries(primePayload, doctorPayload);
-      const recoveryObservations: unknown[] = [];
-      if (projectState !== "v3") recoveries.unshift(fullEntityUpgradePreviewCommand(project));
-      expect(recoveries.every((command) => !command.includes("--yes"))).toBe(true);
-      recoveries.forEach((command, index) => {
+        recoveries.push(...readOnlyRecoveries(primePayload, doctorPayload));
+        if (projectState !== "v3") recoveries.unshift(fullEntityUpgradePreviewCommand(project));
+        expect(recoveries.every((command) => !command.includes("--yes"))).toBe(true);
+        recoveries.forEach((command, index) => {
         const recoveryId = `recovery-${index}`;
         assertAcceptedApplicability(recoveryId, projectState);
         const recovery = dispatch(recoveryId, { owner: `recovery.${index}`, source: command }, command, {
@@ -748,13 +755,16 @@ export function runRuntimeBootstrapMatrix(
           stdout,
           stderr,
         });
-      });
+        });
+      }
       for (const row of rows.filter((row) => row.runtime === runtime && row.projectState === projectState && row.accepted)) {
         row.outcome = expectedOutcome;
         row.recoveryCount = recoveries.length;
       }
 
-      const rejectionSpecs = REJECTION_EXECUTION_SPECS.filter(({ states }) => states.includes(projectState));
+      const rejectionSpecs = REJECTION_EXECUTION_SPECS
+        .filter(({ states }) => states.includes(projectState))
+        .filter(({ id }) => !options.bounded || id === "reject-stable");
       const rejectionBefore = snapshotsWithTiming(protectedRoots);
       const rejectionStarted = performance.now();
       const rejectionResult = spawnSync(process.execPath, [
@@ -790,7 +800,7 @@ export function runRuntimeBootstrapMatrix(
 
       const normalizedObservation = normalized({
         prime: primePayload,
-        startup: JSON.parse(startup.stdout),
+        startup: startupPayload,
         doctor: doctorPayload,
         recoveries,
         recoveryObservations,
@@ -810,7 +820,7 @@ export function runRuntimeBootstrapMatrix(
     accepted: rows.filter((row) => row.projectState === state && row.accepted).length,
     rejected: rows.filter((row) => row.projectState === state && !row.accepted).length,
   }])) as RuntimeBootstrapMatrixSummary["stateCounts"];
-  assertCompleteCompositeRows(rows, expectedAuthority.ids);
+  if (!options.bounded) assertCompleteCompositeRows(rows, expectedAuthority.ids);
   const matrixTiming = finalizeTiming(started, timing);
   assertRuntimeBootstrapMatrixTiming(matrixTiming);
   return {

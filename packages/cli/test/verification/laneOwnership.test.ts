@@ -477,7 +477,7 @@ describe("verification lane ownership", () => {
     expect(result.status, result.stderr).toBe(0);
     const inventory = JSON.parse(result.stdout);
     expect(inventory.counts.total).toBeGreaterThan(190);
-    expect(inventory.counts).toMatchObject({ stress: 1, performance: 1, capacity: 3 });
+    expect(inventory.counts).toMatchObject({ stress: 1, performance: 1, capacity: 4 });
     expect(inventory.files.source).toHaveLength(inventory.counts.source);
     expect(inventory.files.package).toEqual([
       "packages/cli/test/packaging/coldProcessScheduler.test.ts",
