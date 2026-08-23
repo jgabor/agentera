@@ -47,10 +47,10 @@ function project(entity = true): string {
   return root;
 }
 
-function capture(root: string, args: string[], input?: Record<string, unknown>): { rc: number; out: string; err: string; json: any } {
+function capture(root: string, args: string[], input?: Record<string, unknown> | string): { rc: number; out: string; err: string; json: any } {
   const cwd = process.cwd(); let out = ""; let err = ""; process.chdir(root);
   try {
-    const rc = main(["node", "agentera", ...args], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: input ? () => dumpYamlMapping(input) : undefined });
+    const rc = main(["node", "agentera", ...args], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: input === undefined ? undefined : () => typeof input === "string" ? input : dumpYamlMapping(input) });
     return { rc, out, err, json: out.trim().startsWith("{") ? JSON.parse(out) : null };
   } finally { process.chdir(cwd); }
 }
@@ -381,6 +381,28 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(reopenedReplay.rc).toBe(0); expect(reopenedReplay.json.operation.idempotent_replay).toBe(true);
   });
 
+  it("preserves the exact singleton no-ID rejection before malformed input parsing", () => {
+    const root = project();
+    const expected = {
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: {
+        class: "missing_argument",
+        message: "--id is required for todo update",
+        syntax: "--id VALUE",
+        example: "agentera state todo update --id qjtrmnpvka --input todo-patch.yaml --format json",
+        recovery: "Correct the input and retry; no state was changed.",
+      },
+    };
+
+    const malformed = capture(root, ["state", "todo", "update", "--input", "-", "--format", "json"], "[");
+    expect(malformed.rc).toBe(2);
+    expect(malformed.json).toEqual(expected);
+    const singleton = capture(root, ["state", "todo", "update", "--input", "-", "--format", "json"], { title: "Missing selector" });
+    expect(singleton.rc).toBe(2);
+    expect(singleton.json).toEqual(expected);
+  });
+
   it("previews and atomically applies a versioned TODO update batch", () => {
     const root = project();
     const create = (title: string) => todo(root, title).id as string;
@@ -402,6 +424,105 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(applied.json.records.map((entry: any) => entry.record.title)).toEqual(["First updated item", "Second updated item"]);
     const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
     expect(markdown).toContain("First updated item"); expect(markdown).toContain("Second updated item");
+  });
+
+  it("recovers only an interrupted exact TODO update batch retry", () => {
+    const root = project();
+    const first = todo(root, "First interrupted batch item").id as string;
+    const second = todo(root, "Second interrupted batch item").id as string;
+    const input = { schema_version: "agentera.todoUpdateBatch.v1", updates: [
+      { id: first, patch: { title: "First recovered batch item" } },
+      { id: second, patch: { title: "Second recovered batch item" } },
+    ] };
+    const preview = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const request: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", "update")!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { confirmed: true, effect_sha256: preview.json.effect_sha256 },
+      callerPayload: input,
+      input,
+    };
+    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/);
+    binding.publicationContext.close();
+
+    const interrupted = files(root);
+    const divergent = capture(root, ["state", "todo", "update", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], {
+      ...input,
+      updates: [{ id: first, patch: { title: "Divergent retry" } }],
+    });
+    expect(divergent.rc).toBe(2);
+    expect(divergent.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("exact original TODO update batch") });
+    expect(files(root)).toEqual(interrupted);
+
+    const recovered = capture(root, ["state", "todo", "update", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0);
+    expect(recovered.json).toMatchObject({
+      effect_sha256: preview.json.effect_sha256,
+      operation: { verb: "update", dry_run: false, idempotent_replay: true },
+      reconciliation: { transaction_id: expect.any(String), recovered: [expect.any(String)] },
+    });
+    expect(recovered.json.records.map((entry: any) => entry.record.title)).toEqual(["First recovered batch item", "Second recovered batch item"]);
+  });
+
+  it("keeps severity and resolve singleton parsing exact beside the update batch mode", () => {
+    const root = project();
+    const contract = (verb: "update" | "set-severity" | "resolve") => {
+      const spec = operationSpec("todo", verb)!;
+      return { inputMode: spec.inputMode, inputRoot: spec.inputRoot, required: spec.fields.filter((field) => field.required).map((field) => field.flag) };
+    };
+    expect(contract("update")).toEqual({ inputMode: "structured", inputRoot: "TODO record patch or agentera.todoUpdateBatch.v1 envelope", required: ["--id"] });
+    expect(contract("set-severity")).toEqual({ inputMode: "none", inputRoot: undefined, required: ["--id", "--severity", "--reason", "--date"] });
+    expect(contract("resolve")).toEqual({ inputMode: "none", inputRoot: undefined, required: ["--id", "--reason", "--date"] });
+
+    const severity = todo(root, "Transition parser severity");
+    const severityBefore = files(root);
+    const rejectedSeverity = capture(root, ["state", "todo", "set-severity", "--id", severity.id, "--severity", "critical", "--reason", "Immediate impact", "--date", "2026-08-23", "--input", "-", "--format", "json"], {});
+    expect(rejectedSeverity.rc).toBe(2);
+    expect(rejectedSeverity.json).toEqual({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: {
+        class: "mutually_exclusive",
+        message: "todo set-severity accepts field flags, not --input",
+        example: "agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason \"Impact changed\" --date 2026-07-31 --format json",
+        recovery: "Correct the input and retry; no state was changed.",
+      },
+    });
+    expect(files(root)).toEqual(severityBefore);
+    const severitySuccess = capture(root, ["state", "todo", "set-severity", "--id", severity.id, "--severity", "critical", "--reason", "Immediate impact", "--date", "2026-08-23", "--format", "json"]);
+    expect(severitySuccess.rc, severitySuccess.err || severitySuccess.out).toBe(0);
+    expect(severitySuccess.json).toMatchObject({ id: severity.id, record: { severity: "critical", lifecycle: { operation: "set-severity", reason: "Immediate impact", date: "2026-08-23" } }, operation: { dry_run: false, idempotent_replay: false } });
+
+    const resolved = todo(root, "Transition parser resolve");
+    const resolveBefore = files(root);
+    const rejectedResolve = capture(root, ["state", "todo", "resolve", "--id", resolved.id, "--reason", "Work complete", "--date", "2026-08-23", "--input", "-", "--format", "json"], {});
+    expect(rejectedResolve.rc).toBe(2);
+    expect(rejectedResolve.json).toEqual({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+      error: {
+        class: "mutually_exclusive",
+        message: "todo resolve accepts field flags, not --input",
+        example: "agentera state todo resolve --id qjtrmnpvka --reason \"Shipped\" --date 2026-07-31 --format json",
+        recovery: "Correct the input and retry; no state was changed.",
+      },
+    });
+    expect(files(root)).toEqual(resolveBefore);
+    const resolveSuccess = capture(root, ["state", "todo", "resolve", "--id", resolved.id, "--reason", "Work complete", "--date", "2026-08-23", "--format", "json"]);
+    expect(resolveSuccess.rc, resolveSuccess.err || resolveSuccess.out).toBe(0);
+    expect(resolveSuccess.json).toMatchObject({ id: resolved.id, record: { status: "resolved", lifecycle: { operation: "resolve", reason: "Work complete", date: "2026-08-23" } }, operation: { dry_run: false, idempotent_replay: false } });
+
+    const explain = capture(root, ["state", "todo", "explain", "--verb", "update", "--format", "json"]);
+    expect(explain.rc, explain.err || explain.out).toBe(0);
+    expect(explain.json.guidance).toEqual(expect.arrayContaining([
+      "for a singleton, select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
+      "for a batch, omit --id and supply one strict agentera.todoUpdateBatch.v1 envelope; preview it with --dry-run before exact confirmed apply",
+    ]));
   });
 
   it("rejects invalid, duplicate, and stale TODO update batches without effects", () => {

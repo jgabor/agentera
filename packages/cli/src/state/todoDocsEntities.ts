@@ -28,17 +28,12 @@ import { normalizeTodoOwnerCorrectionEvidence, planTodoOwnerCorrection, planTodo
 import { readTodoMarkdown, renderManagedMarkdown } from "./todoMarkdownProjection.js";
 import { inactiveTodoActivationSafety, rejectUnsafeInactiveTodoActivation, unsafeInactiveDuplicateDiagnosis } from "./todoActivationSafety.js";
 import { assertTodoSeverityHeadingStructure, todoSeveritySectionForHeading } from "./todoSeverityHeadings.js";
-const ID = /^[a-z]{10}$/; const SHA256 = /^[a-f0-9]{64}$/; const TODO_UPDATE_BATCH_VERSION = "agentera.todoUpdateBatch.v1";
+import { parseTodoUpdateBatch, todoUpdateBatchEffectSha256 } from "./todoUpdateBatch.js";
+const ID = /^[a-z]{10}$/; const SHA256 = /^[a-f0-9]{64}$/;
 const TODO = { artifact: "todo", boundary: "todo_item", order: "severity_then_status_then_markdown_order_then_id" } as const; const DOCS = { artifact: "docs", boundary: "documentation_inventory_entry", order: "path_then_id" } as const;
 interface Options { sourceRoot?: string; publicationContext?: EntityPublicationContext; candidate?: () => string; interruptAfterTarget?: number }
 interface Contract { authorityPath: string; entityRoot: string; defaultLimit: number; maximumLimit: number; maxUtf8Bytes: number }
 function mapping(value: unknown): value is JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value); }
-function updateBatch(input: JsonObject | null): Array<{ id: string; patch: JsonObject }> | null {
-  if (!input || input.schema_version !== TODO_UPDATE_BATCH_VERSION) return null;
-  const violations: string[] = []; if (Object.keys(input).sort().join(",") !== "schema_version,updates") violations.push("batch envelope must contain exactly schema_version and updates"); if (!Array.isArray(input.updates) || input.updates.length < 1 || input.updates.length > 256) violations.push("updates must contain 1 to 256 entries");
-  const normalized = (Array.isArray(input.updates) ? input.updates : []).map((value, index) => { if (!mapping(value) || Object.keys(value).sort().join(",") !== "id,patch" || !ID.test(String(value.id ?? "")) || !mapping(value.patch)) { violations.push(`updates[${index}] must contain exactly one bare id and one patch mapping`); return { id: "", patch: {} as JsonObject }; } violations.push(...todoInputViolations(value.patch, "update").map((item) => `updates[${index}].patch: ${item}`)); return { id: String(value.id), patch: value.patch }; });
-  const seen = new Set<string>(); for (const { id } of normalized) { if (id && seen.has(id)) violations.push(`duplicate update target '${id}'`); seen.add(id); } if (violations.length) reject({ class: "schema_violation", message: "todo update batch input is invalid", violations, recovery: "Correct the strict agentera.todoUpdateBatch.v1 envelope, then preview it again; no state was changed." }); return normalized;
-}
 function relative(root: string, file: string): string { return path.relative(path.resolve(root), file).split(path.sep).join("/"); }
 function definition(artifact: "todo" | "docs") { return artifact === "todo" ? TODO : DOCS; }
 function contract(boundary: string, sourceRoot = resolveSourceRoot()): Contract {
@@ -661,6 +656,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
     const todoBinding = artifact === "todo" ? todoReconciliationBinding(req.projectRoot, sourceRoot) : null;
     const correctingOwners = artifact === "todo" && req.spec.verb === "correct-owners";
     const ownerEvidence = correctingOwners ? normalizeTodoOwnerCorrectionEvidence(req.input ?? {}) : null;
+    const batch = artifact === "todo" && req.spec.verb === "update" ? parseTodoUpdateBatch(req.input as JsonObject | null) : null;
     const pending = todoBinding ? inspectTodoReconciliation(pinnedRoot, todoBinding) : [];
     if (artifact === "todo") assertTodoSeverityHeadingStructure(readTodoMarkdown(todoPublicPath(pinnedRoot, sourceRoot)).text);
     const initialActivation = artifact === "todo" ? loadTodoReconciliationActivation(pinnedRoot) : null;
@@ -680,6 +676,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
           createRequestSha256,
           ...(["activate", "repair", "correct-owners"].includes(req.spec.verb) ? { activationEffectSha256: String(req.values.effect_sha256) } : {}),
           ...(correctingOwners ? { ownerMappingSha256: ownerEvidence!.sha256 } : {}),
+          ...(batch ? { updateBatch: { effectSha256: String(req.values.effect_sha256 ?? ""), input: req.input as JsonObject } } : {}),
           beforeCommit: () => assertState(pinnedRoot, sourceRoot, sourceBinding),
         })
       : [];
@@ -694,6 +691,8 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
         const created = selectedById(entities, "todo", recoveredCreate.create.created_id);
         return { ...envelope("state todo create", { id: created.id!, path: created.path, replay: true }, "todo", created.record!, false), reconciliation: { transaction_id: recoveredCreate.transaction_id, targets: 0, recovered } };
       }
+      const recoveredBatch = recoveryReceipts.find((receipt) => receipt.update_batch_effect_sha256);
+      if (recoveredBatch?.update_batch_effect_sha256 && batch) return { schemaVersion: "agentera.stateWrite.v1", command: "state todo update", status: "pass", artifact: "todo", records: batch.map(({ id }) => ({ id, record: selectedById(entities, "todo", id).record! })), operation: { verb: "update", dry_run: false, idempotent_replay: true }, validation: { status: "pass", violations: [] }, effect_sha256: recoveredBatch.update_batch_effect_sha256, apply_command: null, reconciliation: { transaction_id: recoveredBatch.transaction_id, targets: recoveredBatch.target_count, recovered } };
       const publicFile = todoPublicPath(pinnedRoot, sourceRoot); const publicRelative = todoBinding!.publicPath;
       const publicExists = fs.existsSync(publicFile);
       const loadedMarkdown = readTodoMarkdown(publicFile); const markdownBefore = loadedMarkdown.bytes; const markdown = loadedMarkdown.text;
@@ -788,7 +787,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
         });
         context.assertValid(); return repairEnvelope(effect, false, false, transaction.id, transaction.targetCount, recovered);
       }
-      const activating = activation === null; const scan = managedRows(markdown, activation, todoEntities); const rows = scan.rows; const reconciled = reconcileTodoRecords(todoEntities, rows, activating); const batch = req.spec.verb === "update" ? updateBatch(req.input as JsonObject | null) : null;
+      const activating = activation === null; const scan = managedRows(markdown, activation, todoEntities); const rows = scan.rows; const reconciled = reconcileTodoRecords(todoEntities, rows, activating);
       if (batch) {
         if (!req.dryRun && (!req.values.confirmed || !SHA256.test(String(req.values.effect_sha256 ?? "")))) reject({ class: "invalid_request", message: "todo update batch apply requires its preview effect SHA-256 and --yes", recovery: "Run the same batch input with --dry-run, review it, then repeat that input with the returned --effect-sha256 value and --yes; no state was changed." });
         const requestedRecords: Array<{ id: string; record: JsonObject }> = [];
@@ -801,11 +800,12 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
         const targets: TodoReconciliationTarget[] = todoEntities.map((entity) => ({ path: entity.relativePath, before: exactDiscoveredEntityBytes(entity), after: canonicalEntityEnvelopeBytes({ id: entity.id!, artifact: "todo", record: reconciled.records.get(entity.id!)!, migrationProvenance: entity.migrationProvenance ?? undefined }) }));
         if (activating) targets.push({ path: TODO_RECONCILIATION_ACTIVATION_PATH, before: null, after: activationBytesAfter });
         targets.push({ path: publicRelative, before: publicExists ? markdownBefore : null, after: rendered });
-        const effectSha256 = createHash("sha256").update(canonicalRecordJson({ schema_version: TODO_UPDATE_BATCH_VERSION, input: req.input, mapping_sha256: todoBinding!.mappingSha256, targets: targets.map((target) => ({ path: target.path, before_sha256: target.before === null ? null : createHash("sha256").update(target.before).digest("hex"), after_sha256: createHash("sha256").update(target.after).digest("hex") })) })).digest("hex");
+        const effectTargets = targets.filter((target) => target.before === null || !target.before.equals(Buffer.from(target.after))).sort((left, right) => Number(left.path === publicRelative) - Number(right.path === publicRelative) || left.path.localeCompare(right.path));
+        const effectSha256 = todoUpdateBatchEffectSha256(req.input as JsonObject, todoBinding!.mappingSha256, effectTargets.map((target) => ({ path: target.path, before_sha256: target.before === null ? null : createHash("sha256").update(target.before).digest("hex"), after_sha256: createHash("sha256").update(target.after).digest("hex") })));
         const applyCommand = `agentera state todo update --input <same-input> --effect-sha256 ${effectSha256} --yes --format json`; const response = { schemaVersion: "agentera.stateWrite.v1", command: "state todo update", status: "pass", artifact: "todo", records: requestedRecords.map(({ id }) => ({ id, record: reconciled.records.get(id)! })), operation: { verb: "update", dry_run: req.dryRun, idempotent_replay: false }, validation: { status: "pass", violations: [] }, effect_sha256: effectSha256, apply_command: req.dryRun ? applyCommand : null } as StateWriteEnvelope;
         if (req.dryRun) return { ...response, reconciliation: { transaction_id: null, targets: targets.length, recovered } };
         if (req.values.effect_sha256 !== effectSha256) reject({ class: "conflict", message: "TODO update batch effects changed after preview", recovery: "Rerun the same batch input with --dry-run, review the new bounded effect, then use its exact effect SHA-256; no state was changed." });
-        const transaction = publishTodoReconciliation(context, sourceRoot, todoBinding!, targets, { interruptAfterTarget: options.interruptAfterTarget, beforeCommit: () => { assertState(pinnedRoot, sourceRoot, sourceBinding); const currentBinding = todoReconciliationBinding(req.projectRoot, sourceRoot); if (currentBinding.publicPath !== todoBinding!.publicPath || currentBinding.mappingSha256 !== todoBinding!.mappingSha256) reject({ class: "conflict", message: "TODO reconciliation mapping changed during batch publication", recovery: "Preserve the changed docs mapping and retry after every transaction target is restored; no mapping bytes were overwritten." }); } }); context.assertValid(); return { ...response, reconciliation: { transaction_id: transaction.id, targets: transaction.targetCount, recovered } };
+        const transaction = publishTodoReconciliation(context, sourceRoot, todoBinding!, targets, { updateBatchEffectSha256: effectSha256, interruptAfterTarget: options.interruptAfterTarget, beforeCommit: () => { assertState(pinnedRoot, sourceRoot, sourceBinding); const currentBinding = todoReconciliationBinding(req.projectRoot, sourceRoot); if (currentBinding.publicPath !== todoBinding!.publicPath || currentBinding.mappingSha256 !== todoBinding!.mappingSha256) reject({ class: "conflict", message: "TODO reconciliation mapping changed during batch publication", recovery: "Preserve the changed docs mapping and retry after every transaction target is restored; no mapping bytes were overwritten." }); } }); context.assertValid(); return { ...response, reconciliation: { transaction_id: transaction.id, targets: transaction.targetCount, recovered } };
       }
       let id: string; let requested: JsonObject; let selected: DiscoveredEntity | undefined;
       if (req.spec.verb === "create") {

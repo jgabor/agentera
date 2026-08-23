@@ -1,0 +1,16 @@
+id: hwxclwtsmp
+artifact: progress
+record:
+  timestamp: 2026-08-23 15:20
+  type: fix
+  phase: build
+  what: Corrected the failed atomic TODO update batch boundary without advancing the plan task.
+  context:
+    intent: Apply only the accepted audit corrections for the failed update-batch task.
+    constraints: Preserve singleton behavior, reuse the existing reconciliation journal, keep evaluator state in progress, preserve the user-owned TODO change, and do not push.
+    unknowns: Transition compatibility is proved without changing set-severity or resolve syntax or implementing their future batch mutations.
+    scope: Findings A-E for task dewllredyf only.
+  discovered: The failed attempt deferred singleton selector rejection until after input parsing, recovered unbound batch journals before request comparison, lacked transition coexistence evidence, gave singleton-only update guidance, and shifted retired-runtime changelog classifications.
+  verified: "PASS: todoDocsEntities.test.ts 85/85, including exact malformed and parsed singleton no-ID rejection, update batch preview/apply/rejection, interrupted exact retry recovery, divergent retry with byte-identical no-effects, and exact set-severity/resolve flag-only success and input rejection. PASS: monolithLint 1/1, typecheck, build, package verification 14/14, local capability contract 3/3, compact with zero errors, rebuilt-local malformed update rejection, update explain guidance, and git diff --check. Full source verification passed 4,089 tests with 1 skipped; only the 3 accepted pre-existing retiredRuntimeSurfacePolicy failures remain. The exact retired-runtime lane stayed at 3 failures but its missing-declaration count fell from the failed attempt's 137 to the pre-attempt 120, and CHANGELOG.md is byte-identical to the pre-attempt revision."
+  next: Keep plan task dewllredyf in progress for independent orchestrator re-evaluation; do not start downstream batch tasks.
+  publication_order: 197

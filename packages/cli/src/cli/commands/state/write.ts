@@ -27,6 +27,7 @@ import {
   type OperationSpec,
   type WritableArtifact,
 } from "../../../state/write/index.js";
+import { inspectTodoUpdateBatch } from "../../../state/todoUpdateBatch.js";
 
 interface ParsedWrite {
   artifact: WritableArtifact;
@@ -50,6 +51,15 @@ function formatFromArgv(argv: string[]): "text" | "json" {
 
 function invalid(body: InvalidInputErrorBody): never {
   throw new StateWriteInputError(body);
+}
+
+function missingTodoUpdateId(): never {
+  invalid({
+    class: "missing_argument",
+    message: "--id is required for todo update",
+    syntax: "--id VALUE",
+    example: exampleFor("todo", "update"),
+  });
 }
 
 function emitRetrievalFailure(error: StateRetrievalFailure, format: "text" | "json", io: Io): number {
@@ -340,8 +350,6 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       });
     }
   }
-  if (artifact === "todo" && verb === "update" && !inputSource && mappingPath(values, "id") === undefined)
-    invalid({ class: "missing_argument", message: "--id is required for todo update", syntax: "--id ID --input PATH", example: exampleFor(artifact, verb) });
   if (artifact === "decisions" && (verb === "update" || verb === "amend")) {
     const id = mappingPath(values, "id");
     const number = mappingPath(values, "number");
@@ -429,6 +437,7 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
       try {
         input = loadStructuredInput(parsed.inputSource, io.stdin ?? (() => fsStdin()), parsed.spec.inputMaxBytes);
       } catch (error) {
+        if (parsed.artifact === "todo" && parsed.spec.verb === "update" && !parsed.values.id) missingTodoUpdateId();
         const message = (error as Error).message;
         invalid({
           class: message.startsWith("input file") ? "unsupported_target" : message.includes("UTF-8 limit") ? "schema_violation" : "invalid_format",
@@ -438,6 +447,8 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
           ...(message.includes("UTF-8 limit") ? { violations: [message] } : {}),
         });
       }
+      const updateBatch = parsed.artifact === "todo" && parsed.spec.verb === "update" ? inspectTodoUpdateBatch(input) : null;
+      if (parsed.artifact === "todo" && parsed.spec.verb === "update" && !parsed.values.id && !updateBatch?.strictEnvelope) missingTodoUpdateId();
       for (const owned of parsed.spec.cliOwnedFields ?? []) {
         if (hasNested(input, owned))
           invalid({
@@ -446,8 +457,6 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
             violations: [`CLI-owned field: ${owned}`],
           });
       }
-      if (parsed.artifact === "todo" && parsed.spec.verb === "update" && !parsed.values.id && input.schema_version !== "agentera.todoUpdateBatch.v1")
-        invalid({ class: "missing_argument", message: "--id is required for todo update", syntax: "--id ID --input PATH", example: exampleFor(parsed.artifact, parsed.spec.verb) });
       parsed.callerPayload = structuredClone(input);
     }
     const envelope = executeStateWrite({ ...parsed, input });

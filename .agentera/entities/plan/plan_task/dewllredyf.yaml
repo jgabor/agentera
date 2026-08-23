@@ -4,10 +4,20 @@ record:
   name: Deliver the shared batch boundary through update
   depends_on:
     []
-  status: complete
+  status: in_progress
   acceptance:
     - GIVEN an existing singleton update invocation WHEN it runs after this task THEN its accepted input, mutation, output, and rejection behavior remain unchanged.
     - GIVEN a valid versioned update batch WHEN it is previewed and the exact confirmation is applied THEN every requested patch publishes atomically with one receipt.
     - GIVEN duplicate targets, an invalid patch, or stale or divergent state WHEN a batch is previewed or applied THEN no target changes and bounded recovery is returned.
     - GIVEN supported parsing and contract rules WHEN tests run THEN each testable unit has one success and one rejection case, and transition compatibility evidence exists before downstream work starts.
   plan: zwubvaeive
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Singleton no-ID rejection precedence changed; interrupted batch recovery is not bound to the original effect digest; transition dual-mode parsing remains unproved; changelog additions increased an already failing retired-runtime diagnostic owner.
+    provenance:
+      attempt_id: dewllredyf-audit-1
+      source: independent audit of commit 3b7390e2
+      recorded_at: 2026-08-23 14:41
+      writer_command: agentera state plan record-evaluation

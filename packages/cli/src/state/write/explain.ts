@@ -310,8 +310,9 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
   if (entityArtifact && artifact === "objective" && verb === "update") return ["select one objective with its bare ten-letter --id; numeric selectors are unavailable", "the CLI preserves that ID while replacing the validated objective record", ...base];
   if (entityArtifact && artifact === "objective") return ["a bare ten-letter objective ID is assigned by the CLI; do not pass an identity", ...base];
   if (entityArtifact && artifact === "todo" && verb === "update") return [
-    "select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
-    "the input document is a patch: omitted fields preserve state and only target_version, requirements, acceptance, and readiness accept typed clears",
+    "for a singleton, select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
+    "for a singleton, the input document is a patch: omitted fields preserve state and only target_version, requirements, acceptance, and readiness accept typed clears",
+    "for a batch, omit --id and supply one strict agentera.todoUpdateBatch.v1 envelope; preview it with --dry-run before exact confirmed apply",
     "public fields are TODO.md-owned; readiness, dependencies, gates, and evidence are Agentera-owned",
     ...base,
   ];
