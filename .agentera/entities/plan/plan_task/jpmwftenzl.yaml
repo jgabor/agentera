@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Correct stale-lock duplicate detection
-  status: in_progress
+  status: complete
   depends_on:
     - haifwrwdrr
     - hhyrhisjfp
@@ -12,3 +12,13 @@ record:
     - GIVEN 100 governed same-ID stale-lock races WHEN both writers finish THEN every repetition has exactly one publisher and one canonical duplicate-ID loser with no writer-lock timeout.
     - GIVEN the contention correction WHEN production contracts are inspected THEN the two-second writer-lock deadline and canonical duplicate-ID error remain unchanged.
     - GIVEN the focused repair WHEN verification runs THEN the targeted stress owner, relevant lock tests, typecheck, and build pass without weakened assertions or budgets.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-jpm-1
+      source: orchestrate audit for task jpmwftenzl
+      recorded_at: 2026-08-23 20:08
+      writer_command: agentera state plan record-evaluation

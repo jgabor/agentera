@@ -1,0 +1,12 @@
+id: vhherytjfi
+artifact: plan
+record:
+  plan: bhhshalaqm
+  name: Verify release after stale-lock repair
+  status: pending
+  depends_on:
+    - jpmwftenzl
+  acceptance:
+    - GIVEN the clean local invocation WHEN the policy-owned release DAG runs THEN every required owner passes in order with no bypassed failure.
+    - GIVEN successful qualification WHEN its evidence is inspected THEN required gate records and receipts are valid and no publish or registry side effect occurs.
+    - GIVEN all owners pass WHEN state is synchronized THEN the replacement final task and plan have current verified status with no unrelated worktree changes.
