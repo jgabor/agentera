@@ -14,3 +14,13 @@ record:
     - GIVEN controlled before and after measurements WHEN compared THEN ordinary focused source package constructions fall to zero and the three-run median source wall time decreases.
     - GIVEN all owners pass in their governed environments WHEN state is synchronized THEN every task and the plan carry current verified status with no unrelated artifact changes.
   plan: bhhshalaqm
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Canonical release DAG was contaminated by ambient Node inspector controls before product performance measurement; downstream owners correctly remained deferred.
+    provenance:
+      attempt_id: audit-vno-1
+      source: orchestrate audit for task vnotgyppaw
+      recorded_at: 2026-08-23 19:40
+      writer_command: agentera state plan record-evaluation
