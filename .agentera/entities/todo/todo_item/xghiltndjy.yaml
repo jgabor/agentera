@@ -19,7 +19,7 @@ record:
       description: "[fix:3.0.0] Keep initial status handoffs informational."
       severity: degraded
       status: open
-      order: 2
+      order: 1
   kind: fix
   target_version: 3.0.0
   requirements:

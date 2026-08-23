@@ -4,7 +4,7 @@ record:
   name: Deliver atomic severity and resolve batches
   depends_on:
     - elbpcppfyi
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN a valid same-kind severity or resolve batch WHEN preview and exact apply complete THEN every target transitions atomically with one receipt.
     - GIVEN one invalid target, duplicate ID, invalid lifecycle transition, or stale state WHEN a transition batch is validated THEN no target changes.
@@ -21,3 +21,6 @@ record:
       source: independent re-audit of correction commit f9bc5154
       recorded_at: 2026-08-23 18:34
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - sssvtqdpbe
+  superseded_reason: Repeated transition-batch recovery was repaired and independently verified by the focused replacement task.

@@ -3,10 +3,20 @@ artifact: plan
 record:
   plan: zwubvaeive
   name: Repair repeated transition-batch recovery
-  status: in_progress
+  status: complete
   depends_on:
     - elbpcppfyi
   acceptance:
     - GIVEN members with prior transition receipts WHEN a second severity or resolve batch is interrupted and retried exactly THEN recovery converges without duplicates or residue.
     - GIVEN a divergent retry or later singleton state WHEN an old batch is retried THEN it conflicts without changing any target.
     - GIVEN both verbs and singleton compatibility WHEN focused and integration checks run THEN each recovery rule has one passing and one rejecting case and required gates pass.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: sssvtqdpbe-audit-1
+      source: independent audit of commit 347a7410
+      recorded_at: 2026-08-23 19:50
+      writer_command: agentera state plan record-evaluation

@@ -6,7 +6,7 @@ record:
     - dewllredyf
     - elbpcppfyi
     - sssvtqdpbe
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN all supported singleton and batch scenarios WHEN focused checks, type checking, build, package validation, and rebuilt-local-CLI checks run THEN they pass with matching schema, help, explain, source, and packaged behavior.
     - GIVEN representative historical same-kind workflows WHEN exercised end to end THEN valid work has no partial publication and exact retries converge.

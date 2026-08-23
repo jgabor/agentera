@@ -2,7 +2,7 @@ id: kbjrvrilzj
 artifact: todo
 record:
   severity: degraded
-  status: open
+  status: resolved
   readiness:
     capability: build
     reason: Repository history since 2026-08-02 contains repeated commits with multiple substantive TODO changes, including linked new items.
@@ -20,9 +20,9 @@ record:
     public:
       present: true
       description: "[feat:3.0.0] Apply common same-kind TODO changes atomically."
+      status: resolved
+      order: 118
       severity: degraded
-      status: open
-      order: 1
   kind: feat
   target_version: 3.0.0
   requirements:
@@ -37,3 +37,7 @@ record:
     - Tests cover representative same-kind create, update, severity, and resolve workflows plus local references, conflicts, and retries.
   release_blocker: false
   title: Apply common same-kind TODO changes atomically.
+  lifecycle:
+    operation: resolve
+    reason: Atomic same-kind create, update, set-severity, and resolve batches shipped with strict schemas, preview-confirmed apply, recovery, and singleton compatibility.
+    date: 2026-08-23
