@@ -1,0 +1,13 @@
+id: zpsblvudni
+artifact: progress
+record:
+  timestamp: 2026-08-23 21:41
+  type: docs
+  phase: audit
+  what: Corrected the upgrade guide contradiction found by audit-1.
+  context:
+    intent: Synchronize early upgrade guidance with shipped bounded historical plugin retirement.
+    constraints: Preserve all ownership, provenance, manual-review, and later cleanup guidance; keep task xnefncbdho in progress for audit.
+    scope: UPGRADE.md active integration wording and its existing focused documentation contract test.
+  verified: UPGRADE.md now states that normal upgrade has no current-runtime selector or installation behavior while allowing only bounded automatic retirement of the proven historical OpenCode plugin. The focused oneCommandContract suite passed 3/3.
+  publication_order: 207

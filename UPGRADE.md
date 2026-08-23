@@ -18,9 +18,11 @@ Agentera has one active integration contract:
 
 Normal `prime`, `doctor`, `schema`, help, and project-integration output reports
 that shared skill and CLI/app/project state. Normal `upgrade` has no
-current-runtime selector or native-resource operation set. It creates no current
-plugin, hook, agent, command, descriptor, or marketplace file and does not run
-runtime package managers, authentication, enablement, or trust operations.
+current-runtime selector or installation behavior. Its only automatic
+native-resource operation is bounded retirement of the proven historical
+OpenCode plugin described below. It creates no current plugin, hook, agent,
+command, descriptor, or marketplace file and does not run runtime package
+managers, authentication, enablement, or trust operations.
 
 Passing `--runtime` fails before mutation. Remove `--runtime`, ensure the runtime
 can read `~/.agents/skills/agentera`, and invoke the CLI directly. The supported

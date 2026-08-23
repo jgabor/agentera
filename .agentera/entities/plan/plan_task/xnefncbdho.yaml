@@ -14,3 +14,13 @@ record:
     - GIVEN repository state and user-facing change records WHEN delivery closes THEN they describe the shipped behavior consistently.
     - GIVEN final package inspection WHEN native integrations are checked THEN no plugin or hook surface has been reintroduced.
   plan: gacnyrekma
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: UPGRADE.md says normal upgrade has no native-resource operation set, but later documents and implements bounded automatic retirement of the proven OpenCode plugin.
+    provenance:
+      attempt_id: audit-1
+      source: agentera.inspekteraEvaluationReport.v1
+      recorded_at: 2026-08-23 21:40
+      writer_command: agentera state plan record-evaluation

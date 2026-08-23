@@ -61,8 +61,12 @@ describe("v2-to-v3 one-command guidance", () => {
   });
 
   it("keeps current cleanup narratives native while preserving Claude-specific examples and history", () => {
+    const activeIntegration = section("UPGRADE.md", "## Active integration");
+    expect(activeIntegration).toContain("no\ncurrent-runtime selector or installation behavior");
+    expect(activeIntegration).toContain("only automatic\nnative-resource operation is bounded retirement of the proven historical\nOpenCode plugin");
+    expect(activeIntegration).not.toContain("no\ncurrent-runtime selector or native-resource operation set");
     const currentUpgradeNarratives = [
-      section("UPGRADE.md", "## Active integration"),
+      activeIntegration,
       section("UPGRADE.md", "## Verification and recovery"),
       section("UPGRADE.md", "## Mutation ownership"),
       section("CHANGELOG.md", "## [Unreleased]"),
