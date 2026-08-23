@@ -44,7 +44,6 @@
 - [ ] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
 - [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
-- [ ] [id:kzthftsrys] [test:3.0.0] Reduce batched runtime integration median below baseline
 
 ## ⇢ Annoying
 
@@ -168,3 +167,4 @@
 - [x] [id:oefnbfdznb] [fix:3.0.0] Fail closed for legacy `prime --dashboard --fields` selectors during status-capsule migration.
 - [x] [id:mmesbicmmx] [fix:3.0.0] Fix interrupted recovery after prior TODO transition batches.
 - [x] [id:kbjrvrilzj] [feat:3.0.0] Apply common same-kind TODO changes atomically.
+- [x] [id:kzthftsrys] [test:3.0.0] Reduce batched runtime integration median below baseline

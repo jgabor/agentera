@@ -3,10 +3,20 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Confirm runtime batching duration
-  status: pending
+  status: complete
   depends_on:
     - ktnrvrhoqs
   acceptance:
     - GIVEN the same pinned local conditions WHEN two consecutive current runtime integration runs complete THEN both pass.
     - GIVEN the recorded 129.769s pre-batch baseline WHEN each current shell wall time is compared THEN each is at least 20% below the baseline.
     - GIVEN those two runs WHEN their runtime contract is inspected THEN they preserve the existing 240000ms timeout and authority digest.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-hai-1
+      source: orchestrate audit for task haifwrwdrr
+      recorded_at: 2026-08-23 19:26
+      writer_command: agentera state plan record-evaluation

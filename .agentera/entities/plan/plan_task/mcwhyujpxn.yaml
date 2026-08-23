@@ -4,7 +4,7 @@ record:
   name: Batch runtime missing-surface evidence
   depends_on:
     - ktnrvrhoqs
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN eight required surfaces across source and package runtimes WHEN missing-surface evidence runs THEN it starts one source batch and one package batch instead of 16 cold children.
     - GIVEN each required surface WHEN its observation is inspected THEN all 16 results retain exit 64, invalid_authority classification, no child-start sentinel, and restored inputs.
@@ -21,3 +21,6 @@ record:
       source: orchestrate re-audit for task mcwhyujpxn
       recorded_at: 2026-08-23 18:14
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - haifwrwdrr
+  superseded_reason: User-approved two-run duration criterion replaces the noisy three-run local comparison.
