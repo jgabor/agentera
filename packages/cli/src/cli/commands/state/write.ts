@@ -219,10 +219,16 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
   let dryRun = false;
   let force = false;
   let inputSource: string | null = null;
+  const transitionBatchMode = artifact === "todo"
+    && (verb === "set-severity" || verb === "resolve")
+    && argv.slice(1).some((token) => token === "--input" || token.startsWith("--input="));
   for (let i = 1; i < argv.length; ) {
     const token = argv[i];
     if (!token.startsWith("--"))
       invalid({ class: "unrecognized_argument", message: `unrecognized arguments: ${token}` });
+    const tokenName = token.split("=", 1)[0];
+    if (!transitionBatchMode && artifact === "todo" && (verb === "set-severity" || verb === "resolve") && (tokenName === "--effect-sha256" || tokenName === "--yes"))
+      invalid({ class: "unrecognized_argument", message: `unrecognized arguments: ${tokenName}`, example: exampleFor(artifact, verb) });
     if (token === "--dry-run") {
       dryRun = true;
       i += 1;

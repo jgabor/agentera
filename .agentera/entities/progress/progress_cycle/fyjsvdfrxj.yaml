@@ -1,0 +1,15 @@
+id: fyjsvdfrxj
+artifact: progress
+record:
+  timestamp: 2026-08-23 18:28
+  type: fix
+  phase: build
+  what: Corrected atomic TODO transition batches after the failed independent audit.
+  context:
+    intent: Apply only accepted audit findings A-D for atomic set-severity and resolve batches.
+    constraints: Preserve strict per-verb batch envelopes, singleton compatibility, the existing effect-bound journal, task and failed-evaluation state, unrelated TODO pqpzmhdpsj, versions, and the no-push boundary.
+    scope: Replay post-state binding, resolve open-member prevalidation, singleton parser precedence, and proportional per-verb regression evidence.
+  discovered: Transition replay trusted receipt identity without a durable post-state digest, resolve batches reached singleton replay logic before open-item validation, singleton parsing exposed batch-only confirmation flags, and per-verb rejection and recovery evidence was incomplete.
+  verified: Focused A-D regressions passed 15/15; todo transition, update, create, singleton, and recovery coverage passed 104/104; grammar, help, and explain passed 56/56 and monolith passed 1/1; typecheck and build passed; package verification passed 14/14; capability contract passed 3/3; compact passed with zero errors; full source passed 4,109 tests with one skip and only the three accepted pre-existing retired-runtime failures, which the exact lane reproduced at 191/194.
+  next: Re-audit task ftikrbkztm while it remains in_progress with failed evaluation ftikrbkztm-audit-1; do not record PASS or complete it in this correction.
+  publication_order: 201

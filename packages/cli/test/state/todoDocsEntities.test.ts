@@ -80,6 +80,24 @@ function todo(root: string, title: string, severity = "normal"): any {
   expect(result.rc, result.err || result.out).toBe(0); return result.json;
 }
 
+const TODO_TRANSITION_VERBS = ["set-severity", "resolve"] as const;
+type TodoTransitionVerb = (typeof TODO_TRANSITION_VERBS)[number];
+
+function transitionBatchInput(verb: TodoTransitionVerb, ids: string[]): Record<string, unknown> {
+  const entries = ids.map((id) => verb === "set-severity"
+    ? { id, severity: "degraded", reason: "Batch transition", date: "2026-08-23" }
+    : { id, reason: "Batch transition", date: "2026-08-23" });
+  return verb === "set-severity"
+    ? { schema_version: "agentera.todoSetSeverityBatch.v1", transitions: entries }
+    : { schema_version: "agentera.todoResolveBatch.v1", resolutions: entries };
+}
+
+function transitionSingletonArgs(verb: TodoTransitionVerb, id: string): string[] {
+  return verb === "set-severity"
+    ? ["state", "todo", verb, "--id", id, "--severity", "degraded", "--reason", "Batch transition", "--date", "2026-08-23", "--format", "json"]
+    : ["state", "todo", verb, "--id", id, "--reason", "Batch transition", "--date", "2026-08-23", "--format", "json"];
+}
+
 function seedTodoEntity(root: string, id: string, title: string, severity = "normal"): string {
   const target = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
   fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -426,12 +444,9 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(markdown).toContain("First updated item"); expect(markdown).toContain("Second updated item");
   });
 
-  it.each([
-    ["set-severity", "agentera.todoSetSeverityBatch.v1", "transitions", (id: string) => ({ id, severity: "degraded", reason: "Impact increased", date: "2026-08-23" })],
-    ["resolve", "agentera.todoResolveBatch.v1", "resolutions", (id: string) => ({ id, reason: "Work complete", date: "2026-08-23" })],
-  ] as const)("previews and atomically applies a %s batch", (verb, schemaVersion, member, entry) => {
+  it.each(TODO_TRANSITION_VERBS)("previews and atomically applies a %s batch", (verb) => {
     const root = project(); const first = todo(root, `${verb} first`).id as string; const second = todo(root, `${verb} second`).id as string;
-    const input = { schema_version: schemaVersion, [member]: [entry(first), entry(second)] };
+    const input = transitionBatchInput(verb, [first, second]);
     const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
     expect(preview.rc, preview.err || preview.out).toBe(0); expect(preview.json).toMatchObject({ effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/), apply_command: expect.stringContaining("--yes") });
     const applied = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
@@ -440,14 +455,93 @@ describe("TODO item and documentation inventory entity authority", () => {
     for (const id of [first, second]) { const record = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]).json.entry.record; expect(record.lifecycle.operation).toBe(verb); if (verb === "resolve") expect(record.status).toBe("resolved"); else expect(record.severity).toBe("degraded"); }
   });
 
-  it.each([
-    ["set-severity", "agentera.todoSetSeverityBatch.v1", "transitions", (id: string) => ({ id, severity: "invalid", reason: "Bad", date: "2026-08-23" })],
-    ["resolve", "agentera.todoResolveBatch.v1", "resolutions", (id: string) => ({ id, reason: "Done", date: "2026-08-23" })],
-  ] as const)("rejects an invalid or duplicate %s batch without effects", (verb, schemaVersion, member, entry) => {
-    const root = project(); const id = todo(root, `${verb} target`).id as string; const before = files(root);
-    const input = { schema_version: schemaVersion, [member]: [entry(id), entry(id)] };
-    const result = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
-    expect(result.rc).toBe(2); expect(result.json.error.class).toBe("schema_violation"); expect(files(root)).toEqual(before);
+  it.each(TODO_TRANSITION_VERBS)("rejects missing, invalid, duplicate, and unconfirmed %s batches without effects", (verb) => {
+    const root = project(); const id = todo(root, `${verb} target`).id as string;
+    const cases: Array<{ input: Record<string, unknown>; rc: number; errorClass: string }> = [
+      { input: transitionBatchInput(verb, ["zzzzzzzzzz"]), rc: 1, errorClass: "not_found" },
+      { input: transitionBatchInput(verb, [id]), rc: 2, errorClass: "schema_violation" },
+      { input: transitionBatchInput(verb, [id, id]), rc: 2, errorClass: "schema_violation" },
+    ];
+    const invalidEntries = cases[1]!.input[verb === "set-severity" ? "transitions" : "resolutions"] as Array<Record<string, unknown>>;
+    invalidEntries[0]![verb === "set-severity" ? "severity" : "date"] = "invalid";
+    for (const { input, rc, errorClass } of cases) {
+      const before = files(root);
+      const result = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+      expect(result.rc).toBe(rc); expect(result.json.error.class).toBe(errorClass); expect(files(root)).toEqual(before);
+    }
+    const input = transitionBatchInput(verb, [id]); const before = files(root);
+    const unconfirmed = capture(root, ["state", "todo", verb, "--input", "-", "--format", "json"], input);
+    expect(unconfirmed.rc).toBe(2); expect(unconfirmed.json.error).toMatchObject({ class: "invalid_request", message: expect.stringContaining("--yes") }); expect(files(root)).toEqual(before);
+  });
+
+  it.each(TODO_TRANSITION_VERBS)("rejects stale %s batch effects and state without effects", (verb) => {
+    const root = project(); const first = todo(root, `${verb} stale first`).id as string; const second = todo(root, `${verb} stale second`).id as string;
+    const input = transitionBatchInput(verb, [first, second]);
+    const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+    const beforeWrongEffect = files(root);
+    const wrongEffect = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"], input);
+    expect(wrongEffect.rc).toBe(2); expect(wrongEffect.json.error.class).toBe("conflict"); expect(files(root)).toEqual(beforeWrongEffect);
+
+    expect(capture(root, ["state", "todo", "update", "--id", first, "--input", "-", "--format", "json"], { requirements: ["Concurrent change"] }).rc).toBe(0);
+    const afterConcurrent = files(root);
+    const staleState = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(staleState.rc).toBe(2); expect(staleState.json.error.class).toBe("conflict"); expect(files(root)).toEqual(afterConcurrent);
+  });
+
+  it.each(TODO_TRANSITION_VERBS)("rejects a mapping change during %s batch publication without target effects", (verb) => {
+    const root = project(); const first = todo(root, `${verb} mapping first`).id as string; const second = todo(root, `${verb} mapping second`).id as string;
+    const input = transitionBatchInput(verb, [first, second]);
+    const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+    const docs = path.join(root, ".agentera/docs.yaml"); const todoPath = path.join(root, "TODO.md"); const mapped = path.join(root, "mapped/WORK.md");
+    fs.mkdirSync(path.dirname(mapped), { recursive: true }); fs.writeFileSync(mapped, fs.readFileSync(todoPath));
+    const targetBytes = [first, second].map((id) => fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`)));
+    const markdownBytes = fs.readFileSync(todoPath); const concurrentMapping = dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] });
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.replaceVisible.bind(binding.publicationContext); let injected = false;
+    vi.spyOn(binding.publicationContext, "replaceVisible").mockImplementation((...args) => {
+      const result = original(...args); if (!injected) { injected = true; fs.writeFileSync(docs, concurrentMapping); } return result;
+    });
+    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", verb)!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
+    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext })).toThrow(new RegExp(`mapping changed during ${verb} batch publication`));
+    binding.publicationContext.close();
+    expect(injected).toBe(true); expect(fs.readFileSync(docs, "utf8")).toBe(concurrentMapping); expect(fs.readFileSync(todoPath)).toEqual(markdownBytes);
+    for (const [index, id] of [first, second].entries()) expect(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`))).toEqual(targetBytes[index]);
+    expect(Object.keys(files(root)).filter((file) => file.startsWith(".agentera/.todo-reconciliation/") && file.endsWith(".json"))).toHaveLength(0); expect(recoveryFiles(root)).toEqual([]);
+  });
+
+  it.each(TODO_TRANSITION_VERBS)("recovers only an interrupted exact %s batch retry", (verb) => {
+    const root = project(); const first = todo(root, `${verb} interrupted first`).id as string; const second = todo(root, `${verb} interrupted second`).id as string;
+    const input = transitionBatchInput(verb, [first, second]);
+    const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", verb)!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
+    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/); binding.publicationContext.close();
+    const interrupted = files(root); const divergentInput = structuredClone(input); const member = verb === "set-severity" ? "transitions" : "resolutions";
+    ((divergentInput[member] as Array<Record<string, unknown>>)[0]!).reason = "Divergent retry";
+    const divergent = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], divergentInput);
+    expect(divergent.rc).toBe(2); expect(divergent.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("exact original TODO update batch") }); expect(files(root)).toEqual(interrupted);
+    const recovered = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0); expect(recovered.json).toMatchObject({ effect_sha256: preview.json.effect_sha256, operation: { verb, dry_run: false, idempotent_replay: true }, reconciliation: { transaction_id: expect.any(String), recovered: [expect.any(String)] } });
+  });
+
+  it.each(TODO_TRANSITION_VERBS)("rejects exact %s batch replay after singleton post-state divergence", (verb) => {
+    const root = project(); const first = todo(root, `${verb} divergence first`).id as string; const second = todo(root, `${verb} divergence second`).id as string;
+    const input = transitionBatchInput(verb, [first, second]); const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input).rc).toBe(0);
+    const singleton = verb === "set-severity"
+      ? ["state", "todo", verb, "--id", first, "--severity", "critical", "--reason", "Singleton divergence", "--date", "2026-08-24", "--format", "json"]
+      : ["state", "todo", "reopen", "--id", first, "--reason", "Singleton divergence", "--date", "2026-08-24", "--format", "json"];
+    expect(capture(root, singleton).rc).toBe(0); const diverged = files(root);
+    const replay = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(replay.rc).toBe(2); expect(replay.json.error).toMatchObject({ class: "conflict", message: expect.stringContaining("post-state") }); expect(files(root)).toEqual(diverged);
+  });
+
+  it("requires every new resolve batch member to be open before transition replay logic", () => {
+    const root = project(); const first = todo(root, "Already resolved batch member").id as string; const second = todo(root, "Open batch member").id as string;
+    const input = transitionBatchInput("resolve", [first, second]);
+    expect(capture(root, transitionSingletonArgs("resolve", first)).rc).toBe(0); const before = files(root);
+    const result = capture(root, ["state", "todo", "resolve", "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(result.rc).toBe(2); expect(result.json.error).toMatchObject({ class: "conflict", message: "TODO resolve requires an open item" }); expect(files(root)).toEqual(before);
   });
 
   it("previews, applies, and replays an atomic TODO create batch with local references", () => {
@@ -624,6 +718,28 @@ describe("TODO item and documentation inventory entity authority", () => {
       "for a singleton, select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
       "for a batch, omit --id and supply one strict agentera.todoUpdateBatch.v1 envelope; preview it with --dry-run before exact confirmed apply",
     ]));
+  });
+
+  it.each(TODO_TRANSITION_VERBS)("rejects batch-only effect flags on singleton %s with the exact prior envelope", (verb) => {
+    for (const flag of ["--effect-sha256", "--yes"] as const) {
+      const root = project(); const item = todo(root, `${verb} singleton effect flag`); const before = files(root);
+      const args = transitionSingletonArgs(verb, item.id); args.splice(-2, 0, flag, ...(flag === "--effect-sha256" ? ["a".repeat(64)] : []));
+      const result = capture(root, args);
+      expect(result.rc).toBe(2);
+      expect(result.json).toEqual({
+        schemaVersion: "agentera.invalidInputEnvelope.v2",
+        status: "fail",
+        error: {
+          class: "unrecognized_argument",
+          message: `unrecognized arguments: ${flag}`,
+          example: verb === "set-severity"
+            ? "agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason \"Impact changed\" --date 2026-07-31 --format json"
+            : "agentera state todo resolve --id qjtrmnpvka --reason \"Shipped\" --date 2026-07-31 --format json",
+          recovery: "Correct the input and retry; no state was changed.",
+        },
+      });
+      expect(files(root)).toEqual(before);
+    }
   });
 
   it("rejects invalid, duplicate, and stale TODO update batches without effects", () => {

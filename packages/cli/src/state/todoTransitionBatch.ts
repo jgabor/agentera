@@ -20,6 +20,20 @@ export interface TodoTransitionBatch {
   entries: TodoTransitionBatchEntry[];
 }
 
+export function todoTransitionBatchPostStateSha256(record: JsonObject): string {
+  const value = structuredClone(record);
+  if (value.reconciliation && typeof value.reconciliation === "object" && !Array.isArray(value.reconciliation)) delete value.reconciliation.transition_batch;
+  return createHash("sha256").update(canonicalRecordJson(value)).digest("hex");
+}
+
+export function matchesTodoTransitionBatchPostState(record: JsonObject, receipt: JsonObject, entry: TodoTransitionBatchEntry, verb: TodoTransitionBatch["verb"]): boolean {
+  const lifecycle = record.lifecycle && typeof record.lifecycle === "object" && !Array.isArray(record.lifecycle) ? record.lifecycle : null;
+  return receipt.post_state_sha256 === todoTransitionBatchPostStateSha256(record)
+    && lifecycle !== null
+    && canonicalRecordJson(lifecycle) === canonicalRecordJson({ operation: verb, reason: entry.reason, date: entry.date })
+    && (verb === "set-severity" ? record.severity === entry.severity : record.status === "resolved");
+}
+
 export function parseTodoTransitionBatch(input: JsonObject | null, verb: string): TodoTransitionBatch | null {
   if (verb !== "set-severity" && verb !== "resolve") return null;
   const version = `agentera.todo${verb === "set-severity" ? "SetSeverity" : "Resolve"}Batch.v1`;

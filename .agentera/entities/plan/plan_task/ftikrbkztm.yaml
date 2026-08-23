@@ -11,3 +11,13 @@ record:
     - GIVEN existing singleton severity and resolve invocations WHEN they run THEN they remain flag-only with unchanged behavior.
     - GIVEN severity and resolve batch rules WHEN tests run THEN each verb has one success and one rejection case per testable contract unit.
   plan: zwubvaeive
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Transition-batch replay can report success after later singleton divergence; resolve batches accept exact prior resolves instead of requiring open items; batch-only effect flags are accepted by singleton commands; per-verb failure and recovery coverage is incomplete.
+    provenance:
+      attempt_id: ftikrbkztm-audit-1
+      source: independent audit of commit 642a2481
+      recorded_at: 2026-08-23 17:51
+      writer_command: agentera state plan record-evaluation
