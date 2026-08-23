@@ -14,3 +14,13 @@ record:
   evidence:
     - "Baseline owner: source, commit 50fd9f93, current lockfile, Node 22.23.2, pnpm 10.30.3, eight workers, no competing verification owner; future comparison must match or disclose each condition. The run stopped before a timing report: /tmp had 24 MiB free and Vitest failed ENOSPC."
     - "Ownership: source keeps bounded runtime behavior, protected roots, representative accept/reject cases, one cutover lifecycle pass/fail pair, and focused recovery. Capacity keeps exact 161-row scale. Package keeps packed/extracted surfaces and parity. Source keeps exhaustive runtime enumeration only until a specialized owner proves the exact matrix."
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-cjd-1
+      source: orchestrate audit for task cjdqaqiqyd
+      recorded_at: 2026-08-24 00:56
+      writer_command: agentera state plan record-evaluation
