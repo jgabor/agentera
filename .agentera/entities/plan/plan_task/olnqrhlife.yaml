@@ -1,0 +1,12 @@
+id: olnqrhlife
+artifact: plan
+record:
+  plan: bhhshalaqm
+  name: Complete release qualification
+  status: pending
+  depends_on:
+    - wkkkhpcfay
+  acceptance:
+    - GIVEN the repaired stress and performance fixtures WHEN the clean policy-owned release DAG runs THEN every required owner passes without bypass or retry.
+    - GIVEN successful qualification WHEN evidence is inspected THEN all required gate records and receipts are valid and publication, registry, candidate, and activation side effects remain false.
+    - GIVEN final PASS evidence WHEN state is synchronized THEN predecessor final tasks are superseded, blocker TODOs are resolved, the plan is complete, and the worktree has no unrelated changes.
