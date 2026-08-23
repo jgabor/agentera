@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Verify release after stale-lock repair
-  status: pending
+  status: in_progress
   depends_on:
     - jpmwftenzl
   acceptance:

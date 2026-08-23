@@ -1,0 +1,15 @@
+id: rhhnomtwfr
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:15
+  type: test
+  phase: audit
+  what: The clean-boundary canonical release DAG stopped at generated-overlap after its source owner failed the monolith lint gate.
+  context:
+    intent: Preserve durable failure evidence for replacement final task vhherytjfi without evaluating task or plan state.
+    constraints: Run the release DAG once, do not retry or run owners separately, and keep all publication and registry side effects false.
+    scope: Final release verification after stale-lock repair commit a07597dfbc453078f62549a5aa8722c65529e840.
+  discovered: The source owner found packages/cli/src/state/entityStorage.ts at 1012 lines, above the 1000-line monolith limit. Batch peers stress and typecheck completed; generated-overlap failed. Performance, capacity, compact, capability-contract, activation-conjunction, and receipt issuance remained deferred. No governed gate result was issued for source, package, build, or generated-overlap.
+  verified: env -u NODE_OPTIONS -u NODE_INSPECT_RESUME_ON_START pnpm -C packages/cli run verify:release exited 1 after 344631ms. Conjunction gate identity 9d22ed14096ffc9946ecb1a6b95a320813935f8a7e4fa1cfdae353fd9dbceb67 reported gate_count 11, gates empty, first_failure generated-overlap, owner packages/cli/scripts/verify-generated-overlap.mjs#runGeneratedOverlap, and generated_artifact null. Receipt, candidate, registry, activation, and publication side effects were all false.
+  next: Reduce entityStorage.ts below the governed monolith limit before a later authorized full release DAG run.
+  publication_order: 209
