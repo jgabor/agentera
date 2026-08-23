@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-08-23
-    status: open
+    status: complete
     reviewed: 2026-08-23
     critic_issues: 1 found, 1 addressed, 0 dismissed
     revised: Reframed contract-first phases as end-to-end verb-family slices so each task keeps intent, tests, and behavior aligned.
