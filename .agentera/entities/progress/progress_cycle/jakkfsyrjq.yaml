@@ -1,0 +1,18 @@
+id: jakkfsyrjq
+artifact: progress
+record:
+  timestamp: 2026-08-23 19:23
+  type: test
+  phase: audit
+  what: Recorded two already-observed sequential runtime integration runs under the same pinned local conditions; no rerun was performed.
+  context:
+    intent: Reconcile durable state with the user-approved simpler runtime batching duration criterion.
+    constraints: State-only change. Do not rerun tests, mutate the blocked task, resolve TODOs, evaluate tasks, push, or publish.
+  discovered: Both current wall times are more than 20% below the recorded 129.769s pre-batch baseline and differ by only 2.275s. This contradicts the prior 145.290s local result and supports machine contention/noise rather than a demonstrated code regression.
+  verified: |-
+    Command for each sequential run: TIMEFORMAT='wall_seconds=%3R'; time env -i HOME=/home/jgabor PATH=/usr/bin:/bin:/usr/local/bin LANG=en_US.UTF-8 TMPDIR=/tmp XDG_CACHE_HOME=/home/jgabor/.cache VITEST_MAX_WORKERS=2 /usr/local/bin/corepack pnpm -C packages/cli exec vp test run test/integration/runtimeBootstrapMatrix.test.ts
+    Run 1: 3/3 pass, Vitest duration 93.91s, shell wall 94.912s; missing-surface case 72.884s.
+    Run 2: 3/3 pass, Vitest duration 92.21s, shell wall 92.637s; missing-surface case 73.174s.
+    Baseline reference: 129.769s. Both current wall times are more than 20% below it and differ by only 2.275s.
+  next: Use the replacement task criterion for runtime batching duration while preserving the historical failed evaluations.
+  publication_order: 205
