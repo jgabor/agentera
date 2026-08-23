@@ -211,9 +211,11 @@ describe("verify", () => {
 
   it("fullUpgradeThenDoctorAndPrime: upgrade --yes --verify exits 0 after state and startup validation", () => {
     const appHome = path.join(home, ".local", "share", "agentera");
-    fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });
-    fs.writeFileSync(path.join(appHome, ".agentera", "progress.yaml"), "cycles: []\n");
-    fs.writeFileSync(path.join(appHome, "v3-handoff.json"), "{}");
+    fs.mkdirSync(appHome, { recursive: true });
+    fs.copyFileSync(
+      path.join(REPO_ROOT, "packages/cli/test/migrate/fixtures/v2-handoff-manifest.json"),
+      path.join(appHome, "v3-handoff.json"),
+    );
     const project = path.join(tmp, "v2-project");
     fs.cpSync(path.join(REPO_ROOT, "packages/cli/test/upgrade/fixtures/v2-yaml-project"), project, { recursive: true });
     execFileSync("git", ["init", "--quiet"], { cwd: project });
@@ -228,13 +230,15 @@ describe("verify", () => {
       "--verify",
       "--home",
       home,
+      "--install-root",
+      appHome,
       "--project",
       project,
       "--channel",
       "development",
     ]);
 
-    expect(rc).toBe(0);
+    expect(rc, `${out}\n${err}`).toBe(0);
     expect(out).toContain("state and startup validation passed");
     expect(err).toBe("");
   });

@@ -241,6 +241,8 @@ describe("repository-native retirement inventory", () => {
         .map((target) => `${importer} -> ${target}`);
     }).sort();
     expect(edges).toEqual([
+      "packages/cli/src/cli/commands/doctor.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
+      "packages/cli/src/cli/commands/doctor.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/cli/dispatch/lifecycle.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/migrate/v2HandoffManifest.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
       "packages/cli/src/upgrade/appContentRefresh.ts -> packages/cli/src/runtime/lifecyclePublication.ts",

@@ -1,0 +1,13 @@
+id: jbbmivponn
+artifact: progress
+record:
+  timestamp: 2026-08-23 21:35
+  type: test
+  phase: audit
+  what: Verified bounded retirement of the historical OpenCode plugin and synchronized full-suite expectations.
+  context:
+    intent: Provide final delivery evidence for independent audit while leaving task xnefncbdho in progress.
+    constraints: No publication, release, real-home mutation, or unrelated cleanup.
+    scope: Commits a4b05c8, 3a63756, 5d48526, and 251f3d0 plus synchronized regression expectations.
+  verified: Focused regression set passed 162/162; full source passed 4105 with 1 skipped; typecheck, build, package verification 14/14, package dry-run, compact, and capability-contract gates passed. Temporary-HOME normal upgrade preview selected the clean journal-backed historical plugin, approved apply removed it, and repeat apply converged to noop. Generated package inventory contains no plugin or hook path.
+  publication_order: 206

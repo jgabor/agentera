@@ -21,7 +21,7 @@
     "success": 0
   },
   "pythonMainPhases": ["bundle", "artifacts", "runtime", "cleanup", "packages"],
-  "typescriptV3Phases": ["detect", "artifacts", "entities", "runtime", "cleanup"],
+  "typescriptV3Phases": ["detect", "artifacts", "entities", "runtime", "cleanup", "lifecycle"],
   "scenarios": [
     {
       "name": "artifact_dry_run_preview",

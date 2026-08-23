@@ -161,7 +161,7 @@ describe("self-contained doctor/upgrade semantics", () => {
       expect(payload.install.kind).toBe("v3_self_contained_npm");
       expect(payload.lifecycleStatus).toBe(STATUS_NO_CHANGES_NEEDED);
       expect(payload.status).toBe("noop");
-      expect(payload.phases.map((phase: { name: string }) => phase.name)).toEqual(["detect"]);
+      expect(payload.phases.map((phase: { name: string }) => phase.name)).toEqual(["detect", "lifecycle"]);
       expect(payload.channel.updateCommand).toBe("npx -y agentera@latest");
     } finally {
       if (prev === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;

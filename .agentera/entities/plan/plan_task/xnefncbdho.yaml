@@ -6,7 +6,7 @@ record:
     - hdktlehytj
     - acixwmoukf
     - wickijdapr
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the implementation WHEN focused ownership, upgrade, diagnostic, race, and idempotence checks run THEN they pass.
     - GIVEN the complete change WHEN source, type, build, and package gates run THEN they pass or every unrelated failure is evidenced.

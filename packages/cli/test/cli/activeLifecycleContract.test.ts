@@ -107,7 +107,7 @@ describe("active shared-skill lifecycle contract", () => {
     expect(tree(root)).toEqual(before);
   });
 
-  it("keeps normal preview/apply native-resource-free and native cleanup explicitly reachable", () => {
+  it("keeps normal preview/apply bounded to historical plugin retirement", () => {
     const { root, home, project } = fixture();
     const forbidden = [".opencode", ".codex", ".cursor", ".github", ".claude-plugin"];
     for (const approval of ["--dry-run", "--yes"] as const) {
@@ -116,7 +116,10 @@ describe("active shared-skill lifecycle contract", () => {
         approval, "--format", "json",
       ]);
       expect([0, 1]).toContain(result.rc);
-      if (result.out) expect(JSON.parse(result.out)).toHaveProperty("lifecycle", null);
+      if (result.out) {
+        const payload = JSON.parse(result.out);
+        expect(payload).toHaveProperty("lifecycle.nativeResourceCleanup.resourceId", "opencode.plugin.agentera");
+      }
       for (const entry of forbidden) expect(fs.existsSync(path.join(home, entry))).toBe(false);
     }
 
