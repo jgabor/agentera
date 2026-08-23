@@ -1,0 +1,13 @@
+id: mcwhyujpxn
+artifact: plan
+record:
+  name: Batch runtime missing-surface evidence
+  depends_on:
+    - ktnrvrhoqs
+  status: pending
+  acceptance:
+    - GIVEN eight required surfaces across source and package runtimes WHEN missing-surface evidence runs THEN it starts one source batch and one package batch instead of 16 cold children.
+    - GIVEN each required surface WHEN its observation is inspected THEN all 16 results retain exit 64, invalid_authority classification, no child-start sentinel, and restored inputs.
+    - GIVEN protected roots and hostile paths WHEN each batch completes THEN preservation, environment isolation, and source/package process separation remain unchanged.
+    - GIVEN equivalent three-run conditions WHEN runtime integration is measured THEN its median wall time is lower than baseline without changing its timeout or authority digest.
+  plan: bhhshalaqm

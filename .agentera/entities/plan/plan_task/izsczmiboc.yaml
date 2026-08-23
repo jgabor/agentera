@@ -1,0 +1,13 @@
+id: izsczmiboc
+artifact: plan
+record:
+  name: Align scale and timing evidence ownership
+  depends_on:
+    - ddsmbqcrhb
+  status: pending
+  acceptance:
+    - GIVEN the archive timing measurement WHEN its evidence contract is assessed THEN it either fits the current performance record or receives the minimal governed schema, validator, and consumer update before ownership changes.
+    - GIVEN ordinary source verification WHEN it runs THEN it contains behavior and byte checks but no machine-sensitive latency or heap budget assertion.
+    - GIVEN the 400-row migration fixture WHEN verification is inventoried THEN its full scale proof belongs to capacity and a smaller source case preserves boundary behavior.
+    - GIVEN performance and capacity execution WHEN policy is validated THEN both retain their existing single-worker isolation, evidence requirements, and budgets.
+  plan: bhhshalaqm

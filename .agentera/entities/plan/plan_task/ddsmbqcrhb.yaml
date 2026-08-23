@@ -1,0 +1,13 @@
+id: ddsmbqcrhb
+artifact: plan
+record:
+  name: Establish a green measured baseline
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the current checkout WHEN the runtime-surface policy suite runs THEN all 194 tests pass without suppressing diagnostics or weakening the metadata contract.
+    - GIVEN fixed workers and equivalent dependency and cache conditions WHEN the representative source commands run three times THEN their median wall time, package-construction count, and result counts are recorded.
+    - GIVEN the retained regression inventory WHEN baseline evidence is reviewed THEN package determinism, runtime parity, cursor semantics, glossary limits, and owner boundaries are explicit completion constraints.
+    - GIVEN each repaired testable unit WHEN coverage is checked THEN it retains one passing and one failing case unless an enumerated boundary contract requires more.
+  plan: bhhshalaqm

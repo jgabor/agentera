@@ -1,0 +1,16 @@
+id: vnotgyppaw
+artifact: plan
+record:
+  name: Verify delivery and synchronize final state
+  depends_on:
+    - ktnrvrhoqs
+    - hhyrhisjfp
+    - izsczmiboc
+    - mcwhyujpxn
+  status: pending
+  acceptance:
+    - GIVEN each changed behavior WHEN focused checks run THEN failures are corrected before broader owners start, and typecheck and build pass where the changed surfaces require them.
+    - GIVEN a clean focused result WHEN final verification runs THEN the policy-owned release DAG is the sole final authority and no downstream owner runs after an owner failure.
+    - GIVEN controlled before and after measurements WHEN compared THEN ordinary focused source package constructions fall to zero and the three-run median source wall time decreases.
+    - GIVEN all owners pass in their governed environments WHEN state is synchronized THEN every task and the plan carry current verified status with no unrelated artifact changes.
+  plan: bhhshalaqm

@@ -1,0 +1,13 @@
+id: ktnrvrhoqs
+artifact: plan
+record:
+  name: Localize package-backed source setup
+  depends_on:
+    - ddsmbqcrhb
+  status: pending
+  acceptance:
+    - GIVEN a focused source test that does not require packaged runtime evidence WHEN it runs THEN it performs zero package constructions.
+    - GIVEN the source-owned runtime integration WHEN it runs THEN it obtains and cleans up one local package fixture and preserves every source/package parity assertion.
+    - GIVEN package verification WHEN it runs THEN two independent constructions remain byte-identical and the existing package wall-time budget remains unchanged.
+    - GIVEN the focused setup checks WHEN tests are counted THEN one unrelated source pass and one package-backed integration pass provide proportional setup coverage.
+  plan: bhhshalaqm

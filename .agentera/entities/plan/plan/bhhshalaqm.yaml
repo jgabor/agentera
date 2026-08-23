@@ -1,0 +1,42 @@
+id: bhhshalaqm
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-23
+    status: open
+    reviewed: 2026-08-23
+    critic_issues: 6 found, 6 addressed, 0 dismissed
+    title: "Plan: Faster focused test verification"
+  what: Reduce avoidable setup, repeated format traversal, oversized correctness fixtures, and redundant process startup in the CLI test suite while preserving every governed regression boundary and verification owner.
+  why: Focused source feedback currently pays for unrelated package construction and repeated evidence. The suite can return results sooner and remain easier to maintain without weakening package, runtime, boundary, performance, or capacity proof.
+  constraints: Preserve the deterministic two-construction package proof, source/package runtime parity, exact glossary byte and entry limits, cursor ordering and termination, package and specialized-owner budgets, and the governed verification DAG. Do not weaken assertions or budgets, add dependencies, change product behavior without a reproduced defect, publish, or push.
+  overall_acceptance: GIVEN the current verification contracts WHEN the complete plan is delivered THEN the source baseline and governed release DAG pass, unrelated focused source tests perform no package construction, all retained boundaries and parity checks remain covered, and controlled measurements show lower source median wall time and fewer cold child processes without a budget increase.
+  scope:
+    included:
+      - Restore the current source verification baseline before measuring improvements.
+      - Make package-backed setup local to the source integration that needs it.
+      - Remove confirmed duplicate and multiplicative source-test work.
+      - Align timing and scale evidence with existing performance and capacity owners.
+      - Batch repeated missing-surface process checks within their existing trust boundaries.
+      - Verify through the governed owner DAG and synchronize typed project state.
+    excluded:
+      - Product feature changes unrelated to a reproduced testability defect.
+      - New verification owners, dependencies, compatibility layers, or relaxed budgets.
+      - Publication, pushing, or release-channel changes.
+    deferred:
+      []
+  design: First restore a trustworthy baseline and record comparable measurements. Separate expensive fixture ownership from ordinary source startup. Exercise semantic behavior exhaustively on one canonical axis and use bounded smokes for representation axes. Keep machine-sensitive and production-scale evidence with their existing specialized owners. Batch repeated cold checks only where one process remains inside the same trust boundary. Finish with the policy-owned verification sequence and measured comparison.
+  unknowns:
+    - question: Are the current runtime-surface failures metadata violations or a scanner-test defect?
+      affects_task: 1
+      resolve_by: Reproduce the three failures, compare their diagnostics with the current metadata contract, and apply the smallest conforming correction before any timing comparison.
+    - question: Can the package fixture become source-test-local without changing evidence bytes, cleanup, or package budgets?
+      affects_task: 2
+      resolve_by: Compare focused package-backed integration and package-owner evidence before and after the setup change.
+    - question: Does archive timing fit the current governed performance evidence schema and its consumers?
+      affects_task: 4
+      resolve_by: Inspect the current evidence record and validators before moving the measurement; include only the minimal governed schema and consumer change if required.
+  surprises:
+    []
+  previous_plan_archived: zwubvaeive

@@ -1,0 +1,16 @@
+id: nbgdrsqzpw
+artifact: progress
+record:
+  timestamp: 2026-08-23 15:53
+  type: fix
+  phase: build
+  what: Restored the runtime-surface policy baseline by refreshing exact CHANGELOG scalar classifications after editorial line movement made their path, region, category, digest, and reason bindings stale.
+  context:
+    intent: Establish a green, measured source baseline before test simplification.
+    constraints: Do not localize package fixtures, simplify cursor or glossary coverage, move ownership, batch runtime checks, weaken metadata, or change budgets.
+    unknowns: "Resolved: the three runtime-surface failures were stale exact CHANGELOG metadata, not scanner behavior."
+    scope: Exact CHANGELOG scalar metadata, targeted runtime policy verification, and baseline evidence only.
+  discovered: "The failures were a real metadata violation, not a scanner defect: CHANGELOG content had moved eight lines since the exact classifications were last refreshed."
+  verified: With VITEST_MAX_WORKERS=2 and unchanged installed dependencies and caches, three runs of pnpm -C packages/cli exec vp test run test/runtime/retiredRuntimeSurfacePolicy.test.ts passed 194/194 tests in 43.030 s, 37.731 s, and 34.184 s; median 37.731 s. The unchanged source global setup performed two package constructions per run. Existing passing inventory assertions and failing missing, stale, category, reason, and executable-mutation cases all pass.
+  next: Retain package determinism, source/package runtime parity, cursor ordering and termination, exact glossary byte and entry limits, and verification owner boundaries as completion constraints for the remaining plan tasks.
+  publication_order: 198
