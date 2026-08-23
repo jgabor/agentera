@@ -107,7 +107,10 @@ function measureColdCliOperation(
 function bounded(text: string): string {
   const bytes = Buffer.from(text, "utf8");
   if (bytes.length <= DIAGNOSTIC_UTF8_LIMIT) return text;
-  return `${bytes.subarray(0, DIAGNOSTIC_UTF8_LIMIT).toString("utf8")}<truncated>`;
+  const marker = "<truncated>";
+  let end = DIAGNOSTIC_UTF8_LIMIT - Buffer.byteLength(marker, "utf8");
+  while (end > 0 && (bytes[end] & 0xc0) === 0x80) end -= 1;
+  return `${bytes.subarray(0, end).toString("utf8")}${marker}`;
 }
 
 export function coldCliFailureEvidence(options: {
@@ -120,7 +123,7 @@ export function coldCliFailureEvidence(options: {
 }): string {
   return JSON.stringify({
     operation: bounded(options.operation),
-    exitCode: options.exitCode,
+    exitCode: options.exitCode ?? null,
     stdout: bounded(options.stdout),
     stderr: bounded(options.stderr),
     childArgs: options.childArgs,
@@ -178,7 +181,7 @@ function measureColdProcess(options: {
     let result: ColdMeasurement | undefined;
     let settled = false;
     const timeout = setTimeout(
-      () => fail(new Error(`cold CLI did not complete serialized output; stderr: ${stderr}; stdout: ${stdout}`)),
+      () => fail(new Error("cold CLI did not complete serialized output")),
       30_000,
     );
     const fixtureBoundary = new Promise<void>((boundaryResolve) => {
@@ -244,7 +247,7 @@ function measureColdProcess(options: {
         if (message.error) handler.reject(new Error(message.error.message));
         else handler.resolve(message.result);
       };
-      socket.onerror = () => fail(new Error(`inspector connection failed: ${stderr}`));
+      socket.onerror = () => fail(new Error("inspector connection failed"));
       socket.onopen = async () => {
         try {
           await request("Runtime.enable");

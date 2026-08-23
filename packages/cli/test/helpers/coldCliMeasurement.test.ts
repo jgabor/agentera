@@ -5,6 +5,12 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { publishNumberedArchive } from "../../src/state/archivePublication.js";
+import {
+  effectiveChildFlagsAreComplete,
+  EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT as EVIDENCE_NODE_OPTIONS_LIMIT,
+  performanceRunnerAuthority,
+} from "../../scripts/performance-evidence.mjs";
 import {
   collectGarbageThenReadBaseline,
   coldCliFailureEvidence,
@@ -13,11 +19,6 @@ import {
   measureColdCliWithRetainedAllocation,
 } from "./coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "./entityAuthorityFixture.js";
-import {
-  effectiveChildFlagsAreComplete,
-  EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT as EVIDENCE_NODE_OPTIONS_LIMIT,
-  performanceRunnerAuthority,
-} from "../../scripts/performance-evidence.mjs";
 
 const temporaryDirectories: string[] = [];
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -31,27 +32,96 @@ afterEach(() => {
 });
 
 describe("cold CLI heap measurement", () => {
-  it("reports bounded process-boundary evidence without environment values", () => {
+  it("bounds UTF-8 process evidence and represents an unavailable exit code", () => {
     const evidence = coldCliFailureEvidence({
       operation: "prime --dashboard",
       stdout: "x".repeat(5_000),
-      stderr: "debugger output",
+      stderr: "é".repeat(5_000),
       childArgs: ["--inspect-brk=127.0.0.1:0", "--eval", "<inline-runner>"],
       env: { NODE_OPTIONS: "secret option", NODE_INSPECT_RESUME_ON_START: "secret control" },
-      exitCode: 1,
     });
-    expect(Buffer.byteLength(evidence, "utf8")).toBeLessThan(5_000);
-    expect(JSON.parse(evidence)).toMatchObject({
+    const parsed = JSON.parse(evidence);
+    expect(parsed).toMatchObject({
       operation: "prime --dashboard",
-      exitCode: 1,
-      stderr: "debugger output",
+      exitCode: null,
       childArgs: ["--inspect-brk=127.0.0.1:0", "--eval", "<inline-runner>"],
       presentDebugEnvNames: ["NODE_INSPECT_RESUME_ON_START", "NODE_OPTIONS"],
     });
-    expect(evidence).toContain("<truncated>");
+    expect(Buffer.byteLength(parsed.stdout, "utf8")).toBe(4_096);
+    expect(Buffer.byteLength(parsed.stderr, "utf8")).toBeLessThanOrEqual(4_096);
+    expect(parsed.stdout.endsWith("<truncated>")).toBe(true);
+    expect(parsed.stderr.endsWith("<truncated>")).toBe(true);
+    expect(parsed.stderr).not.toContain("�");
     expect(evidence).not.toContain("secret option");
     expect(evidence).not.toContain("secret control");
   });
+
+  it("reports the measured marker-absent archive CLI rejection", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "cold-archive-failure-"));
+    temporaryDirectories.push(root);
+    const project = path.join(root, "project");
+    const home = path.join(root, "home");
+    fs.mkdirSync(project);
+    fs.mkdirSync(home);
+    publishNumberedArchive(
+      project,
+      "progress",
+      1,
+      {
+        number: 1,
+        timestamp: "2026-08-23 20:00",
+        type: "test",
+        phase: "build",
+        what: "Archive fixture",
+        context: { intent: "Exercise measured CLI failure evidence" },
+      },
+      { sourceRoot: REPO_ROOT },
+    );
+
+    const previousNodeOptions = process.env.NODE_OPTIONS;
+    const previousInspectResume = process.env.NODE_INSPECT_RESUME_ON_START;
+    let measured: ReturnType<typeof measureColdCli>;
+    try {
+      process.env.NODE_OPTIONS = "--no-warnings";
+      process.env.NODE_INSPECT_RESUME_ON_START = "0";
+      measured = measureColdCli({
+        args: ["state", "progress", "list", "--limit", "100", "--format", "json"],
+        project,
+        home,
+        repoRoot: REPO_ROOT,
+      });
+    } finally {
+      if (previousNodeOptions === undefined) delete process.env.NODE_OPTIONS;
+      else process.env.NODE_OPTIONS = previousNodeOptions;
+      if (previousInspectResume === undefined) delete process.env.NODE_INSPECT_RESUME_ON_START;
+      else process.env.NODE_INSPECT_RESUME_ON_START = previousInspectResume;
+    }
+
+    const failure = await measured.then(
+      () => undefined,
+      (error: Error) => error,
+    );
+    expect(failure).toBeInstanceOf(Error);
+    const prefix = "cold CLI exited 1; evidence: ";
+    expect(failure?.message.startsWith(prefix)).toBe(true);
+    const evidence = JSON.parse(failure!.message.slice(prefix.length));
+    expect(evidence).toMatchObject({
+      operation: "state progress list --limit 100 --format json",
+      exitCode: 1,
+      childArgs: [
+        "--inspect-brk=127.0.0.1:0",
+        "--input-type=module",
+        "--eval",
+        "<inline-runner>",
+      ],
+      presentDebugEnvNames: ["NODE_INSPECT_RESUME_ON_START", "NODE_OPTIONS"],
+    });
+    expect(JSON.parse(evidence.stdout).error.message).toContain("marker-absent unknown");
+    expect(evidence.stderr).toContain("__AGENTERA_COLD_CLI_FIXTURE_BOUNDARY__");
+    expect(Buffer.byteLength(evidence.stdout, "utf8")).toBeLessThanOrEqual(4_096);
+    expect(Buffer.byteLength(evidence.stderr, "utf8")).toBeLessThanOrEqual(4_096);
+    expect(failure?.message).not.toContain("--no-warnings");
+  }, 40_000);
 
   it("distinguishes local diagnostic evidence from the pinned remote runner identity", () => {
     const definition = YAML.parse(fs.readFileSync(VERIFICATION_POLICY_PATH, "utf8")).owners.performance;

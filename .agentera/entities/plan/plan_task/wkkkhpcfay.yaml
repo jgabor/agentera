@@ -10,3 +10,13 @@ record:
     - GIVEN a measured cold CLI failure WHEN the performance helper reports it THEN bounded evidence includes the failing operation, raw stdout and stderr, effective child arguments, and relevant environment variable names.
     - GIVEN the retained failure evidence WHEN the process boundary is corrected THEN the fix addresses only the confirmed fixture or inheritance defect and preserves the fixture-owned inspector and performance budgets.
     - GIVEN the focused correction WHEN verification runs THEN helper regressions, performance-focused tests, typecheck, and build pass.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Timeout and inspector failures interpolate uncapped child streams before bounded evidence; truncation exceeds the 4096-byte cap, unavailable exit codes are omitted, and the regression test bypasses the actual measured-process failure path.
+    provenance:
+      attempt_id: audit-wkk-1
+      source: orchestrate audit for task wkkkhpcfay
+      recorded_at: 2026-08-23 20:56
+      writer_command: agentera state plan record-evaluation

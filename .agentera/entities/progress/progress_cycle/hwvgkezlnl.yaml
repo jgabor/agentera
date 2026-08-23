@@ -1,0 +1,14 @@
+id: hwvgkezlnl
+artifact: progress
+record:
+  timestamp: 2026-08-23 21:09
+  type: fix
+  phase: build
+  what: Corrected cold-process rejection evidence after the focused audit.
+  context:
+    intent: Keep failure reasons stream-free while retaining one bounded process-evidence record.
+    constraints: Preserve fixture-owned inspection, archive direct-list measurement, evidence schema, consumers, and performance budgets.
+    scope: Plan task wkkkhpcfay accepted audit findings only.
+  discovered: The failure formatter sliced before adding its marker, split multibyte text, omitted an undefined exit code, and was tested without a measured child rejection.
+  verified: pnpm -C packages/cli exec vp test run test/helpers/coldCliMeasurement.test.ts passed 7/7. pnpm -C packages/cli test:performance first rejected a contended host, then passed 1/1 with all 35 cold samples after the active source owner settled. pnpm -C packages/cli run typecheck passed. pnpm -C packages/cli build passed.
+  publication_order: 212
