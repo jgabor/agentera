@@ -6,7 +6,7 @@ record:
     - dewllredyf
     - elbpcppfyi
     - sssvtqdpbe
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN all supported singleton and batch scenarios WHEN focused checks, type checking, build, package validation, and rebuilt-local-CLI checks run THEN they pass with matching schema, help, explain, source, and packaged behavior.
     - GIVEN representative historical same-kind workflows WHEN exercised end to end THEN valid work has no partial publication and exact retries converge.
@@ -14,12 +14,12 @@ record:
     - GIVEN pre-existing unrelated worktree changes WHEN closeout is inspected THEN those changes remain intact.
   plan: zwubvaeive
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Orchestration startup reports verified evidence absent because progressVerificationSummary ignores scalar progress.latest_verification; audit citations packages/cli/src/cli/commands/prime/collectEntityOrientation.ts:315 and packages/cli/src/cli/capabilityContext/progress.ts:27.
     provenance:
-      attempt_id: vntesmhwpk-audit-1
-      source: independent audit of commit a9444eba and progress jiqyabkrti
-      recorded_at: 2026-08-23 20:19
+      attempt_id: vntesmhwpk-audit-2
+      source: independent re-audit of correction commit e5b6e6ee and progress kqoiswqsvs plus full delivery evidence jiqyabkrti
+      recorded_at: 2026-08-23 20:40
       writer_command: agentera state plan record-evaluation
