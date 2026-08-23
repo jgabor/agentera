@@ -1,0 +1,13 @@
+id: xglpiuqkvh
+artifact: plan
+record:
+  name: Right-size runtime bootstrap verification
+  depends_on:
+    - cjdqaqiqyd
+  status: pending
+  acceptance:
+    - GIVEN ordinary source verification WHEN runtime bootstrap runs THEN a bounded smoke proves accepted startup, wrong-channel rejection, missing-surface rejection before child start, and protected-root preservation for source and package representations.
+    - GIVEN the exhaustive runtime matrix and package evidence WHEN verification inventory runs THEN every required row, missing surface, parity check, and adversarial evidence case executes under its existing capacity, package, or release owner.
+    - GIVEN the owner reassignment WHEN all affected lanes run THEN no obligation is omitted or executed redundantly in routine source verification.
+    - GIVEN each retained runtime testable unit WHEN coverage is counted THEN it has one passing and one failing case, with larger matrices retained only where the governing contract enumerates them.
+  plan: ewclribdyz

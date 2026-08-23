@@ -1,0 +1,16 @@
+id: cjdqaqiqyd
+artifact: plan
+record:
+  name: Establish a green ownership baseline
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an uncontended checkout WHEN the authoritative source owner runs THEN it passes, or the first independent blocker is recorded before optimization measurements proceed.
+    - GIVEN each remaining slow integration assertion WHEN ownership is reviewed THEN every unique behavior, scale, package, and recovery obligation has exactly one intended authoritative owner.
+    - GIVEN the 22m 26.699s diagnostic baseline WHEN comparison evidence is prepared THEN dependency state, worker count, and host contention conditions are recorded consistently.
+    - GIVEN each testable ownership decision WHEN proportionality is reviewed THEN it retains at least one passing and one failing case unless an enumerated matrix contract requires more.
+  plan: ewclribdyz
+  evidence:
+    - "Baseline owner: source, commit 50fd9f93, current lockfile, Node 22.23.2, pnpm 10.30.3, eight workers, no competing verification owner; future comparison must match or disclose each condition. The run stopped before a timing report: /tmp had 24 MiB free and Vitest failed ENOSPC."
+    - "Ownership: source keeps bounded runtime behavior, protected roots, representative accept/reject cases, one cutover lifecycle pass/fail pair, and focused recovery. Capacity keeps exact 161-row scale. Package keeps packed/extracted surfaces and parity. Source keeps exhaustive runtime enumeration only until a specialized owner proves the exact matrix."

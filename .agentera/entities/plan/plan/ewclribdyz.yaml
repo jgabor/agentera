@@ -1,0 +1,35 @@
+id: ewclribdyz
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-24
+    status: open
+    reviewed: 2026-08-24
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    title: "Plan: Right-size remaining source integration tests"
+  what: Reduce the remaining high-cost source integration tests by assigning exhaustive scale and package evidence to their authoritative verification owners and keeping source coverage focused on unique behavioral seams.
+  why: After the completed focused-test optimization plan, an uncontended breakdown still took 5m 56.898s and 22m 26.699s of cumulative worker time. Three remaining tests contributed more than 3m 15s while combining scale, package, recovery, and command-surface evidence already suitable for specialized owners or focused suites.
+  constraints: Preserve every unique accepted and rejected path, protected-root guarantee, source and package parity obligation, exact 161-row scale proof, pinned aggregate-byte guarantee, and governed verification owner. Do not weaken assertions, relax budgets, add dependencies, change product behavior without a reproduced defect, publish, or push. Establish a green uncontended baseline before accepting timing evidence.
+  overall_acceptance: GIVEN the current verification contracts WHEN this plan completes THEN all unique runtime-bootstrap and entity-cutover regressions remain exercised by exactly one authoritative owner, all owning gates pass, and the same uncontended source breakdown reports at least two minutes less cumulative source-worker time than 22m 26.699s without creating a timing gate.
+  scope:
+    included:
+      - Resolve the current single source-test failure and inventory the unique obligations in the remaining slow integration tests.
+      - Keep bounded runtime-bootstrap behavior in source while assigning exhaustive matrix, scale, and package evidence to existing specialized owners.
+      - Keep compact entity-cutover semantics and one pinned lifecycle path in source while preserving exact scale and focused lifecycle evidence.
+      - Verify the affected owners, measure the result, and synchronize typed project state.
+    excluded:
+      - Production behavior changes unrelated to a reproduced testability defect.
+      - New verification owners, dependencies, relaxed budgets, publication, or pushing.
+    deferred:
+      []
+  design: First restore a trustworthy source baseline and map each slow assertion to one owner. Then retain representative source integration seams while specialized owners keep exhaustive scale and package proof. Reduce the pinned lifecycle to its unique cross-boundary contract and rely on focused owners for recovery, retrieval, command presentation, and replay behavior. Finish with owner-specific gates, one uncontended diagnostic comparison, and typed state synchronization.
+  unknowns:
+    - question: Is the remaining single source failure deterministic and related to these slow tests?
+      affects_task: 1
+      resolve_by: Run the authoritative source owner uncontended, capture the first failure, and either correct it within scope or record an independent blocker before timing comparison.
+    - question: Which existing specialized owner can preserve each exhaustive runtime and 161-row obligation without duplicate execution?
+      affects_task: 2
+      resolve_by: Compare the verification inventory and current owner evidence; move an obligation only after the destination runs its exact acceptance, otherwise retain it in source.
+  surprises:
+    []

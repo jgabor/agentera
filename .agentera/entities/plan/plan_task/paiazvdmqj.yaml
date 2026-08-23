@@ -1,0 +1,13 @@
+id: paiazvdmqj
+artifact: plan
+record:
+  name: Right-size entity cutover verification
+  depends_on:
+    - cjdqaqiqyd
+  status: pending
+  acceptance:
+    - GIVEN a compact hierarchical cutover fixture WHEN source verification runs THEN stable IDs, open and resolved status, prose, order, readiness, and duplicate-prevention behavior remain proven.
+    - GIVEN the exact 161-row fixture WHEN capacity verification runs THEN every row reconciles without duplicate projection or resurrection and the scale proof remains deterministic.
+    - GIVEN the pinned compaction lifecycle WHEN source verification runs THEN one end-to-end preview, apply, validation, TODO migration, and aggregate-byte preservation path remains.
+    - GIVEN focused recovery, summary-read, command-presentation, and replay suites WHEN duplicate lifecycle checks are removed THEN each unique behavior still has one passing and one failing case under its authoritative owner.
+  plan: ewclribdyz

@@ -1,0 +1,16 @@
+id: unsktgxjol
+artifact: progress
+record:
+  timestamp: 2026-08-24 00:51
+  type: test
+  phase: audit
+  what: Established the intended single-owner map for the remaining slow source obligations and stopped before optimization measurements.
+  context:
+    intent: Record ownership and comparison conditions for plan ewclribdyz. The 22m26.699s baseline used commit 50fd9f93, current lockfile, Node 22.23.2, pnpm 10.30.3, eight workers, and no competing verification owner; comparisons must match or disclose each condition.
+    constraints: No runtime or entity-cutover simplification, test weakening, publication, or push.
+    scope: Ownership baseline task cjdqaqiqyd only.
+  inspiration: Verification policy assigns behavioral fixtures to source, deterministic large-scale evidence to capacity, and distribution-only evidence to package.
+  discovered: The uncontended source breakdown could not write its JSON report because /tmp was full, with 24 MiB available; Vitest reported ENOSPC.
+  verified: Reviewed verification-policy.yaml and the runtime bootstrap, entity cutover, and TODO owner-correction tests. Source owns bounded behavior, protected roots, representative pass/fail cases, one cutover lifecycle pair, and recovery. Capacity owns exact 161-row scale. Package owns packed surfaces. Exhaustive runtime enumeration stays source-owned until another owner proves the exact matrix.
+  next: Clear the independent /tmp capacity blocker, then rerun the same source owner before any optimization measurement.
+  publication_order: 217
