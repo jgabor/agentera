@@ -1,0 +1,15 @@
+id: kcmqygflio
+artifact: progress
+record:
+  timestamp: 2026-08-23 18:04
+  type: test
+  phase: build
+  what: Corrected the failed audit evidence for batched runtime missing-surface checks and replaced the incomplete timing claim with a reproducible six-run measurement.
+  context:
+    intent: Prove each missing surface reaches the real dispatcher path without reaching its spawn boundary, while retaining two runtime batches and recording comparable timing evidence.
+    constraints: Keep task mcwhyujpxn in_progress with audit attempt 1 intact; preserve runtime separation, hostile paths, protected roots, environment isolation, restoration, exit 64, invalid_authority, no child start, the 240000ms timeout, authority digest, product behavior, package budget, and owners.
+    scope: Pre-cutover test dispatch helpers, focused runtime integration evidence, and this typed progress cycle.
+  discovered: "The accepted audit was correct: the batch helper synthesized status 64 and childStarted false. The corrected helper now calls the same dispatcher function as production evidence and injects a spawn-boundary hook that writes a per-surface sentinel only if spawn is reached; childStarted is fs.existsSync(sentinel). The pre-batch baseline was commit c2c3f8d4002dd7bb7785230b71b88f53562e7758; the corrected post tree is the commit containing this cycle."
+  verified: "Timing command per run: TIMEFORMAT='wall_seconds=%3R'; time env -i HOME=/home/jgabor PATH=/usr/bin:/bin:/usr/local/bin LANG=en_US.UTF-8 TMPDIR=/tmp XDG_CACHE_HOME=/home/jgabor/.cache VITEST_MAX_WORKERS=2 /usr/local/bin/corepack pnpm -C packages/cli exec vp test run test/integration/runtimeBootstrapMatrix.test.ts. Both trees received one unmeasured warm-up, then three sequential runs with no task-owned parallel command, no install or cache clear, fresh test temp roots, the same warm pnpm/Vite/OS cache policy, Node v22.23.2, pnpm 10.30.3, two workers, and pnpm-lock.yaml plus node_modules/.pnpm/lock.yaml SHA-256 7ae924de4f73ab09040da824fcc2b0d860e0ab529cd3f5505592b30f8240cfa7. Baseline wall times were 135.998s, 129.769s, 119.224s, median 129.769s. Corrected wall times were 124.562s, 151.119s, 145.290s, median 145.290s. The corrected median was 15.521s higher, so this host measurement does not re-establish the speed acceptance. All six runs passed. Corrected integration observed exactly two outer cold processes, one source and one package, and 16 results with dispatcher-derived exit 64/invalid_authority, absent spawn-hook sentinels, and restored surfaces; the 190-row matrix, hostile-path rejection, nine protected roots per row, environment isolation, and runtime separation passed. Helper/policy tests passed 129/129 after invoking the local vp boundary with the pinned pnpm PATH. Typecheck, build, and package verification passed; package verification passed 14/14 in 18345ms against 60000ms."
+  next: Re-audit the two evidence corrections while task mcwhyujpxn remains in_progress; treat the measured median regression as unresolved acceptance evidence rather than retaining the prior unsupported speed claim.
+  publication_order: 204

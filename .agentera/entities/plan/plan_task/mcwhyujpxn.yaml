@@ -11,3 +11,13 @@ record:
     - GIVEN protected roots and hostile paths WHEN each batch completes THEN preservation, environment isolation, and source/package process separation remain unchanged.
     - GIVEN equivalent three-run conditions WHEN runtime integration is measured THEN its median wall time is lower than baseline without changing its timeout or authority digest.
   plan: bhhshalaqm
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Batch helper hard-codes exit 64 and childStarted false without observing an actual sentinel boundary; progress timing omits exact commands, commits, worker settings, cache state, and equivalent environment conditions.
+    provenance:
+      attempt_id: audit-mcw-1
+      source: orchestrate audit for task mcwhyujpxn
+      recorded_at: 2026-08-23 17:24
+      writer_command: agentera state plan record-evaluation
