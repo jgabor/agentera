@@ -44,6 +44,7 @@
 - [ ] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
 - [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
+- [ ] [id:kzthftsrys] [test:3.0.0] Reduce batched runtime integration median below baseline
 
 ## ⇢ Annoying
 

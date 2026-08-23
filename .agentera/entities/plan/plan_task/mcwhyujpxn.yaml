@@ -4,7 +4,7 @@ record:
   name: Batch runtime missing-surface evidence
   depends_on:
     - ktnrvrhoqs
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN eight required surfaces across source and package runtimes WHEN missing-surface evidence runs THEN it starts one source batch and one package batch instead of 16 cold children.
     - GIVEN each required surface WHEN its observation is inspected THEN all 16 results retain exit 64, invalid_authority classification, no child-start sentinel, and restored inputs.
@@ -12,12 +12,12 @@ record:
     - GIVEN equivalent three-run conditions WHEN runtime integration is measured THEN its median wall time is lower than baseline without changing its timeout or authority digest.
   plan: bhhshalaqm
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Batch helper hard-codes exit 64 and childStarted false without observing an actual sentinel boundary; progress timing omits exact commands, commits, worker settings, cache state, and equivalent environment conditions.
+    last_failure_evidence: Controlled equivalent runs show corrected median 145.290s versus baseline 129.769s, a 15.521s regression; speed acceptance remains unmet despite valid per-surface evidence.
     provenance:
-      attempt_id: audit-mcw-1
-      source: orchestrate audit for task mcwhyujpxn
-      recorded_at: 2026-08-23 17:24
+      attempt_id: audit-mcw-2
+      source: orchestrate re-audit for task mcwhyujpxn
+      recorded_at: 2026-08-23 18:14
       writer_command: agentera state plan record-evaluation
