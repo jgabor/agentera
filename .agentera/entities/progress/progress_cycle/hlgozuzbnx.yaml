@@ -1,0 +1,15 @@
+id: hlgozuzbnx
+artifact: progress
+record:
+  timestamp: 2026-08-23 16:28
+  type: test
+  phase: build
+  what: Aligned scale and timing evidence with governed verification owners.
+  context:
+    intent: Move machine-sensitive archive timing to performance and full migration scale to capacity without changing the policy DAG or budgets.
+    constraints: Keep task izsczmiboc in progress for orchestrator evaluation; preserve one-worker isolation, the existing evidence producer, and remote runner authority.
+    scope: Archive-list performance evidence, migration preview source and capacity fixtures, and owner inventory.
+  discovered: Archive enumeration did not fit the performance record because its fixtures and targets were absent. The record now declares archive_small and archive_large fixtures and archive_list targets under the existing evidence schema and producer.
+  verified: "Owner inventory is exactly 256 files: source 248, stress 1, performance 1, capacity 3, package 3; performance integration remains the existing consumer and entityAuthorityPerformance remains the sole producer. Targeted source and authority tests passed 33/33; migration capacity passed 1/1; performance-policy ownership passed 80/80; full source passed 4,083 with 1 skipped; capacity passed 3/3; typecheck and build passed; git diff --check passed. Local performance produced no diagnostic timing because the isolation guard found active source verification processes in another checkout and rejected execution before measurement."
+  next: Orchestrator should evaluate task izsczmiboc. Run performance authoritatively on the pinned GitHub-hosted Ubuntu 24.04 runner; any local retry remains diagnostic only.
+  publication_order: 200

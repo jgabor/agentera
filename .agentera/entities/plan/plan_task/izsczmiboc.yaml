@@ -4,7 +4,7 @@ record:
   name: Align scale and timing evidence ownership
   depends_on:
     - ddsmbqcrhb
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the archive timing measurement WHEN its evidence contract is assessed THEN it either fits the current performance record or receives the minimal governed schema, validator, and consumer update before ownership changes.
     - GIVEN ordinary source verification WHEN it runs THEN it contains behavior and byte checks but no machine-sensitive latency or heap budget assertion.

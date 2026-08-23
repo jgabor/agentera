@@ -122,6 +122,7 @@ export function validatePerformanceEvidence(stdout, definition, root) {
     )) && evidence.samples.every((sample) => sample.status === "pass"
       && [sample.baselineHeapBytes, sample.peakHeapBytes, sample.heapDeltaBytes, sample.inspectorSamples].every(Number.isFinite)
       && sample.inspectorSamples >= 2
+      && (sample.operation !== "archive_list" || sample.entries === scales[`archive_${sample.scale}`])
       && sample.peakHeapBytes - sample.baselineHeapBytes === sample.heapDeltaBytes);
     if (!complete) errors.push("samples do not cover every target and repetition");
   }

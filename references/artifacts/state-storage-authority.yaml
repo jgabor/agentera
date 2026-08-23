@@ -1147,6 +1147,8 @@ entity_target:
     fixtures:
       small: 100 valid entities distributed across every active entity_target.entities boundary
       large: 1000 valid entities distributed across every active entity_target.entities boundary
+      archive_small: 100 valid numbered progress archive entries
+      archive_large: 1000 valid numbered progress archive entries
       relationship_rule: every active entity_target.relationships declaration has at least one valid fixture edge
     sampling:
       repetitions: 5
@@ -1168,6 +1170,14 @@ entity_target:
         max_heap_delta_bytes: 67108864
         max_utf8_bytes: 32768
       bounded_list_large:
+        max_latency_ms: 15000
+        max_heap_delta_bytes: 268435456
+        max_utf8_bytes: 32768
+      archive_list_small:
+        max_latency_ms: 5000
+        max_heap_delta_bytes: 67108864
+        max_utf8_bytes: 32768
+      archive_list_large:
         max_latency_ms: 15000
         max_heap_delta_bytes: 268435456
         max_utf8_bytes: 32768

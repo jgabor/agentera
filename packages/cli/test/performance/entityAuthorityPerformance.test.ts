@@ -6,6 +6,7 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
+import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { measureColdCli } from "../helpers/coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
 import { performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
@@ -86,18 +87,18 @@ describe("entity authority performance", () => {
     const targets = measurementContract.targets;
     const repetitions = measurementContract.sampling.repetitions as number;
     const scales = Object.fromEntries(
-      ["small", "large"].map((scale) => [
+      ["small", "large", "archive_small", "archive_large"].map((scale) => [
         scale,
         Number(String(measurementContract.fixtures[scale]).match(/^\d+/)?.[0]),
       ]),
-    ) as Record<"small" | "large", number>;
+    ) as Record<"small" | "large" | "archive_small" | "archive_large", number>;
     const samples: Array<Record<string, number | string>> = [];
     const fixtures: Record<string, unknown> = {};
     let runtime: Awaited<ReturnType<typeof measureColdCli>>["runtime"] | undefined;
 
     expect(measurementContract.environment).toContain("one cold CLI process per sample");
     expect(repetitions).toBe(5);
-    expect(scales).toEqual({ small: 100, large: 1000 });
+    expect(scales).toEqual({ small: 100, large: 1000, archive_small: 100, archive_large: 1000 });
 
     for (const scale of ["small", "large"] as const) {
       const entities = scales[scale];
@@ -211,6 +212,52 @@ describe("entity authority performance", () => {
       }
     }
 
+    for (const scale of ["small", "large"] as const) {
+      const entries = scales[`archive_${scale}`];
+      const archiveProject = path.join(tmp, `archive-${scale}`);
+      fs.mkdirSync(archiveProject, { recursive: true });
+      for (let number = 1; number <= entries; number += 1) {
+        publishNumberedArchive(archiveProject, "progress", number, {
+          number,
+          timestamp: "2026-07-13 16:00",
+          type: "test",
+          phase: "build",
+          what: `Archive fixture ${number}`,
+          context: { intent: "Measure archive enumeration" },
+        }, { sourceRoot: REPO_ROOT });
+      }
+      fixtures[`archive_${scale}`] = { entries };
+      for (let repetition = 1; repetition <= repetitions; repetition += 1) {
+        const limits = targets[`archive_list_${scale}`];
+        const measured = await measureColdCli({
+          args: ["state", "progress", "list", "--limit", "100", "--format", "json"],
+          project: archiveProject,
+          home,
+          repoRoot: REPO_ROOT,
+        });
+        runtime ??= measured.runtime;
+        expect(measured.runtime).toEqual(runtime);
+        const outputBytes = Buffer.byteLength(measured.stdout, "utf8");
+        expect(measured.elapsedMs, measurementDiagnostic(`archive_list ${scale} repetition ${repetition}`, measured)).toBeLessThanOrEqual(limits.max_latency_ms);
+        expect(measured.heapDeltaBytes, measurementDiagnostic(`archive_list ${scale} repetition ${repetition}`, measured)).toBeLessThanOrEqual(limits.max_heap_delta_bytes);
+        expect(outputBytes).toBeLessThanOrEqual(limits.max_utf8_bytes);
+        expect(JSON.parse(measured.stdout).counts.total).toBe(entries);
+        samples.push({
+          operation: "archive_list",
+          scale,
+          entries,
+          repetition,
+          status: "pass",
+          elapsedMs: measured.elapsedMs,
+          heapDeltaBytes: measured.heapDeltaBytes,
+          peakHeapBytes: measured.peakHeapBytes,
+          baselineHeapBytes: measured.baselineHeapBytes,
+          outputBytes,
+          inspectorSamples: measured.inspectorSamples,
+        });
+      }
+    }
+
     const targetNames = [
       "exact_get",
       "bounded_list_small",
@@ -257,7 +304,7 @@ describe("entity authority performance", () => {
       }),
     );
     expect(Object.values(maxima).every(({ repetitions }: any) => repetitions === 5)).toBe(true);
-    expect(samples).toHaveLength(25);
+    expect(samples).toHaveLength(35);
 
     const evidence = {
       schemaVersion: "agentera.entityAuthorityPerformanceEvidence.v1",
