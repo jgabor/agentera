@@ -4,7 +4,7 @@ record:
   name: Deliver atomic batch create with local references
   depends_on:
     - dewllredyf
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a valid create batch whose new items depend on request-local references WHEN preview and exact apply complete THEN every item is created atomically and the receipt maps each local reference to one canonical ID.
     - GIVEN duplicate local references, missing references, cycles, or invalid records WHEN the batch is validated THEN no item or public row is created.

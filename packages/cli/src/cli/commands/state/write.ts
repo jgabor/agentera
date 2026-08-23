@@ -28,6 +28,7 @@ import {
   type WritableArtifact,
 } from "../../../state/write/index.js";
 import { inspectTodoUpdateBatch } from "../../../state/todoUpdateBatch.js";
+import { inspectTodoCreateBatch } from "../../../state/todoCreateBatch.js";
 
 interface ParsedWrite {
   artifact: WritableArtifact;
@@ -330,7 +331,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       example: exampleFor(artifact, verb),
     });
   const selectorFields = new Set(spec.fields.filter((field) => spec.selectors.includes(field.flag)).map((field) => field.field));
-  const correctionApplyFields = artifact === "todo" && (verb === "correct-owners" || verb === "update")
+  const correctionApplyFields = artifact === "todo" && (verb === "correct-owners" || verb === "update" || verb === "create")
     ? new Set(["effect_sha256", "confirmed"])
     : new Set<string>();
   if (spec.inputRoot && Object.keys(values).some((field) => !selectorFields.has(field) && !correctionApplyFields.has(field)))
@@ -448,8 +449,9 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
         });
       }
       const updateBatch = parsed.artifact === "todo" && parsed.spec.verb === "update" ? inspectTodoUpdateBatch(input) : null;
+      const createBatch = parsed.artifact === "todo" && parsed.spec.verb === "create" ? inspectTodoCreateBatch(input) : null;
       if (parsed.artifact === "todo" && parsed.spec.verb === "update" && !parsed.values.id && !updateBatch?.strictEnvelope) missingTodoUpdateId();
-      for (const owned of parsed.spec.cliOwnedFields ?? []) {
+      for (const owned of createBatch ? [] : parsed.spec.cliOwnedFields ?? []) {
         if (hasNested(input, owned))
           invalid({
             class: "schema_violation",

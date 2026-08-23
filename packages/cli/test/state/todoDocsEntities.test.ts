@@ -426,6 +426,47 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(markdown).toContain("First updated item"); expect(markdown).toContain("Second updated item");
   });
 
+  it("previews, applies, and replays an atomic TODO create batch with local references", () => {
+    const root = project();
+    const input = { schema_version: "agentera.todoCreateBatch.v1", creates: [
+      { local_ref: "foundation", record: { title: "Batch foundation", kind: "feat", target_version: "3.0.0", severity: "normal", requirements: [], acceptance: [], release_blocker: false, readiness: readinessInput({ queue_rank: 1 }) } },
+      { local_ref: "dependent", record: { title: "Batch dependent", kind: "feat", target_version: "3.0.0", severity: "normal", requirements: [], acceptance: [], release_blocker: false, readiness: readinessInput({ dependencies: [{ local_ref: "foundation" }], queue_rank: 2 }) } },
+    ] };
+    const preview = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    expect(preview.json.local_refs).toEqual({ foundation: expect.stringMatching(/^[a-z]{10}$/), dependent: expect.stringMatching(/^[a-z]{10}$/) });
+    expect(Object.keys(files(root)).filter((file) => file.includes("/todo_item/"))).toHaveLength(0);
+    const applied = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(applied.rc, applied.err || applied.out).toBe(0);
+    expect(applied.json.local_refs).toEqual(preview.json.local_refs);
+    expect(applied.json.records[1].record.readiness.dependencies).toEqual([{ artifact: "todo", id: preview.json.local_refs.foundation }]);
+    const replay = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(replay.rc, replay.err || replay.out).toBe(0); expect(replay.json.operation.idempotent_replay).toBe(true); expect(replay.json.local_refs).toEqual(preview.json.local_refs);
+    expect(Object.keys(files(root)).filter((file) => file.includes("/todo_item/"))).toHaveLength(2);
+  });
+
+  it("rejects duplicate, missing, cyclic, and invalid TODO create batches without effects", () => {
+    const cases = [
+      { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "same", record: {} }, { local_ref: "same", record: {} }] },
+      { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "one", record: { readiness: readinessInput({ dependencies: [{ local_ref: "missing" }] }) } }] },
+      { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "one", record: { readiness: readinessInput({ dependencies: [{ local_ref: "two" }] }) } }, { local_ref: "two", record: { readiness: readinessInput({ dependencies: [{ local_ref: "one" }] }) } }] },
+      { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "one", record: { status: "resolved" } }] },
+    ];
+    for (const input of cases) { const root = project(); const before = files(root); const result = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input); expect(result.rc).toBe(2); expect(result.json.error.class).toBe("schema_violation"); expect(files(root)).toEqual(before); }
+  });
+
+  it("recovers only an interrupted exact TODO create batch", () => {
+    const root = project(); const input = { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "one", record: { title: "Interrupted create", kind: "feat", target_version: "3.0.0", severity: "normal", requirements: [], acceptance: [], release_blocker: false } }] };
+    const preview = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input);
+    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "create")!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
+    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/); binding.publicationContext.close();
+    const interrupted = files(root); const divergent = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], { ...input, creates: [{ local_ref: "other", record: input.creates[0].record }] });
+    expect(divergent.rc).toBe(2); expect(divergent.json.error.class).toBe("conflict"); expect(files(root)).toEqual(interrupted);
+    const recovered = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0); expect(recovered.json.operation.idempotent_replay).toBe(true); expect(recovered.json.local_refs).toEqual(preview.json.local_refs);
+  });
+
   it("recovers only an interrupted exact TODO update batch retry", () => {
     const root = project();
     const first = todo(root, "First interrupted batch item").id as string;

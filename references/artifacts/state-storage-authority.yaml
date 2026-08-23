@@ -2915,18 +2915,20 @@ mutation_grammar:
       verb: create
       class: record_payload
       selectors: []
-      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, full_typed_record_is_valid, readiness_is_complete_or_needs_triage, dependency_graph_is_valid]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, singleton_or_versioned_batch_shape_is_valid, full_typed_records_are_valid, duplicate_local_references_are_absent, all_ids_are_allocated_before_local_reference_resolution, dependency_graph_is_valid, batch_effect_is_previewed_and_confirmed]
       owned_fields: [id, artifact, status, public_order, lifecycle]
       input:
         mode: structured
-        root: full typed TODO record
+        root: full typed TODO record or agentera.todoCreateBatch.v1 envelope
         sources: [file, stdin]
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, status, public_order, lifecycle]
-      recovery: Run npx -y agentera@next state todo explain --verb create --format json, remove CLI-owned fields, provide the full typed TODO record, and retry.
+      recovery: For one item, preserve the existing full-record form. For a batch, supply agentera.todoCreateBatch.v1, preview with --dry-run, then repeat the same input with its effect SHA-256 and --yes.
       examples: ['npx -y agentera@next state todo create --input todo.yaml --format json']
-      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
-      fields: []
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256 }
+      fields:
+        - { flag: --effect-sha256, field: effect_sha256, kind: string }
+        - { flag: --yes, field: confirmed, kind: boolean }
 
     - artifact: todo
       verb: update

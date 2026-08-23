@@ -17,6 +17,7 @@ import {
 import { ExactReplacementConflictError, FileReplacementError } from "./exactReplacementRecovery.js";
 import { TODO_RECONCILIATION_ACTIVATION_PATH } from "./todoReconciliationActivation.js";
 import { todoUpdateBatchEffectSha256 } from "./todoUpdateBatch.js";
+import { todoCreateBatchEffectSha256 } from "./todoCreateBatch.js";
 import { reject } from "./write/errors.js";
 
 const VERSION = "agentera.todoReconciliationTransaction.v1";
@@ -47,13 +48,16 @@ export interface TodoReconciliationRecoveryReceipt {
   target_count: number;
   create?: TodoReconciliationCreateReceipt;
   update_batch_effect_sha256?: string;
+  create_batch?: TodoReconciliationCreateBatchReceipt;
 }
+export interface TodoReconciliationCreateBatchReceipt { effect_sha256: string; input_sha256: string; local_refs: Record<string, string> }
 
 export interface TodoReconciliationRecoveryOptions {
   createRequestSha256?: string;
   activationEffectSha256?: string;
   ownerMappingSha256?: string;
   updateBatch?: { effectSha256: string; input: JsonObject };
+  createBatch?: { effectSha256: string; input: JsonObject };
   beforeRecovery?: (targets: readonly ValidatedTodoReconciliationTarget[]) => void;
   beforeCommit?: () => void;
   beforeActivation?: () => void;
@@ -64,6 +68,7 @@ export interface TodoReconciliationPublicationOptions {
   activationEffectSha256?: string;
   ownerMappingSha256?: string;
   updateBatchEffectSha256?: string;
+  createBatch?: TodoReconciliationCreateBatchReceipt;
   interruptAfterTarget?: number;
   retainUnchangedTargets?: boolean;
   beforeCommit?: () => void;
@@ -91,6 +96,7 @@ interface Journal {
   activation_effect_sha256?: string;
   owner_mapping_sha256?: string;
   update_batch_effect_sha256?: string;
+  create_batch?: TodoReconciliationCreateBatchReceipt;
   targets: JournalTarget[];
 }
 
@@ -151,7 +157,7 @@ function validTarget(relative: string, publicPath: string): boolean {
 function createReceiptFromTargets(targets: JournalTarget[]): TodoReconciliationCreateReceipt | undefined {
   const created = targets.filter((target) => target.before === null && /^\.agentera\/entities\/todo\/todo_item\/[a-z]{10}\.yaml$/.test(target.path));
   if (!created.length) return undefined;
-  if (created.length !== 1) invalidJournal("TODO reconciliation journal has multiple immutable TODO entity targets");
+  if (created.length !== 1) return undefined;
   const target = created[0]!;
   const createdId = path.posix.basename(target.path, ".yaml");
   let envelope: Record<string, unknown>;
@@ -180,7 +186,7 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
   catch { invalidJournal("TODO reconciliation journal is not valid bounded UTF-8 JSON"); }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) invalidJournal("TODO reconciliation journal is not a mapping");
   const value = parsed as Partial<Journal>;
-  const expectedKeys = ["schema_version", "id", "public_path", "mapping_sha256", "targets", ...(value.create === undefined ? [] : ["create"]), ...(value.activation_effect_sha256 === undefined ? [] : ["activation_effect_sha256"]), ...(value.owner_mapping_sha256 === undefined ? [] : ["owner_mapping_sha256"]), ...(value.update_batch_effect_sha256 === undefined ? [] : ["update_batch_effect_sha256"])].sort().join(",");
+  const expectedKeys = ["schema_version", "id", "public_path", "mapping_sha256", "targets", ...(value.create === undefined ? [] : ["create"]), ...(value.create_batch === undefined ? [] : ["create_batch"]), ...(value.activation_effect_sha256 === undefined ? [] : ["activation_effect_sha256"]), ...(value.owner_mapping_sha256 === undefined ? [] : ["owner_mapping_sha256"]), ...(value.update_batch_effect_sha256 === undefined ? [] : ["update_batch_effect_sha256"])].sort().join(",");
   if (
     Object.keys(value).sort().join(",") !== expectedKeys
     || value.schema_version !== VERSION
@@ -196,6 +202,7 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
   if (value.activation_effect_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.activation_effect_sha256)) invalidJournal("TODO reconciliation journal has an invalid activation effect authorization");
   if (value.owner_mapping_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.owner_mapping_sha256)) invalidJournal("TODO reconciliation journal has an invalid owner-mapping authorization");
   if (value.update_batch_effect_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.update_batch_effect_sha256)) invalidJournal("TODO reconciliation journal has an invalid update-batch effect authorization");
+  if (value.create_batch !== undefined && (!value.create_batch || typeof value.create_batch !== "object" || Array.isArray(value.create_batch) || Object.keys(value.create_batch).sort().join(",") !== "effect_sha256,input_sha256,local_refs" || !/^[a-f0-9]{64}$/.test(value.create_batch.effect_sha256) || !/^[a-f0-9]{64}$/.test(value.create_batch.input_sha256) || !value.create_batch.local_refs || typeof value.create_batch.local_refs !== "object" || Array.isArray(value.create_batch.local_refs) || Object.entries(value.create_batch.local_refs).some(([ref, id]) => !/^[a-z][a-z0-9_-]{0,63}$/.test(ref) || typeof id !== "string" || !/^[a-z]{10}$/.test(id)))) invalidJournal("TODO reconciliation journal has an invalid create-batch receipt");
   if (value.create !== undefined && (
     !value.create
     || typeof value.create !== "object"
@@ -233,14 +240,14 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
     || value.create.created_id !== inferredCreate.created_id
     || value.create.request_sha256 !== inferredCreate.request_sha256
   )) invalidJournal("TODO reconciliation create receipt does not match its canonical entity target");
-  const identity = value.create || value.activation_effect_sha256 || value.owner_mapping_sha256 || value.update_batch_effect_sha256
-    ? { ...(value.create ? { create: value.create } : {}), ...(value.activation_effect_sha256 ? { activation_effect_sha256: value.activation_effect_sha256 } : {}), ...(value.owner_mapping_sha256 ? { owner_mapping_sha256: value.owner_mapping_sha256 } : {}), ...(value.update_batch_effect_sha256 ? { update_batch_effect_sha256: value.update_batch_effect_sha256 } : {}), targets: body }
+  const identity = value.create || value.create_batch || value.activation_effect_sha256 || value.owner_mapping_sha256 || value.update_batch_effect_sha256
+    ? { ...(value.create ? { create: value.create } : {}), ...(value.create_batch ? { create_batch: value.create_batch } : {}), ...(value.activation_effect_sha256 ? { activation_effect_sha256: value.activation_effect_sha256 } : {}), ...(value.owner_mapping_sha256 ? { owner_mapping_sha256: value.owner_mapping_sha256 } : {}), ...(value.update_batch_effect_sha256 ? { update_batch_effect_sha256: value.update_batch_effect_sha256 } : {}), targets: body }
     : body;
   const expectedId = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (value.id !== expectedId || (fileName !== undefined && fileName !== `${value.id}.json`)) {
     invalidJournal("TODO reconciliation journal identity does not match its canonical targets");
   }
-  const create = value.create ?? inferredCreate;
+  const create = value.create ?? (value.create_batch ? undefined : inferredCreate);
   return { ...value, ...(create ? { create } : {}) } as Journal;
 }
 
@@ -574,6 +581,12 @@ export function recoverTodoReconciliation(
         recovery: "Retry the exact original TODO update batch input with its preview effect SHA-256 and --yes; no transaction target bytes were changed.",
       });
     }
+    if (journal.create_batch) {
+      const supplied = options.createBatch;
+      const requestInputSha256 = supplied ? createHash("sha256").update(canonicalRecordJson(supplied.input)).digest("hex") : null;
+      const requestEffectSha256 = supplied ? todoCreateBatchEffectSha256(supplied.input, journal.mapping_sha256, journal.create_batch.local_refs, journal.targets.filter((target) => !(target.before === null && /^\.agentera\/entities\/todo\/todo_item\/[a-z]{10}\.yaml$/.test(target.path))).map((target) => ({ path: target.path, before_sha256: target.before === null ? null : createHash("sha256").update(decode(target.before)).digest("hex"), after_sha256: createHash("sha256").update(decode(target.after)).digest("hex") }))) : null;
+      if (!supplied || supplied.effectSha256 !== journal.create_batch.effect_sha256 || requestInputSha256 !== journal.create_batch.input_sha256 || requestEffectSha256 !== journal.create_batch.effect_sha256) reject({ class: "conflict", message: "pending TODO create batch does not match this request and effect authorization", recovery: "Retry the exact original TODO create batch input with its preview effect SHA-256 and --yes; no transaction target bytes were changed." });
+    }
     if (journal.create && options.createRequestSha256 !== journal.create.request_sha256) reject({
       class: "conflict",
       message: `pending TODO create for '${journal.create.created_id}' does not match this request`,
@@ -610,6 +623,7 @@ export function recoverTodoReconciliation(
         target_count: journal.targets.length,
         ...(journal.create ? { create: journal.create } : {}),
         ...(journal.update_batch_effect_sha256 ? { update_batch_effect_sha256: journal.update_batch_effect_sha256 } : {}),
+        ...(journal.create_batch ? { create_batch: journal.create_batch } : {}),
       });
     } catch (error) {
       const rollbackIssues = applied.length ? rollback(context, applied, sourceRoot, journal.public_path) : [];
@@ -637,8 +651,8 @@ export function publishTodoReconciliation(
   const body = normalized.map((target) => ({ path: target.path, before: target.before === null ? null : encode(target.before), after: encode(target.after) }));
   if ((options.activationEffectSha256 || options.ownerMappingSha256) && !normalized.some((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH)) reject({ class: "schema_violation", message: "TODO activation authorization requires its activation target", recovery: "Recompute the complete activation target set from a fresh dry-run; no state was changed." });
   if (options.ownerMappingSha256 && !options.activationEffectSha256) reject({ class: "schema_violation", message: "TODO owner-mapping authorization requires its effect authorization", recovery: "Recompute the complete owner correction target set from a fresh dry-run; no state was changed." });
-  const identity = options.create || options.activationEffectSha256 || options.ownerMappingSha256 || options.updateBatchEffectSha256
-    ? { ...(options.create ? { create: options.create } : {}), ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}), ...(options.ownerMappingSha256 ? { owner_mapping_sha256: options.ownerMappingSha256 } : {}), ...(options.updateBatchEffectSha256 ? { update_batch_effect_sha256: options.updateBatchEffectSha256 } : {}), targets: body }
+  const identity = options.create || options.createBatch || options.activationEffectSha256 || options.ownerMappingSha256 || options.updateBatchEffectSha256
+    ? { ...(options.create ? { create: options.create } : {}), ...(options.createBatch ? { create_batch: options.createBatch } : {}), ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}), ...(options.ownerMappingSha256 ? { owner_mapping_sha256: options.ownerMappingSha256 } : {}), ...(options.updateBatchEffectSha256 ? { update_batch_effect_sha256: options.updateBatchEffectSha256 } : {}), targets: body }
     : body;
   const id = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (!normalized.length) return { id, targetCount: 0 };
@@ -668,6 +682,7 @@ export function publishTodoReconciliation(
     public_path: binding.publicPath,
     mapping_sha256: binding.mappingSha256,
     ...(options.create ? { create: options.create } : {}),
+    ...(options.createBatch ? { create_batch: options.createBatch } : {}),
     ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}),
     ...(options.ownerMappingSha256 ? { owner_mapping_sha256: options.ownerMappingSha256 } : {}),
     ...(options.updateBatchEffectSha256 ? { update_batch_effect_sha256: options.updateBatchEffectSha256 } : {}),

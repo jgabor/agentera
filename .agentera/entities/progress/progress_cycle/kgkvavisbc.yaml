@@ -1,0 +1,14 @@
+id: kgkvavisbc
+artifact: progress
+record:
+  timestamp: 2026-08-23 15:46
+  type: feat
+  phase: build
+  what: Delivered atomic same-kind TODO create batches with request-local dependency references and replay-safe canonical IDs.
+  context:
+    intent: Deliver plan task elbpcppfyi without advancing later tasks.
+    constraints: Preserved singleton create behavior, reused TODO reconciliation CAS/journal/recovery, and left task evaluation unset.
+    scope: Same-kind TODO create batches only.
+  verified: Focused TODO create-batch tests passed 3/3; todoDocsEntities passed 88/88; mutationGrammar passed 32/32; typecheck, build, package verification, local capability-contract, and compact passed. Retired-runtime owner remained at its pre-existing 3 failures from CHANGELOG classification diagnostics.
+  next: Independent evaluation of task elbpcppfyi remains required before completion.
+  publication_order: 198

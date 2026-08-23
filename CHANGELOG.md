@@ -18,6 +18,8 @@
 
 ### Changed
 
+- [post-audit-flagged] `agentera state todo create --input` now accepts strict, preview-confirmed
+  same-kind batches with request-local dependency references and replay-safe IDs.
 - Consented `agentera report refresh --consent local-history` now publishes the
   deterministic personal-glossary candidate projection for the new evidence
   generation. Projection failures keep evidence current, return nonzero with
