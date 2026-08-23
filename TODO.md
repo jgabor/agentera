@@ -6,6 +6,7 @@
 - [ ] [id:pqpzmhdpsj] [fix:3.0.0] Prepare the stable TypeScript publication contract on main.
 - [ ] [id:lqqmlchlyr] [fix:3.0.0] Prepare one verified TypeScript stable-cutover candidate after approval.
 - [ ] [id:huiepnrwav] [fix:3.0.0] Promote the verified TypeScript cutover candidate to npm @latest.
+- [ ] [id:wcjklpzgop] [fix:3.0.0] Make stale-lock races reach canonical duplicate detection
 
 ## ⇉ Degraded
 

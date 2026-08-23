@@ -7,7 +7,7 @@ record:
     - hhyrhisjfp
     - izsczmiboc
     - mcwhyujpxn
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN each changed behavior WHEN focused checks run THEN failures are corrected before broader owners start, and typecheck and build pass where the changed surfaces require them.
     - GIVEN a clean focused result WHEN final verification runs THEN the policy-owned release DAG is the sole final authority and no downstream owner runs after an owner failure.
@@ -15,12 +15,12 @@ record:
     - GIVEN all owners pass in their governed environments WHEN state is synchronized THEN every task and the plan carry current verified status with no unrelated artifact changes.
   plan: bhhshalaqm
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Canonical release DAG was contaminated by ambient Node inspector controls before product performance measurement; downstream owners correctly remained deferred.
+    last_failure_evidence: "Clean release qualification failed the authoritative stress owner at repetition 72: the same-ID loser timed out on the writer lock instead of reaching canonical duplicate-ID detection; downstream owners were correctly deferred."
     provenance:
-      attempt_id: audit-vno-1
-      source: orchestrate audit for task vnotgyppaw
-      recorded_at: 2026-08-23 19:40
+      attempt_id: audit-vno-2
+      source: orchestrate re-audit for task vnotgyppaw
+      recorded_at: 2026-08-23 19:57
       writer_command: agentera state plan record-evaluation

@@ -1,0 +1,22 @@
+id: wcjklpzgop
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Make stale-lock races reach canonical duplicate detection
+  requirements:
+    - Preserve the production writer-lock deadline and canonical duplicate-ID contract while preventing a same-ID stale-lock contender from timing out before duplicate detection under governed stress.
+  acceptance:
+    - All 100 governed stale-lock race repetitions produce one publisher and one canonical duplicate-ID loser with no writer-lock timeout.
+    - The clean-boundary release DAG passes the stress owner and continues through its remaining owners without weakened assertions or budgets.
+  release_blocker: true
+  severity: critical
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Make stale-lock races reach canonical duplicate detection"
+      severity: critical
+      status: open
+      order: 5
