@@ -4,7 +4,7 @@ record:
   name: Right-size entity cutover verification
   depends_on:
     - cjdqaqiqyd
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a compact hierarchical cutover fixture WHEN source verification runs THEN stable IDs, open and resolved status, prose, order, readiness, and duplicate-prevention behavior remain proven.
     - GIVEN the exact 161-row fixture WHEN capacity verification runs THEN every row reconciles without duplicate projection or resurrection and the scale proof remains deterministic.

@@ -1,0 +1,14 @@
+id: sqqosvicio
+artifact: progress
+record:
+  timestamp: 2026-08-24 01:30
+  type: test
+  phase: build
+  what: Moved the exact 161-row entity-cutover scale proof to the capacity owner, retained a four-row hierarchical source fixture, and reduced the pinned compaction lifecycle to preview, apply, validation, TODO migration, and aggregate-byte preservation.
+  context:
+    intent: Preserve compact source behavior and pinned lifecycle evidence while assigning the deterministic 161-row proof to capacity and leaving focused lifecycle checks with their authoritative owners.
+  inspiration: Source owns compact behavior and one lifecycle path; capacity owns deterministic scale; focused source suites own recovery, summary reads, command presentation, and replay.
+  discovered: The repository cleanup workflow retained both generated generations and recovered no space. /tmp remained at 100% with 4.9 MiB available, so source and capacity owner setup both failed with ENOSPC before test collection.
+  verified: pnpm -C packages/cli run typecheck passed and git diff --check passed. Source now proves stable IDs, open and resolved status, prose, order, readiness, and duplicate prevention. Capacity reconciles all 161 IDs and records, checks 54 resolved rows, unique prose, readiness, exact replay, and no duplicate entities. Targeted source and capacity commands failed during transient TypeScript compilation because /tmp had no space; no test assertion ran.
+  next: Orchestration audit should rerun the targeted source and capacity owner commands after independent /tmp cleanup, then evaluate this still-in-progress task.
+  publication_order: 218
