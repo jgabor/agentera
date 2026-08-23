@@ -156,8 +156,15 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
     lines.push("");
     lines.push("Retired native resources:");
     for (const resource of resources) {
-      lines.push(`  - action required: ${String(resource.id)}`);
-      lines.push(`    Preview: ${String(resource.preview_command)}`);
+      if (resource.status === "pending_automatic_removal") {
+        lines.push(`  - pending automatic removal: ${String(resource.id)}`);
+        if (typeof resource.next_action === "string") lines.push(`    Next action: ${resource.next_action}`);
+      } else if (resource.status === "manual_review") {
+        lines.push(`  - manual review required: ${String(resource.id)}`);
+        if (typeof resource.preview_command === "string") lines.push(`    Preview: ${resource.preview_command}`);
+      } else {
+        lines.push(`  - ${plainStatus(String(resource.status))}: ${String(resource.id)}`);
+      }
     }
   }
   if (status.status === APP_UP_TO_DATE) {
@@ -181,9 +188,12 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
   } else if (todoReconciliation) {
     lines.push("");
     lines.push("Next: run the reported TODO reconciliation preview, review its bounded effect, then use its exact apply_command.");
-  } else if (resources.length > 0) {
+  } else if (resources.some((resource) => resource.status === "manual_review")) {
     lines.push("");
     lines.push("Next: review each read-only retirement preview before any explicit cleanup.");
+  } else if (resources.some((resource) => resource.status === "pending_automatic_removal")) {
+    lines.push("");
+    lines.push("Next: run the reported normal upgrade action.");
   } else {
     lines.push("");
     lines.push(

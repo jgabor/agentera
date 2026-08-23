@@ -12,15 +12,14 @@
   operator, substitution, split-token, multiline, nested, malformed,
   alias-cycle, or wrong-channel evasion with one diagnostic per invocation.
   Stable-channel tokens are confined independently of command recognition.
-  Exact source/package parity now includes all generated declaration fields,
-  unused exemptions, and conservative import/re-export closure with explicit
-  producer or non-producer classification.
+  Exact source/package parity now includes all generated declaration fields, unused exemptions,
+  and conservative import/re-export closure with explicit producer or non-producer classification.
 
 ### Changed
 
 - `agentera state todo set-severity` and `resolve` now accept strict,
   preview-confirmed same-kind batches while preserving singleton flag syntax.
-<p>Fixed automatic retirement so normal upgrade distinguishes proven pending removal, manual review, and clean state. Successful removal tells operators to restart OpenCode. No gate or hook command replaces the retired plugin.</p>
+- Fixed automatic retirement so normal upgrade distinguishes proven pending removal, manual review, and clean state. Successful removal tells operators to restart OpenCode. No gate or hook command replaces the retired plugin.
 - [post-audit-flagged] `agentera state todo create --input` now accepts strict, preview-confirmed
   same-kind batches with request-local dependency references and replay-safe IDs.
 - Consented `agentera report refresh --consent local-history` now publishes the

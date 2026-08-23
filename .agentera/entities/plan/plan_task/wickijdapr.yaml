@@ -12,3 +12,13 @@ record:
     - GIVEN successful removal WHEN upgrade reports completion THEN it instructs the operator to restart OpenCode.
     - GIVEN operator documentation WHEN reviewed THEN it requires no separate cleanup selector and states that no gate replaced the retired plugin.
   plan: gacnyrekma
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "Default doctor text ignores pending_automatic_removal, prints Preview: undefined, and recommends explicit cleanup instead of normal upgrade."
+    provenance:
+      attempt_id: audit-1
+      source: agentera.inspekteraEvaluationReport.v1
+      recorded_at: 2026-08-23 20:43
+      writer_command: agentera state plan record-evaluation

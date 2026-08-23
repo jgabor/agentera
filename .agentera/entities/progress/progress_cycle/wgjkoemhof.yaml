@@ -1,0 +1,13 @@
+id: wgjkoemhof
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:59
+  type: fix
+  phase: build
+  what: Corrected status-aware doctor text for proven retired plugins and restored policy inventory parity.
+  context:
+    intent: Make default doctor text match accepted structured diagnostics without changing cleanup qualification or ownership behavior.
+  discovered: The renderer treated every retired resource as manual review, while the prior changelog HTML left exact policy classifications misaligned with parsed source lines.
+  verified: Focused retired-resource diagnostics passed 26 tests; the combined doctor, diagnostics, and retired-runtime policy command passed 247 tests across 4 files; the final policy rerun passed 194 tests. Typecheck and build passed.
+  next: Keep task wickijdapr in progress with audit-1 failure evidence for reevaluation; task 4 owns unrelated final package gates.
+  publication_order: 205

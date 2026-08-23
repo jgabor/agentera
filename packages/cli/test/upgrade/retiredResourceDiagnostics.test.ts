@@ -177,7 +177,7 @@ describe("retired native resource doctor diagnostics", () => {
     expect(payload.signals.some((signal: { kind: string }) => signal.kind === "retired_native_resources")).toBe(false);
   });
 
-  it("reports a proven plugin as pending automatic removal through normal upgrade", () => {
+  it("reports a proven plugin as pending automatic removal through normal upgrade in JSON and default text", () => {
     const plugin = path.join(home, ".config", "opencode", "plugins", "agentera.js");
     fs.mkdirSync(path.dirname(plugin), { recursive: true });
     const historical = spawnSync("git", ["show", "aa33870df05d53745ebad5351b8a352b7dad7780:.opencode/plugins/agentera.js"], {
@@ -211,6 +211,15 @@ describe("retired native resource doctor diagnostics", () => {
     expect(payload.signals).toContainEqual(expect.objectContaining({
       kind: "retired_native_resources_pending_automatic_removal",
     }));
+
+    let text = "";
+    const rc = cmdDoctor({ home, project, installRoot }, { out: (output) => (text += output) });
+
+    expect(rc).toBe(1);
+    expect(text).toContain("  - pending automatic removal: opencode.plugin.agentera");
+    expect(text).toContain(`    Next action: ${resource.next_action}`);
+    expect(text).not.toContain("undefined");
+    expect(text).not.toContain("explicit cleanup");
   });
 
   it("runs an exact read-only diagnostic preview without accepting a cleanup selector", () => {
