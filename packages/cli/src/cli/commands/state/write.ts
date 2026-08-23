@@ -331,16 +331,18 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       example: exampleFor(artifact, verb),
     });
   const selectorFields = new Set(spec.fields.filter((field) => spec.selectors.includes(field.flag)).map((field) => field.field));
-  const correctionApplyFields = artifact === "todo" && (verb === "correct-owners" || verb === "update" || verb === "create")
+  const correctionApplyFields = artifact === "todo" && (verb === "correct-owners" || verb === "update" || verb === "create" || verb === "set-severity" || verb === "resolve")
     ? new Set(["effect_sha256", "confirmed"])
     : new Set<string>();
-  if (spec.inputRoot && Object.keys(values).some((field) => !selectorFields.has(field) && !correctionApplyFields.has(field)))
+  if (artifact === "todo" && ["set-severity", "resolve"].includes(verb) && inputSource && Object.keys(values).some((field) => !correctionApplyFields.has(field)))
+    invalid({ class: "mutually_exclusive", message: `${artifact} ${verb} accepts field flags, not --input`, example: exampleFor(artifact, verb) });
+  if (spec.inputRoot && inputSource && Object.keys(values).some((field) => !selectorFields.has(field) && !correctionApplyFields.has(field)))
     invalid({
       class: "mutually_exclusive",
       message: `--input cannot be combined with field flags for ${artifact} ${verb}`,
     });
   for (const field of fields.filter((candidate) => candidate.required)) {
-    if (artifact === "todo" && verb === "update" && field.field === "id" && inputSource) continue;
+    if (artifact === "todo" && ["update", "set-severity", "resolve"].includes(verb) && inputSource && ["id", "severity", "lifecycle.reason", "lifecycle.date"].includes(field.field)) continue;
     if (mappingPath(values, field.field) === undefined) {
       invalid({
         class: "missing_argument",

@@ -18,6 +18,8 @@
 
 ### Changed
 
+- `agentera state todo set-severity` and `resolve` now accept strict,
+  preview-confirmed same-kind batches while preserving singleton flag syntax.
 - [post-audit-flagged] `agentera state todo create --input` now accepts strict, preview-confirmed
   same-kind batches with request-local dependency references and replay-safe IDs.
 - Consented `agentera report refresh --consent local-history` now publishes the

@@ -4,7 +4,7 @@ record:
   name: Deliver atomic severity and resolve batches
   depends_on:
     - elbpcppfyi
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a valid same-kind severity or resolve batch WHEN preview and exact apply complete THEN every target transitions atomically with one receipt.
     - GIVEN one invalid target, duplicate ID, invalid lifecycle transition, or stale state WHEN a transition batch is validated THEN no target changes.

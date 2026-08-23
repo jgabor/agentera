@@ -2954,17 +2954,19 @@ mutation_grammar:
       verb: set-severity
       class: simple_transition
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, target_id_is_bare_ten_letters, severity_is_valid, reason_and_date_are_present]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, singleton_or_agentera_todoSetSeverityBatch_v1_shape_is_valid, target_ids_are_bare_ten_letters, duplicate_targets_are_absent, severity_is_valid, reason_and_date_are_present, batch_effect_is_previewed_and_confirmed]
       owned_fields: [id, artifact, severity, lifecycle]
-      input: { mode: none, sources: [], cli_owned_fields: [] }
-      recovery: Use the bare TODO ID, one immediate-impact severity, a reason, and a YYYY-MM-DD date; no record input is accepted.
+      input: { mode: structured, root: agentera.todoSetSeverityBatch.v1 envelope, optional: true, sources: [file, stdin], structured_sources: [file, stdin], cli_owned_fields: [] }
+      recovery: Use singleton flags unchanged, or supply agentera.todoSetSeverityBatch.v1 through --input, preview it, then exact-apply it with the effect SHA-256 and --yes.
       examples: ['npx -y agentera@next state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31 --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256, max_reason_code_points: 500 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
         - { flag: --severity, field: severity, kind: string, required: true, valid_values: [critical, degraded, normal, annoying] }
         - { flag: --reason, field: lifecycle.reason, kind: string, required: true }
         - { flag: --date, field: lifecycle.date, kind: date, required: true }
+        - { flag: --effect-sha256, field: effect_sha256, kind: string }
+        - { flag: --yes, field: confirmed, kind: boolean }
 
     - artifact: todo
       verb: supersede
@@ -2986,16 +2988,18 @@ mutation_grammar:
       verb: resolve
       class: simple_transition
       selectors: [--id]
-      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, target_id_is_bare_ten_letters, item_is_open, reason_and_date_are_present]
+      preconditions: [entity_mode_marker_is_valid, todo_reconciliation_is_valid, singleton_or_agentera_todoResolveBatch_v1_shape_is_valid, target_ids_are_bare_ten_letters, duplicate_targets_are_absent, every_item_is_open, reason_and_date_are_present, batch_effect_is_previewed_and_confirmed]
       owned_fields: [id, artifact, status, lifecycle]
-      input: { mode: none, sources: [], cli_owned_fields: [] }
-      recovery: Use the bare TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.
+      input: { mode: structured, root: agentera.todoResolveBatch.v1 envelope, optional: true, sources: [file, stdin], structured_sources: [file, stdin], cli_owned_fields: [] }
+      recovery: Use singleton flags unchanged, or supply agentera.todoResolveBatch.v1 through --input, preview it, then exact-apply it with the effect SHA-256 and --yes.
       examples: ['npx -y agentera@next state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31 --format json']
-      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
+      bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256, max_reason_code_points: 500 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
         - { flag: --reason, field: lifecycle.reason, kind: string, required: true }
         - { flag: --date, field: lifecycle.date, kind: date, required: true }
+        - { flag: --effect-sha256, field: effect_sha256, kind: string }
+        - { flag: --yes, field: confirmed, kind: boolean }
 
     - artifact: todo
       verb: reopen

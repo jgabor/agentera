@@ -134,10 +134,13 @@ LIFECYCLE:
   description: >-
     activate is a flag-only reconciliation transition that requires the
     preview effect SHA-256 and explicit confirmation. Item lifecycle transitions
-    set-severity, supersede, resolve, and reopen require a reason and date;
+    Singleton set-severity, supersede, resolve, and reopen require flag-only
+    reason and date values. Set-severity and resolve also accept strict
+    agentera.todoSetSeverityBatch.v1 and agentera.todoResolveBatch.v1 envelopes;
+    batches require dry-run preview and exact effect-confirmed apply.
     supersede additionally requires a distinct existing replacement ID. These
-    operations never accept structured record content or use Markdown
-    strikethrough.
+    These operations never accept unversioned structured record content or use
+    Markdown strikethrough.
   clearable_patch_fields: [target_version, requirements, acceptance, readiness]
   cli_owned_fields: [id, artifact, status, public_order, lifecycle]
   transition_fields: [reason, date, replacement]

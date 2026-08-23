@@ -1,0 +1,14 @@
+id: awyotgsxxf
+artifact: progress
+record:
+  timestamp: 2026-08-23 17:28
+  type: feat
+  phase: build
+  what: Added strict preview-confirmed same-kind set-severity and resolve batches through the existing TODO reconciliation transaction.
+  context:
+    intent: Deliver atomic same-kind severity and resolve batches.
+    constraints: Preserve singleton flags, reuse reconciliation, leave kbjrvrilzj open and decision nvoxndralc satisfaction null.
+    scope: set-severity and resolve batch input, authority, schema, help, explain, package surfaces, tests, and state only.
+  verified: "packages/cli/test/state/todoDocsEntities.test.ts passed 93/93; targeted final batch and monolith tests passed 6/6; typecheck and build passed; package verification passed 14/14; capability contract passed 3/3; compact passed with zero errors. Full source passed 4,093 tests and failed four: three accepted pre-existing retiredRuntimeSurfacePolicy failures and one concurrent opencode.db parity failure."
+  next: Audit task ftikrbkztm while it remains in_progress; do not start final synchronization task vntesmhwpk.
+  publication_order: 200

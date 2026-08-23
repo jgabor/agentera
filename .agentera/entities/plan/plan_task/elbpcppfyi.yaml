@@ -4,7 +4,7 @@ record:
   name: Deliver atomic batch create with local references
   depends_on:
     - dewllredyf
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a valid create batch whose new items depend on request-local references WHEN preview and exact apply complete THEN every item is created atomically and the receipt maps each local reference to one canonical ID.
     - GIVEN duplicate local references, missing references, cycles, or invalid records WHEN the batch is validated THEN no item or public row is created.
@@ -12,12 +12,12 @@ record:
     - GIVEN create, reference, and replay rules WHEN tests run THEN each testable unit has one success and one rejection case, with extra cases only for graph or collision behavior.
   plan: zwubvaeive
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Create-batch apply does not revalidate the TODO mapping before commit, and static help does not expose the versioned batch preview/apply contract.
     provenance:
-      attempt_id: elbpcppfyi-audit-1
-      source: independent audit of commit 3e4f513c
-      recorded_at: 2026-08-23 16:20
+      attempt_id: elbpcppfyi-audit-2
+      source: independent re-audit of correction commit 39958fcb
+      recorded_at: 2026-08-23 17:02
       writer_command: agentera state plan record-evaluation

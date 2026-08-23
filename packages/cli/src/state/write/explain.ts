@@ -317,7 +317,9 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
     ...base,
   ];
   if (entityArtifact && artifact === "todo" && ["set-severity", "supersede", "resolve", "reopen"].includes(verb)) return [
-    "select one TODO item with its bare ten-letter --id; lifecycle transitions are flag-only and accept no --input record",
+    ["set-severity", "resolve"].includes(verb)
+      ? `for a singleton, select one TODO item with its bare ten-letter --id and use only flags; for a batch, omit --id and supply the strict ${verb === "set-severity" ? "agentera.todoSetSeverityBatch.v1" : "agentera.todoResolveBatch.v1"} envelope through --input`
+      : "select one TODO item with its bare ten-letter --id; lifecycle transitions are flag-only and accept no --input record",
     "supply a reason and YYYY-MM-DD date; supersede additionally requires a distinct existing replacement ID",
     ...base,
   ];

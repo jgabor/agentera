@@ -426,6 +426,30 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(markdown).toContain("First updated item"); expect(markdown).toContain("Second updated item");
   });
 
+  it.each([
+    ["set-severity", "agentera.todoSetSeverityBatch.v1", "transitions", (id: string) => ({ id, severity: "degraded", reason: "Impact increased", date: "2026-08-23" })],
+    ["resolve", "agentera.todoResolveBatch.v1", "resolutions", (id: string) => ({ id, reason: "Work complete", date: "2026-08-23" })],
+  ] as const)("previews and atomically applies a %s batch", (verb, schemaVersion, member, entry) => {
+    const root = project(); const first = todo(root, `${verb} first`).id as string; const second = todo(root, `${verb} second`).id as string;
+    const input = { schema_version: schemaVersion, [member]: [entry(first), entry(second)] };
+    const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(preview.rc, preview.err || preview.out).toBe(0); expect(preview.json).toMatchObject({ effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/), apply_command: expect.stringContaining("--yes") });
+    const applied = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(applied.rc, applied.err || applied.out).toBe(0); expect(applied.json.records).toHaveLength(2); expect(applied.json.reconciliation.transaction_id).toEqual(expect.any(String));
+    const replay = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input); expect(replay.rc, replay.err || replay.out).toBe(0); expect(replay.json.operation.idempotent_replay).toBe(true);
+    for (const id of [first, second]) { const record = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]).json.entry.record; expect(record.lifecycle.operation).toBe(verb); if (verb === "resolve") expect(record.status).toBe("resolved"); else expect(record.severity).toBe("degraded"); }
+  });
+
+  it.each([
+    ["set-severity", "agentera.todoSetSeverityBatch.v1", "transitions", (id: string) => ({ id, severity: "invalid", reason: "Bad", date: "2026-08-23" })],
+    ["resolve", "agentera.todoResolveBatch.v1", "resolutions", (id: string) => ({ id, reason: "Done", date: "2026-08-23" })],
+  ] as const)("rejects an invalid or duplicate %s batch without effects", (verb, schemaVersion, member, entry) => {
+    const root = project(); const id = todo(root, `${verb} target`).id as string; const before = files(root);
+    const input = { schema_version: schemaVersion, [member]: [entry(id), entry(id)] };
+    const result = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+    expect(result.rc).toBe(2); expect(result.json.error.class).toBe("schema_violation"); expect(files(root)).toEqual(before);
+  });
+
   it("previews, applies, and replays an atomic TODO create batch with local references", () => {
     const root = project();
     const input = { schema_version: "agentera.todoCreateBatch.v1", creates: [
@@ -553,8 +577,8 @@ describe("TODO item and documentation inventory entity authority", () => {
       return { inputMode: spec.inputMode, inputRoot: spec.inputRoot, required: spec.fields.filter((field) => field.required).map((field) => field.flag) };
     };
     expect(contract("update")).toEqual({ inputMode: "structured", inputRoot: "TODO record patch or agentera.todoUpdateBatch.v1 envelope", required: ["--id"] });
-    expect(contract("set-severity")).toEqual({ inputMode: "none", inputRoot: undefined, required: ["--id", "--severity", "--reason", "--date"] });
-    expect(contract("resolve")).toEqual({ inputMode: "none", inputRoot: undefined, required: ["--id", "--reason", "--date"] });
+    expect(contract("set-severity")).toEqual({ inputMode: "structured", inputRoot: "agentera.todoSetSeverityBatch.v1 envelope", required: ["--id", "--severity", "--reason", "--date"] });
+    expect(contract("resolve")).toEqual({ inputMode: "structured", inputRoot: "agentera.todoResolveBatch.v1 envelope", required: ["--id", "--reason", "--date"] });
 
     const severity = todo(root, "Transition parser severity");
     const severityBefore = files(root);

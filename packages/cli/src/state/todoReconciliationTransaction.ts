@@ -5,7 +5,7 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
-import { entityExactGetMaxBytes } from "./entityStorage.js";
+import { canonicalEntityEnvelopeBytes, entityExactGetMaxBytes } from "./entityStorage.js";
 import {
   FILE_REPLACEMENT_METADATA_NAME,
   FILE_REPLACEMENT_RECOVERY_VERSION,
@@ -570,10 +570,10 @@ export function recoverTodoReconciliation(
     assertBinding(journal, binding);
     if (journal.update_batch_effect_sha256) {
       const supplied = options.updateBatch;
-      const requestEffectSha256 = supplied ? todoUpdateBatchEffectSha256(supplied.input, journal.mapping_sha256, journal.targets.map((target) => ({
+      const transition = supplied && /^agentera\.todo(?:SetSeverity|Resolve)Batch\.v1$/.test(String(supplied.input.schema_version)); const requestEffectSha256 = supplied ? todoUpdateBatchEffectSha256(supplied.input, journal.mapping_sha256, journal.targets.map((target) => ({
         path: target.path,
         before_sha256: target.before === null ? null : createHash("sha256").update(decode(target.before)).digest("hex"),
-        after_sha256: createHash("sha256").update(decode(target.after)).digest("hex"),
+        after_sha256: createHash("sha256").update(transition && target.path.includes("/todo_item/") ? (() => { const value = loadYamlMapping(decode(target.after).toString("utf8")); const record = value.record as JsonObject; if (record.reconciliation && typeof record.reconciliation === "object" && !Array.isArray(record.reconciliation)) delete (record.reconciliation as JsonObject).transition_batch; return canonicalEntityEnvelopeBytes({ id: String(value.id), artifact: "todo", record }); })() : decode(target.after)).digest("hex"),
       }))) : null;
       if (!supplied || supplied.effectSha256 !== journal.update_batch_effect_sha256 || requestEffectSha256 !== journal.update_batch_effect_sha256) reject({
         class: "conflict",
