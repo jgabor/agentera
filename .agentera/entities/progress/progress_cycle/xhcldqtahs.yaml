@@ -1,0 +1,13 @@
+id: xhcldqtahs
+artifact: progress
+record:
+  timestamp: 2026-08-23 16:11
+  type: test
+  phase: build
+  what: Simplified redundant correctness tests while retaining bounded state traversal, output continuation smokes, glossary boundaries, Prime guidance, and compact routing contracts.
+  context:
+    intent: Remove redundant correctness work without weakening canonical contracts.
+    constraints: Keep plan task hhyrhisjfp in progress for orchestrator audit and do not push.
+    scope: State-list, glossary acquisition, Prime guidance, and compact CLI tests only.
+  verified: 81 targeted tests passed in 27.83s, down from 90 cases; pnpm -C packages/cli run typecheck passed. Full source verification exceeded both 120s and 300s local time limits without a reported assertion failure.
+  publication_order: 199

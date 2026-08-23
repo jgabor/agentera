@@ -41,16 +41,6 @@ describe("cli compact", () => {
     expect(out).toContain("action=missing");
   });
 
-  it("emits a structured JSON payload with null counts", () => {
-    const { rc, out } = capture((io) => cmdCompact({ project: tmp, mode: "check", format: "json" }, io));
-    expect(rc).toBe(0);
-    const payload = JSON.parse(out);
-    expect(payload.command).toBe("check compact");
-    expect(payload.summary.status).toBe("pass");
-    const changelog = payload.operations.find((o: { artifact: string }) => o.artifact === "changelog");
-    expect(changelog.active_count).toBeNull();
-  });
-
   it("reports pending TODO summary formatting without calling it over-limit", () => {
     const rows = Array.from(
       { length: 50 },
@@ -88,21 +78,6 @@ describe("cli compact", () => {
 
 
 describe("cli check compact", () => {
-  it("runs the compaction gate on an empty project", () => {
-    const { rc, out } = capture((io) => cmdGate({ project: tmp }, io));
-    expect(rc).toBe(0);
-    expect(out).toContain("status=pass | mode=check");
-  });
-
-  it("emits canonical structured command identity", () => {
-    const { rc, out } = capture((io) => cmdGate({ project: tmp, format: "json" }, io));
-    expect(rc).toBe(0);
-    const payload = JSON.parse(out);
-    expect(payload.command).toBe("check compact");
-    expect(payload).not.toHaveProperty("gate");
-    expect(payload.summary.mode).toBe("check");
-  });
-
   it("routes check compact (check mode) to the gate and check compact --mode fix to compact", () => {
     activate();
     const gate = capture((io) => main(["node", "agentera", "check", "compact", "--project", tmp], io));

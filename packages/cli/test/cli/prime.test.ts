@@ -81,6 +81,10 @@ describe("cli prime", () => {
     expect(out).toContain("npx -y agentera@next state <artifact> explain --format json");
     expect(out).toContain("Supported typed writes:");
     expect(out).toContain("--dry-run");
+    expect(out.endsWith("repair preview.\n")).toBe(true);
+    expect(out.endsWith("\n\n")).toBe(false);
+    expect(out).toContain("Optional draft prose preview; the writer validates published bytes");
+    expect(out).not.toContain("Pre-write artifact prose self-audit");
   });
 
   it("renders the default text orientation briefing", () => {

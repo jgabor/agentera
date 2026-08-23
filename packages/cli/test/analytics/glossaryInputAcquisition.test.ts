@@ -89,6 +89,17 @@ function writePersonalGlossary(pathname: string, count = 1): void {
   });
 }
 
+function writePersonalGlossaryFixture(pathname: string, count: number): void {
+  const entries = Array.from({ length: count }, (_, index) => personalEntry(index));
+  const document = {
+    schema_version: "agentera.personalGlossarySection.v1",
+    as_of: "2026-07-27",
+    confidence_basis: Object.fromEntries(entries.map((entry) => [entry.term, entry.confidence])),
+    entries,
+  };
+  fs.writeFileSync(pathname, `${START}\n## Glossary\n\n\`\`\`json\n${JSON.stringify(document, null, 2)}\n\`\`\`\n${END}\n`);
+}
+
 function finding(root: string): TerminologyDriftFinding {
   fs.writeFileSync(path.join(root, "term.ts"), "export type ProjectTerm = LegacyProjectTerm;\n");
   fs.writeFileSync(path.join(root, "term-extra.ts"), "export type ProjectAlias = ProjectTerm;\n");
@@ -469,7 +480,7 @@ describe("bounded glossary input acquisition", () => {
     });
 
     const overCount = profilePath();
-    writePersonalGlossary(overCount, 101);
+    writePersonalGlossaryFixture(overCount, 101);
     const bounded = acquirePersonalGlossaryInput(overCount);
     expect(bounded).toMatchObject({ availability: "over_bound", entries: [] });
     expect(
@@ -479,7 +490,7 @@ describe("bounded glossary input acquisition", () => {
 
   it("accepts exact personal byte and entry bounds and fatally rejects invalid UTF-8", () => {
     const exactBytes = profilePath();
-    writePersonalGlossary(exactBytes);
+    writePersonalGlossaryFixture(exactBytes, 1);
     padFile(exactBytes, 65536);
     expect(fs.statSync(exactBytes).size).toBe(65536);
     expect(acquirePersonalGlossaryInput(exactBytes)).toMatchObject({
@@ -488,7 +499,7 @@ describe("bounded glossary input acquisition", () => {
     });
 
     const exactEntries = profilePath();
-    writePersonalGlossary(exactEntries, 100);
+    writePersonalGlossaryFixture(exactEntries, 100);
     expect(fs.statSync(exactEntries).size).toBeLessThanOrEqual(65536);
     expect(acquirePersonalGlossaryInput(exactEntries)).toMatchObject({
       availability: "valid_present",

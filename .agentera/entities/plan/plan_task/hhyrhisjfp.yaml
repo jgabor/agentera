@@ -4,7 +4,7 @@ record:
   name: Remove redundant correctness work
   depends_on:
     - ddsmbqcrhb
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN bounded state-list fixtures WHEN cursor behavior is exercised THEN one canonical traversal still proves exact order, uniqueness, termination, and final-page behavior.
     - GIVEN each additional output representation WHEN one continuation page is rendered and read THEN its cursor and payload remain compatible with the canonical traversal.

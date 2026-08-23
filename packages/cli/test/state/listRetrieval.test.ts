@@ -184,9 +184,7 @@ describe("read-only migration fixture state listing", () => {
     expect(page1.snapshot.order).toBe("entry_number_desc");
   });
 
-  it.each(["json", "yaml", "text"] as const)(
-    "exhaustively follows every bounded %s cursor without repeating a page boundary",
-    (format) => {
+  it("exhaustively follows every bounded JSON cursor without repeating a page boundary", () => {
       for (const size of [0, 1, 2, 5, 9]) {
         const root = project();
         for (let number = 1; number <= size; number += 1) writeArchiveFixture(root, number);
@@ -195,7 +193,7 @@ describe("read-only migration fixture state listing", () => {
           const cursors = new Set<string>();
           let cursor: string | undefined;
           for (let pageNumber = 0; pageNumber <= size + 1; pageNumber += 1) {
-            const page = migrationFixturePage(root, format, limit, cursor);
+            const page = migrationFixturePage(root, "json", limit, cursor);
             ids.push(...page.ids);
             if (!page.nextCursor) break;
             expect(cursors.has(page.nextCursor)).toBe(false);
@@ -208,15 +206,16 @@ describe("read-only migration fixture state listing", () => {
           expect(new Set(ids).size).toBe(size);
         }
       }
-    },
-  );
+  });
 
-  it.each(["json", "yaml", "text"] as const)("returns the same bounded page for a repeated %s cursor", (format) => {
+  it.each(["yaml", "text"] as const)("continues a bounded %s page with compatible cursor and payload", (format) => {
     const root = project();
-    for (let number = 1; number <= 7; number += 1) writeArchiveFixture(root, number);
+    for (let number = 1; number <= 3; number += 1) writeArchiveFixture(root, number);
     const first = migrationFixturePage(root, format, 2);
-    const repeated = migrationFixturePage(root, format, 2, first.nextCursor);
-    expect(repeated).toEqual(migrationFixturePage(root, format, 2, first.nextCursor));
+    const continued = migrationFixturePage(root, format, 2, first.nextCursor);
+    expect(first.ids).toEqual(["progress:3", "progress:2"]);
+    expect(first.nextCursor).toEqual(expect.any(String));
+    expect(continued).toEqual({ ids: ["progress:1"], nextCursor: undefined });
   });
 
   it("keeps an appended row out of an established bounded CLI snapshot", () => {
