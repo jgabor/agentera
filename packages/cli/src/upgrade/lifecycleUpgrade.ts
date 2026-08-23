@@ -7,6 +7,7 @@ import {
 import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
 import {
   applyNativeResourceCleanup,
+  classifyAutomaticRetirement,
   previewNativeResourceCleanup,
   type NativeResourceCleanupPreview,
   type NativeResourceCleanupResult,
@@ -43,6 +44,7 @@ export interface LifecycleUpgradeArgs {
   appHome: string;
   apply: boolean;
   resourceCleanup: string;
+  automaticRetirement?: boolean;
 }
 
 export interface LifecycleUpgradeApplyOptions extends LifecycleApplyOptions {}
@@ -120,7 +122,24 @@ export function runLifecycleUpgrade(
     resourceId: args.resourceCleanup,
     home: args.home,
     ledger: journal.ledger,
+    automaticRetirement: args.automaticRetirement,
   });
+  if (args.automaticRetirement && preview.plan.operations[0]?.action !== "noop") {
+    const qualification = classifyAutomaticRetirement(
+      args.resourceCleanup,
+      preview.plan.operations[0]!.destination,
+      journal.path,
+    );
+    if (qualification.qualification !== "qualified") {
+      const reason = `automatic retirement requires manual review: ${qualification.reason}`;
+      preview = {
+        ...preview,
+        ledgerAuthorization: "blocked",
+        ledgerDiagnostics: [...preview.ledgerDiagnostics, reason],
+        plan: blockedPlan(preview.plan, reason),
+      };
+    }
+  }
   if (journalBlocksMutation(journal)) {
     const reason = journalBlocker(journal);
     preview = {
@@ -134,7 +153,7 @@ export function runLifecycleUpgrade(
   let outputJournal = journal;
   let nativeResourceCleanup: NativeResourceCleanupPreview | NativeResourceCleanupResult = preview;
   let cleanupSummary = previewSummary(preview);
-  if (args.apply && !journalBlocksMutation(journal)) {
+  if (args.apply && !journalBlocksMutation(journal) && preview.ledgerAuthorization !== "blocked") {
     nativeResourceCleanup = applyNativeResourceCleanup(preview, {
       ...options,
       approved: true,

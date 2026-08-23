@@ -448,13 +448,14 @@ function buildUpgradePlanUnlocked(
   if (migrationPreview && (entityAuthorityActive || (args.yes && entityCutoverPending))) {
     delegatePlanLifecycleToEntityCutover(migrationPreview.artifacts);
   }
-  const lifecycleArgs = args.legacyCleanup ? {
+  const lifecycleArgs = {
     home,
     appHome: installRoot,
     apply: false,
-    resourceCleanup: args.legacyCleanup,
-  } : null;
-  let lifecycle = lifecycleArgs ? runLifecycleUpgrade(lifecycleArgs) : null;
+    resourceCleanup: "opencode.plugin.agentera",
+    automaticRetirement: true,
+  };
+  let lifecycle = runLifecycleUpgrade(lifecycleArgs);
 
   const plannedPhases = [
     ...phases,

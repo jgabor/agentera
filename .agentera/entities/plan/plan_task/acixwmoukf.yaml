@@ -4,7 +4,7 @@ record:
   name: Integrate cleanup with normal upgrade
   depends_on:
     - hdktlehytj
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a proven retired plugin WHEN normal upgrade is previewed THEN removal is reported without filesystem mutation.
     - GIVEN a proven retired plugin WHEN normal upgrade is approved THEN it is removed without a legacy-cleanup selector, including on same-major v3 installations.

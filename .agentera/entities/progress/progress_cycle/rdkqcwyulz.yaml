@@ -1,0 +1,15 @@
+id: rdkqcwyulz
+artifact: progress
+record:
+  timestamp: 2026-08-23 20:06
+  type: feat
+  phase: build
+  what: Integrated bounded `opencode.plugin.agentera` retirement into normal `agentera upgrade` preview and apply paths, including same-major v3 repair.
+  context:
+    intent: Integrate proven retired plugin cleanup with normal upgrade.
+    constraints: Only the bounded OpenCode plugin may be automatic; preserve unproven resources and keep the task in progress for audit.
+    scope: Upgrade orchestration, automatic lifecycle cleanup, regression tests, and changelog.
+  discovered: The committed task 1 changelog insertion left the bootstrap scalar-classification inventory stale; task 3 should reconcile that operator-facing authority while updating guidance.
+  verified: 24 upgrade orchestrator tests passed; typecheck and build passed. Full source verification reached 191 passing policy tests but failed 3 because committed CHANGELOG.md line classifications are stale.
+  next: Task 3 can align diagnostics and operator guidance, including the stale changelog scalar-classification inventory.
+  publication_order: 202

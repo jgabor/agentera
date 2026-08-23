@@ -21,9 +21,10 @@
 - `agentera state todo set-severity` and `resolve` now accept strict,
   preview-confirmed same-kind batches while preserving singleton flag syntax.
 - Bounded automatic retirement to journal-owned `opencode.plugin.agentera`
-  installations with a proven historical fingerprint. Byte-identical copies
-  without matching per-install ownership, altered, unknown, non-regular,
-  unreadable, and all other retired resources remain manual review.
+  installations with a proven historical fingerprint. Normal upgrade now
+  previews and removes them during migration and same-major v3 repair, with a
+  fresh apply check. Unproven resources remain manual review without blocking
+  unrelated upgrade work.
 - [post-audit-flagged] `agentera state todo create --input` now accepts strict, preview-confirmed
   same-kind batches with request-local dependency references and replay-safe IDs.
 - Consented `agentera report refresh --consent local-history` now publishes the

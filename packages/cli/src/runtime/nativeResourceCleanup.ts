@@ -675,9 +675,24 @@ export function previewNativeResourceCleanup(opts: {
   home: string;
   ledger?: LifecycleOwnershipLedger;
   contract?: NativeResourceCleanupContract;
+  automaticRetirement?: boolean;
 }): NativeResourceCleanupPreview {
   const contract = opts.contract ?? loadNativeResourceCleanupContract();
-  const resource = resolveNativeResourceCleanupId(opts.resourceId, contract);
+  const automatic = opts.automaticRetirement
+    && contract.automaticRetirement.some(({ resourceId }) => resourceId === opts.resourceId)
+    && contract.diagnosticResources.find(({ id }) => id === opts.resourceId);
+  const resource = resolveNativeResourceCleanupId(opts.resourceId, contract) ?? (automatic ? {
+    id: opts.resourceId,
+    historicalIds: [contract.automaticRetirement.find(({ resourceId }) => resourceId === opts.resourceId)!.ownershipResourceId],
+    host: "opencode",
+    hostSupportStatus: "supported" as const,
+    kind: "file" as const,
+    destination: automatic.destinations[0]!,
+    ledgerStatus: "managed" as const,
+    durableProof: "bounded automatic retirement",
+    neverTouch: [],
+    safetyNote: "automatic retirement requires bounded content and installer ownership proof",
+  } : undefined);
   if (!resource) throw new Error(`unknown native Agentera resource cleanup id: ${opts.resourceId}`);
   const operations: LifecycleOperationSpec[] = [{
     id: resource.id,

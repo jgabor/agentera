@@ -10,6 +10,10 @@ import YAML from "yaml";
 
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
+import { appendLifecycleOwnershipJournal, lifecycleOwnershipJournalPath } from "../../src/runtime/lifecycleOwnershipJournal.js";
+import { observeLifecyclePath } from "../../src/runtime/lifecyclePublication.js";
+import { LIFECYCLE_LEDGER_SCHEMA } from "../../src/runtime/lifecycleOperations.js";
+import { runLifecycleUpgrade } from "../../src/upgrade/lifecycleUpgrade.js";
 import { applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
 import { getDecisionEntity } from "../../src/state/decisionEntities.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
@@ -89,6 +93,17 @@ function managedV2(appHome: string): void {
     path.join(app, BUNDLE_MARKER),
     JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }),
   );
+}
+
+function v3Bundle(): string {
+  const bundle = path.join(tmp, "v3-bundle");
+  fs.mkdirSync(path.join(bundle, "skills", "agentera"), { recursive: true });
+  fs.writeFileSync(path.join(bundle, "skills", "agentera", "SKILL.md"), "x");
+  fs.writeFileSync(path.join(bundle, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0" }] }));
+  fs.writeFileSync(path.join(bundle, BUNDLE_MARKER), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0" }));
+  fs.cpSync(path.join(REPO_ROOT, "skills", "agentera", "schemas"), path.join(bundle, "skills", "agentera", "schemas"), { recursive: true });
+  fs.cpSync(path.join(REPO_ROOT, "references"), path.join(bundle, "references"), { recursive: true });
+  return bundle;
 }
 
 beforeEach(() => {
@@ -223,8 +238,8 @@ describe("buildUpgradePlan", () => {
       message: expect.stringMatching(/entity cutover normalizes plan lifecycle/),
     });
     expect(artifacts?.summary.pending).toBe(0);
-    expect(plan.phases.some((phase) => phase.name === "lifecycle")).toBe(false);
-    expect(plan.lifecycle).toBeNull();
+    expect(plan.phases.some((phase) => phase.name === "lifecycle")).toBe(true);
+    expect(plan.lifecycle?.status).toBe("noop");
     expect(plan.summary.pending).toBe(0);
     expect(fs.readFileSync(path.join(project, ".agentera/plan.yaml"))).toEqual(legacyPlan);
   });
@@ -356,14 +371,14 @@ describe("buildUpgradePlan", () => {
 
     expect(plan.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
     expect(plan.channel.channel).toBe("development");
-    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities", "runtime", "cleanup"]);
+    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities", "runtime", "cleanup", "lifecycle"]);
     expect(plan.phases.every((p) => p.summary && Array.isArray(p.items))).toBe(true);
     expect(plan.dryRunCommand).toContain("--dry-run");
     expect(plan.applyCommand).toContain("--yes");
     expect(plan.applyCommand).not.toContain("--runtime");
     expect(plan.applyCommand).not.toContain("--target-major");
     expect(plan.upgradeOutcome.kind).toBe("migration_to_latest_on_channel");
-    expect(plan.lifecycle).toBeNull();
+    expect(plan.lifecycle?.status).toBe("noop");
   });
 
   it("rejects retired runtime selection before a blocked app phase", () => {
@@ -471,8 +486,8 @@ describe("buildUpgradePlan", () => {
       yes: true,
     });
 
-    expect(stablePreview.lifecycle).toBeNull();
-    expect(developmentApply.lifecycle).toBeNull();
+    expect(stablePreview.lifecycle?.status).toBe("noop");
+    expect(developmentApply.lifecycle?.status).toBe("noop");
   });
 
 
@@ -519,6 +534,95 @@ describe("buildUpgradePlan", () => {
     expect(plan.summary.pending).toBeGreaterThan(0);
   });
 
+  it("previews, applies, and converges automatic plugin retirement on same-major v3", () => {
+    const bundle = v3Bundle();
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "v3-project"));
+    initializeGit(project);
+    applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(project, bundle));
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+
+    const plugin = path.join(home, ".config", "opencode", "plugins", "agentera.js");
+    fs.mkdirSync(path.dirname(plugin), { recursive: true });
+    const historical = spawnSync("git", ["show", "aa33870df05d53745ebad5351b8a352b7dad7780:.opencode/plugins/agentera.js"], {
+      cwd: REPO_ROOT,
+      encoding: null,
+    });
+    expect(historical.status).toBe(0);
+    fs.writeFileSync(plugin, historical.stdout);
+    const observed = observeLifecyclePath(plugin, [home]);
+    appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(bundle), {
+      schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+      owner: "agentera",
+      records: [{
+        resourceId: "opencode.plugin",
+        destination: plugin,
+        kind: "file",
+        scope: "whole",
+        status: "managed",
+        fingerprint: observed.fingerprint!,
+        identity: observed.identity!,
+      }],
+    });
+
+    const preview = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", dryRun: true });
+    expect(preview.crossMajorBoundary).toBe(false);
+    expect(preview.lifecycle?.cleanupSummary.pending).toBe(1);
+    expect(fs.existsSync(plugin)).toBe(true);
+
+    const applied = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", yes: true });
+    expect(applied.lifecycle?.cleanupSummary.applied).toBe(1);
+    expect(fs.existsSync(plugin)).toBe(false);
+    expect(buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", yes: true }).lifecycle?.status).toBe("noop");
+
+    fs.writeFileSync(plugin, historical.stdout);
+    const replacementObservation = observeLifecyclePath(plugin, [home]);
+    appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(bundle), {
+      schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+      owner: "agentera",
+      records: [{
+        resourceId: "opencode.plugin",
+        destination: plugin,
+        kind: "file",
+        scope: "whole",
+        status: "managed",
+        fingerprint: replacementObservation.fingerprint!,
+        identity: replacementObservation.identity!,
+      }],
+    });
+    const raced = runLifecycleUpgrade({
+      home,
+      appHome: bundle,
+      apply: true,
+      resourceCleanup: "opencode.plugin.agentera",
+      automaticRetirement: true,
+    }, {
+      beforePublication() {
+        fs.writeFileSync(plugin, "changed before removal\n");
+      },
+    });
+    expect(raced.cleanupSummary.failed).toBe(1);
+    expect(fs.readFileSync(plugin, "utf8")).toBe("changed before removal\n");
+  });
+
+  it("preserves an unproven plugin while applying unrelated upgrade work", () => {
+    const bundle = v3Bundle();
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "unproven-project"));
+    initializeGit(project);
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+    const plugin = path.join(home, ".config", "opencode", "plugins", "agentera.js");
+    fs.mkdirSync(path.dirname(plugin), { recursive: true });
+    fs.writeFileSync(plugin, "user owned\n");
+
+    const applied = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", yes: true });
+
+    expect(fs.readFileSync(plugin, "utf8")).toBe("user owned\n");
+    expect(applied.lifecycle?.status).toBe("non_success");
+    expect("plan" in applied.lifecycle!.nativeResourceCleanup && applied.lifecycle.nativeResourceCleanup.ledgerDiagnostics).toContain(
+      "automatic retirement requires manual review: unproven_content",
+    );
+    expect(validateEntityState(project).valid).toBe(true);
+  });
+
   it("limits phases with --only artifacts", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
@@ -532,7 +636,7 @@ describe("buildUpgradePlan", () => {
       only: ["artifacts"],
     });
 
-    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities"]);
+    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities", "lifecycle"]);
     expect(plan.phases.some((p) => p.name === "runtime")).toBe(false);
     expect(plan.phases.some((p) => p.name === "cleanup")).toBe(false);
   });
@@ -585,7 +689,7 @@ describe("cmdUpgrade integration", () => {
     expect(payload.dryRunCommand).toContain("--dry-run");
     expect(payload.applyCommand).toContain("--yes");
     expect(payload.applyCommand).not.toContain("--runtime");
-    expect(payload.lifecycle).toBeNull();
+    expect(payload.lifecycle.status).toBe("noop");
     expect(payload.summary.pending).toBeGreaterThan(0);
     expect(payload.lifecycleStatus).toBe(STATUS_READY_TO_APPLY);
   });
