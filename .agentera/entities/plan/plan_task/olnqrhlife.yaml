@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: bhhshalaqm
   name: Complete release qualification
-  status: pending
+  status: in_progress
   depends_on:
     - wkkkhpcfay
   acceptance:

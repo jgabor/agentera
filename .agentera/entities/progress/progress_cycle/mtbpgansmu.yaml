@@ -1,0 +1,15 @@
+id: mtbpgansmu
+artifact: progress
+record:
+  timestamp: 2026-08-23 21:23
+  type: test
+  phase: audit
+  what: The canonical release DAG stopped at performance because other marked source verification processes contended the host.
+  context:
+    intent: Preserve durable failure evidence for final task olnqrhlife without evaluating task or plan state.
+    constraints: Run the release DAG once, do not retry or run owners separately, and keep publication and registry side effects false.
+    scope: Final release qualification after the audited repairs passed.
+  discovered: The performance owner rejected the contended host and named active source owners. The conjunction completed no owner, issued no governed gate result, and deferred all remaining gates after the first failure. Local performance evidence is non-authoritative because the owner could not obtain an uncontended machine-sensitive sample.
+  verified: env -u NODE_OPTIONS -u NODE_INSPECT_RESUME_ON_START pnpm -C packages/cli run verify:release exited 1 after 470325ms. Conjunction gate identity 9d22ed14096ffc9946ecb1a6b95a320813935f8a7e4fa1cfdae353fd9dbceb67 reported gate_count 11, gates empty, first_failure performance, owner packages/cli/scripts/verify-lane.mjs#performance, generated_artifact null, completed none, and settled performance failed. Receipt, candidate, registry, activation, and publication side effects were all false.
+  next: Wait for all marked verification owners to settle before a later authorized full release DAG run.
+  publication_order: 213
