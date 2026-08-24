@@ -6,7 +6,7 @@ record:
     - cjdqaqiqyd
     - xglpiuqkvh
     - paiazvdmqj
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the runtime and cutover changes WHEN targeted and authoritative source, capacity, package, and release checks run THEN all affected owners pass without relaxed budgets or skipped evidence.
     - GIVEN equivalent uncontended conditions WHEN the source breakdown reruns THEN cumulative source-worker time is at least two minutes below 22m 26.699s and the comparison remains diagnostic rather than a new gate.
@@ -17,3 +17,13 @@ record:
     - Node 24.19.0 source breakdown passed 249 files, 4122 tests (4120 passed, 2 skipped), 4m42.447s wall and 16m40.925s cumulative worker time, 5m45.774s below baseline.
     - Capacity passed 4 files/4 tests in 80.67s; package passed 3 files/14 tests in 9.66s within 60s owner budget; release runtime evidence passed 3 tests with 1 bounded-only skip in 121.89s.
     - "Typecheck, Node 24 build, compact, capability contract, and lane inventory passed. No TODO or changelog record is affected. Checkout release-metadata remains outside this task: gitRef names an earlier governed package source."
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-stg-1
+      source: orchestrate audit for task stggdkyphl
+      recorded_at: 2026-08-24 09:55
+      writer_command: agentera state plan record-evaluation
