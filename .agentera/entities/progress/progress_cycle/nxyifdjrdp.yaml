@@ -1,0 +1,14 @@
+id: nxyifdjrdp
+artifact: progress
+record:
+  timestamp: 2026-08-24 01:40
+  type: test
+  phase: audit
+  what: Verified the right-sized source delivery under the pinned Node 24 runtime and synchronized final task evidence without closing orchestration-owned lifecycle state.
+  context:
+    intent: Run the affected source, capacity, package, runtime release-evidence, build, and repository gates; preserve diagnostic timing evidence; update only final plan and progress state.
+    constraints: Task stggdkyphl remains in progress for orchestration audit. No timing gate, TODO change, changelog entry, publication, or push.
+  discovered: The baseline used Node 22.23.2, but the branch now pins Node 24.19.0. No competing verification owner was present. One initial build attempt used Corepack pnpm 11.3.0 inside the build and failed the repository pnpm-version check; rerunning with direct pinned pnpm 10.30.3 passed. An extra release-metadata check reported the existing checkout gitRef points to an earlier governed package source; this is outside the runtime-evidence check and was not changed.
+  verified: "TMPDIR=/var/tmp/agentera-stggdkyphl-3951558 with Node 24.19.0 and pnpm 10.30.3: source breakdown passed 249 files and 4122 tests (4120 passed, 2 governed skips), wall 4m42.447s, cumulative worker 16m40.925s. This is 5m45.774s below 22m26.699s and remains diagnostic only. Capacity passed 4 files/4 tests in 80.67s. Package passed 3 files/14 tests in 9.66s, owner wall 10025ms under 60000ms. Release runtime evidence passed 3 tests with 1 bounded-only skip in 121.89s. Typecheck, direct pinned-pnpm build, compact, capability contract, and verification inventory passed. No affected TODO exists and no shipped contract changed, so TODO.md and CHANGELOG.md are unchanged."
+  next: Orchestration should audit task stggdkyphl and own task and plan closure. The task remains in_progress.
+  publication_order: 220

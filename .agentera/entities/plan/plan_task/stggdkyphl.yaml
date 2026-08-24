@@ -6,10 +6,14 @@ record:
     - cjdqaqiqyd
     - xglpiuqkvh
     - paiazvdmqj
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the runtime and cutover changes WHEN targeted and authoritative source, capacity, package, and release checks run THEN all affected owners pass without relaxed budgets or skipped evidence.
     - GIVEN equivalent uncontended conditions WHEN the source breakdown reruns THEN cumulative source-worker time is at least two minutes below 22m 26.699s and the comparison remains diagnostic rather than a new gate.
     - GIVEN the verified final diff WHEN project state is synchronized THEN plan tasks, evaluations, progress, and any affected TODO records accurately describe the delivered result through typed writers.
     - GIVEN no user-facing behavior changed WHEN changelog scope is assessed THEN no changelog entry is added unless the final diff changes a shipped contract.
   plan: ewclribdyz
+  evidence:
+    - Node 24.19.0 source breakdown passed 249 files, 4122 tests (4120 passed, 2 skipped), 4m42.447s wall and 16m40.925s cumulative worker time, 5m45.774s below baseline.
+    - Capacity passed 4 files/4 tests in 80.67s; package passed 3 files/14 tests in 9.66s within 60s owner budget; release runtime evidence passed 3 tests with 1 bounded-only skip in 121.89s.
+    - "Typecheck, Node 24 build, compact, capability contract, and lane inventory passed. No TODO or changelog record is affected. Checkout release-metadata remains outside this task: gitRef names an earlier governed package source."
