@@ -1,0 +1,28 @@
+id: twajrckdrh
+artifact: health
+record:
+  date: 2026-08-24
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: artifact freshness remains A with complete terminal-open closure evidence."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited closure audit for plan prpojxblfj passed. All four tasks are complete with persisted PASS evaluations. TODO.md, CHANGELOG.md, plan entities, final progress, and the glossary schema changed on or after 2026-08-24. The delivered range contains the approved reconciliation scope; the sole pre-closure worktree change was the coordinator-owned final task completion and evaluation transition. Final evidence records 4,123 source tests, 15 package tests, typecheck, build, state, compact, vocabulary, cross-capability, and contract PASS.
+      findings:
+        []
+  trends:
+    comparison_target: health lnbelrvvms (2026-08-23)
+    stable: Artifact freshness remains A with no findings.
+    new_findings: None.
+    carried_forward: Host /tmp remains full. Decisions, vision, and profile detail stay deferred; profile-derived state is stale. These are non-failing closure caveats.
+  patterns:
+    - Typed task evaluations and final progress evidence precede coordinator-owned plan closure.
+  appended_at: 2026-08-24T02:36:56.335Z

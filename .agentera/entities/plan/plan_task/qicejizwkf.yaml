@@ -6,10 +6,20 @@ record:
     - vzilxvsilu
     - pnhkgbhewv
     - ghwzgirlgw
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN all prior tasks complete WHEN plan, TODO, changelog, progress policy, and artifact discovery are inspected THEN no current surface contradicts the implemented glossary lifecycle.
     - GIVEN source and bundled execution WHEN targeted tests and governing validation gates run THEN both surfaces pass the same glossary and profile contracts.
     - GIVEN unrelated repository work WHEN the final change set is reviewed THEN only the approved reconciliation scope is present.
     - GIVEN final verification evidence WHEN task status is synchronized THEN the plan is ready for archival with no unresolved acceptance criterion.
   plan: prpojxblfj
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Orca audit dispatch ctx_e4077bb29daf
+      recorded_at: 2026-08-24 04:30
+      writer_command: agentera state plan record-evaluation
