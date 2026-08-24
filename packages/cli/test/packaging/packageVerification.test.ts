@@ -6,6 +6,10 @@ import path from "node:path";
 import YAML from "yaml";
 import { describe, expect, inject, it } from "vitest";
 
+import {
+  EXPECTED_PRODUCER_READINESS,
+  runProducerReadinessWorkflow,
+} from "../helpers/producerReadinessWorkflow.js";
 import { runProductionGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
 
 const fixture = inject("packageFixture");
@@ -240,6 +244,12 @@ describe("npm distribution boundary", () => {
       privacyBounded: true,
       recovery: "agentera report refresh --consent local-history",
     });
+  });
+
+  it("runs the producer readiness workflow from the extracted package", { timeout: 120_000 }, async () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    await expect(runProducerReadinessWorkflow(bin, path.join(fixture.root, "producer-readiness")))
+      .resolves.toEqual(EXPECTED_PRODUCER_READINESS);
   });
 
   it("matches source preview and destructive fresh reset behavior", () => {

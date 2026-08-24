@@ -1,0 +1,16 @@
+id: eewhcnbxud
+artifact: progress
+record:
+  timestamp: 2026-08-24 02:44
+  type: fix
+  phase: build
+  what: Corrected accepted audit-1 findings for task vzilxvsilu without changing the valid glossary implementation.
+  context:
+    intent: Correct only the accepted audit-1 findings and return verified package and source evidence.
+    constraints: Preserve the prior implementation; do not push, publish, bump versions, add docs mapping, weaken tests, or complete task vzilxvsilu.
+    unknowns: None after authoritative source and package owners passed.
+    scope: Owning package test, related changelog layout and scalar authority, typed progress evidence.
+  discovered: The constructed-package guard helper had no owning import. The source-owner failures came from stale CHANGELOG.md scalar regions after a new glossary entry; an unrelated reflow had masked part of the line shift. Corepack pnpm caused nested scripts to select 11.3.0, and /tmp was full, so authoritative runs used direct pnpm 10.30.3 and a task-specific TMPDIR.
+  verified: '`git grep -n "runProducerReadinessWorkflow\|producerReadinessWorkflow" -- packages/cli/test/packaging/packageVerification.test.ts` returned the owning import and call. From packages/cli, `TMPDIR=/home/jgabor/.cache/agentera-fix-glossary.NkdERy mise exec node@24.19.0 -- vp test run --config vite.config.ts test/runtime/retiredRuntimeSurfacePolicy.test.ts` passed 1 file and 194 tests. From the repository root, `TMPDIR=/home/jgabor/.cache/agentera-fix-glossary.NkdERy mise exec node@24.19.0 -- pnpm -C packages/cli run verify:package` passed 3 files and 15 tests in 39,192 ms under the 60,000 ms budget. From the repository root, `TMPDIR=/home/jgabor/.cache/agentera-fix-glossary.NkdERy mise exec node@24.19.0 -- pnpm -C packages/cli test` passed 249 files and 4,123 tests with 1 skip.'
+  next: Coordinator evaluates the correction; task vzilxvsilu remains in_progress.
+  publication_order: 218

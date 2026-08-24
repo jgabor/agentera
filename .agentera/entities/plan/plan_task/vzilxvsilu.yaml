@@ -12,3 +12,13 @@ record:
     - GIVEN the current backlog and shipped documentation WHEN reconciliation completes THEN the three unmanaged glossary rows and retired validation terminology are absent without rewriting resolved history.
     - GIVEN each changed behavior WHEN focused tests run THEN at least one passing and one failing case prove the validation boundary.
   plan: prpojxblfj
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Package pass/fail readiness helper has no owning test import, the broad source owner currently reports three failures, CHANGELOG contains unrelated reflow, and recorded progress evidence lacks durable commands resolving those discrepancies.
+    provenance:
+      attempt_id: audit-1
+      source: Orca audit dispatch ctx_bc088fdc3361
+      recorded_at: 2026-08-24 02:21
+      writer_command: agentera state plan record-evaluation

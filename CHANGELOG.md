@@ -13,7 +13,8 @@
   operator, substitution, split-token, multiline, nested, malformed,
   alias-cycle, or wrong-channel evasion with one diagnostic per invocation.
   Stable-channel tokens are confined independently of command recognition.
-  Exact source/package parity now includes all generated declaration fields, unused exemptions, and conservative import/re-export closure with explicit producer or non-producer classification.
+  Exact source/package parity now includes all generated declaration fields, unused exemptions,
+  and conservative import/re-export closure with explicit producer or non-producer classification.
 
 ### Changed
 
@@ -211,10 +212,9 @@
   confidence decay and refresh, retained permanence, and no project-glossary
   reads. Discuss, Plan, and Build consume it only through bounded glossary
   advice after project-state acquisition proves the applicable authority.
-- Added canonical project-glossary discovery and confirmed-variant enforcement
-  through the canonical whole-state validator. Approved literal drift variants fail when
-  reintroduced outside their retained evidence, with the canonical term,
-  source location, and correction.
+- Added canonical project-glossary discovery and confirmed-variant enforcement through
+  the canonical whole-state validator. Approved literal drift variants fail when reintroduced
+  outside their retained evidence, with the canonical term, source location, and correction.
 - Added `agentera report glossary-advice --input <file|-> --format json` for
   active read-only glossary lookup. Exact project entries govern project work;
   personal entries apply only after a valid project gap is proven; and inferred
