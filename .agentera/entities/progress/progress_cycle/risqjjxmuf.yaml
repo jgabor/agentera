@@ -1,0 +1,16 @@
+id: risqjjxmuf
+artifact: progress
+record:
+  timestamp: 2026-08-24 03:39
+  type: fix
+  phase: build
+  what: Refined the open non-glossary profile provenance TODO for the bounded signal-generation model.
+  context:
+    intent: Replace obsolete corpus-era assumptions with an executable contract for current-generation non-glossary provenance.
+    constraints: Preserve the open lifecycle, independently owned personal Glossary section, resolved history, profile implementation, and remote state.
+    unknowns: The defect remains open because no executable implementation evidence proves current-generation-only date and confidence derivation.
+    scope: Typed TODO contract, canonical TODO.md reconciliation, and orchestration verification state only.
+  discovered: Current Profile Full instructions synthesize the non-glossary base from an existing bounded signal tier and independently preserve the personal Glossary range, but no implementation evidence proves that prior non-glossary dates or confidence cannot influence regenerated output.
+  verified: Exact TODO get and open-list reads show an actionable open item with clean public reconciliation; TODO.md contains one canonical managed row; check compact passes; the focused TODO and plan state suites pass 2 files and 168 tests on Node 24.19.0.
+  next: Keep the planned task in progress for coordinator evaluation; a future build must implement the TODO acceptance without changing personal Glossary ownership or lifecycle behavior.
+  publication_order: 220

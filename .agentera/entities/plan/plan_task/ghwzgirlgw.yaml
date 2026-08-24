@@ -4,7 +4,7 @@ record:
   name: Refine non-glossary profile provenance work
   depends_on:
     - pnhkgbhewv
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the current bounded evidence model WHEN the remaining profile provenance TODO is rendered THEN it refers to the current bounded signal generation rather than a monolithic corpus.
     - GIVEN the independently owned personal Glossary section WHEN the TODO scope is inspected THEN glossary confidence, permanence, and publication are explicitly excluded.

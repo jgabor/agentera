@@ -3,12 +3,36 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[chore:3.0.0] Re-derive `first:` dates and confidence numbers from the current corpus on every profile write, instead of carrying them forward from the prior profile. The adversarial review in `ses_1406cbc95ffeZ8WRcSvUag387G` found 25+ entries where `first:` predated the corpus start (`first:2026-02-08` against a 2026-02-14 corpus) and several where the confidence number reflected a prior rebuild's evidence. The profilera writer must mark inherited entries explicitly (e.g., `first:2026-02-08 inherited:2026-05-30`) and demote confidence to the maximum of \"re-evidenced in current corpus\" and \"carried forward\" rather than silently blending them."
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[chore:3.0.0] Re-derive `first:` dates and confidence numbers from the current corpus on every profile write, instead of carrying them forward from the prior profile. The adversarial review in `ses_1406cbc95ffeZ8WRcSvUag387G` found 25+ entries where `first:` predated the corpus start (`first:2026-02-08` against a 2026-02-14 corpus) and several where the confidence number reflected a prior rebuild's evidence. The profilera writer must mark inherited entries explicitly (e.g., `first:2026-02-08 inherited:2026-05-30`) and demote confidence to the maximum of \"re-evidenced in current corpus\" and \"carried forward\" rather than silently blending them."
+      description: "[fix:3.0.0] Recompute non-glossary profile provenance from each bounded signal generation"
       severity: normal
       status: open
       order: 17
+  kind: fix
+  target_version: 3.0.0
+  requirements:
+    - For every Profile Full generation, compute each non-glossary decision entry's `first` date from the earliest timestamp among its supporting records in the selected current bounded signal generation.
+    - Compute each non-glossary decision entry's numeric confidence only from supporting signals in that same generation, applying the declared evidence-strength bands and any bounded-signal sufficiency cap; a matching prior PROFILE.md entry must not supply or raise the date or confidence.
+    - Treat the prior non-glossary profile only as history and change-summary input, never as evidence for a newly generated claim.
+    - Exclude a signal whose `evidence_anchor` does not resolve within the current generation's retained full-evidence shards; omit the claim when no resolvable support remains, otherwise recompute its date and confidence from the remaining resolvable support.
+    - Preserve the independently owned personal Glossary section byte-for-byte. Glossary-entry confidence, permanence, `confidence_basis`, decay, admission, review, and publication lifecycle are explicitly excluded.
+  acceptance:
+    - GIVEN a prior non-glossary entry with an earlier `first` date or higher confidence than the current bounded signal generation supports WHEN Profile Full regenerates the profile THEN the output uses the earliest resolvable supporting timestamp and confidence derived only from that generation, without carrying forward either prior value.
+    - GIVEN identical current bounded signals and prior profiles with different non-glossary dates or confidence WHEN Profile Full generates each base profile THEN the generated non-glossary metadata is identical.
+    - GIVEN an unresolved evidence anchor WHEN non-glossary provenance is computed THEN that signal contributes neither a date nor confidence, and a claim with no remaining resolvable support is absent.
+    - GIVEN an insufficient bounded-signal family WHEN its non-glossary category is synthesized THEN confidence is capped at CS4 (30-49) or below and the profile reports the declared flagged limitation.
+    - GIVEN an existing canonical personal Glossary section WHEN the non-glossary provenance behavior and its tests run THEN the owned section remains byte-identical and no glossary admission, review, confidence, permanence, decay, or publication behavior changes.
+  release_blocker: false
+  title: Recompute non-glossary profile provenance from each bounded signal generation
+  readiness:
+    capability: build
+    reason: The non-glossary provenance defect has executable behavioral requirements and does not depend on glossary lifecycle work.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 96
+    order_reason: Execute after the current glossary reconciliation plan; implementation evidence is still absent.
