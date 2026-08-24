@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-08-24
-    status: open
+    status: complete
     reviewed: 2026-08-24
     critic_issues: 3 found, 3 addressed, 0 dismissed
     title: "Plan: Right-size remaining source integration tests"
