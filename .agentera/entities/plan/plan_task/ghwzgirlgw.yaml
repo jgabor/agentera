@@ -4,9 +4,19 @@ record:
   name: Refine non-glossary profile provenance work
   depends_on:
     - pnhkgbhewv
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the current bounded evidence model WHEN the remaining profile provenance TODO is rendered THEN it refers to the current bounded signal generation rather than a monolithic corpus.
     - GIVEN the independently owned personal Glossary section WHEN the TODO scope is inspected THEN glossary confidence, permanence, and publication are explicitly excluded.
     - GIVEN no implementation evidence for the underlying provenance defect WHEN reconciliation completes THEN the work remains open with precise behavioral acceptance rather than being closed speculatively.
   plan: prpojxblfj
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: Orca audit dispatch ctx_0ab9e361bc65
+      recorded_at: 2026-08-24 03:50
+      writer_command: agentera state plan record-evaluation

@@ -6,7 +6,7 @@ record:
     - vzilxvsilu
     - pnhkgbhewv
     - ghwzgirlgw
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN all prior tasks complete WHEN plan, TODO, changelog, progress policy, and artifact discovery are inspected THEN no current surface contradicts the implemented glossary lifecycle.
     - GIVEN source and bundled execution WHEN targeted tests and governing validation gates run THEN both surfaces pass the same glossary and profile contracts.
