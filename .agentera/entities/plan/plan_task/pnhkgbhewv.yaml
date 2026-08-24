@@ -4,7 +4,7 @@ record:
   name: Resolve optional profile-grounding work
   depends_on:
     - vzilxvsilu
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN an absent or invalid profile WHEN a self-contained capability request starts THEN execution remains available without private profile content or an unrelated prerequisite.
     - GIVEN a request that explicitly requires profile grounding WHEN grounding is unavailable THEN behavior follows a declared bounded contract rather than an inferred mode.

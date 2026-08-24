@@ -4,7 +4,7 @@ record:
   name: Restore and reconcile the glossary contract
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a confirmed project glossary WHEN a retained drift variant is reintroduced outside approved evidence THEN the active CLI validation route fails with the canonical term, location, and correction.
     - GIVEN no project glossary or no reintroduced variant WHEN the same validation route runs THEN it passes without creating or changing glossary state.
@@ -13,12 +13,12 @@ record:
     - GIVEN each changed behavior WHEN focused tests run THEN at least one passing and one failing case prove the validation boundary.
   plan: prpojxblfj
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Package pass/fail readiness helper has no owning test import, the broad source owner currently reports three failures, CHANGELOG contains unrelated reflow, and recorded progress evidence lacks durable commands resolving those discrepancies.
     provenance:
-      attempt_id: audit-1
-      source: Orca audit dispatch ctx_bc088fdc3361
-      recorded_at: 2026-08-24 02:21
+      attempt_id: audit-2
+      source: Orca audit dispatch ctx_f0d31b41130e
+      recorded_at: 2026-08-24 03:02
       writer_command: agentera state plan record-evaluation

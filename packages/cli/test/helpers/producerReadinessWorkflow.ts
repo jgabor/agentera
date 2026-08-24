@@ -42,6 +42,9 @@ export interface ProducerReadinessObservation {
   boundary: {
     startupCapabilities: string[];
     groundingStatuses: string[];
+    unavailableGroundingStatus: string;
+    selfContainedRequestAvailable: boolean;
+    unavailablePrivateDataHidden: boolean;
     malformedGroundingCasesRejected: number;
     groundingErrorsSanitized: boolean;
     nonGlossaryBytesExact: boolean;
@@ -603,6 +606,36 @@ export async function runProducerReadinessWorkflow(
   });
   assertTrapsAbsent(unavailable, pathTraps, "path");
 
+  const selfContained = invoke(
+    executable,
+    ["prime", "--context", "build", "--input", "-", "--format", "json"],
+    project,
+    { ...env, AGENTERA_PROFILE_DIR: trappedProfileDir },
+    [
+      "schema_version: agentera.buildExecutionRequest.v1",
+      "scope: Verify self-contained work without profile grounding",
+      "acceptance:",
+      "  - Execution remains available without profile grounding",
+      "",
+    ].join("\n"),
+  );
+  assert.equal(selfContained.status, 0, selfContained.stderr || selfContained.stdout);
+  const selfContainedPayload = JSON.parse(selfContained.stdout);
+  const selfContainedExecution = selfContainedPayload.capability_context?.context?.execution_context;
+  const selfContainedRequestAvailable =
+    selfContainedPayload.capability_context?.startup?.outcome !== "blocked" &&
+    selfContainedExecution?.mode === "no_plan" &&
+    selfContainedExecution?.work_selection?.status === "selected" &&
+    selfContainedExecution?.acceptance_criteria?.status === "available" &&
+    !selfContainedExecution?.fallback_commands?.includes(
+      "npx -y agentera@next report profile-grounding --format json",
+    );
+  assert.equal(selfContainedRequestAvailable, true, "absent profile blocked self-contained Build work");
+  const unavailablePrivateDataHidden = !trapValues(pathTraps).some(
+    (trap) => selfContained.stdout.includes(trap) || selfContained.stderr.includes(trap),
+  );
+  assert.equal(unavailablePrivateDataHidden, true, "absent profile path leaked into Build startup");
+
   const readTraps = groundingTraps("read");
   const readHook = path.join(root, "profile-read-failure.mjs");
   fs.writeFileSync(
@@ -659,6 +692,9 @@ export async function runProducerReadinessWorkflow(
     boundary: {
       startupCapabilities,
       groundingStatuses,
+      unavailableGroundingStatus: unavailablePayload.status,
+      selfContainedRequestAvailable,
+      unavailablePrivateDataHidden,
       malformedGroundingCasesRejected,
       groundingErrorsSanitized,
       nonGlossaryBytesExact,
@@ -692,6 +728,9 @@ export const EXPECTED_PRODUCER_READINESS: ProducerReadinessObservation = {
   boundary: {
     startupCapabilities: ["discuss", "plan", "build"],
     groundingStatuses: ["ok", "ok", "ok"],
+    unavailableGroundingStatus: "absent",
+    selfContainedRequestAvailable: true,
+    unavailablePrivateDataHidden: true,
     malformedGroundingCasesRejected: 8,
     groundingErrorsSanitized: true,
     nonGlossaryBytesExact: true,

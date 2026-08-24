@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation."
       severity: normal
       status: open
-      order: 22
+      order: 21

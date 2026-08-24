@@ -14,16 +14,16 @@ record:
     - Unavailable grounding reads no private profile content into capability context, diagnostics, logs, or plan state.
   release_blocker: true
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests."
+      status: resolved
+      order: 122
       severity: normal
-      status: open
-      order: 21
   lifecycle:
-    operation: set-severity
-    reason: Moved from the duplicated Critical section to the Normal backlog.
-    date: 2026-08-06
+    operation: resolve
+    reason: Current supported request modes treat profile grounding as optional context; valid and unavailable paths are covered without private disclosure.
+    date: 2026-08-24

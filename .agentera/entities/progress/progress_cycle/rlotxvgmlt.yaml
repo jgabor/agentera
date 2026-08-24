@@ -1,0 +1,16 @@
+id: rlotxvgmlt
+artifact: progress
+record:
+  timestamp: 2026-08-24 03:17
+  type: test
+  phase: build
+  what: Proved that profile grounding is optional for supported self-contained requests and resolved the stale profile-grounding TODO.
+  context:
+    intent: Resolve optional profile-grounding work with the smallest current-state evidence change.
+    constraints: Preserve glossary exclusion and privacy; do not refresh profile state, alter vision, publish, push, or change versions.
+    unknowns: None. Current request and startup authorities define no required-grounding request mode.
+    scope: Extracted-package valid and absent profile grounding plus a self-contained Build request under unavailable profile state.
+  discovered: The only transient capability request schema accepts exactly schema_version, scope, and acceptance. Profile is deferred startup context; no supported request mode declares it required.
+  verified: "PASS: PATH=/home/jgabor/.local/share/mise/installs/node/24.19.0/bin:$PATH pnpm -C packages/cli run typecheck. PASS: PATH=/home/jgabor/.local/share/mise/installs/node/24.19.0/bin:$PATH pnpm -C packages/cli build. PASS: TMPDIR=/home/jgabor/.cache/agentera-fix-glossary.9QMx2t PATH=/home/jgabor/.local/share/mise/installs/node/24.19.0/bin:$PATH pnpm -C packages/cli test -- packages/cli/test/cli/profileAcquisition.test.ts packages/cli/test/cli/buildExecutionRequest.test.ts (2 files, 51 tests). PASS: TMPDIR=/home/jgabor/.cache/agentera-fix-glossary.9QMx2t PATH=/home/jgabor/.local/share/mise/installs/node/24.19.0/bin:$PATH pnpm -C packages/cli run verify:package (3 files, 15 tests)."
+  next: Keep the current plan task in progress for independent evaluation; no hypothetical required-grounding mode remains.
+  publication_order: 219

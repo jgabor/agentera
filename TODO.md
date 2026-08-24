@@ -33,7 +33,6 @@
 - [ ] [id:vhsrtulfio] [fix:3.0.0] Reduce the focused runtimeBootstrapMatrix.test.ts package-verification wall time from about 128 seconds to a bounded release-gate budget without weakening the 190-row source/package bootstrap proof.
 - [ ] [id:azsvrmuhch] [fix:3.0.0] Make Doctor report project operability separately from installation health.
 - [ ] [id:zeyfnbqdov] [fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup.
-- [ ] [id:yqyodsuqfb] [fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests.
 - [ ] [id:jyxnnzvysl] [fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
@@ -167,3 +166,4 @@
 - [x] [id:kzthftsrys] [test:3.0.0] Reduce batched runtime integration median below baseline
 - [x] [id:wcjklpzgop] [fix:3.0.0] Make stale-lock races reach canonical duplicate detection
 - [x] [id:qtywxothpb] [test:3.0.0] Preserve cold performance failure diagnostics
+- [x] [id:yqyodsuqfb] [fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests.
