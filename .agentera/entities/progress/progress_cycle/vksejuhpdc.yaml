@@ -1,0 +1,14 @@
+id: vksejuhpdc
+artifact: progress
+record:
+  timestamp: 2026-08-25 11:13
+  type: fix
+  phase: audit
+  what: Closed the stale-lock preparation-loss boundary by rebuilding only when publish rename ENOENT coincides with loss of the pinned preparation path.
+  context:
+    intent: Apply the accepted audit correction for a preparation removed immediately before stale-claim link publication.
+    constraints: Preserve bounded retries, one publisher, the explicit duplicate-ID loser, and cleanup. Propagate ENOENT unless the prepared path no longer matches its pinned directory descriptor.
+    scope: packages/cli/src/state/write/lock.ts and its deterministic lock regression
+  discovered: The prior claim-link ENOENT recovery returned to the acquisition loop, where publishPrepared retried rename before the later preparation identity check and raised a fatal ENOENT for the vanished source.
+  verified: Under Node 24.19.0 and pnpm 10.30.3, the new regression failed before the source correction at publishPrepared rename and then passed. Focused entity storage and lock tests passed 44/44, the 100-race stress owner passed 2/2, typecheck passed, and full source passed 249 files with 4,124 tests passed and 2 skipped.
+  publication_order: 223

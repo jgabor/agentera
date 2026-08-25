@@ -246,6 +246,36 @@ describe("project writer lock", () => {
     }
   });
 
+  it("rebuilds when its preparation disappears immediately before claim publication", () => {
+    const project = root();
+    seedLock(project, {
+      pid: 999_999_999,
+      token: "stale-instance",
+      created_at: "2020-01-01T00:00:00Z",
+    });
+    const originalLink = fs.linkSync;
+    let removed = false;
+    const link = vi.spyOn(fs, "linkSync").mockImplementation(((...args: unknown[]) => {
+      if (!removed && String(args[1]).endsWith("/.reclaim.json")) {
+        removed = true;
+        fs.rmSync(path.dirname(fs.realpathSync(String(args[0]))), { recursive: true });
+      }
+      return Reflect.apply(originalLink, fs, args);
+    }) as typeof fs.linkSync);
+
+    try {
+      const lock = acquireWriterLock(project, 500);
+      expect(removed).toBe(true);
+      expect(JSON.parse(fs.readFileSync(path.join(lock.path, "owner.json"), "utf8"))).toMatchObject({
+        pid: process.pid,
+      });
+      lock.release();
+    } finally {
+      link.mockRestore();
+    }
+    expect(fs.readdirSync(path.join(project, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
+  });
+
   it("does not release a successor lock with a different owner token", () => {
     const project = root();
     const first = acquireWriterLock(project, 100);

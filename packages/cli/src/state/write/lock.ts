@@ -577,6 +577,10 @@ function publishPrepared(
   try {
     fs.renameSync(prepared.path, fdPath(parentFd, lockName));
   } catch (error) {
+    if (
+      (error as NodeJS.ErrnoException).code === "ENOENT"
+      && !pathMatches(prepared.path, prepared.dirFd, DIRECTORY_FLAGS)
+    ) return null;
     if (renameConflict(error)) return null;
     throw error;
   }
