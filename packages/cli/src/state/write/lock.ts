@@ -651,6 +651,7 @@ function claimInspectedDirectory(
     // One fixed O_EXCL entry elects one reclaimer inside the exact directory inspected above.
     fs.linkSync(fdPath(prepared.dirFd, OWNER_NAME), claimPath);
   } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
     const existing = inspectRecord(inspection.fd, CLAIM_NAME);
     try {
@@ -889,6 +890,9 @@ export function acquireWriterLock(
         return published;
       }
       if (prepared.dirFd < 0 || prepared.ownerFd < 0) {
+        prepared = prepareLock(parentFd);
+      } else if (!pathMatches(prepared.path, prepared.dirFd, DIRECTORY_FLAGS)) {
+        disposePrepared(prepared, parentFd);
         prepared = prepareLock(parentFd);
       }
 

@@ -1,0 +1,14 @@
+id: zdzjpgzwie
+artifact: progress
+record:
+  timestamp: 2026-08-25 10:53
+  type: fix
+  phase: build
+  what: Made simultaneous stale-lock reclaimers recover when a peer removes their private preparation path, preserving one publisher and one canonical duplicate-ID loser.
+  context:
+    intent: Make stale-lock publication deterministic under supported source concurrency.
+    constraints: Preserve bounded lock waits, duplicate-ID semantics, residue checks, and stress ownership.
+    scope: Entity writer lock recovery and race diagnostics.
+  discovered: Under the controlled race, the loser could receive ENOENT while linking its prepared owner into the reclaim claim because the elected peer had removed that private preparation directory.
+  verified: Entity storage passed five focused repetitions; the 100-race stress owner and typecheck passed. Full source reached 4122 passed with only an unrelated transient Git index-integrity assertion, whose focused test then passed 5/5.
+  publication_order: 222

@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  assertRaceInvariant,
   concurrentPublication,
   publicationProcess,
   waitForFiles,
@@ -217,9 +218,9 @@ describe("entity discovery and publication", () => {
     const { results } = race;
     expect(race.reclaimOverlap).toBe(true);
     expect(results.filter(({ published }) => published)).toHaveLength(1);
-    expect(results.filter(({ published }) => !published)).toEqual([
-      expect.objectContaining({ published: false, error: expect.stringMatching(/entity ID 'zzzzzzzzzz' already exists.*owned by boundary/) }),
-    ]);
+    const losers = results.filter(({ published }) => !published);
+    assertRaceInvariant(1, "explicit duplicate loser", losers.length === 1
+      && /entity ID 'zzzzzzzzzz' already exists.*owned by boundary/.test(losers[0]?.error ?? ""), results);
     expect(discoverEntities(root).entities.filter(({ id }) => id === "zzzzzzzzzz")).toHaveLength(1);
     expect(fs.existsSync(lockPath)).toBe(false);
     expect(fs.readdirSync(path.join(root, ".agentera")).filter((name) => name.startsWith(".writer."))).toEqual([]);
