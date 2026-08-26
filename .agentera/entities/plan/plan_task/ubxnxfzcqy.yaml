@@ -4,7 +4,7 @@ record:
   name: Right-size TODO cursor evidence
   depends_on:
     []
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN 21 ordered TODO records and a limit of 10 WHEN continuation is exhausted THEN pages contain 10, 10, and 1 record with exact order, ranks, termination, retrieval, and no mutation.
     - GIVEN 11 TODO records WHEN each of the five malformed cursor variants is submitted THEN every variant fails closed with its expected error and recovery command.

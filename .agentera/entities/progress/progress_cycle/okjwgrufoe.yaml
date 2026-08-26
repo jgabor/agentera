@@ -1,0 +1,13 @@
+id: okjwgrufoe
+artifact: progress
+record:
+  timestamp: 2026-08-26 18:12
+  type: test
+  phase: build
+  what: Right-sized source-owned TODO cursor evidence to minimum semantic fixtures while retaining capacity-owned scale coverage.
+  context:
+    intent: Prove 21-row continuation and all five malformed-cursor failures without changing production behavior or the shared realistic fixture distribution.
+  discovered: The 21-row traversal produces page shapes 10, 10, and 1 with exact order and ranks; the 11-row malformed fixture preserves all five security variants and needs one shared successful restart.
+  verified: Targeted TODO cursor tests passed 2/2 in 4.42s. Capacity verification passed 4/4 in 75.71s and retained its 120-row fixture. Typecheck, build, and the local built CLI compact check passed.
+  next: Keep task ubxnxfzcqy in_progress for orchestrator audit.
+  publication_order: 227

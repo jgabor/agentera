@@ -1284,7 +1284,7 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("binds TODO cursors to normalized limit and preserves exact unfiltered continuation", () => {
-    const { root, orderedIds } = realisticTodoProject();
+    const { root, orderedIds } = realisticTodoProject(21);
     const before = files(root);
     const cursorFirst = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
     expect(cursorFirst.rc, cursorFirst.err || cursorFirst.out).toBe(0);
@@ -1306,21 +1306,21 @@ describe("TODO item and documentation inventory entity authority", () => {
       cursorPages.push(next.json);
     }
     const cursorEntries = cursorPages.flatMap((page) => page.entries);
-    expect(cursorPages).toHaveLength(12);
+    expect(cursorPages.map((page) => page.entries.length)).toEqual([10, 10, 1]);
     cursorPages.forEach((page, index) => expect(page.counts).toMatchObject({
-      total: 120,
-      candidate: 120,
-      returned: 10,
-      remaining: 120 - (index + 1) * 10,
-      omitted: 120 - (index + 1) * 10,
-      continuation: 120 - (index + 1) * 10,
+      total: 21,
+      candidate: 21,
+      returned: [10, 10, 1][index],
+      remaining: [11, 1, 0][index],
+      omitted: [11, 1, 0][index],
+      continuation: [11, 1, 0][index],
     }));
     expect(cursorPages.at(-1)).toMatchObject({ status: "ok", counts: { remaining: 0, omitted: 0, continuation: 0 } });
     expect(cursorPages.at(-1).next_cursor).toBeUndefined();
     expect(cursorPages.at(-1).retrieval.continue).toBeUndefined();
     expect(cursorEntries.map((entry: any) => entry.id)).toEqual(orderedIds);
-    expect(cursorEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 120 }, (_, index) => index + 1));
-    expect(new Set(cursorEntries.map((entry: any) => entry.id)).size).toBe(120);
+    expect(cursorEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 21 }, (_, index) => index + 1));
+    expect(new Set(cursorEntries.map((entry: any) => entry.id)).size).toBe(21);
     const cursorExact = capture(root, shellCommandArgs(cursorEntries.at(-1).retrieval.get));
     expect(cursorExact.rc, cursorExact.err || cursorExact.out).toBe(0);
     expect(cursorExact.json.entry).toMatchObject({ id: orderedIds.at(-1), artifact: "todo" });
@@ -1407,13 +1407,14 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("fails closed for malformed, signed legacy, signature, base64, and payload cursors", () => {
-    const { root, orderedIds } = realisticTodoProject();
+    const { root, orderedIds } = realisticTodoProject(11);
     const before = files(root);
     const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
     const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
     const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
     const [body, signature] = String(first.json.next_cursor).split(".");
     const legacy = structuredClone(payload); delete legacy.limit;
+    const recovery = "agentera state todo list --ids-only --limit 10 --format json";
     const variants = [
       { label: "malformed", cursor: "not-a-cursor", message: "todo cursor is malformed or belongs to another project" },
       { label: "signature", cursor: `${body}.${signature.slice(0, -1)}${signature.endsWith("A") ? "B" : "A"}`, message: "todo cursor is malformed or belongs to another project" },
@@ -1425,11 +1426,11 @@ describe("TODO item and documentation inventory entity authority", () => {
       const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", variant.cursor, "--format", "json"]);
       expect(result.rc, variant.label).toBe(1);
       expect(result.json).not.toHaveProperty("entries");
-      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message: variant.message, recovery: "agentera state todo list --ids-only --limit 10 --format json" });
-      const restarted = capture(root, shellCommandArgs(result.json.error.recovery));
-      expect(restarted.rc, restarted.err || restarted.out).toBe(0);
-      expect(restarted.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message: variant.message, recovery });
     }
+    const restarted = capture(root, shellCommandArgs(recovery));
+    expect(restarted.rc, restarted.err || restarted.out).toBe(0);
+    expect(restarted.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
     expect(files(root)).toEqual(before);
   }, REALISTIC_TODO_CURSOR_TIMEOUT_MS);
 
