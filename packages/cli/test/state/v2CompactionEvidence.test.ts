@@ -44,6 +44,15 @@ function project(): string {
   return root;
 }
 
+function focusedProject(sourceRelative: string, targetRelative: string): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v2-compaction-focused-"));
+  roots.push(root);
+  const target = path.join(root, targetRelative);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(path.join(FIXTURE_ROOT, sourceRelative), target);
+  return root;
+}
+
 function yaml(relative: string): Record<string, any> {
   return YAML.parse(fs.readFileSync(path.join(FIXTURE_ROOT, relative), "utf8")) as Record<string, any>;
 }
@@ -169,7 +178,7 @@ describe("pinned v2.7.11 compaction evidence", () => {
       });
     }
 
-    const archivedLegacy = project();
+    const archivedLegacy = focusedProject("output/.agentera/decisions.yaml", ".agentera/decisions.yaml");
     const archivedDecisions = YAML.parse(fs.readFileSync(path.join(archivedLegacy, ".agentera/decisions.yaml"), "utf8"));
     const archiveRoot = path.join(archivedLegacy, ".agentera/archive/decisions");
     fs.mkdirSync(archiveRoot, { recursive: true });
@@ -207,30 +216,30 @@ describe("pinned v2.7.11 compaction evidence", () => {
     fs.writeFileSync(archiveSixPath, YAML.stringify(unsupportedArchive));
     expect(planEntityMigration(archivedLegacy, REPO_ROOT).entries.find((entry) => entry.source_identity === "decisions:6")).toMatchObject({ classification: "corrupt", proposed_target: null });
 
-    const backed = project();
+    const backed = focusedProject("output/.agentera/decisions.yaml", ".agentera/decisions.yaml");
     const archivePath = path.join(backed, ".agentera/archive/decisions/1.yaml");
     fs.mkdirSync(path.dirname(archivePath), { recursive: true });
     fs.copyFileSync(path.join(FIXTURE_ROOT, "backed-summary/decisions-1.archive.yaml"), archivePath);
-    const backedEntry = planEntityMigration(backed, REPO_ROOT).entries.find((entry) => entry.source_identity === "decisions:1");
+    const backedPlan = planEntityMigration(backed, REPO_ROOT);
+    const backedEntry = backedPlan.entries.find((entry) => entry.source_identity === "decisions:1");
     expect(backedEntry).toMatchObject({ boundary: "decision", classification: "verified_full", detail_availability: "full", compatibility: "current" });
     expect(backedEntry?.record).not.toHaveProperty("migration_provenance");
-    expect(planEntityMigration(backed, REPO_ROOT).entries.find((entry) => entry.source_identity === "decision_satisfaction:decisions:1")).toMatchObject({
+    expect(backedPlan.entries.find((entry) => entry.source_identity === "decision_satisfaction:decisions:1")).toMatchObject({
       classification: "verified_full",
       relationships: [{ field: "decision", target_id: backedEntry?.proposed_target?.id, status: "resolved" }],
     });
 
-    const corrupt = project();
-    fs.copyFileSync(path.join(FIXTURE_ROOT, "cases/non-confidence-corruption.progress.yaml"), path.join(corrupt, ".agentera/progress.yaml"));
+    const corrupt = focusedProject("cases/non-confidence-corruption.progress.yaml", ".agentera/progress.yaml");
     expect(planEntityMigration(corrupt, REPO_ROOT).entries.find((entry) => entry.source_identity === "progress:99")).toMatchObject({ classification: "corrupt" });
 
-    const unsupportedLabel = project();
+    const unsupportedLabel = focusedProject("output/.agentera/decisions.yaml", ".agentera/decisions.yaml");
     const decisionsPath = path.join(unsupportedLabel, ".agentera/decisions.yaml");
     const decisions = YAML.parse(fs.readFileSync(decisionsPath, "utf8"));
     decisions.decisions.find((entry: any) => entry.number === 6).confidence = "certain";
     fs.writeFileSync(decisionsPath, YAML.stringify(decisions));
     expect(planEntityMigration(unsupportedLabel, REPO_ROOT).entries.find((entry) => entry.source_identity === "decisions:6")).toMatchObject({ classification: "corrupt", proposed_target: null });
 
-    const additionalViolation = project();
+    const additionalViolation = focusedProject("output/.agentera/decisions.yaml", ".agentera/decisions.yaml");
     const additionalPath = path.join(additionalViolation, ".agentera/decisions.yaml");
     const additionalDecisions = YAML.parse(fs.readFileSync(additionalPath, "utf8"));
     delete additionalDecisions.decisions.find((entry: any) => entry.number === 6).reasoning;

@@ -1462,7 +1462,7 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("reserves snapshot-unavailable for actual state loss and missing continuation identity", () => {
-    const { root, orderedIds } = realisticTodoProject();
+    const { root, orderedIds } = realisticTodoProject(11);
     const initial = files(root);
     const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
     const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);

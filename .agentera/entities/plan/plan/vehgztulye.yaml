@@ -1,0 +1,33 @@
+id: vehgztulye
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-26
+    status: open
+    reviewed: 2026-08-26
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    title: "Plan: Reduce Source Test Runtime Without Coverage Loss"
+  what: Reduce the cost of the five slowest source tests by right-sizing fixtures, eliminating repeated analysis, and removing duplicate cross-layer checks while retaining every distinct behavioral and process-boundary guarantee.
+  why: The five tests consume 84.652 seconds of cumulative worker time. Faster focused tests shorten feedback without weakening confidence in state migration, cursor safety, glossary publication, or packaged CLI behavior.
+  constraints: Make no production behavior change, remove no distinct regression guarantee, preserve verification-owner boundaries, keep deterministic fixtures, and do not weaken verification policy or release gates.
+  overall_acceptance: GIVEN the five slowest source tests are simplified WHEN targeted, source, type, and applicable package checks run THEN all existing behaviors remain covered and comparable timing evidence shows their cumulative worker time below the 84.652-second baseline.
+  scope:
+    included:
+      - TODO cursor fixture sizing and snapshot-unavailable coverage
+      - v2 compaction migration planning and upgrade lifecycle coverage
+      - personal glossary publication ordering and Profile Full workflow coverage
+      - targeted and full timing evidence for the changed tests
+    excluded:
+      - Production CLI behavior changes
+      - Verification policy or lane reassignment
+      - Unrelated source-test cleanup
+    deferred:
+      []
+  design: Preserve one authoritative check for each behavior at the cheapest appropriate layer. Use small representative state for focused failure cases, retain full fixtures only where aggregate compatibility matters, and retain child-process execution only where it proves a boundary not already covered elsewhere. Verify focused behavior before measuring the complete source lane.
+  unknowns:
+    - question: Which Profile Full child-process checks provide unique coverage beyond the extracted-package workflows?
+      affects_task: 3
+      resolve_by: Map each process-boundary assertion to existing package coverage before replacing it; retain one source subprocess smoke for any unmatched boundary.
+  surprises:
+    []

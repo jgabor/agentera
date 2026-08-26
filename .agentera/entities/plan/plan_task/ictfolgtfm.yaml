@@ -1,0 +1,25 @@
+id: ictfolgtfm
+artifact: plan
+record:
+  name: Verify behavior and runtime improvement
+  depends_on:
+    - tfkxutxsjh
+    - gqdkbyllpx
+    - dhgcntoamy
+  status: complete
+  acceptance:
+    - GIVEN each changed test surface WHEN its focused checks run THEN all tests pass before broader verification.
+    - GIVEN shared test helpers cross the packaged boundary WHEN package verification runs THEN extracted CLI workflows still pass.
+    - GIVEN the completed changes WHEN type checking and the complete source lane run THEN both pass without skipped regression coverage.
+    - GIVEN the 84.652-second top-five baseline WHEN the timing breakdown is repeated in the same environment THEN cumulative worker time for the five candidates is lower, with isolated before-and-after evidence used to interpret suite-level noise.
+  plan: vehgztulye
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Reported timing sum used a different test set and did not prove the original-five criterion.
+    provenance:
+      attempt_id: resolve-20260826-2
+      source: resolve task ses_fc0b68d54ffeZhAxaYmUpNnQKz
+      recorded_at: 2026-08-26 20:40
+      writer_command: agentera state plan record-evaluation

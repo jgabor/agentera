@@ -178,6 +178,18 @@ afterEach(() => {
 });
 
 describe("one-way Git entity cutover", () => {
+  it("reports the public upgrade preview contract for a representative v2 project", () => {
+    const root = project();
+    initializeGit(root);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-preview-"));
+    roots.push(home);
+
+    const preview = previewUpgrade(root, managedV2(home), home);
+
+    expect(preview.code, `${preview.out}\n${preview.err}`).toBe(1);
+    expect(JSON.parse(preview.out)).toMatchObject({ schemaVersion: "agentera.upgrade.v2", mode: "plan" });
+  });
+
   it("reconciles a compact hierarchical TODO without duplicate projection or resurrection", () => {
     const root = precreatedTodoProject(4);
     initializeGit(root);
@@ -468,11 +480,6 @@ describe("one-way Git entity cutover", () => {
     expect(previewEntries).toHaveLength(preview.counts.total);
     expect(new Set(targets.map((entry) => entry.proposed_target!.id)).size).toBe(targets.length);
     assertSourcesUnchanged();
-    const upgradePreview = previewUpgrade(root, appHome, home);
-    expect(upgradePreview.code, `${upgradePreview.out}\n${upgradePreview.err}`).toBe(1);
-    expect(JSON.parse(upgradePreview.out)).toMatchObject({ schemaVersion: "agentera.upgrade.v2", mode: "plan" });
-    assertSourcesUnchanged();
-
     const applied = applyUpgrade(root, appHome, home);
     expect(applied).toMatchObject({ code: 0, err: "" });
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");

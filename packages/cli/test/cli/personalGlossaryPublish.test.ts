@@ -587,20 +587,13 @@ describe("agentera report personal-glossary-publish", () => {
     const projection = persist(mined.candidates.map((candidate) => candidate.capsule));
     const authorized = mined.candidates.map(({ capsule }) => {
       const receipt = receiptFor(capsule, projection);
-      return { receipt, decision: cliDecision(receipt) };
+      return { receipt, decision: forcedAutomaticDecision(capsule, receipt) };
     });
     for (const item of authorized) expect(publishRequest(publicationRequest(item.receipt, item.decision))).toMatchObject({ rc: 0 });
 
     const entries = section().entries as Array<Record<string, unknown>>;
     expect(entries.map((entry) => entry.term)).toEqual(["alpha term", "café", "café", "zeta term"]);
     expect(new Set(entries.map((entry) => entry.term))).toHaveLength(4);
-
-    const zeta = authorized.find((item) => item.receipt.classification.term === "zeta term")!;
-    const refreshed = publicationRequest(zeta.receipt, zeta.decision, "2026-08-11");
-    expect(publishRequest(refreshed)).toMatchObject({ rc: 0 });
-    expect(section().entries.find((entry: any) => entry.term === "zeta term")).toMatchObject({
-      temporal: { observed_at: AS_OF, last_confirmed_at: "2026-08-11" },
-    });
   });
 
   it("rejects a changed meaning that conflicts with an established profile entry before effects", () => {

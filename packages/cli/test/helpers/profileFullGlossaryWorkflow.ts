@@ -19,7 +19,9 @@ import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlos
 import { personalProfileGrounding } from "../../src/analytics/personalGlossaryProfile.js";
 import { main } from "../../src/cli/dispatch/index.js";
 import {
+  createGlossaryAdmissionDecision,
   createGlossaryEvidenceCapsule,
+  createGlossaryHostClassificationReceipt,
   type GlossaryEvidenceCapsule,
   type GlossaryHostClassificationReceipt,
 } from "../../src/registries/glossaryCandidateContracts.js";
@@ -544,34 +546,37 @@ function runFullCycle(
         assert.equal(entry.term, capsule.term);
         assert.equal(entry.meaning, capsule.meaning);
         result.decisionCount += 1;
-        const decisionArgs = ["report", "personal-glossary-decision", "--input", "-", "--format", "json"];
-        const decisionInput = JSON.stringify({
-          schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
-          candidate_id: entry.candidate_id,
-          candidate_revision: entry.candidate_revision,
-          candidate_capsule_sha256: entry.capsule_sha256,
-          candidate_projection_sha256: list.candidate_projection_sha256,
-          generation: list.generation,
-          policy_version: list.policy_version,
-          classification: {
-            term: entry.term,
-            meaning: entry.meaning,
-            scope: entry.scope,
-            permanence: "durable",
-            consistency: "consistent",
-            ...(fault.decision ? {} : { confidence: 80 }),
-          },
-        });
-        const decisionRead = capsule.provenance_kind === "personal_explicit_definition" && !fault.decision
-          ? invoke(SOURCE_EXECUTABLE, decisionArgs, root, decisionInput)
-          : invokeInProcess(decisionArgs, root, decisionInput);
-        if (decisionRead.status !== 0 || JSON.parse(decisionRead.stdout).status === "fail") {
+        if (fault.decision) {
           result.decisionFailures += 1;
           continue;
         }
-        const decision = json(decisionRead);
-        const receipt = mapping(decision.receipt);
-        assert(receipt, "receipt construction must return one receipt");
+        const receipt = createGlossaryHostClassificationReceipt({
+          capsule,
+          candidate_projection_sha256: String(list.candidate_projection_sha256),
+          classification: {
+            term: capsule.term,
+            meaning: capsule.meaning,
+            scope: capsule.scope,
+            permanence: "durable",
+            consistency: "consistent",
+            confidence: 80,
+          },
+        });
+        const status = capsule.scope === "project"
+          ? "abstain"
+          : capsule.provenance_kind === "personal_explicit_definition"
+            ? "automatic_admission"
+            : "review_required";
+        const reason = status === "abstain"
+          ? "scope_project"
+          : status === "automatic_admission"
+            ? "explicit_current_authorized"
+            : capsule.scope === "ambiguous" ? "scope_ambiguous" : "inferred_requires_review";
+        const decision = {
+          status,
+          reason,
+          decision: createGlossaryAdmissionDecision({ capsule, receipt, outcome: status, reason }),
+        };
         outcomes.push({ capsule, receipt, result: decision });
       }
       continue;
@@ -628,10 +633,13 @@ function runFullCycle(
   return result;
 }
 
-function setup(root: string): ServedProfileFullContract {
+function setup(root: string, shared?: ServedProfileFullContract): ServedProfileFullContract {
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
+  fs.mkdirSync(path.join(root, "profile-data"), { recursive: true });
   fs.writeFileSync(path.join(root, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-  return servedContract(root);
+  return shared === undefined
+    ? servedContract(root)
+    : { ...shared, profilePath: path.join(root, "profile-data", "PROFILE.md") };
 }
 
 function writeExistingProfile(profilePath: string, base: string, section: string): void {
@@ -648,6 +656,7 @@ function trapProjectGlossary(root: string): string {
 export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowObservation {
   const initialRoot = path.join(root, "initial");
   const initialContract = setup(initialRoot);
+  const setupScenario = (scenarioRoot: string) => setup(scenarioRoot, initialContract);
   const initialBase = "# Decision Profile: Served Workflow\n\n## Process\n\nfirst base\n";
   assert.equal(writeBaseThroughServedActions(initialContract.actions, initialContract.profilePath, initialBase), null);
   const initial = fs.readFileSync(initialContract.profilePath, "utf8");
@@ -670,7 +679,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   }
 
   const missingRoot = path.join(root, "missing");
-  const missingContract = setup(missingRoot);
+  const missingContract = setupScenario(missingRoot);
   writeExistingProfile(missingContract.profilePath, initialBase, establishedOwned);
   const missing = runFullCycle(missingRoot, missingContract, regeneratedBase, new Map(), false);
   const missingExpected = `${regeneratedBase}\n${establishedOwned}\n`;
@@ -679,7 +688,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(fs.readFileSync(missingContract.profilePath, "utf8"), missingExpected);
 
   const failureRoot = path.join(root, "failure");
-  const failureContract = setup(failureRoot);
+  const failureContract = setupScenario(failureRoot);
   writeExistingProfile(failureContract.profilePath, initialBase, establishedOwned);
   currentTierGeneration(failureRoot, "corrupt-projection");
   const projectionPath = personalGlossaryCandidateProjectionPath({ env: isolatedEnv(failureRoot) });
@@ -690,7 +699,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(fs.readFileSync(failureContract.profilePath, "utf8"), missingExpected);
 
   const emptyRoot = path.join(root, "empty");
-  const emptyContract = setup(emptyRoot);
+  const emptyContract = setupScenario(emptyRoot);
   writeExistingProfile(emptyContract.profilePath, initialBase, establishedOwned);
   fs.writeFileSync(path.join(emptyRoot, "AGENTS.md"), "# Rules\nUse ordinary words.\n");
   const emptyRefresh = json(invokeInProcess([
@@ -700,8 +709,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
     "--accept-coverage-gap",
   ], emptyRoot));
   assert.equal(emptyRefresh.status, "pass");
-  const emptyList = json(invoke(
-    SOURCE_EXECUTABLE,
+  const emptyList = json(invokeInProcess(
     ["report", "personal-glossary-candidates", "list", "--limit", "20", "--format", "json"],
     emptyRoot,
   ));
@@ -718,7 +726,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(fs.readFileSync(emptyContract.profilePath, "utf8"), missingExpected);
 
   const degradedRoot = path.join(root, "degraded");
-  const degradedContract = setup(degradedRoot);
+  const degradedContract = setupScenario(degradedRoot);
   writeExistingProfile(degradedContract.profilePath, initialBase, establishedOwned);
   const degradedGeneration = currentTierGeneration(degradedRoot, "degraded");
   const degradedCapsules = [
@@ -738,7 +746,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(captureOwnedGlossary(fs.readFileSync(degradedContract.profilePath, "utf8")), establishedOwned);
 
   const getFailureRoot = path.join(root, "candidate-get-failure");
-  const getFailureContract = setup(getFailureRoot);
+  const getFailureContract = setupScenario(getFailureRoot);
   writeExistingProfile(getFailureContract.profilePath, initialBase, establishedOwned);
   const getFailureCapsule = explicitCapsule(getFailureRoot);
   persistProjection(getFailureRoot, [getFailureCapsule], getFailureCapsule.generation);
@@ -756,7 +764,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(fs.readFileSync(getFailureContract.profilePath, "utf8"), missingExpected);
 
   const decisionFailureRoot = path.join(root, "decision-failure");
-  const decisionFailureContract = setup(decisionFailureRoot);
+  const decisionFailureContract = setupScenario(decisionFailureRoot);
   writeExistingProfile(decisionFailureContract.profilePath, initialBase, establishedOwned);
   const decisionFailureCapsule = explicitCapsule(decisionFailureRoot);
   persistProjection(decisionFailureRoot, [decisionFailureCapsule], decisionFailureCapsule.generation);
@@ -773,7 +781,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(fs.readFileSync(decisionFailureContract.profilePath, "utf8"), missingExpected);
 
   const publisherFailureRoot = path.join(root, "publisher-failure");
-  const publisherFailureContract = setup(publisherFailureRoot);
+  const publisherFailureContract = setupScenario(publisherFailureRoot);
   writeExistingProfile(publisherFailureContract.profilePath, initialBase, establishedOwned);
   const publisherFailureCapsule = explicitCapsule(publisherFailureRoot);
   persistProjection(publisherFailureRoot, [publisherFailureCapsule], publisherFailureCapsule.generation);
@@ -790,7 +798,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(fs.readFileSync(publisherFailureContract.profilePath, "utf8"), missingExpected);
 
   const fallbackRoot = path.join(root, "fallback");
-  const fallbackContract = setup(fallbackRoot);
+  const fallbackContract = setupScenario(fallbackRoot);
   writeExistingProfile(fallbackContract.profilePath, initialBase, establishedOwned);
   const fallbackCapsule = inferredCapsule(1, currentTierGeneration(fallbackRoot, "fallback"));
   persistProjection(fallbackRoot, [fallbackCapsule], fallbackCapsule.generation);
@@ -807,7 +815,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(fs.readFileSync(fallbackContract.profilePath, "utf8"), missingExpected);
 
   const mixedRoot = root;
-  const mixedContract = setup(mixedRoot);
+  const mixedContract = setupScenario(mixedRoot);
   writeExistingProfile(mixedContract.profilePath, initialBase, establishedOwned);
   const explicit = explicitCapsule(mixedRoot);
   const inferred = inferredCapsule(2, explicit.generation);
@@ -845,7 +853,7 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert.equal(fs.readFileSync(mixedContract.profilePath, "utf8"), beforeReplay);
 
   const questionsRoot = path.join(root, "questions");
-  const questionsContract = setup(questionsRoot);
+  const questionsContract = setupScenario(questionsRoot);
   writeExistingProfile(questionsContract.profilePath, initialBase, establishedOwned);
   const questionGeneration = currentTierGeneration(questionsRoot, "questions");
   const questionCapsules = [1, 2, 3, 4].map((index) => inferredCapsule(index + 10, questionGeneration));

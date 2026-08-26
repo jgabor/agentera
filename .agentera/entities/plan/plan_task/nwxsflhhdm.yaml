@@ -1,0 +1,15 @@
+id: nwxsflhhdm
+artifact: plan
+record:
+  name: Synchronize implementation state
+  depends_on:
+    - tfkxutxsjh
+    - gqdkbyllpx
+    - dhgcntoamy
+    - ictfolgtfm
+  status: in_progress
+  acceptance:
+    - GIVEN all implementation and verification tasks are complete WHEN project state is synchronized THEN task statuses and plan evaluation match verified evidence.
+    - GIVEN implementation surprises occurred WHEN state is synchronized THEN only genuine unresolved follow-up is recorded through typed writers.
+    - GIVEN no unresolved work remains WHEN the plan is evaluated THEN the next project-state reader sees a complete coherent lifecycle.
+  plan: vehgztulye

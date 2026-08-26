@@ -1,0 +1,23 @@
+id: tfkxutxsjh
+artifact: plan
+record:
+  name: Right-size TODO cursor snapshot coverage
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a first page of ten TODO identities WHEN the continuation is exercised THEN at least one valid second-page identity remains available.
+    - GIVEN a cursor with a missing continuation identity WHEN it is read THEN the existing snapshot-unavailable class, message, and recovery behavior remain unchanged.
+    - GIVEN project state changes after cursor creation WHEN the stale cursor is read THEN state-loss detection still fails closed without mutating unrelated state.
+    - GIVEN the reduced fixture WHEN the focused test runs THEN all prior assertions pass with fewer generated records.
+  plan: vehgztulye
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-20260826-1
+      source: audit task ses_fc0b9e1d0ffe7ETosgLDuLW6Oy
+      recorded_at: 2026-08-26 20:40
+      writer_command: agentera state plan record-evaluation

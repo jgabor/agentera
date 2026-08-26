@@ -1,0 +1,23 @@
+id: gqdkbyllpx
+artifact: plan
+record:
+  name: Eliminate repeated v2 migration work
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN unchanged migration input WHEN multiple assertions inspect its plan THEN they share one computed result.
+    - GIVEN inherited labels, backed summaries, and corrupt records WHEN each focused case is evaluated THEN its existing classification, provenance, relationship, and publication outcome remains unchanged.
+    - GIVEN the full compacted fixture WHEN the upgrade lifecycle runs THEN exact entity publication and aggregate-byte preservation remain verified.
+    - GIVEN upgrade preview behavior WHEN it is checked on representative state THEN its public plan contract remains covered without another full-fixture traversal.
+  plan: vehgztulye
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Public CLI preview contract coverage was removed from representative state.
+    provenance:
+      attempt_id: resolve-20260826-2
+      source: resolve task ses_fc0b68d54ffeZhAxaYmUpNnQKz
+      recorded_at: 2026-08-26 20:40
+      writer_command: agentera state plan record-evaluation

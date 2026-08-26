@@ -1,0 +1,23 @@
+id: dhgcntoamy
+artifact: plan
+record:
+  name: Focus glossary workflow tests on unique responsibilities
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the served Profile Full contract WHEN all workflow scenarios run THEN instruction order and bounds are validated once and applied consistently to every scenario.
+    - GIVEN decision and publication process boundaries WHEN duplicate source subprocess checks are removed THEN every unique boundary remains covered either by a retained source smoke or an extracted-package workflow.
+    - GIVEN four ASCII and composed or decomposed Unicode terms WHEN they are published THEN deterministic ordering and distinct identity remain verified.
+    - GIVEN publication refresh behavior is already covered WHEN the ordering scenario runs THEN it does not repeat the refresh assertion or unnecessary decision-command work.
+  plan: vehgztulye
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-20260826-1
+      source: audit task ses_fc0b9e1d0ffe7ETosgLDuLW6Oy
+      recorded_at: 2026-08-26 20:40
+      writer_command: agentera state plan record-evaluation
