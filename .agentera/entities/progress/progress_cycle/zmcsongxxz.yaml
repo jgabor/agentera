@@ -1,0 +1,15 @@
+id: zmcsongxxz
+artifact: progress
+record:
+  timestamp: 2026-08-26 18:30
+  type: test
+  phase: audit
+  what: Verified the completed source-test simplifications across targeted, source, package, typecheck, timing, compact, and state boundaries.
+  context:
+    intent: Record final diagnostic regression evidence while leaving task ojbafhmuxx and plan ywnpgswqou open for orchestrator audit.
+    constraints: Node 24.19.0 and pnpm 10.30.3; timing is same-machine diagnostic evidence, not a gate.
+    scope: Profile Full source/package separation, precommit child-Git isolation, and TODO cursor fixtures.
+  discovered: "The removed inherited-Git upgrade integration corresponds to precommitVitest: clears hook-local Git environment before fixture repositories run, measured at 0.025s rather than zero. The breakdown summary retains only five slowest individual tests, so a supplementary same-machine targeted JSON report captured all four affected assertions."
+  verified: Targeted source files passed 155/155 in 92.70s; typecheck passed; source lane passed 249 files and 4,124 tests with 2 skipped in 266.48s; package verification passed 3 files and 16 tests in 27.22s, owner wall 27.540s. One source breakdown passed 249 files and 4,124 tests with 2 skipped, owner wall 258.958s. Affected durations were Profile 21.910s, precommit 0.025s, cursor traversal 0.832s, malformed cursor 0.885s, totaling 23.651s versus 94.806s, a 75.053% reduction. Build, compact, and state validation passed.
+  next: Orchestrator should audit the evidence and decide task and plan completion; both remain in progress/open.
+  publication_order: 228

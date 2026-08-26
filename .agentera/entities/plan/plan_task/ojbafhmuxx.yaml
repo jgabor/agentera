@@ -6,7 +6,7 @@ record:
     - noyxrvkxjg
     - ubxnxfzcqy
     - emyvgpfjgh
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN tasks 1 through 3 are complete WHEN targeted checks, typecheck, the source lane, and package verification run THEN every command passes.
     - GIVEN the 94.806-second baseline WHEN one same-machine source timing breakdown runs THEN affected-test worker time is at most 60 seconds and the result remains diagnostic rather than a new gate.
