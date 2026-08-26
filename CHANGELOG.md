@@ -18,6 +18,10 @@
 
 ### Changed
 
+- `pnpm -C packages/cli build` now stages outside the checkout and synchronizes
+  only byte or mode differences into `dist/` and `bundle/`. Release verification
+  keeps one parent-owned private build through barrier B, eliminating checkout
+  generation rotation, polling, leases, retention, and cleanup.
 - `agentera state todo set-severity` and `resolve` now accept strict,
   preview-confirmed same-kind batches while preserving singleton flag syntax.
 - Fixed automatic retirement so normal upgrade distinguishes proven pending removal, manual review, and clean state. Successful removal tells operators to restart OpenCode. No gate or hook command replaces the retired plugin.

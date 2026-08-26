@@ -26,7 +26,7 @@ const distRootIndex = process.argv.indexOf("--dist-root");
 const distRoot = path.resolve(
   distRootIndex >= 0
     ? process.argv[distRootIndex + 1]
-    : path.join(pkgRoot, ".agentera-generated", "current", "dist"),
+    : path.join(pkgRoot, "dist"),
 );
 const distParity = path.join(distRoot, "analytics/extractCorpus/extractCorpusParity.js");
 const writeMode = process.argv.includes("--write");

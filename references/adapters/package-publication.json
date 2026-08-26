@@ -247,7 +247,7 @@
           "maxViolations": 40,
           "maxDiagnosticCharacters": 500,
           "maxOutputBytes": 196608,
-          "maxGenerationIdCharacters": 36,
+          "maxGenerationIdCharacters": 64,
           "maxPathCharacters": 240,
           "maxSymbolCharacters": 120,
           "maxSelectorCharacters": 240,
@@ -351,10 +351,10 @@
           "capability-contract": 3000,
           "activation-conjunction": 6000
         },
-        "failure": "The coordinator passes generated-overlap, the solo performance barrier, and the serial capacity barrier the actual source deadline. Overlap stops owned work 10000ms before that deadline, settles and cleans its generated state, and returns at least 4000ms before the deadline for parent reconciliation. The first observed owner failure cancels only cancellable process groups. generated-overlap is cooperatively stopped and never force-killed; performance, capacity, barrier B, and receipt issuance remain blocked after any batch failure, capacity, barrier B, and receipt issuance remain blocked after any performance failure, and barrier B and receipt issuance remain blocked after any capacity failure.",
+        "failure": "The coordinator passes generated-overlap, the solo performance barrier, and the serial capacity barrier the actual source deadline. Overlap stops owned work 10000ms before that deadline, settles its children, and returns at least 4000ms before the deadline for parent reconciliation. The first observed owner failure cancels only cancellable process groups. generated-overlap is cooperatively stopped and never force-killed; performance, capacity, barrier B, and receipt issuance remain blocked after any batch failure, capacity, barrier B, and receipt issuance remain blocked after any performance failure, and barrier B and receipt issuance remain blocked after any capacity failure.",
         "isolation": "Every child receives a distinct HOME, cache, user config, global config, and report output. Batch A provides output isolation. Performance runs alone with one worker on the policy-declared authoritative runner after batch A settles. Capacity then runs serially before the reader barrier."
       },
-      "parallelism": "Batch A runs generated-overlap, stress, and typecheck concurrently. generated-overlap is the sole checkout generated-output writer and sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, performance runs alone in fresh isolated state with one worker. Capacity runs alone after performance. After capacity passes, compact, capability-contract, and activation-conjunction run concurrently as readers of the settled generation."
+      "parallelism": "Batch A runs generated-overlap, stress, and typecheck concurrently. generated-overlap owns one private immutable build root and is the sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, performance runs alone in fresh isolated state with one worker. Capacity runs alone after performance. After capacity passes, compact, capability-contract, and activation-conjunction run concurrently as readers of that private build."
     },
     "readiness": {
       "schemaVersion": "agentera.releaseReadiness.v1",

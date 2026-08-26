@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result."
       severity: normal
       status: open
-      order: 23
+      order: 22

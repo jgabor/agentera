@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -48,7 +49,7 @@ function sourceIdentity() {
   return sealGeneratedSourceIdentity(unsigned);
 }
 
-function overlapEvidence() {
+function overlapEvidence(buildRoot = "/tmp/private-build/generation-a") {
   return {
     schemaVersion: "agentera.generatedOverlapEvidence.v1",
     status: "pass",
@@ -57,7 +58,7 @@ function overlapEvidence() {
     participants: {
       source: { command: gate("source").command, elapsedMs: 80, files: 10, tests: 40, pending: [] },
       package: { command: gate("package").command, elapsedMs: 70, files: 4, tests: 12, pending: [] },
-      build: { command: gate("build").command, elapsedMs: 30, status: "pass" },
+      build: { command: [...gate("build").command, "--", "--output-root", buildRoot], elapsedMs: 30, status: "pass" },
     },
     reader: {
       observed: true,
@@ -67,10 +68,11 @@ function overlapEvidence() {
       generations: ["generation-a"],
     },
     generation: "generation-a",
+    build_root: buildRoot,
     activation_evidence: {
       digest: "a".repeat(64),
       checks: 42,
-      path: "packages/cli/.agentera-generated/generations/generation-a/activation-evidence.json",
+      path: "private-build/generation-a/activation-evidence.json",
       package_identity: packageIdentity(),
       package_snapshot: {
         schemaVersion: "agentera.activationPackageSnapshot.v1",
@@ -108,12 +110,14 @@ function performanceStdout() {
   })}\n`;
 }
 
-function result(name: string) {
+function result(name: string, specification?: { environment?: NodeJS.ProcessEnv }) {
+  const overlapRoot = specification?.environment?.AGENTERA_GENERATED_OVERLAP_ROOT;
+  const buildRoot = overlapRoot ? path.join(overlapRoot, "private-build", "generation-a") : undefined;
   return {
     name,
     elapsedMs: 10,
     stdout: name === "generated-overlap"
-      ? JSON.stringify(overlapEvidence())
+      ? JSON.stringify(overlapEvidence(buildRoot))
       : name === "performance"
         ? performanceStdout()
         : `${name} passed\n`,
@@ -126,6 +130,22 @@ function ownerError(name: string, detail: string, status = "failed") {
   error.owner = name;
   error.sourceStatus = status;
   return error;
+}
+
+function createOverlapPackageRoot(workRoot: string) {
+  const repo = path.join(workRoot, "source");
+  const packageRoot = path.join(repo, "packages/cli");
+  fs.mkdirSync(packageRoot, { recursive: true });
+  fs.writeFileSync(path.join(repo, "source.txt"), "source\n");
+  for (const args of [
+    ["init", "--quiet"],
+    ["add", "."],
+    ["-c", "user.name=Agentera Tests", "-c", "user.email=tests@agentera.invalid", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "fixture"],
+  ]) {
+    const result = spawnSync("git", ["-C", repo, ...args], { encoding: "utf8" });
+    if (result.status !== 0) throw new Error(result.stderr);
+  }
+  return packageRoot;
 }
 
 describe("source qualification DAG", () => {
@@ -168,7 +188,7 @@ describe("source qualification DAG", () => {
         return {
           name: specification.name,
           cancellable: specification.cancellable,
-          promise: Promise.resolve(result(specification.name)).finally(() => active.delete(specification.name)),
+          promise: Promise.resolve(result(specification.name, specification)).finally(() => active.delete(specification.name)),
           cancel: () => undefined,
         };
       },
@@ -246,10 +266,62 @@ describe("source qualification DAG", () => {
     });
   });
 
+  it("keeps the parent-owned overlap root through barrier B and removes it after the DAG", async () => {
+    const ownerRoots: string[] = [];
+    let overlapRoot = "";
+    let generatedOwnerRoot = "";
+    let barrierObserved = false;
+    const marker = () => path.join(overlapRoot, "private-build", "generation-a", "alive");
+
+    await runSourceQualificationDag({
+      repo: REPO_ROOT,
+      gates: GATES,
+      clock: () => 0,
+      wallClock: () => 1_000,
+      createState: (name: string) => {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), `agentera-owner-lifetime-${name}-`));
+        ownerRoots.push(root);
+        if (name === "generated-overlap") generatedOwnerRoot = root;
+        return {
+          root,
+          environment: {},
+          cleanup: () => fs.rmSync(root, { recursive: true, force: true }),
+        };
+      },
+      startOwner: (specification: any) => {
+        if (specification.name === "generated-overlap") {
+          overlapRoot = specification.environment.AGENTERA_GENERATED_OVERLAP_ROOT;
+          fs.mkdirSync(path.dirname(marker()), { recursive: true });
+          fs.writeFileSync(marker(), "alive\n");
+        }
+        if (["compact", "capability-contract", "activation-conjunction"].includes(specification.name)) {
+          expect(fs.existsSync(generatedOwnerRoot)).toBe(false);
+          expect(fs.existsSync(marker())).toBe(true);
+          barrierObserved = true;
+        }
+        return {
+          name: specification.name,
+          cancellable: specification.cancellable,
+          promise: Promise.resolve(result(specification.name, specification)),
+          cancel: () => undefined,
+        };
+      },
+      readGeneratedState: () => {
+        expect(fs.existsSync(marker())).toBe(true);
+        return { generation: "generation-a", leases: [] };
+      },
+    });
+
+    expect(barrierObserved).toBe(true);
+    expect(fs.existsSync(overlapRoot)).toBe(false);
+    expect(ownerRoots.every((root) => !fs.existsSync(root))).toBe(true);
+  });
+
   it("preserves the first peer failure, cancels cancellable groups, settles overlap, and blocks barrier B", async () => {
     const started: string[] = [];
     const cancelled: string[] = [];
     let overlapSettled = false;
+    let overlapRoot = "";
     let now = 0;
     const pending = new Map<string, (error: Error) => void>();
     const stressFailure = Promise.reject(ownerError("stress", "stress failed first"));
@@ -274,6 +346,10 @@ describe("source qualification DAG", () => {
       createState: (name: string) => ({ root: `/isolated/${name}`, environment: {}, cleanup: () => undefined }),
       startOwner: (specification: any) => {
         started.push(specification.name);
+        if (specification.name === "generated-overlap") {
+          overlapRoot = specification.environment.AGENTERA_GENERATED_OVERLAP_ROOT;
+          fs.writeFileSync(path.join(overlapRoot, "owned"), "owned\n");
+        }
         return {
           name: specification.name,
           cancellable: specification.cancellable,
@@ -301,6 +377,7 @@ describe("source qualification DAG", () => {
     expect(cancelled).toContain("typecheck");
     expect(cancelled).not.toContain("generated-overlap");
     expect(started).not.toEqual(expect.arrayContaining(["performance", "capacity", "compact", "capability-contract"]));
+    expect(fs.existsSync(overlapRoot)).toBe(false);
   });
 
   it("blocks readers when the solo performance barrier times out", async () => {
@@ -322,7 +399,7 @@ describe("source qualification DAG", () => {
           cancellable: specification.cancellable,
           promise: specification.name === "performance"
             ? Promise.reject(ownerError("performance", "performance exceeded its remaining source deadline"))
-            : Promise.resolve(result(specification.name)),
+            : Promise.resolve(result(specification.name, specification)),
           cancel: () => undefined,
         };
       },
@@ -356,7 +433,7 @@ describe("source qualification DAG", () => {
           cancellable: specification.cancellable,
           promise: specification.name === "capacity"
             ? Promise.reject(ownerError("capacity", "capacity fixture failed"))
-            : Promise.resolve(result(specification.name)),
+            : Promise.resolve(result(specification.name, specification)),
           cancel: () => undefined,
         };
       },
@@ -382,7 +459,7 @@ describe("source qualification DAG", () => {
           ? Promise.reject(ownerError("compact", "compact reader failed"))
           : specification.name === "capability-contract"
             ? new Promise((_resolve, reject) => { rejectCapability = reject; })
-            : Promise.resolve(result(specification.name));
+            : Promise.resolve(result(specification.name, specification));
         return {
           name: specification.name,
           cancellable: specification.cancellable,
@@ -415,7 +492,7 @@ describe("source qualification DAG", () => {
       startOwner: (specification: any) => ({
         name: specification.name,
         cancellable: specification.cancellable,
-        promise: Promise.resolve(result(specification.name)),
+        promise: Promise.resolve(result(specification.name, specification)),
         cancel: () => undefined,
       }),
       readGeneratedState: () => reads++ < 3
@@ -435,7 +512,10 @@ describe("source qualification DAG", () => {
     const phases: string[][] = [];
     const runConcurrent = async (specifications: any[]) => {
       phases.push(specifications.map(({ name }) => name));
-      const values = Object.fromEntries(specifications.map(({ name, timeoutMs }) => [name, { ...result(name), timeoutMs }]));
+      const values = Object.fromEntries(specifications.map((specification) => [
+        specification.name,
+        { ...result(specification.name, specification), timeoutMs: specification.timeoutMs },
+      ]));
       if (specifications[0]?.name === "performance") now = afterPerformance;
       return values;
     };
@@ -460,12 +540,12 @@ describe("source qualification DAG", () => {
     }
   });
 
-  it("uses a fake deadline to stop starting overlap work and clean owned generated state before handoff", async () => {
+  it("uses a fake deadline to stop starting overlap work and settle owned children before handoff", async () => {
     let now = 1_000;
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-deadline-test-"));
     fs.mkdirSync(path.join(workRoot, "barrier"));
+    const packageRoot = createOverlapPackageRoot(workRoot);
     const started: string[] = [];
-    const cleanupAt: number[] = [];
     let rejected: ((error: Error) => void) | undefined;
     let cancelled = false;
     try {
@@ -476,12 +556,11 @@ describe("source qualification DAG", () => {
           AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
         },
         now: () => now,
+        packageRoot,
         workRoot,
-        retainFailureArtifacts: false,
         handleSignals: false,
         policyBytes: Buffer.from("policy"),
         loadInventory: () => ({ counts: {}, files: {} }),
-        cleanupGenerated: () => cleanupAt.push(now),
         startParticipant: (name: string) => {
           started.push(name);
           now = 291_000;
@@ -502,7 +581,6 @@ describe("source qualification DAG", () => {
         message: "generated-overlap deadline expired before starting build",
       });
       expect(started).toEqual(["source"]);
-      expect(cleanupAt).toEqual([1_000, 291_100]);
       expect(now).toBeLessThan(297_000);
       expect(fs.existsSync(workRoot)).toBe(false);
     } finally {
@@ -514,8 +592,8 @@ describe("source qualification DAG", () => {
     let now = 1_000;
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-blocked-test-"));
     fs.mkdirSync(path.join(workRoot, "barrier"));
+    const packageRoot = createOverlapPackageRoot(workRoot);
     const cancelled: string[] = [];
-    const cleanupAt: number[] = [];
     const deferred = new Map<string, (error: Error) => void>();
     let evidenceReads = 0;
     try {
@@ -526,12 +604,11 @@ describe("source qualification DAG", () => {
           AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
         },
         now: () => now,
+        packageRoot,
         workRoot,
-        retainFailureArtifacts: false,
         handleSignals: false,
         policyBytes: Buffer.from("policy"),
         loadInventory: () => ({ counts: {}, files: {} }),
-        cleanupGenerated: () => cleanupAt.push(now),
         waitForReady: async () => undefined,
         startReader: () => ({
           stop: () => undefined,
@@ -566,7 +643,6 @@ describe("source qualification DAG", () => {
         message: "overlap work exceeded its cooperative deadline",
       });
       expect(cancelled.sort()).toEqual(["build", "package", "source"]);
-      expect(cleanupAt).toEqual([1_000, 291_300]);
       expect(evidenceReads).toBe(0);
       expect(now).toBeLessThan(297_000);
       expect(fs.existsSync(workRoot)).toBe(false);
@@ -579,8 +655,8 @@ describe("source qualification DAG", () => {
     let now = 1_000;
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-success-test-"));
     fs.mkdirSync(path.join(workRoot, "barrier"));
+    const packageRoot = createOverlapPackageRoot(workRoot);
     const started: Array<{ name: string; command: string[] }> = [];
-    const cleanupAt: number[] = [];
     const inventory = {
       counts: { source: 1, package: 1, stress: 1, performance: 1, capacity: 1 },
       files: { source: ["source.test.ts"], package: ["package.test.ts"] },
@@ -593,11 +669,11 @@ describe("source qualification DAG", () => {
           AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
         },
         now: () => now,
+        packageRoot,
         workRoot,
         handleSignals: false,
         policyBytes: Buffer.from("policy"),
         loadInventory: () => inventory,
-        cleanupGenerated: () => cleanupAt.push(now),
         waitForReady: async () => undefined,
         startReader: () => ({
           stop: () => undefined,
@@ -632,6 +708,7 @@ describe("source qualification DAG", () => {
           },
         }),
       });
+      const privateRoot = started.find(({ name }) => name === "build")!.command.at(-1)!;
       expect(evidence).toMatchObject({
         schemaVersion: "agentera.generatedOverlapEvidence.v1",
         status: "pass",
@@ -650,16 +727,15 @@ describe("source qualification DAG", () => {
         participants: {
           source: { command: gate("source").command, elapsedMs: 10 },
           package: { command: gate("package").command, elapsedMs: 10 },
-          build: { command: gate("build").command, elapsedMs: 10, status: "pass" },
+          build: { command: [...gate("build").command, "--", "--output-root", privateRoot], elapsedMs: 10, status: "pass" },
         },
       });
       expect(started).toEqual([
         { name: "source", command: ["pnpm", "-C", "packages/cli", "run", "test:source"] },
-        { name: "build", command: ["pnpm", "-C", "packages/cli", "build"] },
+        { name: "build", command: ["pnpm", "-C", "packages/cli", "build", "--", "--output-root", privateRoot] },
         { name: "package", command: ["pnpm", "-C", "packages/cli", "run", "verify:package"] },
-        { name: "invocation", command: [process.execPath, path.join(REPO_ROOT, "packages/cli/dist/bin/agentera.js"), "--version"] },
+        { name: "invocation", command: [process.execPath, path.join(privateRoot, "dist/bin/agentera.js"), "--version"] },
       ]);
-      expect(cleanupAt).toEqual([1_000]);
       expect(fs.existsSync(workRoot)).toBe(false);
     } finally {
       fs.rmSync(workRoot, { recursive: true, force: true });

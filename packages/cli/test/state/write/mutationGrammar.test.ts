@@ -63,7 +63,7 @@ describe("declarative state mutation grammar", () => {
 
   it("keeps source and bundled plan schema identity boundaries explicit", () => {
     const schemaPaths = [path.join(repoRoot, "skills/agentera/schemas/artifacts/plan.yaml")];
-    const bundled = path.join(repoRoot, "packages/cli/.agentera-generated/current/bundle/skills/agentera/schemas/artifacts/plan.yaml");
+    const bundled = path.join(repoRoot, "packages/cli/bundle/skills/agentera/schemas/artifacts/plan.yaml");
     if (fs.existsSync(bundled)) schemaPaths.push(bundled);
     for (const schemaPath of schemaPaths) {
       expect(fs.existsSync(schemaPath), schemaPath).toBe(true);

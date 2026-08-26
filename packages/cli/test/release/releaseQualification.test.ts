@@ -84,7 +84,7 @@ function overlapObservation() {
     participants: {
       source: { command: command("source"), elapsedMs: 1, files: 1, tests: 1, pending: [] },
       package: { command: command("package"), elapsedMs: 1, files: 1, tests: 1, pending: [] },
-      build: { command: command("build"), elapsedMs: 1, status: "pass" },
+      build: { command: [...command("build"), "--", "--output-root", "/tmp/private-build/generation-a"], elapsedMs: 1, status: "pass" },
     },
     reader: {
       observed: true,
@@ -94,10 +94,11 @@ function overlapObservation() {
       generations: ["generation-a"],
     },
     generation: "generation-a",
+    build_root: "/tmp/private-build/generation-a",
     activation_evidence: {
       digest: "a".repeat(64),
       checks: 42,
-      path: "packages/cli/.agentera-generated/generations/generation-a/activation-evidence.json",
+      path: "private-build/generation-a/activation-evidence.json",
       package_identity: packageIdentity(),
       package_snapshot: {
         schemaVersion: "agentera.activationPackageSnapshot.v1",
@@ -124,7 +125,11 @@ function gateRecord(gate: { name: string; command: string[] }) {
   if (["source", "package"].includes(gate.name)) {
     observation = { command: gate.command, files: 1, tests: 1, pending: [] };
   } else if (gate.name === "build") {
-    observation = { command: gate.command, status: "pass", generation: "generation-a" };
+    observation = {
+      command: [...gate.command, "--", "--output-root", "/tmp/private-build/generation-a"],
+      status: "pass",
+      generation: "generation-a",
+    };
   } else if (gate.name === "generated-overlap") {
     observation = overlapObservation();
   } else if (gate.name === "performance") {
@@ -847,6 +852,26 @@ describe("release qualification receipts", () => {
     });
     expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "source-receipt.json"), "utf8")))
       .toEqual(issued.receipt);
+  });
+
+  it("accepts the actual build command and rejects a missing output-root suffix", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const receipt = await sourceReceipt(repo, candidateDirectory);
+    const build = receipt.gates.find((gate: { name: string }) => gate.name === "build");
+    const governed = GOVERNED_GATES.find((gate: { name: string }) => gate.name === "build")!.command;
+    expect(build.observation.command).toEqual([
+      ...governed,
+      "--",
+      "--output-root",
+      "/tmp/private-build/generation-a",
+    ]);
+
+    const invalid = structuredClone(receipt);
+    invalid.gates.find((gate: { name: string }) => gate.name === "build").observation.command = governed;
+    const { receiptSha256: _discarded, ...content } = invalid;
+    invalid.receiptSha256 = sha256(canonicalJson(content));
+    expect(() => validateSourceReceipt({ repo, receipt: invalid }))
+      .toThrow("source receipt gate 'build' has the wrong command origin");
   });
 
   it("rejects source authority from a non-pinned performance runner identity", async () => {

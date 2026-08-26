@@ -126,16 +126,16 @@ review those workflow files on `main` before the v3 `@latest` cutover.
 
 Source verification runs one evidence DAG. Batch A starts generated-overlap,
 stress, and typecheck together with separate HOME, cache, npm configs, and
-report outputs. Generated-overlap is the only checkout
-generated-output writer. It invokes the exact public source, package, and build
-commands once and returns their inventory, pending-test, build, generation, and
-continuous-reader evidence. Source, package, and build are not spawned again.
+report outputs. Generated-overlap invokes the exact public source, package, and
+build commands once. The build writes only its private immutable root and returns
+the owner inventories, pending-test results, and build evidence. Source, package,
+and build are not spawned again.
 The GitHub source verification step gives the long-running source participant two
 workers, gives hosted Vitest assertions a 120-second ceiling, and limits the
 concurrently starting package and stress participants to one worker each. Local
 assertions retain the 30-second default. This bounds initial contention without
 starving the source owner that determines the generated-overlap wall time.
-After every batch owner passes and overlap settles one lease-free generation,
+After every batch owner passes and overlap validates one immutable private build,
 performance runs alone with one worker in fresh isolated state on the pinned
 remote runner declared by the policy, and records the runner identity. Local
 performance runs are diagnostic, not authoritative package verification evidence. This
@@ -145,11 +145,11 @@ prevent CPU contention. Performance receives the same absolute source deadline.
 After it passes, capacity runs alone with one worker for large deterministic
 scale evidence. After capacity passes, compact, capability-contract, and the
 source-only activation conjunction run together as reader barrier B. All three
-use the newly built CLI from that exact lease-free generation. Generated-overlap
+use the newly built CLI from that exact private build. Generated-overlap
 computes one Git commit, Git tree, and exact working-tree digest before
 releasing participants. Build and both package constructions embed that
-identity in `dist/` and `bundle/`; selection and barrier reads reject a
-complete generation whose source identity differs.
+identity in `dist/` and `bundle/`; barrier reads reject a private build whose
+source identity differs.
 
 Before it returns, generated-overlap gives the source and package owners separate
 isolated evidence directories under its report root. The source owner atomically
@@ -176,13 +176,13 @@ regular-file content, 4,096 entries, and 512 characters per relative path. It
 rejects symlinks, non-regular files, unexpected root entries, schema drift, and
 tree or byte-count drift.
 
-Generated-overlap then executes the selected generation's capability and
+Generated-overlap then executes the private build's capability and
 bootstrap paths. Immediately before combination it validates the parent-owned
 snapshot against the package-identity receipt and installs it at the fixed private
-`.activation-package-snapshot` child of that generation. Neither an environment
+`.activation-package-snapshot` child of that build root. Neither an environment
 value nor `activation-evidence.json` can select another snapshot root. It then
-writes `activation-evidence.json` into that generation. The combined manifest
-binds its generation UUID, current source digest, extracted package integrity,
+writes `activation-evidence.json` into that build root. The combined manifest
+binds its source-identity SHA-256, current source digest, extracted package integrity,
 immutable tuple digest, the three producer digests, and 42 identity checks with
 exact producer and artifact provenance. Observation digests hash only canonical
 normalized observations; check IDs are not digest salt.
@@ -193,7 +193,7 @@ generated, and extracted bootstrap classifications must also agree. Generated
 overlap returns the package identity and fixed snapshot descriptor separately
 from the combined manifest. The release parent forwards only the retained identity
 to Barrier B; the activation conjunction derives the snapshot from the already
-authoritative generation root, rechecks realpath containment and all bounds,
+authoritative private build root, rechecks realpath containment and all bounds,
 rehashes the retained tarball, extracts those same bytes through stdin, and
 recomputes the complete retained extracted tree. Post-finalization mutation,
 deletion, or addition therefore fails with the package owner and correction even
@@ -384,10 +384,9 @@ independent:
 | Capacity | `pnpm -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
 | Package | `pnpm -C packages/cli run verify:package` | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke. |
 
-Build is a separate generated-output participant, not a test owner.
-`pnpm -C packages/cli build` publishes one immutable checkout generation
-containing matching `dist/` and `bundle/`, followed by one atomic `current`
-symlink replacement.
+Build is a separate generated-output participant, not a test owner. Routine
+builds synchronize staged output into checkout `dist/` and `bundle/`; release
+verification instead retains one private immutable build root.
 
 `packages/cli/test/packaging/packageSetup.ts` is the canonical package fixture.
 It builds in two distinct metacharacter-bearing roots, packs each construction
@@ -475,95 +474,31 @@ request, activation, or publication action. Receipt verification retains its
 clean committed-tree and explicit external artifact directory requirements.
 
 `pnpm -C packages/cli run verify:generated-overlap` starts the exact public
-source, build, and package commands from absent checkout output. Each participant
-has isolated npm state and report output. The coordinator releases their
-global-setup barrier once all are ready, compares exact source and package
-inventories and pending assertions with structured Vitest results, and
-continuously pins and validates selected generations until every participant
-exits. Its JSON evidence records commands, durations, owner inventories, build
-status, selected generation, and reader identity/surface results; it does not
-turn scheduler-dependent observation counts into durable evidence.
+source, package, and build owners concurrently. The build owner writes one
+source-identified immutable tree under the coordinator's private temporary
+root. Release readers and activation evidence use that explicit root. No
+checkout generation pointer, lease, retention, or cleanup protocol participates.
 
-## Checkout generation protocol
+## Checkout generated output
 
-`packages/cli/scripts/generated-output.mjs` is the executable authority. A
-generation is complete only when its root, `dist/`, and `bundle/` carry the
-same generation identity. Production builds also require matching
-`.agentera-build-source.json` markers in `dist/` and `bundle/`, bound to the Git
-commit, Git tree, file count, and exact tracked-plus-untracked working-tree
-digest observed before and after construction. Each digest record includes its
-canonical Git mode: `100644` or `100755` for regular files and `120000` for
-target-bound symlinks. Only the executable bit participates when Git supports
-worktree file modes; other host permission bits do not. `current` must be a symlink to a
-regular direct child of
-`.agentera-generated/generations/`; canonical-path checks reject external
-targets, prefix collisions, generation symlinks, missing surfaces, and identity
-mismatches. Validation recursively `lstat`s and canonicalizes every `dist/` and
-`bundle/` entry, accepting only regular directories and singly linked regular
-files. Nested absolute, relative, directory, broken, and path-prefix symlinks,
-special files, and multiply linked files are rejected. Package construction
-applies the same rule before `npm pack`; npm metadata outside these surfaces
-remains unaffected. The cost is linear in generated entries and reads metadata,
-not file contents. The stable checkout launcher pins that validated generation
-for its process lifetime before importing the CLI. It never resolves `dist` and
-`bundle` separately.
+Routine `pnpm -C packages/cli build` constructs `dist/` and `bundle/` in an OS
+temporary directory. It then synchronizes those trees into the checkout. The
+synchronizer adds missing files, replaces files whose bytes or executable mode
+changed, and removes stale files. It does not rewrite unchanged files, so an
+unchanged build preserves output bytes and modification times. An interrupted
+build can leave partial checkout output; rerun the build to repair it.
 
-Publication validates in staging, renames the complete generation into the
-generations root, creates a temporary pointer, and atomically renames that
-pointer to `current`. A short publisher lease protects the pre-selection
-window. One short-lived, crash-recoverable mutation mutex serializes cleanup,
-publication, retention, and compatibility-launcher installation; compilation
-still occurs outside it. There is no publication journal.
+Matching `.agentera-build-source.json` markers in `dist/` and `bundle/` bind
+isolated package and release construction to the Git commit, Git tree, file
+count, and exact tracked-plus-untracked working-tree digest. Regular-tree
+validation rejects links, special files, and multiply linked files. The
+checkout `dist/bin/agentera.js` is the compiled regular executable, not a
+generation launcher. Routine builds do not write `.agentera-generated`.
 
-Reader, publisher, staging, and mutation ownership records pair PID with process
-birth identity: `/proc/<pid>/stat` start ticks on Linux,
-`LC_ALL=C LANG=C TZ=UTC0 ps -o lstart` normalized to an UTC ISO timestamp on
-macOS, and PowerShell `StartTime` ticks on Windows. PID reuse therefore becomes
-stale ownership rather than a false live reader. Legacy, malformed,
-permission-denied, unsupported, or otherwise unavailable process-start evidence
-is `unknown`: cleanup or contended mutation fails with the preserved path
-instead of deleting state or claiming bounded success.
-Cleanup retains at most two complete generations unless additional generations
-have live leases. A reader lease is a hard link to the generation guard;
-cleanup atomically renames that guard before deletion, so lease acquisition
-either wins first or retries without any live generation path disappearing. A
-live lease restores an interrupted guard claim. A
-later build or explicit cleanup removes stale leases and released generations,
-so crashed readers do not create permanent growth on Linux, macOS, or Windows
-when their declared process-start mechanism is available. The precise invariant
-is two ordinary complete generations plus generations protected by currently
-live leases; unknown leases are preserved and make cleanup fail visibly.
-
-## Recovery and cleanup
-
-Build runs recovery before staging and bounded retention after publication.
-Recovery is idempotent and never follows or mutates an escaped target.
-
-| State | Recovery |
-| ----- | -------- |
-| Missing `current` | Valid before the first build; the next successful build selects one complete generation. |
-| Directory, regular file, broken link, escaped link, or otherwise invalid `current` | Atomically renamed to one `.preserved-current-*` path before replacement. Inspect that preserved path before deleting it. |
-| `.current-*` temporary pointer | A well-formed stale symlink is removed; malformed or non-symlink state is preserved and reported with bounded paths. |
-| `.staging-*` | Removed only when its owner is absent or its recorded process identity no longer matches. Live state is retained; malformed or uncertain ownership fails with a correction. |
-| `.agentera-generation.guard.retiring-*` cleanup claim | Restored when the generation is current or a matching live lease exists; otherwise its unselected generation is removed. Conflicting guard state is preserved and reported. |
-| `.mutation-lock` | Concurrent callers wait for an atomically-created owner record. Live ownership times out actionably; dead, PID-reused, and unknown canonical ownership is preserved and fails closed rather than using a non-atomic pathname claim. Inspect and remove only confirmed stale residue, then rerun `pnpm -C packages/cli run generated:cleanup -- --force`. |
-| `.mutation-lock.reclaim-*` | Every interrupted reclaim claim is reclassified from its retained owner record. Proven-dead or PID-reused claims are removed, a lone live claim is restored to `.mutation-lock`, and matching duplicate records are collapsed. Malformed, permission-denied, unsupported, or conflicting canonical/claim ownership is preserved with bounded corrective paths. Retries converge without ignoring claim residue. |
-| Legacy publication lock | Active or uncertain ownership is retained. A dead owner or an ownerless lock older than 30 seconds is reclaimed. |
-| Legacy journal or backup residue | Never interpreted or deleted automatically. The build reports at most three paths and asks the contributor to inspect or remove confirmed residue. |
-
-Preview and apply self-service retention headlessly:
-
-```bash
-pnpm -C packages/cli run generated:cleanup -- --dry-run --json
-pnpm -C packages/cli run generated:cleanup -- --force --json
-```
-
-Cleanup requires either `--dry-run` or `--force`; retries are safe. To inspect
-the publication tarball surface, use
+To inspect the publication tarball surface, use
 `pnpm -C packages/cli run pack:dry-run`. Add `-- --json` or `-- --verbose` when
 the complete file manifest is needed. Direct checkout `npm pack` remains
-rejected because compatibility launchers and generations are not package
-inputs.
+rejected because package construction owns the publication inputs.
 
 ## Ownership inventory
 

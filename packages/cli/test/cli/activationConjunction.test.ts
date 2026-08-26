@@ -375,14 +375,14 @@ describe("activation conjunction", () => {
   });
 
   it("rejects overlong and path-varied generation provenance", () => {
-    expect(validateActivationConjunction({ root: ROOT, productionInputs: baseline(), expectedGeneration: "x".repeat(37) }).status).toBe("fail");
-    expect(validateActivationConjunction({ root: ROOT, productionInputs: baseline(), expectedGeneration: "123e4567-e89b-42d3-a456-426614174000", generationRoot: path.join(ROOT, "elsewhere") }).status).toBe("fail");
+    expect(validateActivationConjunction({ root: ROOT, productionInputs: baseline(), expectedGeneration: "x".repeat(65) }).status).toBe("fail");
+    expect(validateActivationConjunction({ root: ROOT, productionInputs: baseline(), expectedGeneration: "1".repeat(64), generationRoot: path.join(ROOT, "elsewhere") }).status).toBe("fail");
   });
 
   it("rejects a fully re-signed manifest after the retained package snapshot changes", () => {
     const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-retained-package-"));
-    const generation = "123e4567-e89b-42d3-a456-426614174000";
-    const generationRoot = path.join(temporaryRoot, "packages/cli/.agentera-generated/generations", generation);
+    const generation = "1".repeat(64);
+    const generationRoot = path.join(temporaryRoot, "private-build", generation);
     try {
       const inputRoot = path.join(temporaryRoot, "input");
       const inputPackage = path.join(inputRoot, "package");
@@ -412,8 +412,8 @@ describe("activation conjunction", () => {
       const packageIdentity = { ...unsignedIdentity, identityDigest: observationDigest(unsignedIdentity) };
 
       for (const relative of ["", "dist", "bundle"]) fs.mkdirSync(path.join(generationRoot, relative), { recursive: true });
-      for (const relative of [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json"]) {
-        fs.writeFileSync(path.join(generationRoot, relative), `${JSON.stringify({ id: generation })}\n`);
+      for (const relative of ["dist/.agentera-build-source.json", "bundle/.agentera-build-source.json"]) {
+        fs.writeFileSync(path.join(generationRoot, relative), `${JSON.stringify({ identitySha256: generation })}\n`);
       }
       installRetainedPackageSnapshot(sourceSnapshot, generationRoot, packageIdentity);
 

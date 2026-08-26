@@ -32,4 +32,4 @@ record:
       description: "[refactor] Retire the unused durability diagnostic"
       severity: normal
       status: open
-      order: 25
+      order: 24

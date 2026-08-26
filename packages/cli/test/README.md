@@ -11,7 +11,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 
 | Layer | Proves | Entry point |
 | ----- | ------ | ----------- |
-| Source Vitest | Detailed hook/CLI behavior from fixtures and tmp project trees; runtime bootstrap uses one accepted and one rejected smoke per source/package representation. No checkout generated-output writes. A source test may compare a settled bundled schema when that checkout generation already exists. | `pnpm -C packages/cli test` |
+| Source Vitest | Detailed hook/CLI behavior from fixtures and tmp project trees; runtime bootstrap uses one accepted and one rejected smoke per source/package representation. No checkout generated-output writes. A source test may compare the direct checkout bundle when present. | `pnpm -C packages/cli test` |
 | Performance owner | Machine-sensitive cold-process budgets on one worker, including one bounded evidence record with runner authority | `pnpm -C packages/cli test:performance` |
 | Capacity owner | Large deterministic scale coverage that is too heavy for source correctness or performance timing | `pnpm -C packages/cli test:capacity` |
 | Performance integration | Real supported owner command plus independent stdout-contract validation; scheduled/release policy surface | `pnpm -C packages/cli test:performance:integration` |
@@ -20,8 +20,9 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | Repo gate | Committed `.agentera/*` and `TODO.md` within `uniform_10_40_50` | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
 | Release gate | Version-bearing surfaces and governed provenance aligned in the live checkout | `agentera check validate release-metadata --format json` |
 
-Generated-output producers, consumers, publication, and recovery are defined
-once in the [v3 packaging authority](../../../docs/packaging/v3-packaging.md).
+Generated-output construction, consumers, package publication, and temporary-root
+lifecycle are defined once in the
+[v3 packaging authority](../../../docs/packaging/v3-packaging.md).
 
 Performance stdout is not JSON-only: normal Vitest text surrounds exactly one
 whole-line `agentera.entityAuthorityPerformanceEvidence.v1` JSON record. Consumers
@@ -51,7 +52,7 @@ runs the exhaustive governed runtime-bootstrap matrix, every missing surface,
 and the adversarial activation-evidence cases instead of repeating them in
 ordinary source verification. It
 runs beside isolated stress and typecheck owners. After those three batch owners
-pass and the generated generation settles without leases, performance runs alone
+pass and the private build settles, performance runs alone
 with one worker in fresh state on the pinned remote runner, and records runner
 identity so CPU contention cannot invalidate its machine-sensitive evidence.
 Local performance runs are diagnostic, not authoritative package verification evidence.

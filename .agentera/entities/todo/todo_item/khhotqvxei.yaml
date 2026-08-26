@@ -33,4 +33,4 @@ record:
       description: "[refactor] Make usage analytics output stdout-only"
       severity: normal
       status: open
-      order: 27
+      order: 26

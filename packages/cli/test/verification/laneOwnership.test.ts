@@ -511,10 +511,8 @@ describe("verification lane ownership", () => {
     expect(authority).toContain("| `release` | Source, stress, performance, capacity, package |");
     expect(authority).toContain("Conservative authority and verification surfaces route to `ci_owned`");
     expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
-    expect(authority).toContain("generated:cleanup -- --force --json");
-    expect(authority).toContain("singly linked regular");
-    expect(authority).toContain("`LC_ALL=C LANG=C TZ=UTC0 ps -o lstart`");
-    expect(authority).toContain("mutation mutex serializes cleanup");
+    expect(authority).toContain("Routine builds do not write `.agentera-generated`");
+    expect(authority).toContain("multiply linked files");
     expect(contributor).toContain("../../docs/packaging/v3-packaging.md");
     expect(testPolicy).toContain("../../../docs/packaging/v3-packaging.md");
     expect(characterization).toContain("../../docs/packaging/v3-packaging.md");
@@ -526,7 +524,7 @@ describe("verification lane ownership", () => {
     expect(shimReadme).toContain("pnpm cli:publish:qualified:stable");
     expect(shimReadme).not.toMatch(/^npm (?:pack|publish)/m);
     expect(contributor).not.toContain("Staging directories encode their owner PID");
-    expect(packageJson.scripts["generated:cleanup"]).toBe("node scripts/build-package.mjs --cleanup");
+    expect(packageJson.scripts["generated:cleanup"]).toBeUndefined();
   });
 
   it("keeps package construction separate and fast policy owner-free", () => {

@@ -109,18 +109,11 @@ Package verification requires an executable regular
 and extracted runtime parity. Construction refuses to overwrite an existing
 artifact.
 
-`docs/packaging/v3-packaging.md` owns generated-output construction, leases,
-retention, recovery, package bounds, and publication interaction. Use its
-cleanup commands rather than deleting generated state manually:
-
-```bash
-pnpm -C packages/cli run generated:cleanup -- --dry-run --json
-pnpm -C packages/cli run generated:cleanup -- --force --json
-```
-
-Cleanup requires either `--dry-run` or `--force`. Inspect preserved or
-uncertain ownership before removal. Never force-kill generated overlap during
-source verification.
+`docs/packaging/v3-packaging.md` owns generated-output construction, package
+bounds, and publication interaction. Standalone generated-overlap removes its
+private temporary root after success or failure. Release verification retains
+its parent-owned root through barrier B and removes it in the DAG-level
+`finally`. Never force-kill generated overlap during source verification.
 
 ## Behavioral verification
 

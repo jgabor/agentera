@@ -40,7 +40,6 @@
     "test:watch": "vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
     "verify:generated-overlap": "node scripts/verify-generated-overlap.mjs",
-    "generated:cleanup": "node scripts/build-package.mjs --cleanup",
     "pack:dry-run": "node scripts/pack-package.mjs --dry-run",
     "release:prepare": "node scripts/publication-transaction.mjs prepare development",
     "release:qualify:source": "node scripts/release-qualification.mjs source",

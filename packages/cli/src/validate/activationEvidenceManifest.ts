@@ -661,10 +661,10 @@ function activationEvidenceViolationsInternal(
     validateAuthoritativeOwner(manifest.producers?.source, context.sourceEvidence, violations);
     validateAuthoritativeOwner(manifest.producers?.generated, context.generatedEvidence, violations);
     violations.push(...activationPackageIdentityViolations(context.expectedPackageIdentity, manifest.producers?.package));
-    for (const relative of [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json"]) {
+    for (const relative of ["dist/.agentera-build-source.json", "bundle/.agentera-build-source.json"]) {
       try {
-        if (JSON.parse(fs.readFileSync(path.join(context.generationRoot, relative), "utf8")).id !== generation) violations.push("activation evidence generation marker provenance drifted");
-      } catch { violations.push("activation evidence generation marker is missing or malformed"); }
+        if (JSON.parse(fs.readFileSync(path.join(context.generationRoot, relative), "utf8")).identitySha256 !== generation) violations.push("activation evidence build marker provenance drifted");
+      } catch { violations.push("activation evidence build marker is missing or malformed"); }
     }
   }
   return [...new Set(violations)];

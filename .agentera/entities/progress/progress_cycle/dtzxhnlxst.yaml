@@ -1,0 +1,13 @@
+id: dtzxhnlxst
+artifact: progress
+record:
+  timestamp: 2026-08-26 21:12
+  type: refactor
+  phase: build
+  what: Replaced rotating checkout generations with differential local output and one parent-owned private release build.
+  context:
+    intent: Eliminate high-volume generated-tree rotation without weakening release evidence.
+    constraints: Preserve package bytes, executable output, source identity, activation evidence, and barrier B.
+    scope: Build output, release verification, lifecycle tests, and packaging guidance.
+  verified: Node 24 checks passed 100 focused tests, typecheck, build, CLI smoke, 16 package tests, the 249-file generated-overlap source owner with 4,079 tests, compact, and capability contract.
+  publication_order: 229

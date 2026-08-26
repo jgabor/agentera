@@ -113,7 +113,7 @@ export interface ActivationViolation { owner: string; violation: string; correct
 
 const OWNER_PATH = /^(?:packages\/cli\/(?:src\/.+\.ts|scripts\/.+\.mjs)|references\/.+\.(?:json|ya?ml))$/;
 const SYMBOL = /^[A-Za-z_$][A-Za-z0-9_.$-]*$/;
-const GENERATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const GENERATION_ID = /^[0-9a-f]{64}$/;
 const RETAINED_CLASSES = new Set(["current", "migration-only", "runbook"]);
 
 function exactSet(left: readonly string[], right: readonly string[]): boolean {
@@ -642,14 +642,14 @@ export function discoverActivationSurfaces(root: string): ActivationSurfaceRow[]
 }
 
 function generationViolation(root: string, id: string, generationRoot: string | undefined, contract: ActivationConjunctionContract): string | null {
-  if (id.length > contract.bounds.maxGenerationIdCharacters || !GENERATION_ID.test(id)) return "generation identity violates the exact UUID grammar or bound";
-  const expected = path.resolve(root, "packages/cli/.agentera-generated/generations", id);
-  const actual = generationRoot ? path.resolve(generationRoot) : expected;
-  if (actual !== expected) return "generation path does not match the selected current-source generation";
-  for (const relative of [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json"]) {
+  if (id.length > contract.bounds.maxGenerationIdCharacters || !GENERATION_ID.test(id)) return "build identity violates the exact SHA-256 grammar or bound";
+  if (!generationRoot) return "private build root is missing";
+  const actual = path.resolve(generationRoot);
+  if (path.basename(actual) !== id) return "private build root does not match its build identity";
+  for (const relative of ["dist/.agentera-build-source.json", "bundle/.agentera-build-source.json"]) {
     try {
-      if (JSON.parse(fs.readFileSync(path.join(actual, relative), "utf8")).id !== id) return "generation identity does not match across package surfaces";
-    } catch { return "generation identity is missing from a required package surface"; }
+      if (JSON.parse(fs.readFileSync(path.join(actual, relative), "utf8")).identitySha256 !== id) return "build identity does not match across package surfaces";
+    } catch { return "build identity is missing from a required package surface"; }
   }
   return null;
 }
@@ -853,7 +853,7 @@ function report(
     tuple_authority: ACTIVATION_TUPLE_AUTHORITY as unknown as JsonObject,
     evidence_manifest: generation && generationRoot ? {
       schema: "agentera.activationEvidence.v1",
-      path: `packages/cli/.agentera-generated/generations/${generation}/${ACTIVATION_EVIDENCE_FILE}`,
+      path: `private-build/${generation}/${ACTIVATION_EVIDENCE_FILE}`,
       digest: (() => {
         const manifest = readActivationEvidenceManifest(generationRoot) as any;
         return typeof manifest?.manifestDigest === "string" ? manifest.manifestDigest : null;

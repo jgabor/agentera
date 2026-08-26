@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
-import { selectGeneratedGeneration, validateGeneratedSourceIdentity } from "./generated-output.mjs";
+import { readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
 import { gitSourceTreeDigest } from "./git-source-tree.mjs";
 import { performanceEvidenceRecords } from "./performance-evidence.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
@@ -372,6 +372,18 @@ function sourceGateMap(gates) {
   return entries;
 }
 
+function isGovernedParticipantCommand(name, command, governed, buildRoot) {
+  if (name !== "build") return canonicalJson(command) === canonicalJson(governed);
+  if (!Array.isArray(command) || canonicalJson(command.slice(0, governed.length)) !== canonicalJson(governed)) return false;
+  const suffix = command.slice(governed.length);
+  return suffix.length === 3
+    && suffix[0] === "--"
+    && suffix[1] === "--output-root"
+    && typeof suffix[2] === "string"
+    && suffix[2].length > 0
+    && (buildRoot === undefined || suffix[2] === buildRoot);
+}
+
 function sourceProcessFailure(name, detail, status) {
   const error = new Error(detail);
   error.owner = name;
@@ -551,9 +563,10 @@ function validateOverlapEvidence(evidence, gates) {
     || evidence.reader?.identity_mismatches !== 0
     || evidence.reader?.surface_validation_failures !== 0
     || typeof evidence.generation !== "string"
+    || typeof evidence.build_root !== "string"
     || evidence.activation_evidence?.checks !== RELEASE_MODEL.activationConjunction.checkIds.length
     || !/^[0-9a-f]{64}$/.test(evidence.activation_evidence?.digest ?? "")
-    || evidence.activation_evidence?.path !== `packages/cli/.agentera-generated/generations/${evidence.generation}/activation-evidence.json`
+    || evidence.activation_evidence?.path !== `private-build/${evidence.generation}/activation-evidence.json`
     || activationPackageIdentityViolations(evidence.activation_evidence?.package_identity).length !== 0
     || evidence.activation_evidence?.package_snapshot?.schemaVersion !== PACKAGE_SNAPSHOT_SCHEMA
     || evidence.activation_evidence?.package_snapshot?.path !== PACKAGE_SNAPSHOT_DIRECTORY
@@ -576,7 +589,7 @@ function validateOverlapEvidence(evidence, gates) {
   for (const name of OVERLAP_PARTICIPANTS) {
     const participant = evidence.participants?.[name];
     if (
-      JSON.stringify(participant?.command) !== JSON.stringify(gates.get(name).command)
+      !isGovernedParticipantCommand(name, participant?.command, gates.get(name).command, evidence.build_root)
       || !Number.isFinite(participant?.elapsedMs)
       || participant.elapsedMs < 0
     ) {
@@ -613,14 +626,16 @@ function parseOverlapEvidence(result, gates) {
   return validateOverlapEvidence(records[0], gates);
 }
 
-function generatedState(repo, sourceIdentity) {
-  const packageRoot = path.join(repo, "packages/cli");
-  const selected = selectGeneratedGeneration(packageRoot, { sourceIdentity });
-  const leasesRoot = path.join(packageRoot, ".agentera-generated", "leases");
+function generatedState(buildRoot, generation, sourceIdentity) {
+  if (!sameGeneratedSourceIdentity(readGeneratedSourceIdentity(buildRoot), sourceIdentity)) {
+    throw sourceProcessFailure("reader-barrier", "private build source identity changed", "failed");
+  }
+  validateRegularTree(path.join(buildRoot, "dist"), "private generated dist");
+  validateRegularTree(path.join(buildRoot, "bundle"), "private generated bundle");
   return {
-    generation: selected.id,
-    root: selected.root,
-    leases: fs.existsSync(leasesRoot) ? fs.readdirSync(leasesRoot).sort() : [],
+    generation,
+    root: buildRoot,
+    leases: [],
   };
 }
 
@@ -680,7 +695,7 @@ function validateSourceGateRecords(records) {
     }
     const observation = record.observation;
     if (OVERLAP_PARTICIPANTS.includes(record.name)) {
-      if (canonicalJson(observation.command) !== canonicalJson(gateContracts.get(record.name).command)) {
+      if (!isGovernedParticipantCommand(record.name, observation.command, gateContracts.get(record.name).command)) {
         throw new Error(`source receipt gate '${record.name}' has the wrong command origin`);
       }
       if (record.name === "build") {
@@ -768,7 +783,7 @@ function performanceObservation(result, inventoryFiles, requireAuthoritative) {
   };
 }
 
-export async function runSourceQualificationDag(options = {}) {
+async function executeSourceQualificationDag(options, overlapRoot) {
   const repo = options.repo ?? REPO_ROOT;
   const gateSet = governedSourceGates(options.gates);
   const gates = sourceGateMap(gateSet);
@@ -802,11 +817,16 @@ export async function runSourceQualificationDag(options = {}) {
     environment: name === "generated-overlap" ? {
       AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs),
       AGENTERA_SOURCE_CLEANUP_MARGIN_MS: String(cleanupMarginMs),
+      AGENTERA_GENERATED_OVERLAP_ROOT: overlapRoot,
     } : undefined,
   })), common);
   const batchElapsedMs = Math.max(0, Math.round(clock() - batchStarted));
   const overlap = parseOverlapEvidence(batch["generated-overlap"], gates);
-  const readState = options.readGeneratedState ?? ((currentRepo) => generatedState(currentRepo, overlap.source_identity));
+  const expectedBuildRoot = path.join(overlapRoot, "private-build", overlap.generation);
+  if (overlap.build_root !== expectedBuildRoot) {
+    throw sourceProcessFailure("generated-overlap", "generated-overlap returned a build outside its parent-owned root", "failed");
+  }
+  const readState = options.readGeneratedState ?? (() => generatedState(overlap.build_root, overlap.generation, overlap.source_identity));
   const afterBatch = readState(repo);
   if (afterBatch.generation !== overlap.generation || afterBatch.leases.length !== 0) {
     throw sourceProcessFailure("reader-barrier", "generated-overlap did not settle one lease-free generation", "failed");
@@ -862,7 +882,7 @@ export async function runSourceQualificationDag(options = {}) {
       "failed",
     );
   }
-  const freshGenerationRoot = beforeBarrier.root ?? path.join(repo, "packages/cli/.agentera-generated/generations", beforeBarrier.generation);
+  const freshGenerationRoot = beforeBarrier.root ?? overlap.build_root;
   const freshCli = path.join(freshGenerationRoot, "dist/bin/agentera.js");
   let barrier;
   let barrierFailure;
@@ -1030,6 +1050,15 @@ export async function runSourceQualificationDag(options = {}) {
   };
 }
 
+export async function runSourceQualificationDag(options = {}) {
+  const overlapRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-release-overlap-"));
+  try {
+    return await executeSourceQualificationDag(options, overlapRoot);
+  } finally {
+    fs.rmSync(overlapRoot, { recursive: true, force: true });
+  }
+}
+
 export async function issueSourceReceipt(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const clock = options.clock ?? (() => performance.now());
@@ -1117,7 +1146,7 @@ export async function runSourceConjunction(options = {}) {
       correction: null,
       generated_artifact: {
         generation: result.execution.generation,
-        path: `packages/cli/.agentera-generated/generations/${result.execution.generation}/dist/bin/agentera.js`,
+        path: `private-build/${result.execution.generation}/dist/bin/agentera.js`,
       },
       side_effects: { receipt: false, candidate: false, registry: false, activation: false, publication: false },
     };

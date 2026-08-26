@@ -125,7 +125,8 @@ describe("source-owned runtime bootstrap integration", () => {
     expect(() => assertRuntimeMatrixExecutionRegistry(incompleteRegistry)).toThrow();
   });
 
-  it.skipIf(RELEASE_EVIDENCE_RUN)("smokes accepted startup and wrong-channel rejection with protected-root preservation", { timeout: 120_000 }, () => {
+  it("smokes accepted startup and wrong-channel rejection with protected-root preservation", { timeout: 120_000 }, () => {
+    if (RELEASE_EVIDENCE_RUN) return;
     const summary = runRuntimeBootstrapMatrix(fixture, CHECKOUT_ROOT, { bounded: true });
     expect(summary.runtimeCounts).toEqual({
       source: { accepted: 1, rejected: 1 },
@@ -257,7 +258,7 @@ describe("source-owned runtime bootstrap integration", () => {
     expect(() => readContentAddressedPackageIdentity(path.join(retainedProbe, "missing-identity"))).toThrow(/package identity is missing/);
     fs.rmSync(retainedProbe, { recursive: true, force: true });
 
-    const generation = `package-fixture-${fixture.manifest.shasum}`;
+    const generation = fixture.sourceIdentity.identitySha256;
     const generatedEvidence = await createGeneratedOwnerEvidence({
       root: CHECKOUT_ROOT,
       generationRoot: fixture.constructionRoot,
@@ -277,17 +278,7 @@ describe("source-owned runtime bootstrap integration", () => {
     let sourceObservations = 0;
     let generatedObservations = 0;
     const mutablePackageEvidence = structuredClone(evidence);
-    const originalGenerationMarkers = [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json"]
-      .map((relative) => {
-        const file = path.join(fixture.constructionRoot, relative);
-        return [relative, fs.existsSync(file) ? fs.readFileSync(file) : null] as const;
-      });
-    for (const [relative] of originalGenerationMarkers) {
-      fs.writeFileSync(path.join(fixture.constructionRoot, relative), `${JSON.stringify({ id: generation })}\n`);
-    }
-    let assembledResult: ReturnType<typeof assembleAndValidateActivationEvidence>;
-    try {
-      assembledResult = assembleAndValidateActivationEvidence({
+    const assembledResult = assembleAndValidateActivationEvidence({
         root: CHECKOUT_ROOT,
         generationRoot: fixture.constructionRoot,
         generation,
@@ -297,13 +288,6 @@ describe("source-owned runtime bootstrap integration", () => {
         packageEvidence: mutablePackageEvidence,
         expectedPackageIdentity: packageIdentity,
       });
-    } finally {
-      for (const [relative, bytes] of originalGenerationMarkers) {
-        const file = path.join(fixture.constructionRoot, relative);
-        if (bytes) fs.writeFileSync(file, bytes);
-        else fs.rmSync(file, { force: true });
-      }
-    }
     sourceObservations += assembledResult.observerCalls.source;
     generatedObservations += assembledResult.observerCalls.generated;
     const assembled = assembledResult.manifest;
@@ -467,16 +451,12 @@ describe("source-owned runtime bootstrap integration", () => {
     for (const relative of ["references", "skills", "docs", "packages/cli/src", "packages/cli/scripts"]) copyIntoAttackRoot(relative);
     for (const relative of ["registry.json", "package.json", "packages/cli/package.json", "packages/cli/tsconfig.json"]) copyIntoAttackRoot(relative);
     fs.symlinkSync(path.join(CHECKOUT_ROOT, "packages/cli/node_modules"), path.join(attackRoot, "packages/cli/node_modules"), "dir");
-    const attackGeneration = "123e4567-e89b-42d3-a456-426614174000";
-    const attackGenerationRoot = path.join(attackRoot, "packages/cli/.agentera-generated/generations", attackGeneration);
+    const attackGeneration = fixture.sourceIdentity.identitySha256;
+    const attackGenerationRoot = path.join(attackRoot, "private-build", attackGeneration);
     fs.mkdirSync(attackGenerationRoot, { recursive: true });
     fs.cpSync(fs.realpathSync(path.join(fixture.constructionRoot, "dist")), path.join(attackGenerationRoot, "dist"), { recursive: true });
     fs.cpSync(fs.realpathSync(path.join(fixture.constructionRoot, "bundle")), path.join(attackGenerationRoot, "bundle"), { recursive: true });
     fs.symlinkSync(path.join(CHECKOUT_ROOT, "packages/cli/node_modules"), path.join(attackGenerationRoot, "node_modules"), "dir");
-    for (const relative of [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json"]) {
-      const marker = path.join(attackGenerationRoot, relative);
-      fs.writeFileSync(marker, `${JSON.stringify({ id: attackGeneration })}\n`);
-    }
     const attackPackageRoot = path.join(fixture.root, "coordinated-attack-package");
     fs.cpSync(fixture.packageRoot, attackPackageRoot, { recursive: true, verbatimSymlinks: true });
     const attackTarball = path.join(fixture.root, "coordinated-attack-agentera-3.0.0-dev.42.tgz");

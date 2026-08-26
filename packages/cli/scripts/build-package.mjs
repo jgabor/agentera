@@ -1,26 +1,20 @@
 #!/usr/bin/env node
-import { randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  cleanupGeneratedState,
   generatedSourceIdentity,
-  publishGeneratedGeneration,
   sameGeneratedSourceIdentity,
   validateRegularTree,
-  withGeneratedStateLock,
   writeGeneratedSourceIdentity,
-  writeGenerationIdentity,
-  writeStagingOwner,
 } from "./generated-output.mjs";
 import { waitForVerificationBarrier } from "./verification-barrier.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(here, "..");
-const generatedDirectory = ".agentera-generated";
 
 function run(command, args, cwd = packageRoot) {
   const result = spawnSync(command, args, { cwd, stdio: "inherit" });
@@ -77,44 +71,36 @@ function constructStableSource(outputRoot) {
   return before;
 }
 
-function launcherSource() {
-  return `#!/usr/bin/env node
-import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const protocol = await import(pathToFileURL(path.join(packageRoot, "scripts/generated-output.mjs")).href);
-const selected = protocol.pinGeneratedGeneration(packageRoot);
-process.once("exit", selected.release);
-await import(pathToFileURL(path.join(selected.root, "dist/bin/agentera.js")).href);
-`;
-}
-
-export function installCompatibilityLauncher(root) {
-  const dist = path.join(root, "dist");
-  const expected = launcherSource();
-  const existing = path.join(dist, "bin", "agentera.js");
-  if (fs.existsSync(existing) && fs.readFileSync(existing, "utf8") === expected) return;
-  const staged = path.join(root, `.agentera-launcher-${randomUUID()}`);
-  fs.mkdirSync(path.join(staged, "bin"), { recursive: true });
-  fs.writeFileSync(path.join(staged, "bin", "agentera.js"), expected, { mode: 0o755 });
-  const legacy = path.join(root, `.agentera-legacy-dist-${randomUUID()}`);
-  if (fs.existsSync(dist)) fs.renameSync(dist, legacy);
-  fs.renameSync(staged, dist);
-  fs.rmSync(legacy, { recursive: true, force: true });
-  fs.rmSync(path.join(root, "bundle"), { recursive: true, force: true });
+export function synchronizeTree(source, destination) {
+  fs.mkdirSync(destination, { recursive: true });
+  const sourceNames = new Set(fs.readdirSync(source));
+  for (const name of fs.readdirSync(destination)) {
+    if (!sourceNames.has(name)) fs.rmSync(path.join(destination, name), { recursive: true, force: true });
+  }
+  for (const name of sourceNames) {
+    const from = path.join(source, name);
+    const to = path.join(destination, name);
+    const sourceStat = fs.lstatSync(from);
+    const destinationStat = fs.existsSync(to) ? fs.lstatSync(to) : null;
+    if (sourceStat.isDirectory()) {
+      if (destinationStat && !destinationStat.isDirectory()) fs.rmSync(to, { recursive: true, force: true });
+      synchronizeTree(from, to);
+      continue;
+    }
+    const mode = sourceStat.mode & 0o777;
+    const unchanged = destinationStat?.isFile()
+      && (destinationStat.mode & 0o777) === mode
+      && sourceStat.size === destinationStat.size
+      && fs.readFileSync(from).equals(fs.readFileSync(to));
+    if (unchanged) continue;
+    if (destinationStat) fs.rmSync(to, { recursive: true, force: true });
+    fs.copyFileSync(from, to);
+    fs.chmodSync(to, mode);
+  }
 }
 
 function main() {
-  if (process.argv.includes("--cleanup")) {
-    const dryRun = process.argv.includes("--dry-run");
-    if (!dryRun && !process.argv.includes("--force")) {
-      throw new Error("generated cleanup requires --dry-run or --force; correction: run pnpm -C packages/cli run generated:cleanup -- --dry-run, then rerun with --force");
-    }
-    const result = cleanupGeneratedState(packageRoot, { dryRun });
-    console.log(process.argv.includes("--json") ? JSON.stringify(result, null, 2) : `generated cleanup ${dryRun ? "preview" : "complete"}: ${result.removed.count} removed, ${result.retained.count} retained, ${result.preserved.count} preserved`);
-    return;
-  }
+  waitForVerificationBarrier();
   const outputIndex = process.argv.indexOf("--output-root");
   if (outputIndex >= 0) {
     const outputRoot = process.argv[outputIndex + 1];
@@ -122,24 +108,11 @@ function main() {
     constructStableSource(path.resolve(outputRoot));
     return;
   }
-  waitForVerificationBarrier();
-  const generationId = randomUUID();
-  const generatedRoot = path.join(packageRoot, generatedDirectory);
-  fs.mkdirSync(generatedRoot, { recursive: true });
-  const recovery = cleanupGeneratedState(packageRoot);
-  if (recovery.preserved.count > 0) {
-    console.error(`build-package: preserved invalid current state for inspection at ${recovery.preserved.paths.join(", ")}${recovery.preserved.omitted > 0 ? ` (${recovery.preserved.omitted} more)` : ""}`);
-  }
-  const stagedRoot = path.join(generatedRoot, `.staging-${process.pid}-${generationId}`);
+  const stagedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-build-"));
   try {
-    writeStagingOwner(stagedRoot);
-    const sourceIdentity = constructStableSource(stagedRoot);
-    writeGenerationIdentity(stagedRoot, generationId, sourceIdentity);
-    withGeneratedStateLock(packageRoot, () => {
-      publishGeneratedGeneration(packageRoot, stagedRoot, generationId, { lockHeld: true });
-      cleanupGeneratedState(packageRoot, { lockHeld: true });
-      installCompatibilityLauncher(packageRoot);
-    });
+    constructStableSource(stagedRoot);
+    synchronizeTree(path.join(stagedRoot, "dist"), path.join(packageRoot, "dist"));
+    synchronizeTree(path.join(stagedRoot, "bundle"), path.join(packageRoot, "bundle"));
   } finally {
     fs.rmSync(stagedRoot, { recursive: true, force: true });
   }

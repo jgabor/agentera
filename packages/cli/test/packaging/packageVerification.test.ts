@@ -300,7 +300,7 @@ describe("npm distribution boundary", () => {
   });
 
   it("matches source preview and destructive fresh reset behavior", () => {
-    const sourceBin = path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js");
+    const sourceBin = path.join(fixture.constructionRoot, "dist/bin/agentera.js");
     const packageBin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const source = runResetWorkflow(sourceBin, path.join(fixture.root, "source-reset"));
     const packed = runResetWorkflow(packageBin, path.join(fixture.root, "packed-reset"));

@@ -37,14 +37,15 @@ overlap:
 
 # Release source qualification executes this evidence DAG without changing the
 # owner inventories or public commands above. generated-overlap is the only
-# checkout generated-output writer and the only execution origin for source,
+# private generated-output owner and the only execution origin for source,
 # package, build, and overlap evidence.
 release_qualification:
   schedule_authority: references/adapters/package-publication.json#qualification.source.dag
   deadline_authority: references/adapters/package-publication.json#benchmark.timeouts.sourceQualificationMs
   deadline_behavior: the source coordinator passes the actual absolute deadline;
     overlap stops new work at the contract cleanup margin, settles owned children,
-    removes its generated state on failure, and returns before the contract parent margin
+    and returns before the contract parent margin; the coordinator removes its
+    private root after barrier B or failure
   isolation: distinct_home_cache_user_global_config_and_report_per_child
   resource_isolation: performance_runs_alone_after_batch_a_settles_with_one_worker_and_no_other_marked_owner_then_capacity_runs_serially_before_readers
   failure:
@@ -60,9 +61,9 @@ release_qualification:
   source_generated_access:
     checkout_generated_write: forbidden
     conditional_read_when_present:
-      - packages/cli/.agentera-generated/current/bundle
-    authority: source tests may compare a settled bundled schema when present;
-      they never construct, publish, replace, or clean checkout generated output
+      - packages/cli/bundle
+    authority: source tests may compare the direct checkout bundle when present;
+      they never construct or clean checkout generated output
 
 owners:
   source:

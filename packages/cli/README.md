@@ -251,13 +251,13 @@ state, candidate projection, or publication result.
 Contributors use the Node.js 24 LTS version pinned in `.node-version` and pnpm
 10.30.3.
 
-### Generated-output ownership and recovery
+### Generated-output ownership
 
-The canonical producer, reader, packing, retention, and recovery contract is
+The canonical producer, reader, packing, and temporary-root lifecycle contract is
 [v3 npm packaging and verification](../../docs/packaging/v3-packaging.md).
-Generated generations are disposable; source files and the package registry
-remain authoritative. Use its recovery matrix rather than deleting uncertain
-state.
+Generated output is disposable; source files and the package registry remain
+authoritative. Routine builds update checkout `dist/` and `bundle/`, while
+release verification uses a private temporary build root.
 
 ```bash
 pnpm -C packages/cli test
@@ -265,7 +265,6 @@ pnpm -C packages/cli run verify:package
 pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
 pnpm -C packages/cli run verify:generated-overlap
-pnpm -C packages/cli run generated:cleanup -- --dry-run --json
 pnpm -C packages/cli run lint
 ```
 

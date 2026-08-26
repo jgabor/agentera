@@ -14,12 +14,16 @@ record:
     - Focused generated-overlap and release-qualification verification pass within their governed timing budgets.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation."
+      status: resolved
+      order: 123
       severity: normal
-      status: open
-      order: 21
+  lifecycle:
+    operation: resolve
+    reason: Removed generated-tree polling by replacing checkout generations with one private immutable release build and differential local output.
+    date: 2026-08-26
