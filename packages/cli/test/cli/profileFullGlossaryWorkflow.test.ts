@@ -2,15 +2,18 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { expect, it } from "vitest";
+import { expect, inject, it } from "vitest";
 
 import { runSourceProfileFullWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
+import { installSourceGlossaryEvaluationRunner } from "../helpers/sourceSubprocess.js";
 
 it("drives Profile Full source behavior from the served instruction order", { timeout: 120_000 }, () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "profile-full-source-workflow-"));
+  const restoreEvaluationRunner = installSourceGlossaryEvaluationRunner();
   try {
     const workflowRoot = path.join(root, "workflow");
-    const observation = runSourceProfileFullWorkflow(workflowRoot);
+    const executable = path.join(inject("sourceBuildRoot"), "bin/agentera.js");
+    const observation = runSourceProfileFullWorkflow(workflowRoot, executable);
     expect(observation).toMatchObject({
       initialBaseHasNoGlossary: true,
       preservedOwnedSection: true,
@@ -33,6 +36,7 @@ it("drives Profile Full source behavior from the served instruction order", { ti
     expect(observation.questionPrompts).toBe(observation.questionPromptMaximum);
 
   } finally {
+    restoreEvaluationRunner();
     fs.rmSync(root, { recursive: true, force: true });
   }
 });

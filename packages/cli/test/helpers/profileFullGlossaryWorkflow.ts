@@ -19,7 +19,6 @@ import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlos
 import { personalProfileGrounding } from "../../src/analytics/personalGlossaryProfile.js";
 import { main } from "../../src/cli/dispatch/index.js";
 import {
-  createGlossaryAdmissionDecision,
   createGlossaryEvidenceCapsule,
   createGlossaryHostClassificationReceipt,
   type GlossaryEvidenceCapsule,
@@ -40,7 +39,7 @@ const ACTIONS = [
 const RETAINED_AT = "2099-01-01T00:00:00.000Z";
 const AS_OF = "2099-01-01";
 const POLICY_VERSION = "agentera.personalGlossaryMiningPolicy.v1";
-const SOURCE_EXECUTABLE = path.resolve(import.meta.dirname, "../../dist/bin/agentera.js");
+const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
 type Action = (typeof ACTIONS)[number];
 type Mapping = Record<string, unknown>;
@@ -138,10 +137,10 @@ function isolatedEnv(root: string): NodeJS.ProcessEnv {
   return env;
 }
 
-function invoke(executable: string, args: string[], root: string, input?: string) {
+function invoke(executable: string, args: string[], root: string, input?: string, env?: NodeJS.ProcessEnv) {
   return spawnSync(process.execPath, [executable, ...args], {
     cwd: root,
-    env: isolatedEnv(root),
+    env: { ...isolatedEnv(root), ...env },
     encoding: "utf8",
     input,
   });
@@ -154,8 +153,10 @@ export function invokeInProcess(args: string[], root: string, input?: string) {
   const env = { ...process.env };
   try {
     process.chdir(root);
+    const isolated = isolatedEnv(root);
+    isolated.AGENTERA_BOOTSTRAP_SOURCE_ROOT = CHECKOUT_ROOT;
     for (const key of Object.keys(process.env)) delete process.env[key];
-    Object.assign(process.env, isolatedEnv(root));
+    Object.assign(process.env, isolated);
     const status = main(["node", "agentera", ...args], {
       out: (text) => { stdout += text; },
       err: (text) => { stderr += text; },
@@ -562,21 +563,20 @@ function runFullCycle(
             confidence: 80,
           },
         });
-        const status = capsule.scope === "project"
-          ? "abstain"
-          : capsule.provenance_kind === "personal_explicit_definition"
-            ? "automatic_admission"
-            : "review_required";
-        const reason = status === "abstain"
-          ? "scope_project"
-          : status === "automatic_admission"
-            ? "explicit_current_authorized"
-            : capsule.scope === "ambiguous" ? "scope_ambiguous" : "inferred_requires_review";
-        const decision = {
-          status,
-          reason,
-          decision: createGlossaryAdmissionDecision({ capsule, receipt, outcome: status, reason }),
-        };
+        const decisionRead = invokeInProcess([
+          "report", "personal-glossary-decision", "--input", "-", "--format", "json",
+        ], root, JSON.stringify({
+          schema_version: "agentera.personalGlossaryAdmissionRequest.v1",
+          receipt,
+        }));
+        if (decisionRead.status !== 0) {
+          result.decisionFailures += 1;
+          continue;
+        }
+        const decision = json(decisionRead);
+        if (capsule.provenance_kind === "personal_explicit_definition" && decision.status !== "automatic_admission") {
+          throw new Error(`explicit glossary decision was not authorized: ${decisionRead.stderr}${decisionRead.stdout}`);
+        }
         outcomes.push({ capsule, receipt, result: decision });
       }
       continue;
@@ -617,10 +617,11 @@ function runFullCycle(
           decision,
           as_of: fault.publication ? "not-a-calendar-date" : AS_OF,
         });
-        const publishedRead = fault.publication
-          ? invokeInProcess(publishArgs, root, publishInput)
-          : invoke(SOURCE_EXECUTABLE, publishArgs, root, publishInput);
+        const publishedRead = invokeInProcess(publishArgs, root, publishInput);
         if (publishedRead.status !== 0 || JSON.parse(publishedRead.stdout).status === "fail") {
+          if (!fault.publication) {
+            throw new Error(`personal glossary publication failed: ${publishedRead.stderr}${publishedRead.stdout}`);
+          }
           result.publicationFailures += 1;
           continue;
         }
@@ -653,7 +654,7 @@ function trapProjectGlossary(root: string): string {
   return trap;
 }
 
-export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowObservation {
+export function runSourceProfileFullWorkflow(root: string, executable: string): ProfileFullWorkflowObservation {
   const initialRoot = path.join(root, "initial");
   const initialContract = setup(initialRoot);
   const setupScenario = (scenarioRoot: string) => setup(scenarioRoot, initialContract);
@@ -841,14 +842,14 @@ export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowO
   assert(fs.statSync(glossaryTrap).isDirectory(), "project glossary trap must remain untouched");
   const beforeReplay = mixedProfile;
   const replayRequest = mixed.authorizedPublications[0]!;
-  const replay = json(invoke(SOURCE_EXECUTABLE, [
+  const replay = json(invoke(executable, [
     "report", "personal-glossary-publish", "--input", "-", "--format", "json",
   ], mixedRoot, JSON.stringify({
     schema_version: "agentera.personalGlossaryPublishRequest.v1",
     receipt: replayRequest.receipt,
     decision: replayRequest.decision,
     as_of: AS_OF,
-  })));
+  }), { AGENTERA_BOOTSTRAP_SOURCE_ROOT: CHECKOUT_ROOT }));
   assert.equal(replay.status, "unchanged_replay");
   assert.equal(fs.readFileSync(mixedContract.profilePath, "utf8"), beforeReplay);
 
