@@ -4,9 +4,19 @@ record:
   name: Narrow precommit Git isolation evidence
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN inherited Git routing variables WHEN precommit verification starts THEN every variable is absent from the verification process.
     - GIVEN a child Git operation runs under the precommit path WHEN it completes THEN the parent repository head and local configuration are unchanged.
     - GIVEN routing, error, and budget cases WHEN their tests run THEN their existing outcomes remain covered without invoking an unrelated upgrade suite.
   plan: ywnpgswqou
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: orchestrate audit
+      recorded_at: 2026-08-26 18:08
+      writer_command: agentera state plan record-evaluation
