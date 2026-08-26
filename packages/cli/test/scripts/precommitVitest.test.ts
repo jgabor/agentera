@@ -157,14 +157,26 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
   });
 
   it("clears hook-local Git environment before fixture repositories run", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "precommit-git-fixture-"));
+    const binDir = path.join(tempDir, "bin");
+    const childRepo = path.join(tempDir, "child");
+    fs.mkdirSync(binDir);
+    fs.mkdirSync(childRepo);
+    expect(spawnSync("git", ["init", "--quiet", childRepo], { encoding: "utf8" }).status).toBe(0);
+    fs.writeFileSync(path.join(binDir, "node"), `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$2" == route ]]; then printf 'precommit\n'; exit 0; fi
+[[ "$2" == policy ]]
+git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
+`);
+    fs.writeFileSync(path.join(binDir, "pnpm"), "#!/usr/bin/env bash\nexit 0\n");
+    for (const executable of ["node", "pnpm"]) fs.chmodSync(path.join(binDir, executable), 0o755);
     const before = {
       head: gitOutput("rev-parse", "HEAD"),
       localConfig: normalizeLocalGitConfig(gitOutput("config", "--local", "--list")),
     };
-    const result = spawnSync(
-      "bash",
-      [PRECOMMIT_SCRIPT, "packages/cli/test/upgrade/upgradeOrchestrator.test.ts"],
-      {
+    try {
+      const result = spawnSync("bash", [PRECOMMIT_SCRIPT, "packages/cli/src/cli/prime.ts"], {
         cwd: REPO_ROOT,
         env: {
           ...process.env,
@@ -172,17 +184,25 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
           GIT_COMMON_DIR: path.resolve(REPO_ROOT, gitOutput("rev-parse", "--git-common-dir")),
           GIT_INDEX_FILE: gitOutput("rev-parse", "--git-path", "index"),
           GIT_WORK_TREE: REPO_ROOT,
+          PATH: `${binDir}:${process.env.PATH}`,
+          BASH_ENV: "",
+          PRECOMMIT_CHILD_REPO: childRepo,
         },
         encoding: "utf8",
-      },
-    );
+      });
 
-    expect(result.status, result.stderr || result.stdout).toBe(0);
-    expect({
-      head: gitOutput("rev-parse", "HEAD"),
-      localConfig: normalizeLocalGitConfig(gitOutput("config", "--local", "--list")),
-    }).toEqual(before);
-  }, 60_000);
+      expect(result.status, result.stderr || result.stdout).toBe(0);
+      expect(spawnSync("git", ["-C", childRepo, "config", "--local", "precommit.fixture"], {
+        encoding: "utf8",
+      }).stdout.trim()).toBe("child");
+      expect({
+        head: gitOutput("rev-parse", "HEAD"),
+        localConfig: normalizeLocalGitConfig(gitOutput("config", "--local", "--list")),
+      }).toEqual(before);
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
   it("routes ordinary source changes to one deterministic source test with typecheck", () => {
     expect(runPrecommitVitest("packages/cli/src/cli/commands/prime.ts")).toEqual(
       targeted("test/cli/prime.test.ts"),

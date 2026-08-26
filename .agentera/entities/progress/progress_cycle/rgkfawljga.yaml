@@ -1,0 +1,13 @@
+id: rgkfawljga
+artifact: progress
+record:
+  timestamp: 2026-08-26 18:03
+  type: test
+  phase: build
+  what: Replaced the precommit Git-isolation upgrade-suite fixture with a minimal child-repository Git operation.
+  context:
+    intent: Preserve direct Git routing-variable absence and parent-repository isolation evidence without running the unrelated upgrade suite.
+  discovered: "A child git config operation reproduces the routing risk: it succeeds in the child only after precommit clears GIT_DIR, GIT_COMMON_DIR, GIT_INDEX_FILE, and GIT_WORK_TREE; the parent HEAD and normalized local config remain unchanged."
+  verified: The targeted precommit test passed 48/48 in 38.31s. Typecheck passed. Build passed. The local built CLI compact check passed with zero over-limit artifacts, formatting issues, protected overflow, errors, or changes.
+  next: Keep plan task noyxrvkxjg in_progress for orchestrator audit.
+  publication_order: 226
