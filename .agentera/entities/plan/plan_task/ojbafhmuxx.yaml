@@ -1,0 +1,14 @@
+id: ojbafhmuxx
+artifact: plan
+record:
+  name: Verify regressions and synchronize state
+  depends_on:
+    - noyxrvkxjg
+    - ubxnxfzcqy
+    - emyvgpfjgh
+  status: pending
+  acceptance:
+    - GIVEN tasks 1 through 3 are complete WHEN targeted checks, typecheck, the source lane, and package verification run THEN every command passes.
+    - GIVEN the 94.806-second baseline WHEN one same-machine source timing breakdown runs THEN affected-test worker time is at most 60 seconds and the result remains diagnostic rather than a new gate.
+    - GIVEN verification evidence is complete WHEN plan state is synchronized THEN task and plan statuses match the observed results.
+  plan: ywnpgswqou

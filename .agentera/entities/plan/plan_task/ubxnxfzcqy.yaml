@@ -1,0 +1,12 @@
+id: ubxnxfzcqy
+artifact: plan
+record:
+  name: Right-size TODO cursor evidence
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN 21 ordered TODO records and a limit of 10 WHEN continuation is exhausted THEN pages contain 10, 10, and 1 record with exact order, ranks, termination, retrieval, and no mutation.
+    - GIVEN 11 TODO records WHEN each of the five malformed cursor variants is submitted THEN every variant fails closed with its expected error and recovery command.
+    - GIVEN the shared malformed-cursor recovery WHEN it runs once THEN it restarts successfully, while capacity verification retains the 120-row scale proof.
+  plan: ywnpgswqou

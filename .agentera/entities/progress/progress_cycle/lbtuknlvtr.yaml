@@ -1,0 +1,12 @@
+id: lbtuknlvtr
+artifact: progress
+record:
+  timestamp: 2026-08-26 17:35
+  type: test
+  phase: build
+  what: Separated Profile Full source workflow evidence from extracted-package contract evidence.
+  context:
+    intent: Keep source behavior evidence independent from extracted-package contract evidence.
+  verified: The source behavioral matrix passed without package construction. The package owner passed 16 tests, including bundled Profile serving, malformed-authority isolation, and exact byte restoration. CLI typecheck passed.
+  next: Continue with the next open plan task.
+  publication_order: 224

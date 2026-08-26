@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 
 import YAML from "yaml";
 
-import { runServedProfileFullWorkflow } from "./profileFullGlossaryWorkflow.js";
+import { runSourceProfileFullWorkflow } from "./profileFullGlossaryWorkflow.js";
 
 const PROFILE_GLOSSARY_START = "<!-- agentera:personal-glossary:start -->";
 const PROFILE_GLOSSARY_END = "<!-- agentera:personal-glossary:end -->";
@@ -279,7 +279,7 @@ export async function runProducerReadinessWorkflow(
   assert.equal(inferred?.evidence.length, 2);
 
   fs.mkdirSync(path.join(project, ".agentera/glossary.yaml"));
-  const profile = runServedProfileFullWorkflow(executable, project);
+  const profile = runSourceProfileFullWorkflow(project);
   fs.rmdirSync(path.join(project, ".agentera/glossary.yaml"));
   const profileBeforeProject = fs.readFileSync(profile.profilePath);
 

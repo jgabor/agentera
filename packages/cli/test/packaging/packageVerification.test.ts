@@ -236,6 +236,53 @@ describe("npm distribution boundary", () => {
     expect(payload.capability_context.capability).toBe("status");
   });
 
+  it("serves and isolates the bundled Profile contract", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const authorityPath = path.join(
+      fixture.packageRoot,
+      "bundle/references/artifacts/glossary-entry-contract.yaml",
+    );
+    const projectRoot = path.join(fixture.root, "profile-contract");
+    fs.mkdirSync(path.join(projectRoot, ".agentera"), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectRoot, ".agentera", "state-mode.yaml"),
+      "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
+    );
+    const originalAuthority = fs.readFileSync(authorityPath);
+    const runPrime = (capability: string) => spawnSync(
+      process.execPath,
+      [bin, "prime", "--context", capability, "--format", "json"],
+      { cwd: projectRoot, env: packageEnvironment(), encoding: "utf8" },
+    );
+
+    const profile = runPrime("profile");
+    expect(profile.status, profile.stderr || profile.stdout).toBe(0);
+    expect(JSON.parse(profile.stdout)).toMatchObject({
+      capability_context: { capability: "profile" },
+    });
+
+    try {
+      const authority = YAML.parse(originalAuthority.toString("utf8")) as Record<string, any>;
+      authority.personal_mining_authority.profile_full.existing_generation.list_limit = 0;
+      fs.writeFileSync(authorityPath, YAML.stringify(authority), "utf8");
+
+      const malformed = runPrime("profile");
+      expect(malformed.status).not.toBe(0);
+      expect(malformed.stderr + malformed.stdout).toContain(
+        "personal glossary Profile Full contract is unavailable",
+      );
+
+      const build = runPrime("build");
+      expect(build.status, build.stderr || build.stdout).toBe(0);
+      expect(JSON.parse(build.stdout)).toMatchObject({
+        capability_context: { capability: "build" },
+      });
+    } finally {
+      fs.writeFileSync(authorityPath, originalAuthority);
+    }
+    expect(fs.readFileSync(authorityPath).equals(originalAuthority)).toBe(true);
+  });
+
   it("matches the source personal glossary production workflow", () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     expect(runProductionGlossaryWorkflow(bin, path.join(fixture.root, "glossary-production"))).toEqual({

@@ -38,6 +38,7 @@ const ACTIONS = [
 const RETAINED_AT = "2099-01-01T00:00:00.000Z";
 const AS_OF = "2099-01-01";
 const POLICY_VERSION = "agentera.personalGlossaryMiningPolicy.v1";
+const SOURCE_EXECUTABLE = path.resolve(import.meta.dirname, "../../dist/bin/agentera.js");
 
 type Action = (typeof ACTIONS)[number];
 type Mapping = Record<string, unknown>;
@@ -459,7 +460,6 @@ function persistProjection(root: string, capsules: readonly GlossaryEvidenceCaps
 }
 
 function runFullCycle(
-  executable: string,
   root: string,
   contract: ServedProfileFullContract,
   base: string,
@@ -563,7 +563,7 @@ function runFullCycle(
           },
         });
         const decisionRead = capsule.provenance_kind === "personal_explicit_definition" && !fault.decision
-          ? invoke(executable, decisionArgs, root, decisionInput)
+          ? invoke(SOURCE_EXECUTABLE, decisionArgs, root, decisionInput)
           : invokeInProcess(decisionArgs, root, decisionInput);
         if (decisionRead.status !== 0 || JSON.parse(decisionRead.stdout).status === "fail") {
           result.decisionFailures += 1;
@@ -614,7 +614,7 @@ function runFullCycle(
         });
         const publishedRead = fault.publication
           ? invokeInProcess(publishArgs, root, publishInput)
-          : invoke(executable, publishArgs, root, publishInput);
+          : invoke(SOURCE_EXECUTABLE, publishArgs, root, publishInput);
         if (publishedRead.status !== 0 || JSON.parse(publishedRead.stdout).status === "fail") {
           result.publicationFailures += 1;
           continue;
@@ -628,7 +628,7 @@ function runFullCycle(
   return result;
 }
 
-function setup(_executable: string, root: string): ServedProfileFullContract {
+function setup(root: string): ServedProfileFullContract {
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   return servedContract(root);
@@ -645,9 +645,9 @@ function trapProjectGlossary(root: string): string {
   return trap;
 }
 
-export function runServedProfileFullWorkflow(executable: string, root: string): ProfileFullWorkflowObservation {
+export function runSourceProfileFullWorkflow(root: string): ProfileFullWorkflowObservation {
   const initialRoot = path.join(root, "initial");
-  const initialContract = setup(executable, initialRoot);
+  const initialContract = setup(initialRoot);
   const initialBase = "# Decision Profile: Served Workflow\n\n## Process\n\nfirst base\n";
   assert.equal(writeBaseThroughServedActions(initialContract.actions, initialContract.profilePath, initialBase), null);
   const initial = fs.readFileSync(initialContract.profilePath, "utf8");
@@ -670,27 +670,27 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   }
 
   const missingRoot = path.join(root, "missing");
-  const missingContract = setup(executable, missingRoot);
+  const missingContract = setup(missingRoot);
   writeExistingProfile(missingContract.profilePath, initialBase, establishedOwned);
-  const missing = runFullCycle(executable, missingRoot, missingContract, regeneratedBase, new Map(), false);
+  const missing = runFullCycle(missingRoot, missingContract, regeneratedBase, new Map(), false);
   const missingExpected = `${regeneratedBase}\n${establishedOwned}\n`;
   assert.equal(missing.candidateReadCount, 1);
   assert.equal(missing.candidateReadFailures, 1);
   assert.equal(fs.readFileSync(missingContract.profilePath, "utf8"), missingExpected);
 
   const failureRoot = path.join(root, "failure");
-  const failureContract = setup(executable, failureRoot);
+  const failureContract = setup(failureRoot);
   writeExistingProfile(failureContract.profilePath, initialBase, establishedOwned);
   currentTierGeneration(failureRoot, "corrupt-projection");
   const projectionPath = personalGlossaryCandidateProjectionPath({ env: isolatedEnv(failureRoot) });
   fs.mkdirSync(path.dirname(projectionPath), { recursive: true });
   fs.writeFileSync(projectionPath, "not a candidate projection\n");
-  const failure = runFullCycle(executable, failureRoot, failureContract, regeneratedBase, new Map(), false);
+  const failure = runFullCycle(failureRoot, failureContract, regeneratedBase, new Map(), false);
   assert.equal(failure.candidateReadFailures, 1);
   assert.equal(fs.readFileSync(failureContract.profilePath, "utf8"), missingExpected);
 
   const emptyRoot = path.join(root, "empty");
-  const emptyContract = setup(executable, emptyRoot);
+  const emptyContract = setup(emptyRoot);
   writeExistingProfile(emptyContract.profilePath, initialBase, establishedOwned);
   fs.writeFileSync(path.join(emptyRoot, "AGENTS.md"), "# Rules\nUse ordinary words.\n");
   const emptyRefresh = json(invokeInProcess([
@@ -701,7 +701,7 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   ], emptyRoot));
   assert.equal(emptyRefresh.status, "pass");
   const emptyList = json(invoke(
-    executable,
+    SOURCE_EXECUTABLE,
     ["report", "personal-glossary-candidates", "list", "--limit", "20", "--format", "json"],
     emptyRoot,
   ));
@@ -712,13 +712,13 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
     assert.equal(typeof counts.candidate_count, "number");
     assert.equal(typeof counts.abstention_count, "number");
   }
-  const empty = runFullCycle(executable, emptyRoot, emptyContract, regeneratedBase, new Map(), false);
+  const empty = runFullCycle(emptyRoot, emptyContract, regeneratedBase, new Map(), false);
   assert.equal(empty.candidateReadFailures, 0);
   assert.equal(empty.published, 0);
   assert.equal(fs.readFileSync(emptyContract.profilePath, "utf8"), missingExpected);
 
   const degradedRoot = path.join(root, "degraded");
-  const degradedContract = setup(executable, degradedRoot);
+  const degradedContract = setup(degradedRoot);
   writeExistingProfile(degradedContract.profilePath, initialBase, establishedOwned);
   const degradedGeneration = currentTierGeneration(degradedRoot, "degraded");
   const degradedCapsules = [
@@ -727,7 +727,7 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   ];
   const degradedProjection = persistProjection(degradedRoot, degradedCapsules, degradedGeneration);
   assert(degradedProjection.candidates.some(({ capsule }) => capsule.provenance_kind === "personal_explicit_definition"));
-  const degraded = runFullCycle(executable, degradedRoot, degradedContract, regeneratedBase, new Map(), false);
+  const degraded = runFullCycle(degradedRoot, degradedContract, regeneratedBase, new Map(), false);
   assert.equal(degraded.degradedGeneration, true);
   assert.equal(degraded.exactReadCount, 0);
   assert.equal(degraded.decisionCount, 0);
@@ -738,12 +738,11 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert.equal(captureOwnedGlossary(fs.readFileSync(degradedContract.profilePath, "utf8")), establishedOwned);
 
   const getFailureRoot = path.join(root, "candidate-get-failure");
-  const getFailureContract = setup(executable, getFailureRoot);
+  const getFailureContract = setup(getFailureRoot);
   writeExistingProfile(getFailureContract.profilePath, initialBase, establishedOwned);
   const getFailureCapsule = explicitCapsule(getFailureRoot);
   persistProjection(getFailureRoot, [getFailureCapsule], getFailureCapsule.generation);
   const getFailure = runFullCycle(
-    executable,
     getFailureRoot,
     getFailureContract,
     regeneratedBase,
@@ -757,12 +756,11 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert.equal(fs.readFileSync(getFailureContract.profilePath, "utf8"), missingExpected);
 
   const decisionFailureRoot = path.join(root, "decision-failure");
-  const decisionFailureContract = setup(executable, decisionFailureRoot);
+  const decisionFailureContract = setup(decisionFailureRoot);
   writeExistingProfile(decisionFailureContract.profilePath, initialBase, establishedOwned);
   const decisionFailureCapsule = explicitCapsule(decisionFailureRoot);
   persistProjection(decisionFailureRoot, [decisionFailureCapsule], decisionFailureCapsule.generation);
   const decisionFailure = runFullCycle(
-    executable,
     decisionFailureRoot,
     decisionFailureContract,
     regeneratedBase,
@@ -775,12 +773,11 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert.equal(fs.readFileSync(decisionFailureContract.profilePath, "utf8"), missingExpected);
 
   const publisherFailureRoot = path.join(root, "publisher-failure");
-  const publisherFailureContract = setup(executable, publisherFailureRoot);
+  const publisherFailureContract = setup(publisherFailureRoot);
   writeExistingProfile(publisherFailureContract.profilePath, initialBase, establishedOwned);
   const publisherFailureCapsule = explicitCapsule(publisherFailureRoot);
   persistProjection(publisherFailureRoot, [publisherFailureCapsule], publisherFailureCapsule.generation);
   const publisherFailure = runFullCycle(
-    executable,
     publisherFailureRoot,
     publisherFailureContract,
     regeneratedBase,
@@ -793,12 +790,11 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert.equal(fs.readFileSync(publisherFailureContract.profilePath, "utf8"), missingExpected);
 
   const fallbackRoot = path.join(root, "fallback");
-  const fallbackContract = setup(executable, fallbackRoot);
+  const fallbackContract = setup(fallbackRoot);
   writeExistingProfile(fallbackContract.profilePath, initialBase, establishedOwned);
   const fallbackCapsule = inferredCapsule(1, currentTierGeneration(fallbackRoot, "fallback"));
   persistProjection(fallbackRoot, [fallbackCapsule], fallbackCapsule.generation);
   const fallback = runFullCycle(
-    executable,
     fallbackRoot,
     fallbackContract,
     regeneratedBase,
@@ -811,7 +807,7 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert.equal(fs.readFileSync(fallbackContract.profilePath, "utf8"), missingExpected);
 
   const mixedRoot = root;
-  const mixedContract = setup(executable, mixedRoot);
+  const mixedContract = setup(mixedRoot);
   writeExistingProfile(mixedContract.profilePath, initialBase, establishedOwned);
   const explicit = explicitCapsule(mixedRoot);
   const inferred = inferredCapsule(2, explicit.generation);
@@ -825,7 +821,7 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
     [ambiguous.candidate_id, ambiguous],
     [projectScoped.candidate_id, projectScoped],
   ]);
-  const mixed = runFullCycle(executable, mixedRoot, mixedContract, regeneratedBase, mixedCapsules, true);
+  const mixed = runFullCycle(mixedRoot, mixedContract, regeneratedBase, mixedCapsules, true);
   const mixedProfile = fs.readFileSync(mixedContract.profilePath, "utf8");
   assert.equal(mixed.published, 1);
   assert.equal(mixed.queued, 2);
@@ -837,7 +833,7 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert(fs.statSync(glossaryTrap).isDirectory(), "project glossary trap must remain untouched");
   const beforeReplay = mixedProfile;
   const replayRequest = mixed.authorizedPublications[0]!;
-  const replay = json(invoke(executable, [
+  const replay = json(invoke(SOURCE_EXECUTABLE, [
     "report", "personal-glossary-publish", "--input", "-", "--format", "json",
   ], mixedRoot, JSON.stringify({
     schema_version: "agentera.personalGlossaryPublishRequest.v1",
@@ -849,13 +845,12 @@ export function runServedProfileFullWorkflow(executable: string, root: string): 
   assert.equal(fs.readFileSync(mixedContract.profilePath, "utf8"), beforeReplay);
 
   const questionsRoot = path.join(root, "questions");
-  const questionsContract = setup(executable, questionsRoot);
+  const questionsContract = setup(questionsRoot);
   writeExistingProfile(questionsContract.profilePath, initialBase, establishedOwned);
   const questionGeneration = currentTierGeneration(questionsRoot, "questions");
   const questionCapsules = [1, 2, 3, 4].map((index) => inferredCapsule(index + 10, questionGeneration));
   persistProjection(questionsRoot, questionCapsules, questionGeneration);
   const questions = runFullCycle(
-    executable,
     questionsRoot,
     questionsContract,
     regeneratedBase,

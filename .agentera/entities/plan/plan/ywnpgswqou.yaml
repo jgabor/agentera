@@ -1,0 +1,34 @@
+id: ywnpgswqou
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-26
+    status: open
+    reviewed: 2026-08-26
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    revised: Added a minimal Git-fixture proof, strict package-executable boundaries, and a measurable timing target.
+    title: "Plan: Simplify slow source tests"
+  what: Reduce the cost of four slow source-test scenarios while preserving their behavioral, security, package-boundary, and regression evidence.
+  why: The four scenarios consume 94.806 seconds of cumulative worker time and mix oversized fixtures, duplicate recovery work, unrelated integration work, and package construction into source verification.
+  constraints: Do not change production behavior, weaken cursor security, remove 120-row capacity coverage, or replace executable package evidence with source-only calls. Keep release metadata and user-facing documentation unchanged. Use one passing and one failing case per testable contract unless an existing table provides stronger evidence.
+  overall_acceptance: GIVEN the four recommendations are implemented WHEN targeted, source, package, typecheck, and timing verification run THEN all retained contracts pass and the affected tests total no more than 60 seconds of same-machine worker time without creating a new release gate.
+  scope:
+    included:
+      - Precommit Git-environment regression coverage
+      - TODO cursor traversal and malformed-cursor source tests
+      - Profile Full source workflow and extracted-package checks
+      - Regression verification and source timing comparison
+    excluded:
+      - Production CLI behavior changes
+      - Capacity-lane scale reductions
+      - Release, version, changelog, and unrelated test cleanup
+    deferred:
+      - Simplification of slower tests outside recommendations 1 through 4
+  design: Keep each contract in its cheapest authoritative verification owner. Replace broad integration evidence with narrow behavioral proof, use minimum fixtures for semantic tests while retaining scale evidence in capacity verification, and reserve extracted-executable assertions for package verification. Finish with complete source and package checks plus a diagnostic timing comparison.
+  unknowns:
+    - question: Will a minimal child Git operation reproduce the inherited hook-routing risk covered by the removed upgrade fixture?
+      affects_task: 1
+      resolve_by: Run the replacement with all inherited Git routing variables and compare the parent repository before and after. If it cannot exercise the risk, use the smallest existing Git-using fixture that can.
+  surprises:
+    []

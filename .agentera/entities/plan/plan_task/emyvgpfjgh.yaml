@@ -1,0 +1,17 @@
+id: emyvgpfjgh
+artifact: plan
+record:
+  name: Separate Profile Full source and package evidence
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the Profile Full source workflow WHEN its behavioral matrix runs THEN every current outcome remains covered without constructing a package.
+    - GIVEN the extracted package executable WHEN Profile context is requested THEN the bundled contract is served without invoking the source CLI.
+    - GIVEN malformed bundled Profile authority WHEN the extracted executable runs THEN Profile fails closed, an unrelated capability remains usable, and fixture bytes are restored.
+    - GIVEN every mixed-helper caller is traced WHEN package-only evidence is reassigned THEN no required executable behavior is lost or silently tested through source imports.
+  plan: ywnpgswqou
+  evidence:
+    - Profile Full source matrix passes without package construction.
+    - Extracted package verification serves bundled Profile, rejects malformed Profile authority, preserves Build, and restores exact authority bytes.
+    - Typecheck passes after helper signature changes.
