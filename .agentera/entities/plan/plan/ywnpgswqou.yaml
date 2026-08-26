@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-08-26
-    status: open
+    status: complete
     reviewed: 2026-08-26
     critic_issues: 3 found, 3 addressed, 0 dismissed
     revised: Added a minimal Git-fixture proof, strict package-executable boundaries, and a measurable timing target.

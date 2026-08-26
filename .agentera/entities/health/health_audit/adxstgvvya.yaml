@@ -1,0 +1,27 @@
+id: adxstgvvya
+artifact: health
+record:
+  date: 2026-08-26
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: terminal-task evidence is current, complete, and materially faster."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited closure audit for plan ywnpgswqou passed. All four terminal tasks have persisted PASS evaluations, scoped artifacts are current relative to plan creation, and final verification satisfies the plan acceptance criteria. Affected same-machine test time fell from 94.806s to 23.651s.
+      findings:
+        []
+  trends:
+    improved: Scoped source-test evidence is current and affected test time fell by 75.053%.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: The initial Profile audit failure passed bounded correction and re-audit.
+    carried_forward: Decisions, vision, and Profile details remain deferred; stale Profile state was not refreshed.
+  appended_at: 2026-08-26T16:36:47.200Z
