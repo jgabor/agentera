@@ -42,7 +42,7 @@ describe("source worker policy", () => {
   });
 
   it("keeps GitHub Actions explicitly unmeasured", () => {
-    const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8"));
+    const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8"));
     const sourceOwnerStep = workflow.jobs.cli.steps.find(
       (step: { name?: string }) => step.name === "Run check-only release verification",
     );

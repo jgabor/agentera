@@ -78,7 +78,7 @@ paths are pure and registry-independent. Stable preparation retains its separate
 source-provenance behavior without the development receipt.
 
 Every passing queued push to `feat/v3` publishes to `@next`. CI allocates
-`3.0.0-dev.(GITHUB_RUN_NUMBER + 72)`, builds once from `GITHUB_SHA`, and sets
+`3.0.0-dev.(GITHUB_RUN_NUMBER + 82)`, builds once from `GITHUB_SHA`, and sets
 package `agentera.gitRef` to that SHA without editing the checkout. It validates
 the isolated tarball metadata, runs its executable CLI version smoke, and
 publishes those exact bytes to `@next`. Failed runs can create gaps. `queue: max`
@@ -92,8 +92,8 @@ version or push. Make corrections on a worktree branch and
 obtain fresh explicit authorization before a later integration push. Rerunning
 an existing workflow reuses its allocation.
 
-Before the first push, confirm `.github/workflows/qualify.yml` is still
-unregistered at run number 0 and npm `3.0.0-dev.73` is absent. The offset is a
+Before the first push, confirm `.github/workflows/publish-next.yml` is still
+unregistered at run number 0 and npm `3.0.0-dev.83` is absent. The offset is a
 one-time migration assumption, not a runtime registry query.
 
 The resumable readiness coordinator remains the manual diagnostic and recovery
@@ -180,10 +180,11 @@ Never reconstruct it, move a tag backward, or attempt rollback.
 ## Stable shim
 
 Stable verification and publication are not operational until
-`.github/workflows/verify-stable.yml` and `.github/workflows/publish.yml` exist
-on the default `main` branch. Their `workflow_dispatch` triggers are a v3
-`@latest` cutover prerequisite, not a path available from the current
-`feat/v3`-only checkout.
+`.github/workflows/publish-stable.yml` exists on the default `main` branch. Its
+`workflow_dispatch` trigger is a v3 `@latest` cutover prerequisite, not a path
+available from the current `feat/v3`-only checkout. One run prepares and attests
+the exact candidate, then the `npm-publish` environment gates the dependent
+publication job.
 
 The stable shim uses the same package flow and remains on `@latest`:
 

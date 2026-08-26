@@ -1,4 +1,4 @@
-name: CI
+name: Verify changes
 
 on:
   pull_request:

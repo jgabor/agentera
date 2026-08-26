@@ -44,7 +44,7 @@ export function developmentVersionFromRunNumber(baseCore, runNumber, offset = RE
 
 export function validateDevelopmentCiCandidateBinding(options = {}) {
   const environment = options.environment ?? process.env;
-  const expected = qualificationWorkflowIdentity("development");
+  const expected = publicationWorkflowIdentity("development");
   const contractedCi = environment.GITHUB_ACTIONS === "true"
     && environment.GITHUB_REPOSITORY === expected.repository
     && environment.GITHUB_WORKFLOW === expected.workflow
@@ -1778,9 +1778,11 @@ function validRunId(value) {
   return typeof value === "string" && /^[1-9]\d{0,19}$/.test(value);
 }
 
-export function qualificationWorkflowIdentity(kind = "development") {
+export function publicationWorkflowIdentity(kind = "development") {
   const ci = RELEASE_CONTRACT.ci;
-  const workflow = kind === "stable" ? ci?.stableVerificationWorkflow : ci?.qualificationWorkflow;
+  const workflow = kind === "stable"
+    ? ci?.stablePublicationWorkflow
+    : ci?.developmentPublicationWorkflow;
   if (
     !ci?.repository
     || !workflow?.name
@@ -1789,7 +1791,7 @@ export function qualificationWorkflowIdentity(kind = "development") {
     || !workflow.ref.startsWith("refs/heads/")
     || workflow.ref.length === "refs/heads/".length
   ) {
-    throw new Error("release publication contract has no verification workflow identity");
+    throw new Error("release publication contract has no publication workflow identity");
   }
   return {
     repository: ci.repository,
@@ -1801,62 +1803,8 @@ export function qualificationWorkflowIdentity(kind = "development") {
   };
 }
 
-export function validateQualificationWorkflowRun(run, requestedRunId) {
-  const expected = qualificationWorkflowIdentity("stable");
-  const expectedPaths = new Set([
-    expected.workflowPath,
-    `${expected.workflowPath}@${expected.branch}`,
-  ]);
-  if (
-    !Number.isSafeInteger(requestedRunId)
-    || requestedRunId < 1
-    || run?.id !== requestedRunId
-    || run.repository?.full_name !== expected.repository
-    || run.head_repository?.full_name !== expected.repository
-    || run.name !== expected.workflow
-    || !expectedPaths.has(run.path)
-    || run.head_branch !== expected.branch
-    || run.event !== "workflow_dispatch"
-    || run.conclusion !== "success"
-    || typeof run.head_sha !== "string"
-    || !/^[0-9a-f]{40}$/.test(run.head_sha)
-  ) {
-    throw new Error(
-      "source_run_id is not a successful contracted qualification run at the configured repository, workflow, and branch",
-    );
-  }
-  return {
-    runId: String(requestedRunId),
-    headSha: run.head_sha,
-    ref: expected.ref,
-  };
-}
-
-export function validateCandidateRunBinding(receipt, expectedReceiptSha256, runHeadSha) {
-  validReceiptDigest(receipt, "package receipt");
-  if (receipt.kind !== "candidate") {
-    throw new Error("package receipt kind must be 'candidate'");
-  }
-  if (
-    typeof expectedReceiptSha256 !== "string"
-    || !/^[0-9a-f]{64}$/.test(expectedReceiptSha256)
-    || receipt.receiptSha256 !== expectedReceiptSha256
-  ) {
-    throw new Error("package receipt digest does not match the explicit workflow approval");
-  }
-  if (
-    typeof runHeadSha !== "string"
-    || !/^[0-9a-f]{40}$/.test(runHeadSha)
-    || receipt.metadataCommit !== runHeadSha
-    || (receipt.adapter === "development" && receipt.sourceCommit !== runHeadSha)
-  ) {
-    throw new Error("package receipt commits do not match the API-backed verification run head SHA");
-  }
-  return { metadataCommit: receipt.metadataCommit, candidateReceiptSha256: receipt.receiptSha256 };
-}
-
 function assertQualificationWorkflowEnvironment(environment, adapterName = "development") {
-  const expected = qualificationWorkflowIdentity(adapterName === "stable" ? "stable" : "development");
+  const expected = publicationWorkflowIdentity(adapterName === "stable" ? "stable" : "development");
   if (
     environment.GITHUB_REPOSITORY !== expected.repository
     || environment.GITHUB_WORKFLOW !== expected.workflow
@@ -1918,7 +1866,7 @@ export function validateCiAttestation(options = {}) {
     throw new Error("CI registry mutation requires a GitHub Actions execution context");
   }
   const adapterName = options.adapterName ?? options.candidate?.receipt?.adapter ?? "development";
-  const expected = qualificationWorkflowIdentity(adapterName === "stable" ? "stable" : "development");
+  const expected = publicationWorkflowIdentity(adapterName === "stable" ? "stable" : "development");
   if (environment.GITHUB_REPOSITORY !== expected.repository || !validRunId(options.sourceRunId)) {
     throw new Error("CI registry mutation requires the contracted repository and a source verification run identity");
   }

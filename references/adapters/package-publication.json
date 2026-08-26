@@ -45,46 +45,31 @@
   },
   "ci": {
     "repository": "jgabor/agentera",
-    "qualificationWorkflow": {
-      "name": "Publish development package",
-      "path": ".github/workflows/qualify.yml",
+    "developmentPublicationWorkflow": {
+      "name": "Publish development package (@next)",
+      "path": ".github/workflows/publish-next.yml",
       "ref": "refs/heads/feat/v3"
     },
     "developmentPush": {
       "trigger": "push to refs/heads/feat/v3",
       "versionAuthority": "GitHub Actions workflow run number plus the fixed migration offset",
-      "runNumberOffset": 72,
+      "runNumberOffset": 82,
       "rules": [
-        "version is 3.0.0-dev.(GITHUB_RUN_NUMBER + 72)",
+        "version is 3.0.0-dev.(GITHUB_RUN_NUMBER + 82)",
         "agentera.gitRef equals GITHUB_SHA",
         "the checkout manifest is not modified",
         "one isolated tarball is built, validated for version and git ref, and executable-smoked before those exact bytes are published to next",
         "reruns reuse the same run number, SHA, and version; identical already-published bytes succeed without another upload",
         "failed runs can create version gaps",
-        "before the first push, confirm qualify.yml is still unregistered at run 0 and npm 3.0.0-dev.73 is absent"
+        "before the first push, confirm publish-next.yml is still unregistered at run 0 and npm 3.0.0-dev.83 is absent"
       ],
       "approval": "The routine push workflow publishes the locally validated exact tarball to next without the manual qualification, receipt, attestation, benchmark, approval, or artifact-handoff framework.",
       "concurrency": "The publish-next-${{ github.ref }} group uses queue: max, which keeps up to 100 pending runs and does not cancel an active or pending push."
     },
-    "stableVerificationWorkflow": {
-      "name": "Verify stable package",
-      "path": ".github/workflows/verify-stable.yml",
+    "stablePublicationWorkflow": {
+      "name": "Publish stable package (@latest)",
+      "path": ".github/workflows/publish-stable.yml",
       "ref": "refs/heads/main"
-    },
-    "publicationRunBinding": {
-      "beforeArtifactDownload": [
-        "run.id",
-        "run.repository.full_name",
-        "run.head_repository.full_name",
-        "run.name",
-        "run.path",
-        "run.head_branch",
-        "run.head_sha",
-        "run.event",
-        "run.conclusion"
-      ],
-      "refRule": "qualificationWorkflow.ref is a full refs/heads branch ref; run.head_branch must equal its exact branch name",
-      "beforeEnvironmentApproval": "The content-validated package artifact receipt metadataCommit must equal the API-backed run.head_sha; development sourceCommit must also equal run.head_sha"
     }
   },
   "qualification": {

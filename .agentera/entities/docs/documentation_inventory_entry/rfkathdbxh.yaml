@@ -1,7 +1,7 @@
 id: rfkathdbxh
 artifact: docs
 record:
-  document: CI workflow
-  path: .github/workflows/ci.yml
-  last_updated: 2026-05-05
+  document: Verification workflow
+  path: .github/workflows/verify-changes.yml
+  last_updated: 2026-08-26
   status: current

@@ -10,24 +10,18 @@ import {
   canonicalJson,
   developmentVersionFromRunNumber,
   issueCiAttestation,
-  qualificationWorkflowIdentity,
+  publicationWorkflowIdentity,
   sha256,
-  validateCandidateRunBinding,
-  validateQualificationWorkflowRun,
 } from "../../scripts/release-qualification.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const ciYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8");
+const ciYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8");
 const qualificationYaml = fs.readFileSync(
-  path.join(REPO_ROOT, ".github/workflows/qualify.yml"),
+  path.join(REPO_ROOT, ".github/workflows/publish-next.yml"),
   "utf8",
 );
 const publicationYaml = fs.readFileSync(
-  path.join(REPO_ROOT, ".github/workflows/publish.yml"),
-  "utf8",
-);
-const stableVerificationYaml = fs.readFileSync(
-  path.join(REPO_ROOT, ".github/workflows/verify-stable.yml"),
+  path.join(REPO_ROOT, ".github/workflows/publish-stable.yml"),
   "utf8",
 );
 const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
@@ -96,9 +90,9 @@ describe("package publication orchestration", () => {
   });
 
   it("allocates deterministic rolling development versions", () => {
-    expect(developmentVersionFromRunNumber("3.0.0", "1")).toBe("3.0.0-dev.73");
-    expect(developmentVersionFromRunNumber("3.0.0", "2")).toBe("3.0.0-dev.74");
-    expect(developmentVersionFromRunNumber("3.0.0", "2")).toBe("3.0.0-dev.74");
+    expect(developmentVersionFromRunNumber("3.0.0", "1")).toBe("3.0.0-dev.83");
+    expect(developmentVersionFromRunNumber("3.0.0", "2")).toBe("3.0.0-dev.84");
+    expect(developmentVersionFromRunNumber("3.0.0", "2")).toBe("3.0.0-dev.84");
     for (const invalid of ["0", "-1", "1.5", "abc", "9007199254740991"]) {
       expect(() => developmentVersionFromRunNumber("3.0.0", invalid)).toThrow();
     }
@@ -153,54 +147,51 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
     expect(qualificationYaml).toContain("timeout-minutes: 8");
     expect(qualificationYaml.match(/timeout-minutes:/g)).toHaveLength(8);
-    expect(stableVerificationYaml).toContain("workflow_dispatch");
-    expect(stableVerificationYaml).toContain("candidate --adapter stable");
+    expect(publicationYaml).toContain("workflow_dispatch");
+    expect(publicationYaml).toContain("candidate --adapter stable");
     for (const excluded of [
       "cli:qualify:source", "cli:qualify:dev", "release-qualification", "release-benchmark",
       "upload-artifact", "download-artifact", "receipt", "attestation", "performance", "capacity", "migration",
     ]) expect(qualificationYaml).not.toContain(excluded);
   });
 
-  it("validates API provenance before approval, then runs one bounded forward-only envelope", () => {
-    expect(publicationYaml).not.toContain("inputs.adapter");
-    expect(publicationYaml).not.toMatch(/options: \[development, stable\]/);
+  it("prepares and revalidates one stable candidate before protected publication", () => {
+    expect(publicationYaml).not.toContain("inputs:");
     expect(publicationYaml).toContain("ADAPTER: stable");
     expect(publicationYaml).toContain("publication --adapter stable");
     expect(publicationYaml).toContain("environment: npm-publish");
-    expect(publicationYaml).toContain("candidate_receipt_sha256");
+    expect(publicationYaml).toContain("needs: prepare");
+    expect(publicationYaml).toContain("github.ref != 'refs/heads/main'");
+    expect(publicationYaml).toContain("actions/upload-artifact@v4");
     expect(publicationYaml).toContain("actions/download-artifact@v4");
-    expect(publicationYaml).toContain("actions/github-script@v7");
     expect(publicationYaml).toContain("packages/cli/scripts/release-qualification.mjs");
-    expect(publicationContract.ci.qualificationWorkflow).toEqual({
-      name: "Publish development package",
-      path: ".github/workflows/qualify.yml",
+    expect(publicationContract.ci.developmentPublicationWorkflow).toEqual({
+      name: "Publish development package (@next)",
+      path: ".github/workflows/publish-next.yml",
       ref: "refs/heads/feat/v3",
     });
-    expect(publicationContract.ci.stableVerificationWorkflow).toEqual({
-      name: "Verify stable package",
-      path: ".github/workflows/verify-stable.yml",
+    expect(publicationContract.ci.stablePublicationWorkflow).toEqual({
+      name: "Publish stable package (@latest)",
+      path: ".github/workflows/publish-stable.yml",
       ref: "refs/heads/main",
     });
-    expect(publicationContract.ci.publicationRunBinding.beforeArtifactDownload).toContain("run.head_branch");
-    expect(publicationContract.ci.publicationRunBinding.beforeEnvironmentApproval).toContain("run.head_sha");
-    expect(publicationYaml).toContain("validateQualificationWorkflowRun(run, runId)");
-    expect(publicationYaml).toContain("validateCandidateRunBinding");
-    expect(publicationYaml.match(/validateCandidateReceipt\(\{/g)).toHaveLength(2);
-    expect(publicationYaml).toContain("git checkout --detach");
-    expect(publicationYaml).toContain("run-id: ${{ inputs.source_run_id }}");
+    expect(publicationYaml).toContain("validateCandidateReceipt");
+    expect(publicationYaml).not.toContain("actions/github-script");
+    expect(publicationYaml).not.toContain("run-id:");
+    expect(publicationYaml.match(/release-candidate-\$\{\{ github\.run_id \}\}/g)).toHaveLength(2);
     expect(publicationYaml).toContain("release-qualification.mjs approval");
-    expect(publicationYaml).toContain("--source-run-id");
+    expect(publicationYaml.match(/--source-run-id "\$\{GITHUB_RUN_ID\}"/g)).toHaveLength(2);
     expect(publicationYaml).toContain("release-benchmark.mjs publication");
     expect(publicationYaml).toContain("coordinator enforces <120s");
     expect(publicationYaml).toContain("timeout-minutes: 3");
     expect(publicationYaml).toContain("qualified-publication-receipt.json");
     expect(publicationYaml).toContain('chmod 0444 "${RUNNER_TEMP}"/agentera-package/*.tgz');
-    expect(publicationYaml.indexOf("validateQualificationWorkflowRun(run, runId)"))
-      .toBeLessThan(publicationYaml.indexOf("Checkout verified source"));
-    expect(publicationYaml.indexOf("Checkout verified source"))
-      .toBeLessThan(publicationYaml.indexOf("Download verified package"));
-    expect(publicationYaml.indexOf("Match package receipt to workflow run"))
-       .toBeLessThan(publicationYaml.indexOf("environment: npm-publish"));
+    expect(publicationYaml.indexOf("Verify committed source"))
+      .toBeLessThan(publicationYaml.indexOf("Verify stable package"));
+    expect(publicationYaml.indexOf("Attest stable package"))
+      .toBeLessThan(publicationYaml.indexOf("Upload stable release candidate"));
+    expect(publicationYaml.indexOf("Upload stable release candidate"))
+      .toBeLessThan(publicationYaml.indexOf("environment: npm-publish"));
     expect(publicationYaml.indexOf("Recheck package receipt"))
       .toBeLessThan(publicationYaml.indexOf("NPM_TOKEN"));
     expect(publicationYaml.indexOf("Restore package file mode"))
@@ -210,7 +201,6 @@ describe("package publication orchestration", () => {
     expect(publicationYaml).not.toContain("release-benchmark.mjs qualification --adapter");
     expect(publicationYaml.match(/node-version-file: \.node-version/g)).toHaveLength(2);
     expect(publicationYaml).toContain("COREPACK_HOME: ${{ runner.temp }}/corepack");
-    expect(stableVerificationYaml.match(/COREPACK_HOME: \$\{\{ runner\.temp \}\}\/corepack/g)).toHaveLength(3);
   });
 
   it("keeps package verification benchmarking local after workflow removal", () => {
@@ -222,55 +212,14 @@ describe("package publication orchestration", () => {
     expect(publicationContract.benchmark).not.toHaveProperty("workflow");
   });
 
-  it("rejects a successful source verification run from the wrong contracted ref", () => {
-    const run = {
-      id: 123,
-      repository: { full_name: "jgabor/agentera" },
-      head_repository: { full_name: "jgabor/agentera" },
-      name: "Verify stable package",
-      path: ".github/workflows/verify-stable.yml@main",
-      head_branch: "main",
-      head_sha: "a".repeat(40),
-      event: "workflow_dispatch",
-      conclusion: "success",
-    };
-
-    expect(validateQualificationWorkflowRun(run, 123)).toMatchObject({
-      headSha: "a".repeat(40),
-      ref: "refs/heads/main",
-    });
-    expect(() => validateQualificationWorkflowRun({
-      ...run,
-      head_branch: "feat/v3",
-    }, 123)).toThrow("configured repository, workflow, and branch");
-  });
-
-  it("rejects stable publication source runs with the wrong workflow identity or event", () => {
-    const valid = {
-      id: 123,
-      repository: { full_name: "jgabor/agentera" },
-      head_repository: { full_name: "jgabor/agentera" },
-      name: "Verify stable package",
-      path: ".github/workflows/verify-stable.yml@main",
-      head_branch: "main",
-      head_sha: "a".repeat(40),
-      event: "workflow_dispatch",
-      conclusion: "success",
-    };
-    expect(() => validateQualificationWorkflowRun({ ...valid, name: "Verify package" }, 123)).toThrow();
-    expect(() => validateQualificationWorkflowRun({ ...valid, path: ".github/workflows/qualify.yml@feat/v3" }, 123)).toThrow();
-    expect(() => validateQualificationWorkflowRun({ ...valid, event: "push" }, 123)).toThrow();
-    expect(() => validateQualificationWorkflowRun({ ...valid, conclusion: "failure" }, 123)).toThrow();
-  });
-
-  it("binds stable attestation identity to the default-branch verification workflow", () => {
-    expect(qualificationWorkflowIdentity("stable")).toEqual({
+  it("binds stable attestation identity to the default-branch publication workflow", () => {
+    expect(publicationWorkflowIdentity("stable")).toEqual({
       repository: "jgabor/agentera",
-      workflow: "Verify stable package",
-      workflowPath: ".github/workflows/verify-stable.yml",
+      workflow: "Publish stable package (@latest)",
+      workflowPath: ".github/workflows/publish-stable.yml",
       ref: "refs/heads/main",
       branch: "main",
-      workflowRef: "jgabor/agentera/.github/workflows/verify-stable.yml@refs/heads/main",
+      workflowRef: "jgabor/agentera/.github/workflows/publish-stable.yml@refs/heads/main",
     });
   });
 
@@ -291,14 +240,14 @@ describe("package publication orchestration", () => {
           GITHUB_ACTIONS: "true",
           GITHUB_SHA: head,
           GITHUB_REPOSITORY: "jgabor/agentera",
-          GITHUB_WORKFLOW: "Verify stable package",
-          GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/verify-stable.yml@refs/heads/main",
+          GITHUB_WORKFLOW: "Publish stable package (@latest)",
+          GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/publish-stable.yml@refs/heads/main",
           GITHUB_RUN_ID: "123",
         },
       });
       expect(attestation).toMatchObject({
-        workflow: "Verify stable package",
-        workflowRef: "jgabor/agentera/.github/workflows/verify-stable.yml@refs/heads/main",
+        workflow: "Publish stable package (@latest)",
+        workflowRef: "jgabor/agentera/.github/workflows/publish-stable.yml@refs/heads/main",
         metadataCommit: head,
         sourceCommit: "b".repeat(40),
       });
@@ -307,27 +256,4 @@ describe("package publication orchestration", () => {
     }
   });
 
-  it("rejects a package artifact receipt whose commits differ from the API run head", () => {
-    const receipt: Record<string, unknown> = {
-      schemaVersion: "agentera.releaseQualification.v1",
-      kind: "candidate",
-      metadataCommit: "b".repeat(40),
-    };
-    receipt.receiptSha256 = sha256(canonicalJson(receipt));
-
-    expect(() => validateCandidateRunBinding(receipt, receipt.receiptSha256 as string, "c".repeat(40)))
-      .toThrow("API-backed verification run head SHA");
-
-    const head = "c".repeat(40);
-    const sourceMismatch: Record<string, unknown> = {
-      schemaVersion: "agentera.releaseQualification.v1",
-      kind: "candidate",
-      adapter: "development",
-      metadataCommit: head,
-      sourceCommit: "b".repeat(40),
-    };
-    sourceMismatch.receiptSha256 = sha256(canonicalJson(sourceMismatch));
-    expect(() => validateCandidateRunBinding(sourceMismatch, sourceMismatch.receiptSha256 as string, head))
-      .toThrow("API-backed verification run head SHA");
-  });
 });

@@ -6,7 +6,7 @@ import YAML from "yaml";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const workflow = YAML.parse(
-  fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/ci.yml"), "utf8"),
+  fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8"),
 );
 const developmentPackage = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"),

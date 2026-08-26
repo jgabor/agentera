@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const workflow = fs.readFileSync(
-  path.join(REPO_ROOT, ".github/workflows/publish.yml"),
+  path.join(REPO_ROOT, ".github/workflows/publish-stable.yml"),
   "utf8",
 );
 const benchmark = fs.readFileSync(
@@ -35,7 +35,7 @@ describe("staged package migration contract", () => {
   it("keeps the public tag unchanged until the staged package migration smoke succeeds", () => {
     expect(workflow).toContain("release-benchmark.mjs publication");
     expect(benchmark).toContain("AGENTERA_SANDBOX_TIER: \"L2\"");
-    expect(workflow).toContain("candidate_receipt_sha256");
+    expect(workflow).toContain("release-candidate-${{ github.run_id }}");
     expect(workflow).toContain("environment: npm-publish");
   });
 

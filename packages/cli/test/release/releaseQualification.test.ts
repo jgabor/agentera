@@ -14,7 +14,7 @@ import {
   issueCandidateReceipt,
   issueCiAttestation,
   issueSourceReceipt,
-  qualificationWorkflowIdentity,
+  publicationWorkflowIdentity,
   RELEASE_CONTRACT,
   runSourceReceiptCheckCommand,
   sha256,
@@ -192,7 +192,7 @@ function git(root: string, ...args: string[]): string {
 }
 
 function sourceQualificationEnvironment(repo: string) {
-  const workflow = qualificationWorkflowIdentity("development");
+  const workflow = publicationWorkflowIdentity("development");
   return {
     GITHUB_ACTIONS: "true",
     GITHUB_SHA: git(repo, "rev-parse", "HEAD"),
@@ -485,23 +485,23 @@ describe("release qualification receipts", () => {
       ...candidateExecution(candidateDirectory, targetVersion),
     });
 
-    expect(() => issue("3.0.0-dev.74", head)).toThrow("target version must equal 3.0.0-dev.73");
-    expect(() => issue("3.0.0-dev.73", "0".repeat(40))).toThrow("source commit must equal GITHUB_SHA");
+    expect(() => issue("3.0.0-dev.84", head)).toThrow("target version must equal 3.0.0-dev.83");
+    expect(() => issue("3.0.0-dev.83", "0".repeat(40))).toThrow("source commit must equal GITHUB_SHA");
     expect(() => issue(
-      "3.0.0-dev.73",
+      "3.0.0-dev.83",
       "0".repeat(40),
       { ...environment, GITHUB_SHA: "0".repeat(40) },
     )).toThrow("checkout HEAD must equal GITHUB_SHA");
 
-    const accepted = issue("3.0.0-dev.73", head);
+    const accepted = issue("3.0.0-dev.83", head);
     expect(accepted.receipt).toMatchObject({
-      version: "3.0.0-dev.73",
+      version: "3.0.0-dev.83",
       sourceCommit: head,
       metadataCommit: head,
     });
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" })).not.toThrow();
-    expect(() => issue("3.0.0-dev.74", head)).toThrow("target version must equal 3.0.0-dev.73");
-    expect(issue("3.0.0-dev.73", head)).toMatchObject({ reused: true });
+    expect(() => issue("3.0.0-dev.84", head)).toThrow("target version must equal 3.0.0-dev.83");
+    expect(issue("3.0.0-dev.83", head)).toMatchObject({ reused: true });
     expect(() => issueCiAttestation({
       repo,
       candidateDirectory,

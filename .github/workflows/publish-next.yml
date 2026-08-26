@@ -1,4 +1,4 @@
-name: Publish development package
+name: Publish development package (@next)
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
-          version="$(node -p "'3.0.0-dev.' + (Number(process.env.GITHUB_RUN_NUMBER) + 72)")"
+          version="$(node -p "'3.0.0-dev.' + (Number(process.env.GITHUB_RUN_NUMBER) + 82)")"
           printf 'value=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
           printf 'Publishing %s from %s\n' "${version}" "${GITHUB_SHA}"
       - name: Build one isolated package tarball

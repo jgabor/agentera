@@ -108,7 +108,7 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
 
 - Every passing queued push to `feat/v3` publishes one rolling
   development package to npm `@next`. CI derives `3.0.0-dev.N` as
-  `GITHUB_RUN_NUMBER + 72`, builds once from `GITHUB_SHA`, and sets package
+  `GITHUB_RUN_NUMBER + 82`, builds once from `GITHUB_SHA`, and sets package
   `agentera.gitRef` to that SHA in isolated package construction. It validates
   and smokes that exact tarball before publishing the same bytes. It does not
   edit the checkout or require a final metadata commit.
@@ -119,13 +119,14 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
   by it. After that push, stop. A failed or cancelled workflow does not
   authorize another version or push. Repair the cause on a
   worktree branch and obtain fresh explicit authorization before integrating it.
-- Before the first push with `.github/workflows/qualify.yml`, confirm that this
-  new workflow is still unregistered at run number 0 and npm `3.0.0-dev.73` is
-  absent. The offset 72 is a one-time migration assumption, not a registry query.
+- Before the first push with `.github/workflows/publish-next.yml`, confirm that
+  this renamed workflow is still unregistered at run number 0 and npm
+  `3.0.0-dev.83` is absent. The offset 82 is a one-time migration assumption,
+  not a registry query.
 - Publication from `main` remains the stable path and requires protected
   environment review before npm mutation. The stable `workflow_dispatch`
-  paths are not operational until `verify-stable.yml` and `publish.yml` exist
-  on the default `main` branch. Landing them there is a v3 cutover prerequisite.
+  path is not operational until `publish-stable.yml` exists on the default
+  `main` branch. Landing it there is a v3 cutover prerequisite.
 
 Until `3.0.0` is on npm `@latest`, do not bump suite or release metadata beyond
 `3.0.0`. Any version or publication task must load `agentera-release` before

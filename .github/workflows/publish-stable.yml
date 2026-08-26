@@ -1,0 +1,94 @@
+name: Publish stable package (@latest)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: publish-stable
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare stable release candidate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          printf 'Stable publication must be dispatched from main.\n' >&2
+          exit 1
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+      - name: Verify committed source
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+          VITEST_MAX_WORKERS: "1"
+          VITEST_TEST_TIMEOUT_MS: "120000"
+          AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
+          AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
+          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
+        run: node packages/cli/scripts/release-qualification.mjs source --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package"
+      - name: Verify stable package
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+        run: node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package"
+      - name: Attest stable package
+        run: node packages/cli/scripts/release-qualification.mjs attest --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package"
+      - name: Upload stable release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/agentera-package
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish stable package to @latest
+    needs: prepare
+    runs-on: ubuntu-24.04
+    environment: npm-publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Download stable release candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: release-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/agentera-package
+      - name: Restore package file mode
+        run: chmod 0444 "${RUNNER_TEMP}"/agentera-package/*.tgz
+      - name: Recheck package receipt
+        env:
+          ADAPTER: stable
+        run: |
+          node --input-type=module -e 'import { validateCandidateReceipt } from "./packages/cli/scripts/release-qualification.mjs"; validateCandidateReceipt({ candidateDirectory: process.env.RUNNER_TEMP + "/agentera-package", adapterName: process.env.ADAPTER });'
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+      - name: Approve verified package
+        run: node packages/cli/scripts/release-qualification.mjs approval --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package" --approved-by "${{ github.actor }}" --source-run-id "${GITHUB_RUN_ID}"
+      - name: Stage, test, and promote package
+        # The coordinator enforces <120s; this outer guard leaves time to emit its failure receipt.
+        timeout-minutes: 3
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node packages/cli/scripts/release-benchmark.mjs publication --adapter stable --candidate-dir "${RUNNER_TEMP}/agentera-package" --source-run-id "${GITHUB_RUN_ID}" --receipt-file "${RUNNER_TEMP}/qualified-publication-receipt.json" --json

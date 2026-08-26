@@ -46,8 +46,8 @@ It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
 Every passing queued push to `feat/v3` publishes through
-`.github/workflows/qualify.yml` to npm `@next`. CI derives `3.0.0-dev.N` as
-`GITHUB_RUN_NUMBER + 72`, builds once from `GITHUB_SHA`, and sets
+`.github/workflows/publish-next.yml` to npm `@next`. CI derives
+`3.0.0-dev.N` as `GITHUB_RUN_NUMBER + 82`, builds once from `GITHUB_SHA`, and sets
 `agentera.gitRef` to `GITHUB_SHA` only in the copied construction manifest. It
 validates that exact tarball's version and git ref, runs its executable CLI
 version smoke, then publishes the same tarball to `@next`. This routine path does not run the manual qualification, receipt, attestation, benchmark, or artifact
@@ -57,9 +57,9 @@ commit. The `publish-next-${{ github.ref }}` group uses
 A rerun keeps the same run number, SHA, and version. If identical bytes already
 exist at that version on `@next`, publication succeeds without another upload.
 
-Before the first push, confirm the new `qualify.yml` path remains unregistered
-at run number 0 and npm `3.0.0-dev.73` is absent. The offset 72 is a one-time
-migration assumption. Allocation does not query npm.
+Before the first push, confirm the new `publish-next.yml` path remains
+unregistered at run number 0 and npm `3.0.0-dev.83` is absent. The offset 82 is
+a one-time migration assumption. Allocation does not query npm.
 
 One explicit push authorization permits exactly one push and is consumed by it.
 After that push, stop. A failed or cancelled workflow ends the release attempt;
@@ -118,11 +118,11 @@ credentials. Stable shim preparation retains its separate source-provenance
 check and does not use the development receipt. `cli:qualify:source` and
 `cli:qualify:dev` remain the exact low-level receipt owners.
 
-The stable verification and publication workflows are a cutover prerequisite,
-not a currently operational dispatch path. GitHub does not expose their
-`workflow_dispatch` triggers until `.github/workflows/verify-stable.yml` and
-`.github/workflows/publish.yml` exist on the default `main` branch. Land and
-review those workflow files on `main` before the v3 `@latest` cutover.
+The stable publication workflow is a cutover prerequisite, not a currently
+operational dispatch path. GitHub does not expose its `workflow_dispatch`
+trigger until `.github/workflows/publish-stable.yml` exists on the default
+`main` branch. Land and review that workflow on `main` before the v3 `@latest`
+cutover.
 
 Source verification runs one evidence DAG. Batch A starts generated-overlap,
 stress, and typecheck together with separate HOME, cache, npm configs, and
@@ -287,20 +287,21 @@ and receipts plus a CI attestation from the source verification run. Stable
 publication from `main` retains explicit protected-environment review. OIDC
 provenance remains deferred.
 
-The manual CI attestation binds `jgabor/agentera`, the `Publish development package`
-workflow, `.github/workflows/qualify.yml@refs/heads/feat/v3`, and
+The manual CI attestation binds `jgabor/agentera`, the
+`Publish development package (@next)` workflow,
+`.github/workflows/publish-next.yml@refs/heads/feat/v3`, and
 the numeric source run ID. The full `refs/heads/...` contract is the branch
 authority. This attestation and approval flow is not part of routine `feat/v3`
 push publication.
 
-After the stable workflow files land on default `main`, the separately
-dispatched `.github/workflows/publish.yml` workflow becomes the protected manual
-path. It queries the source verification run before artifact
-download, validates the package artifact against the API-backed `head_sha`, and
-revalidates it inside the `npm-publish` environment before credentials are
-available. Stable publication from `main` uses this protected review. The local
-publication command is emergency recovery only, after the same
-artifact-bound approval and retained package artifact are established:
+After `.github/workflows/publish-stable.yml` lands on default `main`, its manual
+dispatch prepares, attests, and uploads one immutable candidate. The dependent
+publication job downloads the candidate from the same workflow run and waits
+for `npm-publish` environment approval. It revalidates the receipt, artifact,
+and same-run CI attestation before registry credentials are used. Stable
+publication from `main` uses this protected review. The local publication
+command is emergency recovery only, after the same artifact-bound approval and
+retained package artifact are established:
 
 ```bash
 NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
