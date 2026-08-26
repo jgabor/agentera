@@ -7,8 +7,6 @@ import { pathToFileURL } from "node:url";
 
 import YAML from "yaml";
 
-import { runSourceProfileFullWorkflow } from "./profileFullGlossaryWorkflow.js";
-
 const PROFILE_GLOSSARY_START = "<!-- agentera:personal-glossary:start -->";
 const PROFILE_GLOSSARY_END = "<!-- agentera:personal-glossary:end -->";
 
@@ -28,7 +26,8 @@ export interface ProducerReadinessObservation {
     inferredEvidence: number;
     initialBaseHasNoGlossary: boolean;
     preservedOwnedSection: boolean;
-    malformedOutputCasesRejected: number;
+    publicationStatus: string;
+    replayStatus: string;
   };
   project: {
     auditReadOnly: boolean;
@@ -238,7 +237,7 @@ export async function runProducerReadinessWorkflow(
   const tiers = await load(executable, "analytics/extractCorpus/evidenceTiers.js");
   const corpus = await load(executable, "analytics/extractCorpus/core.js");
   const admission = await load(executable, "analytics/personalGlossaryAdmission.js");
-  const tiersDir = path.join(root, "tiers");
+  const tiersDir = path.join(env.AGENTERA_PROFILE_DIR!, "intermediate", "tiers");
   tiers.publishEvidenceTiers(
     [
       evidenceRecord(
@@ -278,10 +277,81 @@ export async function runProducerReadinessWorkflow(
   assert.equal(explicit?.evidence.length, 1);
   assert.equal(inferred?.evidence.length, 2);
 
+  const mining = await load(executable, "analytics/personalGlossaryExplicitMining.js");
+  const projections = await load(executable, "analytics/personalGlossaryCandidateProjection.js");
+  const mined = mining.mineExplicitGlossaryCandidates({ tiersDir });
+  assert.equal(mined.state, "current");
+  assert.equal(mined.candidates.length, 1);
+  const capsule = mined.candidates[0].capsule;
+  const projection = projections.projectPersonalGlossaryCandidates({
+    generation: capsule.generation,
+    policy_version: capsule.policy_version,
+    retained_at: "2099-01-01T00:00:00.000Z",
+    candidates: [{ capsule, project_ids: ["producer-readiness"] }],
+  });
+  projections.persistPersonalGlossaryCandidateProjection(projection, { env });
+
+  const profilePath = path.join(env.AGENTERA_PROFILE_DIR!, "PROFILE.md");
+  const profileBase = "# Decision Profile: Producer Readiness\n\n## Decision Patterns\n\n- High confidence: preserve semantic seams.\n";
+  fs.writeFileSync(profilePath, profileBase);
   fs.mkdirSync(path.join(project, ".agentera/glossary.yaml"));
-  const profile = runSourceProfileFullWorkflow(project);
+  const decision = invoke(
+    executable,
+    ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
+    project,
+    env,
+    JSON.stringify({
+      schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
+      candidate_id: capsule.candidate_id,
+      candidate_revision: capsule.candidate_revision,
+      candidate_capsule_sha256: capsule.capsule_sha256,
+      candidate_projection_sha256: projection.projection_sha256,
+      generation: capsule.generation,
+      policy_version: capsule.policy_version,
+      classification: {
+        term: capsule.term,
+        meaning: capsule.meaning,
+        scope: capsule.scope,
+        permanence: "durable",
+        consistency: "consistent",
+        confidence: 80,
+      },
+    }),
+  );
+  assert.equal(decision.status, 0, decision.stderr || decision.stdout);
+  const decisionPayload = JSON.parse(decision.stdout);
+  assert.equal(decisionPayload.status, "automatic_admission", decision.stdout);
+  const publicationRequest = JSON.stringify({
+    schema_version: "agentera.personalGlossaryPublishRequest.v1",
+    receipt: decisionPayload.receipt,
+    decision: decisionPayload.decision,
+    as_of: "2026-07-26",
+  });
+  const publication = invoke(
+    executable,
+    ["report", "personal-glossary-publish", "--input", "-", "--format", "json"],
+    project,
+    env,
+    publicationRequest,
+  );
+  assert.equal(publication.status, 0, publication.stderr || publication.stdout);
+  const publicationStatus = JSON.parse(publication.stdout).status;
+  assert.equal(publicationStatus, "changed");
+  const publishedProfile = fs.readFileSync(profilePath);
+  const personalReplay = invoke(
+    executable,
+    ["report", "personal-glossary-publish", "--input", "-", "--format", "json"],
+    project,
+    env,
+    publicationRequest,
+  );
+  assert.equal(personalReplay.status, 0, personalReplay.stderr || personalReplay.stdout);
+  const replayStatus = JSON.parse(personalReplay.stdout).status;
+  assert.equal(replayStatus, "unchanged_replay");
+  assert(fs.readFileSync(profilePath).equals(publishedProfile), "personal glossary replay changed profile bytes");
+  assert(fs.statSync(path.join(project, ".agentera/glossary.yaml")).isDirectory());
   fs.rmdirSync(path.join(project, ".agentera/glossary.yaml"));
-  const profileBeforeProject = fs.readFileSync(profile.profilePath);
+  const profileBeforeProject = fs.readFileSync(profilePath);
 
   const audit = await load(executable, "audit/terminologyDrift.js");
   fs.mkdirSync(path.join(project, "src"));
@@ -393,13 +463,13 @@ export async function runProducerReadinessWorkflow(
       String(issue.message).includes("src/reintroduced.ts:1")
     ).length;
   assert.equal(digestTree(project), beforeFailedValidation, "failed glossary validation mutated project state");
-  const profileUnchanged = fs.readFileSync(profile.profilePath).equals(profileBeforeProject);
+  const profileUnchanged = fs.readFileSync(profilePath).equals(profileBeforeProject);
 
   const trapTerm = "PRIVATE_CONSUMER_TRAP_7F31";
   fs.writeFileSync(path.join(project, ".agentera/consumer-trap.yaml"), `term: ${trapTerm}\n`);
   fs.writeFileSync(path.join(project, "profile-data/consumer-trap.txt"), trapTerm);
   const observedFiles = [
-    profile.profilePath,
+    profilePath,
     path.join(project, ".agentera/glossary.yaml"),
     path.join(project, ".agentera/consumer-trap.yaml"),
     path.join(project, "profile-data/consumer-trap.txt"),
@@ -409,7 +479,7 @@ export async function runProducerReadinessWorkflow(
   const startupOutput: string[] = [];
   const groundingStatuses: string[] = [];
   let nonGlossaryBytesExact = true;
-  const validProfile = fs.readFileSync(profile.profilePath);
+  const validProfile = fs.readFileSync(profilePath);
   const validProfileText = validProfile.toString("utf8");
   const ownedStart = validProfileText.indexOf(PROFILE_GLOSSARY_START);
   const ownedEnd =
@@ -548,8 +618,8 @@ export async function runProducerReadinessWorkflow(
   let malformedGroundingCasesRejected = 0;
   let groundingErrorsSanitized = true;
   for (const { family, traps, profile: malformed } of malformedProfiles) {
-    fs.writeFileSync(profile.profilePath, malformed);
-    const before = fs.readFileSync(profile.profilePath);
+    fs.writeFileSync(profilePath, malformed);
+    const before = fs.readFileSync(profilePath);
     const rejected = invoke(
       executable,
       ["report", "profile-grounding", "--format", "json"],
@@ -559,7 +629,7 @@ export async function runProducerReadinessWorkflow(
     assert.notEqual(rejected.status, 0, `${family} profile grounding succeeded`);
     assertTrapsAbsent(rejected, traps, family);
     assert(
-      fs.readFileSync(profile.profilePath).equals(before),
+      fs.readFileSync(profilePath).equals(before),
       `${family} profile bytes changed after rejection`,
     );
     const rejectedPayload = JSON.parse(rejected.stdout);
@@ -571,7 +641,7 @@ export async function runProducerReadinessWorkflow(
       rejectedPayload.recovery === rejectedPayload.validity?.recovery;
     malformedGroundingCasesRejected += 1;
   }
-  fs.writeFileSync(profile.profilePath, validProfile);
+  fs.writeFileSync(profilePath, validProfile);
 
   for (const requestFamily of ["request-choice", "request-argument"]) {
     const requestTraps = groundingTraps(requestFamily);
@@ -644,7 +714,7 @@ export async function runProducerReadinessWorkflow(
       'import fs from "node:fs";',
       'import { syncBuiltinESMExports } from "node:module";',
       "const original = fs.openSync;",
-      `const profilePath = ${JSON.stringify(profile.profilePath)};`,
+      `const profilePath = ${JSON.stringify(profilePath)};`,
       `const failure = ${JSON.stringify(trapValues(readTraps).join(" "))};`,
       "fs.openSync = function (target, ...args) {",
       "  if (String(target) === profilePath) throw new Error(failure);",
@@ -657,7 +727,7 @@ export async function runProducerReadinessWorkflow(
   const nodeOptions = [env.NODE_OPTIONS, `--import=${pathToFileURL(readHook).href}`]
     .filter(Boolean)
     .join(" ");
-  const beforeReadFailure = fs.readFileSync(profile.profilePath);
+  const beforeReadFailure = fs.readFileSync(profilePath);
   const unreadable = invoke(
     executable,
     ["report", "profile-grounding", "--format", "json"],
@@ -667,7 +737,7 @@ export async function runProducerReadinessWorkflow(
   assert.notEqual(unreadable.status, 0, "profile read failure was accepted");
   assertTrapsAbsent(unreadable, readTraps, "read");
   assert(
-    fs.readFileSync(profile.profilePath).equals(beforeReadFailure),
+    fs.readFileSync(profilePath).equals(beforeReadFailure),
     "profile bytes changed after read failure",
   );
 
@@ -675,9 +745,10 @@ export async function runProducerReadinessWorkflow(
     personal: {
       explicitEvidence: explicit.evidence.length,
       inferredEvidence: inferred.evidence.length,
-      initialBaseHasNoGlossary: profile.initialBaseHasNoGlossary,
-      preservedOwnedSection: profile.preservedOwnedSection,
-      malformedOutputCasesRejected: profile.malformedCasesRejected,
+      initialBaseHasNoGlossary: !profileBase.includes(PROFILE_GLOSSARY_START),
+      preservedOwnedSection: fs.readFileSync(profilePath, "utf8").includes(PROFILE_GLOSSARY_START),
+      publicationStatus,
+      replayStatus,
     },
     project: {
       auditReadOnly,
@@ -714,7 +785,8 @@ export const EXPECTED_PRODUCER_READINESS: ProducerReadinessObservation = {
     inferredEvidence: 2,
     initialBaseHasNoGlossary: true,
     preservedOwnedSection: true,
-    malformedOutputCasesRejected: 4,
+    publicationStatus: "changed",
+    replayStatus: "unchanged_replay",
   },
   project: {
     auditReadOnly: true,

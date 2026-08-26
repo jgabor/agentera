@@ -293,7 +293,7 @@ describe("npm distribution boundary", () => {
     });
   });
 
-  it("runs the producer readiness workflow from the extracted package", { timeout: 120_000 }, async () => {
+  it("runs producer readiness publication and replay from the extracted package", { timeout: 120_000 }, async () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     await expect(runProducerReadinessWorkflow(bin, path.join(fixture.root, "producer-readiness")))
       .resolves.toEqual(EXPECTED_PRODUCER_READINESS);

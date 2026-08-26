@@ -4,7 +4,7 @@ record:
   name: Separate Profile Full source and package evidence
   depends_on:
     []
-  status: complete
+  status: in_progress
   acceptance:
     - GIVEN the Profile Full source workflow WHEN its behavioral matrix runs THEN every current outcome remains covered without constructing a package.
     - GIVEN the extracted package executable WHEN Profile context is requested THEN the bundled contract is served without invoking the source CLI.
@@ -15,3 +15,13 @@ record:
     - Profile Full source matrix passes without package construction.
     - Extracted package verification serves bundled Profile, rejects malformed Profile authority, preserves Build, and restores exact authority bytes.
     - Typecheck passes after helper signature changes.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Package producer readiness still routes Profile publication and replay through source execution, so extracted-package regressions can pass silently.
+    provenance:
+      attempt_id: audit-1
+      source: orchestrate audit
+      recorded_at: 2026-08-26 17:40
+      writer_command: agentera state plan record-evaluation

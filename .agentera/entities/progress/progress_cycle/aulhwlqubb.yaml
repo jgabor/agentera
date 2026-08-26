@@ -1,0 +1,13 @@
+id: aulhwlqubb
+artifact: progress
+record:
+  timestamp: 2026-08-26 17:55
+  type: test
+  phase: build
+  what: Corrected package Profile evidence so producer readiness no longer imports or runs the source Profile Full workflow.
+  context:
+    intent: Make extracted-package publication and replay regressions execute only through the extracted package binary.
+  discovered: The package producer helper called runSourceProfileFullWorkflow, whose successful decision, publication, and replay paths spawned the checkout dist executable.
+  verified: The Profile Full source test passed 1/1. The package verification file passed 9/9 and spawned the extracted executable for personal-glossary-publish, observing changed then unchanged_replay while preserving exact profile bytes. Typecheck, build, compact, and state validation passed.
+  next: Keep plan task emyvgpfjgh in_progress until orchestrate records a passing re-audit.
+  publication_order: 225
