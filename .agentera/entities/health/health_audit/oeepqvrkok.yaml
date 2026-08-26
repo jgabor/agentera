@@ -1,0 +1,27 @@
+id: oeepqvrkok
+artifact: health
+record:
+  date: 2026-08-26
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: scoped source-test evidence is current, complete, and materially faster."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited closure review for plan vehgztulye passed after two audit findings were resolved by one bounded correction. All five tasks have current PASS evaluations, commit 0ec681da makes scoped artifacts current relative to plan creation, and the original five tests fell from 84.652s to 56.446s.
+      findings:
+        []
+  trends:
+    improved: Scoped source-test wall time fell from 5m 4.334s to 4m 52.557s, and the original five tests fell by 28.206s.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: Representative CLI preview coverage and exact timing evidence were restored after audit.
+    carried_forward: Decisions, vision, and Profile details remain deferred; stale Profile state was not refreshed.
+  appended_at: 2026-08-26T18:54:51.034Z
