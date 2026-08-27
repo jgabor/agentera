@@ -1,0 +1,27 @@
+id: nkngfxtdxf
+artifact: health
+record:
+  date: 2026-08-27
+  dimensions:
+    - pattern_consistency
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: the duplicate package command was removed and the active timing diagnostic was retained."
+  grades:
+    pattern_consistency: A
+  dimension_details:
+    - name: pattern_consistency
+      grade: A
+      summary: "Follow-up to health audit uroljxmllz: the maintainer confirmed that packages/cli/scripts/source-test-breakdown.mjs is actively used, so its removal finding is withdrawn. The duplicate bundle:data command and current references were consolidated under build."
+      findings:
+        []
+  trends:
+    improved: Package generation now has one supported build command.
+    degraded: None.
+    new_findings: None.
+    resolved: The bundle:data duplication is resolved; the source-test removal finding is withdrawn.
+    carried_forward: Retain the source timing diagnostic and its tests.
+  appended_at: 2026-08-27T15:58:19.733Z

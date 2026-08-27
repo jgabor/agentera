@@ -1,0 +1,40 @@
+id: uroljxmllz
+artifact: health
+record:
+  date: 2026-08-27
+  dimensions:
+    - pattern_consistency
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 1
+    filtered_by_confidence: 0
+  trajectory: "stable: the scripts are mostly contract-backed; one one-off diagnostic and one duplicate command surface remain."
+  grades:
+    pattern_consistency: B
+  dimension_details:
+    - name: pattern_consistency
+      grade: B
+      summary: Twenty-five script files were traced through package commands, workflows, source imports, tests, docs, and verification policy. Twenty-four have an active caller or declared contract.
+      findings:
+        - severity: warning
+          confidence: 95
+          title: Remove the orphaned source timing diagnostic
+          location: packages/cli/scripts/source-test-breakdown.mjs:155
+          evidence: The entry point runs a full source timing report, but only its unit test references the file; no package command, workflow, documentation, or verification-policy entry exposes it.
+          impact: A completed-plan diagnostic leaves 194 script lines and 71 test lines in the maintained source lane.
+          suggested_action: Delete the script and its dedicated test, or document a current recurring owner before retaining it.
+        - severity: info
+          confidence: 90
+          title: Retire the duplicate bundle:data alias
+          location: packages/cli/package.json:32,64
+          evidence: build and bundle:data execute the identical build-package.mjs command.
+          impact: Two names describe one operation and historical checks often run both.
+          suggested_action: Keep build, update the generated wrapper and release-metadata correction, then remove bundle:data.
+  trends:
+    improved: Recent release refactors removed substantial generated-output and qualification duplication.
+    degraded: None observed in this targeted review.
+    new_findings: One orphaned diagnostic and one duplicate command alias.
+    resolved: None in this review.
+    carried_forward: Manual release scripts remain intentional recovery or stable-publication contracts and should stay.
+  appended_at: 2026-08-27T11:04:09.637Z
