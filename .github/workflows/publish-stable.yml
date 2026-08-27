@@ -21,11 +21,11 @@ jobs:
         run: |
           printf 'Stable publication must be dispatched from main.\n' >&2
           exit 1
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
       - run: corepack enable
@@ -61,11 +61,11 @@ jobs:
     runs-on: ubuntu-24.04
     environment: npm-publish
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
       - name: Download stable release candidate

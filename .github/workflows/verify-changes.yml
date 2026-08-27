@@ -11,8 +11,8 @@ jobs:
     name: CLI verification DAG
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
       - name: Enable corepack (pnpm)
@@ -36,8 +36,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
       - run: corepack enable

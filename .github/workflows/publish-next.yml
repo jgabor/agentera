@@ -18,11 +18,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         timeout-minutes: 1
         with:
           node-version-file: .node-version
