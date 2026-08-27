@@ -368,7 +368,7 @@ describe("release-metadata", () => {
     const errors = validateReleaseMetadata(tmp);
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("release-metadata drift (advisory)");
-    expect(errors[0]).toContain("run `npm run bundle:data`");
+    expect(errors[0]).toContain("run `npm run build`");
     expect(RELEASE_METADATA_ADVISORY_FILES).toContain("packages/cli/bundle/.agentera-npx-bundle.json");
   });
 

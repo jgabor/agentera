@@ -18,6 +18,7 @@
 
 ### Changed
 
+- Consolidated package generation in `packages/cli/package.json` under `pnpm -C packages/cli build` and removed the duplicate `bundle:data` command.
 - `pnpm -C packages/cli build` now stages outside the checkout and synchronizes
   only byte or mode differences into `dist/` and `bundle/`. Release verification
   keeps one parent-owned private build through barrier B, eliminating checkout

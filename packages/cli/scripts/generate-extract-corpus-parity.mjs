@@ -67,7 +67,7 @@ fixture contract so cross-language drift remains observable.
 
 DO NOT EDIT. Regenerate with:
   node packages/cli/scripts/generate-extract-corpus-parity.mjs --write
-  pnpm -C packages/cli run bundle:data
+  pnpm -C packages/cli build
 """
 
 from __future__ import annotations

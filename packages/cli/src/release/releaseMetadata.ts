@@ -485,7 +485,7 @@ export function validateReleaseMetadata(
       errors.push(
         `release-metadata drift (advisory): packages/cli/bundle/.agentera-npx-bundle.json suiteVersion is ${JSON.stringify(snap.bundleSuiteVersion)} ` +
           `but registry.json skills[0].version is ${JSON.stringify(snap.authoritativeVersion)}; ` +
-          `run \`npm run bundle:data\` (or \`pnpm -C packages/cli run bundle:data\`) at ${rootLabel} to refresh the local bundle copy before publishing`,
+          `run \`npm run build\` (or \`pnpm -C packages/cli build\`) at ${rootLabel} to refresh the local bundle copy before publishing`,
       );
     }
   }

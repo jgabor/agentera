@@ -60,8 +60,7 @@
     "verify:release": "node scripts/release-qualification.mjs verify --json",
     "lint": "vp lint",
     "fmt": "vp fmt",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "bundle:data": "node scripts/build-package.mjs"
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "smol-toml": "^1.8.0",
