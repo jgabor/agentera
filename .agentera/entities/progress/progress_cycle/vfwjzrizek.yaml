@@ -1,0 +1,15 @@
+id: vfwjzrizek
+artifact: progress
+record:
+  timestamp: 2026-08-28 17:43
+  type: test
+  phase: build
+  what: Simplified the Profile Full source workflow by avoiding duplicate durable review-queue writes in the question-limit scenario while retaining real queue writes in mixed and fallback scenarios.
+  context:
+    intent: Complete task ahloervdbk test-runtime simplification without weakening Profile Full observations or gate authority.
+    constraints: Preserve pass-only five-file cache authority, re-execution on drift or failure, dedicated owner coverage, and unrelated plan state.
+    scope: packages/cli/test/helpers/profileFullGlossaryWorkflow.ts and typed progress only.
+  discovered: Timing instrumentation identified repeated review-queue commands as the dominant removable workflow cost; quality-gate decisions were already reusing the authoritative pass-only five-file fingerprint cache.
+  verified: "Node 24.19.0: Profile Full, personal glossary decision, review-record, and evaluator suites passed (68 tests); typecheck passed. Decision coverage includes authority drift, nonzero evaluator failure, stale authority bindings, and a real authorizing gate pass."
+  next: Continue the remaining tasks in plan jdwyriidnr without changing task ahloervdbk status or evaluation.
+  publication_order: 231

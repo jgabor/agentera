@@ -469,6 +469,7 @@ function runFullCycle(
   capsules: ReadonlyMap<string, GlossaryEvidenceCapsule>,
   questionChannel: boolean,
   fault: WorkflowFault = {},
+  persistReviews = true,
 ): WorkflowResult {
   const result: WorkflowResult = {
     candidateReadFailures: 0,
@@ -589,13 +590,15 @@ function runFullCycle(
           continue;
         }
         if (status !== "review_required") continue;
-        const queued = json(invokeInProcess([
-          "report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json",
-        ], root, JSON.stringify({
-          schema_version: "agentera.personalGlossaryReviewQueueRequest.v1",
-          receipt: outcome.receipt,
-        })));
-        assert(["queued", "unchanged_replay", "suppressed", "reopened"].includes(String(queued.status)));
+        if (persistReviews) {
+          const queued = json(invokeInProcess([
+            "report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json",
+          ], root, JSON.stringify({
+            schema_version: "agentera.personalGlossaryReviewQueueRequest.v1",
+            receipt: outcome.receipt,
+          })));
+          assert(["queued", "unchanged_replay", "suppressed", "reopened"].includes(String(queued.status)));
+        }
         result.queued += 1;
         if (questionChannel && result.questionPrompts < contract.questionReviewMaximum) {
           result.questionPrompts += 1;
@@ -865,6 +868,9 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
     regeneratedBase,
     new Map(questionCapsules.map((capsule) => [capsule.candidate_id, capsule])),
     true,
+    {},
+    // Mixed and fallback scenarios already exercise durable queue writes.
+    false,
   );
   assert.equal(questions.queued, questionCapsules.length);
   assert.equal(questions.questionPrompts, questionsContract.questionReviewMaximum);
