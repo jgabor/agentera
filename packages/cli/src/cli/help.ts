@@ -439,6 +439,7 @@ export function printReportHelp(): string {
     "                         [--no-<runtime> ...] [--accept-coverage-gap]",
      `                       | ${profileGlossary.command} --input <file|-> [--dry-run] --format json`,
     "                       | agentera report glossary-advice --input <file|-> --format json",
+    "                       | agentera report glossary-advice --term-input <file|-> --format json",
     "                       | agentera report profile-grounding --format json",
     `                       | ${candidateReads.candidateReadCommand} list [--source-family explicit|recurring]`,
     "                         [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN] --format json",

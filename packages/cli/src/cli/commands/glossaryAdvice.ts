@@ -13,6 +13,7 @@ import type { Io } from "../dispatch/shared.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import { registryArtifactPath } from "../orientation.js";
 import { emitStructured } from "../structured.js";
+import { loadSelectedTermInput, SelectedTermInputError } from "./prime/selectedTermInput.js";
 
 type Mapping = Record<string, unknown>;
 
@@ -30,11 +31,14 @@ function invalid(io: Io, body: InvalidInputErrorBody): number {
   return emitInvalidInput(io, { format: "json", body: { ...body, recovery: RECOVERY } });
 }
 
-function parseArgs(argv: string[]): string | InvalidInputErrorBody {
+type AdviceSource = { input: string } | { termInput: string };
+
+function parseArgs(argv: string[]): AdviceSource | InvalidInputErrorBody {
   let input: string | undefined;
+  let termInput: string | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     const [name, inline] = argv[index]!.split("=", 2);
-    if (name !== "--input" && name !== "--format") {
+    if (name !== "--input" && name !== "--term-input" && name !== "--format") {
       return {
         class: "unrecognized_argument",
         message: `unrecognized arguments: ${name}`,
@@ -60,9 +64,17 @@ function parseArgs(argv: string[]): string | InvalidInputErrorBody {
       if (input !== undefined)
         return { class: "mutually_exclusive", message: "--input may only be supplied once" };
       input = value;
+    } else if (name === "--term-input") {
+      if (termInput !== undefined)
+        return { class: "mutually_exclusive", message: "--term-input may only be supplied once" };
+      termInput = value;
     }
   }
-  return input ?? { class: "missing_argument", message: "--input is required", syntax: COMMAND };
+  if (input !== undefined && termInput !== undefined)
+    return { class: "mutually_exclusive", message: "--input and --term-input are mutually exclusive" };
+  if (input !== undefined) return { input };
+  if (termInput !== undefined) return { termInput };
+  return { class: "missing_argument", message: "--input or --term-input is required", syntax: COMMAND };
 }
 
 function readRequest(source: string, io: Io): Mapping {
@@ -127,24 +139,40 @@ function validatedRequest(
 
 export function runGlossaryAdviceCommand(argv: string[], io: Io): number {
   const parsedArgs = parseArgs(argv);
-  if (typeof parsedArgs !== "string") return invalid(io, parsedArgs);
-  let request: Mapping;
-  try {
-    request = readRequest(parsedArgs, io);
-  } catch {
-    return invalid(io, {
-      class: "invalid_format",
-      message: "--input must be one readable bounded UTF-8 YAML or JSON mapping",
-    });
+  if ("class" in parsedArgs) return invalid(io, parsedArgs);
+  let requestedTerm: string;
+  let hostReview: GlossaryAdviceHostReview | undefined;
+  if ("termInput" in parsedArgs) {
+    try {
+      requestedTerm = loadSelectedTermInput(parsedArgs.termInput, io.stdin);
+    } catch (error) {
+      if (!(error instanceof SelectedTermInputError)) throw error;
+      return invalid(io, {
+        class: "invalid_format",
+        message: "--term-input must be one readable bounded non-blank UTF-8 scalar",
+      });
+    }
+  } else {
+    let request: Mapping;
+    try {
+      request = readRequest(parsedArgs.input, io);
+    } catch {
+      return invalid(io, {
+        class: "invalid_format",
+        message: "--input must be one readable bounded UTF-8 YAML or JSON mapping",
+      });
+    }
+    const parsed = validatedRequest(request);
+    if ("class" in parsed) return invalid(io, parsed);
+    requestedTerm = parsed.requestedTerm;
+    hostReview = parsed.hostReview;
   }
-  const parsed = validatedRequest(request);
-  if ("class" in parsed) return invalid(io, parsed);
   try {
     const profilePath = registryArtifactPath("profile", discoverSchemasDir());
     const advice = resolveGlossaryAdvice(
-      parsed.requestedTerm,
+      requestedTerm,
       acquireGlossaryInputs(process.cwd(), profilePath),
-      parsed.hostReview,
+      hostReview,
     );
     emitStructured(
       {

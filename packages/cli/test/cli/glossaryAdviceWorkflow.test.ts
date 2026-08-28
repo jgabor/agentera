@@ -154,6 +154,23 @@ function advice(root: string, profileRoot: string, request: Record<string, unkno
   );
 }
 
+function compactAdvice(root: string, profileRoot: string, term: string) {
+  return spawnSync(
+    process.execPath,
+    [CLI, "report", "glossary-advice", "--term-input", "-", "--format", "json"],
+    {
+      cwd: root,
+      input: term,
+      encoding: "utf8",
+      env: {
+        ...sourceSubprocessEnv(),
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
+        AGENTERA_PROFILE_DIR: profileRoot,
+      },
+    },
+  );
+}
+
 function discussInstructions(root: string, profileRoot: string): string {
   const result = spawnSync(
     process.execPath,
@@ -277,6 +294,53 @@ afterEach(() => {
 });
 
 describe("packaged Build glossary advice seam", () => {
+  it("resolves compact no-review refresh through private scalar input", () => {
+    const root = project();
+    const profileRoot = profile("Ship Shape", "Personal meaning");
+    const result = compactAdvice(root, profileRoot, "Ship Shape");
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "agentera.glossaryAdvice.v1",
+      command: "report glossary-advice",
+      status: "ok",
+      advice: { outcome: "proven_project_gap", applicable_meaning: "Personal meaning" },
+    });
+    expect(result.stdout + result.stderr).not.toContain("Ship Shape");
+  });
+
+  it("rejects conflicting refresh inputs before reads or effects without echoing content", () => {
+    const root = project();
+    const before = snapshotTree(root);
+    const secret = "PRIVATE_REFRESH_TERM";
+    const result = spawnSync(
+      process.execPath,
+      [CLI, "report", "glossary-advice", "--input", "/missing/request", "--term-input", "-", "--format", "json"],
+      {
+        cwd: root,
+        input: secret,
+        encoding: "utf8",
+        env: { ...sourceSubprocessEnv(), AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT },
+      },
+    );
+
+    expect(result.status).toBe(2);
+    expect(JSON.parse(result.stdout).error.class).toBe("mutually_exclusive");
+    expect(result.stdout + result.stderr).not.toContain(secret);
+    expect(snapshotTree(root)).toEqual(before);
+  });
+
+  it("rejects malformed compact refresh without resolution, effects, or content echo", () => {
+    const root = project();
+    const before = snapshotTree(root);
+    const result = compactAdvice(root, temporary("missing-profile"), "   ");
+
+    expect(result.status).toBe(2);
+    expect(JSON.parse(result.stdout).error.class).toBe("invalid_format");
+    expect(result.stdout + result.stderr).not.toContain("   ");
+    expect(snapshotTree(root)).toEqual(before);
+  });
+
   it("grounds exact project authority without mutating glossary, approvals, profile, or state", () => {
     const root = project();
     const profileRoot = profile("Ship Shape", "Personal meaning");

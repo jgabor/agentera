@@ -1,0 +1,13 @@
+id: vvbohljvte
+artifact: progress
+record:
+  timestamp: 2026-08-28 17:48
+  type: feat
+  phase: build
+  what: Added compact no-review glossary advice refresh through the authorized selected-term transport while preserving the structured host-review report path.
+  context:
+    intent: Implement plan task agywahiidu compact no-review advice refresh.
+    constraints: Reused the selected-term loader and glossary resolver; preserved structured host review and output envelope; added no capability instruction migration or broad host/package suites.
+    scope: Glossary advice report parser, help, and focused workflow tests.
+  verified: Focused glossary workflow tests passed (17/17); typecheck and build passed; local compiled refresh smoke, capability-contract, compact, package verification (16/16), and package dry run passed. Full source verification reached only the known unrelated retired-runtime policy baseline with 3 failures before the command timeout.
+  publication_order: 232
