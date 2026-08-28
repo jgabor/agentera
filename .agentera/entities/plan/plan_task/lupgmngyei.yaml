@@ -4,10 +4,20 @@ record:
   name: Reduce redundant full-lifecycle upgrade analysis
   depends_on:
     - acwlumuxop
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the full pinned compacted fixture WHEN the public upgrade lifecycle runs THEN preview, apply, verification, exact entity publication, aggregate-byte preservation, TODO normalization, and protected-resource preservation remain covered.
     - GIVEN reusable evidence within one upgrade WHEN a later pass consumes it THEN the evidence is bound to unchanged source and Git fingerprints while mutable project inputs are checked again before effects.
     - GIVEN project, source, or Git input changes between safety passes WHEN upgrade continues THEN it fails closed without an unsafe effect.
     - GIVEN protected-resource preservation WHEN the test compares before and after state THEN it observes the upgraded project rather than comparing a source fixture to itself.
   plan: jdwyriidnr
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-lupgmngyei-1
+      source: audit task ses_fb6d8b34dffeK0S7MVa72IU33A
+      recorded_at: 2026-08-28 18:16
+      writer_command: agentera state plan record-evaluation
