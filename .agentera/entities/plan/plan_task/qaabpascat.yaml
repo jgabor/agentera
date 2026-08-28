@@ -16,3 +16,13 @@ record:
     - Removed development run-number allocation, package-version construction override, preparation target-version input, readiness target-version input, and candidate target-version override; development construction now copies the committed manifest version and injects only source identity.
     - Preserved stable prepareTargetMetadata and stable prepare --target-version behavior; focused publication transaction tests passed.
     - Focused construction, preparation, readiness, qualification, orchestration, and root argument tests passed 146/146; typecheck, build, compact, package verification 19/19, and manifest-version dry-run passed. Generated-overlap and release conjunction were attempted but remain blocked by unrelated temporary-registry/write failures.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Development construction now rejects --package-version, but publish-next.yml still allocates GITHUB_RUN_NUMBER+82 and passes that flag; publication authority/tests also retain runNumberOffset and a development target-version override. Remove these remaining callers so the branch is coherent before Task 3 hardens publication semantics.
+    provenance:
+      attempt_id: audit-qaabpascat-1
+      source: audit task ses_fb62a57b5ffeIw81m1kKKVFN3G
+      recorded_at: 2026-08-28 21:27
+      writer_command: agentera state plan record-evaluation

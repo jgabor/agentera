@@ -203,11 +203,8 @@ function sourceQualificationEnvironment(repo: string) {
   };
 }
 
-function developmentCandidateEnvironment(repo: string, runNumber = "1") {
-  return {
-    ...sourceQualificationEnvironment(repo),
-    GITHUB_RUN_NUMBER: runNumber,
-  };
+function developmentCandidateEnvironment(repo: string) {
+  return sourceQualificationEnvironment(repo);
 }
 
 function write(root: string, relative: string, contents: string): void {
@@ -1251,34 +1248,50 @@ describe("release qualification receipts", () => {
 });
 
 describe("explicit preparation", () => {
-  const manifest = {
+  const developmentManifest = {
     name: "agentera",
     version: "3.0.0-dev.41",
     dependencies: { yaml: "^2" },
     agentera: { suiteVersion: "3.0.0", gitRef: HEAD },
   };
 
-  it("changes only the requested next version and source commit", () => {
+  const stableManifest = {
+    name: "agentera",
+    version: "0.0.1",
+    dependencies: { yaml: "^2" },
+    agentera: { suiteVersion: "3.0.0", gitRef: HEAD },
+  };
+
+  it("changes only the stable requested next version and source commit", () => {
     const prepared = prepareTargetMetadata(
-      "development",
-      manifest,
-      "3.0.0-dev.42",
+      "stable",
+      stableManifest,
+      "0.0.2",
       "abcdef0123456789abcdef0123456789abcdef01",
     );
     expect(prepared.changed).toBe(true);
     expect(prepared.manifest).toEqual({
-      ...manifest,
-      version: "3.0.0-dev.42",
+      ...stableManifest,
+      version: "0.0.2",
       agentera: { suiteVersion: "3.0.0", gitRef: "abcdef0123456789abcdef0123456789abcdef01" },
     });
   });
 
-  it("makes the exact current target a no-op and rejects stale or skipped targets", () => {
-    expect(prepareTargetMetadata("development", manifest, manifest.version, manifest.agentera.gitRef).changed).toBe(false);
-    expect(() => prepareTargetMetadata("development", manifest, "3.0.0-dev.41", "abcdef0123456789abcdef0123456789abcdef01"))
+  it("makes the exact stable target a no-op and rejects stale or skipped targets", () => {
+    expect(prepareTargetMetadata("stable", stableManifest, stableManifest.version, stableManifest.agentera.gitRef).changed).toBe(false);
+    expect(() => prepareTargetMetadata("stable", stableManifest, "0.0.1", "abcdef0123456789abcdef0123456789abcdef01"))
       .toThrow("not the next");
-    expect(() => prepareTargetMetadata("development", manifest, "3.0.0-dev.43", "abcdef0123456789abcdef0123456789abcdef01"))
+    expect(() => prepareTargetMetadata("stable", stableManifest, "0.0.3", "abcdef0123456789abcdef0123456789abcdef01"))
       .toThrow("not the next");
+  });
+
+  it("rejects development target metadata overrides", () => {
+    expect(() => prepareTargetMetadata(
+      "development",
+      developmentManifest,
+      "3.0.0-dev.42",
+      "abcdef0123456789abcdef0123456789abcdef01",
+    )).toThrow("available only for stable releases");
   });
 
   it("fails development preparation before metadata effects when source evidence is absent", () => {

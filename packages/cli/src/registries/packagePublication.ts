@@ -232,12 +232,7 @@ function exactCensusIdentity(value: any, expected: ActivationCensusIdentity, lab
 export function validatePackagePublicationDocument(raw: any): PackagePublicationModel {
   if (raw?.schemaVersion !== "agentera.packagePublication.v2") fail("schemaVersion is invalid");
   const inventory = raw?.versionCallerInventory;
-  const developmentCallers = exactList(inventory?.development?.currentExplicitTargetCallers, [
-    "packages/cli/scripts/publication-transaction.mjs#prepare development",
-    "packages/cli/scripts/release-readiness.mjs#development",
-    "packages/cli/scripts/release-qualification.mjs#candidate development override",
-    ".github/workflows/publish-next.yml#Construct isolated package",
-  ], "development version callers");
+  const developmentCallers = exactList(inventory?.development?.currentExplicitTargetCallers, [], "development version callers");
   const stableCallers = exactList(inventory?.stable?.preservedCallers, [
     "packages/cli/scripts/publication-transaction.mjs#prepare stable",
   ], "stable version callers");
@@ -247,6 +242,15 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
     || inventory?.stable?.authority !== "explicit target-version"
     || inventory?.suite?.authority !== "packages/cli/package.json#agentera.suiteVersion"
     || inventory?.suite?.requiredVersion !== "3.0.0") fail("version authority or caller inventory is invalid");
+  const developmentPush = raw?.ci?.developmentPush;
+  if (
+    developmentPush?.versionAuthority !== "packages/cli/package.json#version"
+    || Object.prototype.hasOwnProperty.call(developmentPush ?? {}, "runNumberOffset")
+  ) fail("development push version authority is invalid");
+  exactList(raw?.qualification?.candidate?.inputs, [
+    "source_receipt", "metadata_commit", "source_commit", "adapter", "package", "registry",
+    "expected_tag", "artifact_bytes", "artifact_mode",
+  ], "candidate inputs");
   const source = raw?.qualification?.source;
   const readiness = raw?.qualification?.readiness;
   const activation = source?.activationConjunction;
@@ -261,7 +265,7 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
     readiness.command,
     "release readiness command",
     320,
-    /^node packages\/cli\/scripts\/release-readiness\.mjs development --candidate-dir DIR --target-version VERSION --source-commit COMMIT \[--metadata-commit COMMIT\] \[--json\]$/,
+    /^node packages\/cli\/scripts\/release-readiness\.mjs development --candidate-dir DIR --source-commit COMMIT \[--metadata-commit COMMIT\] \[--json\]$/,
   );
   const readinessPhases = exactList(
     readiness.phases,

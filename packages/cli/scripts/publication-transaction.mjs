@@ -111,6 +111,9 @@ export function prepareMetadata(adapterName, manifest, head) {
 export function prepareTargetMetadata(adapterName, manifest, targetVersion, sourceCommit) {
   const adapter = PACKAGE_ADAPTERS[adapterName];
   if (!adapter) throw new Error(`unknown package '${adapterName}'; use development or stable`);
+  if (adapterName !== "stable") {
+    throw new Error("target metadata preparation is available only for stable releases");
+  }
   if (!/^[0-9a-f]{40}$/.test(sourceCommit)) {
     throw new Error("source commit must be a 40-character commit SHA");
   }

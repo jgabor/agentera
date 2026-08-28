@@ -161,7 +161,7 @@ function result(request, values = {}) {
   };
 }
 
-function metadataPause(request, source, execution, prepared, elapsedMs) {
+function metadataPause(request, source, execution, elapsedMs) {
   return result(request, {
     outcome: "paused",
     state: "awaiting_metadata_review",
@@ -175,9 +175,7 @@ function metadataPause(request, source, execution, prepared, elapsedMs) {
     },
     execution,
     elapsedMs,
-    nextAction: prepared
-      ? "Review and commit the prepared metadata, then rerun with the same explicit inputs and --metadata-commit COMMIT."
-      : "Prepare, review, and commit the explicit target metadata outside this coordinator, then rerun with the same inputs and --metadata-commit COMMIT.",
+    nextAction: "Review the committed manifest metadata, then rerun with the same source commit and --metadata-commit COMMIT.",
   });
 }
 
@@ -241,7 +239,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
         executed: issued.reused ? "none" : "ordered-gates",
         reused: issued.reused,
       };
-      return metadataPause(request, source, execution, false, clock() - started);
+      return metadataPause(request, source, execution, clock() - started);
     }
 
     (options.checkSource ?? checkSourceReceipt)({
@@ -265,7 +263,6 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
         request,
         source,
         execution,
-        true,
         clock() - started,
       );
     }

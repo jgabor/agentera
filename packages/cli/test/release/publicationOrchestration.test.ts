@@ -73,9 +73,9 @@ describe("package publication orchestration", () => {
     expect(stablePackage.scripts).not.toHaveProperty("publish:stable");
   });
 
-  it("separates CI allocation from receipt-bound manual preparation", () => {
+  it("separates manifest-owned CI construction from receipt-bound manual preparation", () => {
     expect(publicationContract.invariants.preparation).toContain(
-      "CI allocates rolling development package metadata in an isolated construction tree",
+      "CI copies the checked-in development package version into an isolated construction tree",
     );
     expect(publicationContract.invariants.preparation).toContain(
       "manual readiness preparation path first validates a current normalized source receipt",
@@ -134,17 +134,24 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).not.toContain("workflow_dispatch");
     expect(qualificationYaml).toContain("queue: max");
     expect(qualificationYaml).not.toContain("cancel-in-progress");
-    expect(qualificationYaml).toContain("github.run_number");
+    expect(qualificationYaml).not.toContain("github.run_number");
+    expect(qualificationYaml).not.toContain("GITHUB_RUN_NUMBER");
+    expect(qualificationYaml).toContain("require('./packages/cli/package.json').version");
     expect(qualificationYaml).toContain("GITHUB_SHA");
     expect(qualificationYaml).toContain("pack-package.mjs");
     expect(qualificationYaml).toContain("publish-development.mjs validate");
     expect(qualificationYaml).toContain("publish-development.mjs publish");
-    expect(qualificationYaml).toContain("--package-version \"${{ steps.version.outputs.value }}\"");
+    expect(qualificationYaml.match(/--package-version \"\$\{\{ steps\.version\.outputs\.value \}\}\"/g)).toHaveLength(2);
     expect(qualificationYaml).toContain("--git-ref \"${GITHUB_SHA}\"");
     expect(qualificationYaml.match(/agentera-\$\{\{ steps\.version\.outputs\.value \}\}\.tgz/g)).toHaveLength(2);
     expect(qualificationYaml).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
     expect(qualificationYaml).toContain("timeout-minutes: 8");
     expect(qualificationYaml.match(/timeout-minutes:/g)).toHaveLength(8);
+    const workflow = YAML.parse(qualificationYaml);
+    const construction = workflow.jobs["publish-development"].steps.find(
+      (step: { name?: string }) => step.name === "Build one isolated package tarball",
+    );
+    expect(construction.run).not.toContain("--package-version");
     expect(publicationYaml).toContain("workflow_dispatch");
     expect(publicationYaml).toContain("candidate --adapter stable");
     for (const excluded of [

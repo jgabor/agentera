@@ -2,11 +2,11 @@
   "schemaVersion": "agentera.packagePublication.v2",
   "owner": "repository/package scripts",
   "invariants": {
-    "preparation": "Preparation is pure and registry-independent. CI allocates rolling development package metadata in an isolated construction tree without changing the checkout. The manual readiness preparation path first validates a current normalized source receipt, then accepts an explicit target version and source commit. Stable preparation retains its separate source-provenance contract.",
+    "preparation": "Preparation is pure and registry-independent. CI copies the checked-in development package version into an isolated construction tree and changes only agentera.gitRef to the pushed SHA without changing the checkout. The manual readiness preparation path first validates a current normalized source receipt, then uses the committed manifest version and an explicit source commit. Stable preparation retains its separate source-provenance contract.",
     "sourceQualification": "Source verification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
     "candidateQualification": "Package verification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
     "publication": "Registry publication consumes the retained package artifact through one measured stage, independent staged package migration smoke, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source verification, or rolls a tag back.",
-    "approval": "Manual development and stable release machinery requires artifact-bound approval. The routine feat/v3 push path instead derives its immutable version and git ref from the GitHub run and push SHA, validates and smokes the exact isolated tarball, and publishes those bytes directly to next. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch.",
+    "approval": "Manual development and stable release machinery requires artifact-bound approval. The routine feat/v3 push path instead derives its immutable version from the checked-in manifest and its git ref from the push SHA, validates and smokes the exact isolated tarball, and publishes those bytes directly to next. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch.",
     "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
     "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
     "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
@@ -48,13 +48,8 @@
   "versionCallerInventory": {
     "development": {
       "authority": "checked-in packages/cli/package.json version",
-      "currentExplicitTargetCallers": [
-        "packages/cli/scripts/publication-transaction.mjs#prepare development",
-        "packages/cli/scripts/release-readiness.mjs#development",
-        "packages/cli/scripts/release-qualification.mjs#candidate development override",
-        ".github/workflows/publish-next.yml#Construct isolated package"
-      ],
-      "task2Boundary": "Remove development target allocation and overrides while retaining source-commit binding."
+      "currentExplicitTargetCallers": [],
+      "task2Boundary": "Development callers reject version allocation and override inputs while retaining source-commit binding."
     },
     "stable": {
       "authority": "explicit target-version",
@@ -74,16 +69,14 @@
     },
     "developmentPush": {
       "trigger": "push to refs/heads/feat/v3",
-      "versionAuthority": "GitHub Actions workflow run number plus the fixed migration offset",
-      "runNumberOffset": 82,
+      "versionAuthority": "packages/cli/package.json#version",
       "rules": [
-        "version is 3.0.0-dev.(GITHUB_RUN_NUMBER + 82)",
+        "version equals the checked-in packages/cli/package.json version",
         "agentera.gitRef equals GITHUB_SHA",
         "the checkout manifest is not modified",
         "one isolated tarball is built, validated for version and git ref, and executable-smoked before those exact bytes are published to next",
-        "reruns reuse the same run number, SHA, and version; identical already-published bytes succeed without another upload",
-        "failed runs can create version gaps",
-        "before the first push, confirm publish-next.yml is still unregistered at run 0 and npm 3.0.0-dev.83 is absent"
+        "reruns reuse the same SHA and checked-in version; identical already-published bytes succeed without another upload",
+        "failed runs do not allocate a replacement version"
       ],
       "approval": "The routine push workflow publishes the locally validated exact tarball to next without the manual qualification, receipt, attestation, benchmark, approval, or artifact-handoff framework.",
       "concurrency": "The publish-next-${{ github.ref }} group uses queue: max, which keeps up to 100 pending runs and does not cancel an active or pending push."
@@ -367,14 +360,14 @@
       "schemaVersion": "agentera.releaseReadiness.v1",
       "component": "release-readiness",
       "adapter": "development",
-      "command": "node packages/cli/scripts/release-readiness.mjs development --candidate-dir DIR --target-version VERSION --source-commit COMMIT [--metadata-commit COMMIT] [--json]",
+      "command": "node packages/cli/scripts/release-readiness.mjs development --candidate-dir DIR --source-commit COMMIT [--metadata-commit COMMIT] [--json]",
       "phases": ["source-readiness", "metadata-review", "candidate-readiness"],
       "receipts": {
         "source": "source-receipt.json",
         "candidate": "candidate-receipt.json"
       },
       "reuse": "A present source receipt is validated with the source reuse check instead of invoking source verification. A present package artifact receipt and retained artifact are validated instead of invoking package verification. Invalid, stale, incomplete, or mismatched evidence rejects the run before an issuance owner starts.",
-      "metadataReview": "A successful source verification or source-receipt reuse pauses before package artifact construction until the caller supplies the explicit reviewed metadata commit. The coordinator never prepares metadata, changes a version, commits, approves, rebuilds a valid package artifact, stages bytes, or mutates registry state.",
+      "metadataReview": "A successful source verification or source-receipt reuse pauses before package artifact construction until the caller supplies the reviewed commit for the committed manifest version and source identity. The coordinator never prepares metadata, changes a version, commits, approves, rebuilds a valid package artifact, stages bytes, or mutates registry state.",
       "outcomes": ["paused", "ready", "rejected"],
       "exitCodes": {
         "paused": 0,
@@ -387,7 +380,6 @@
       "inputs": [
         "source_receipt",
         "metadata_commit",
-        "target_version",
         "source_commit",
         "adapter",
         "package",

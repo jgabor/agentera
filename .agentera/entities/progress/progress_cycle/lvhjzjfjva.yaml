@@ -1,0 +1,15 @@
+id: lvhjzjfjva
+artifact: progress
+record:
+  timestamp: 2026-08-28 21:50
+  type: fix
+  phase: build
+  what: Aligned development push construction, release authority, readiness, and qualification with the checked-in package manifest version.
+  context:
+    intent: Remove every remaining development version allocator and target-version caller while preserving stable explicit target-version behavior.
+    constraints: Do not change package or suite versions, stable release behavior, registry state, credentials, publication, task status, or the accepted failed evaluation.
+    scope: Development push workflow, package-publication authority, preparation helper boundary, readiness messaging, qualification fixtures, and focused regression tests.
+  discovered: The prior correction removed the construction override but left publish-next allocating GITHUB_RUN_NUMBER plus 82 and passing the rejected --package-version flag. The publication contract and helper tests still authorized the same removed development override.
+  verified: Focused workflow, authority, readiness, qualification, and root release tests passed 90 of 90. Typecheck, build, compact, package verification 19 of 19, manifest-version dry-run, generated-overlap, and the 11-gate release conjunction passed. An initial focused run exposed EDQUOT while copying package data to /tmp; removing inactive disposable caches restored space and the owning test passed without a product-code workaround.
+  next: Keep the task in progress with audit attempt 1 recorded as FAIL. Task 3 owns queue, replay, credential, and monotonic publication hardening.
+  publication_order: 242

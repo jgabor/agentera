@@ -87,10 +87,12 @@ function operations() {
       }
       return { receiptSha256: "a".repeat(64) };
     },
-    issueCandidate: ({ candidateDirectory, sourceCommit }: {
+    issueCandidate: (input: {
       candidateDirectory: string;
       sourceCommit: string;
     }) => {
+      expect(input).not.toHaveProperty("targetVersion");
+      const { candidateDirectory, sourceCommit } = input;
       counters.candidateIssues += 1;
       counters.candidateConstructions += 1;
       expect(sourceCommit).toMatch(/^[0-9a-f]{40}$/);
@@ -304,6 +306,7 @@ describe("development release readiness coordinator", () => {
     });
     expect(help.status).toBe(READINESS_CONTRACT.exitCodes.paused);
     expect(help.stdout).toContain("release-readiness.mjs development");
+    expect(help.stdout).not.toContain("--target-version");
     expect(help.stdout).toContain("Exit codes: 0 paused or ready; 1 rejected or invalid usage.");
     expect(help.stderr).toBe("");
 
@@ -332,5 +335,20 @@ describe("development release readiness coordinator", () => {
     expect(rejected.stderr).toContain("release-readiness: --source-commit must be an explicit");
     expect(fs.existsSync(candidateDirectory)).toBe(false);
     expect(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"))).toEqual(before);
+
+    const obsolete = spawnSync(process.execPath, [
+      SCRIPT,
+      "development",
+      "--candidate-dir",
+      candidateDirectory,
+      "--target-version",
+      "3.0.0-dev.73",
+      "--source-commit",
+      "0".repeat(40),
+      "--json",
+    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    expect(obsolete.status).toBe(READINESS_CONTRACT.exitCodes.rejected);
+    expect(obsolete.stderr).toContain("unexpected argument '--target-version'");
+    expect(fs.existsSync(candidateDirectory)).toBe(false);
   });
 });

@@ -34,7 +34,7 @@ describe("strict package publication model", () => {
     expect(model.activationConjunction.checkIds).toHaveLength(42);
     expect(model.sourceQualificationMs).toBe(2_400_000);
     expect(model.versionCallerInventory).toMatchObject({
-      development: { authority: "checked-in packages/cli/package.json version", currentExplicitTargetCallers: expect.any(Array) },
+      development: { authority: "checked-in packages/cli/package.json version", currentExplicitTargetCallers: [] },
       stable: { authority: "explicit target-version" },
       suite: { requiredVersion: "3.0.0" },
     });
@@ -42,6 +42,9 @@ describe("strict package publication model", () => {
   });
 
   it("rejects reassigned development, stable, or suite version authority", () => {
+    expect(mutate((copy) => { copy.ci.developmentPush.versionAuthority = "GitHub run number"; })).toThrow(/development push version authority/);
+    expect(mutate((copy) => { copy.ci.developmentPush.runNumberOffset = 82; })).toThrow(/development push version authority/);
+    expect(mutate((copy) => { copy.versionCallerInventory.development.currentExplicitTargetCallers.push("obsolete caller"); })).toThrow(/development version callers/);
     expect(mutate((copy) => { copy.versionCallerInventory.stable.authority = "checked-in manifest"; })).toThrow(/version authority/);
   });
 
@@ -66,6 +69,8 @@ describe("strict package publication model", () => {
     ["changed metadata review rule", (copy: any) => { copy.qualification.readiness.metadataReview = ""; }],
     ["wrong readiness receipt", (copy: any) => { copy.qualification.readiness.receipts.candidate = "other.json"; }],
     ["wrong readiness exit", (copy: any) => { copy.qualification.readiness.exitCodes.rejected = 0; }],
+    ["development readiness target version", (copy: any) => { copy.qualification.readiness.command = copy.qualification.readiness.command.replace("--source-commit", "--target-version VERSION --source-commit"); }],
+    ["candidate target version", (copy: any) => { copy.qualification.candidate.inputs.splice(2, 0, "target_version"); }],
   ])("rejects %s", (_label, change) => expect(mutate(change)).toThrow(/package publication contract/));
 
   it.each(ACTIVATION_CLASSES)("rejects a well-formed wrong %s class owner and reports canonical identity", (classId) => {
