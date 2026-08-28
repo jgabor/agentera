@@ -12,3 +12,13 @@ record:
     - GIVEN the new authority rules WHEN contract validation runs THEN one representative accepted form and one rejected form prove the transport, no-echo, and exclusivity boundaries.
   plan: sqcanwbxwy
   evidence: Authorized --term-input file or stdin as bounded no-review scalar transport; validator rejects argv content, output echo, host review, and shared Build stdin. Targeted tests, typecheck, build, vocabularyAuthority validation, and capability-contract validation passed.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-faxvlusnih-1
+      source: audit task ses_fb7134438ffeA2iHKteCVJAszT
+      recorded_at: 2026-08-28 17:13
+      writer_command: agentera state plan record-evaluation
