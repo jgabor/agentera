@@ -1,0 +1,37 @@
+id: jdwyriidnr
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-28
+    status: open
+    reviewed: 2026-08-28
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    title: "Plan: Finish Source Test Runtime Simplification"
+  what: Reduce redundant analysis and process work in the three current longest source tests while preserving every distinct migration, upgrade, glossary-gate, and failure guarantee.
+  why: These tests consume 69.771 seconds of cumulative worker time and delay source feedback despite repeating deterministic work that can be grouped or safely reused.
+  constraints: Preserve the full pinned compacted fixture through the public upgrade lifecycle, fresh project and Git safety checks, valid summary and inherited-label behavior, the measured glossary gate, verification ownership, and production-visible behavior.
+  overall_acceptance: GIVEN all tasks are complete WHEN comparable targeted and full source verification runs THEN every distinct regression guarantee remains covered, the full pinned upgrade lifecycle remains end to end, all checks pass, and the three-test targeted median improves by at least 15 percent.
+  scope:
+    included:
+      - Pinned v2 compaction planning evidence
+      - Full pinned v2 upgrade lifecycle evidence
+      - Source Profile Full workflow cost
+      - Comparable targeted and full timing evidence
+    excluded:
+      - Replacing the full lifecycle fixture with a minimal fixture
+      - Verification lane reassignment or policy weakening
+      - Unrelated slow-test cleanup
+      - Version or release changes
+    deferred:
+      []
+  design: Retain one authoritative proof at each necessary boundary. Group deterministic classification cases, reuse only evidence bound to unchanged inputs, and keep fresh checks wherever project state, Git state, evaluation authority, or failure behavior can change. Verify focused seams before the complete source lane.
+  unknowns:
+    - question: Which repeated upgrade work is immutable within one command and safe to reuse without weakening mutation detection between preview and apply?
+      affects_task: 2
+      resolve_by: Trace the inputs for every safety pass, bind reusable evidence to source and Git fingerprints, and prove that an intervening mutation fails before effects.
+    - question: What work still dominates the Profile Full workflow now that passing glossary gate results already use a five-file authority fingerprint?
+      affects_task: 3
+      resolve_by: Measure scenario boundaries, map each repeated path to its owning evaluator or decision test, and retain fresh execution for every unmatched boundary.
+  surprises:
+    []

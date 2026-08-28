@@ -192,6 +192,27 @@ describe("pinned v2.7.11 compaction evidence", () => {
         record_sha256: sha256(canonicalRecordJson(record)),
       }));
     }
+    const inherited = archivedDecisions.decisions.find((entry: any) => entry.number === 6);
+    for (const [number, change] of [
+      [12, { confidence: "certain" }],
+      [13, { reasoning: undefined }],
+    ] as const) {
+      const record = { ...inherited, ...change, number };
+      if (record.reasoning === undefined) delete record.reasoning;
+      fs.writeFileSync(path.join(archiveRoot, `${number}.yaml`), YAML.stringify({
+        schemaVersion: "agentera.stateArchiveEntry.v1",
+        artifact_id: "decisions",
+        entry_number: number,
+        record,
+        record_sha256: sha256(canonicalRecordJson(record)),
+      }));
+    }
+    archivedDecisions.decisions.push(
+      { ...inherited, number: 14, confidence: "certain" },
+      { ...inherited, number: 15, reasoning: undefined },
+    );
+    fs.writeFileSync(path.join(archivedLegacy, ".agentera/decisions.yaml"), YAML.stringify(archivedDecisions));
+    fs.copyFileSync(path.join(FIXTURE_ROOT, "cases/non-confidence-corruption.progress.yaml"), path.join(archivedLegacy, ".agentera/progress.yaml"));
     const archivedPlan = planEntityMigration(archivedLegacy, REPO_ROOT);
     for (const [label, withoutSatisfaction, withSatisfaction] of [["high", 6, 7], ["medium", 8, 9], ["low", 10, 11]]) {
       for (const number of [withoutSatisfaction, withSatisfaction]) {
@@ -204,17 +225,10 @@ describe("pinned v2.7.11 compaction evidence", () => {
       }
       expect(archivedPlan.entries.find((entry) => entry.source_identity === `decision_satisfaction:decisions:${withSatisfaction}`)).toMatchObject({ classification: "verified_full", proposed_target: expect.any(Object) });
     }
-    const archiveSixPath = path.join(archiveRoot, "6.yaml");
-    const unsupportedArchive = YAML.parse(fs.readFileSync(archiveSixPath, "utf8"));
-    unsupportedArchive.record.confidence = "certain";
-    unsupportedArchive.record_sha256 = sha256(canonicalRecordJson(unsupportedArchive.record));
-    fs.writeFileSync(archiveSixPath, YAML.stringify(unsupportedArchive));
-    expect(planEntityMigration(archivedLegacy, REPO_ROOT).entries.find((entry) => entry.source_identity === "decisions:6")).toMatchObject({ classification: "corrupt", proposed_target: null });
-    unsupportedArchive.record.confidence = "high";
-    delete unsupportedArchive.record.reasoning;
-    unsupportedArchive.record_sha256 = sha256(canonicalRecordJson(unsupportedArchive.record));
-    fs.writeFileSync(archiveSixPath, YAML.stringify(unsupportedArchive));
-    expect(planEntityMigration(archivedLegacy, REPO_ROOT).entries.find((entry) => entry.source_identity === "decisions:6")).toMatchObject({ classification: "corrupt", proposed_target: null });
+    for (const identity of ["decisions:12", "decisions:13", "decisions:14", "decisions:15"]) {
+      expect(archivedPlan.entries.find((entry) => entry.source_identity === identity)).toMatchObject({ classification: "corrupt", proposed_target: null });
+    }
+    expect(archivedPlan.entries.find((entry) => entry.source_identity === "progress:99")).toMatchObject({ classification: "corrupt" });
 
     const backed = focusedProject("output/.agentera/decisions.yaml", ".agentera/decisions.yaml");
     const archivePath = path.join(backed, ".agentera/archive/decisions/1.yaml");
@@ -229,22 +243,6 @@ describe("pinned v2.7.11 compaction evidence", () => {
       relationships: [{ field: "decision", target_id: backedEntry?.proposed_target?.id, status: "resolved" }],
     });
 
-    const corrupt = focusedProject("cases/non-confidence-corruption.progress.yaml", ".agentera/progress.yaml");
-    expect(planEntityMigration(corrupt, REPO_ROOT).entries.find((entry) => entry.source_identity === "progress:99")).toMatchObject({ classification: "corrupt" });
-
-    const unsupportedLabel = focusedProject("output/.agentera/decisions.yaml", ".agentera/decisions.yaml");
-    const decisionsPath = path.join(unsupportedLabel, ".agentera/decisions.yaml");
-    const decisions = YAML.parse(fs.readFileSync(decisionsPath, "utf8"));
-    decisions.decisions.find((entry: any) => entry.number === 6).confidence = "certain";
-    fs.writeFileSync(decisionsPath, YAML.stringify(decisions));
-    expect(planEntityMigration(unsupportedLabel, REPO_ROOT).entries.find((entry) => entry.source_identity === "decisions:6")).toMatchObject({ classification: "corrupt", proposed_target: null });
-
-    const additionalViolation = focusedProject("output/.agentera/decisions.yaml", ".agentera/decisions.yaml");
-    const additionalPath = path.join(additionalViolation, ".agentera/decisions.yaml");
-    const additionalDecisions = YAML.parse(fs.readFileSync(additionalPath, "utf8"));
-    delete additionalDecisions.decisions.find((entry: any) => entry.number === 6).reasoning;
-    fs.writeFileSync(additionalPath, YAML.stringify(additionalDecisions));
-    expect(planEntityMigration(additionalViolation, REPO_ROOT).entries.find((entry) => entry.source_identity === "decisions:6")).toMatchObject({ classification: "corrupt", proposed_target: null });
   }, 60_000);
 
   it("removes every authority-prohibited persisted alias from canonical migration records", () => {

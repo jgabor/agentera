@@ -1,0 +1,13 @@
+id: acwlumuxop
+artifact: plan
+record:
+  name: Consolidate pinned compaction classification evidence
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN the unchanged checkout before edits WHEN the three named tests run three times with one worker under the pinned runtime THEN a comparable median baseline is recorded.
+    - GIVEN the full compacted fixture WHEN migration planning runs THEN all supported summary families, inherited labels, provenance, relationships, and aggregate counts remain verified in one baseline pass.
+    - GIVEN archived, current, and corrupt variants WHEN their outcomes are checked THEN the test uses no more than three total planner passes while retaining every prior classification.
+    - GIVEN the grouped fixtures WHEN valid and invalid records are evaluated THEN at least one passing and one fail-closed case remain for each changed seam.
+  plan: jdwyriidnr

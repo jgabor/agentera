@@ -1,0 +1,13 @@
+id: ahloervdbk
+artifact: plan
+record:
+  name: Remove remaining duplicate Profile Full workflow work
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN unchanged evaluation authority WHEN multiple workflow candidates are decided THEN heavyweight gate evidence is reused only under its existing identical five-file fingerprint and passing-result boundary.
+    - GIVEN authority drift or an evaluation failure WHEN another decision is requested THEN the gate executes again and the change cannot be hidden by reuse.
+    - GIVEN all Profile Full scenarios WHEN the workflow completes THEN candidate reads, decisions, review queues, publications, abstentions, replay, limits, and project-glossary isolation retain their current outcomes.
+    - GIVEN dedicated evaluator and decision suites WHEN duplicate workflow work is removed THEN at least one real gate pass and one fail-closed gate case remain under their proper owners.
+  plan: jdwyriidnr

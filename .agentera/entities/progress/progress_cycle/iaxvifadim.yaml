@@ -1,0 +1,15 @@
+id: iaxvifadim
+artifact: progress
+record:
+  timestamp: 2026-08-28 17:28
+  type: test
+  phase: build
+  what: Consolidated pinned compaction classification evidence into three migration-planner passes while preserving the full compacted baseline and all archived, current, backed-summary, and corrupt outcomes.
+  context:
+    intent: Reduce repeated migration planning in task acwlumuxop without weakening v2 upgrade compatibility or the full end-to-end lifecycle fixture.
+    constraints: Node 24.19.0, pnpm 10.30.3, one Vitest worker; timing is same-machine diagnostic evidence.
+    scope: The pinned v2 compaction evidence source test only.
+  discovered: Pre-edit targeted assertion durations were 66.31s, 66.34s, and 61.64s, with a 66.31s median; corresponding wall times were 71.369s, 70.550s, and 66.326s, with a 70.550s median.
+  verified: "The focused compaction test passed 1/1 in 4.50s. The three named tests passed 3/3 in 44.78s assertion time after editing. The target compaction test now makes exactly three planner calls: full baseline, grouped archived/current/corrupt evidence, and backed-summary evidence."
+  next: Leave task acwlumuxop in progress for orchestrator evaluation; do not record an evaluation verdict.
+  publication_order: 230

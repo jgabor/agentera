@@ -1,0 +1,13 @@
+id: lupgmngyei
+artifact: plan
+record:
+  name: Reduce redundant full-lifecycle upgrade analysis
+  depends_on:
+    - acwlumuxop
+  status: pending
+  acceptance:
+    - GIVEN the full pinned compacted fixture WHEN the public upgrade lifecycle runs THEN preview, apply, verification, exact entity publication, aggregate-byte preservation, TODO normalization, and protected-resource preservation remain covered.
+    - GIVEN reusable evidence within one upgrade WHEN a later pass consumes it THEN the evidence is bound to unchanged source and Git fingerprints while mutable project inputs are checked again before effects.
+    - GIVEN project, source, or Git input changes between safety passes WHEN upgrade continues THEN it fails closed without an unsafe effect.
+    - GIVEN protected-resource preservation WHEN the test compares before and after state THEN it observes the upgraded project rather than comparing a source fixture to itself.
+  plan: jdwyriidnr
