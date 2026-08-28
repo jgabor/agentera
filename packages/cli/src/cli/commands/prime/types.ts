@@ -18,6 +18,7 @@ export interface PrimeArgs {
   format?: string;
   fields?: string | null;
   input?: string | null;
+  termInput?: string | null;
   home?: string | null;
   installRoot?: string | null;
   expectedVersion?: string | null;

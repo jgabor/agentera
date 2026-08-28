@@ -1,0 +1,14 @@
+id: aicdtcaprg
+artifact: progress
+record:
+  timestamp: 2026-08-28 17:27
+  type: feat
+  phase: build
+  what: Capability startup now accepts one private selected-term source and returns shared no-review glossary advice for Discuss, Plan, and Build without changing state.
+  context:
+    intent: Return legacy-equivalent no-review glossary advice in the bounded capability startup response.
+    constraints: Keep the selected term out of argv, output, diagnostics, and state; preserve Build --input and reject dual stdin before reads; do not implement compact refresh or prose migration.
+    scope: Task qpoztjcznp implementation, focused tests, and typed state only.
+  verified: Focused startup and Build compatibility tests passed (38 tests); typecheck, build, capability-contract validation, realistic local CLI no-echo smoke, and package verification passed. The broader source lane was run and remains blocked by existing retired-runtime scalar classification diagnostics.
+  next: Orchestrate must independently evaluate task qpoztjcznp before completion.
+  publication_order: 231

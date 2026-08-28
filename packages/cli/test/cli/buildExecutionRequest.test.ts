@@ -329,4 +329,35 @@ describe("prime --context build --input", () => {
     expect(fs.readFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "utf8")).toBe(before);
     expect(fs.readdirSync(path.join(tmp, ".agentera"))).toEqual(["state-mode.yaml"]);
   });
+
+  it("keeps Build execution input and no-review term input unambiguous", () => {
+    fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const requestFile = path.join(tmp, "request.yaml");
+    const termFile = path.join(tmp, "term");
+    fs.writeFileSync(requestFile, VALID_YAML);
+    fs.writeFileSync(termFile, "private-selected-term");
+
+    const result = capture((io) => cmdPrime({
+      context: "build", format: "json", input: requestFile, termInput: termFile,
+      projectRoot: tmp, home: path.join(tmp, "home"), installRoot: REPO_ROOT,
+    }, io));
+
+    expect(result.rc).toBe(0);
+    const payload = JSON.parse(result.out).capability_context;
+    expect(payload.context.execution_context.mode).toBe("no_plan");
+    expect(payload.glossary_advice.outcome).toBe("no_applicable_entry");
+    expect(result.out).not.toContain("private-selected-term");
+  });
+
+  it("rejects shared stdin before reading either input", () => {
+    let reads = 0;
+    const result = capture((io) => main([
+      "node", "agentera", "prime", "--context", "build", "--input", "-", "--term-input", "-", "--format", "json",
+    ], { ...io, stdin: () => { reads += 1; return "private"; } }));
+    expect(result.rc).toBe(2);
+    expect(JSON.parse(result.out).error.class).toBe("conflicting_stdin");
+    expect(reads).toBe(0);
+    expect(result.out).not.toContain("private");
+  });
 });

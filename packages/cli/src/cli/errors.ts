@@ -24,7 +24,9 @@ export type InvalidInputErrorClass =
   | "unsupported_target"
   | "schema_violation"
   | "conflict"
-  | "invalid_receipt";
+  | "invalid_receipt"
+  | "invalid_selected_term"
+  | "conflicting_stdin";
 
 export interface InvalidInputErrorBody {
   class: InvalidInputErrorClass;

@@ -61,7 +61,7 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
 }
 
 export function runPrime(command: string, argv: string[], io: Io, prog: string): number {
-  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text", input: null };
+  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text", input: null, termInput: null };
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
     i = n;
@@ -92,6 +92,25 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
         });
       }
       args.input = v;
+    } else if (a === "--term-input" && (!argv[i + 1] || argv[i + 1].startsWith("--"))) {
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: { class: "missing_argument", message: "--term-input requires a file path or -", syntax: "--term-input <file|->" },
+      });
+    } else if ((v = value("--term-input")) !== null) {
+      if (v.length === 0) {
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: { class: "missing_argument", message: "--term-input requires a file path or -", syntax: "--term-input <file|->" },
+        });
+      }
+      if (args.termInput !== null) {
+        return emitInvalidInput(io, {
+          format: asEnvelopeFormat(args.format),
+          body: { class: "mutually_exclusive", message: "--term-input may only be supplied once" },
+        });
+      }
+      args.termInput = v;
     } else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json" && v !== "yaml") {
         return emitInvalidInput(io, {

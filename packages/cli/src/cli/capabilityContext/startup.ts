@@ -8,6 +8,7 @@ import type { JsonObject } from "../../core/jsonValue.js";
 import { boundStartupValue } from "../../state/startupProjection.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 import { startupAggregation } from "./startupAggregation.js";
+import type { GlossaryAdvice } from "../../analytics/glossaryAdviceResolution.js";
 
 export function slimPlanState(plan: JsonObject): JsonObject {
   const firstPending = plan.first_pending;
@@ -163,6 +164,7 @@ export function buildPrimeCapabilityContextPayload(
   capabilityName: string,
   command = "prime",
   buildRequest: import("../commands/prime/buildExecutionRequest.js").BuildExecutionRequest | null = null,
+  glossaryAdvice: GlossaryAdvice | null = null,
 ): JsonObject {
   const stateDict = state as unknown as JsonObject;
   const bundlePublic = publicDoctorStatus(state.app);
@@ -172,7 +174,7 @@ export function buildPrimeCapabilityContextPayload(
   const cutover = stateDict.state_cutover as JsonObject;
   const todoReconciliation = (stateDict.todo_reconciliation as JsonObject | null | undefined) ?? null;
   const startup = startupAggregation(contract, stateDict.health as JsonObject, cutover, todoReconciliation);
-  return {
+  const payload: JsonObject = {
     command,
     outcome: startup.outcome,
     shared_skill: stateDict.shared_skill,
@@ -191,4 +193,6 @@ export function buildPrimeCapabilityContextPayload(
       todoReconciliation,
     ),
   };
+  if (glossaryAdvice !== null) (payload.capability_context as JsonObject).glossary_advice = glossaryAdvice as unknown as JsonObject;
+  return payload;
 }

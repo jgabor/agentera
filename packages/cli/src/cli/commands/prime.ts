@@ -19,6 +19,11 @@ import {
   type BuildExecutionRequest,
 } from "./prime/buildExecutionRequest.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
+import { loadSelectedTermInput, SelectedTermInputError } from "./prime/selectedTermInput.js";
+import { acquireGlossaryInputs } from "../../analytics/glossaryInputAcquisition.js";
+import { resolveStartupGlossaryAdvice } from "../capabilityContext/startupGlossaryAdvice.js";
+import { discoverSchemasDir } from "../appContext.js";
+import { registryArtifactPath } from "../orientation.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
 export type { PrimeArgs } from "./prime/types.js";
@@ -62,6 +67,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const dashboard = Boolean(args.dashboard || args.orientation);
   const guidance = Boolean(args.guidance);
   const input = args.input ?? null;
+  const termInput = args.termInput ?? null;
   const format = args.format ?? "text";
   const inputErrorFormat = args.format === "json" || args.format === "yaml" ? args.format : "text";
   const rejectInput = (body: Parameters<typeof emitInvalidInput>[1]["body"]): number =>
@@ -72,6 +78,16 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
       message: "--input is valid only with prime --context build",
       syntax: preCutoverCommand("prime --context build --input <file|-> --format json"),
     });
+  }
+  if (termInput !== null && (!capability || !["discuss", "plan", "build"].includes(capability) || dashboard || guidance)) {
+    return rejectInput({
+      class: "unsupported_target",
+      message: "--term-input is valid only with prime --context discuss, plan, or build",
+      syntax: preCutoverCommand("prime --context <discuss|plan|build> --term-input <file|-> --format json"),
+    });
+  }
+  if (input === "-" && termInput === "-") {
+    return rejectInput({ class: "conflicting_stdin", message: "--input and --term-input cannot both read stdin" });
   }
   if (capability !== null && dashboard) {
     err("Error: prime --context and prime --dashboard/--orientation are mutually exclusive\n");
@@ -123,12 +139,23 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
       return 2;
     }
     let buildRequest: BuildExecutionRequest | null = null;
+    let selectedTerm: string | null = null;
     if (input !== null) {
       try {
         buildRequest = loadBuildExecutionRequest(input, io.stdin);
       } catch (error) {
         if (error instanceof BuildExecutionRequestError) return rejectInput(error.body);
         return rejectInput({ class: "invalid_format", message: "Build execution request input could not be read" });
+      }
+    }
+    if (termInput !== null) {
+      try {
+        selectedTerm = loadSelectedTermInput(termInput, io.stdin);
+      } catch (error) {
+        if (error instanceof SelectedTermInputError) {
+          return rejectInput({ class: "invalid_selected_term", message: "--term-input must be one non-empty bounded UTF-8 scalar" });
+        }
+        return rejectInput({ class: "invalid_selected_term", message: "--term-input could not be read" });
       }
     }
     const state = collectOrientationState(collectOpts);
@@ -139,9 +166,22 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
         recovery: "Run Build without --input for the current plan, or close/archive that plan before retrying; no state was changed.",
       });
     }
+    let glossaryAdvice = null;
+    if (selectedTerm !== null) {
+      try {
+        const profilePath = registryArtifactPath("profile", discoverSchemasDir());
+        glossaryAdvice = resolveStartupGlossaryAdvice(
+          capability,
+          selectedTerm,
+          acquireGlossaryInputs(args.projectRoot ?? process.cwd(), profilePath),
+        );
+      } catch {
+        return rejectInput({ class: "invalid_selected_term", message: "glossary advice could not be resolved" });
+      }
+    }
     const payload = capability === "status"
       ? buildStatusCapabilityContextPayload(state, command)
-      : buildPrimeCapabilityContextPayload(state, capability, command, buildRequest);
+      : buildPrimeCapabilityContextPayload(state, capability, command, buildRequest, glossaryAdvice);
     return emitPrime(command, payload, format, args.fields, out, err, {
       maxUtf8Bytes: capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : undefined,
     });

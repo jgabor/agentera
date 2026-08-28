@@ -4,7 +4,7 @@ record:
   name: Return no-review advice from capability startup
   depends_on:
     - faxvlusnih
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN Discuss, Plan, or Build startup with one selected term and no host review WHEN startup completes THEN its scoped advice matches the legacy no-review resolver outcome in the same bounded response.
     - GIVEN valid, unavailable, malformed, or no-applicable glossary sources WHEN startup resolves advice THEN it preserves existing outcome semantics, changes no state, and reveals neither the term, full event, nor unrelated glossary data.
@@ -12,3 +12,4 @@ record:
     - GIVEN Build execution input and a selected term WHEN both are supplied through the authorized contract THEN both remain unambiguous and the established Build path retains its behavior.
     - GIVEN each new startup parser or composition unit WHEN tests are added THEN one success and one failure case cover it, with extra cases only for identified privacy or compatibility risks.
   plan: sqcanwbxwy
+  evidence: Implemented private bounded selected-term startup input for Discuss, Plan, and Build; composed the existing no-review resolver into the bounded capability response; preserved Build request coexistence and rejected shared stdin before reads; targeted tests, typecheck, build, capability-contract validation, realistic local CLI smoke, and package verification pass. Full source lane remains blocked by pre-existing retired-runtime scalar classification diagnostics.
