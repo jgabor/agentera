@@ -1,0 +1,15 @@
+id: wrqffbfrzi
+artifact: progress
+record:
+  timestamp: 2026-08-28 19:03
+  type: test
+  phase: audit
+  what: Corrected the Discuss, Plan, and Build advice publication contract coverage with table-driven current-event route cases.
+  context:
+    intent: Close only the accepted event-routing coverage gap.
+    constraints: Preserve the existing failed evaluation and exclude broad host/package scenarios and final task closeout.
+    scope: capabilityPublicationContract test coverage only.
+  discovered: The failed attempt checked required prose but did not model representative allowed and forbidden events or assert their selected routes.
+  verified: The focused contract test passes 11 tests, including seven event categories across all three source and served contracts plus stale host-review input rejection; typecheck, build, three capability validations, capability-contract validation, and compact pass.
+  next: Keep task vxgqgthuph in progress with FAIL attempt 1 until audit reevaluation.
+  publication_order: 236

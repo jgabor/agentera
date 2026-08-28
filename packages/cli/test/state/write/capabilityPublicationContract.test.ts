@@ -15,7 +15,32 @@ const sources = {
   build: buildInstructions,
 };
 
+const servedCache = new Map<keyof typeof sources, string>();
+
+type AdviceEvent =
+  | "initial_no_review"
+  | "later_changed_no_review"
+  | "host_review_clarification"
+  | "unchanged"
+  | "rendered"
+  | "tool"
+  | "control_only";
+
+type AdviceRoute = "startup_advice" | "compact_term_input" | "structured_input" | "none" | "invalid_contract";
+
+const adviceEvents: Array<{ event: AdviceEvent; route: AdviceRoute }> = [
+  { event: "initial_no_review", route: "startup_advice" },
+  { event: "later_changed_no_review", route: "compact_term_input" },
+  { event: "host_review_clarification", route: "structured_input" },
+  { event: "unchanged", route: "none" },
+  { event: "rendered", route: "none" },
+  { event: "tool", route: "none" },
+  { event: "control_only", route: "none" },
+];
+
 function served(capability: keyof typeof sources): string {
+  const cached = servedCache.get(capability);
+  if (cached) return cached;
   const root = fs.mkdtempSync(path.join(os.tmpdir(), `agentera-${capability}-contract-`));
   const previous = process.cwd();
   let output = "";
@@ -28,7 +53,9 @@ function served(capability: keyof typeof sources): string {
       { out: (text) => { output += text; }, err: (text) => { output += text; }, stdin: () => "" },
     );
     expect(rc, output).toBe(0);
-    return (JSON.parse(output) as Record<string, any>).capability_context.instructions as string;
+    const instructions = (JSON.parse(output) as Record<string, any>).capability_context.instructions as string;
+    servedCache.set(capability, instructions);
+    return instructions;
   } finally {
     process.chdir(previous);
     fs.rmSync(root, { recursive: true, force: true });
@@ -44,6 +71,45 @@ function adviceViolations(capability: keyof typeof sources, text: string): strin
     "do not issue a second initial glossary report",
   ];
   return required.filter((value) => !text.includes(value));
+}
+
+function selectedAdviceRoute(
+  capability: keyof typeof sources,
+  text: string,
+  event: AdviceEvent,
+): AdviceRoute {
+  const contract = text.split("\n\n").find((paragraph) => paragraph.includes("capability_context.glossary_advice"));
+  if (!contract) return "invalid_contract";
+
+  if (event === "initial_no_review") {
+    const clause = contract.match(/At initial meaning-sensitive[^.]*\./)?.[0] ?? "";
+    return clause.includes(`prime --context ${capability} --term-input <file|-> --format json`)
+      && contract.includes("do not issue a second initial glossary report")
+      ? "startup_advice"
+      : "invalid_contract";
+  }
+  if (event === "later_changed_no_review") {
+    const clause = contract.match(/For a later user-authored[^.]*\./)?.[0] ?? "";
+    return clause.includes("that can alter the affected meaning, refresh compact no-review advice")
+      && clause.includes("report glossary-advice --term-input <file|-> --format json")
+      ? "compact_term_input"
+      : "invalid_contract";
+  }
+  if (event === "host_review_clarification") {
+    const clause = contract.match(/When a clarification answer supplies structured host review[^.]*\./)?.[0] ?? "";
+    return clause.includes("report glossary-advice --input <file|-> --format json")
+      ? "structured_input"
+      : "invalid_contract";
+  }
+
+  const exclusion = contract.match(/Do not invoke either refresh[^.]*\./)?.[0] ?? "";
+  const excluded = {
+    unchanged: /unchanged replay/.test(exclusion),
+    rendered: /rendering/.test(exclusion),
+    tool: /tool output/.test(exclusion),
+    control_only: /control-only|Done-only control/.test(exclusion),
+  }[event];
+  return excluded ? "none" : "invalid_contract";
 }
 
 describe("capability advice and plan publication contracts", () => {
@@ -67,6 +133,25 @@ describe("capability advice and plan publication contracts", () => {
       expect(text).toContain("tool output");
       expect(text).toMatch(/control-only|Done-only control/);
       expect(text.replace(/control-only|Done-only control/g, "ordinary continuation")).not.toMatch(/control-only|Done-only control/);
+    }
+  });
+
+  it.each(adviceEvents)("routes $event to $route for every source and served contract", ({ event, route }) => {
+    for (const capability of Object.keys(sources) as Array<keyof typeof sources>) {
+      for (const [surface, text] of [["source", sources[capability]], ["served", served(capability)]]) {
+        expect(selectedAdviceRoute(capability, text, event), `${capability} ${surface}`).toBe(route);
+      }
+    }
+  });
+
+  it("rejects a stale host-review route on source and served contracts", () => {
+    for (const [surface, text] of [["source", planInstructions], ["served", served("plan")]]) {
+      const stale = text.replace(
+        "report glossary-advice --input <file|-> --format json",
+        "report glossary-advice --term-input <file|-> --format json",
+      );
+      expect(stale, `${surface} fixture changed`).not.toBe(text);
+      expect(selectedAdviceRoute("plan", stale, "host_review_clarification"), surface).toBe("invalid_contract");
     }
   });
 
