@@ -1,0 +1,27 @@
+id: glbuoajqnq
+artifact: health
+record:
+  date: 2026-08-28
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: terminal source-test evidence is current, complete, and materially faster."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited closure review for plan jdwyriidnr passed. All four tasks have current PASS evaluations and non-empty progress verification. Plan and progress state were updated on the plan creation date. The three-test median fell from 66.31s to 31.65s, while the full source lane passed.
+      findings:
+        []
+  trends:
+    improved: The three-test median improved by 52.27%, and the full named-test sum was 36.417s against the 69.771s baseline.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: Repeated migration planning, duplicate review-queue work, and a tautological protected-resource check were corrected without removing the full upgrade lifecycle fixture.
+    carried_forward: Decisions, vision, and Profile details remain deferred; stale Profile state was not refreshed.
+  appended_at: 2026-08-28T16:33:25.224Z
