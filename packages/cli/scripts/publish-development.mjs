@@ -34,24 +34,28 @@ function run(command, args, options = {}) {
   return result.stdout?.trim() ?? "";
 }
 
-function isolatedNpmEnvironment(root, token) {
+function requireCredentialFreeCoordinatorEnvironment(environment) {
+  const hasCredentials = Object.keys(environment).some((key) => {
+    const normalized = key.toUpperCase();
+    return normalized === "NPM_TOKEN"
+      || normalized === "NODE_AUTH_TOKEN"
+      || (normalized.startsWith("NPM_CONFIG_") && /(?:AUTH|USERCONFIG|GLOBALCONFIG)/.test(normalized));
+  });
+  if (hasCredentials) throw new Error("development publication coordinator environment contains npm credentials or auth configuration");
+}
+
+function isolatedNpmEnvironment(root, environment = process.env, userConfig) {
   fs.mkdirSync(root, { recursive: true, mode: 0o700 });
   const home = path.join(root, "home");
   const cache = path.join(root, "cache");
-  const npmrc = path.join(root, "npmrc");
+  const npmrc = userConfig ?? path.join(root, "npmrc");
   const globalNpmrc = path.join(root, "global-npmrc");
   fs.mkdirSync(home, { mode: 0o700 });
   fs.mkdirSync(cache, { mode: 0o700 });
   fs.writeFileSync(globalNpmrc, "", { mode: 0o600 });
-  fs.writeFileSync(
-    npmrc,
-    token
-      ? `registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${token}\n`
-      : "registry=https://registry.npmjs.org/\n",
-    { mode: 0o600 },
-  );
+  if (!userConfig) fs.writeFileSync(npmrc, "registry=https://registry.npmjs.org/\n", { mode: 0o600 });
   return {
-    ...npmChildEnvironment(process.env, npmrc, globalNpmrc),
+    ...npmChildEnvironment(environment, npmrc, globalNpmrc),
     HOME: home,
     NPM_CONFIG_CACHE: cache,
     NPM_CONFIG_AUDIT: "false",
@@ -77,8 +81,8 @@ function tarballIntegrity(tarball) {
   return `sha512-${crypto.createHash("sha512").update(fs.readFileSync(tarball)).digest("base64")}`;
 }
 
-function inspectDevelopmentRegistry(candidate, view, root) {
-  const inspectEnv = isolatedNpmEnvironment(root);
+function inspectDevelopmentRegistry(candidate, view, root, environment) {
+  const inspectEnv = isolatedNpmEnvironment(root, environment);
   const tags = view([candidate.package, "dist-tags"], inspectEnv) ?? {};
   const publishedIntegrity = view([`${candidate.package}@${candidate.version}`, "dist.integrity"], inspectEnv);
   const publishedSource = view([`${candidate.package}@${candidate.version}`, "agentera.gitRef"], inspectEnv);
@@ -152,6 +156,8 @@ export function validateDevelopmentTarball({ tarball, packageVersion, gitRef }) 
 export function classifyDevelopmentTarball(options, dependencies = {}) {
   const validate = dependencies.validate ?? validateDevelopmentTarball;
   const view = dependencies.view ?? npmView;
+  const environment = dependencies.environment ?? process.env;
+  requireCredentialFreeCoordinatorEnvironment(environment);
   const { manifest, integrity } = validate(options);
   const classification = {
     schemaVersion: CLASSIFICATION_SCHEMA,
@@ -163,7 +169,7 @@ export function classifyDevelopmentTarball(options, dependencies = {}) {
   };
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-classify-"));
   try {
-    classification.outcome = inspectDevelopmentRegistry(classification, view, root);
+    classification.outcome = inspectDevelopmentRegistry(classification, view, root, environment);
     return requireDevelopmentClassification(classification);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -171,24 +177,35 @@ export function classifyDevelopmentTarball(options, dependencies = {}) {
 }
 
 export function mutateDevelopmentTarball(options, classification, dependencies = {}) {
-  const value = requireDevelopmentClassification(classification);
-  if (!value.outcome.startsWith("forward-")) throw new Error("classification does not authorize npm mutation");
-  if (value.version !== options.packageVersion || value.gitRef !== options.gitRef
-    || value.integrity !== tarballIntegrity(options.tarball)) {
-    throw new Error("classification does not match the exact tarball, version, and git ref");
-  }
-  const view = dependencies.view ?? npmView;
-  const execute = dependencies.run ?? run;
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-mutate-"));
+  const authConfig = dependencies.authConfig ?? options.authConfig;
+  let root;
   try {
-    const state = inspectDevelopmentRegistry(value, view, root);
+    const environment = dependencies.environment ?? process.env;
+    requireCredentialFreeCoordinatorEnvironment(environment);
+    const value = requireDevelopmentClassification(classification);
+    if (!value.outcome.startsWith("forward-")) throw new Error("classification does not authorize npm mutation");
+    if (value.version !== options.packageVersion || value.gitRef !== options.gitRef
+      || value.integrity !== tarballIntegrity(options.tarball)) {
+      throw new Error("classification does not match the exact tarball, version, and git ref");
+    }
+    const view = dependencies.view ?? npmView;
+    const execute = dependencies.run ?? run;
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-mutate-"));
+    const state = inspectDevelopmentRegistry(value, view, root, environment);
     if (state === "exact-replay" || state === "superseded-replay") {
       console.log(`${value.package}@${value.version} became an ${state}; no mutation is needed`);
       return state;
     }
-    const token = Object.hasOwn(dependencies, "token") ? dependencies.token : process.env.NPM_TOKEN;
-    if (!token) throw new Error("NPM_TOKEN is required for npm mutation");
-    const mutationEnv = isolatedNpmEnvironment(fs.mkdtempSync(path.join(root, "mutation-")), token);
+    if (!authConfig) throw new Error("temporary npm auth config is required for npm mutation");
+    const authStat = fs.statSync(authConfig);
+    if (!authStat.isFile() || (authStat.mode & 0o777) !== 0o600) {
+      throw new Error("temporary npm auth config must be a mode-0600 regular file");
+    }
+    const mutationEnv = isolatedNpmEnvironment(
+      fs.mkdtempSync(path.join(root, "mutation-")),
+      environment,
+      authConfig,
+    );
     if (state === "forward-publish") {
       execute("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], { env: mutationEnv });
     } else {
@@ -196,14 +213,15 @@ export function mutateDevelopmentTarball(options, classification, dependencies =
     }
     return state;
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    if (root) fs.rmSync(root, { recursive: true, force: true });
+    if (authConfig) fs.rmSync(authConfig, { force: true });
   }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [command] = process.argv.slice(2);
-  if (!["validate", "classify", "mutate"].includes(command)) throw new Error("usage: publish-development.mjs <validate|classify|mutate> --tarball FILE --package-version VERSION --git-ref SHA [--classification FILE]");
-  const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref", "--classification"] });
+  if (!["validate", "classify", "mutate"].includes(command)) throw new Error("usage: publish-development.mjs <validate|classify|mutate> --tarball FILE --package-version VERSION --git-ref SHA [--classification FILE] [--auth-config FILE]");
+  const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref", "--classification", "--auth-config"] });
   const options = {
     tarball: path.resolve(flags.get("--tarball") ?? ""),
     packageVersion: flags.get("--package-version"),
@@ -221,6 +239,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     writeDevelopmentClassification(path.resolve(classificationFile), classification);
     console.log(classification.outcome);
   } else {
-    mutateDevelopmentTarball(options, readDevelopmentClassification(path.resolve(classificationFile)));
+    const authConfig = flags.get("--auth-config");
+    mutateDevelopmentTarball(
+      { ...options, ...(authConfig ? { authConfig: path.resolve(authConfig) } : {}) },
+      readDevelopmentClassification(path.resolve(classificationFile)),
+    );
   }
 }

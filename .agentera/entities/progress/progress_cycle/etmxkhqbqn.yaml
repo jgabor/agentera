@@ -1,0 +1,15 @@
+id: etmxkhqbqn
+artifact: progress
+record:
+  timestamp: 2026-08-28 23:11
+  type: fix
+  phase: build
+  what: Restricted development publication authentication to the final npm mutation child.
+  context:
+    intent: Keep initial and race registry classification credential-free while preserving exact replay binding and monotonic @next movement.
+    constraints: Preserved task ujelwalvtv as in_progress with FAIL attempt 1. No version, stable workflow, changelog, registry, credential source, tag, publish, or push change.
+    scope: Development publication workflow, coordinator environment boundary, temporary npm user config handoff, cleanup, and focused release tests.
+  discovered: The prior correction conditioned the mutation step on a forward outcome but still injected NPM_TOKEN into the Node coordinator that performed the mandatory race reclassification.
+  verified: "Focused publication and workflow tests passed: 4 files, 125 tests. Typecheck and build passed. Generated-overlap passed with source 254 files/4144 tests, package 3 files/19 tests, and build evidence. The 11-gate release conjunction passed. Compact passed with zero errors or changes. Separate package verification passed 3 files/19 tests. Package dry-run passed without creating an artifact."
+  next: Keep task ujelwalvtv in progress with FAIL attempt 1 preserved until independent evaluation.
+  publication_order: 246

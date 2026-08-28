@@ -50,7 +50,7 @@ jobs:
         id: classification
         timeout-minutes: 1
         run: |
-          outcome="$(node packages/cli/scripts/publish-development.mjs classify \
+          outcome="$(env -i PATH="${PATH}" node packages/cli/scripts/publish-development.mjs classify \
             --tarball "${RUNNER_TEMP}/agentera-package/agentera-${{ steps.version.outputs.value }}.tgz" \
             --package-version "${{ steps.version.outputs.value }}" \
             --git-ref "${GITHUB_SHA}" \
@@ -66,8 +66,20 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          node packages/cli/scripts/publish-development.mjs mutate \
+          if [[ -z "${NPM_TOKEN:-}" ]]; then
+            printf 'NPM_TOKEN is required for npm mutation\n' >&2
+            exit 1
+          fi
+          auth_config="${RUNNER_TEMP}/agentera-npm-auth.npmrc"
+          trap 'rm -f "${auth_config}"' EXIT
+          umask 077
+          printf 'registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=%s\n' "${NPM_TOKEN}" > "${auth_config}"
+          unset NPM_TOKEN NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG npm_config_userconfig \
+            NPM_CONFIG_GLOBALCONFIG npm_config_globalconfig NPM_CONFIG__AUTH npm_config__auth \
+            NPM_CONFIG__AUTHTOKEN npm_config__authToken
+          env -i PATH="${PATH}" node packages/cli/scripts/publish-development.mjs mutate \
             --tarball "${RUNNER_TEMP}/agentera-package/agentera-${{ steps.version.outputs.value }}.tgz" \
             --package-version "${{ steps.version.outputs.value }}" \
             --git-ref "${GITHUB_SHA}" \
-            --classification "${RUNNER_TEMP}/agentera-package/publication-classification.json"
+            --classification "${RUNNER_TEMP}/agentera-package/publication-classification.json" \
+            --auth-config "${auth_config}"

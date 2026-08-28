@@ -201,9 +201,18 @@ describe("package publication orchestration", () => {
     );
     const classification = steps.find((step: { id?: string }) => step.id === "classification");
     expect(classification).not.toHaveProperty("env.NPM_TOKEN");
+    expect(classification.run).toContain('env -i PATH="${PATH}" node packages/cli/scripts/publish-development.mjs classify');
     expect(classification.run).toContain("publication-classification.json");
     expect(classification.run).toContain("exact-replay|superseded-replay|forward-publish|forward-retag");
-    expect(credentialSteps[0].run).toContain("publication-classification.json");
+    const mutation = credentialSteps[0];
+    expect(mutation.run).toContain("publication-classification.json");
+    expect(mutation.run).toContain("umask 077");
+    expect(mutation.run).toContain("_authToken=%s");
+    expect(mutation.run).toContain("trap 'rm -f");
+    expect(mutation.run).toContain("unset NPM_TOKEN NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG");
+    expect(mutation.run).toContain('env -i PATH="${PATH}" node packages/cli/scripts/publish-development.mjs mutate');
+    expect(mutation.run).toContain('--auth-config "${auth_config}"');
+    expect(mutation.run.indexOf("unset NPM_TOKEN")).toBeLessThan(mutation.run.indexOf("env -i"));
     expect(publicationYaml).toContain("workflow_dispatch");
     expect(publicationYaml).toContain("candidate --adapter stable");
     for (const excluded of [
