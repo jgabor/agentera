@@ -4,7 +4,7 @@ record:
   name: Bind development construction to the manifest version
   depends_on:
     - otmtspkvqk
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a valid committed development version and pushed source identity WHEN an isolated package is constructed THEN its version equals the manifest and only its source identity differs from the checkout manifest.
     - GIVEN a development caller attempts to allocate or override the package version WHEN preparation begins THEN the obsolete input is unavailable or rejected before output construction.
@@ -17,12 +17,12 @@ record:
     - Preserved stable prepareTargetMetadata and stable prepare --target-version behavior; focused publication transaction tests passed.
     - Focused construction, preparation, readiness, qualification, orchestration, and root argument tests passed 146/146; typecheck, build, compact, package verification 19/19, and manifest-version dry-run passed. Generated-overlap and release conjunction were attempted but remain blocked by unrelated temporary-registry/write failures.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Development construction now rejects --package-version, but publish-next.yml still allocates GITHUB_RUN_NUMBER+82 and passes that flag; publication authority/tests also retain runNumberOffset and a development target-version override. Remove these remaining callers so the branch is coherent before Task 3 hardens publication semantics.
     provenance:
-      attempt_id: audit-qaabpascat-1
-      source: audit task ses_fb62a57b5ffeIw81m1kKKVFN3G
-      recorded_at: 2026-08-28 21:27
+      attempt_id: audit-qaabpascat-2
+      source: audit task ses_fb5fc9fa5ffezXRxKkO8nzIOZU
+      recorded_at: 2026-08-28 22:16
       writer_command: agentera state plan record-evaluation
