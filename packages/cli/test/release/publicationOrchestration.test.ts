@@ -8,7 +8,6 @@ import YAML from "yaml";
 
 import {
   canonicalJson,
-  developmentVersionFromRunNumber,
   issueCiAttestation,
   publicationWorkflowIdentity,
   sha256,
@@ -89,13 +88,12 @@ describe("package publication orchestration", () => {
     );
   });
 
-  it("allocates deterministic rolling development versions", () => {
-    expect(developmentVersionFromRunNumber("3.0.0", "1")).toBe("3.0.0-dev.83");
-    expect(developmentVersionFromRunNumber("3.0.0", "2")).toBe("3.0.0-dev.84");
-    expect(developmentVersionFromRunNumber("3.0.0", "2")).toBe("3.0.0-dev.84");
-    for (const invalid of ["0", "-1", "1.5", "abc", "9007199254740991"]) {
-      expect(() => developmentVersionFromRunNumber("3.0.0", invalid)).toThrow();
-    }
+  it("rejects the retired development allocation command", () => {
+    const result = spawnSync(process.execPath, [
+      "packages/cli/scripts/release-qualification.mjs", "allocate", "--run-number", "2",
+    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("<verify|source|source-check|candidate|approval|attest>");
   });
 
   it("keeps readiness resumable and hard-paused before approval or registry work", () => {

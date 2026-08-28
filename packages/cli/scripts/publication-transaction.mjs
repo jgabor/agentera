@@ -225,9 +225,14 @@ export function prepareReleaseMetadata(adapterName, request, options = {}) {
   const projectRoot = options.repo ?? repoRoot;
   const targetVersion = request.targetVersion;
   const sourceCommit = request.sourceCommit;
-  if (!targetVersion || !sourceCommit) {
+  if (adapterName === "development" && targetVersion !== undefined) {
+    throw new Error("development prepare does not accept --target-version; commit the package version in the manifest");
+  }
+  if ((adapterName === "stable" && !targetVersion) || !sourceCommit) {
     throw new Error(
-      "prepare requires --target-version X.Y.Z[-dev.N] and --source-commit SHA; preparation never infers a target",
+      adapterName === "stable"
+        ? "prepare requires --target-version X.Y.Z and --source-commit SHA; preparation never infers a target"
+        : "development prepare requires --source-commit SHA",
     );
   }
   if (adapterName === "development") {
@@ -237,6 +242,22 @@ export function prepareReleaseMetadata(adapterName, request, options = {}) {
       );
     }
     checkSourceReceipt({ repo: projectRoot, candidateDirectory: request.candidateDirectory });
+    if (!gitRefExists(sourceCommit, projectRoot)) {
+      throw new Error("source commit does not name an existing immutable commit");
+    }
+    const manifest = readManifest(adapter, projectRoot);
+    if (!publishableVersion("development", manifest.version)) {
+      throw new Error("development manifest version must match X.Y.Z-dev.N");
+    }
+    return result(
+      adapterName,
+      manifest.version,
+      "preparation",
+      "noop",
+      "manifest version is already committed; qualify it with the supplied source identity",
+      undefined,
+      { executed: "none", reused: true },
+    );
   }
   if (!gitRefExists(sourceCommit, projectRoot)) {
     throw new Error("source commit does not name an existing immutable commit");
@@ -893,7 +914,7 @@ async function main() {
       : ["--approve", "--json", "--verbose"],
     value: phase === "prepare"
       ? [
-          "--target-version",
+          ...(adapterName === "stable" ? ["--target-version"] : []),
           "--source-commit",
           ...(adapterName === "development" ? ["--candidate-dir"] : []),
         ]

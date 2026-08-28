@@ -1,0 +1,15 @@
+id: jaxblduofb
+artifact: progress
+record:
+  timestamp: 2026-08-28 21:24
+  type: feat
+  phase: build
+  what: Bound development package construction and qualification to the committed manifest version while keeping pushed source identity injectable.
+  context:
+    intent: Make committed development package metadata authoritative during isolated construction.
+    constraints: Do not edit publish-next.yml, package version, stable explicit-version behavior, credentials, npm state, suite metadata, or task completion state.
+    scope: Development construction, preparation, readiness, qualification, and focused tests.
+  discovered: Development allocation and target-version inputs existed in release qualification, isolated packing, publication preparation, and readiness. Stable preparation remains a separate explicit target-version path.
+  verified: Focused release tests passed 146/146. Typecheck and build passed. Compact passed. Package verification passed 19/19. Dry-run produced agentera@3.0.0-dev.72 without checkout edits. Generated-overlap and release conjunction were run but failed in unrelated temporary registry and write setup.
+  next: Orchestrate must evaluate qaabpascat before completion; publish-next workflow migration and the checked-in 3.0.0-dev.84 bump remain later plan tasks.
+  publication_order: 241

@@ -4,7 +4,7 @@ record:
   name: Bind development construction to the manifest version
   depends_on:
     - otmtspkvqk
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a valid committed development version and pushed source identity WHEN an isolated package is constructed THEN its version equals the manifest and only its source identity differs from the checkout manifest.
     - GIVEN a development caller attempts to allocate or override the package version WHEN preparation begins THEN the obsolete input is unavailable or rejected before output construction.
@@ -12,3 +12,7 @@ record:
     - GIVEN local dry-run, retained construction, and exact-package validation WHEN they observe package metadata THEN they agree on the manifest-owned version without editing checkout files.
     - GIVEN each changed construction or qualification unit WHEN tests run THEN one success and one failure case cover version authority and mismatch rejection.
   plan: pbvgdsqunx
+  evidence:
+    - Removed development run-number allocation, package-version construction override, preparation target-version input, readiness target-version input, and candidate target-version override; development construction now copies the committed manifest version and injects only source identity.
+    - Preserved stable prepareTargetMetadata and stable prepare --target-version behavior; focused publication transaction tests passed.
+    - Focused construction, preparation, readiness, qualification, orchestration, and root argument tests passed 146/146; typecheck, build, compact, package verification 19/19, and manifest-version dry-run passed. Generated-overlap and release conjunction were attempted but remain blocked by unrelated temporary-registry/write failures.

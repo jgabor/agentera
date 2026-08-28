@@ -348,8 +348,6 @@ function candidateExecution(candidateDirectory: string, version = "3.0.0-dev.41"
         candidateDirectory,
         "--with-dry-run",
         "--json",
-        "--package-version",
-        version,
         "--git-ref",
         expect.stringMatching(/^[0-9a-f]{40}$/),
       ]);
@@ -423,7 +421,7 @@ describe("release qualification receipts", () => {
     expect(replay.receipt.receiptSha256).toBe(first.receiptSha256);
   });
 
-  it("applies package metadata overrides only in isolated construction", () => {
+  it("injects only source identity into manifest-version construction", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-override-test-"));
     temporary.push(root);
     const outputDirectory = path.join(root, "candidate");
@@ -435,28 +433,27 @@ describe("release qualification receipts", () => {
       "--output-dir", outputDirectory,
       "--with-dry-run",
       "--json",
-      "--package-version", "3.0.0-dev.73",
       "--git-ref", sourceCommit,
     ], { cwd: path.join(REPO_ROOT, "packages/cli"), encoding: "utf8", timeout: 120_000 });
 
     expect(result.status, result.stderr).toBe(0);
     const packed = JSON.parse(result.stdout).packed;
-    expect(packed.version).toBe("3.0.0-dev.73");
+    const checkoutManifest = JSON.parse(before.toString());
+    expect(packed.version).toBe(checkoutManifest.version);
     const extraction = path.join(root, "extracted");
     fs.mkdirSync(extraction);
     const extracted = spawnSync("tar", ["-xzf", packed.artifact, "-C", extraction], { encoding: "utf8" });
     expect(extracted.status, extracted.stderr).toBe(0);
     expect(JSON.parse(fs.readFileSync(path.join(extraction, "package/package.json"), "utf8")))
-      .toMatchObject({ version: "3.0.0-dev.73", agentera: { gitRef: sourceCommit } });
+      .toEqual({ ...checkoutManifest, agentera: { ...checkoutManifest.agentera, gitRef: sourceCommit } });
     expect(fs.readFileSync(manifestPath)).toEqual(before);
   });
 
-  it("keeps package metadata override flags narrow and paired", () => {
+  it("rejects package version overrides and invalid source identities", () => {
     const packageRoot = path.join(REPO_ROOT, "packages/cli");
     const cases = [
-      [["--dry-run", "--package-version", "3.0.0-dev.73"], "must be supplied together"],
-      [["--dry-run", "--package-version", "3.1.0-dev.73", "--git-ref", "a".repeat(40)], "must match 3.0.0-dev.N"],
-      [["--dry-run", "--package-version", "3.0.0-dev.73", "--git-ref", "A".repeat(40)], "lowercase commit SHA"],
+      [["--dry-run", "--package-version", "3.0.0-dev.73"], "unexpected argument '--package-version'"],
+      [["--dry-run", "--git-ref", "A".repeat(40)], "lowercase commit SHA"],
       [["--dry-run", "--unexpected"], "unexpected argument"],
     ] as const;
     for (const [args, error] of cases) {
@@ -469,39 +466,36 @@ describe("release qualification receipts", () => {
     }
   });
 
-  it("binds development CI package verification to run allocation, source SHA, and checkout HEAD", async () => {
+  it("binds development CI package verification to manifest version, source SHA, and checkout HEAD", async () => {
     const { repo, candidateDirectory } = fixture();
     await sourceReceipt(repo, candidateDirectory);
     const head = git(repo, "rev-parse", "HEAD");
     const environment = developmentCandidateEnvironment(repo);
-    const issue = (targetVersion: string, sourceCommit: string, candidateEnvironment = environment) => issueCandidateReceipt({
+    const issue = (sourceCommit: string, candidateEnvironment = environment) => issueCandidateReceipt({
       repo,
       candidateDirectory,
       adapterName: "development",
-      targetVersion,
       sourceCommit,
       environment: candidateEnvironment,
       metadataRun: () => "{}",
-      ...candidateExecution(candidateDirectory, targetVersion),
+      ...candidateExecution(candidateDirectory, "3.0.0-dev.41"),
     });
 
-    expect(() => issue("3.0.0-dev.84", head)).toThrow("target version must equal 3.0.0-dev.83");
-    expect(() => issue("3.0.0-dev.83", "0".repeat(40))).toThrow("source commit must equal GITHUB_SHA");
+    expect(() => issue("0".repeat(40))).toThrow("source commit must equal GITHUB_SHA");
     expect(() => issue(
-      "3.0.0-dev.83",
       "0".repeat(40),
       { ...environment, GITHUB_SHA: "0".repeat(40) },
     )).toThrow("checkout HEAD must equal GITHUB_SHA");
 
-    const accepted = issue("3.0.0-dev.83", head);
+    const accepted = issue(head);
     expect(accepted.receipt).toMatchObject({
-      version: "3.0.0-dev.83",
+      version: "3.0.0-dev.41",
       sourceCommit: head,
       metadataCommit: head,
     });
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" })).not.toThrow();
-    expect(() => issue("3.0.0-dev.84", head)).toThrow("target version must equal 3.0.0-dev.83");
-    expect(issue("3.0.0-dev.83", head)).toMatchObject({ reused: true });
+    expect(() => issueCandidateReceipt({ repo, candidateDirectory, adapterName: "development", targetVersion: "3.0.0-dev.42", sourceCommit: head })).toThrow("does not accept targetVersion");
+    expect(issue(head)).toMatchObject({ reused: true });
     expect(() => issueCiAttestation({
       repo,
       candidateDirectory,
@@ -1293,14 +1287,12 @@ describe("explicit preparation", () => {
     const before = fs.readFileSync(manifestPath);
 
     expect(() => prepareReleaseMetadata("development", {
-      targetVersion: "3.0.0-dev.42",
       sourceCommit,
     }, { repo })).toThrow("requires --candidate-dir");
     expect(fs.readFileSync(manifestPath)).toEqual(before);
 
     fs.mkdirSync(candidateDirectory);
     expect(() => prepareReleaseMetadata("development", {
-      targetVersion: "3.0.0-dev.42",
       sourceCommit,
       candidateDirectory,
     }, { repo })).toThrow("source receipt is missing");
@@ -1309,31 +1301,26 @@ describe("explicit preparation", () => {
     expect(git(repo, "status", "--porcelain=v1")).toBe("");
   });
 
-  it("prepares only normalized development metadata and keeps source evidence reusable", async () => {
+  it("keeps manifest-version development preparation read-only and source evidence reusable", async () => {
     const { repo, candidateDirectory, sourceCommit } = fixture();
     const source = await sourceReceipt(repo, candidateDirectory);
     const manifestPath = path.join(repo, "packages/cli/package.json");
     const before = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
     const preparation = prepareReleaseMetadata("development", {
-      targetVersion: "3.0.0-dev.42",
       sourceCommit,
       candidateDirectory,
     }, { repo });
 
     expect(preparation).toMatchObject({
       package: "development",
-      version: "3.0.0-dev.42",
+      version: "3.0.0-dev.41",
       phase: "preparation",
-      outcome: "prepared",
+      outcome: "noop",
     });
     expect(JSON.stringify(preparation)).not.toContain(candidateDirectory);
-    expect(git(repo, "diff", "--name-only")).toBe("packages/cli/package.json");
-    expect(JSON.parse(fs.readFileSync(manifestPath, "utf8"))).toEqual({
-      ...before,
-      version: "3.0.0-dev.42",
-      agentera: { ...before.agentera, gitRef: sourceCommit },
-    });
+    expect(git(repo, "diff", "--name-only")).toBe("");
+    expect(JSON.parse(fs.readFileSync(manifestPath, "utf8"))).toEqual(before);
     const rechecked = checkSourceReceipt({ repo, candidateDirectory });
     expect(rechecked.receiptSha256).toBe(source.receiptSha256);
     expect(rechecked.component).not.toHaveProperty("sourceCommit");
@@ -1354,7 +1341,6 @@ describe("explicit preparation", () => {
     const before = fs.readFileSync(manifestPath);
 
     expect(() => prepareReleaseMetadata("development", {
-      targetVersion: "3.0.0-dev.42",
       sourceCommit,
       candidateDirectory,
     }, { repo })).toThrow("digest does not match");
@@ -1373,7 +1359,6 @@ describe("explicit preparation", () => {
     const before = fs.readFileSync(manifestPath);
 
     expect(() => prepareReleaseMetadata("development", {
-      targetVersion: "3.0.0-dev.42",
       sourceCommit,
       candidateDirectory,
     }, { repo })).toThrow("staged and working package inputs differ outside version and agentera.gitRef");

@@ -5,7 +5,6 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { prepareTargetMetadata } from "./publication-transaction.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 import {
   checkSourceReceipt,
@@ -22,7 +21,7 @@ export const READINESS_CONTRACT = RELEASE_MODEL.readiness;
 const DEVELOPMENT_ADAPTER = RELEASE_CONTRACT.packages[READINESS_CONTRACT.adapter];
 const SOURCE_RECEIPT = READINESS_CONTRACT.receipts.source;
 const CANDIDATE_RECEIPT = READINESS_CONTRACT.receipts.candidate;
-const USAGE = "usage: release-readiness.mjs development --candidate-dir DIR --target-version X.Y.Z-dev.N --source-commit SHA [--metadata-commit SHA] [--json]";
+const USAGE = "usage: release-readiness.mjs development --candidate-dir DIR --source-commit SHA [--metadata-commit SHA] [--json]";
 
 function git(repo, args) {
   const result = spawnSync("git", args, {
@@ -66,13 +65,6 @@ function assertEmptyCandidateDirectory(candidateDirectory) {
   }
 }
 
-function metadataState(manifest, targetVersion, sourceCommit) {
-  if (manifest.version === targetVersion && manifest.agentera?.gitRef === sourceCommit) return "prepared";
-  const prepared = prepareTargetMetadata("development", manifest, targetVersion, sourceCommit);
-  if (!prepared.changed) return "prepared";
-  return "unprepared";
-}
-
 function validateRequest(request, repo) {
   if (request.adapter !== READINESS_CONTRACT.adapter) {
     throw new Error("release readiness supports only the development adapter");
@@ -80,8 +72,8 @@ function validateRequest(request, repo) {
   if (typeof request.candidateDirectory !== "string" || request.candidateDirectory.length === 0) {
     throw new Error("missing required --candidate-dir");
   }
-  if (typeof request.targetVersion !== "string" || !/^\d+\.\d+\.\d+-dev\.(?:0|[1-9]\d*)$/.test(request.targetVersion)) {
-    throw new Error("--target-version must be an explicit development version matching X.Y.Z-dev.N");
+  if (request.targetVersion !== undefined) {
+    throw new Error("development readiness does not accept --target-version; commit the package version in the manifest");
   }
   if (typeof request.sourceCommit !== "string" || !/^[0-9a-f]{40}$/.test(request.sourceCommit)) {
     throw new Error("--source-commit must be an explicit 40-character commit SHA");
@@ -143,13 +135,12 @@ function result(request, values = {}) {
   return {
     schemaVersion: READINESS_CONTRACT.schemaVersion,
     package: READINESS_CONTRACT.adapter,
-    version: request?.targetVersion ?? null,
+    version: request?.version ?? null,
     expectedTag: DEVELOPMENT_ADAPTER.expectedTag,
     adapter: READINESS_CONTRACT.adapter,
     outcome: values.outcome ?? "rejected",
     state: values.state ?? "rejected",
     phase: values.phase ?? "preflight",
-    targetVersion: request?.targetVersion ?? null,
     sourceCommit: request?.sourceCommit ?? null,
     metadataCommit: request?.metadataCommit ?? null,
     executed,
@@ -216,7 +207,10 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
   try {
     validateRequest(request, repo);
     const manifest = readDevelopmentManifest(repo);
-    const currentMetadataState = metadataState(manifest, request.targetVersion, request.sourceCommit);
+    if (!/^\d+\.\d+\.\d+-dev\.(?:0|[1-9]\d*)$/.test(manifest.version)) {
+      throw new Error("development manifest version must match X.Y.Z-dev.N");
+    }
+    request = { ...request, version: manifest.version };
     const sourcePresent = receiptExists(request.candidateDirectory, SOURCE_RECEIPT);
     const candidatePresent = receiptExists(request.candidateDirectory, CANDIDATE_RECEIPT);
 
@@ -224,9 +218,6 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
     if (!sourcePresent) {
       if (request.metadataCommit !== undefined) {
         throw new Error("metadata resume requires the existing source receipt from the prior readiness pause");
-      }
-      if (currentMetadataState !== "unprepared") {
-        throw new Error("source readiness must complete before the target metadata is prepared");
       }
       if (candidatePresent) {
         throw new Error("package evidence cannot exist before the source receipt");
@@ -267,26 +258,18 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
 
     phase = READINESS_CONTRACT.phases[1];
     if (request.metadataCommit === undefined) {
-      if (currentMetadataState === "unprepared") {
-        if (candidatePresent) {
-          throw new Error("package evidence does not match the still-unprepared target metadata");
-        }
-        if (git(repo, ["rev-parse", "HEAD"]) !== request.sourceCommit) {
-          throw new Error("unprepared metadata requires HEAD to equal the explicit source commit");
-        }
+      if (candidatePresent) {
+        throw new Error("package evidence requires an explicit reviewed metadata commit");
       }
       return metadataPause(
         request,
         source,
         execution,
-        currentMetadataState === "prepared",
+        true,
         clock() - started,
       );
     }
 
-    if (currentMetadataState !== "prepared") {
-      throw new Error("metadata commit does not contain the explicit target version and source commit");
-    }
     if (git(repo, ["rev-parse", "HEAD"]) !== request.metadataCommit) {
       throw new Error("--metadata-commit must equal the current reviewed HEAD");
     }
@@ -314,7 +297,6 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
         repo,
         candidateDirectory: request.candidateDirectory,
         adapterName: READINESS_CONTRACT.adapter,
-        targetVersion: request.targetVersion,
         sourceCommit: request.sourceCommit,
         environment: options.environment,
         ...(options.candidateOptions ?? {}),
@@ -377,12 +359,11 @@ async function main() {
   if (adapter !== READINESS_CONTRACT.adapter) throw new Error(USAGE);
   const flags = parseReleaseFlags(rest, {
     boolean: ["--json"],
-    value: ["--candidate-dir", "--target-version", "--source-commit", "--metadata-commit"],
+    value: ["--candidate-dir", "--source-commit", "--metadata-commit"],
   });
   const value = await coordinateDevelopmentReadiness({
     adapter,
     candidateDirectory: flags.get("--candidate-dir"),
-    targetVersion: flags.get("--target-version"),
     sourceCommit: flags.get("--source-commit"),
     metadataCommit: flags.get("--metadata-commit"),
   });

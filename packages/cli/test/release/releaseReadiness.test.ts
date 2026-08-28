@@ -40,11 +40,11 @@ function fixture() {
   git(repo, "config", "user.name", "Release Readiness Test");
   git(repo, "config", "user.email", "release-readiness@example.invalid");
   git(repo, "config", "commit.gpgsign", "false");
-  writeManifest(repo, "3.0.0-dev.41", "0".repeat(40));
+  writeManifest(repo, "3.0.0-dev.42", "0".repeat(40));
   git(repo, "add", ".");
   git(repo, "commit", "--quiet", "-m", "seed");
   const priorCommit = git(repo, "rev-parse", "HEAD");
-  writeManifest(repo, "3.0.0-dev.41", priorCommit);
+  writeManifest(repo, "3.0.0-dev.42", priorCommit);
   git(repo, "add", ".");
   git(repo, "commit", "--quiet", "-m", "source ready");
   const sourceCommit = git(repo, "rev-parse", "HEAD");
@@ -53,7 +53,6 @@ function fixture() {
     repo,
     candidateDirectory,
     sourceCommit,
-    targetVersion: "3.0.0-dev.42",
   };
 }
 
@@ -88,14 +87,12 @@ function operations() {
       }
       return { receiptSha256: "a".repeat(64) };
     },
-    issueCandidate: ({ candidateDirectory, targetVersion, sourceCommit }: {
+    issueCandidate: ({ candidateDirectory, sourceCommit }: {
       candidateDirectory: string;
-      targetVersion: string;
       sourceCommit: string;
     }) => {
       counters.candidateIssues += 1;
       counters.candidateConstructions += 1;
-      expect(targetVersion).toBe("3.0.0-dev.42");
       expect(sourceCommit).toMatch(/^[0-9a-f]{40}$/);
       fs.writeFileSync(path.join(candidateDirectory, artifactName), artifactBytes, { flag: "wx", mode: 0o444 });
       fs.writeFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "valid-candidate\n", { flag: "wx" });
@@ -118,7 +115,6 @@ function request(value: ReturnType<typeof fixture>, metadataCommit?: string) {
   return {
     adapter: "development",
     candidateDirectory: value.candidateDirectory,
-    targetVersion: value.targetVersion,
     sourceCommit: value.sourceCommit,
     ...(metadataCommit ? { metadataCommit } : {}),
   };
@@ -189,26 +185,6 @@ describe("development release readiness coordinator", () => {
       },
     });
 
-    writeManifest(value.repo, value.targetVersion, value.sourceCommit);
-    const dirtyPause = await coordinateDevelopmentReadiness(request(value), options);
-    expect(dirtyPause).toMatchObject({
-      outcome: "paused",
-      state: "awaiting_metadata_review",
-      executed: "none",
-      reused: true,
-      candidate: { status: "blocked_by_metadata_review", executed: "none" },
-      execution: {
-        sourceQualificationInvocations: 0,
-        sourceGateExecutions: 0,
-        candidateQualificationInvocations: 0,
-        candidateConstructionExecutions: 0,
-      },
-      nextAction: expect.stringContaining("Review and commit the prepared metadata"),
-    });
-    expect(git(value.repo, "status", "--porcelain=v1")).toContain("packages/cli/package.json");
-    expect(owners.counters.candidateIssues).toBe(0);
-    git(value.repo, "add", "packages/cli/package.json");
-    git(value.repo, "commit", "--quiet", "-m", "reviewed metadata");
     const metadataCommit = git(value.repo, "rev-parse", "HEAD");
     const ready = await coordinateDevelopmentReadiness(request(value, metadataCommit), options);
     expect(ready).toMatchObject({
@@ -231,7 +207,7 @@ describe("development release readiness coordinator", () => {
     });
     expect(owners.counters).toEqual({
       sourceIssues: 1,
-      sourceChecks: 3,
+      sourceChecks: 2,
       candidateIssues: 1,
       candidateChecks: 0,
       candidateConstructions: 1,
@@ -340,8 +316,6 @@ describe("development release readiness coordinator", () => {
       "development",
       "--candidate-dir",
       candidateDirectory,
-      "--target-version",
-      "3.0.0-dev.52",
       "--source-commit",
       "invalid",
       "--json",

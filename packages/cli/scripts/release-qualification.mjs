@@ -29,19 +29,6 @@ export const RELEASE_MODEL = loadPackagePublicationModel(REPO_ROOT);
 const RECEIPT_SCHEMA = "agentera.releaseQualification.v1";
 const ARTIFACT_MODE = Number.parseInt(RELEASE_CONTRACT.qualification.candidate.retainedArtifactMode, 8);
 
-export function developmentVersionFromRunNumber(baseCore, runNumber, offset = RELEASE_CONTRACT.ci.developmentPush.runNumberOffset) {
-  if (baseCore !== "3.0.0") throw new Error("development version core must be 3.0.0");
-  if (typeof runNumber !== "string" || !/^[1-9]\d*$/.test(runNumber)) {
-    throw new Error("GitHub run number must be a positive decimal integer");
-  }
-  if (!Number.isSafeInteger(offset) || offset < 0) throw new Error("development run number offset must be a nonnegative safe integer");
-  const parsed = Number(runNumber);
-  if (!Number.isSafeInteger(parsed) || !Number.isSafeInteger(parsed + offset)) {
-    throw new Error("GitHub run number allocation exceeds the safe integer range");
-  }
-  return `${baseCore}-dev.${parsed + offset}`;
-}
-
 export function validateDevelopmentCiCandidateBinding(options = {}) {
   const environment = options.environment ?? process.env;
   const expected = publicationWorkflowIdentity("development");
@@ -51,10 +38,6 @@ export function validateDevelopmentCiCandidateBinding(options = {}) {
     && environment.GITHUB_WORKFLOW_REF === expected.workflowRef;
   if (options.adapterName !== "development" || !contractedCi) return;
   assertQualificationWorkflowEnvironment(environment, "development");
-  const expectedVersion = developmentVersionFromRunNumber("3.0.0", environment.GITHUB_RUN_NUMBER);
-  if (options.targetVersion !== expectedVersion) {
-    throw new Error(`development CI target version must equal ${expectedVersion} for GITHUB_RUN_NUMBER`);
-  }
   if (options.sourceCommit !== environment.GITHUB_SHA) {
     throw new Error("development CI source commit must equal GITHUB_SHA");
   }
@@ -1211,12 +1194,11 @@ function executeJson(command, args, options = {}) {
   }
 }
 
-function candidateManifest(adapterName, repo = REPO_ROOT, override) {
+function candidateManifest(adapterName, repo = REPO_ROOT, sourceCommit) {
   const manifest = readManifest(adapterName, repo);
-  if (override) {
-    if (adapterName !== "development") throw new Error("package metadata overrides support only development");
-    manifest.version = override.targetVersion;
-    manifest.agentera = { ...manifest.agentera, gitRef: override.sourceCommit };
+  if (sourceCommit) {
+    if (adapterName !== "development") throw new Error("source identity injection supports only development");
+    manifest.agentera = { ...manifest.agentera, gitRef: sourceCommit };
   }
   const adapter = RELEASE_CONTRACT.packages[adapterName];
   const expectedDevelopment = adapterName === "development";
@@ -1430,7 +1412,7 @@ function constructCandidatePackage({ repo, adapter, manifest, candidateDirectory
       process.execPath,
       [
         "scripts/pack-package.mjs", "--output-dir", candidateDirectory, "--with-dry-run", "--json",
-        "--package-version", manifest.version, "--git-ref", manifest.agentera.gitRef,
+        "--git-ref", manifest.agentera.gitRef,
       ],
       { cwd: packageRoot, run: execute },
     );
@@ -1520,28 +1502,26 @@ export function issueCandidateReceipt(options = {}) {
     receipt: validReceiptDigest(readJson(receiptPath(candidateDirectory, "source-receipt.json"), "source receipt"), "source receipt"),
     toolchain: options.toolchain,
   });
-  const override = options.targetVersion || options.sourceCommit
-    ? { targetVersion: options.targetVersion, sourceCommit: options.sourceCommit }
-    : undefined;
-  if (override && (!/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(override.targetVersion ?? "") || !/^[0-9a-f]{40}$/.test(override.sourceCommit ?? ""))) {
-    throw new Error("development package override requires --target-version 3.0.0-dev.N and --source-commit SHA");
+  if (options.targetVersion !== undefined) {
+    throw new Error("development candidate does not accept targetVersion; commit the package version in the manifest");
+  }
+  if (options.sourceCommit !== undefined && !/^[0-9a-f]{40}$/.test(options.sourceCommit)) {
+    throw new Error("development candidate --source-commit must be a 40-character commit SHA");
   }
   validateDevelopmentCiCandidateBinding({
     repo,
     adapterName: options.adapterName,
-    targetVersion: options.targetVersion,
     sourceCommit: options.sourceCommit,
     environment: options.environment ?? process.env,
   });
-  const { adapter, manifest } = candidateManifest(options.adapterName, repo, override);
+  const { adapter, manifest } = candidateManifest(options.adapterName, repo, options.sourceCommit);
   const metadataCommit = git(["rev-parse", "HEAD"], repo);
   const candidateFile = receiptPath(candidateDirectory, "candidate-receipt.json");
   if (fs.existsSync(candidateFile)) {
     const existing = validateCandidateReceipt({ candidateDirectory, adapterName: options.adapterName, repo });
     if (
-      override
-      && (existing.receipt.version !== override.targetVersion
-        || existing.receipt.sourceCommit !== override.sourceCommit)
+      options.sourceCommit
+      && existing.receipt.sourceCommit !== options.sourceCommit
     ) {
       throw new Error("existing package receipt does not match the requested development metadata");
     }
@@ -1681,10 +1661,8 @@ export function validateCandidateReceipt(options = {}) {
   );
   validateCandidateReceiptSemantics(receipt);
   const adapterName = options.adapterName ?? receipt.adapter;
-  const override = adapterName === "development"
-    ? { targetVersion: receipt.version, sourceCommit: receipt.sourceCommit }
-    : undefined;
-  const { manifest, adapter } = candidateManifest(adapterName, repo, override);
+  const sourceCommit = adapterName === "development" ? receipt.sourceCommit : undefined;
+  const { manifest, adapter } = candidateManifest(adapterName, repo, sourceCommit);
   const source = checkSourceReceipt({ repo, candidateDirectory });
   if (
     receipt.sourceReceiptSha256 !== source.receiptSha256
@@ -1894,10 +1872,9 @@ export function validateCiAttestation(options = {}) {
 async function runCommand(command, flags) {
   const candidateDirectory = requireArgument(flags, "--candidate-dir");
   const adapterName = flags.get("--adapter") ?? "development";
-  const targetVersion = flags.get("--target-version");
   const sourceCommit = flags.get("--source-commit");
-  const manifest = adapterName === "development" && targetVersion && sourceCommit
-    ? candidateManifest(adapterName, REPO_ROOT, { targetVersion, sourceCommit }).manifest
+  const manifest = adapterName === "development" && sourceCommit
+    ? candidateManifest(adapterName, REPO_ROOT, sourceCommit).manifest
     : readManifest(adapterName);
   const json = Boolean(flags.get("--json"));
   const started = performance.now();
@@ -1918,7 +1895,6 @@ async function runCommand(command, flags) {
           ? issueCandidateReceipt({
               candidateDirectory,
               adapterName,
-              targetVersion,
               sourceCommit,
               environment: process.env,
             })
@@ -2018,17 +1994,11 @@ export async function runNoReceiptVerificationCommand(flags, options = {}) {
 
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
-  if (!["allocate", "verify", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
-    throw new Error("usage: release-qualification.mjs <allocate|verify|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
-  }
-  if (command === "allocate") {
-    const flags = parseReleaseFlags(rest, { boolean: ["--json"], value: ["--run-number"] });
-    const version = developmentVersionFromRunNumber("3.0.0", requireArgument(flags, "--run-number"));
-    process.stdout.write(flags.get("--json") ? `${JSON.stringify({ version })}\n` : `${version}\n`);
-    return;
+  if (!["verify", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
+    throw new Error("usage: release-qualification.mjs <verify|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
   }
   const valueFlags = command === "verify" ? [] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
-  if (command === "candidate") valueFlags.push("--target-version", "--source-commit");
+  if (command === "candidate") valueFlags.push("--source-commit");
   if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
   const flags = parseReleaseFlags(rest, {
     boolean: ["verify", "source-check"].includes(command) ? ["--json"] : ["--json", "--verbose"],
