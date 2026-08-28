@@ -464,7 +464,7 @@ describe("packaged Build glossary advice seam", () => {
     expect(result.status, result.stderr).toBe(0);
     const instructions = JSON.parse(result.stdout).capability_context.instructions as string;
     expect(instructions).toContain("initial meaning-sensitive cycle intent");
-    expect(instructions).toContain("Do not refresh for unchanged replay");
+    expect(instructions).toContain("Do not invoke either refresh for unchanged replay");
     expect(instructions.indexOf("ask one focused clarification")).toBeLessThan(
       instructions.indexOf("before meaning-sensitive execution"),
     );
@@ -483,8 +483,8 @@ describe("packaged Build glossary advice seam", () => {
 
     expect(instructions).toContain("initial meaning-sensitive user input");
     expect(instructions).toContain(command);
-    expect(instructions).toContain("later user-authored change to a deliberation premise");
-    expect(instructions).toContain("Do not invoke it for unchanged replay");
+    expect(instructions).toContain("later user-authored premise change that can alter the affected meaning");
+    expect(instructions).toContain("Do not invoke either refresh for unchanged replay");
     expect(instructions).toContain("Done-only control");
     expect(instructions).toContain("never add an unbounded or persistent transcript scan");
     expect(instructions.indexOf("ask one focused clarification first")).toBeLessThan(
@@ -505,9 +505,9 @@ describe("packaged Build glossary advice seam", () => {
     expect(instructions).toContain("initial meaning-sensitive planning input");
     expect(instructions).toContain(command);
     expect(instructions).toContain(
-      "scope, requirements, constraints, task or overall acceptance, or clarification",
+      "scope, requirements, constraints, task, or overall acceptance that can alter the affected meaning",
     );
-    expect(instructions).toContain("Do not invoke it for unchanged replay");
+    expect(instructions).toContain("Do not invoke either refresh for unchanged replay");
     expect(instructions).toContain("control-only continuation");
     expect(instructions).toContain("current bounded event input");
     expect(instructions.indexOf("first emit one focused clarification")).toBeLessThan(

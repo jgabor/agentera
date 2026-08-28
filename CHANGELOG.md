@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- Added private selected-term input for glossary advice. `prime --context
+  <discuss|plan|build> --term-input <file|->` now returns initial advice in
+  `capability_context.glossary_advice`, and later no-review refreshes use
+  `report glossary-advice --term-input <file|->`. Structured `--input` remains
+  the host-review and legacy path. Plan publication now uses one typed writer
+  call, while explicit preview and apply reuse one temporary input.
 - Fixed confirmed project-glossary variant enforcement through the canonical read-only state validator, and aligned Discuss, Plan, Build, and Prime consumer declarations with their active integrations.
 - Fixed pre-cutover bootstrap so clean, v2, partially migrated, and v3 projects
   can call `npx -y agentera@next prime --context status --format json` once;
