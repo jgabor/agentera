@@ -1,0 +1,15 @@
+id: agywahiidu
+artifact: plan
+record:
+  name: Add compact no-review advice refresh
+  depends_on:
+    - faxvlusnih
+    - qpoztjcznp
+  status: pending
+  acceptance:
+    - GIVEN a later user-authored meaning change with one selected term and no host review WHEN advice refreshes THEN the compact path reuses the authorized scalar transport without a shell-generated mapping.
+    - GIVEN inferred-equivalence host review WHEN advice refreshes THEN the existing structured request remains required and preserves its selection and privacy semantics.
+    - GIVEN an existing structured report caller WHEN the new path ships THEN its accepted input, output envelope, retry behavior, and failure contract remain compatible.
+    - GIVEN conflicting or malformed refresh input WHEN the command runs THEN it fails before resolution or effects and does not echo caller content.
+    - GIVEN each new refresh parser or dispatch unit WHEN tests are added THEN one success and one failure case cover it.
+  plan: sqcanwbxwy

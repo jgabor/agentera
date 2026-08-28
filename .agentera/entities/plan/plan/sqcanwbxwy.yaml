@@ -1,0 +1,39 @@
+id: sqcanwbxwy
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-28
+    status: open
+    reviewed: 2026-08-28
+    critic_issues: 5 found, 5 addressed, 0 dismissed
+    title: "Plan: Single-ingress agent workflows"
+  what: Replace initial glossary-advice side calls and routine plan preflight chains with one bounded capability-startup ingress, one compact changed-term refresh, and one normal typed-writer publication call while retaining compatible exceptional paths.
+  why: Repeated content serialization wastes tokens, disrupts prompt caches, and encourages invalid shell plumbing without adding validation or user value.
+  constraints: Keep the CLI canonical and capability startup read-only. Never replay the full user event, echo selected terms, expose unrelated glossary content, change glossary precedence, weaken typed validation, break Build's existing startup input, or require MCP, native adapters, interactive prompts, or staged drafts. Preserve the legacy structured report and explicit preview. If no privacy-safe single-ingress term transport exists, stop before downstream implementation. Add no release or version claim. For each new testable unit, target one success and one failure case, adding broader cases only for concrete privacy, compatibility, or packaging risks.
+  overall_acceptance: GIVEN a meaning-sensitive Discuss, Plan, or Build event without host review WHEN its selected term enters through the qualified transport THEN initial startup or later compact refresh returns resolver-equivalent scoped advice without full-event replay, term echo, shell-generated mappings, or duplicate initial calls; GIVEN an approved plan WHEN it is published normally THEN one typed-writer call performs lint, schema validation, and durable publication, while an explicitly requested preview reuses the same input and all legacy structured, host-review, Build-input, and package behaviors remain compatible.
+  scope:
+    included:
+      - Privacy-qualified selected-term transport for no-review glossary advice
+      - Initial advice in Discuss, Plan, and Build startup
+      - Compact no-review refresh for later changed meanings
+      - Legacy structured report and host-review compatibility
+      - Capability instructions, schemas, CLI help, and authority validation
+      - Single-call normal plan publication guidance
+      - Host-command, source, bundled-runtime, and package verification
+    excluded:
+      - Glossary source, precedence, review, or publication semantic changes
+      - Full user-event input or transcript scanning
+      - Other typed writer families
+      - MCP, runtime-native adapters, or third-party integration surfaces
+      - CLI-managed staged drafts or mandatory preview
+    deferred:
+      - New ergonomic transport for structured host-review submissions
+      - Single-ingress changes for other reports and writer families
+  design: First qualify the selected-term privacy and compatibility boundary and encode it in shared authority. Then compose no-review advice into capability startup, provide the same compact transport for later simple refreshes, align the three consumers and plan publication guidance, verify host-observable command reduction and packaged compatibility, and finish by synchronizing public contracts and typed project state.
+  unknowns:
+    - question: Does the existing confidentiality boundary permit a bounded selected term in process arguments, and if not, which non-argument transport can coexist with Build's execution input without restoring shell-generated mappings?
+      affects_task: 1
+      resolve_by: Task 1 reviews the no-request-in-arguments boundary and Build's existing input contract, approves one concrete transport that satisfies the decision, or blocks the plan before interface implementation if none does.
+  surprises:
+    []

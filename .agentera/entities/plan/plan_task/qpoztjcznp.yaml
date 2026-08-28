@@ -1,0 +1,14 @@
+id: qpoztjcznp
+artifact: plan
+record:
+  name: Return no-review advice from capability startup
+  depends_on:
+    - faxvlusnih
+  status: pending
+  acceptance:
+    - GIVEN Discuss, Plan, or Build startup with one selected term and no host review WHEN startup completes THEN its scoped advice matches the legacy no-review resolver outcome in the same bounded response.
+    - GIVEN valid, unavailable, malformed, or no-applicable glossary sources WHEN startup resolves advice THEN it preserves existing outcome semantics, changes no state, and reveals neither the term, full event, nor unrelated glossary data.
+    - GIVEN absent, invalid, over-bound, duplicated, or incompatible term input WHEN startup runs THEN absence preserves existing behavior and invalid forms fail structurally before advice output or effects.
+    - GIVEN Build execution input and a selected term WHEN both are supplied through the authorized contract THEN both remain unambiguous and the established Build path retains its behavior.
+    - GIVEN each new startup parser or composition unit WHEN tests are added THEN one success and one failure case cover it, with extra cases only for identified privacy or compatibility risks.
+  plan: sqcanwbxwy

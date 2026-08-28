@@ -1,0 +1,14 @@
+id: oxuflvtdgr
+artifact: progress
+record:
+  timestamp: 2026-08-28 17:04
+  type: feat
+  phase: build
+  what: Authorized the selected-term transport boundary for later no-review glossary advice startup and compact refresh work.
+  context:
+    intent: Qualify a privacy-safe selected-term transport before downstream runtime effects.
+    constraints: Keep selected-term bytes out of argv and output; preserve structured host review, Build --input, and omitted-term behavior.
+    scope: Authority, validator, and proportional contract tests only.
+  verified: The glossary authority regression suite passed 87 tests; typecheck, build, local vocabularyAuthority validation, and capability-contract validation all passed.
+  next: Implement startup advice only through the authorized scalar source contract while preserving structured host review and Build request input.
+  publication_order: 230

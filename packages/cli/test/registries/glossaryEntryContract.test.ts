@@ -429,6 +429,46 @@ describe("shared glossary entry authority", () => {
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });
 
+  it("accepts the bounded no-review selected-term transport", () => {
+    expect(validateGlossaryEntryContract()).not.toContain(
+      "consumer_boundary.selected_term_transport must authorize bounded no-review file or stdin input without argv content, output echo, host review, persistence, or shared Build stdin",
+    );
+  });
+
+  it.each([
+    [
+      "argv term content",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.selected_term_transport.privacy.selected_term_in_argv =
+          "allowed";
+      },
+    ],
+    [
+      "term echo",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.selected_term_transport.failure.selected_term_echo = "allowed";
+      },
+    ],
+    [
+      "shared Build stdin",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.selected_term_transport.coexistence.shared_stdin = "allowed";
+      },
+    ],
+    [
+      "host review",
+      (authority: Record<string, any>) => {
+        authority.consumer_boundary.selected_term_transport.review.host_review = "allowed";
+      },
+    ],
+  ])("rejects selected-term transport drift in %s", (_label, mutate) => {
+    const pathname = malformedAuthority(mutate);
+    expect(validateGlossaryEntryContract(pathname)).toContain(
+      "consumer_boundary.selected_term_transport must authorize bounded no-review file or stdin input without argv content, output echo, host review, persistence, or shared Build stdin",
+    );
+    fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
+  });
+
   it("rejects a primitive with the shared term removed", () => {
     const pathname = malformedAuthority((authority) => {
       authority.shared_primitive.required_fields =
@@ -676,11 +716,11 @@ describe("shared glossary entry authority", () => {
       "consumer_boundary.downstream_gate must block integration with section-specific validation and an actionable local command",
     ],
     [
-      "a downstream gate that omits active Plan integration",
+      "a downstream gate that omits selected-term transport authority",
       (authority: Record<string, any>) => {
         authority.consumer_boundary.downstream_gate.required_sections =
           authority.consumer_boundary.downstream_gate.required_sections.filter(
-            (section: string) => section !== "consumer_boundary.plan_integration",
+            (section: string) => section !== "consumer_boundary.selected_term_transport",
           );
       },
       "consumer_boundary.downstream_gate must block integration with section-specific validation and an actionable local command",

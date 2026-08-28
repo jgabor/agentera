@@ -1,0 +1,17 @@
+id: pqpcnoigie
+artifact: plan
+record:
+  name: Synchronize public contract and project state
+  depends_on:
+    - faxvlusnih
+    - qpoztjcznp
+    - agywahiidu
+    - vxgqgthuph
+    - ttlnzmnfsc
+  status: pending
+  acceptance:
+    - GIVEN verified behavior WHEN public documentation is synchronized THEN CLI help, glossary authority, capability instructions and schemas, and CHANGELOG.md describe the efficient and legacy paths without contradiction.
+    - GIVEN implementation completion WHEN typed project state is synchronized THEN this plan and required progress records reflect verified outcomes without unrelated TODO mutation.
+    - GIVEN repository validation, capability contract, compact, and package gates WHEN final checks run THEN they pass against the same documented behavior.
+    - GIVEN excluded and deferred work WHEN closeout is reviewed THEN no artifact claims full-event ingress, new glossary semantics, native adapters, staged drafts, other writer coverage, or release readiness.
+  plan: sqcanwbxwy

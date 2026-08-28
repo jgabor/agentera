@@ -1,0 +1,17 @@
+id: gazyqhkyyf
+artifact: decisions
+record:
+  date: 2026-08-28
+  question: How should Agentera eliminate repeated shell serialization for glossary advice and typed artifact publication?
+  context: Discuss, Plan, and Build currently require `agentera report glossary-advice --input <file|-> --format json`, which makes agents restate selected input through Python, printf, or equivalent shell plumbing. Generated plans can likewise pass through `agentera check lint`, `state plan create --dry-run`, and `state plan create` even though `packages/cli/src/state/write/planPublication.ts` already applies strict prose lint and schema validation before effects. Firm prior decisions keep the CLI canonical and reject a new user-extension or MCP substrate.
+  alternatives:
+    - name: "Use single-ingress CLI workflows: prime optionally accepts one host-selected glossary term and returns its scoped advice, while each typed writer remains the sole default lint, validation, and publication gate."
+      status: chosen
+    - name: Replay the full user event into startup or retain mandatory separate advice and preflight command chains.
+      status: rejected
+    - name: Add runtime-native adapters, an MCP surface, or CLI-managed staged drafts now.
+      status: rejected
+  choice: Add backward-compatible, selected-term glossary advice to capability startup. Keep the existing glossary report as a compatibility path. Direct capability guidance to call the typed writer once by default; run dry-run only for an explicitly requested preview, using one reusable input file rather than reserializing its content.
+  reasoning: The host already owns semantic term selection, so sending only that term avoids repeating the prompt while preserving CLI-owned authority resolution and bounded output. The plan writer already validates final bytes before publication, making routine standalone lint and dry-run calls redundant. Reusing a file is sufficient for exceptional preview without introducing draft storage, cleanup, or another protocol surface.
+  confidence: firm
+  feeds_into: Agentera Plan for capability startup, glossary advice, and typed-writer guidance changes.

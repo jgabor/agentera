@@ -2220,6 +2220,44 @@ consumer_boundary:
         Fail once before selection with only a bounded class and public recovery;
         never quote or serialize an input term, meaning, diagnostic, path, raw
         entry, profile or project content, approval, anchor, or provenance.
+  selected_term_transport:
+    status: authorized
+    option: --term-input
+    sources: [file, stdin]
+    encoding: utf8_scalar
+    max_utf8_bytes: 65536
+    scopes: [capability_startup_no_review, compact_refresh_no_review]
+    privacy:
+      selected_term_in_argv: forbidden
+      selected_term_in_output: forbidden
+      persistence: forbidden
+      rule: >-
+        The option carries only a file path or the stdin marker; selected-term
+        bytes remain in the bounded input source and are never echoed.
+    coexistence:
+      build_request_option: --input
+      simultaneous_sources: allowed
+      shared_stdin: forbidden
+      rule: >-
+        Build may receive both inputs when at most one reads stdin. If both
+        options select stdin, reject the call before parsing either payload.
+    review:
+      host_review: forbidden
+      authoritative_path: consumer_boundary.advice_resolution.invocation
+      rule: >-
+        The scalar transport requests no-review advice only. Any host review
+        remains exclusively authorized through the structured report request.
+    compatibility:
+      omitted: existing_capability_output_and_behavior_unchanged
+    failure:
+      timing: before_resolution_or_effects
+      mutation: forbidden
+      selected_term_echo: forbidden
+      classes: [invalid_selected_term, conflicting_stdin]
+      rule: >-
+        Reject absent scalar content, malformed or over-bound UTF-8, extra
+        scalar fields, and shared stdin with only a bounded class and recovery;
+        never include selected-term bytes in diagnostics or output.
   primary_selection:
     dimensions:
       project_input: [invalid, valid_gap, valid_exact]
@@ -2779,6 +2817,7 @@ consumer_boundary:
     required_sections:
       - consumer_boundary.acquisition
       - consumer_boundary.advice_resolution
+      - consumer_boundary.selected_term_transport
       - consumer_boundary.primary_selection
       - consumer_boundary.outcome_matrix
       - consumer_boundary.orthogonal_advisories

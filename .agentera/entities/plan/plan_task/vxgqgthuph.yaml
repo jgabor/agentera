@@ -1,0 +1,15 @@
+id: vxgqgthuph
+artifact: plan
+record:
+  name: Align capability and plan publication behavior
+  depends_on:
+    - qpoztjcznp
+    - agywahiidu
+  status: pending
+  acceptance:
+    - GIVEN initial meaning-sensitive Discuss, Plan, or Build input WHEN each capability starts THEN it consumes startup advice without issuing a second initial glossary report.
+    - GIVEN a later changed meaning or host-review clarification WHEN capability guidance applies THEN compact no-review refresh and structured host review follow their respective contracts while unchanged, rendered, tool, and control-only events trigger neither.
+    - GIVEN an approved plan that does not require preview WHEN Plan publishes THEN guidance calls the typed writer once and does not call standalone lint or dry-run first.
+    - GIVEN the user explicitly requests preview WHEN Plan validates and later publishes THEN both phases reference one reusable input rather than reserializing plan content.
+    - GIVEN changed instructions and schemas WHEN source and served contract tests run THEN each new behavioral rule has one passing and one failing representative case and all three consumers agree.
+  plan: sqcanwbxwy

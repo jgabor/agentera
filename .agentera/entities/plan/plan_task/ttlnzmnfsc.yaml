@@ -1,0 +1,16 @@
+id: ttlnzmnfsc
+artifact: plan
+record:
+  name: Verify host and packaged workflows
+  depends_on:
+    - qpoztjcznp
+    - agywahiidu
+    - vxgqgthuph
+  status: pending
+  acceptance:
+    - GIVEN a recorded host integration fixture for initial terminology advice WHEN commands are inspected THEN it contains one capability-startup call and no Python, printf, duplicate report, or full-event replay.
+    - GIVEN normal and explicitly previewed Plan fixtures WHEN commands are inspected THEN normal publication has no standalone lint or dry-run, while preview and apply reuse one input reference.
+    - GIVEN legacy structured advice, host review, Build execution input, unavailable sources, invalid input, and no selected term WHEN compatibility scenarios run THEN behavior remains contract-compliant and failures are structured and mutation-free.
+    - GIVEN source, bundled runtime, and extracted package execution WHEN parity checks run THEN selected-term advice, help, instructions, schemas, output bounds, and no-echo behavior agree.
+    - GIVEN each new host or package scenario WHEN tests are added THEN one success and one failure case cover each testable boundary, with extra cases only for concrete package or privacy risks.
+  plan: sqcanwbxwy

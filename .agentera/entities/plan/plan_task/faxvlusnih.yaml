@@ -1,0 +1,14 @@
+id: faxvlusnih
+artifact: plan
+record:
+  name: Qualify and authorize selected-term transport
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the current no-request-in-arguments rule and Build startup input WHEN the term transport is qualified THEN one concrete bounded transport is authorized with explicit coexistence, privacy, and failure semantics, or downstream work is blocked before effects.
+    - GIVEN no-review and host-review requests WHEN authority is defined THEN startup and compact scalar paths cover only no-review advice while the structured report remains authoritative for host review.
+    - GIVEN a startup call without a selected term WHEN compatibility is specified THEN existing capability output and behavior remain unchanged.
+    - GIVEN the new authority rules WHEN contract validation runs THEN one representative accepted form and one rejected form prove the transport, no-echo, and exclusivity boundaries.
+  plan: sqcanwbxwy
+  evidence: Authorized --term-input file or stdin as bounded no-review scalar transport; validator rejects argv content, output echo, host review, and shared Build stdin. Targeted tests, typecheck, build, vocabularyAuthority validation, and capability-contract validation passed.

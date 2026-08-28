@@ -355,6 +355,46 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     );
   }
 
+  const selectedTermTransport = mapping(consumer?.selected_term_transport);
+  const transportPrivacy = mapping(selectedTermTransport?.privacy);
+  const transportCoexistence = mapping(selectedTermTransport?.coexistence);
+  const transportReview = mapping(selectedTermTransport?.review);
+  const transportCompatibility = mapping(selectedTermTransport?.compatibility);
+  const transportFailure = mapping(selectedTermTransport?.failure);
+  if (
+    selectedTermTransport?.status !== "authorized" ||
+    selectedTermTransport?.option !== "--term-input" ||
+    !sameStrings(selectedTermTransport?.sources, ["file", "stdin"]) ||
+    selectedTermTransport?.encoding !== "utf8_scalar" ||
+    selectedTermTransport?.max_utf8_bytes !== 65536 ||
+    !sameStrings(selectedTermTransport?.scopes, [
+      "capability_startup_no_review",
+      "compact_refresh_no_review",
+    ]) ||
+    transportPrivacy?.selected_term_in_argv !== "forbidden" ||
+    transportPrivacy?.selected_term_in_output !== "forbidden" ||
+    transportPrivacy?.persistence !== "forbidden" ||
+    !nonEmpty(transportPrivacy?.rule) ||
+    transportCoexistence?.build_request_option !== "--input" ||
+    transportCoexistence?.simultaneous_sources !== "allowed" ||
+    transportCoexistence?.shared_stdin !== "forbidden" ||
+    !nonEmpty(transportCoexistence?.rule) ||
+    transportReview?.host_review !== "forbidden" ||
+    transportReview?.authoritative_path !==
+      "consumer_boundary.advice_resolution.invocation" ||
+    !nonEmpty(transportReview?.rule) ||
+    transportCompatibility?.omitted !== "existing_capability_output_and_behavior_unchanged" ||
+    transportFailure?.timing !== "before_resolution_or_effects" ||
+    transportFailure?.mutation !== "forbidden" ||
+    transportFailure?.selected_term_echo !== "forbidden" ||
+    !sameStrings(transportFailure?.classes, ["invalid_selected_term", "conflicting_stdin"]) ||
+    !nonEmpty(transportFailure?.rule)
+  ) {
+    errors.push(
+      "consumer_boundary.selected_term_transport must authorize bounded no-review file or stdin input without argv content, output echo, host review, persistence, or shared Build stdin",
+    );
+  }
+
   const acquisition = mapping(consumer?.acquisition);
   const bounds = mapping(acquisition?.bounds);
   const availability = mapping(acquisition?.availability);
@@ -822,6 +862,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     !sameStrings(gate?.required_sections, [
       "consumer_boundary.acquisition",
       "consumer_boundary.advice_resolution",
+      "consumer_boundary.selected_term_transport",
       "consumer_boundary.primary_selection",
       "consumer_boundary.outcome_matrix",
       "consumer_boundary.orthogonal_advisories",
