@@ -14,6 +14,15 @@ import { runProductionGlossaryWorkflow } from "../helpers/profileFullGlossaryWor
 
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
+const EMPTY_PERSONAL_GLOSSARY = [
+  "<!-- agentera:personal-glossary:start -->",
+  "## Glossary",
+  "",
+  "```json",
+  '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}',
+  "```",
+  "<!-- agentera:personal-glossary:end -->",
+].join("\n");
 
 type BundleSurfaces = {
   directories: Array<{ path: string }>;
@@ -59,8 +68,12 @@ function validateDistributionInventory(files: Set<string>, surfaces: BundleSurfa
   }
 }
 
-function packageEnvironment(home = path.join(fixture.root, "isolated-home"), profile?: string): NodeJS.ProcessEnv {
-  const env = { ...process.env };
+function packageEnvironment(
+  home = path.join(fixture.root, "isolated-home"),
+  profile?: string,
+  source: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const env = { ...source };
   for (const key of Object.keys(env)) {
     if (/^AGENTERA_.*SOURCE.*ROOT$/.test(key)) delete env[key];
   }
@@ -72,15 +85,23 @@ function packageEnvironment(home = path.join(fixture.root, "isolated-home"), pro
   return env;
 }
 
-function selectedTermObservation(bin: string, root: string, termBytes: Buffer | string) {
+function selectedTermObservation(
+  bin: string,
+  root: string,
+  termBytes: Buffer | string,
+  sourceEnvironment: NodeJS.ProcessEnv = process.env,
+) {
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  const profile = path.join(root, "profile");
+  fs.mkdirSync(profile, { recursive: true });
+  fs.writeFileSync(path.join(profile, "PROFILE.md"), `# Profile\n\n${EMPTY_PERSONAL_GLOSSARY}\n`);
   const term = path.join(root, "term");
   fs.writeFileSync(term, termBytes);
   const result = spawnSync(
     process.execPath,
     [bin, "prime", "--context", "plan", "--term-input", term, "--format", "json"],
-    { cwd: root, env: packageEnvironment(path.join(root, "home")), encoding: "utf8" },
+    { cwd: root, env: packageEnvironment(path.join(root, "home"), profile, sourceEnvironment), encoding: "utf8" },
   );
   const output = result.stdout + result.stderr;
   const payload = JSON.parse(result.stdout || result.stderr) as Record<string, any>;
@@ -303,6 +324,25 @@ describe("npm distribution boundary", () => {
       expect(contents[1], relative).toBe(contents[0]);
       expect(contents[2], relative).toBe(contents[0]);
     }
+  });
+
+  it("isolates selected-term startup from an empty inherited XDG profile root", () => {
+    const inheritedData = path.join(fixture.root, "empty-inherited-xdg");
+    fs.mkdirSync(inheritedData);
+    const observation = selectedTermObservation(
+      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
+      path.join(fixture.root, "term-empty-xdg"),
+      "package-private-selected-term",
+      { ...process.env, XDG_DATA_HOME: inheritedData },
+    );
+
+    expect(observation).toMatchObject({
+      status: 0,
+      advice: { outcome: "no_applicable_entry" },
+      echoed: false,
+      files: ["state-mode.yaml"],
+    });
+    expect(fs.readdirSync(inheritedData)).toEqual([]);
   });
 
   it("matches structured, mutation-free scalar failures across all runtimes", () => {

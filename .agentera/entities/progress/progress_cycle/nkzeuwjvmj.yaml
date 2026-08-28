@@ -1,0 +1,15 @@
+id: nkzeuwjvmj
+artifact: progress
+record:
+  timestamp: 2026-08-28 20:56
+  type: fix
+  phase: audit
+  what: Made selected-term startup verification independent of inherited profile and app state.
+  context:
+    intent: Correct the accepted selected-term startup parity audit blocker without changing glossary semantics.
+    constraints: Preserve the existing no_applicable_entry assertion, package behavior, release metadata, and failed evaluation state.
+    scope: Seed valid-empty personal glossary fixtures for the affected source and package selected-term tests, including an empty inherited XDG regression case.
+  discovered: The selected-term tests changed HOME but inherited XDG_DATA_HOME. Standalone verification therefore read a valid-empty user profile, while generated-overlap used its empty isolated XDG root and classified personal glossary input as unavailable.
+  verified: Focused source and package tests passed, then generated-overlap and the 11-gate release conjunction passed with source, package, and build owned by one generated-overlap run.
+  next: Resume evaluation of plan task otmtspkvqk; keep it in progress with audit FAIL attempt 1 preserved.
+  publication_order: 240

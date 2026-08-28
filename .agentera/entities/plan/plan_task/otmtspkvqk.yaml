@@ -16,3 +16,13 @@ record:
     - Implemented semantic development publication classification for forward publish/retag, exact replay, superseded replay, and fail-closed malformed or conflicting states.
     - Recorded checked-in development, explicit stable, and unchanged 3.0.0 suite version authorities with the current development caller inventory.
     - Focused classification and authority tests passed; typecheck and build passed before status transition.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Authoritative verify:generated-overlap reproducibly fails selected-term startup parity at packages/cli/test/packaging/packageVerification.test.ts:266-287, while standalone package verification passes; diagnose concurrency or stale-profile interference and rerun the owning release gate.
+    provenance:
+      attempt_id: audit-otmtspkvqk-1
+      source: audit task ses_fb65dfb9dffe0Aknt23hQreSTD
+      recorded_at: 2026-08-28 20:32
+      writer_command: agentera state plan record-evaluation

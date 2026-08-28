@@ -26,6 +26,18 @@ const VALID_YAML = [
   "  - No plan fallback is emitted",
   "",
 ].join("\n");
+const VALID_EMPTY_PROFILE = [
+  "# Profile",
+  "",
+  "<!-- agentera:personal-glossary:start -->",
+  "## Glossary",
+  "",
+  "```json",
+  '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}',
+  "```",
+  "<!-- agentera:personal-glossary:end -->",
+  "",
+].join("\n");
 
 let tmp: string;
 
@@ -333,21 +345,29 @@ describe("prime --context build --input", () => {
   it("keeps Build execution input and no-review term input unambiguous", () => {
     fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
     fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const profileDir = path.join(tmp, "profile");
+    fs.mkdirSync(profileDir);
+    fs.writeFileSync(path.join(profileDir, "PROFILE.md"), VALID_EMPTY_PROFILE);
     const requestFile = path.join(tmp, "request.yaml");
     const termFile = path.join(tmp, "term");
     fs.writeFileSync(requestFile, VALID_YAML);
     fs.writeFileSync(termFile, "private-selected-term");
 
-    const result = capture((io) => cmdPrime({
-      context: "build", format: "json", input: requestFile, termInput: termFile,
-      projectRoot: tmp, home: path.join(tmp, "home"), installRoot: REPO_ROOT,
-    }, io));
+    vi.stubEnv("AGENTERA_PROFILE_DIR", profileDir);
+    try {
+      const result = capture((io) => cmdPrime({
+        context: "build", format: "json", input: requestFile, termInput: termFile,
+        projectRoot: tmp, home: path.join(tmp, "home"), installRoot: REPO_ROOT,
+      }, io));
 
-    expect(result.rc).toBe(0);
-    const payload = JSON.parse(result.out).capability_context;
-    expect(payload.context.execution_context.mode).toBe("no_plan");
-    expect(payload.glossary_advice.outcome).toBe("no_applicable_entry");
-    expect(result.out).not.toContain("private-selected-term");
+      expect(result.rc).toBe(0);
+      const payload = JSON.parse(result.out).capability_context;
+      expect(payload.context.execution_context.mode).toBe("no_plan");
+      expect(payload.glossary_advice.outcome).toBe("no_applicable_entry");
+      expect(result.out).not.toContain("private-selected-term");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("rejects shared stdin before reading either input", () => {
