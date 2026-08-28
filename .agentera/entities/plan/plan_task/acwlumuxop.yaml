@@ -4,10 +4,20 @@ record:
   name: Consolidate pinned compaction classification evidence
   depends_on:
     []
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the unchanged checkout before edits WHEN the three named tests run three times with one worker under the pinned runtime THEN a comparable median baseline is recorded.
     - GIVEN the full compacted fixture WHEN migration planning runs THEN all supported summary families, inherited labels, provenance, relationships, and aggregate counts remain verified in one baseline pass.
     - GIVEN archived, current, and corrupt variants WHEN their outcomes are checked THEN the test uses no more than three total planner passes while retaining every prior classification.
     - GIVEN the grouped fixtures WHEN valid and invalid records are evaluated THEN at least one passing and one fail-closed case remain for each changed seam.
   plan: jdwyriidnr
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-acwlumuxop-1
+      source: audit task ses_fb701f3ddffenwmqy6OWMnP24F
+      recorded_at: 2026-08-28 17:32
+      writer_command: agentera state plan record-evaluation
