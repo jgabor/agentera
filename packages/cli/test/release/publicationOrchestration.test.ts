@@ -33,6 +33,15 @@ const stablePackage = JSON.parse(
 const publicationContract = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"),
 );
+const packagingGuide = fs.readFileSync(
+  path.join(REPO_ROOT, "docs/packaging/v3-packaging.md"),
+  "utf8",
+);
+const releaseSkill = fs.readFileSync(
+  path.join(REPO_ROOT, ".opencode/skills/agentera-release/SKILL.md"),
+  "utf8",
+);
+const agentsGuide = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
 
 describe("package publication orchestration", () => {
   it("routes preparation, verification, approval, staging, and promotion through explicit scripts", () => {
@@ -86,6 +95,36 @@ describe("package publication orchestration", () => {
     expect(publicationContract.invariants.preparation).toContain(
       "Stable preparation retains its separate source-provenance contract",
     );
+  });
+
+  it("keeps canonical development publication instructions on manifest authority", () => {
+    for (const [label, instructions] of [
+      ["packaging guide", packagingGuide],
+      ["release skill", releaseSkill],
+      ["agent bootstrap", agentsGuide],
+    ] as const) {
+      expect(instructions, label).toContain("packages/cli/package.json#version");
+      expect(instructions, label).toContain("GITHUB_SHA");
+      expect(instructions, label).toContain("queue: max");
+      expect(instructions, label).toContain("explicit push authorization");
+      expect(instructions, label).toMatch(
+        /stable preparation\s+continues to require explicit\s+`--target-version`/,
+      );
+      expect(instructions, label).not.toMatch(/GITHUB_RUN_NUMBER|run[- ]number|offset 82/i);
+    }
+
+    for (const instructions of [packagingGuide, releaseSkill]) {
+      const developmentBlocks = [...instructions.matchAll(/```bash\n([\s\S]*?)```/g)]
+        .map((match) => match[1])
+        .filter((block) => block.includes("cli:ready:dev") || block.includes("cli:prepare:dev"));
+      expect(developmentBlocks.length).toBeGreaterThan(0);
+      for (const block of developmentBlocks) expect(block).not.toContain("--target-version");
+    }
+
+    expect(releaseSkill).toContain([
+      "pnpm cli:prepare:stable -- \\",
+      "  --target-version X.Y.Z --source-commit COMMIT",
+    ].join("\n"));
   });
 
   it("rejects the retired development allocation command", () => {

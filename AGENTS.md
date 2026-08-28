@@ -107,22 +107,20 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
 ### Development push contract
 
 - Every passing queued push to `feat/v3` publishes one rolling
-  development package to npm `@next`. CI derives `3.0.0-dev.N` as
-  `GITHUB_RUN_NUMBER + 82`, builds once from `GITHUB_SHA`, and sets package
-  `agentera.gitRef` to that SHA in isolated package construction. It validates
-  and smokes that exact tarball before publishing the same bytes. It does not
-  edit the checkout or require a final metadata commit.
+  development package to npm `@next` using the checked-in
+  `packages/cli/package.json#version`. CI builds once from `GITHUB_SHA` and sets
+  package `agentera.gitRef` to that SHA in isolated package construction. It
+  validates and smokes that exact tarball before publishing the same bytes. It
+  does not edit the checkout or require a final metadata commit.
 - The `publish-next-${{ github.ref }}` concurrency group uses `queue: max`, which
-  keeps up to 100 pending pushes. Failed runs can create version gaps. A rerun
-  keeps the same run number, SHA, version, and source.
+  keeps up to 100 pending pushes. A rerun keeps the same pushed SHA and
+  checked-in version. A failed run does not allocate a replacement version.
 - A user's explicit push authorization permits exactly one push and is consumed
   by it. After that push, stop. A failed or cancelled workflow does not
   authorize another version or push. Repair the cause on a
   worktree branch and obtain fresh explicit authorization before integrating it.
-- Before the first push with `.github/workflows/publish-next.yml`, confirm that
-  this renamed workflow is still unregistered at run number 0 and npm
-  `3.0.0-dev.83` is absent. The offset 82 is a one-time migration assumption,
-  not a registry query.
+- Development preparation rejects `--target-version`; stable preparation
+  continues to require explicit `--target-version`.
 - Publication from `main` remains the stable path and requires protected
   environment review before npm mutation. The stable `workflow_dispatch`
   path is not operational until `publish-stable.yml` exists on the default

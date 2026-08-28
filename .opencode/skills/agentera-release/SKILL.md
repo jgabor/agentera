@@ -70,31 +70,28 @@ replay without a token.
 
 ## Development publication
 
-CI development preparation changes only package version and `agentera.gitRef`
-in the isolated construction manifest. The manual readiness
-preparer requires an explicit next version, source commit, and external
-artifact directory containing a current normalized source receipt. Both
-paths are pure and registry-independent. Stable preparation retains its separate
-source-provenance behavior without the development receipt.
+CI development preparation copies the checked-in package version and changes
+only `agentera.gitRef` in the isolated construction manifest. The manual
+readiness preparer reads that checked-in version and requires a source commit
+and external artifact directory containing a current normalized source receipt.
+Both paths are pure and registry-independent. Stable preparation retains its
+separate source-provenance behavior without the development receipt.
 
-Every passing queued push to `feat/v3` publishes to `@next`. CI allocates
-`3.0.0-dev.(GITHUB_RUN_NUMBER + 82)`, builds once from `GITHUB_SHA`, and sets
-package `agentera.gitRef` to that SHA without editing the checkout. It validates
-the isolated tarball metadata, runs its executable CLI version smoke, and
-publishes those exact bytes to `@next`. Failed runs can create gaps. `queue: max`
-keeps up to 100 pending runs. A rerun reuses the same run number, SHA, and version;
-matching already-published bytes are a successful replay.
+Every passing queued push to `feat/v3` publishes the checked-in
+`packages/cli/package.json#version` to `@next`. CI builds once from `GITHUB_SHA`
+and sets package `agentera.gitRef` to that SHA without editing the checkout. It
+validates the isolated tarball metadata, runs its executable CLI version smoke,
+and publishes those exact bytes to `@next`. `queue: max` keeps up to 100 pending
+runs. A rerun reuses the same pushed SHA and checked-in version; matching
+already-published bytes are a successful replay. A failed run does not allocate
+a replacement version.
 
 A user's explicit push authorization is single-use and is consumed by one
 `git push`. Local commits do not publish. After that push, stop. A failed or
 cancelled workflow ends that release attempt and does not authorize another
 version or push. Make corrections on a worktree branch and
 obtain fresh explicit authorization before a later integration push. Rerunning
-an existing workflow reuses its allocation.
-
-Before the first push, confirm `.github/workflows/publish-next.yml` is still
-unregistered at run number 0 and npm `3.0.0-dev.83` is absent. The offset is a
-one-time migration assumption, not a runtime registry query.
+an existing workflow reuses the same pushed SHA and checked-in version.
 
 The resumable readiness coordinator remains the manual diagnostic and recovery
 path, separate from normal push publication. Its fresh run can issue source
@@ -108,14 +105,14 @@ source receipt.
 ```bash
 pnpm cli:ready:dev -- \
   --candidate-dir /secure/external/agentera-package \
-  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT --json
+  --source-commit SOURCE_COMMIT --json
+# Update, review, and commit packages/cli/package.json separately.
 pnpm cli:prepare:dev -- \
   --candidate-dir /secure/external/agentera-package \
-  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT
-# Review and commit packages/cli/package.json.
+  --source-commit SOURCE_COMMIT
 pnpm cli:ready:dev -- \
   --candidate-dir /secure/external/agentera-package \
-  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT \
+  --source-commit SOURCE_COMMIT \
   --metadata-commit METADATA_COMMIT --json
 pnpm cli:approve:dev -- \
   --candidate-dir /secure/external/agentera-package --approved-by NAME
@@ -129,9 +126,11 @@ NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
 
 Preparation, verification, approval, and publication are separate operations.
 Do not infer or mutate their inputs outside the owning commands. Normal push
-publication derives the version from the GitHub Actions run number and changes
-only the isolated construction manifest. Manual recovery preparation accepts
-explicit metadata and does not describe or control normal push publication.
+publication reads the checked-in package version and changes only
+`agentera.gitRef` in the isolated construction manifest. Manual recovery
+preparation uses the committed development version and explicit source commit.
+Development preparation rejects `--target-version`; stable preparation
+continues to require explicit `--target-version`.
 The readiness coordinator never prepares metadata, commits, approves, rebuilds
 a valid package artifact, stages bytes, or mutates registry state. `paused` and `ready`
 exit 0; invalid or stale evidence returns `rejected` and exits 1.

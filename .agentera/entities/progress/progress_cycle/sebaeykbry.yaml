@@ -1,0 +1,15 @@
+id: sebaeykbry
+artifact: progress
+record:
+  timestamp: 2026-08-28 22:13
+  type: docs
+  phase: build
+  what: Corrected canonical development publication instructions to use the checked-in package manifest version.
+  context:
+    intent: Align the packaging guide, release skill, and agent bootstrap with the already-correct development publication behavior.
+    constraints: Preserve stable explicit target-version behavior, push-triggered publication, queue and replay boundaries, checkout purity, gitRef injection, single-use push authorization, task in-progress state, and the existing failed evaluation. Perform no publication, credential inspection, version bump, changelog synchronization, or npm mutation.
+    scope: Canonical release prose and exact regression coverage for the three named instruction surfaces.
+  discovered: The executable workflow already read packages/cli/package.json, but the three instruction surfaces still described GitHub run-number allocation and development target-version inputs.
+  verified: Focused release, authority, capability-prose, and retired-runtime tests passed 327 of 327. Typecheck and build passed. Focused release-conjunction tests passed 3 of 3. Generated-overlap passed with 4,125 source tests and 19 package tests. Compact passed with no changes. Package verification passed 19 of 19. The package dry-run observed manifest version 3.0.0-dev.72 without creating an artifact. The 11-gate release conjunction passed source, stress, performance, capacity, package, generated-overlap, typecheck, build, compact, capability-contract, and activation-conjunction with no receipt, candidate, registry, activation, or publication effects.
+  next: Keep qaabpascat in progress with only persisted audit attempt 1 recorded as FAIL. Task 6 owns broader changelog and final synchronization.
+  publication_order: 243

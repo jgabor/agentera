@@ -46,31 +46,31 @@ It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
 Every passing queued push to `feat/v3` publishes through
-`.github/workflows/publish-next.yml` to npm `@next`. CI derives
-`3.0.0-dev.N` as `GITHUB_RUN_NUMBER + 82`, builds once from `GITHUB_SHA`, and sets
+`.github/workflows/publish-next.yml` to npm `@next`. CI reads the checked-in
+`packages/cli/package.json#version`, builds once from `GITHUB_SHA`, and sets
 `agentera.gitRef` to `GITHUB_SHA` only in the copied construction manifest. It
 validates that exact tarball's version and git ref, runs its executable CLI
-version smoke, then publishes the same tarball to `@next`. This routine path does not run the manual qualification, receipt, attestation, benchmark, or artifact
+version smoke, then publishes the same tarball to `@next`. This routine path does
+not run the manual qualification, receipt, attestation, benchmark, or artifact
 handoff framework. It does not edit the checkout or require a final metadata-only
 commit. The `publish-next-${{ github.ref }}` group uses
-`queue: max`, which keeps up to 100 pending pushes. Failed runs can create gaps.
-A rerun keeps the same run number, SHA, and version. If identical bytes already
-exist at that version on `@next`, publication succeeds without another upload.
-
-Before the first push, confirm the new `publish-next.yml` path remains
-unregistered at run number 0 and npm `3.0.0-dev.83` is absent. The offset 82 is
-a one-time migration assumption. Allocation does not query npm.
+`queue: max`, which keeps up to 100 pending pushes.
+A rerun keeps the same pushed SHA and checked-in version. If identical bytes
+already exist at that version on `@next`, publication succeeds without another
+upload. A failed run does not allocate a replacement version.
 
 One explicit push authorization permits exactly one push and is consumed by it.
 After that push, stop. A failed or cancelled workflow ends the release attempt;
 it does not authorize another version or push. Make fixes on a
 worktree branch, then obtain fresh authorization for a later integration push.
-Local commits do not publish. Rerunning an existing workflow reuses its allocation.
+Local commits do not publish. Rerunning an existing workflow reuses the same
+pushed SHA and checked-in version.
 
 The resumable readiness coordinator remains the manual diagnostic and recovery
 path. It is separate from normal push publication and accepts an explicit
-external artifact directory, target version,
-and source commit. On the contracted GitHub Actions source runner, a fresh run
+external artifact directory and source commit. It reads the development package
+version from `packages/cli/package.json#version`. On the contracted GitHub
+Actions source runner, a fresh run
 executes the source evidence DAG once, writes the source receipt, and exits 0
 with `outcome: "paused"`. A workstation can run performance diagnostics, but
 cannot issue new source authority. A valid downloaded source receipt is reused
@@ -79,23 +79,23 @@ without running an owner.
 ```bash
 pnpm cli:ready:dev -- \
   --candidate-dir /secure/external/agentera-package \
-  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT --json
+  --source-commit SOURCE_COMMIT --json
 # outcome: paused; state: awaiting_metadata_review
 
+# Update, review, and commit packages/cli/package.json separately.
 pnpm cli:prepare:dev -- \
   --candidate-dir /secure/external/agentera-package \
-  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT
-# Review and commit packages/cli/package.json separately.
+  --source-commit SOURCE_COMMIT
 
 pnpm cli:ready:dev -- \
   --candidate-dir /secure/external/agentera-package \
-  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT \
+  --source-commit SOURCE_COMMIT \
   --metadata-commit METADATA_COMMIT --json
 # outcome: ready; state: ready_for_approval
 
 pnpm cli:prepare:dev -- \
   --candidate-dir /secure/external/agentera-package \
-  --target-version 3.0.0-dev.N --source-commit SOURCE_COMMIT --check
+  --source-commit SOURCE_COMMIT --check
 ```
 
 The readiness coordinator never prepares metadata, commits, approves, rebuilds
@@ -108,15 +108,16 @@ retained artifact. Stale or mismatched evidence exits 1 before an issuance owner
 starts. The external artifact directory can be absent or empty for a fresh
 source run; after that it is retained input and must not be replaced.
 
-Preparation remains pure. Normal push publication allocates metadata only in
-the isolated CI construction tree and does not prepare checkout metadata. The
-manual recovery preparer accepts an explicit target and changes only
-`packages/cli/package.json#version` and `agentera.gitRef`; a
-stale, skipped, malformed, or out-of-policy target and missing or invalid source
-evidence fail before effects. Neither path reads the registry or loads `.env`
-credentials. Stable shim preparation retains its separate source-provenance
-check and does not use the development receipt. `cli:qualify:source` and
-`cli:qualify:dev` remain the exact low-level receipt owners.
+Preparation remains pure. Normal push publication copies the checked-in package
+version into the isolated CI construction tree, injects only `agentera.gitRef`,
+and does not prepare checkout metadata. The manual recovery preparer validates
+the checked-in development version, explicit source commit, and source evidence
+without changing checkout metadata. Development preparation rejects
+`--target-version`; stable preparation continues to require explicit
+`--target-version`. Neither path reads the registry or loads `.env` credentials.
+Stable shim preparation retains its separate source-provenance check and does
+not use the development receipt. `cli:qualify:source` and `cli:qualify:dev`
+remain the exact low-level receipt owners.
 
 The stable publication workflow is a cutover prerequisite, not a currently
 operational dispatch path. GitHub does not expose its `workflow_dispatch`
@@ -261,7 +262,7 @@ pnpm cli:approve:dev -- --candidate-dir /secure/external/agentera-package --appr
 Package verification validates that source receipt, runs release-metadata,
 compares dry-pack and retained artifact observations, writes one mode-`0444`
 tarball, and runs that exact tarball in a new empty npm home, cache, user config,
-source receipt, metadata and source commits, adapter, target version, registry
+source receipt, metadata and source commits, adapter, package version, registry
 and tag, exact bytes, integrity, construction observation, and smoke result.
 The external artifact directory must be outside the checkout. It is retained input, not
 cleanup residue: later stages fail if the receipt, path containment, bytes,
