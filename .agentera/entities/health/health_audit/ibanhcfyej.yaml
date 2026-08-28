@@ -1,0 +1,27 @@
+id: ibanhcfyej
+artifact: health
+record:
+  date: 2026-08-29
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: checked-in development publication artifacts are current and terminal evidence passed."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-plan closure for checked-in development version publication, not a codebase-wide audit. Workflow, construction, authority, guidance, package metadata, tests, changelog, plan, and progress artifacts were updated after plan creation. The worktree was clean, all six tasks had latest PASS evaluations, and source, typecheck, build, generated-overlap, release, capability-contract, compact, package, dry-run, and lint evidence passed against 3.0.0-dev.84.
+      findings:
+        []
+  trends:
+    improved: Development publication now uses the committed package version and isolates credentials to the final npm child.
+    degraded: None.
+    new_findings: None.
+    resolved: Run-number allocation, version overrides, backward tagging, and credential-bearing replay classification are resolved.
+    carried_forward: Profile state remains stale and detailed decision and vision startup context remains deferred; no publication or release readiness is claimed.
+  appended_at: 2026-08-28T22:22:39.631Z
