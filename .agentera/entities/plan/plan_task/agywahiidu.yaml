@@ -5,7 +5,7 @@ record:
   depends_on:
     - faxvlusnih
     - qpoztjcznp
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a later user-authored meaning change with one selected term and no host review WHEN advice refreshes THEN the compact path reuses the authorized scalar transport without a shell-generated mapping.
     - GIVEN inferred-equivalence host review WHEN advice refreshes THEN the existing structured request remains required and preserves its selection and privacy semantics.
@@ -15,12 +15,12 @@ record:
   plan: sqcanwbxwy
   evidence: Implemented compact report glossary-advice --term-input refresh with shared bounded scalar loading and existing resolver acquisition; preserved structured --input host review and output envelope. Focused tests, typecheck, build, compiled smoke, capability-contract, compact, package verification, and package dry run passed; full source lane retained the known unrelated retired-runtime 3-failure baseline.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Compact scalar failures return legacy --input recovery and invalid_format instead of --term-input recovery and invalid_selected_term; packages/cli/src/cli/commands/glossaryAdvice.ts:20-22,30-31,150-153.
     provenance:
-      attempt_id: audit-agywahiidu-1
-      source: audit task ses_fb6efed1bffeJ7ggN3cbT4hIwh
-      recorded_at: 2026-08-28 17:53
+      attempt_id: audit-agywahiidu-2
+      source: audit task ses_fb6bb6149ffeOjHYNUCrFsF1TI
+      recorded_at: 2026-08-28 18:49
       writer_command: agentera state plan record-evaluation
