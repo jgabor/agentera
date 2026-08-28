@@ -191,6 +191,10 @@ describe("package publication orchestration", () => {
       (step: { name?: string }) => step.name === "Build one isolated package tarball",
     );
     expect(construction.run).not.toContain("--package-version");
+    const steps = workflow.jobs["publish-development"].steps;
+    const credentialSteps = steps.filter((step: { env?: Record<string, string> }) => step.env?.NPM_TOKEN);
+    expect(credentialSteps).toHaveLength(1);
+    expect(credentialSteps[0].name).toBe("Publish the exact tarball to npm @next");
     expect(publicationYaml).toContain("workflow_dispatch");
     expect(publicationYaml).toContain("candidate --adapter stable");
     for (const excluded of [

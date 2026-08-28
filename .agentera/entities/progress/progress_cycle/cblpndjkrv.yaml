@@ -1,0 +1,15 @@
+id: cblpndjkrv
+artifact: progress
+record:
+  timestamp: 2026-08-28 22:27
+  type: fix
+  phase: build
+  what: Hardened manifest-version development publication and replay behavior.
+  context:
+    intent: Publish the checked-in manifest version safely on each feat/v3 push.
+    constraints: Preserve push trigger, serialized queue, one tarball, GITHUB_SHA binding, token isolation, stable behavior, and task in-progress state. Perform no version bump, push, publication, tag, credential inspection, or npm mutation.
+    scope: Development workflow publication decisions and deterministic tests only.
+  discovered: The workflow already used the committed manifest version and pushed SHA throughout construction and validation. Publication needed direct deterministic coverage of registry classification, mutation choice, and credential timing.
+  verified: Focused publication tests covered forward publish and retag, exact rerun, superseded replay, conflict, malformed current tag, and credential timing. Typecheck, build, generated overlap, activation conjunction, compact, package verification, and package dry-run passed.
+  next: Independent orchestration evaluation must decide task completion. The broader ordering and package-parity matrix remains deferred to Task 5.
+  publication_order: 244

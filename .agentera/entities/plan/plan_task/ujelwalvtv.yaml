@@ -5,7 +5,7 @@ record:
   depends_on:
     - otmtspkvqk
     - qaabpascat
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a push to feat/v3 with a valid eligible manifest version WHEN the development workflow runs THEN it reads that version, binds the pushed source identity, and uses the same values for construction, validation, smoke, and publication.
     - GIVEN the push workflow runs WHEN version provenance is inspected THEN no workflow run number, offset, or generated target version participates.

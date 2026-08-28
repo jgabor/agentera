@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { npmChildEnvironment } from "./package-construction.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
@@ -95,14 +96,18 @@ export function validateDevelopmentTarball({ tarball, packageVersion, gitRef }) 
   }
 }
 
-export function publishDevelopmentTarball(options) {
-  const { manifest, integrity } = validateDevelopmentTarball(options);
+export function publishDevelopmentTarball(options, dependencies = {}) {
+  const validate = dependencies.validate ?? validateDevelopmentTarball;
+  const view = dependencies.view ?? npmView;
+  const execute = dependencies.run ?? run;
+  const token = Object.hasOwn(dependencies, "token") ? dependencies.token : process.env.NPM_TOKEN;
+  const { manifest, integrity } = validate(options);
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-publish-"));
   try {
     const inspectEnv = isolatedNpmEnvironment(root);
-    const tags = npmView([manifest.name, "dist-tags"], inspectEnv) ?? {};
-    const publishedIntegrity = npmView([`${manifest.name}@${manifest.version}`, "dist.integrity"], inspectEnv);
-    const publishedSource = npmView([`${manifest.name}@${manifest.version}`, "agentera.gitRef"], inspectEnv);
+    const tags = view([manifest.name, "dist-tags"], inspectEnv) ?? {};
+    const publishedIntegrity = view([`${manifest.name}@${manifest.version}`, "dist.integrity"], inspectEnv);
+    const publishedSource = view([`${manifest.name}@${manifest.version}`, "agentera.gitRef"], inspectEnv);
     const state = classifyDevelopmentPublication({
       version: manifest.version,
       integrity,
@@ -114,30 +119,32 @@ export function publishDevelopmentTarball(options) {
       console.log(`${manifest.name}@${manifest.version} is an ${state} with identical bytes and source`);
       return;
     }
-    if (!process.env.NPM_TOKEN) throw new Error("NPM_TOKEN is required for npm mutation");
-    const mutationEnv = isolatedNpmEnvironment(fs.mkdtempSync(path.join(root, "mutation-")), process.env.NPM_TOKEN);
+    if (!token) throw new Error("NPM_TOKEN is required for npm mutation");
+    const mutationEnv = isolatedNpmEnvironment(fs.mkdtempSync(path.join(root, "mutation-")), token);
     if (state === "forward-publish") {
-      run("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], { env: mutationEnv });
+      execute("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], { env: mutationEnv });
     } else {
-      run("npm", ["dist-tag", "add", `${manifest.name}@${manifest.version}`, "next"], { env: mutationEnv });
+      execute("npm", ["dist-tag", "add", `${manifest.name}@${manifest.version}`, "next"], { env: mutationEnv });
     }
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 }
 
-const [command] = process.argv.slice(2);
-if (!["validate", "publish"].includes(command)) throw new Error("usage: publish-development.mjs <validate|publish> --tarball FILE --package-version VERSION --git-ref SHA");
-const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref"] });
-const options = {
-  tarball: path.resolve(flags.get("--tarball") ?? ""),
-  packageVersion: flags.get("--package-version"),
-  gitRef: flags.get("--git-ref"),
-};
-if (!options.tarball || !options.packageVersion || !options.gitRef) throw new Error("--tarball, --package-version, and --git-ref are required");
-if (command === "validate") {
-  validateDevelopmentTarball(options);
-  console.log(`validated ${options.packageVersion} from ${options.gitRef}`);
-} else {
-  publishDevelopmentTarball(options);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const [command] = process.argv.slice(2);
+  if (!["validate", "publish"].includes(command)) throw new Error("usage: publish-development.mjs <validate|publish> --tarball FILE --package-version VERSION --git-ref SHA");
+  const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref"] });
+  const options = {
+    tarball: path.resolve(flags.get("--tarball") ?? ""),
+    packageVersion: flags.get("--package-version"),
+    gitRef: flags.get("--git-ref"),
+  };
+  if (!options.tarball || !options.packageVersion || !options.gitRef) throw new Error("--tarball, --package-version, and --git-ref are required");
+  if (command === "validate") {
+    validateDevelopmentTarball(options);
+    console.log(`validated ${options.packageVersion} from ${options.gitRef}`);
+  } else {
+    publishDevelopmentTarball(options);
+  }
 }
