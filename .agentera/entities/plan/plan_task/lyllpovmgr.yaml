@@ -6,10 +6,16 @@ record:
     - otmtspkvqk
     - qaabpascat
     - ujelwalvtv
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN npm @next is 3.0.0-dev.83 WHEN the migration is prepared THEN the checked-in development package version becomes exactly 3.0.0-dev.84.
     - GIVEN the development package version changes WHEN version surfaces are validated THEN suite, registry, and skill versions remain 3.0.0 and stable metadata remains unchanged.
     - GIVEN maintainers prepare a later feat/v3 push WHEN guidance is followed THEN they commit a new development version before pushing and receive clear recovery for unpublished, replayed, or conflicting versions.
     - GIVEN the migration commit is verified locally WHEN implementation ends THEN no push, registry mutation, tag change, or publication claim has occurred.
   plan: pbvgdsqunx
+  evidence:
+    - Read-only npm observation confirmed agentera@next is 3.0.0-dev.83; packages/cli/package.json now declares only development package version 3.0.0-dev.84.
+    - Focused authority, release-metadata, guidance, and release-conjunction tests passed 68/68; suite, registry, skill, stable metadata, and gitRef policy remain unchanged.
+    - Typecheck, build, generated-overlap, the 11-gate release conjunction, package verification 19/19, compact, and package dry-run passed; executable and dry-run report 3.0.0-dev.84 with no publication effects.
+    - Maintainer guidance now requires a committed new development version before each later feat/v3 push and distinguishes unpublished-source recovery, exact replay, and registry-byte conflict recovery.
+    - No push, publish, tag, registry mutation, credential inspection, or dev.84 publication claim occurred; progress record ylztztyobl captures the local preparation evidence.

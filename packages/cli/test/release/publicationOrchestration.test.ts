@@ -27,6 +27,8 @@ const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.jso
 const developmentPackage = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"),
 );
+const registry = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "registry.json"), "utf8"));
+const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
 const stablePackage = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "packages/cli/shim/package.json"), "utf8"),
 );
@@ -44,6 +46,29 @@ const releaseSkill = fs.readFileSync(
 const agentsGuide = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
 
 describe("package publication orchestration", () => {
+  it("prepares only the first checked-in development package version", () => {
+    expect(developmentPackage.version).toBe("3.0.0-dev.84");
+    expect(developmentPackage.agentera.suiteVersion).toBe("3.0.0");
+    expect(registry.skills[0].version).toBe("3.0.0");
+    expect(skill).toMatch(/^version: "3\.0\.0"$/m);
+    expect(stablePackage).toMatchObject({
+      version: "0.0.2",
+      agentera: {
+        suiteVersion: "2.7.7",
+        gitRef: "ce4a7054a8438b8b0aac013bac4b86ba1a9de3dd",
+      },
+    });
+  });
+
+  it("documents bump-before-push and development version recovery", () => {
+    expect(packagingGuide).toContain("Before each later `feat/v3` push");
+    expect(packagingGuide).toContain("commit a new development version");
+    expect(packagingGuide).toContain("exact replay");
+    expect(packagingGuide).toContain("already contains different bytes");
+    expect(packagingGuide).toContain("do not overwrite or retag it");
+    expect(packagingGuide).toContain("obtain fresh push authorization");
+  });
+
   it("routes preparation, verification, approval, staging, and promotion through explicit scripts", () => {
     expect(rootPackage.scripts).toMatchObject({
       "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",

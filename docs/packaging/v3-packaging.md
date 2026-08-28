@@ -59,6 +59,16 @@ A rerun keeps the same pushed SHA and checked-in version. If identical bytes
 already exist at that version on `@next`, publication succeeds without another
 upload. A failed run does not allocate a replacement version.
 
+Before each later `feat/v3` push, choose a development version newer than the
+current npm `@next`, update only `packages/cli/package.json#version`, and commit
+that change with the source that it identifies. Do not push an unpublished
+version again after changing its source. Instead, commit a new development
+version and obtain fresh push authorization. Rerun the existing workflow when
+the version and source are unchanged, because that is an exact replay. If npm
+already contains different bytes at the checked-in version, treat it as a
+conflict: do not overwrite or retag it; commit a new development version and
+obtain fresh push authorization.
+
 One explicit push authorization permits exactly one push and is consumed by it.
 After that push, stop. A failed or cancelled workflow ends the release attempt;
 it does not authorize another version or push. Make fixes on a
