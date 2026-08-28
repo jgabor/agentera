@@ -4,7 +4,7 @@ record:
   name: Establish checked-in development-version authority
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a checked-in development version newer than npm @next WHEN publication state is classified THEN it is eligible for forward publication and tag advancement.
     - GIVEN a checked-in version equal to npm @next WHEN registry bytes and source identity match THEN publication is an exact no-op replay, while any mismatch fails before credentials or mutation.
@@ -17,12 +17,12 @@ record:
     - Recorded checked-in development, explicit stable, and unchanged 3.0.0 suite version authorities with the current development caller inventory.
     - Focused classification and authority tests passed; typecheck and build passed before status transition.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Authoritative verify:generated-overlap reproducibly fails selected-term startup parity at packages/cli/test/packaging/packageVerification.test.ts:266-287, while standalone package verification passes; diagnose concurrency or stale-profile interference and rerun the owning release gate.
     provenance:
-      attempt_id: audit-otmtspkvqk-1
-      source: audit task ses_fb65dfb9dffe0Aknt23hQreSTD
-      recorded_at: 2026-08-28 20:32
+      attempt_id: audit-otmtspkvqk-2
+      source: audit task ses_fb642fe77ffeC3G5bsAlGsoPNk
+      recorded_at: 2026-08-28 21:04
       writer_command: agentera state plan record-evaluation
