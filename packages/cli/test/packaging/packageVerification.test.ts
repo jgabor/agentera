@@ -72,6 +72,33 @@ function packageEnvironment(home = path.join(fixture.root, "isolated-home"), pro
   return env;
 }
 
+function selectedTermObservation(bin: string, root: string, termBytes: Buffer | string) {
+  fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
+  fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  const term = path.join(root, "term");
+  fs.writeFileSync(term, termBytes);
+  const result = spawnSync(
+    process.execPath,
+    [bin, "prime", "--context", "plan", "--term-input", term, "--format", "json"],
+    { cwd: root, env: packageEnvironment(path.join(root, "home")), encoding: "utf8" },
+  );
+  const output = result.stdout + result.stderr;
+  const payload = JSON.parse(result.stdout || result.stderr) as Record<string, any>;
+  return {
+    status: result.status,
+    advice: payload.capability_context?.glossary_advice,
+    instructions: payload.capability_context?.instructions,
+    error: payload.error && {
+      class: payload.error.class,
+      syntax: payload.error.syntax,
+      recovery: payload.error.recovery,
+    },
+    bytes: Buffer.byteLength(output),
+    echoed: output.includes("package-private-selected-term"),
+    files: fs.readdirSync(path.join(root, ".agentera")),
+  };
+}
+
 function runResetWorkflow(bin: string, root: string) {
   const project = path.join(root, "project");
   const install = path.join(root, "install");
@@ -234,6 +261,70 @@ describe("npm distribution boundary", () => {
       capability_context: { capability: string };
     };
     expect(payload.capability_context.capability).toBe("status");
+  });
+
+  it("matches selected-term startup across source, bundled, and extracted runtimes", () => {
+    const bins = [
+      path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),
+      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
+      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
+    ];
+    const observations = bins.map((bin, index) => selectedTermObservation(
+      bin,
+      path.join(fixture.root, `term-parity-${index}`),
+      "package-private-selected-term",
+    ));
+
+    const withoutBytes = observations.map(({ bytes: _bytes, ...observation }) => observation);
+    expect(withoutBytes[1]).toEqual(withoutBytes[0]);
+    expect(withoutBytes[2]).toEqual(withoutBytes[0]);
+    expect(observations[0]).toMatchObject({
+      status: 0,
+      advice: { outcome: "no_applicable_entry" },
+      echoed: false,
+      files: ["state-mode.yaml"],
+    });
+    expect(observations.every(({ bytes }) => bytes <= 32_768)).toBe(true);
+
+    const helps = bins.map((bin) => spawnSync(process.execPath, [bin, "prime", "--help"], { encoding: "utf8" }).stdout);
+    expect(helps[1]).toBe(helps[0]);
+    expect(helps[2]).toBe(helps[0]);
+    expect(helps[0]).toContain("--term-input FILE|-");
+
+    for (const relative of [
+      "skills/agentera/capabilities/plan/schemas/validation.yaml",
+      "skills/agentera/protocol.yaml",
+    ]) {
+      const contents = [
+        fs.readFileSync(path.join(CHECKOUT_ROOT, relative), "utf8"),
+        fs.readFileSync(path.join(fixture.constructionRoot, "bundle", relative), "utf8"),
+        fs.readFileSync(path.join(fixture.packageRoot, "bundle", relative), "utf8"),
+      ];
+      expect(contents[1], relative).toBe(contents[0]);
+      expect(contents[2], relative).toBe(contents[0]);
+    }
+  });
+
+  it("matches structured, mutation-free scalar failures across all runtimes", () => {
+    const bins = [
+      path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),
+      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
+      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
+    ];
+    const observations = bins.map((bin, index) => selectedTermObservation(
+      bin,
+      path.join(fixture.root, `term-failure-parity-${index}`),
+      Buffer.from([0xc3, 0x28]),
+    ));
+
+    expect(observations[1]).toEqual(observations[0]);
+    expect(observations[2]).toEqual(observations[0]);
+    expect(observations[0]).toMatchObject({
+      status: 2,
+      error: { class: "invalid_selected_term" },
+      echoed: false,
+      files: ["state-mode.yaml"],
+    });
   });
 
   it("serves and isolates the bundled Profile contract", () => {

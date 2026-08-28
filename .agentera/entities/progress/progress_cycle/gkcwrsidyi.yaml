@@ -1,0 +1,14 @@
+id: gkcwrsidyi
+artifact: progress
+record:
+  timestamp: 2026-08-28 19:19
+  type: test
+  phase: build
+  what: Verified host command reduction, compatibility, and packaged selected-term workflow parity for plan task ttlnzmnfsc.
+  context:
+    intent: Verify host and packaged workflows for single-ingress terminology advice and Plan publication.
+    constraints: Keep advice read-only, bounded, no-echo, package-self-contained, and leave task incomplete pending evaluation.
+    scope: Host semantic fixtures, compatibility evidence, and source, bundled, extracted-package parity tests.
+  verified: "Focused host and compatibility: 69 passed with the known 3 stale packaged-prose assertions excluded; host fixtures: 6 passed; typecheck and build passed; capability contract passed 3/3; compact passed; package verification passed 18/18; package dry-run completed with 483 files and no warnings; broad source lane passed 4103 with 2 skipped and 6 known failures, comprising the 191/3 retired-runtime baseline plus 3 stale packaged-prose assertions outside this task."
+  next: Orchestrate evaluates task ttlnzmnfsc before completion and final synchronization remains owned by pqpcnoigie.
+  publication_order: 237
