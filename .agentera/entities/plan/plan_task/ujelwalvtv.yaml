@@ -5,7 +5,7 @@ record:
   depends_on:
     - otmtspkvqk
     - qaabpascat
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a push to feat/v3 with a valid eligible manifest version WHEN the development workflow runs THEN it reads that version, binds the pushed source identity, and uses the same values for construction, validation, smoke, and publication.
     - GIVEN the push workflow runs WHEN version provenance is inspected THEN no workflow run number, offset, or generated target version participates.
@@ -14,12 +14,12 @@ record:
     - GIVEN an interrupted or rerun workflow WHEN the same source and version execute again THEN replay converges without allocating a new version or authorizing another push.
   plan: pbvgdsqunx
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: publish-next injects NPM_TOKEN into the publication process before registry classification, so exact and superseded replay paths receive credentials. Split credential-free classification from conditional forward mutation.
     provenance:
-      attempt_id: audit-ujelwalvtv-1
-      source: audit task ses_fb5f0df64ffeioo2kusr2r7Wu8
-      recorded_at: 2026-08-28 22:29
+      attempt_id: audit-ujelwalvtv-2
+      source: audit task ses_fb5c76e47ffeEcmqAZQNWiQgD2
+      recorded_at: 2026-08-28 23:15
       writer_command: agentera state plan record-evaluation
