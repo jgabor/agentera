@@ -6,7 +6,7 @@ record:
     - qaabpascat
     - ujelwalvtv
     - lyllpovmgr
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN forward, exact replay, conflict, older-existing, older-absent, malformed, and failed-prior-run scenarios WHEN deterministic verification runs THEN each produces the authority-defined outcome without live registry mutation.
     - GIVEN development versions with different digit widths WHEN ordering is checked THEN numeric progression such as dev.9 to dev.10 is correct and lexical ordering cannot move @next backward.
@@ -19,3 +19,13 @@ record:
     - Two sequential eligible versions followed by a stale older run classify the stale run as superseded replay and reject mutation, so @next cannot move backward.
     - Package verification proves 3.0.0-dev.84 manifest, gitRef, executable output, deterministic tarball bytes, construction, bundle source identity, and extracted package parity.
     - Focused publication tests, full source, typecheck, build, generated-overlap, all 11 release gates, compact, package verification, and dry-run passed without publication effects.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-leakspniav-1
+      source: audit task ses_fb5a3277affehfPKziNFBytP7v
+      recorded_at: 2026-08-28 23:54
+      writer_command: agentera state plan record-evaluation
