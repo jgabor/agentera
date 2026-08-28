@@ -1,0 +1,14 @@
+id: kodyfgcjnv
+artifact: progress
+record:
+  timestamp: 2026-08-28 18:44
+  type: fix
+  phase: build
+  what: Corrected compact glossary advice scalar loading failures to return the selected-term error class and scalar retry command while preserving legacy structured input failures.
+  context:
+    intent: Correct the accepted audit finding for plan task agywahiidu.
+    constraints: Change only scalar --term-input loading failure class and recovery; preserve legacy structured --input behavior and the persisted failed evaluation.
+    scope: Glossary advice report failure response and focused workflow assertions.
+  verified: Focused glossary workflow tests passed (17/17); typecheck, build, capability-contract (3/3), compact, and the compiled malformed-scalar smoke passed.
+  next: Audit and orchestration retain task ownership; agywahiidu remains in_progress with FAIL attempt 1 preserved.
+  publication_order: 234

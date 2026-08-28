@@ -336,7 +336,11 @@ describe("packaged Build glossary advice seam", () => {
     const result = compactAdvice(root, temporary("missing-profile"), "   ");
 
     expect(result.status).toBe(2);
-    expect(JSON.parse(result.stdout).error.class).toBe("invalid_format");
+    const error = JSON.parse(result.stdout).error;
+    expect(error.class).toBe("invalid_selected_term");
+    expect(error.recovery).toBe(
+      "agentera report glossary-advice --term-input <file|-> --format json",
+    );
     expect(result.stdout + result.stderr).not.toContain("   ");
     expect(snapshotTree(root)).toEqual(before);
   });

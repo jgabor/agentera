@@ -20,6 +20,7 @@ type Mapping = Record<string, unknown>;
 const contract = glossaryAdviceContract();
 const COMMAND = contract.command.replace("REQUEST", "<file|->");
 const RECOVERY = `Correct the bounded request and retry ${COMMAND}; no state was changed.`;
+const TERM_INPUT_RECOVERY = "agentera report glossary-advice --term-input <file|-> --format json";
 
 function mapping(value: unknown): Mapping | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -27,8 +28,8 @@ function mapping(value: unknown): Mapping | null {
     : null;
 }
 
-function invalid(io: Io, body: InvalidInputErrorBody): number {
-  return emitInvalidInput(io, { format: "json", body: { ...body, recovery: RECOVERY } });
+function invalid(io: Io, body: InvalidInputErrorBody, recovery = RECOVERY): number {
+  return emitInvalidInput(io, { format: "json", body: { ...body, recovery } });
 }
 
 type AdviceSource = { input: string } | { termInput: string };
@@ -148,9 +149,9 @@ export function runGlossaryAdviceCommand(argv: string[], io: Io): number {
     } catch (error) {
       if (!(error instanceof SelectedTermInputError)) throw error;
       return invalid(io, {
-        class: "invalid_format",
+        class: "invalid_selected_term",
         message: "--term-input must be one readable bounded non-blank UTF-8 scalar",
-      });
+      }, TERM_INPUT_RECOVERY);
     }
   } else {
     let request: Mapping;

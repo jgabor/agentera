@@ -14,3 +14,13 @@ record:
     - GIVEN each new refresh parser or dispatch unit WHEN tests are added THEN one success and one failure case cover it.
   plan: sqcanwbxwy
   evidence: Implemented compact report glossary-advice --term-input refresh with shared bounded scalar loading and existing resolver acquisition; preserved structured --input host review and output envelope. Focused tests, typecheck, build, compiled smoke, capability-contract, compact, package verification, and package dry run passed; full source lane retained the known unrelated retired-runtime 3-failure baseline.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Compact scalar failures return legacy --input recovery and invalid_format instead of --term-input recovery and invalid_selected_term; packages/cli/src/cli/commands/glossaryAdvice.ts:20-22,30-31,150-153.
+    provenance:
+      attempt_id: audit-agywahiidu-1
+      source: audit task ses_fb6efed1bffeJ7ggN3cbT4hIwh
+      recorded_at: 2026-08-28 17:53
+      writer_command: agentera state plan record-evaluation
