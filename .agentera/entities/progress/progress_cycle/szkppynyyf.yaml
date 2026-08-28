@@ -1,0 +1,15 @@
+id: szkppynyyf
+artifact: progress
+record:
+  timestamp: 2026-08-28 18:28
+  type: chore
+  phase: audit
+  what: Verified source-test simplification completion evidence for plan jdwyriidnr.
+  context:
+    intent: Record final verification evidence for task yeugqltjfj without closing it.
+    constraints: Do not change verification policy, unrelated state, task status, plan status, health, or evaluation.
+    scope: Final verification and typed evidence only.
+  discovered: "Surprise: the standard full breakdown prints only five slow tests, so a temporary reporting-only expansion (restored before state write) was needed to expose the third named duration. The source run also emitted the expected preview-only upgrade recovery diagnostic while passing."
+  verified: 'Node v24.19.0 and pnpm 10.30.3. Comparable command repeated three times: time pnpm -C packages/cli exec vp test run --config vite.config.ts test/upgrade/upgradeEntityCutover.test.ts test/cli/profileFullGlossaryWorkflow.test.ts test/state/v2CompactionEvidence.test.ts --maxWorkers=1 --testNamePattern="completes the pinned v2 compaction lifecycle|drives Profile Full source behavior|publishes compacted summaries and only known inherited decision labels". All runs passed 3 files/3 selected tests (43 skipped). Assertion/wall: 31.55s/34.562s, 31.65s/34.690s, 31.75s/34.800s; medians 31.65s/34.690s. Assertion median is 52.27% below 66.31s and below 56.3635s. Full command: node packages/cli/scripts/source-test-breakdown.mjs. PASS; owner wall 3m31.396s; 249 files; 4080 tests (4078 passed, 2 skipped); named durations: upgrade 14.966s, profile 17.405s, compaction evidence 4.046s; sum 36.417s, below 69.771s. pnpm -C packages/cli run typecheck: PASS. pnpm -C packages/cli build: PASS. node packages/cli/dist/bin/agentera.js check compact: PASS, 0 over-limit/errors/changes. Package verification not applicable: changed files since bb2d6a4d^ are source, tests, and typed state only; no package manifest, construction, packaged bundle, or package-boundary contract changed.'
+  next: Orchestrator owns audit and closure; task and plan status remain unchanged.
+  publication_order: 233
