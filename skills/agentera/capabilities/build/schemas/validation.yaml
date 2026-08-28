@@ -132,14 +132,17 @@ VALIDATION:
     id: V12
     rule: governed_glossary_advice
     description: >-
-      At initial meaning-sensitive cycle intent and later user-authored changes
-      or clarification answers that can alter intent, Build MUST request bounded
-      advice through `npx -y agentera@next report glossary-advice --input REQUEST --format
-      json`. Unchanged replay, unrelated turns, rendering, and tool output MUST
-      NOT refresh advice.
+      Build MUST consume startup advice from `npx -y agentera@next prime
+      --context build --term-input <file|-> --format json` without a second
+      initial report. Later changed meaning MUST use compact `report
+      glossary-advice --term-input`; structured host-review clarification MUST
+      use `--input`. Unchanged replay, unrelated turns, rendering, tool output,
+      and control-only continuation MUST NOT refresh advice.
     severity: critical
     checks:
       - "Exact project authority or proven-gap personal fallback grounds intent"
+      - "Initial advice comes from prime with no second initial report"
+      - "Changed meaning and host review use their distinct input contracts"
       - "Governed changes refresh only the affected meaning"
       - "Incidental turns and unchanged replay do not refresh"
   13:

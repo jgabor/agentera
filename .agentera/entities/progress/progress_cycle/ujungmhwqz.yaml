@@ -1,0 +1,13 @@
+id: ujungmhwqz
+artifact: progress
+record:
+  timestamp: 2026-08-28 18:55
+  type: docs
+  phase: build
+  what: Aligned capability advice and Plan publication contracts.
+  context:
+    intent: Consume startup glossary advice once and publish approved plans through the typed writer once.
+    constraints: Kept host review structured, later no-review refresh scalar, explicit preview reusable, and task status in_progress pending orchestrate evaluation.
+    scope: Discuss, Plan, and Build instructions and validation schemas plus proportional source and served contract tests.
+  verified: Focused source, served, and schema tests passed 44/44; typecheck and build passed; Discuss, Plan, Build, and shared capability validation passed; compact passed; package verification passed 16/16; package dry-run passed with no warnings; retired-runtime policy remained at the known 191-pass/3-failure CHANGELOG baseline.
+  publication_order: 235

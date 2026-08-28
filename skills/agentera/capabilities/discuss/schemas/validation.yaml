@@ -92,15 +92,18 @@ VALIDATION:
     id: V9
     rule: governed_glossary_advice_events
     description: >-
-      Discuss MUST invoke `npx -y agentera@next report glossary-advice --input <file|->
-      --format json` for initial meaning-sensitive user input and later
-      user-authored premise changes or affected clarification answers that can
-      change meaning. It MUST NOT invoke advice for unchanged replay, rendering,
+      Discuss MUST consume `capability_context.glossary_advice` from `npx -y
+      agentera@next prime --context discuss --term-input <file|-> --format json`
+      for initial meaning-sensitive input without a second report. Later
+      user-authored premise changes use compact `report glossary-advice
+      --term-input`, while structured host-review clarification uses `--input`.
+      It MUST NOT invoke advice for unchanged replay, rendering,
       unrelated turns, tool output, background rereads, or Done-only control,
       and MUST NOT use an unbounded or persistent transcript scan.
     severity: critical
     checks:
-      - "Initial and changed meaning-sensitive user events refresh advice"
+      - "Initial advice comes from prime with no second initial report"
+      - "Changed meaning uses term-input and host review uses structured input"
       - "Incidental, unchanged, and Done-only events do not refresh advice"
       - "Only current user-authored meaning-sensitive input is inspected"
   10:

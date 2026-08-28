@@ -312,8 +312,10 @@ describe("producer capability writer integration", () => {
     );
 
     expect(planInstructions).toContain("### Step 4: Validate and publish");
-    expect(planInstructions).toContain("Optionally run `agentera check lint");
-    expect(planInstructions).toContain("sole publication gate");
+    expect(planInstructions).toContain("Normally run exactly one `agentera state plan create");
+    expect(planInstructions).toContain("do not run standalone lint or dry-run first");
+    expect(planInstructions).toContain("publish from the same unchanged PATH");
+    expect(planInstructions).not.toContain("Optionally run `agentera check lint");
     expect(planInstructions).not.toContain("Pre-write self-audit");
     expect(vocabulary).toContain("Draft lint preview");
     expect(vocabulary).toContain("the typed writer validates final bytes when publishing");

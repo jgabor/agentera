@@ -103,14 +103,19 @@ VALIDATION:
     id: V10
     rule: governed_terminology_advice
     description: >-
-      Plan MUST consume terminology advice through the shared glossary consumer
-      authority at governed meaning-sensitive user events. Interactive review
+      Plan MUST consume initial advice from `npx -y agentera@next prime
+      --context plan --term-input <file|-> --format json` without a second
+      report. Later changed meaning uses compact `report glossary-advice
+      --term-input`, while structured host-review clarification uses `--input`.
+      Interactive review
       MUST precede fixing affected requirements. Autonomous unresolved review
       MUST abstain, defer the affected requirements, and emit at most one bounded
       current writer intent without delivering or storing it or writing plan
       conflict or progress state.
     severity: critical
     checks:
+      - "Initial advice comes from prime with no second initial report"
+      - "Changed meaning and host review use their distinct input contracts"
       - "Advice refreshes only for authority-declared Plan events"
       - "Mode follows explicit authority precedence and unknown mode waits"
       - "Interactive review precedes affected requirements and acceptance"
@@ -119,3 +124,17 @@ VALIDATION:
       - "Writer owns caveat identity, Build capability, and transition fields"
       - "Exact project authority suppresses personal-unavailable durable handoff"
       - "Plan artifacts exclude private glossary content"
+  11:
+    id: V11
+    rule: approved_plan_publication
+    description: >-
+      Plan MUST publish an approved plan that does not require preview with
+      exactly one `npx -y agentera@next state plan create --input PATH --format
+      json` call and MUST NOT run standalone lint or dry-run first. When the user
+      explicitly requests preview, dry-run and final publication MUST reference
+      the same unchanged temporary input rather than reserializing plan content.
+    severity: critical
+    checks:
+      - "Normal publication is one typed writer call"
+      - "Standalone lint and default dry-run are absent"
+      - "Explicit preview and publication reuse one unchanged input"

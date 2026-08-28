@@ -15,7 +15,7 @@ Build reads whether progress is allowed or required from the \`guidance\` and \`
 
 #### Governed terminology advice
 
-At initial meaning-sensitive cycle intent, request acquisition and advice with the structured, headless interface declared by \`agentera report glossary-advice --help\` and the vocabulary authority. Repeat only when a later user-authored requirement, intent, acceptance change, cycle-intent change, or clarification answer can alter the affected meaning. Do not refresh for unchanged replay, unrelated turns, background rereads, rendering, or tool output.
+At initial meaning-sensitive cycle intent, identify the requested term and start with \`agentera prime --context build --term-input <file|-> --format json\` (alongside \`--input <file|->\` when a transient execution request is needed). Consume \`capability_context.glossary_advice\`; do not issue a second initial glossary report. For a later user-authored requirement, intent, acceptance, or cycle-intent change that can alter the affected meaning, refresh compact no-review advice with \`agentera report glossary-advice --term-input <file|-> --format json\`. When a clarification answer supplies structured host review, use \`agentera report glossary-advice --input <file|-> --format json\` instead. Do not invoke either refresh for unchanged replay, unrelated turns, background rereads, rendering, tool output, or control-only continuation.
 
 Use only \`advice.applicable_meaning\` with \`advice.applicable_owner\`: an exact project entry governs, including an exact divergent collision, while a personal entry applies only after the CLI proves a valid project gap. Invalid or unavailable acquisition abstains; never fabricate fallback. Preserve bounded tension without changing authority.
 
