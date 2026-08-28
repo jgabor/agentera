@@ -150,9 +150,35 @@ describe("development publication", () => {
 
   it.each([
     ["conflict", "3.0.0-dev.10", { integrity: "sha512-other", source }],
+    ["older absent", "3.0.0-dev.11", {}],
+    ["older conflicting", "3.0.0-dev.11", { integrity: "sha512-other", source }],
     ["malformed current tag", "not-a-version", {}],
   ])("fails closed on %s during credential-free classification", (_label, currentNext, published) => {
     expect(() => classify(currentNext, published)).toThrow();
+  });
+
+  it("keeps @next on the newer sequential version when a stale run arrives", () => {
+    const first = classify("3.0.0-dev.8", {});
+    expect(first.classification.outcome).toBe("forward-publish");
+
+    options.packageVersion = "3.0.0-dev.11";
+    const second = classify("3.0.0-dev.10", {});
+    expect(second.classification.outcome).toBe("forward-publish");
+
+    options.packageVersion = "3.0.0-dev.10";
+    const stale = classify("3.0.0-dev.11", { integrity, source });
+    expect(stale.classification.outcome).toBe("superseded-replay");
+    expect(() => mutateDevelopmentTarball(options, stale.classification, {
+      ...registry("3.0.0-dev.11", { integrity, source }),
+      environment: coordinatorEnvironment,
+    })).toThrow("classification does not authorize npm mutation");
+  });
+
+  it("retries a failed prior forward run without allocating a new version", () => {
+    const prior = classify("3.0.0-dev.9", {});
+    expect(prior.classification.outcome).toBe("forward-publish");
+    const retry = classify("3.0.0-dev.9", {});
+    expect(retry.classification).toEqual(prior.classification);
   });
 
   it("binds mutation to the classified tarball bytes", () => {

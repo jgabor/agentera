@@ -213,6 +213,25 @@ describe("npm distribution boundary", () => {
     }
   });
 
+  it("keeps development version and source identity aligned through extraction", () => {
+    const roots = [
+      path.join(CHECKOUT_ROOT, "packages/cli"),
+      fixture.constructionRoot,
+      fixture.packageRoot,
+    ];
+    const manifests = roots.map((root) => JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")));
+    expect(manifests.map(({ version }) => version)).toEqual(Array(3).fill("3.0.0-dev.84"));
+    expect(manifests.map(({ agentera }) => agentera.gitRef)).toEqual(Array(3).fill(manifests[0].agentera.gitRef));
+
+    const versions = roots.map((root) => spawnSync(
+      process.execPath,
+      [path.join(root, "dist/bin/agentera.js"), "--version"],
+      { encoding: "utf8" },
+    ));
+    expect(versions.every(({ status }) => status === 0)).toBe(true);
+    expect(versions.map(({ stdout }) => stdout.trim())).toEqual(Array(3).fill("3.0.0-dev.84"));
+  });
+
   it("extracts the manifest as regular files with the executable mode and no source maps", () => {
     const manifestFiles = new Map(fixture.manifest.files.map((entry) => [entry.path, entry]));
     let diskFiles = 0;
