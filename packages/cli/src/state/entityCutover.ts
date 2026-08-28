@@ -37,6 +37,8 @@ export interface PreparedEntityCutover {
   head: string;
   sourceFingerprint: string;
   previewDigest: string;
+  entityCount: number;
+  todoReconciliation: boolean;
   recovery?: boolean;
 }
 
@@ -234,9 +236,9 @@ export function inspectEntityCutoverForUpgrade(projectRoot: string, sourceRoot: 
 
 export function prepareEntityCutoverForUpgrade(projectRoot: string, sourceRoot: string, activeUpgradeLockPaths: readonly string[] = []): PreparedEntityCutover {
   const current = inspect(projectRoot, sourceRoot, true, false, activeUpgradeLockPaths);
-  if (current.inspection.phase === "ready" && !current.plan) return { project: validateRealProjectRoot(projectRoot).path, sourceRoot, head: "", sourceFingerprint: "", previewDigest: "", recovery: true };
+  if (current.inspection.phase === "ready" && !current.plan) return { project: validateRealProjectRoot(projectRoot).path, sourceRoot, head: "", sourceFingerprint: "", previewDigest: "", entityCount: current.inspection.entityCount, todoReconciliation: current.inspection.todoReconciliation, recovery: true };
   if (current.inspection.phase === "active" || !current.plan || !current.head) throw new EntityCutoverError("entity authority is already active; no cutover preparation is available");
-  return { project: current.plan.project, sourceRoot, head: current.head, sourceFingerprint: current.plan.source_fingerprint, previewDigest: current.plan.preview_digest };
+  return { project: current.plan.project, sourceRoot, head: current.head, sourceFingerprint: current.plan.source_fingerprint, previewDigest: current.plan.preview_digest, entityCount: current.inspection.entityCount, todoReconciliation: current.inspection.todoReconciliation };
 }
 
 function ensureDirectory(project: string, relativeDirectory: string): void {
@@ -449,10 +451,6 @@ export function applyPreparedEntityCutover(prepared: PreparedEntityCutover, acti
       return recovered;
     } finally { lock.release(); }
   }
-  const before = inspect(prepared.project, prepared.sourceRoot, true, false, activeUpgradeLockPaths);
-  if (before.inspection.phase === "active") return { status: "complete", phase: "active", idempotent: true, mutation_performed: false, entity_count: before.inspection.entityCount };
-  if (!before.plan || before.head !== prepared.head || before.plan.source_fingerprint !== prepared.sourceFingerprint || before.plan.preview_digest !== prepared.previewDigest) throw new EntityCutoverError("first unresolved path '.agentera': converted input changed before apply");
-
   const lock = acquireWriterLock(prepared.project, 2000);
   try {
     const current = inspect(prepared.project, prepared.sourceRoot, true, true, activeUpgradeLockPaths);

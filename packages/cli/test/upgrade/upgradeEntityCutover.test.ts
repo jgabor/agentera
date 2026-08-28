@@ -83,6 +83,7 @@ function compactedProject(): string {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(source, target);
   }
+  fs.cpSync(path.join(V2_COMPACTION_OUTPUT, ".agentera/optimera"), path.join(root, ".agentera/optimera"), { recursive: true });
   return root;
 }
 
@@ -443,12 +444,35 @@ describe("one-way Git entity cutover", () => {
     expect(applyPreparedEntityCutover(prepared)).toMatchObject({ status: "complete", idempotent: true, mutation_performed: false });
   }, 30_000);
 
+  it.each([
+    ["project", (root: string, _prepared: ReturnType<typeof prepareEntityCutoverForUpgrade>) => fs.appendFileSync(path.join(root, ".agentera/progress.yaml"), "# drift\n")],
+    ["source", (_root: string, prepared: ReturnType<typeof prepareEntityCutoverForUpgrade>) => {
+      const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-source-drift-"));
+      roots.push(sourceRoot);
+      fs.cpSync(path.join(SOURCE_ROOT, "references/artifacts"), path.join(sourceRoot, "references/artifacts"), { recursive: true });
+      fs.cpSync(path.join(SOURCE_ROOT, "skills/agentera"), path.join(sourceRoot, "skills/agentera"), { recursive: true });
+      const authority = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
+      fs.appendFileSync(authority, "# drift\n");
+      prepared.sourceRoot = sourceRoot;
+    }],
+    ["Git", (root: string, _prepared: ReturnType<typeof prepareEntityCutoverForUpgrade>) => git(root, ...gitCommitArgs("--quiet", "--allow-empty", "-m", "drift"))],
+  ])("rejects %s drift after preparation before the first effect", (_kind, mutate) => {
+    const root = project();
+    initializeGit(root);
+    const prepared = prepareEntityCutoverForUpgrade(root, SOURCE_ROOT);
+    mutate(root, prepared);
+
+    expect(() => applyPreparedEntityCutover(prepared)).toThrow(/changed|modified or renamed/);
+    expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
+    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+  });
+
   it("completes the pinned v2 compaction lifecycle without changing preserved aggregate bytes", () => {
     const root = compactedProject();
     const rawTodo = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
     expect(rawTodo).toMatch(/^## Resolved$/m);
     expect(rawTodo).not.toMatch(/^## ✓ Resolved$/m);
-    const protectedExperiments = treeBytes(V2_COMPACTION_OUTPUT, ".agentera/optimera");
+    const protectedExperiments = treeBytes(root, ".agentera/optimera");
     initializeGit(root);
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v2-compaction-home-"));
     roots.push(home);
@@ -458,7 +482,7 @@ describe("one-way Git entity cutover", () => {
       const { "TODO.md": _todo, ...current } = aggregateHashes(root);
       expect(current).toEqual(aggregateBefore);
       if (expectedTodo) expect(sha256(fs.readFileSync(path.join(root, "TODO.md")))).toBe(expectedTodo);
-      expect(treeBytes(V2_COMPACTION_OUTPUT, ".agentera/optimera")).toEqual(protectedExperiments);
+      expect(treeBytes(root, ".agentera/optimera")).toEqual(protectedExperiments);
     };
     const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
     const previewEntries = [...preview.entries];

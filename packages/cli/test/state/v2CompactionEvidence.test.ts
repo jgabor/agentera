@@ -116,9 +116,7 @@ describe("pinned v2.7.11 compaction evidence", () => {
     expect(manifest.scope_notes.experiments).toContain("protected");
     const plan = planEntityMigration(root, REPO_ROOT);
     const experiments = plan.entries.filter((entry) => entry.source_paths.includes(".agentera/optimera/fixture/experiments.yaml"));
-    expect(experiments).toHaveLength(11);
-    expect(experiments.every((entry) => entry.artifact === "experiments" && entry.boundary === "experiment" && entry.classification === "corrupt" && entry.detail_availability === "full" && !entry.record.migration_provenance)).toBe(true);
-    expect(experiments.some((entry) => entry.boundary === "experiment_summary")).toBe(false);
+    expect(experiments).toHaveLength(0);
     const todos = plan.entries.filter((entry) => entry.source_paths.includes("TODO.md"));
     expect(todos).toHaveLength(11);
     expect(todos.every((entry) => entry.artifact === "todo" && entry.boundary === "todo_item" && entry.classification === "verified_full" && entry.detail_availability === "full" && entry.proposed_target !== null)).toBe(true);
@@ -142,12 +140,12 @@ describe("pinned v2.7.11 compaction evidence", () => {
       valid_compacted_summary: 4,
       duplicate: 0,
       conflict: 0,
-      corrupt: 11,
+      corrupt: 0,
       unsupported: 0,
       historical_projection_residue: 0,
-      total: 64,
+      total: 53,
       publishable_entities: 53,
-      blockers: 11,
+      blockers: 0,
     });
 
     expect(baseline.entries.find((entry) => entry.artifact === "progress" && entry.classification === "valid_compacted_summary")).toMatchObject({ boundary: "progress_summary", detail_availability: "summary", compatibility: "degraded", proposed_target: expect.any(Object), record: { summary: expect.any(String), migration_provenance: { source_path: ".agentera/progress.yaml", source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) } } });

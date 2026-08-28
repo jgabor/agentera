@@ -1,0 +1,15 @@
+id: xwxaqvuvuo
+artifact: progress
+record:
+  timestamp: 2026-08-28 18:13
+  type: refactor
+  phase: build
+  what: Reduced repeated full-lifecycle entity-upgrade analysis while retaining fresh conversion planning at the final safety boundary and preserving protected v2 experiment resources.
+  context:
+    intent: Complete plan task lupgmngyei without weakening the full pinned v2 preview, apply, publication, verification, TODO, or preservation evidence.
+    constraints: Do not reuse a mutable conversion plan; bind command-scoped preparation to project-source, migration-authority, and Git evidence; fail before publication on drift.
+    scope: Entity cutover preparation and orchestration, protected legacy experiments, focused compaction and upgrade tests.
+  discovered: The interrupted change reused a DurableEntityMigrationPlan across safety passes. The corrected seam reuses only preparation fingerprints and summary evidence, then recomputes and validates the complete plan and Git source under the writer lock before the first publication effect. The protected-resource assertion also compared fixture input to itself instead of the upgraded temporary project.
+  verified: "Node 24.19.0 and pnpm 10.30.3: focused project, authority-source, and Git drift plus protected/lifecycle checks passed 6 tests; compaction, entity-cutover, and orchestrator suites passed 69 tests in 48.75s assertion time; typecheck and build passed. One comparable three-test diagnostic run passed in 30.69s assertion time and 33.32s wall time versus the recorded pre-edit medians of 66.31s and 70.55s; this after value is one run, not a new median."
+  next: Leave task lupgmngyei pending and unevaluated for orchestrator review; do not change another task.
+  publication_order: 232

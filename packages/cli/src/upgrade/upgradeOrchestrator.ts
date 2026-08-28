@@ -226,6 +226,17 @@ function migrationPhaseToOrchestrator(phase: MigrationPhase): UpgradeOrchestrato
   };
 }
 
+function readyEntityCutoverPhase(entityCount: number, todoReconciliation: boolean): UpgradeOrchestratorPhase {
+  const empty = entityCount === 0;
+  return summarizeOrchestratorPhase("entities", [{
+    status: empty ? "blocked" : "pending",
+    action: empty ? "unsupported-state-source" : "entity-cutover",
+    message: empty
+      ? "marker-absent state has no recognized v2 entity input; preserve it and follow the manual source recovery instructions in UPGRADE.md"
+      : `${entityCount} entity record(s) are ready for marker-last Git cutover${todoReconciliation ? "; apply also journals TODO visible IDs, Markdown-owned public baselines, activation, canonical Markdown, and the authority marker" : ""}`,
+  }]);
+}
+
 function entityReadinessPhase(
   project: string,
   sourceRoot: string,
@@ -263,14 +274,7 @@ function entityReadinessPhase(
         message: "marker-absent projects require one full cross-major upgrade; filtered apply is unavailable",
       }]);
     }
-    const empty = cutover.entityCount === 0;
-    return summarizeOrchestratorPhase("entities", [{
-      status: empty ? "blocked" : "pending",
-      action: empty ? "unsupported-state-source" : "entity-cutover",
-      message: empty
-        ? "marker-absent state has no recognized v2 entity input; preserve it and follow the manual source recovery instructions in UPGRADE.md"
-        : `${cutover.entityCount} entity record(s) are ready for marker-last Git cutover${cutover.todoReconciliation ? "; apply also journals TODO visible IDs, Markdown-owned public baselines, activation, canonical Markdown, and the authority marker" : ""}`,
-    }]);
+    return readyEntityCutoverPhase(cutover.entityCount, cutover.todoReconciliation);
   } catch (error) {
     return summarizeOrchestratorPhase("entities", [{
       status: "blocked",
@@ -441,9 +445,24 @@ function buildUpgradePlanUnlocked(
   const filteredEntityBoundary = entityBoundary && Boolean(args.only && args.only.length > 0);
   const entitySelected = entityBoundary && (!filteredEntityBoundary || (!args.yes && Boolean(args.only?.includes("artifacts"))));
   const partialStateApply = filteredEntityBoundary && !entitySelected;
-  let entityPhase = entitySelected || partialStateApply || (entityAuthorityActive && crossMajorMigration)
-    ? entityReadinessPhase(project, sourceRoot, entitySelected, Boolean(args.yes), activeUpgradeLockPaths)
-    : null;
+  let preparedEntityMigration: PreparedEntityCutover | null = null;
+  let entityPhase: UpgradeOrchestratorPhase | null = null;
+  if (entitySelected || partialStateApply || (entityAuthorityActive && crossMajorMigration)) {
+    if (args.yes && entitySelected && !entityAuthorityActive) {
+      try {
+        preparedEntityMigration = prepareEntityCutoverForUpgrade(project, sourceRoot, activeUpgradeLockPaths);
+        entityPhase = readyEntityCutoverPhase(preparedEntityMigration.entityCount, preparedEntityMigration.todoReconciliation);
+      } catch (error) {
+        entityPhase = summarizeOrchestratorPhase("entities", [{
+          status: "blocked",
+          action: "validate-entity-state",
+          message: (error as Error).message,
+        }]);
+      }
+    } else {
+      entityPhase = entityReadinessPhase(project, sourceRoot, entitySelected, Boolean(args.yes), activeUpgradeLockPaths);
+    }
+  }
   const entityCutoverPending = entityPhase?.items.some(({ action }) => action === "entity-cutover") ?? false;
   if (migrationPreview && (entityAuthorityActive || (args.yes && entityCutoverPending))) {
     delegatePlanLifecycleToEntityCutover(migrationPreview.artifacts);
@@ -468,11 +487,7 @@ function buildUpgradePlanUnlocked(
   const entityPreflight = aggregateSummary(plannedPhases.filter((phase) => ["detect", "artifacts", "entities"].includes(phase.name)));
   const entityPreflightBlocked = entityPreflight.blocked > 0 || entityPreflight.failed > 0;
 
-  let preparedEntityMigration: PreparedEntityCutover | null = null;
-  if (args.yes && entitySelected && entityPhase?.status === "pending" && !entityPreflightBlocked) {
-    preparedEntityMigration = prepareEntityCutoverForUpgrade(project, sourceRoot, activeUpgradeLockPaths);
-  }
-  if (preparedEntityMigration) {
+  if (preparedEntityMigration && !entityPreflightBlocked) {
     const result = applyPreparedEntityCutover(preparedEntityMigration, activeUpgradeLockPaths);
     entityPhase = summarizeOrchestratorPhase("entities", [{
       status: "applied",

@@ -586,6 +586,7 @@ function objectiveObservations(root: string, files: SourceFile[], observations: 
     if (objective.ambiguous) continue;
     const objectivePath = objective.paths[0];
     const experimentsRelative = relative(root, path.join(path.dirname(objectivePath), "experiments.yaml"));
+    if (experimentsRelative.startsWith(".agentera/optimera/")) continue;
     const experiments = files.find((source) => source.relative === experimentsRelative);
     if (experiments?.kind === "file") {
       try {
