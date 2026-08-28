@@ -100,9 +100,9 @@ self-contained and includes runtime data under `packages/cli/bundle/`.
 `packages/cli/scripts/pack-package.mjs` constructs an isolated package tree and
 runs `npm pack` with lifecycle scripts disabled. Checkout `prepack` rejects
 direct `npm pack`; it is a safety guard, not a build step. Do not bypass it.
-For a development push, CI passes the allocated package version and pushed SHA
-to construction. Only the copied manifest changes; source and receipt checks
-remain bound to the clean pushed checkout.
+For a development push, construction uses the checked-in package version and
+sets only `agentera.gitRef` to the pushed SHA in the copied manifest. Source and
+receipt checks remain bound to the clean pushed checkout.
 
 Package verification requires an executable regular
 `dist/bin/agentera.js`, excludes source maps, and verifies source, generated,

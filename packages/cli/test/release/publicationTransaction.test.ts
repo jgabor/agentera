@@ -126,7 +126,7 @@ describe("publication contract", () => {
   it("shares transaction invariants while retaining adapter-specific behavior", () => {
     expect(PACKAGE_ADAPTERS.development).toMatchObject({
       expectedTag: "next",
-      preparation: "incrementDevPrerelease",
+      preparation: "useManifestVersion",
       construction: "isolatedTypeScriptPackage",
     });
     expect(PACKAGE_ADAPTERS.stable).toMatchObject({
@@ -191,7 +191,7 @@ describe.each(["development", "stable"] as const)("%s publication adapter", (ada
     const result = prepareMetadata(adapterName, manifest(adapterName), HEAD);
 
     expect(result.manifest.agentera.gitRef).toBe(HEAD);
-    expect(result.manifest.version).toBe(adapterName === "development" ? "3.0.0-dev.33" : "0.0.3");
+    expect(result.manifest.version).toBe(adapterName === "development" ? "3.0.0-dev.32" : "0.0.3");
     expect(result.receipt).toMatchObject({
       package: adapterName,
       expectedTag: adapter.expectedTag,

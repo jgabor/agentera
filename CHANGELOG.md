@@ -43,10 +43,10 @@
   privacy-safe fixed-key aggregate candidate and abstention counts, while Profile
   Full preserves an existing Glossary when mining returns no candidates. Inferred
   candidates remain review-only and are not automatically admitted.
-- Every passing `feat/v3` push now publishes one CI-allocated rolling
-  `3.0.0-dev.N` package to npm `@next` without a metadata-only commit. The
-  bounded workflow builds one isolated tarball, validates and smokes those exact
-  bytes, then publishes them directly. Stable publication remains protected by review.
+- Every passing `feat/v3` push now publishes the checked-in development version
+  to npm `@next`. The bounded workflow builds, validates, and smokes one exact
+  isolated tarball, safely replays it without moving `@next` backward, and gives
+  temporary npm authentication only to forward mutation. Suite authority is unchanged.
 - Local staged verification now gives ordinary source changes targeted tests
   and typecheck with two workers in at most 60 seconds. State and documentation
   checks stay under 10 seconds, while specialized and global owners defer to

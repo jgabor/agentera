@@ -44,6 +44,7 @@ const releaseSkill = fs.readFileSync(
   "utf8",
 );
 const agentsGuide = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
+const changelog = fs.readFileSync(path.join(REPO_ROOT, "CHANGELOG.md"), "utf8");
 
 describe("package publication orchestration", () => {
   it("prepares only the first checked-in development package version", () => {
@@ -150,6 +151,9 @@ describe("package publication orchestration", () => {
       "pnpm cli:prepare:stable -- \\",
       "  --target-version X.Y.Z --source-commit COMMIT",
     ].join("\n"));
+
+    expect(changelog).toContain("publishes the checked-in development version");
+    expect(changelog).not.toContain("CI-allocated rolling");
   });
 
   it("rejects the retired development allocation command", () => {

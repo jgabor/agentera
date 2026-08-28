@@ -29,10 +29,10 @@ export const PACKAGE_ADAPTERS = PUBLICATION_CONTRACT.packages;
 const REQUIRED_RESULT_FIELDS = ["package", "version", "expectedTag", "phase", "outcome", "nextAction", "executed"];
 
 function incrementVersion(version, preparation) {
-  if (preparation === "incrementDevPrerelease") {
-    const match = /^(\d+)\.(\d+)\.(\d+)-dev\.(\d+)$/.exec(version);
-    if (!match) throw new Error(`development version '${version}' must match X.Y.Z-dev.N`);
-    return `${match[1]}.${match[2]}.${match[3]}-dev.${BigInt(match[4]) + 1n}`;
+  if (preparation === "useManifestVersion") {
+    if (!/^\d+\.\d+\.\d+-dev\.\d+$/.test(version))
+      throw new Error(`development version '${version}' must match X.Y.Z-dev.N`);
+    return version;
   }
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
   if (!match) throw new Error(`stable version '${version}' must match X.Y.Z`);

@@ -17,7 +17,7 @@
       "packagePath": "packages/cli",
       "manifestPath": "packages/cli/package.json",
       "expectedTag": "next",
-      "preparation": "incrementDevPrerelease",
+      "preparation": "useManifestVersion",
       "construction": "isolatedTypeScriptPackage",
       "smoke": ["npx", "-y", "agentera@{version}", "--version"],
       "localSmoke": ["agentera", "--version"],
