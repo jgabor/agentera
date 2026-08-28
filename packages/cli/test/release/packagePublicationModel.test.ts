@@ -33,7 +33,16 @@ describe("strict package publication model", () => {
     expect(model.activationConjunction.dimensions).toHaveLength(6);
     expect(model.activationConjunction.checkIds).toHaveLength(42);
     expect(model.sourceQualificationMs).toBe(2_400_000);
+    expect(model.versionCallerInventory).toMatchObject({
+      development: { authority: "checked-in packages/cli/package.json version", currentExplicitTargetCallers: expect.any(Array) },
+      stable: { authority: "explicit target-version" },
+      suite: { requiredVersion: "3.0.0" },
+    });
     expect(mutate((copy) => { copy.benchmark.timeouts.sourceQualificationMs = 2_400_001; })).toThrow(/source qualification timeout/);
+  });
+
+  it("rejects reassigned development, stable, or suite version authority", () => {
+    expect(mutate((copy) => { copy.versionCallerInventory.stable.authority = "checked-in manifest"; })).toThrow(/version authority/);
   });
 
   it.each([

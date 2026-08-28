@@ -7,6 +7,7 @@ import path from "node:path";
 
 import { npmChildEnvironment } from "./package-construction.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
+import { classifyDevelopmentPublication } from "./development-publication-state.mjs";
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -99,18 +100,23 @@ export function publishDevelopmentTarball(options) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-publish-"));
   try {
     const inspectEnv = isolatedNpmEnvironment(root);
-    const publishedIntegrity = npmView([`${manifest.name}@${manifest.version}`, "dist.integrity"], inspectEnv);
     const tags = npmView([manifest.name, "dist-tags"], inspectEnv) ?? {};
-    if (publishedIntegrity !== null) {
-      if (publishedIntegrity !== integrity) throw new Error(`${manifest.name}@${manifest.version} already exists with different bytes`);
-      if (tags.next === manifest.version) {
-        console.log(`${manifest.name}@${manifest.version} is already published on @next with identical bytes`);
-        return;
-      }
+    const publishedIntegrity = npmView([`${manifest.name}@${manifest.version}`, "dist.integrity"], inspectEnv);
+    const publishedSource = npmView([`${manifest.name}@${manifest.version}`, "agentera.gitRef"], inspectEnv);
+    const state = classifyDevelopmentPublication({
+      version: manifest.version,
+      integrity,
+      source: manifest.agentera.gitRef,
+      currentNext: tags.next,
+      published: { integrity: publishedIntegrity, source: publishedSource },
+    });
+    if (state === "exact-replay" || state === "superseded-replay") {
+      console.log(`${manifest.name}@${manifest.version} is an ${state} with identical bytes and source`);
+      return;
     }
     if (!process.env.NPM_TOKEN) throw new Error("NPM_TOKEN is required for npm mutation");
     const mutationEnv = isolatedNpmEnvironment(fs.mkdtempSync(path.join(root, "mutation-")), process.env.NPM_TOKEN);
-    if (publishedIntegrity === null) {
+    if (state === "forward-publish") {
       run("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], { env: mutationEnv });
     } else {
       run("npm", ["dist-tag", "add", `${manifest.name}@${manifest.version}`, "next"], { env: mutationEnv });

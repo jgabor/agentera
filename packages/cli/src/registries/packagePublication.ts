@@ -177,6 +177,11 @@ export interface PackagePublicationModel {
   sourceQualificationMs: number;
   readiness: ReleaseReadinessContract;
   activationConjunction: ActivationConjunctionContract;
+  versionCallerInventory: {
+    development: { authority: string; currentExplicitTargetCallers: string[]; task2Boundary: string };
+    stable: { authority: string; preservedCallers: string[] };
+    suite: { authority: string; requiredVersion: "3.0.0" };
+  };
 }
 
 const EXACT_COMMANDS: Record<string, readonly string[]> = {
@@ -226,6 +231,22 @@ function exactCensusIdentity(value: any, expected: ActivationCensusIdentity, lab
 /** Validate the sole publication authority against behavior-owned exact sets and grammar. */
 export function validatePackagePublicationDocument(raw: any): PackagePublicationModel {
   if (raw?.schemaVersion !== "agentera.packagePublication.v2") fail("schemaVersion is invalid");
+  const inventory = raw?.versionCallerInventory;
+  const developmentCallers = exactList(inventory?.development?.currentExplicitTargetCallers, [
+    "packages/cli/scripts/publication-transaction.mjs#prepare development",
+    "packages/cli/scripts/release-readiness.mjs#development",
+    "packages/cli/scripts/release-qualification.mjs#candidate development override",
+    ".github/workflows/publish-next.yml#Construct isolated package",
+  ], "development version callers");
+  const stableCallers = exactList(inventory?.stable?.preservedCallers, [
+    "packages/cli/scripts/publication-transaction.mjs#prepare stable",
+  ], "stable version callers");
+  if (raw?.packages?.development?.versionAuthority !== "packages/cli/package.json#version"
+    || raw?.packages?.development?.suiteVersionAuthority !== "packages/cli/package.json#agentera.suiteVersion"
+    || inventory?.development?.authority !== "checked-in packages/cli/package.json version"
+    || inventory?.stable?.authority !== "explicit target-version"
+    || inventory?.suite?.authority !== "packages/cli/package.json#agentera.suiteVersion"
+    || inventory?.suite?.requiredVersion !== "3.0.0") fail("version authority or caller inventory is invalid");
   const source = raw?.qualification?.source;
   const readiness = raw?.qualification?.readiness;
   const activation = source?.activationConjunction;
@@ -372,6 +393,11 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
     activationConjunction: {
       gateIdentity: activation.gateIdentity, classes, dimensions, checkIds, bounds, owners,
       census: { algorithm: ACTIVATION_CENSUS_AUTHORITY.algorithm, classes: censusClasses, total: censusTotal },
+    },
+    versionCallerInventory: {
+      development: { authority: inventory.development.authority, currentExplicitTargetCallers: developmentCallers, task2Boundary: boundedText(inventory.development.task2Boundary, "development task 2 boundary", 240, /^[^\0\r\n]+$/) },
+      stable: { authority: inventory.stable.authority, preservedCallers: stableCallers },
+      suite: { authority: inventory.suite.authority, requiredVersion: "3.0.0" },
     },
   };
 }

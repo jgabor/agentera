@@ -1,0 +1,15 @@
+id: aksqfocmzl
+artifact: progress
+record:
+  timestamp: 2026-08-28 20:27
+  type: feat
+  phase: build
+  what: Established checked-in development-version publication authority and fail-closed registry state classification.
+  context:
+    intent: Make the checked-in development package version authoritative and define monotonic npm @next replay behavior.
+    constraints: No package construction, workflow, checked-in version, suite version, stable behavior, credentials, or npm mutation changes.
+    scope: Publication authority, registry classification, caller inventory, focused tests, and typed task state.
+  discovered: Development target versions currently enter through publication prepare, release readiness, candidate qualification override, and publish-next package construction. Stable explicit targeting is isolated to stable publication preparation.
+  verified: Focused development classification and publication authority tests passed (36 tests). Typecheck, build, compact, capability contract, and standalone package verification passed. The release conjunction was run twice and failed in generated-overlap because its concurrent package owner assertion failed, while that package owner passed standalone (18 tests).
+  next: Independent evaluation must review this in-progress task before completion. Task 2 can remove only the inventoried development target-version inputs and must preserve stable explicit targeting.
+  publication_order: 239

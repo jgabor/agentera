@@ -1,0 +1,15 @@
+id: lyllpovmgr
+artifact: plan
+record:
+  name: Prepare the first checked-in development version
+  depends_on:
+    - otmtspkvqk
+    - qaabpascat
+    - ujelwalvtv
+  status: pending
+  acceptance:
+    - GIVEN npm @next is 3.0.0-dev.83 WHEN the migration is prepared THEN the checked-in development package version becomes exactly 3.0.0-dev.84.
+    - GIVEN the development package version changes WHEN version surfaces are validated THEN suite, registry, and skill versions remain 3.0.0 and stable metadata remains unchanged.
+    - GIVEN maintainers prepare a later feat/v3 push WHEN guidance is followed THEN they commit a new development version before pushing and receive clear recovery for unpublished, replayed, or conflicting versions.
+    - GIVEN the migration commit is verified locally WHEN implementation ends THEN no push, registry mutation, tag change, or publication claim has occurred.
+  plan: pbvgdsqunx

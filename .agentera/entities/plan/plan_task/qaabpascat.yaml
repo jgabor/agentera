@@ -1,0 +1,14 @@
+id: qaabpascat
+artifact: plan
+record:
+  name: Bind development construction to the manifest version
+  depends_on:
+    - otmtspkvqk
+  status: pending
+  acceptance:
+    - GIVEN a valid committed development version and pushed source identity WHEN an isolated package is constructed THEN its version equals the manifest and only its source identity differs from the checkout manifest.
+    - GIVEN a development caller attempts to allocate or override the package version WHEN preparation begins THEN the obsolete input is unavailable or rejected before output construction.
+    - GIVEN stable preparation supplies its explicit version WHEN development authority changes THEN stable construction and validation retain their established behavior.
+    - GIVEN local dry-run, retained construction, and exact-package validation WHEN they observe package metadata THEN they agree on the manifest-owned version without editing checkout files.
+    - GIVEN each changed construction or qualification unit WHEN tests run THEN one success and one failure case cover version authority and mismatch rejection.
+  plan: pbvgdsqunx

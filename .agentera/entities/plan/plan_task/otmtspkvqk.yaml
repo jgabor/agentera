@@ -1,0 +1,18 @@
+id: otmtspkvqk
+artifact: plan
+record:
+  name: Establish checked-in development-version authority
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN a checked-in development version newer than npm @next WHEN publication state is classified THEN it is eligible for forward publication and tag advancement.
+    - GIVEN a checked-in version equal to npm @next WHEN registry bytes and source identity match THEN publication is an exact no-op replay, while any mismatch fails before credentials or mutation.
+    - GIVEN a checked-in version older than npm @next WHEN its exact immutable package already exists THEN it is a superseded replay with no upload or tag change; an absent or conflicting older version fails before credentials or mutation.
+    - GIVEN malformed development metadata or a malformed current @next version WHEN classification runs THEN it fails closed before package or registry effects.
+    - GIVEN development and stable release callers WHEN authority is inventoried and validated THEN development uses the checked-in package version, stable retains its explicit version contract, suite authority remains unchanged, and one accepted plus one rejected case proves each new rule.
+  plan: pbvgdsqunx
+  evidence:
+    - Implemented semantic development publication classification for forward publish/retag, exact replay, superseded replay, and fail-closed malformed or conflicting states.
+    - Recorded checked-in development, explicit stable, and unchanged 3.0.0 suite version authorities with the current development caller inventory.
+    - Focused classification and authority tests passed; typecheck and build passed before status transition.

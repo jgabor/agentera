@@ -1,0 +1,18 @@
+id: msyenwniiv
+artifact: plan
+record:
+  name: Synchronize release contracts and project state
+  depends_on:
+    - otmtspkvqk
+    - qaabpascat
+    - ujelwalvtv
+    - lyllpovmgr
+    - leakspniav
+  status: pending
+  acceptance:
+    - GIVEN verified checked-in version publication WHEN release authorities are synchronized THEN maintainer guidance, workflow documentation, package metadata contracts, and changelog agree without run-number allocation or first-dev.83 assumptions.
+    - GIVEN the development authority changes WHEN package registry and suite contracts are validated THEN the registry remains the 3.0.0 suite authority and no ADR-only authority migration is implied.
+    - GIVEN implementation completion WHEN typed state is synchronized THEN this plan and required progress records report verified behavior without unrelated TODO, vision, profile, or satisfaction mutation.
+    - GIVEN source, typecheck, build, release, workflow, package, compact, and dry-run gates WHEN final verification runs THEN they pass against the same checked-in version contract.
+    - GIVEN closeout and deferred scope WHEN artifacts are reviewed THEN they claim no push, npm mutation, stable adoption, credential change, tag, or release beyond preparation of 3.0.0-dev.84.
+  plan: pbvgdsqunx

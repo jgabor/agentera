@@ -1,0 +1,39 @@
+id: pbvgdsqunx
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-28
+    status: open
+    reviewed: 2026-08-28
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    title: "Plan: Publish checked-in development versions"
+  what: Replace CI-allocated rolling development versions with the version committed at feat/v3 HEAD while retaining publication on every push, isolated exact-source construction, safe replay, and monotonic npm @next behavior.
+  why: Make local package metadata, Git history, and npm publication identity agree so every pushed commit declares the development package version it is authorized to publish.
+  constraints: Keep every feat/v3 push publication-authorizing and serialized. The checked-in package manifest owns the development version; all suite-version surfaces remain 3.0.0. CI may inject only the pushed source identity and must not edit the checkout. Preserve exact-artifact validation, token isolation, self-contained packaging, replay, failed-run visibility, and the rule that @next never moves backward. A changed source at an already-published version must fail before mutation. During implementation, prepare only 3.0.0-dev.84 and perform no push, npm mutation, tag, stable promotion, credential change, or release-readiness claim. For each new testable unit, target one success and one failure case, adding broader cases only for concrete ordering, replay, or package-safety risks.
+  overall_acceptance: GIVEN feat/v3 HEAD contains a committed valid development package version WHEN that commit is pushed THEN CI builds one isolated tarball from the pushed source whose version equals the checked-in manifest and whose source identity equals the pushed commit, validates and smokes those exact bytes, and publishes or safely replays them on npm @next without editing the checkout; malformed or conflicting versions fail before mutation, older workflows cannot move @next backward, stable and suite-version authority remain unchanged, and the first prepared version is 3.0.0-dev.84.
+  scope:
+    included:
+      - Checked-in development package-version authority
+      - Push-triggered feat/v3 development publication
+      - Development package construction and source-identity binding
+      - Forward publication, exact replay, conflict, and superseded replay states
+      - Serialized queue and monotonic npm @next handling
+      - First checked-in migration version 3.0.0-dev.84
+      - Release authorities, maintainer guidance, workflow tests, and package verification
+    excluded:
+      - Stable publication from main or npm latest promotion
+      - Live push, npm publication, tag creation, or credential changes
+      - Suite-version or skill-version changes beyond 3.0.0
+      - GitHub Releases or Git tag workflows
+      - Runtime product behavior unrelated to publication
+    deferred:
+      - Applying checked-in version authority to stable publication
+      - Any release after 3.0.0-dev.84
+  design: First establish the authoritative development version and complete registry state table while separating development behavior from stable behavior. Then make isolated construction consume that committed version, switch the push workflow to the same authority, prepare the first aligned version, verify forward and out-of-order scenarios without registry mutation, and finish by synchronizing release guidance and typed project state.
+  unknowns:
+    - question: Which current development preparation, qualification, and recovery callers still allocate or supply a target version, and which similarly shaped callers belong exclusively to the stable adapter?
+      affects_task: 2
+      resolve_by: Task 1 inventories each caller by adapter and records the development-only removals and stable-preservation boundary before Task 2 changes construction or qualification behavior.
+  surprises:
+    []

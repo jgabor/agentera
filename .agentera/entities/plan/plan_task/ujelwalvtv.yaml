@@ -1,0 +1,15 @@
+id: ujelwalvtv
+artifact: plan
+record:
+  name: Publish the manifest version on feat/v3 push
+  depends_on:
+    - otmtspkvqk
+    - qaabpascat
+  status: pending
+  acceptance:
+    - GIVEN a push to feat/v3 with a valid eligible manifest version WHEN the development workflow runs THEN it reads that version, binds the pushed source identity, and uses the same values for construction, validation, smoke, and publication.
+    - GIVEN the push workflow runs WHEN version provenance is inspected THEN no workflow run number, offset, or generated target version participates.
+    - GIVEN sequential or out-of-order queued runs WHEN registry state changes THEN only a forward version may move @next, while exact and superseded replays remain mutation-safe.
+    - GIVEN publication needs npm credentials WHEN the workflow reaches mutation THEN only the publication child receives them, and all earlier failures remain credential-free and effect-free.
+    - GIVEN an interrupted or rerun workflow WHEN the same source and version execute again THEN replay converges without allocating a new version or authorizing another push.
+  plan: pbvgdsqunx

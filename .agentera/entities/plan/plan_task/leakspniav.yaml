@@ -1,0 +1,16 @@
+id: leakspniav
+artifact: plan
+record:
+  name: Verify publication ordering and package parity
+  depends_on:
+    - qaabpascat
+    - ujelwalvtv
+    - lyllpovmgr
+  status: pending
+  acceptance:
+    - GIVEN forward, exact replay, conflict, older-existing, older-absent, malformed, and failed-prior-run scenarios WHEN deterministic verification runs THEN each produces the authority-defined outcome without live registry mutation.
+    - GIVEN development versions with different digit widths WHEN ordering is checked THEN numeric progression such as dev.9 to dev.10 is correct and lexical ordering cannot move @next backward.
+    - GIVEN two sequential pushed versions and an out-of-order stale run WHEN workflow simulations execute THEN the newer eligible version remains on @next and the stale run cannot retag it.
+    - GIVEN source, isolated construction, bundled runtime, and extracted package checks WHEN metadata is compared THEN manifest version, pushed source identity, executable version output, and package bytes agree.
+    - GIVEN each new workflow or package boundary WHEN tests are added THEN one success and one failure case cover it, with extra cases only for concrete replay, ordering, or credential risks.
+  plan: pbvgdsqunx

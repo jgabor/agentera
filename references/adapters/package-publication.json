@@ -20,7 +20,9 @@
       "preparation": "incrementDevPrerelease",
       "construction": "isolatedTypeScriptPackage",
       "smoke": ["npx", "-y", "agentera@{version}", "--version"],
-      "localSmoke": ["agentera", "--version"]
+      "localSmoke": ["agentera", "--version"],
+      "versionAuthority": "packages/cli/package.json#version",
+      "suiteVersionAuthority": "packages/cli/package.json#agentera.suiteVersion"
     },
     "stable": {
       "label": "transitional stable shim",
@@ -41,6 +43,26 @@
         ],
         "permittedManifestDifferences": ["version", "agentera.gitRef"]
       }
+    }
+  },
+  "versionCallerInventory": {
+    "development": {
+      "authority": "checked-in packages/cli/package.json version",
+      "currentExplicitTargetCallers": [
+        "packages/cli/scripts/publication-transaction.mjs#prepare development",
+        "packages/cli/scripts/release-readiness.mjs#development",
+        "packages/cli/scripts/release-qualification.mjs#candidate development override",
+        ".github/workflows/publish-next.yml#Construct isolated package"
+      ],
+      "task2Boundary": "Remove development target allocation and overrides while retaining source-commit binding."
+    },
+    "stable": {
+      "authority": "explicit target-version",
+      "preservedCallers": ["packages/cli/scripts/publication-transaction.mjs#prepare stable"]
+    },
+    "suite": {
+      "authority": "packages/cli/package.json#agentera.suiteVersion",
+      "requiredVersion": "3.0.0"
     }
   },
   "ci": {
