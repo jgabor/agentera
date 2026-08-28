@@ -10,6 +10,14 @@ import { npmChildEnvironment } from "./package-construction.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 import { classifyDevelopmentPublication } from "./development-publication-state.mjs";
 
+const CLASSIFICATION_SCHEMA = "agentera.developmentPublicationClassification.v1";
+const PUBLICATION_OUTCOMES = new Set([
+  "exact-replay",
+  "superseded-replay",
+  "forward-publish",
+  "forward-retag",
+]);
+
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
@@ -65,6 +73,51 @@ function npmView(args, env) {
   return JSON.parse(result.stdout);
 }
 
+function tarballIntegrity(tarball) {
+  return `sha512-${crypto.createHash("sha512").update(fs.readFileSync(tarball)).digest("base64")}`;
+}
+
+function inspectDevelopmentRegistry(candidate, view, root) {
+  const inspectEnv = isolatedNpmEnvironment(root);
+  const tags = view([candidate.package, "dist-tags"], inspectEnv) ?? {};
+  const publishedIntegrity = view([`${candidate.package}@${candidate.version}`, "dist.integrity"], inspectEnv);
+  const publishedSource = view([`${candidate.package}@${candidate.version}`, "agentera.gitRef"], inspectEnv);
+  return classifyDevelopmentPublication({
+    version: candidate.version,
+    integrity: candidate.integrity,
+    source: candidate.gitRef,
+    currentNext: tags.next,
+    published: { integrity: publishedIntegrity, source: publishedSource },
+  });
+}
+
+function requireDevelopmentClassification(value) {
+  const expectedKeys = ["gitRef", "integrity", "outcome", "package", "schemaVersion", "version"];
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify(expectedKeys)) {
+    throw new Error("invalid development publication classification");
+  }
+  if (value.schemaVersion !== CLASSIFICATION_SCHEMA || value.package !== "agentera"
+    || !PUBLICATION_OUTCOMES.has(value.outcome)
+    || !/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(value.version)
+    || !/^[0-9a-f]{40}$/.test(value.gitRef)
+    || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(value.integrity)) {
+    throw new Error("invalid development publication classification");
+  }
+  return value;
+}
+
+export function writeDevelopmentClassification(file, classification) {
+  const value = requireDevelopmentClassification(classification);
+  fs.writeFileSync(file, `${JSON.stringify(value)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
+}
+
+export function readDevelopmentClassification(file) {
+  const content = fs.readFileSync(file, "utf8");
+  if (Buffer.byteLength(content) > 1024) throw new Error("development publication classification is too large");
+  return requireDevelopmentClassification(JSON.parse(content));
+}
+
 export function validateDevelopmentTarball({ tarball, packageVersion, gitRef }) {
   if (!/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(packageVersion)) throw new Error("invalid development package version");
   if (!/^[0-9a-f]{40}$/.test(gitRef)) throw new Error("invalid git ref");
@@ -90,42 +143,58 @@ export function validateDevelopmentTarball({ tarball, packageVersion, gitRef }) 
       capture: true,
     });
     if (output !== packageVersion) throw new Error(`unexpected CLI version output: ${output}`);
-    return { manifest, integrity: `sha512-${crypto.createHash("sha512").update(fs.readFileSync(tarball)).digest("base64")}` };
+    return { manifest, integrity: tarballIntegrity(tarball) };
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 }
 
-export function publishDevelopmentTarball(options, dependencies = {}) {
+export function classifyDevelopmentTarball(options, dependencies = {}) {
   const validate = dependencies.validate ?? validateDevelopmentTarball;
   const view = dependencies.view ?? npmView;
-  const execute = dependencies.run ?? run;
-  const token = Object.hasOwn(dependencies, "token") ? dependencies.token : process.env.NPM_TOKEN;
   const { manifest, integrity } = validate(options);
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-publish-"));
+  const classification = {
+    schemaVersion: CLASSIFICATION_SCHEMA,
+    outcome: null,
+    package: manifest.name,
+    version: manifest.version,
+    gitRef: manifest.agentera.gitRef,
+    integrity,
+  };
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-classify-"));
   try {
-    const inspectEnv = isolatedNpmEnvironment(root);
-    const tags = view([manifest.name, "dist-tags"], inspectEnv) ?? {};
-    const publishedIntegrity = view([`${manifest.name}@${manifest.version}`, "dist.integrity"], inspectEnv);
-    const publishedSource = view([`${manifest.name}@${manifest.version}`, "agentera.gitRef"], inspectEnv);
-    const state = classifyDevelopmentPublication({
-      version: manifest.version,
-      integrity,
-      source: manifest.agentera.gitRef,
-      currentNext: tags.next,
-      published: { integrity: publishedIntegrity, source: publishedSource },
-    });
+    classification.outcome = inspectDevelopmentRegistry(classification, view, root);
+    return requireDevelopmentClassification(classification);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+export function mutateDevelopmentTarball(options, classification, dependencies = {}) {
+  const value = requireDevelopmentClassification(classification);
+  if (!value.outcome.startsWith("forward-")) throw new Error("classification does not authorize npm mutation");
+  if (value.version !== options.packageVersion || value.gitRef !== options.gitRef
+    || value.integrity !== tarballIntegrity(options.tarball)) {
+    throw new Error("classification does not match the exact tarball, version, and git ref");
+  }
+  const view = dependencies.view ?? npmView;
+  const execute = dependencies.run ?? run;
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-development-mutate-"));
+  try {
+    const state = inspectDevelopmentRegistry(value, view, root);
     if (state === "exact-replay" || state === "superseded-replay") {
-      console.log(`${manifest.name}@${manifest.version} is an ${state} with identical bytes and source`);
-      return;
+      console.log(`${value.package}@${value.version} became an ${state}; no mutation is needed`);
+      return state;
     }
+    const token = Object.hasOwn(dependencies, "token") ? dependencies.token : process.env.NPM_TOKEN;
     if (!token) throw new Error("NPM_TOKEN is required for npm mutation");
     const mutationEnv = isolatedNpmEnvironment(fs.mkdtempSync(path.join(root, "mutation-")), token);
     if (state === "forward-publish") {
       execute("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], { env: mutationEnv });
     } else {
-      execute("npm", ["dist-tag", "add", `${manifest.name}@${manifest.version}`, "next"], { env: mutationEnv });
+      execute("npm", ["dist-tag", "add", `${value.package}@${value.version}`, "next"], { env: mutationEnv });
     }
+    return state;
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -133,18 +202,25 @@ export function publishDevelopmentTarball(options, dependencies = {}) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [command] = process.argv.slice(2);
-  if (!["validate", "publish"].includes(command)) throw new Error("usage: publish-development.mjs <validate|publish> --tarball FILE --package-version VERSION --git-ref SHA");
-  const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref"] });
+  if (!["validate", "classify", "mutate"].includes(command)) throw new Error("usage: publish-development.mjs <validate|classify|mutate> --tarball FILE --package-version VERSION --git-ref SHA [--classification FILE]");
+  const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref", "--classification"] });
   const options = {
     tarball: path.resolve(flags.get("--tarball") ?? ""),
     packageVersion: flags.get("--package-version"),
     gitRef: flags.get("--git-ref"),
   };
   if (!options.tarball || !options.packageVersion || !options.gitRef) throw new Error("--tarball, --package-version, and --git-ref are required");
+  const classificationFile = flags.get("--classification");
   if (command === "validate") {
     validateDevelopmentTarball(options);
     console.log(`validated ${options.packageVersion} from ${options.gitRef}`);
+  } else if (!classificationFile) {
+    throw new Error("--classification is required for classify and mutate");
+  } else if (command === "classify") {
+    const classification = classifyDevelopmentTarball(options);
+    writeDevelopmentClassification(path.resolve(classificationFile), classification);
+    console.log(classification.outcome);
   } else {
-    publishDevelopmentTarball(options);
+    mutateDevelopmentTarball(options, readDevelopmentClassification(path.resolve(classificationFile)));
   }
 }

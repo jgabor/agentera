@@ -7,8 +7,8 @@
     "candidateQualification": "Package verification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
     "publication": "Registry publication consumes the retained package artifact through one measured stage, independent staged package migration smoke, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source verification, or rolls a tag back.",
     "approval": "Manual development and stable release machinery requires artifact-bound approval. The routine feat/v3 push path instead derives its immutable version from the checked-in manifest and its git ref from the push SHA, validates and smokes the exact isolated tarball, and publishes those bytes directly to next. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch.",
-    "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
-    "credentials": "Registry inspection runs before credentials are required. Only the npm mutation child receives a mode-0600 temporary user config. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
+    "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Development classification emits one bounded outcome bound to the exact tarball integrity, version, and git ref. Exact and superseded replay outcomes skip the mutation step. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
+    "credentials": "Development registry classification runs in a separate process without npm credentials. Only a forward-publish or forward-retag outcome starts the token-bearing mutation process, which verifies the classification binding and rechecks registry state before an effect. Only the npm mutation child receives a mode-0600 temporary user config. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
     "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
   },
   "packages": {
@@ -74,7 +74,9 @@
         "version equals the checked-in packages/cli/package.json version",
         "agentera.gitRef equals GITHUB_SHA",
         "the checkout manifest is not modified",
-        "one isolated tarball is built, validated for version and git ref, and executable-smoked before those exact bytes are published to next",
+        "one isolated tarball is built, validated for version and git ref, executable-smoked, and credential-free classified as exact-replay, superseded-replay, forward-publish, or forward-retag",
+        "the bounded classification binds the tarball integrity, version, and git ref; replay outcomes skip mutation and only forward outcomes start a token-bearing mutation process",
+        "mutation verifies the classification binding and rechecks registry state, so a race that has become an exact or superseded replay converges without an upload or tag rollback",
         "reruns reuse the same SHA and checked-in version; identical already-published bytes succeed without another upload",
         "failed runs do not allocate a replacement version"
       ],

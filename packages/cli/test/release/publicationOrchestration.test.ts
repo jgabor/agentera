@@ -168,7 +168,7 @@ describe("package publication orchestration", () => {
     );
   });
 
-  it("builds, validates, smokes, and publishes one development tarball directly", () => {
+  it("classifies without credentials and mutates only a forward development outcome", () => {
     expect(qualificationYaml).toMatch(/push:\n\s+branches:\n\s+- feat\/v3/);
     expect(qualificationYaml).not.toContain("workflow_dispatch");
     expect(qualificationYaml).toContain("queue: max");
@@ -178,8 +178,9 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).toContain("require('./packages/cli/package.json').version");
     expect(qualificationYaml).toContain("GITHUB_SHA");
     expect(qualificationYaml).toContain("pack-package.mjs");
-    expect(qualificationYaml).toContain("publish-development.mjs validate");
-    expect(qualificationYaml).toContain("publish-development.mjs publish");
+    expect(qualificationYaml).toContain("publish-development.mjs classify");
+    expect(qualificationYaml).toContain("publish-development.mjs mutate");
+    expect(qualificationYaml).not.toContain("publish-development.mjs publish");
     expect(qualificationYaml.match(/--package-version \"\$\{\{ steps\.version\.outputs\.value \}\}\"/g)).toHaveLength(2);
     expect(qualificationYaml).toContain("--git-ref \"${GITHUB_SHA}\"");
     expect(qualificationYaml.match(/agentera-\$\{\{ steps\.version\.outputs\.value \}\}\.tgz/g)).toHaveLength(2);
@@ -194,7 +195,15 @@ describe("package publication orchestration", () => {
     const steps = workflow.jobs["publish-development"].steps;
     const credentialSteps = steps.filter((step: { env?: Record<string, string> }) => step.env?.NPM_TOKEN);
     expect(credentialSteps).toHaveLength(1);
-    expect(credentialSteps[0].name).toBe("Publish the exact tarball to npm @next");
+    expect(credentialSteps[0].name).toBe("Mutate npm only for a forward outcome");
+    expect(credentialSteps[0].if).toBe(
+      "steps.classification.outputs.outcome == 'forward-publish' || steps.classification.outputs.outcome == 'forward-retag'",
+    );
+    const classification = steps.find((step: { id?: string }) => step.id === "classification");
+    expect(classification).not.toHaveProperty("env.NPM_TOKEN");
+    expect(classification.run).toContain("publication-classification.json");
+    expect(classification.run).toContain("exact-replay|superseded-replay|forward-publish|forward-retag");
+    expect(credentialSteps[0].run).toContain("publication-classification.json");
     expect(publicationYaml).toContain("workflow_dispatch");
     expect(publicationYaml).toContain("candidate --adapter stable");
     for (const excluded of [

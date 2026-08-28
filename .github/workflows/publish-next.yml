@@ -46,19 +46,28 @@ jobs:
           node packages/cli/scripts/pack-package.mjs \
             --output-dir "${RUNNER_TEMP}/agentera-package" \
             --git-ref "${GITHUB_SHA}" --json
-      - name: Validate and smoke the exact tarball
+      - name: Validate, smoke, and classify the exact tarball
+        id: classification
         timeout-minutes: 1
         run: |
-          node packages/cli/scripts/publish-development.mjs validate \
+          outcome="$(node packages/cli/scripts/publish-development.mjs classify \
             --tarball "${RUNNER_TEMP}/agentera-package/agentera-${{ steps.version.outputs.value }}.tgz" \
             --package-version "${{ steps.version.outputs.value }}" \
-            --git-ref "${GITHUB_SHA}"
-      - name: Publish the exact tarball to npm @next
+            --git-ref "${GITHUB_SHA}" \
+            --classification "${RUNNER_TEMP}/agentera-package/publication-classification.json")"
+          case "${outcome}" in
+            exact-replay|superseded-replay|forward-publish|forward-retag) ;;
+            *) printf 'Invalid publication classification\n' >&2; exit 1 ;;
+          esac
+          printf 'outcome=%s\n' "${outcome}" >> "${GITHUB_OUTPUT}"
+      - name: Mutate npm only for a forward outcome
+        if: steps.classification.outputs.outcome == 'forward-publish' || steps.classification.outputs.outcome == 'forward-retag'
         timeout-minutes: 2
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          node packages/cli/scripts/publish-development.mjs publish \
+          node packages/cli/scripts/publish-development.mjs mutate \
             --tarball "${RUNNER_TEMP}/agentera-package/agentera-${{ steps.version.outputs.value }}.tgz" \
             --package-version "${{ steps.version.outputs.value }}" \
-            --git-ref "${GITHUB_SHA}"
+            --git-ref "${GITHUB_SHA}" \
+            --classification "${RUNNER_TEMP}/agentera-package/publication-classification.json"

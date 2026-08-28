@@ -13,3 +13,13 @@ record:
     - GIVEN publication needs npm credentials WHEN the workflow reaches mutation THEN only the publication child receives them, and all earlier failures remain credential-free and effect-free.
     - GIVEN an interrupted or rerun workflow WHEN the same source and version execute again THEN replay converges without allocating a new version or authorizing another push.
   plan: pbvgdsqunx
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: publish-next injects NPM_TOKEN into the publication process before registry classification, so exact and superseded replay paths receive credentials. Split credential-free classification from conditional forward mutation.
+    provenance:
+      attempt_id: audit-ujelwalvtv-1
+      source: audit task ses_fb5f0df64ffeioo2kusr2r7Wu8
+      recorded_at: 2026-08-28 22:29
+      writer_command: agentera state plan record-evaluation

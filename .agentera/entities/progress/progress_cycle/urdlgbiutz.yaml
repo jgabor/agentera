@@ -1,0 +1,15 @@
+id: urdlgbiutz
+artifact: progress
+record:
+  timestamp: 2026-08-28 22:48
+  type: fix
+  phase: build
+  what: Separated development registry classification from credentialed npm mutation.
+  context:
+    intent: Classify the exact development tarball without credentials, skip replay mutation steps, and expose NPM_TOKEN only to a conditional forward mutation process.
+    constraints: Preserved stable publication, package versions, credential sources, npm state, and the existing failed evaluation. No push, publish, or tag was performed.
+    scope: Development publication workflow, classification and mutation protocol, package publication authority, and focused tests.
+  discovered: The previous publish command classified exact and superseded replays inside the process that already held NPM_TOKEN. The workflow seam, rather than the registry state classifier, caused the credential exposure.
+  verified: "Focused publication and workflow tests passed: 4 files, 63 tests. Typecheck and build passed. Generated-overlap passed with source 254 files/4139 tests, package 3 files/19 tests, and build evidence. The 11-gate release conjunction passed. Compact passed with zero errors or changes. A separate package verification passed 3 files/19 tests. Package dry-run passed without creating an artifact."
+  next: Keep task ujelwalvtv in progress with FAIL attempt 1 preserved until independent evaluation.
+  publication_order: 245
