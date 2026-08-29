@@ -1,0 +1,27 @@
+id: rdjuyghkve
+artifact: plan
+record:
+  name: Inventory active structured-input friction
+  depends_on:
+    []
+  status: superseded
+  acceptance:
+    - GIVEN the active writer, report, and startup command registries WHEN inventory coverage is checked THEN every active input route has one stable route identity and historical-only surfaces are excluded.
+    - GIVEN an explicitly consented host-owned evidence source WHEN recent usage is analyzed THEN collection has fixed time and count bounds and retained evidence contains only route identity, option names, call counts, and byte counts.
+    - GIVEN no privacy-safe consented source WHEN inventory runs THEN paired synthetic fixtures provide the baseline and no artifact claims recent-host usage.
+    - GIVEN synthetic content of a fixed length WHEN metrics are computed THEN child-process count, duplicate content bytes, and wrapper count use one documented reproducible definition.
+    - GIVEN active registries change WHEN inventory validation runs THEN missing, extra, or unowned route identities fail before a complete inventory is reported.
+  plan: ywhgrvciln
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Personal glossary review still hard-codes queue, disposition, and --input instead of consuming PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS, so criteria 1 and 5 remain unmet. See packages/cli/src/cli/commands/personalGlossaryReviewRecords.ts:180-183,233-262,757-776.
+    provenance:
+      attempt_id: rdjuyghkve-audit-2
+      source: audit report ses_fb2034e37ffe2mOVqaUc1vKILj correction evaluation
+      recorded_at: 2026-08-29 16:54
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - bckdcowwfz
+  superseded_reason: Replacement completed and passed audit after coupling personal glossary review parsing to the authoritative structured-input specification and covering all required drift cases.

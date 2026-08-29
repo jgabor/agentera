@@ -1,0 +1,15 @@
+id: omlkrlhylo
+artifact: progress
+record:
+  timestamp: 2026-08-29 18:23
+  type: test
+  phase: build
+  what: Verified the synthetic structured-input measurements and package contract parity without changing any route disposition or runtime behavior.
+  context:
+    intent: Provide durable measured host-fixture and package-parity evidence for plan task cxkycuwyjr.
+    constraints: No host source was consented; no logs, history, or transcripts were inspected. No route disposition, runtime behavior, version, release, publication, vision, profile, decision satisfaction, or task status changed.
+    scope: Structured-input inventory metrics and source, bundle, and extracted-package parity assertions.
+  discovered: All 29 active routes remain retained, so simplify/remove command-trace proof is mechanically not applicable. The paired baseline compares a synthetic wrapped transport with a direct transport for the same 1,024-byte value; it is transport-cost evidence only and makes no recent-host claim.
+  verified: Route synthetic.fixed-content.transport records wrapped metrics 2 child processes, 1 wrapper, and 1,024 duplicate bytes; direct metrics are 1, 0, and 0; deltas are -1, -1, and -1,024. Focused inventory tests passed 4 tests, compatibility tests passed 98 tests, package verification passed 22 tests, and typecheck, build, compact, capability-contract, and retained-reference validation passed. Source, checkout bundle, and extracted package copies are byte-identical and validate against the same 29 active retained dispositions; malformed extracted-contract validation fails without mutating the package copy.
+  next: Leave task cxkycuwyjr pending for its assigned evaluator. The source-policy lane still has the three known pre-existing CHANGELOG scalar-authority failures and was not used as evidence for this task.
+  publication_order: 260

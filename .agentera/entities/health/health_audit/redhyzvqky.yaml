@@ -1,0 +1,27 @@
+id: redhyzvqky
+artifact: health
+record:
+  date: 2026-08-29
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "improving: inventory validation and atomic delivery evidence are current and complete."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-plan closure for structured-input inventory remediation, not a codebase-wide audit. Validator, adversarial tests, package parity, authority, changelog, plan, and correction-progress artifacts are current. One task has latest PASS after one bounded correction. Full source, typecheck, build, retained-reference, activation, capability, package, compact, lint, formatting, and hook evidence passed.
+      findings:
+        []
+  trends:
+    improved: Malformed and semantically inconsistent inventories now fail with bounded diagnostics, and the unpushed delivery is atomic.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: Incomplete envelope validation, escaping parse failures, non-atomic authority history, standalone closeout, and misclassified subjects are resolved.
+    carried_forward: Decision detail remains deferred, profile state remains stale, the local recovery ref remains retained, and no push or publication is claimed.
+  appended_at: 2026-08-29T21:37:15.230Z

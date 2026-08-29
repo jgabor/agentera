@@ -21,6 +21,7 @@ import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidence
 import { main } from "../../src/cli/dispatch.js";
 import { printReportHelp } from "../../src/cli/help.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
+import { PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS } from "../../src/cli/commands/personalGlossaryReviewRecords.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import {
   createGlossaryEvidenceCapsule,
@@ -331,6 +332,37 @@ describe("agentera report personal-glossary-reviews", () => {
         forbidden_effects: ["profile_entry", "project_state", "candidate_projection", "publication"],
       },
     });
+  });
+
+  it("derives structured-input action and option parsing from the exported specifications", () => {
+    for (const spec of PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS) {
+      const mutableSpec = spec as { action: string; option: string };
+      const original = { ...mutableSpec };
+      try {
+        mutableSpec.action = `${original.action}-from-spec`;
+        mutableSpec.option = "--request-from-spec";
+
+        const accepted = run(
+          ["report", "personal-glossary-reviews", mutableSpec.action, mutableSpec.option, "-", "--format", "json"],
+          "[",
+        );
+        expect(JSON.parse(accepted.out)).toMatchObject({ error: { class: "invalid_format" } });
+
+        const oldAction = run(
+          ["report", "personal-glossary-reviews", original.action, mutableSpec.option, "-", "--format", "json"],
+          "[",
+        );
+        expect(JSON.parse(oldAction.out)).toMatchObject({ error: { class: "unsupported_target" } });
+
+        const oldOption = run(
+          ["report", "personal-glossary-reviews", mutableSpec.action, original.option, "-", "--format", "json"],
+          "[",
+        );
+        expect(JSON.parse(oldOption.out)).toMatchObject({ error: { class: "unrecognized_argument" } });
+      } finally {
+        Object.assign(mutableSpec, original);
+      }
+    }
   });
 
   it("lists and gets a canonical v1 record without changing it", () => {

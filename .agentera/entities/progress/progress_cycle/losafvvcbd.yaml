@@ -1,0 +1,15 @@
+id: losafvvcbd
+artifact: progress
+record:
+  timestamp: 2026-08-29 17:16
+  type: test
+  phase: build
+  what: Added explicit structured-input inventory drift coverage for writer registry changes, duplicate route identities, and unowned route identities.
+  context:
+    intent: Apply only the bounded correction required by replacement audit bckdcowwfz-audit-1.
+    constraints: Keep production behavior, existing report and startup drift checks, parser-authority coverage, synthetic evidence, task status, TODO status, prior progress, and predecessor state unchanged; do not record evaluation, commit, or push.
+    scope: Focused structured-input inventory test mutations and exact validator diagnostics.
+  discovered: The inventory validator already returned the required writer, duplicate, and unowned diagnostics. Only explicit regression coverage was missing, so no production code changed.
+  verified: "PASS: node --version (v24.19.0); corepack pnpm --version (10.30.3); corepack pnpm -C packages/cli exec vitest run test/registries/structuredInputInventory.test.ts test/cli/personalGlossaryReviewRecords.test.ts (2 files, 16 tests passed); corepack pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check compact (status=pass, errors=0); git diff --check. SOURCE POLICY: corepack pnpm -C packages/cli exec vitest run test/runtime/retiredRuntimeSurfacePolicy.test.ts completed with 191 passed and 3 known pre-existing failures caused by CHANGELOG.md scalar-authority diagnostics; no task-owned diagnostic was reported."
+  next: The orchestrator audits replacement task bckdcowwfz again before any task evaluation, completion, TODO resolution, commit, or push.
+  publication_order: 254

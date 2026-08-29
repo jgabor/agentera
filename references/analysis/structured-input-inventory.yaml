@@ -1,0 +1,110 @@
+schema_version: agentera.structuredInputInventory.v1
+scope: active_structured_input_routes_only
+historical_surfaces: excluded
+
+evidence:
+  mode: synthetic
+  recent_host_usage_claim: false
+  reason: No privacy-safe host-owned source was explicitly consented.
+  consented_collection_policy:
+    max_age_days: 30
+    max_calls: 1000
+    retained_fields: [route_identity, option_names, call_count, byte_count]
+
+metric_definitions:
+  child_process_count: Processes invoked by the host to deliver one fixed-length content value to the route; the host process is excluded.
+  wrapper_count: Child processes used only to transform or transport that content before the Agentera CLI receives it.
+  duplicate_content_bytes: Sum of the fixed content length for each content-bearing child-process input after its first occurrence.
+
+synthetic_baseline:
+  route_identity: synthetic.fixed-content.transport
+  content_bytes: 1024
+  fixtures:
+    - name: wrapped
+      child_process_count: 2
+      wrapper_count: 1
+      duplicate_content_bytes: 1024
+    - name: direct
+      child_process_count: 1
+      wrapper_count: 0
+      duplicate_content_bytes: 0
+  deltas:
+    child_process_count: -1
+    wrapper_count: -1
+    duplicate_content_bytes: -1024
+
+closure_evidence:
+  behavior_changed: false
+  active_registry_routes: 29
+  classified_active_routes: 29
+  historical_only_routes: excluded
+  unresolved_rows: 0
+  approved_gaps: closed
+  closeout: All active paths are classified and approved gaps are closed; required structured input remains retained.
+  workflow_guidance:
+    one_call: Serialize once and invoke the validating typed writer once for normal publication.
+    reusable_input: Preview or review and apply the same unchanged input without regeneration.
+    trust_boundary_multi_phase: Retain an evidence-bound second phase when effect confirmation or approval is required; reject changed or stale input before effects.
+  writer_preflight:
+    active_payload_routes: 29
+    payload_disposition: retain_all
+    normal_publication: one_serialization_one_typed_writer_call
+    explicit_preview: dry_run_then_apply_same_unchanged_input
+    routine_lint_dry_run_create_regeneration: forbidden
+    effect_confirmation: retain_evidence_bound_second_phase
+    removal_eligibility: preserve_all_caller_fields_owned_field_exclusion_hash_binding_stale_input_rejection_and_idempotent_replay
+  approved_compact_routes:
+    - report.glossary-advice.term-input
+    - startup.build.term-input
+    - startup.discuss.term-input
+    - startup.plan.term-input
+  retained_structured_glossary_routes:
+    - report.glossary-advice.input
+    - report.personal-glossary-reviews.disposition.input
+    - report.personal-glossary-reviews.queue.input
+  compound_approval:
+    disposition: retain_all
+    hidden_state: forbidden
+    guidance: Retry with the complete current request and a new explicit confirmation after any evidence, approval scope, source generation, or content change.
+    routes:
+      - { id: report.personal-glossary-decision.input, explicit_confirmation: required, authority_binding: private_evidence_and_proposal_digest, stale_or_mismatch: reject_before_effects, exact_replay: unchanged }
+      - { id: report.personal-glossary-publish.input, explicit_confirmation: required, authority_binding: approval_scope_generation_and_content, stale_or_mismatch: reject_before_effects, exact_replay: unchanged_replay }
+      - { id: report.personal-glossary-reviews.queue.input, explicit_confirmation: required, authority_binding: private_review_evidence_and_generation, stale_or_mismatch: reject_before_effects, exact_replay: unchanged_replay }
+      - { id: report.personal-glossary-reviews.disposition.input, explicit_confirmation: required, authority_binding: review_identity_scope_and_generation, stale_or_mismatch: reject_before_effects, exact_replay: unchanged_replay }
+  changed_route_test_requirement: not_applicable
+  simplify_remove_rows: 0
+  command_trace_proof: not_applicable_zero_simplify_remove_rows
+  rationale: Existing compact routes already provide direct bounded scalar input. Compound approval routes cannot omit their complete current authority without hidden state or weaker evidence, confirmation, stale-input, or replay guarantees, so no route disposition or production behavior changed.
+
+routes:
+  # No route has measured recurring host usage. The paired 1,024-byte fixtures
+  # are transport-cost evidence only, so no route receives measured priority.
+  - { id: writer.progress.append.input, owner: writer, disposition: retain, usage_evidence: &synthetic { recurring_host_usage: not_measured, cost_evidence: paired_1024_byte_synthetic_only }, retention_justification: "Typed writer is the sole validation and publication gate for complete caller-controlled progress records." }
+  - { id: writer.decisions.append.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Typed writer must exclude writer-owned identity and bind validation to the complete caller-controlled decision record." }
+  - { id: writer.decisions.amend.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Amendment validation and immutable revision publication require one complete reusable input." }
+  - { id: writer.plan.append.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Typed writer validates same-plan dependencies and excludes writer-owned task identity before publication." }
+  - { id: writer.plan.update.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Typed writer validates the complete caller-controlled task update while preserving writer-owned fields." }
+  - { id: writer.plan.create.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Plan schema, prose lint, owned-field exclusion, and publication remain one typed-writer boundary; explicit preview reuses this input." }
+  - { id: writer.plan.replace.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Replacement approval and archival effects must remain bound to one fully validated plan input." }
+  - { id: writer.health.append.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Typed writer is the sole validation and publication gate for bounded health records." }
+  - { id: writer.objective.create.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Objective identity is writer-owned and the complete caller-controlled record requires schema validation before effects." }
+  - { id: writer.objective.update.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "The complete update preserves owned-field exclusion, stale-input checks, and retry-safe publication." }
+  - { id: writer.experiments.publish.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Publication validation and replay guarantees require one complete experiment payload at the typed-writer boundary." }
+  - { id: writer.todo.correct-owners.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Bulk ownership correction requires bounded validation and stale-input rejection before effects." }
+  - { id: writer.todo.create.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "TODO identity is writer-owned and the caller-controlled fields require typed validation before publication." }
+  - { id: writer.todo.update.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Typed update preserves writer-owned fields, validation, stale-input rejection, and idempotent retry." }
+  - { id: writer.todo.set-severity.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Severity mutation requires validated current input and stale-input rejection at the writer boundary." }
+  - { id: writer.todo.resolve.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Resolution effects require validated current input and replay-safe typed publication." }
+  - { id: writer.docs.create.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Document identity is writer-owned and caller fields require schema validation before publication." }
+  - { id: writer.docs.update.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Typed update preserves owned-field exclusion, stale-input checks, and retry safety." }
+  - { id: writer.glossary.publish.input, owner: writer, disposition: retain, usage_evidence: *synthetic, retention_justification: "Glossary publication requires complete validated content, explicit authority, and replay-safe effects." }
+  - { id: report.glossary-advice.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Firm decision gazyqhkyyf keeps the legacy glossary report compatible, including structured host review." }
+  - { id: report.glossary-advice.term-input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "The selected-term compatibility path avoids prompt replay while retaining bounded CLI-owned authority resolution." }
+  - { id: report.personal-glossary-decision.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Private evidence and explicit decision scope require the current bounded structured request." }
+  - { id: report.personal-glossary-publish.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Approval scope, effect binding, stale-input rejection, and replay safety require the complete publication request." }
+  - { id: report.personal-glossary-reviews.disposition.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Structured glossary host review is explicitly retained and unchanged; disposition effects remain bound to validated review evidence." }
+  - { id: report.personal-glossary-reviews.queue.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Structured glossary host review is explicitly retained and unchanged to preserve private bounded review inputs." }
+  - { id: startup.build.input, owner: startup, disposition: retain, usage_evidence: *synthetic, retention_justification: "Build execution requests require bounded validation of the complete caller-controlled request before capability startup." }
+  - { id: startup.build.term-input, owner: startup, disposition: retain, usage_evidence: *synthetic, retention_justification: "Firm decision gazyqhkyyf authorizes this selected-term startup path to avoid full-event replay." }
+  - { id: startup.discuss.term-input, owner: startup, disposition: retain, usage_evidence: *synthetic, retention_justification: "Firm decision gazyqhkyyf authorizes this selected-term startup path to avoid full-event replay." }
+  - { id: startup.plan.term-input, owner: startup, disposition: retain, usage_evidence: *synthetic, retention_justification: "Firm decision gazyqhkyyf authorizes this selected-term startup path to avoid full-event replay." }

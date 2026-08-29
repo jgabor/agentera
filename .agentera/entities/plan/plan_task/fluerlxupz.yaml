@@ -1,0 +1,26 @@
+id: fluerlxupz
+artifact: plan
+record:
+  name: Close approved compound approval gaps
+  depends_on:
+    - mxmkksxgag
+    - ckxpdxoqpa
+    - dkitintrmz
+  status: complete
+  acceptance:
+    - GIVEN a compound personal glossary or approval route whose unchanged fields can be safely reused WHEN simplification runs THEN the caller supplies only current controlled content and existing explicit confirmation remains required.
+    - GIVEN private evidence, approval scope, source generation, or content changes WHEN a compound request is retried THEN stale or mismatched authority is rejected before effects.
+    - GIVEN prior validated state WHEN it cannot preserve every finalized writer and approval guarantee THEN no hidden state is introduced and the route remains retained or unresolved with actionable guidance.
+    - GIVEN exact replay of an approved compound request WHEN state is inspected THEN it converges without duplicate effects or broader consent.
+    - GIVEN each changed compound boundary WHEN tests run THEN one authorized success and one stale, changed, or unauthorized failure case remain.
+  plan: ywhgrvciln
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: references/analysis/structured-input-inventory.yaml is a live changed reference but is absent from references/meta/retained-reference-authority.yaml, so retained-reference validation fails. Progress bqytcgtakq also omits this task-owned failure.
+    provenance:
+      attempt_id: fluerlxupz-audit-2
+      source: audit report ses_fb1c21455ffeo726cP5bMT6Qdm correction evaluation
+      recorded_at: 2026-08-29 18:14
+      writer_command: agentera state plan record-evaluation

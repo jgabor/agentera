@@ -130,6 +130,15 @@ const addedTuples: ActivationCanonicalTuple[] = [
     semantic_selector_if_any: null,
     canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
   },
+  {
+    class: "reference",
+    surface_id: "references/analysis/structured-input-inventory.yaml",
+    owner_path: "packages/cli/src/registries/structuredInputInventory.ts",
+    owner_symbol_or_selector: "validateStructuredInputInventory",
+    owner_selector: "references/analysis/structured-input-inventory.yaml",
+    semantic_selector_if_any: null,
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
+  },
 ];
 const tuples = [...rawTuples, ...addedTuples].map((tuple): ActivationCanonicalTuple => {
   const reason = emittedReasons[tuple.surface_id];
@@ -146,12 +155,12 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
     cli: { count: 27, sha256: "9d0db6cafe592da30ea3469c91dc514bdd1b3b22e8229a0519e680cbcb01c2fa" },
     capability: { count: 12, sha256: "892e6e5e2a57b41064bc44fa2946453225f1b1195aff77aad05365fd0a1071c2" },
     runtime: { count: 81, sha256: "99b2abff3ebff889b54b1781c563ab4b32609a479c4e90d6aad854f48fba7edc" },
-    reference: { count: 26, sha256: "0daf0d131217064bb66d667be2b88c81bf928369fac321bce8023c9039d9ddfe" },
+    reference: { count: 27, sha256: "2fa3cb9811d7a0c97078effa546e6f157a5e67cea95ca44cc8e9ce84bc887a43" },
     state: { count: 38, sha256: "697de8dcd13ac521124c35058ba222aa5cb6cae546f00bb54652ceaca4b662aa" },
     package: { count: 67, sha256: "5dbe325af5ffb29a1ea50534070d08fcff647d4d9ef5654b4ce03d76eeaa8adb" },
     bootstrap: { count: 34, sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc" },
   },
-  total: { count: 285, sha256: "3be47d6d1928df8b7f16d494aaa57939404d690b35ef81254f2c62506fd5f984" },
+  total: { count: 286, sha256: "7cae6c974edaeb6df5ab7a7718bcd9702fee5504c8ebd8688d285d03124f78e4" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string { return JSON.stringify(value); }
 export function digestCanonicalTuples(values: readonly ActivationCanonicalTuple[]): string {

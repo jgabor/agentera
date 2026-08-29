@@ -1,0 +1,15 @@
+id: prhicliqru
+artifact: progress
+record:
+  timestamp: 2026-08-29 18:10
+  type: fix
+  phase: audit
+  what: Corrected the structured-input inventory retained-reference authority and recorded the audit failure that prior progress bqytcgtakq omitted.
+  context:
+    intent: Resolve only audit attempt fluerlxupz-audit-1 while preserving compound runtime behavior and leaving task fluerlxupz pending.
+    constraints: Do not edit bqytcgtakq, alter compound closure semantics, record another evaluation, complete the task, commit, or push.
+    scope: Retained-reference authority, its exact production validation consumer, and the existing source-policy non-producer classification.
+  discovered: The audit correctly found that references/analysis/structured-input-inventory.yaml was live but absent from references/meta/retained-reference-authority.yaml. Adding its existing validateStructuredInputInventory owner first exposed that the loader lacked an exact default path and was unreachable from production validation; the targeted source-policy rerun then exposed its validator caller as an unclassified non-producer.
+  verified: "PASS: retained-reference validation; focused compound and inventory tests, 4 files and 102 tests; typecheck; build; capability contract, 3 checks; compact, 0 errors; git diff check. The targeted source-policy lane completed with 191 passed and only its 3 known CHANGELOG.md scalar-authority failures; no task-owned diagnostic remained."
+  next: Keep plan task fluerlxupz pending for owner evaluation. No evaluation, completion, commit, or push was recorded.
+  publication_order: 259

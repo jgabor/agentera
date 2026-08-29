@@ -1,0 +1,15 @@
+id: phcwryxkww
+artifact: progress
+record:
+  timestamp: 2026-08-29 18:58
+  type: docs
+  phase: build
+  what: Synchronized structured-input dispositions, capability workflow guidance, and final project closure evidence.
+  context:
+    intent: Record final verified outcomes for pncduggkuw without completing it.
+    constraints: No host source was consented; claims remain synthetic and do not claim zero structured input. Preserve firm decision gazyqhkyyf and structured host-review retention.
+    scope: Disposition guidance, active-route closure, source authority classifications, retained-reference census parity, and final gates.
+  discovered: The three source-policy failures came from stale CHANGELOG exact-scalar classifications after historical lines shifted. Retained-reference activation census and tuple authorities also omitted the already-authorized structured-input inventory.
+  verified: "PASS: pnpm -C packages/cli test:source (255 files, 4,154 passed, 2 skipped); pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check validate capability-contract --format json (3/3); node packages/cli/dist/bin/agentera.js check validate retained-references --format json; pnpm -C packages/cli run verify:package (3 files, 22 tests); node packages/cli/dist/bin/agentera.js check compact; pnpm exec vp fmt --check references/adapters/package-publication.json. Inventory validates 29 classified active routes, excludes historical-only routes, has zero unresolved rows, and records synthetic deltas: -1 child process, -1 wrapper, -1024 duplicate content bytes."
+  next: Orchestrator audit remains required before task or plan completion.
+  publication_order: 261

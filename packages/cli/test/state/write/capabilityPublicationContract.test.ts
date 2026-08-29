@@ -157,12 +157,24 @@ describe("capability advice and plan publication contracts", () => {
 
   it("publishes normally once and reuses one explicit-preview input", () => {
     for (const text of [planInstructions, served("plan")]) {
+      expect(text).toContain("Normal publication is a one-call workflow");
+      expect(text).toContain("Explicit preview or review is a reusable-input workflow");
+      expect(text).toContain("Approval or effect confirmation is trust-boundary multi-phase");
+      expect(text).toContain("Structured input remains required");
       expect(text).toMatch(/exactly one `(?:agentera|npx -y agentera@next) state plan create --input PATH --format json` call/);
       expect(text).toContain("do not run standalone lint or dry-run first on the normal path");
       expect(text).toContain("run the same create command with `--dry-run`");
       expect(text).toContain("referencing that unchanged PATH without reserializing its content");
       const stale = text.replace("that unchanged PATH without reserializing its content", "newly serialized content");
       expect(stale).not.toContain("referencing that unchanged PATH without reserializing its content");
+    }
+  });
+
+  it("keeps effect confirmation separate and bound to first-phase evidence", () => {
+    for (const text of [buildInstructions, served("build")]) {
+      expect(text).toMatch(/never call `(?:agentera|npx -y agentera@next) state glossary publish`/);
+      expect(text).toContain("create or reuse an approval, replace proposal-digest confirmation");
+      expect(text).toContain("separate Build-owned digest-confirmed operation");
     }
   });
 });

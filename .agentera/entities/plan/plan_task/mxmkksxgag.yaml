@@ -1,0 +1,24 @@
+id: mxmkksxgag
+artifact: plan
+record:
+  name: Classify closure and retention dispositions
+  depends_on:
+    - rdjuyghkve
+  status: complete
+  acceptance:
+    - GIVEN an inventoried route WHEN disposition is assigned THEN it is exactly retain, simplify, remove, or unresolved and includes separate usage evidence and retention justification.
+    - GIVEN a route with measured recurring cost WHEN prioritization runs THEN it is ordered ahead of unmeasured convenience work unless a concrete privacy, approval, or replay risk blocks it.
+    - GIVEN a structured payload controlled by the caller WHEN simplification is proposed THEN every caller field, writer-owned exclusion, validation rule, approval boundary, effect binding, stale-input check, and replay guarantee has an explicit preservation result.
+    - GIVEN insufficient evidence or an unsafe replacement WHEN classification completes THEN the route remains retained with a current contract reason or unresolved with a specific evidence need.
+    - GIVEN a disposition is missing or uses an unowned exception WHEN validation runs THEN the closure set fails before dependent behavior changes.
+  plan: ywhgrvciln
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: mxmkksxgag-audit-1
+      source: audit report ses_fb1df09d6ffeRWAbtrdV1mW5qS
+      recorded_at: 2026-08-29 17:27
+      writer_command: agentera state plan record-evaluation

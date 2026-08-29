@@ -1,0 +1,24 @@
+id: dkitintrmz
+artifact: plan
+record:
+  name: Close approved writer and preflight gaps
+  depends_on:
+    - mxmkksxgag
+  status: complete
+  acceptance:
+    - GIVEN a normal approved publication without a required preview WHEN capability guidance executes THEN content is serialized once and one validating typed-writer call publishes it.
+    - GIVEN an explicit preview WHEN preview and apply run THEN both reference the same unchanged input and no content is regenerated between phases.
+    - GIVEN an approval or effect-confirmation trust boundary WHEN a second phase is required THEN the second phase remains bound to the first phase evidence and cannot authorize changed content.
+    - GIVEN a proposal to remove a structured writer payload WHEN eligibility is checked THEN every caller-controlled field, owned-field exclusion, hash binding, stale-input rejection, and idempotent replay guarantee is preserved or the payload remains retained.
+    - GIVEN source and served capability contracts WHEN writer guidance changes THEN allowed and forbidden representative workflows agree.
+  plan: ywhgrvciln
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: dkitintrmz-audit-1
+      source: audit report ses_fb1cf4b28ffexivL14gElyMVlF
+      recorded_at: 2026-08-29 17:45
+      writer_command: agentera state plan record-evaluation

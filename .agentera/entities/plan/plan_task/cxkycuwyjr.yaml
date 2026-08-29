@@ -1,0 +1,26 @@
+id: cxkycuwyjr
+artifact: plan
+record:
+  name: Verify measured host and package outcomes
+  depends_on:
+    - ckxpdxoqpa
+    - dkitintrmz
+    - fluerlxupz
+  status: complete
+  acceptance:
+    - GIVEN identical synthetic payload lengths before and after simplification WHEN host fixtures run THEN route identity, child-process count, duplicate content bytes, wrapper count, and each delta are explicit and reproducible.
+    - GIVEN retained, legacy, malformed, preview, approval, and replay scenarios WHEN compatibility verification runs THEN each produces its disposition-defined behavior without unintended mutation.
+    - GIVEN source, served, bundled, and extracted package execution WHEN parity is checked THEN commands, help, schemas, output bounds, privacy behavior, and route dispositions agree.
+    - GIVEN an inventory row marked simplified or removed WHEN command traces are inspected THEN no unapproved duplicate content-bearing invocation or generated transport wrapper remains.
+    - GIVEN each changed host or package boundary WHEN tests are added THEN one success and one failure case cover it, with extra cases only for current privacy, approval, or replay risks.
+  plan: ywhgrvciln
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: cxkycuwyjr-audit-1
+      source: audit report ses_fb1aa1036ffe6FX2Kieb97m9JW
+      recorded_at: 2026-08-29 18:26
+      writer_command: agentera state plan record-evaluation

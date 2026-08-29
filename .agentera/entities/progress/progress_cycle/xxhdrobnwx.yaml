@@ -1,0 +1,15 @@
+id: xxhdrobnwx
+artifact: progress
+record:
+  timestamp: 2026-08-29 17:25
+  type: docs
+  phase: build
+  what: Classified all 29 active structured-input routes and extended the inventory validator to reject incomplete closure data before dependent behavior changes.
+  context:
+    intent: Execute only plan task mxmkksxgag by adding machine-readable dispositions, separate evidence and justification, and closure validation without changing route behavior.
+    constraints: No host evidence was inspected; no recent-host usage was claimed; synthetic transport metrics were not treated as recurring usage; task status remains pending for orchestrator audit.
+    scope: Existing structured-input inventory authority, its focused validator tests, and this required typed progress record.
+  discovered: No route has measured recurring host usage. All 29 routes remain retained under current typed-writer, compatibility, privacy, approval, stale-input, replay, or selected-term startup contracts, so no caller-controlled payload simplification required preservation fields in this task.
+  verified: "PASS: Node v24.19.0 and pnpm 10.30.3; focused inventory test, 1 file and 3 tests; typecheck; build through pinned /bin/pnpm; local compact check with errors=0; git diff --check. EXPECTED PRE-EXISTING FAILURE: source-policy test had 191 passes and the same 3 CHANGELOG scalar-authority failures; no task-owned failure was reported. The first Corepack build attempt failed because nested pnpm resolved v11.3.0, then the pinned /bin/pnpm 10.30.3 build passed."
+  next: Orchestrator audits pending task mxmkksxgag before evaluation, completion, commit, or push.
+  publication_order: 255

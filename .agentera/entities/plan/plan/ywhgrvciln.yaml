@@ -1,0 +1,43 @@
+id: ywhgrvciln
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-29
+    status: complete
+    reviewed: 2026-08-29
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    title: "Plan: Close remaining structured-input friction"
+  what: Build a complete evidence-backed inventory of active structured-input and repeated-preflight workflows, distinguish necessary structured artifacts from avoidable reserialization, close every approved high-confidence gap, and record why retained or unresolved paths remain.
+  why: Reduce repeated user and generated content, wrapper processes, prompt-cache disruption, and token waste without weakening privacy, validation, approval, stale-input rejection, or retry safety.
+  constraints: Keep the CLI canonical. Add no full-event replay, content in process arguments, MCP or runtime-native adapter, hidden transcript persistence, staged-draft registry, inferred approval, schema weakening, or typed-writer bypass. Keep structured files when current artifact size, privacy, approval, trust-boundary, or replay contracts require them. Structured glossary host review remains retained unless a separate decision changes its authority. Use only an explicitly consented host-owned evidence source with fixed time and count bounds, normalize before analysis, and retain no paths, shell text, payloads, hashes, or prompt-derived values; otherwise use synthetic fixtures and make no recent-host claim. Version and publication changes are out of scope. For each new testable unit, target one success and one failure case, adding broader cases only for concrete privacy, approval, or replay risks.
+  overall_acceptance: GIVEN every active writer, report, and startup input route plus privacy-safe bounded or synthetic host evidence WHEN the plan completes THEN every route has a mechanically complete disposition of retain, simplify, remove, or unresolved with separate usage evidence and retention justification; every approved simplify or remove disposition is implemented without duplicate content transport or weaker caller-field, ownership, validation, approval, effect-binding, stale-input, or replay semantics; retained paths provide one reusable-input workflow and a current contract reason; paired fixtures report reproducible child-process, duplicate-content-byte, and wrapper deltas; and source, bundled, and extracted package surfaces agree.
+  scope:
+    included:
+      - Active writer-operation input routes
+      - Active report and capability-startup input routes
+      - Repeated lint, preview, approval, and publication preflight chains
+      - Bounded consented host-command aggregates or synthetic host fixtures
+      - Transient report, writer, personal glossary, and compound approval workflows
+      - Source, served, bundled, and extracted package guidance and verification
+      - Durable route dispositions and evidence-backed deferred work
+    excluded:
+      - Full prompt or transcript persistence
+      - Glossary host-review transport changes without a new decision
+      - MCP, runtime-native adapters, SDKs, or third-party integration surfaces
+      - Removal of necessary canonical artifact payloads
+      - Weakened approvals, effect hashes, stale-input checks, or replay guarantees
+      - Version, release, publication, or registry changes
+    deferred:
+      - Structured host-review transport redesign
+      - Unresolved routes lacking both usage evidence and a current safe simplification
+  design: First derive a closed inventory from active command registries and establish a privacy-safe reproducible baseline. Then classify every route through explicit eligibility and retention rules. Close approved transient and writer gaps, apply the finalized writer contract to compound approval flows, verify measured host and package outcomes, and finish by publishing durable dispositions, guidance, and state without claiming that all structured input should disappear.
+  unknowns:
+    - question: Which active workflows account for material duplicate content bytes, wrapper processes, or repeated content-bearing CLI calls in bounded consented evidence?
+      affects_task: 2
+      resolve_by: Task 1 produces normalized aggregate metrics from an explicitly consented bounded source, or uses paired synthetic fixtures and records that no recent-host usage claim is available.
+    - question: Which compound approval flows can reuse unchanged validated fields without introducing hidden state or weakening caller control, effect binding, stale-input rejection, or replay safety?
+      affects_task: 5
+      resolve_by: Tasks 2 and 4 establish the finalized eligibility and writer contracts; Task 5 simplifies only rows that satisfy every condition and retains or marks the rest unresolved.
+  surprises:
+    []

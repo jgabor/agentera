@@ -1,0 +1,15 @@
+id: lfsxaizjci
+artifact: progress
+record:
+  timestamp: 2026-08-29 23:24
+  type: fix
+  phase: build
+  what: Completed the gate-clean structured-input inventory contract and prepared the eight unpushed commits for atomic reconstruction.
+  context:
+    intent: Record exact delivery and verification evidence before the authorized local history reconstruction.
+    constraints: Preserve the complete intended tree, keep the task pending, and do not push.
+    scope: Structured-input inventory validation, package parity, typed state, and local commit history.
+  discovered: The validator accepted invalid envelope, route ownership, and closure counts and allowed read and YAML parse exceptions to escape.
+  verified: Focused inventory and retained-reference tests passed 35 tests; focused package verification passed 16 tests. Full source verification passed 4170 tests with 2 skipped. Typecheck and build passed. Retained-reference, activation-conjunction, capability-contract, package, compact, lint, and git diff checks passed. Lint reported only existing warnings. The pre-rewrite history had eight commits above origin/feat/v3; backup ref refs/backup/structured-input-inventory-20260829-5caf2b5c preserves its HEAD. No push occurred.
+  next: Reconstruct origin/feat/v3..HEAD as one substantive commit, keep task ahwzhnxyds pending, then confirm clean status and one-commit history for orchestration audit.
+  publication_order: 262

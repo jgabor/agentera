@@ -1,0 +1,14 @@
+id: llvfrpjvpw
+artifact: progress
+record:
+  timestamp: 2026-08-29 17:31
+  type: docs
+  phase: build
+  what: Closed approved transient report gaps with machine-readable evidence that existing compact glossary routes satisfy the approved workflow without production behavior or disposition changes.
+  context:
+    intent: Prove existing compact selected-term paths and retained structured glossary authority for task ckxpdxoqpa.
+    constraints: No host evidence source was inspected; no route, runtime behavior, task status, decision satisfaction, or release surface changed.
+    scope: Structured-input inventory closure evidence and its focused regression assertion.
+  discovered: Existing selected-term startup and report routes already accept bounded file or stdin scalar input directly, while the legacy glossary report and review routes retain their structured reusable-input authority. Criterion 5 is not applicable because no transient route changed.
+  verified: "PASS: focused inventory, selected-term startup, legacy glossary report, and glossary review tests, 4 files and 38 tests; typecheck; build; compact with errors=0; git diff --check. EXPECTED PRE-EXISTING FAILURE: retiredRuntimeSurfacePolicy had 191 passes and the same 3 CHANGELOG scalar-authority failures; no task-owned failure was reported."
+  publication_order: 256

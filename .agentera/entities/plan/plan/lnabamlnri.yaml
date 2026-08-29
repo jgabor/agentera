@@ -1,0 +1,27 @@
+id: lnabamlnri
+artifact: plan
+record:
+  header:
+    level: light
+    created: 2026-08-29
+    status: complete
+    title: "Plan: Repair structured-input validation and delivery history"
+  what: Harden the structured-input inventory contract against malformed or semantically inconsistent documents and replace the eight unpushed commits with one atomic, gate-clean local delivery.
+  why: Prevent invalid inventory contracts from passing retained-reference and package verification while restoring repository requirements for atomic authority, state, and commit classification.
+  constraints: Preserve accepted structured-input behavior, privacy-safe diagnostics, required approvals, package parity, and all intended final-tree changes. Add no dependency, version, release, publication, registry mutation, host-data collection, or remote push. Rewrite only local commits above origin/feat/v3, preserve local recoverability, use typed state writers, and keep all related state in the substantive delivery commit.
+  overall_acceptance: GIVEN valid and adversarial inventory documents plus the current unpushed series WHEN the plan completes THEN valid source, bundle, and extracted-package contracts pass; invalid envelope, route, count, read, root, and parse cases return stable bounded errors without throwing or exposing caller content; exactly one conventional gate-clean commit above origin/feat/v3 contains the complete code, authority, tests, changelog, and typed state outcome; and the worktree is clean with no push.
+  scope:
+    included:
+      - Complete structured-input inventory envelope and semantic validation
+      - Bounded read, root-shape, and YAML parse diagnostics
+      - Adversarial source and extracted-package regression coverage
+      - Atomic reconstruction of the eight local unpushed commits
+      - Required authority, activation, package, changelog, progress, health, and plan state
+      - Independent source, build, validation, package, compact, and formatting gates
+    excluded:
+      - Structured-input route behavior or disposition changes
+      - New dependencies or validation frameworks
+      - Version, release, publication, npm, vision, profile, TODO, or decision-satisfaction changes
+      - Remote push or publication
+  surprises:
+    []

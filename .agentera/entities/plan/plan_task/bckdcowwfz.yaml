@@ -1,0 +1,24 @@
+id: bckdcowwfz
+artifact: plan
+record:
+  plan: ywhgrvciln
+  name: Recover structured-input inventory authority
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - Active writer, report, and startup input routes derive from specifications consumed by their command parsers, have stable identities, and exclude historical-only surfaces.
+    - Personal glossary review queue, disposition, and --input validation consume PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS without independent route literals.
+    - With no consented host source, paired fixed-length synthetic fixtures provide reproducible child-process, duplicate-byte, and wrapper metrics and make no recent-host claim.
+    - Registry-derived drift tests fail for missing, extra, duplicate, or unowned writer, report, and startup identities.
+    - Focused inventory and glossary review tests, typecheck, build, compact, and task-owned source policy checks pass.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Focused inventory tests cover missing report and extra startup routes but not writer drift, duplicate identities, or unowned identities required by criterion 4. See packages/cli/test/registries/structuredInputInventory.test.ts:22-32.
+    provenance:
+      attempt_id: bckdcowwfz-audit-2
+      source: audit report ses_fb1ec3983ffe7DN8WapWlfbC5w correction evaluation
+      recorded_at: 2026-08-29 17:18
+      writer_command: agentera state plan record-evaluation

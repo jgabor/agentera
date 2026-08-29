@@ -51,6 +51,7 @@ const RESULT_FIELDS = [
 ];
 const OUTPUT_STATUSES = ["changed", "unchanged_replay", "dry_run_candidate"];
 const COMMAND = "agentera report personal-glossary-publish --input <file|-> [--dry-run] --format json";
+export const PERSONAL_GLOSSARY_PUBLISH_STRUCTURED_INPUT_OPTIONS = ["--input"] as const;
 const RECOVERY =
   "Reread the current personal candidate and authorized decision, then retry; no profile bytes were changed.";
 
@@ -133,7 +134,7 @@ function parseArgs(argv: string[]): { input: string; dryRun: boolean } | Invalid
       dryRun = true;
       continue;
     }
-    if (name !== "--input" && name !== "--format") {
+    if (!(PERSONAL_GLOSSARY_PUBLISH_STRUCTURED_INPUT_OPTIONS as readonly string[]).includes(name) && name !== "--format") {
       return { class: "unrecognized_argument", message: "unrecognized personal publication argument", syntax: COMMAND };
     }
     const value = inline ?? argv[++index];

@@ -4,6 +4,7 @@ import path from "node:path";
 import { resolvePath } from "../core/paths.js";
 import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
+import { validateStructuredInputInventory } from "../registries/structuredInputInventory.js";
 
 const AUTHORITY_RELATIVE_PATH = "references/meta/retained-reference-authority.yaml";
 const LIVE_ROOTS = ["references", "skills/agentera/references"] as const;
@@ -873,7 +874,13 @@ export interface RetainedReferenceAuthorityMainOptions {
 }
 
 export function retainedReferenceAuthorityMain(opts: RetainedReferenceAuthorityMainOptions = {}): number {
-  const errors = validateRetainedReferenceAuthority(opts.root);
+  const root = resolvePath(opts.root ?? resolveSourceRoot());
+  const errors = validateRetainedReferenceAuthority(root);
+  if (errors.length === 0) {
+    errors.push(...validateStructuredInputInventory(
+      path.join(root, "references/analysis/structured-input-inventory.yaml"),
+    ));
+  }
   const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
   if (errors.length > 0) {
     out("retained reference authority validation failed:");

@@ -1,0 +1,15 @@
+id: xvgpkkdyfa
+artifact: progress
+record:
+  timestamp: 2026-08-29 16:52
+  type: fix
+  phase: build
+  what: Corrected structured-input inventory coupling so report and startup route identities derive from the command specifications used by their active parsers.
+  context:
+    intent: Correct audit attempt rdjuyghkve-audit-1 by coupling report and startup identities to active command specifications and proving specification drift fails inventory validation.
+    constraints: Keep synthetic privacy and metrics unchanged; leave task pending; do not modify downstream tasks, record a verdict, commit, or push.
+    scope: Authoritative command-spec exports, inventory derivation, drift tests, and required source-policy classification only.
+  discovered: The report parsers had no shared route export, so each authoritative command module now minimally exports its accepted structured-input option or action specification and continues to consume that export. Prime now uses its exported context-option specification for context validation. The inventory imports those specifications; no duplicate route registry was added. The source-policy closure required classifying the inventory validator as a constructor non-producer.
+  verified: "PASS: corepack pnpm -C packages/cli exec vitest run test/registries/structuredInputInventory.test.ts (1 file, 2 tests passed); corepack pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check compact (status=pass, errors=0); git diff --check. BROADER POLICY: pnpm -C packages/cli exec vitest run test/runtime/retiredRuntimeSurfacePolicy.test.ts completed with 191 passed and 3 failed. The inventory validator emitted_producer_omitted diagnostic was removed after its required non-producer classification; the remaining failures are the known CHANGELOG.md scalar authority diagnostics and were not changed or claimed fixed."
+  next: Orchestrator audits correction attempt 2 before any task completion, evaluator verdict, or commit.
+  publication_order: 252

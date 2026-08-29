@@ -173,12 +173,18 @@ function contract(): ReviewRecordsCommandContract {
   };
 }
 
+export const PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS = [
+  { action: "queue", option: "--input" },
+  { action: "disposition", option: "--input" },
+] as const;
+const [QUEUE_STRUCTURED_INPUT_SPEC, DISPOSITION_STRUCTURED_INPUT_SPEC] = PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS;
+
 function queueSyntax(value: ReviewRecordsCommandContract): string {
-  return `${value.command} queue --input <file|-> --format json`;
+  return `${value.command} ${QUEUE_STRUCTURED_INPUT_SPEC.action} ${QUEUE_STRUCTURED_INPUT_SPEC.option} <file|-> --format json`;
 }
 
 function dispositionSyntax(value: ReviewRecordsCommandContract): string {
-  return `${value.command} disposition --input <file|-> --format json`;
+  return `${value.command} ${DISPOSITION_STRUCTURED_INPUT_SPEC.action} ${DISPOSITION_STRUCTURED_INPUT_SPEC.option} <file|-> --format json`;
 }
 
 function listSyntax(value: ReviewRecordsCommandContract): string {
@@ -230,7 +236,7 @@ function parseQueue(argv: string[], value: ReviewRecordsCommandContract): { inpu
   let format = false;
   for (let index = 0; index < argv.length; index += 1) {
     const { name, inline } = argvPart(argv[index]!);
-    if (name !== "--input" && name !== "--format") {
+    if (name !== QUEUE_STRUCTURED_INPUT_SPEC.option && name !== "--format") {
       return { class: "unrecognized_argument", message: "unrecognized review-record argument", syntax: queueSyntax(value) };
     }
     const option = inline ?? argv[++index];
@@ -243,10 +249,10 @@ function parseQueue(argv: string[], value: ReviewRecordsCommandContract): { inpu
       format = true;
       continue;
     }
-    if (input !== undefined) return { class: "mutually_exclusive", message: "--input may only be supplied once", syntax: queueSyntax(value) };
+    if (input !== undefined) return { class: "mutually_exclusive", message: `${QUEUE_STRUCTURED_INPUT_SPEC.option} may only be supplied once`, syntax: queueSyntax(value) };
     input = option;
   }
-  return input ? { input } : { class: "missing_argument", message: "--input is required", syntax: queueSyntax(value) };
+  return input ? { input } : { class: "missing_argument", message: `${QUEUE_STRUCTURED_INPUT_SPEC.option} is required`, syntax: queueSyntax(value) };
 }
 
 function parseDisposition(argv: string[], value: ReviewRecordsCommandContract): { input: string } | InvalidInputErrorBody {
@@ -254,7 +260,7 @@ function parseDisposition(argv: string[], value: ReviewRecordsCommandContract): 
   let format = false;
   for (let index = 0; index < argv.length; index += 1) {
     const { name, inline } = argvPart(argv[index]!);
-    if (name !== "--input" && name !== "--format") {
+    if (name !== DISPOSITION_STRUCTURED_INPUT_SPEC.option && name !== "--format") {
       return { class: "unrecognized_argument", message: "unrecognized review disposition argument", syntax: dispositionSyntax(value) };
     }
     const option = inline ?? argv[++index];
@@ -267,10 +273,10 @@ function parseDisposition(argv: string[], value: ReviewRecordsCommandContract): 
       format = true;
       continue;
     }
-    if (input !== undefined) return { class: "mutually_exclusive", message: "--input may only be supplied once", syntax: dispositionSyntax(value) };
+    if (input !== undefined) return { class: "mutually_exclusive", message: `${DISPOSITION_STRUCTURED_INPUT_SPEC.option} may only be supplied once`, syntax: dispositionSyntax(value) };
     input = option;
   }
-  return input ? { input } : { class: "missing_argument", message: "--input is required", syntax: dispositionSyntax(value) };
+  return input ? { input } : { class: "missing_argument", message: `${DISPOSITION_STRUCTURED_INPUT_SPEC.option} is required`, syntax: dispositionSyntax(value) };
 }
 
 function parseList(argv: string[], value: ReviewRecordsCommandContract): ListOptions | InvalidInputErrorBody {
@@ -505,7 +511,7 @@ function emitQueueSuccess(
 ): number {
   const response: Mapping = {
     schemaVersion: value.queueResultSchemaVersion,
-    command: `${value.command} queue`,
+    command: `${value.command} ${QUEUE_STRUCTURED_INPUT_SPEC.action}`,
     status: result.status,
     reason: result.reason,
     reopen_reason: result.reopen_reason,
@@ -527,7 +533,7 @@ function emitQueueSuccess(
     return failure(
       io,
       value.queueResultSchemaVersion,
-      `${value.command} queue`,
+      `${value.command} ${QUEUE_STRUCTURED_INPUT_SPEC.action}`,
       queueSyntax(value),
       queueSyntax(value),
       {
@@ -546,7 +552,7 @@ function queueReview(io: Io, input: string, value: ReviewRecordsCommandContract)
   try {
     request = readRequest(input, value.queueMaxRequestUtf8Bytes, io);
   } catch {
-    return invalid(io, { class: "invalid_format", message: "--input must be one readable bounded UTF-8 YAML or JSON mapping" });
+    return invalid(io, { class: "invalid_format", message: `${QUEUE_STRUCTURED_INPUT_SPEC.option} must be one readable bounded UTF-8 YAML or JSON mapping` });
   }
   const validated = validateQueueRequest(request, value);
   if ("error" in validated) return invalid(io, validated.error);
@@ -557,7 +563,7 @@ function queueReview(io: Io, input: string, value: ReviewRecordsCommandContract)
     return failure(
       io,
       value.queueResultSchemaVersion,
-      `${value.command} queue`,
+      `${value.command} ${QUEUE_STRUCTURED_INPUT_SPEC.action}`,
       queueSyntax(value),
       queueSyntax(value),
       {
@@ -600,7 +606,7 @@ function queueReview(io: Io, input: string, value: ReviewRecordsCommandContract)
   return failure(
     io,
     value.queueResultSchemaVersion,
-    `${value.command} queue`,
+    `${value.command} ${QUEUE_STRUCTURED_INPUT_SPEC.action}`,
     queueSyntax(value),
     queueSyntax(value),
     failures[result.status as Exclude<PersonalGlossaryReviewQueueResult["status"], "queued" | "unchanged_replay" | "suppressed" | "reopened">],
@@ -614,7 +620,7 @@ function emitDispositionSuccess(
 ): number {
   const response: Mapping = {
     schemaVersion: value.dispositionResultSchemaVersion,
-    command: `${value.command} disposition`,
+    command: `${value.command} ${DISPOSITION_STRUCTURED_INPUT_SPEC.action}`,
     status: result.status,
     owner: value.owner,
     record: reviewSummary(result.record!),
@@ -631,7 +637,7 @@ function emitDispositionSuccess(
     return failure(
       io,
       value.dispositionResultSchemaVersion,
-      `${value.command} disposition`,
+      `${value.command} ${DISPOSITION_STRUCTURED_INPUT_SPEC.action}`,
       dispositionSyntax(value),
       dispositionSyntax(value),
       {
@@ -650,7 +656,7 @@ function dispositionReview(io: Io, input: string, value: ReviewRecordsCommandCon
   try {
     request = readRequest(input, value.dispositionMaxRequestUtf8Bytes, io);
   } catch {
-    return invalid(io, { class: "invalid_format", message: "--input must be one readable bounded UTF-8 YAML or JSON mapping" });
+    return invalid(io, { class: "invalid_format", message: `${DISPOSITION_STRUCTURED_INPUT_SPEC.option} must be one readable bounded UTF-8 YAML or JSON mapping` });
   }
   const validated = validateDispositionRequest(request, value);
   if ("error" in validated) return invalid(io, validated.error);
@@ -665,7 +671,7 @@ function dispositionReview(io: Io, input: string, value: ReviewRecordsCommandCon
     return failure(
       io,
       value.dispositionResultSchemaVersion,
-      `${value.command} disposition`,
+      `${value.command} ${DISPOSITION_STRUCTURED_INPUT_SPEC.action}`,
       dispositionSyntax(value),
       dispositionSyntax(value),
       {
@@ -723,7 +729,7 @@ function dispositionReview(io: Io, input: string, value: ReviewRecordsCommandCon
   return failure(
     io,
     value.dispositionResultSchemaVersion,
-    `${value.command} disposition`,
+    `${value.command} ${DISPOSITION_STRUCTURED_INPUT_SPEC.action}`,
     dispositionSyntax(value),
     dispositionSyntax(value),
     failures[result.status],
@@ -750,22 +756,24 @@ export function runPersonalGlossaryReviewRecordsCommand(argv: string[], io: Io):
     );
   }
   const operation = argv[0];
-  if (operation !== "queue" && operation !== "disposition" && operation !== "list" && operation !== "get") {
+  const structuredInputSpec = PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS.find(({ action }) => action === operation);
+  const validOperations = [...PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS.map(({ action }) => action), "list", "get"];
+  if (!structuredInputSpec && operation !== "list" && operation !== "get") {
     return invalid(io, {
       class: operation ? "unsupported_target" : "missing_argument",
       message: operation ? "unsupported personal glossary review operation" : "review operation is required",
-      valid_values: ["queue", "disposition", "list", "get"],
-      syntax: `${value.command} {queue,disposition,list,get} --format json`,
+      valid_values: validOperations,
+      syntax: `${value.command} {${validOperations.join(",")}} --format json`,
       example: `${value.command} list --limit ${value.defaultLimit} --format json`,
       recovery: "Choose queue, disposition, list, or get and retry; no review metadata was changed.",
     });
   }
-  if (operation === "queue") {
+  if (structuredInputSpec === QUEUE_STRUCTURED_INPUT_SPEC) {
     const parsed = parseQueue(argv.slice(1), value);
     if ("class" in parsed) return invalid(io, { ...parsed, recovery: "Correct the bounded queue request and retry; no review metadata was changed." });
     return queueReview(io, parsed.input, value);
   }
-  if (operation === "disposition") {
+  if (structuredInputSpec === DISPOSITION_STRUCTURED_INPUT_SPEC) {
     const parsed = parseDisposition(argv.slice(1), value);
     if ("class" in parsed) return invalid(io, { ...parsed, recovery: "Correct the bounded disposition request and retry; no review metadata was changed." });
     return dispositionReview(io, parsed.input, value);

@@ -1,0 +1,15 @@
+id: axyuefkymc
+artifact: progress
+record:
+  timestamp: 2026-08-29 17:42
+  type: test
+  phase: build
+  what: Closed approved writer and preflight guidance evidence without changing publication behavior.
+  context:
+    intent: Record durable closure evidence for approved writer and preflight gaps.
+    constraints: Preserve payload fields, owned-field exclusion, hash and stale-input binding, approvals, effect confirmation, and idempotent replay.
+    scope: Machine-readable inventory closure and focused source/served contract assertions only; no behavior change.
+  discovered: Source and served Plan guidance already required one normal typed-writer call and unchanged input reuse for explicit preview; all 29 payload routes remain retained.
+  verified: Focused inventory, source/served capability, and glossary writer tests passed (44 tests); typecheck, build, capability contract, and compact passed. The task-owned source-policy test retained its three known CHANGELOG scalar-authority failures (191 of 194 passed).
+  next: Keep plan task dkitintrmz pending for owner evaluation and completion.
+  publication_order: 257

@@ -1,0 +1,29 @@
+id: pncduggkuw
+artifact: plan
+record:
+  name: Synchronize disposition guidance and project state
+  depends_on:
+    - rdjuyghkve
+    - mxmkksxgag
+    - ckxpdxoqpa
+    - dkitintrmz
+    - fluerlxupz
+    - cxkycuwyjr
+  status: complete
+  acceptance:
+    - GIVEN verified simplifications and retained routes WHEN durable guidance is synchronized THEN users can distinguish one-call workflows, reusable-input workflows, and trust-boundary-required multi-phase workflows without contradiction.
+    - GIVEN the active command registries WHEN the machine-readable disposition inventory is validated THEN every active route is classified and historical-only routes remain excluded.
+    - GIVEN unresolved or deferred rows WHEN follow-up state is created THEN each item names its missing evidence or blocked safety condition and no speculative work is filed.
+    - GIVEN implementation completion WHEN typed plan and progress state are synchronized THEN verified outcomes and measurement deltas are recorded without unrelated TODO, vision, profile, or satisfaction mutation.
+    - GIVEN source, typecheck, build, capability, package, compact, and documentation gates WHEN final verification runs THEN they pass, and closeout claims all active paths classified and approved gaps closed rather than zero structured input.
+  plan: ywhgrvciln
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: pncduggkuw-audit-1
+      source: audit report ses_fb18a3265ffe7z7iA6o3G1CUIJ
+      recorded_at: 2026-08-29 19:05
+      writer_command: agentera state plan record-evaluation

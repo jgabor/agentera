@@ -1,0 +1,29 @@
+id: uaobzdvzlr
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Couple personal glossary review parsing to its structured-input specification.
+  requirements:
+    - Make queue, disposition, and --input validation consume PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS instead of independent literals.
+    - Preserve existing accepted inputs, rejection behavior, privacy bounds, and glossary review authority.
+    - Keep registry-derived drift coverage and correct the inventory progress claim after verification.
+  acceptance:
+    - The active personal glossary review parser consumes its exported structured-input specification.
+    - Changing the review specification causes the inventory drift check to fail without a duplicate route registry.
+    - Focused inventory, glossary review, typecheck, build, and compact checks pass.
+  release_blocker: false
+  severity: degraded
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Couple personal glossary review parsing to its structured-input specification."
+      status: resolved
+      order: 124
+      severity: degraded
+  lifecycle:
+    operation: resolve
+    reason: The audited replacement couples personal glossary review parsing to the structured-input specification and covers writer, report, startup, duplicate, and ownership drift.
+    date: 2026-08-29

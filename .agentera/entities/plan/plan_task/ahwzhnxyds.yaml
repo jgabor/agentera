@@ -1,0 +1,24 @@
+id: ahwzhnxyds
+artifact: plan
+record:
+  name: Deliver a complete gate-clean inventory contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an inventory with an unsupported schema, wrong scope, included historical policy, anonymous route, mismatched route owner, or inconsistent closure count WHEN validation runs THEN it returns a stable specific error and cannot pass retained-reference or package verification.
+    - GIVEN an unreadable file, malformed YAML, or non-mapping root WHEN validation runs THEN it returns a bounded content-safe diagnostic without throwing, printing a stack, exposing caller content, or mutating package input.
+    - GIVEN the canonical inventory in source, bundle, and an extracted package WHEN validation runs THEN all surfaces agree and pass with every active route represented exactly once.
+    - GIVEN the eight local commits and related typed state WHEN delivery is finalized THEN one conventional substantive commit above origin/feat/v3 contains the complete intended tree, authority census, tests, changelog, progress, health, and plan outcome without standalone bookkeeping or misclassified commit subjects.
+    - GIVEN the reconstructed commit WHEN repository gates run THEN focused adversarial tests, full source tests, typecheck, build, retained-reference, activation, capability, package, compact, and documentation checks pass and the worktree remains clean without a push.
+  plan: lnabamlnri
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Progress lfsxaizjci still instructs a later worker to reconstruct already-completed history and lacks post-rewrite confirmation of the one-commit history, clean worktree, unchanged origin, and backup target. Implementation behavior and gates passed.
+    provenance:
+      attempt_id: ahwzhnxyds-audit-2
+      source: audit report ses_fb0951e27ffe7VMrwsPeuSaruC correction evaluation
+      recorded_at: 2026-08-29 23:35
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,15 @@
+id: smgyivncgk
+artifact: progress
+record:
+  timestamp: 2026-08-29 23:31
+  type: fix
+  phase: audit
+  what: Corrected delivery progress after the authorized history reconstruction.
+  context:
+    intent: Record durable post-rewrite delivery evidence for task ahwzhnxyds.
+    constraints: Preserve the failed audit evaluation, pending task status, original backup ref, and all existing work; do not push or repeat reconstruction.
+    scope: Typed progress correction and committed one-commit delivery audit.
+  discovered: Progress lfsxaizjci accurately preserved gate evidence, but its next step was stale after reconstruction completed.
+  verified: Before this correction write, feat/v3 had exactly one substantive commit above unchanged origin/feat/v3. Backup ref refs/backup/structured-input-inventory-20260829-5caf2b5c resolves to the tip of the original pre-rewrite eight-commit series above origin/feat/v3. The worktree was clean after reconstruction and before the audit state write; the persisted failed evaluation was the only subsequent pre-correction change. No push occurred. All gate results recorded in lfsxaizjci remain applicable because the changes after those gates are only typed state.
+  next: Audit the committed one-commit delivery. Do not repeat the history reconstruction.
+  publication_order: 263

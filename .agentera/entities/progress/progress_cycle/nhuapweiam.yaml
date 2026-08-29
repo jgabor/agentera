@@ -1,0 +1,15 @@
+id: nhuapweiam
+artifact: progress
+record:
+  timestamp: 2026-08-29 16:45
+  type: feat
+  phase: build
+  what: Inventoried all active structured-input writer, report, and startup routes with stable identities and a paired synthetic-only baseline; no recent-host usage is claimed.
+  context:
+    intent: Complete task rdjuyghkve only by creating a durable active-route inventory and reproducible synthetic baseline.
+    constraints: Leave the task pending; do not inspect host logs or history, simplify routes, record an evaluator verdict, commit, push, or change release and decision state.
+    scope: Structured-input inventory, synthetic metric definitions, drift validation, and focused tests.
+  discovered: "The active inventory contains 29 routes: 19 typed-writer operations, 6 report routes, and 4 startup routes. Host evidence remains uninspected because no privacy-safe source was consented."
+  verified: "PASS: node --version (v24.19.0); corepack pnpm --version (10.30.3); corepack pnpm -C packages/cli exec vitest run test/registries/structuredInputInventory.test.ts (1 file, 2 tests passed); corepack pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; git diff --check. BROADER GATE: pnpm -C packages/cli test did not complete before 120s and reported 3 failures in retiredRuntimeSurfacePolicy.test.ts; targeted rerun completed with 191 passed and 3 failures from existing registry-bootstrap diagnostics centered on CHANGELOG.md authority classifications."
+  next: Orchestrator audits the working tree and records the evaluator verdict before task completion or commit.
+  publication_order: 251

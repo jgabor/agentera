@@ -1,0 +1,27 @@
+id: joypjmkunl
+artifact: health
+record:
+  date: 2026-08-29
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: all expected structured-input closure artifacts are current and terminal evidence passed."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-plan closure for structured-input friction, not a codebase-wide audit. All expected inventory, guidance, package, authority, test, plan, and progress artifacts were updated on or after plan creation. The worktree was clean, seven tasks were complete, one predecessor was superseded by an audited replacement, and final source, typecheck, build, capability, retained-reference, package, compact, and documentation evidence passed.
+      findings:
+        []
+  trends:
+    improved: All 29 active structured-input routes are classified, compact workflows are explicit, and synthetic transport deltas are reproducible.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: The exhausted inventory task was replaced by an audited implementation, and transient, writer, compound, and package closure evidence is complete.
+    carried_forward: Required structured inputs and structured glossary host review remain retained. Profile state remains stale, decision detail remains deferred at startup, and no real-host usage or release readiness is claimed.
+  appended_at: 2026-08-29T17:09:52.595Z

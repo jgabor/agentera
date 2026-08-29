@@ -24,6 +24,10 @@
 
 ### Changed
 
+- Structured-input inventory now derives active writer, report, and startup
+  identities from parser-consumed specifications, validates its envelope,
+  routes, ownership, and closure counts, and returns bounded diagnostics for
+  unreadable or malformed input without claiming recent-host usage.
 - Consolidated package generation in `packages/cli/package.json` under `pnpm -C packages/cli build` and removed the duplicate `bundle:data` command.
 - `pnpm -C packages/cli build` now stages outside the checkout and synchronizes
   only byte or mode differences into `dist/` and `bundle/`. Release verification
@@ -116,6 +120,8 @@
   migration-only contracts require exact reachable production consumers,
   maintainer runbooks require working source-checkout commands, and unowned,
   historical, test-only, or comment-only files no longer ship as live authority.
+  Validation now loads the structured-input inventory through its reachable
+  production validator.
 
 ### Fixed
 

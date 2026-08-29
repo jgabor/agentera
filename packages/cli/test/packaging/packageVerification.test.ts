@@ -11,6 +11,7 @@ import {
   runProducerReadinessWorkflow,
 } from "../helpers/producerReadinessWorkflow.js";
 import { runProductionGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
+import { validateStructuredInputInventory } from "../../src/registries/structuredInputInventory.js";
 
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -258,6 +259,38 @@ describe("npm distribution boundary", () => {
     expect(diskFiles).toBe([...manifestFiles.keys()].filter((file) => file.startsWith("dist/") || file.startsWith("bundle/")).length);
     expect([...manifestFiles.keys()].some((file) => file.endsWith(".map"))).toBe(false);
     expect(manifestFiles.get("dist/bin/agentera.js")!.mode & 0o111).not.toBe(0);
+  });
+
+  it("keeps the structured-input disposition and metric contract identical across package surfaces", () => {
+    const relative = "references/analysis/structured-input-inventory.yaml";
+    const paths = [
+      path.join(CHECKOUT_ROOT, relative),
+      path.join(CHECKOUT_ROOT, "packages/cli/bundle", relative),
+      path.join(fixture.packageRoot, "bundle", relative),
+    ];
+    const contents = paths.map((inventoryPath) => fs.readFileSync(inventoryPath, "utf8"));
+    expect(contents).toEqual(Array(3).fill(contents[0]));
+    expect(paths.map((inventoryPath) => validateStructuredInputInventory(inventoryPath))).toEqual([[], [], []]);
+  });
+
+  it("rejects a malformed extracted structured-input disposition contract without mutation", () => {
+    const source = path.join(fixture.packageRoot, "bundle/references/analysis/structured-input-inventory.yaml");
+    const malformed = path.join(fixture.root, "malformed-structured-input-inventory.yaml");
+    const inventory = YAML.parse(fs.readFileSync(source, "utf8"));
+    inventory.routes[0].disposition = "removed";
+    fs.writeFileSync(malformed, YAML.stringify(inventory));
+    expect(validateStructuredInputInventory(malformed)).toContain("invalid disposition: writer.progress.append.input");
+    expect(YAML.parse(fs.readFileSync(source, "utf8")).routes[0].disposition).toBe("retain");
+  });
+
+  it("returns a bounded error for malformed extracted-package YAML without mutating package input", () => {
+    const source = path.join(fixture.packageRoot, "bundle/references/analysis/structured-input-inventory.yaml");
+    const original = fs.readFileSync(source, "utf8");
+    const malformed = path.join(fixture.root, "malformed-structured-input-inventory.yaml");
+    fs.writeFileSync(malformed, "routes: [caller-secret");
+    expect(validateStructuredInputInventory(malformed))
+      .toEqual(["structured input inventory contains malformed YAML"]);
+    expect(fs.readFileSync(source, "utf8")).toBe(original);
   });
 
   it("rejects incomplete or unclassified inventory before accepting the extracted inventory", () => {

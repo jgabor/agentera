@@ -1,0 +1,15 @@
+id: bqytcgtakq
+artifact: progress
+record:
+  timestamp: 2026-08-29 17:57
+  type: test
+  phase: build
+  what: Verified retained compound personal glossary approval boundaries and recorded machine-readable closure evidence without changing behavior.
+  context:
+    intent: Close approved compound approval gaps only when every current writer and approval guarantee is preserved.
+    constraints: No hidden state, inferred approval, broader consent, content argv, host-history inspection, behavior change, task completion, commit, or push.
+    scope: Personal glossary decision, publication, review queue, review disposition, and structured-input inventory closure evidence.
+  discovered: Decision, publication, review queue, and review disposition requests already require complete current authority; omitting fields would require hidden state or weaken evidence, confirmation, stale-input, or replay guarantees.
+  verified: Focused inventory and compound approval tests passed 102 tests; typecheck, build, capability contract, compact, and git diff checks passed. The targeted source policy lane retained its pre-existing scalar-authority failures and did not complete within the check timeout.
+  next: Keep plan task fluerlxupz pending for owner evaluation; use the retained-route guidance when compound evidence, scope, generation, or content changes.
+  publication_order: 258

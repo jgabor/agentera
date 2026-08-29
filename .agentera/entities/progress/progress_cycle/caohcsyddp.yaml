@@ -1,0 +1,15 @@
+id: caohcsyddp
+artifact: progress
+record:
+  timestamp: 2026-08-29 17:10
+  type: fix
+  phase: build
+  what: Coupled personal glossary review action and input-option parsing to the exported structured-input specification while preserving existing queue and disposition behavior.
+  context:
+    intent: Implement replacement task bckdcowwfz only by correcting the parser authority defect found in both audits.
+    constraints: Preserve the partial inventory implementation, synthetic-only evidence, glossary compatibility and host-review authority; leave task and TODO state pending; do not record evaluation, commit, or push.
+    scope: Personal glossary review queue and disposition action and option validation plus focused coupling proof.
+  discovered: The failed correction exported PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS for inventory derivation but left the active parser with independent queue, disposition, and --input literals. The parser now derives accepted action identities, option validation, syntax, and response command identities from that specification.
+  verified: "PASS: node --version (v24.19.0); corepack pnpm --version (10.30.3); corepack pnpm -C packages/cli exec vitest run test/registries/structuredInputInventory.test.ts test/cli/personalGlossaryReviewRecords.test.ts (2 files, 15 tests passed); corepack pnpm -C packages/cli run typecheck; pnpm -C packages/cli build; node packages/cli/dist/bin/agentera.js check compact (status=pass, errors=0); git diff --check. SOURCE POLICY: corepack pnpm -C packages/cli exec vitest run test/runtime/retiredRuntimeSurfacePolicy.test.ts completed with 191 passed and 3 known pre-existing failures caused by CHANGELOG.md scalar-authority diagnostics; no structuredInputInventory or emitted_producer_omitted diagnostic remains. The first explicit corepack build attempt failed because its nested pnpm resolved v11.3.0; rerunning through the pinned /bin/pnpm Corepack shim (10.30.3) passed."
+  next: The orchestrator audits replacement task bckdcowwfz before any task evaluation, task completion, TODO resolution, commit, or push.
+  publication_order: 253

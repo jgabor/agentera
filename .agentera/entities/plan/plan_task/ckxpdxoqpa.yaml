@@ -1,0 +1,24 @@
+id: ckxpdxoqpa
+artifact: plan
+record:
+  name: Close approved transient report gaps
+  depends_on:
+    - mxmkksxgag
+  status: complete
+  acceptance:
+    - GIVEN an approved small transient route WHEN the new workflow runs THEN unchanged user or generated content enters the CLI once without a generated Python, printf, or equivalent transport wrapper.
+    - GIVEN legacy structured callers WHEN a transient route is simplified THEN their accepted inputs, bounded outputs, privacy rules, retries, and failure behavior remain compatible.
+    - GIVEN malformed, conflicting, or over-bound transient input WHEN it is submitted THEN processing fails before resolution or effects and does not echo caller content.
+    - GIVEN structured glossary host review WHEN inventory closes THEN its existing structured authority and one reusable-input workflow remain documented and unchanged.
+    - GIVEN each changed transient route WHEN tests run THEN one success and one failure case prove the compact and legacy paths.
+  plan: ywhgrvciln
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: ckxpdxoqpa-audit-1
+      source: audit report ses_fb1d96d4cffeilQB2db5KiGW47
+      recorded_at: 2026-08-29 17:35
+      writer_command: agentera state plan record-evaluation

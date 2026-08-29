@@ -21,6 +21,7 @@ const contract = glossaryAdviceContract();
 const COMMAND = contract.command.replace("REQUEST", "<file|->");
 const RECOVERY = `Correct the bounded request and retry ${COMMAND}; no state was changed.`;
 const TERM_INPUT_RECOVERY = "agentera report glossary-advice --term-input <file|-> --format json";
+export const GLOSSARY_ADVICE_STRUCTURED_INPUT_OPTIONS = ["--input", "--term-input"] as const;
 
 function mapping(value: unknown): Mapping | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -39,7 +40,7 @@ function parseArgs(argv: string[]): AdviceSource | InvalidInputErrorBody {
   let termInput: string | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     const [name, inline] = argv[index]!.split("=", 2);
-    if (name !== "--input" && name !== "--term-input" && name !== "--format") {
+    if (!(GLOSSARY_ADVICE_STRUCTURED_INPUT_OPTIONS as readonly string[]).includes(name) && name !== "--format") {
       return {
         class: "unrecognized_argument",
         message: `unrecognized arguments: ${name}`,

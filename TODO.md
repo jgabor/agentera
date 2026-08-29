@@ -167,3 +167,4 @@
 - [x] [id:qtywxothpb] [test:3.0.0] Preserve cold performance failure diagnostics
 - [x] [id:yqyodsuqfb] [fix:3.0.0] Make optional profile grounding degrade without blocking self-contained capability requests.
 - [x] [id:jyxnnzvysl] [fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
+- [x] [id:uaobzdvzlr] [fix:3.0.0] Couple personal glossary review parsing to its structured-input specification.

@@ -12,6 +12,16 @@ import {
 } from "./prime/orientationOutput.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 import type { OrientationState } from "../contracts/orientationState.js";
+
+export const PRIME_STRUCTURED_INPUT_SPECS = [
+  { context: "build", option: "--input" },
+  { context: "build", option: "--term-input" },
+  { context: "discuss", option: "--term-input" },
+  { context: "plan", option: "--term-input" },
+] as const;
+
+const PRIME_INPUT_CONTEXTS = new Set<string>(PRIME_STRUCTURED_INPUT_SPECS.filter(({ option }) => option === "--input").map(({ context }) => context));
+const PRIME_TERM_INPUT_CONTEXTS = new Set<string>(PRIME_STRUCTURED_INPUT_SPECS.filter(({ option }) => option === "--term-input").map(({ context }) => context));
 import { emitInvalidInput } from "../errors.js";
 import {
   BuildExecutionRequestError,
@@ -72,14 +82,14 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const inputErrorFormat = args.format === "json" || args.format === "yaml" ? args.format : "text";
   const rejectInput = (body: Parameters<typeof emitInvalidInput>[1]["body"]): number =>
     emitInvalidInput(io, { format: inputErrorFormat, body });
-  if (input !== null && (capability !== "build" || dashboard || guidance)) {
+  if (input !== null && (!capability || !PRIME_INPUT_CONTEXTS.has(capability) || dashboard || guidance)) {
     return rejectInput({
       class: "unsupported_target",
       message: "--input is valid only with prime --context build",
       syntax: preCutoverCommand("prime --context build --input <file|-> --format json"),
     });
   }
-  if (termInput !== null && (!capability || !["discuss", "plan", "build"].includes(capability) || dashboard || guidance)) {
+  if (termInput !== null && (!capability || !PRIME_TERM_INPUT_CONTEXTS.has(capability) || dashboard || guidance)) {
     return rejectInput({
       class: "unsupported_target",
       message: "--term-input is valid only with prime --context discuss, plan, or build",

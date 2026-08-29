@@ -33,6 +33,7 @@ export interface PersonalGlossaryEvaluationDecisionOptions
 }
 
 const COMMAND = "agentera report personal-glossary-decision --input <file|-> --format json";
+export const PERSONAL_GLOSSARY_DECISION_STRUCTURED_INPUT_OPTIONS = ["--input"] as const;
 const RECOVERY =
   "Correct the bounded decision request and retry; no projection, review, profile, or project bytes were changed.";
 const SHA256 = /^[a-f0-9]{64}$/u;
@@ -101,7 +102,7 @@ function parseArgs(argv: string[]): { input: string } | InvalidInputErrorBody {
   let input: string | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     const [name, inline] = argv[index]!.split("=", 2);
-    if (name !== "--input" && name !== "--format") {
+    if (!(PERSONAL_GLOSSARY_DECISION_STRUCTURED_INPUT_OPTIONS as readonly string[]).includes(name) && name !== "--format") {
       return { class: "unrecognized_argument", message: `unrecognized arguments: ${name}`, syntax: COMMAND };
     }
     const value = inline ?? argv[++index];

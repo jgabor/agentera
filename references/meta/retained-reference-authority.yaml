@@ -39,6 +39,11 @@ inventory:
     production_owner: { module: packages/cli/src/eval/glossaryEvaluation.ts, symbol: loadGlossaryEvaluationBehaviorFixture }
     consumers:
       - { kind: runtime, module: packages/cli/src/eval/glossaryEvaluationSuccessReport.ts, symbol: validateGlossaryEvaluationSuccessReport, consumption: loads }
+  - path: references/analysis/structured-input-inventory.yaml
+    classification: current
+    production_owner: { module: packages/cli/src/registries/structuredInputInventory.ts, symbol: validateStructuredInputInventory }
+    consumers:
+      - { kind: validator, module: packages/cli/src/registries/structuredInputInventory.ts, symbol: validateStructuredInputInventory, consumption: loads }
   - path: references/analysis/verification-policy.yaml
     classification: current
     production_owner: { module: packages/cli/scripts/verify-lane.mjs, symbol: loadContract }
