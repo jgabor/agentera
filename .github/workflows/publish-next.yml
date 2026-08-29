@@ -26,6 +26,7 @@ jobs:
         timeout-minutes: 1
         with:
           node-version-file: .node-version
+          package-manager-cache: false
       - name: Install dependencies
         timeout-minutes: 3
         env:

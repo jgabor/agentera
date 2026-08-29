@@ -217,6 +217,10 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).toContain("timeout-minutes: 8");
     expect(qualificationYaml.match(/timeout-minutes:/g)).toHaveLength(8);
     const workflow = YAML.parse(qualificationYaml);
+    const setupNode = workflow.jobs["publish-development"].steps.find(
+      (step: { uses?: string }) => step.uses === "actions/setup-node@v5",
+    );
+    expect(setupNode.with["package-manager-cache"]).toBe(false);
     const construction = workflow.jobs["publish-development"].steps.find(
       (step: { name?: string }) => step.name === "Build one isolated package tarball",
     );

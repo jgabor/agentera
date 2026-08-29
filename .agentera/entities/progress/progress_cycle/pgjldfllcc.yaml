@@ -1,0 +1,15 @@
+id: pgjldfllcc
+artifact: progress
+record:
+  timestamp: 2026-08-29 12:50
+  type: fix
+  phase: build
+  what: Corrected the push-triggered development publication workflow startup.
+  context:
+    intent: Allow the checked-in 3.0.0-dev.84 package to reach construction and publication after the first push failed in setup-node.
+    constraints: Preserve manifest-owned versioning, Corepack installation, credential isolation, exact package validation, and single-use push authorization.
+    scope: The publish-next setup-node cache setting, its exact workflow regression assertion, and release verification evidence.
+  discovered: actions/setup-node v5 enabled automatic package-manager caching before the later Corepack step, then failed because pnpm was not yet on PATH.
+  verified: The focused workflow test passed 13 of 13, typecheck passed, git diff validation passed, and the authoritative 11-gate release conjunction passed with no publication effects.
+  next: Commit and push this correction once, then verify the workflow publishes 3.0.0-dev.84 from the pushed source SHA.
+  publication_order: 250

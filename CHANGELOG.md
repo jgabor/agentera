@@ -47,6 +47,8 @@
   to npm `@next`. The bounded workflow builds, validates, and smokes one exact
   isolated tarball, safely replays it without moving `@next` backward, and gives
   temporary npm authentication only to forward mutation. Suite authority is unchanged.
+- Fixed the `@next` workflow startup so `actions/setup-node` does not require
+  pnpm before Corepack installs the repository-pinned package manager.
 - Local staged verification now gives ordinary source changes targeted tests
   and typecheck with two workers in at most 60 seconds. State and documentation
   checks stay under 10 seconds, while specialized and global owners defer to
