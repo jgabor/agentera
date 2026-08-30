@@ -1,0 +1,16 @@
+id: adlhsgrptw
+artifact: progress
+record:
+  timestamp: 2026-08-30 23:29
+  type: test
+  phase: build
+  what: Measured full source-suite throughput at explicit four- and eight-worker settings for independent audit.
+  context:
+    intent: Retain fixed-runner evidence for the eight-worker decision.
+    constraints: No production/config changes; explicit worker override only; six runs serial with identical environment except worker count.
+    unknowns: Independent audit and evaluation remain pending.
+    scope: Optimize plan task hywnwpdiww only.
+  discovered: Eight-worker shell median was 137.460s versus 212.776s at four workers, a 35.397% reduction. Vitest median was 136.24s versus 211.53s, a 35.593% reduction.
+  verified: "Measured clean source commit 5647fddbbeef1d6144ab0d85f59e40ff4b1f392c and tree 23c84ecbf9f127f850b15b0bc16723b9db5bbf2b on host allspark, Linux 7.2.2-1-cachyos x86_64, AMD Ryzen 7 9800X3D (8 cores/16 logical CPUs), Node 24.19.0, pnpm 10.30.3. Interleaved serial command: VITEST_MAX_WORKERS={4|8} pnpm -C packages/cli test. Four-worker runs: shell 223.284s/212.585s/212.776s; Vitest 222.02s/211.35s/211.53s. Eight-worker runs: shell 138.160s/137.460s/137.387s; Vitest 136.85s/136.24s/136.17s. Every run exited 0 with 255/255 files and 4,223 passed plus 2 skipped of 4,225 tests; no retries, timeouts, or shared-output failures were observed."
+  next: Keep task hywnwpdiww in progress for orchestrator audit and resolution; activation remains owned by task 3.
+  publication_order: 277
