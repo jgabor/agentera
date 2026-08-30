@@ -106,21 +106,25 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
 
 ### Development push contract
 
-- Every passing queued push to `feat/v3` publishes one rolling
-  development package to npm `@next` using the checked-in
-  `packages/cli/package.json#version`. CI builds once from `GITHUB_SHA` and sets
-  package `agentera.gitRef` to that SHA in isolated package construction. It
+- Every passing queued push to `feat/v3` publishes one rolling development
+  package to npm `@next`. CI allocates `3.0.0-dev.(GITHUB_RUN_NUMBER plus 80)`
+  on the valid checked-in manifest base line, builds once from `GITHUB_SHA`,
+  and sets the candidate version and package `agentera.gitRef` only in isolated
+  package construction. It
   validates and smokes that exact tarball before publishing the same bytes. It
   does not edit the checkout or require a final metadata commit.
 - The `publish-next-${{ github.ref }}` concurrency group uses `queue: max`, which
-  keeps up to 100 pending pushes. A rerun keeps the same pushed SHA and
-  checked-in version. A failed run does not allocate a replacement version.
+  keeps up to 100 pending pushes. A rerun keeps the same run number, candidate
+  version, pushed SHA, and bytes. Failed runs leave gaps; later queued runs get
+  higher versions and cannot move `@next` backward.
 - A user's explicit push authorization permits exactly one push and is consumed
   by it. After that push, stop. A failed or cancelled workflow does not
   authorize another version or push. Repair the cause on a
   worktree branch and obtain fresh explicit authorization before integrating it.
 - Development preparation rejects `--target-version`; stable preparation
   continues to require explicit `--target-version`.
+- Ordinary `feat/v3` pushes require no pre-push development version bump or
+  metadata-only release commit.
 - Publication from `main` remains the stable path and requires protected
   environment review before npm mutation. The stable `workflow_dispatch`
   path is not operational until `publish-stable.yml` exists on the default

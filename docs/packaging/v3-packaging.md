@@ -46,35 +46,35 @@ It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
 Every passing queued push to `feat/v3` publishes through
-`.github/workflows/publish-next.yml` to npm `@next`. CI reads the checked-in
-`packages/cli/package.json#version`, builds once from `GITHUB_SHA`, and sets
-`agentera.gitRef` to `GITHUB_SHA` only in the copied construction manifest. It
+`.github/workflows/publish-next.yml` to npm `@next`. CI derives the base release
+line from the valid checked-in `packages/cli/package.json#version` and allocates
+the candidate ordinal as `GITHUB_RUN_NUMBER + 80`. Runs 4, 5, and 6 map to
+`3.0.0-dev.84`, `.85`, and `.86`. It builds once from `GITHUB_SHA`, and sets the
+candidate version and `agentera.gitRef` to `GITHUB_SHA` only in the copied
+construction manifest. It
 validates that exact tarball's version and git ref, runs its executable CLI
 version smoke, then publishes the same tarball to `@next`. This routine path does
 not run the manual qualification, receipt, attestation, benchmark, or artifact
 handoff framework. It does not edit the checkout or require a final metadata-only
 commit. The `publish-next-${{ github.ref }}` group uses
 `queue: max`, which keeps up to 100 pending pushes.
-A rerun keeps the same pushed SHA and checked-in version. If identical bytes
+A rerun keeps the same run number, candidate version, pushed SHA, and bytes. If identical bytes
 already exist at that version on `@next`, publication succeeds without another
-upload. A failed run does not allocate a replacement version.
+upload. Failed runs leave gaps. Later queued runs receive higher versions, and
+classification prevents them from moving `@next` backward.
 
-Before each later `feat/v3` push, choose a development version newer than the
-current npm `@next`, update only `packages/cli/package.json#version`, and commit
-that change with the source that it identifies. Do not push an unpublished
-version again after changing its source. Instead, commit a new development
-version and obtain fresh push authorization. Rerun the existing workflow when
-the version and source are unchanged, because that is an exact replay. If npm
-already contains different bytes at the checked-in version, treat it as a
-conflict: do not overwrite or retag it; commit a new development version and
-obtain fresh push authorization.
+Ordinary `feat/v3` pushes require no pre-push development version bump or
+metadata-only release commit. Rerun the existing workflow when the run and
+source are unchanged, because that is an exact replay. If npm already contains
+different bytes at the candidate version, treat it as a conflict: do not
+overwrite or retag it.
 
 One explicit push authorization permits exactly one push and is consumed by it.
 After that push, stop. A failed or cancelled workflow ends the release attempt;
 it does not authorize another version or push. Make fixes on a
 worktree branch, then obtain fresh authorization for a later integration push.
 Local commits do not publish. Rerunning an existing workflow reuses the same
-pushed SHA and checked-in version.
+run number, pushed SHA, candidate version, and bytes.
 
 The resumable readiness coordinator remains the manual diagnostic and recovery
 path. It is separate from normal push publication and accepts an explicit
@@ -118,8 +118,8 @@ retained artifact. Stale or mismatched evidence exits 1 before an issuance owner
 starts. The external artifact directory can be absent or empty for a fresh
 source run; after that it is retained input and must not be replaced.
 
-Preparation remains pure. Normal push publication copies the checked-in package
-version into the isolated CI construction tree, injects only `agentera.gitRef`,
+Preparation remains pure. Normal push publication injects the allocated package
+version and `agentera.gitRef` only into the isolated CI construction tree,
 and does not prepare checkout metadata. The manual recovery preparer validates
 the checked-in development version, explicit source commit, and source evidence
 without changing checkout metadata. Development preparation rejects

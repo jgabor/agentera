@@ -100,9 +100,15 @@ self-contained and includes runtime data under `packages/cli/bundle/`.
 `packages/cli/scripts/pack-package.mjs` constructs an isolated package tree and
 runs `npm pack` with lifecycle scripts disabled. Checkout `prepack` rejects
 direct `npm pack`; it is a safety guard, not a build step. Do not bypass it.
-For a development push, construction uses the checked-in package version and
-sets only `agentera.gitRef` to the pushed SHA in the copied manifest. Source and
-receipt checks remain bound to the clean pushed checkout.
+For a normal development push, CI allocates
+`3.0.0-dev.(GITHUB_RUN_NUMBER + 80)`: runs 4, 5, and 6 map to
+`3.0.0-dev.84`, `3.0.0-dev.85`, and `3.0.0-dev.86`. Only copied manifest
+`version` and `agentera.gitRef` change. Ordinary pushes require no pre-push
+development version bump or metadata-only release commit. Failed runs can
+leave gaps; a rerun reuses the same run number, `GITHUB_SHA`, and candidate
+version. Manual readiness remains based on the committed manifest version and
+explicit source commit. Source and receipt checks remain bound to the clean
+pushed checkout.
 
 Package verification requires an executable regular
 `dist/bin/agentera.js`, excludes source maps, and verifies source, generated,

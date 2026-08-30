@@ -232,20 +232,22 @@ function exactCensusIdentity(value: any, expected: ActivationCensusIdentity, lab
 export function validatePackagePublicationDocument(raw: any): PackagePublicationModel {
   if (raw?.schemaVersion !== "agentera.packagePublication.v2") fail("schemaVersion is invalid");
   const inventory = raw?.versionCallerInventory;
-  const developmentCallers = exactList(inventory?.development?.currentExplicitTargetCallers, [], "development version callers");
+  const developmentCallers = exactList(inventory?.development?.currentExplicitTargetCallers, [
+    "packages/cli/scripts/pack-package.mjs#--package-version with --git-ref",
+  ], "development version callers");
   const stableCallers = exactList(inventory?.stable?.preservedCallers, [
     "packages/cli/scripts/publication-transaction.mjs#prepare stable",
   ], "stable version callers");
-  if (raw?.packages?.development?.versionAuthority !== "packages/cli/package.json#version"
+  if (raw?.packages?.development?.versionAuthority !== "GITHUB_RUN_NUMBER plus governed offset on packages/cli/package.json base line"
     || raw?.packages?.development?.suiteVersionAuthority !== "packages/cli/package.json#agentera.suiteVersion"
-    || inventory?.development?.authority !== "checked-in packages/cli/package.json version"
+    || inventory?.development?.authority !== "CI candidate from GITHUB_RUN_NUMBER plus 80 on checked-in manifest base line"
     || inventory?.stable?.authority !== "explicit target-version"
     || inventory?.suite?.authority !== "packages/cli/package.json#agentera.suiteVersion"
     || inventory?.suite?.requiredVersion !== "3.0.0") fail("version authority or caller inventory is invalid");
   const developmentPush = raw?.ci?.developmentPush;
   if (
-    developmentPush?.versionAuthority !== "packages/cli/package.json#version"
-    || Object.prototype.hasOwnProperty.call(developmentPush ?? {}, "runNumberOffset")
+    developmentPush?.versionAuthority !== "GITHUB_RUN_NUMBER plus runNumberOffset on packages/cli/package.json base line"
+    || developmentPush?.runNumberOffset !== 80
   ) fail("development push version authority is invalid");
   exactList(raw?.qualification?.candidate?.inputs, [
     "source_receipt", "metadata_commit", "source_commit", "adapter", "package", "registry",

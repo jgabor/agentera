@@ -24,6 +24,7 @@
 
 ### Changed
 
+- The `feat/v3` publication workflow now deterministically allocates development versions from `GITHUB_RUN_NUMBER + 80`, injects the candidate version and pushed SHA only into isolated package construction, and requires no pre-push version bump or metadata-only release commit. Reruns reuse the same identity and failed runs leave harmless version gaps.
 - Structured-input inventory now derives active writer, report, and startup
   identities from parser-consumed specifications, validates its envelope,
   routes, ownership, and closure counts, and returns bounded diagnostics for

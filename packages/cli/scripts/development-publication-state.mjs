@@ -1,4 +1,5 @@
 const DEVELOPMENT_VERSION = /^(\d+)\.(\d+)\.(\d+)-dev\.(0|[1-9]\d*)$/;
+export const DEVELOPMENT_RUN_NUMBER_OFFSET = 80;
 
 function parseDevelopmentVersion(version, label) {
   const match = typeof version === "string" ? DEVELOPMENT_VERSION.exec(version) : null;
@@ -13,16 +14,29 @@ function compareVersions(left, right) {
   return 0;
 }
 
+export function allocateDevelopmentVersion(manifestVersion, runNumber) {
+  const [major, minor, patch] = parseDevelopmentVersion(manifestVersion, "package manifest version");
+  const parsedRunNumber = typeof runNumber === "string" && /^(?:0|[1-9]\d*)$/.test(runNumber)
+    ? Number(runNumber)
+    : runNumber;
+  if (!Number.isSafeInteger(parsedRunNumber) || parsedRunNumber <= 0) {
+    throw new Error("GitHub run number must be a positive safe integer");
+  }
+  const ordinal = parsedRunNumber + DEVELOPMENT_RUN_NUMBER_OFFSET;
+  if (!Number.isSafeInteger(ordinal)) throw new Error("allocated development ordinal is not a safe integer");
+  return `${major}.${minor}.${patch}-dev.${ordinal}`;
+}
+
 export function classifyDevelopmentPublication({ version, integrity, source, currentNext, published }) {
   const order = compareVersions(
-    parseDevelopmentVersion(version, "checked-in package version"),
+    parseDevelopmentVersion(version, "candidate package version"),
     parseDevelopmentVersion(currentNext, "npm @next version"),
   );
   const exists = published?.integrity != null || published?.source != null;
   const matches = published?.integrity === integrity && published?.source === source;
 
   if (order === 0) {
-    if (!matches) throw new Error("npm @next does not match the checked-in version integrity and source");
+    if (!matches) throw new Error("npm @next does not match the candidate version integrity and source");
     return "exact-replay";
   }
   if (order < 0) {

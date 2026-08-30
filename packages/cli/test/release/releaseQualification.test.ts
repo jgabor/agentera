@@ -418,38 +418,41 @@ describe("release qualification receipts", () => {
     expect(replay.receipt.receiptSha256).toBe(first.receiptSha256);
   });
 
-  it("injects only source identity into manifest-version construction", () => {
+  it("injects candidate version and source identity only into isolated construction", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-override-test-"));
     temporary.push(root);
     const outputDirectory = path.join(root, "candidate");
     const manifestPath = path.join(REPO_ROOT, "packages/cli/package.json");
     const before = fs.readFileSync(manifestPath);
     const sourceCommit = "a".repeat(40);
+    const candidateVersion = "3.0.0-dev.86";
     const result = spawnSync(process.execPath, [
       "scripts/pack-package.mjs",
       "--output-dir", outputDirectory,
       "--with-dry-run",
       "--json",
+      "--package-version", candidateVersion,
       "--git-ref", sourceCommit,
     ], { cwd: path.join(REPO_ROOT, "packages/cli"), encoding: "utf8", timeout: 120_000 });
 
     expect(result.status, result.stderr).toBe(0);
     const packed = JSON.parse(result.stdout).packed;
     const checkoutManifest = JSON.parse(before.toString());
-    expect(packed.version).toBe(checkoutManifest.version);
+    expect(packed.version).toBe(candidateVersion);
     const extraction = path.join(root, "extracted");
     fs.mkdirSync(extraction);
     const extracted = spawnSync("tar", ["-xzf", packed.artifact, "-C", extraction], { encoding: "utf8" });
     expect(extracted.status, extracted.stderr).toBe(0);
     expect(JSON.parse(fs.readFileSync(path.join(extraction, "package/package.json"), "utf8")))
-      .toEqual({ ...checkoutManifest, agentera: { ...checkoutManifest.agentera, gitRef: sourceCommit } });
+      .toEqual({ ...checkoutManifest, version: candidateVersion, agentera: { ...checkoutManifest.agentera, gitRef: sourceCommit } });
     expect(fs.readFileSync(manifestPath)).toEqual(before);
   });
 
-  it("rejects package version overrides and invalid source identities", () => {
+  it("rejects unpaired or invalid candidate versions and invalid source identities", () => {
     const packageRoot = path.join(REPO_ROOT, "packages/cli");
     const cases = [
-      [["--dry-run", "--package-version", "3.0.0-dev.73"], "unexpected argument '--package-version'"],
+      [["--dry-run", "--package-version", "3.0.0-dev.73"], "requires --git-ref"],
+      [["--dry-run", "--package-version", "3.1.0-dev.73", "--git-ref", "a".repeat(40)], "manifest base line"],
       [["--dry-run", "--git-ref", "A".repeat(40)], "lowercase commit SHA"],
       [["--dry-run", "--unexpected"], "unexpected argument"],
     ] as const;

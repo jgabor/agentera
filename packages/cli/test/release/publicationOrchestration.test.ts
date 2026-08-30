@@ -43,6 +43,10 @@ const releaseSkill = fs.readFileSync(
   path.join(REPO_ROOT, ".opencode/skills/agentera-release/SKILL.md"),
   "utf8",
 );
+const verificationSkill = fs.readFileSync(
+  path.join(REPO_ROOT, ".opencode/skills/agentera-verification/SKILL.md"),
+  "utf8",
+);
 const agentsGuide = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
 const changelog = fs.readFileSync(path.join(REPO_ROOT, "CHANGELOG.md"), "utf8");
 
@@ -61,13 +65,13 @@ describe("package publication orchestration", () => {
     });
   });
 
-  it("documents bump-before-push and development version recovery", () => {
-    expect(packagingGuide).toContain("Before each later `feat/v3` push");
-    expect(packagingGuide).toContain("commit a new development version");
+  it("documents deterministic allocation and development version recovery", () => {
+    expect(packagingGuide).toContain("GITHUB_RUN_NUMBER + 80");
+    expect(packagingGuide).toContain("Failed runs leave gaps");
     expect(packagingGuide).toContain("exact replay");
-    expect(packagingGuide).toContain("already contains different bytes");
-    expect(packagingGuide).toContain("do not overwrite or retag it");
-    expect(packagingGuide).toContain("obtain fresh push authorization");
+    expect(packagingGuide).toContain("npm already contains");
+    expect(packagingGuide).toMatch(/do not\s+overwrite or retag it/);
+    expect(packagingGuide).toContain("obtain fresh authorization");
   });
 
   it("routes preparation, verification, approval, staging, and promotion through explicit scripts", () => {
@@ -108,9 +112,9 @@ describe("package publication orchestration", () => {
     expect(stablePackage.scripts).not.toHaveProperty("publish:stable");
   });
 
-  it("separates manifest-owned CI construction from receipt-bound manual preparation", () => {
+  it("separates allocated CI construction from receipt-bound manual preparation", () => {
     expect(publicationContract.invariants.preparation).toContain(
-      "CI copies the checked-in development package version into an isolated construction tree",
+      "allocates a candidate version from GITHUB_RUN_NUMBER plus 80",
     );
     expect(publicationContract.invariants.preparation).toContain(
       "manual readiness preparation path first validates a current normalized source receipt",
@@ -123,20 +127,21 @@ describe("package publication orchestration", () => {
     );
   });
 
-  it("keeps canonical development publication instructions on manifest authority", () => {
+  it("keeps canonical development publication instructions on deterministic allocation authority", () => {
     for (const [label, instructions] of [
       ["packaging guide", packagingGuide],
       ["release skill", releaseSkill],
       ["agent bootstrap", agentsGuide],
     ] as const) {
-      expect(instructions, label).toContain("packages/cli/package.json#version");
+      expect(instructions, label).toContain("GITHUB_RUN_NUMBER");
+      expect(instructions, label).toMatch(/(?:plus|\+) 80/);
       expect(instructions, label).toContain("GITHUB_SHA");
       expect(instructions, label).toContain("queue: max");
       expect(instructions, label).toContain("explicit push authorization");
       expect(instructions, label).toMatch(
         /stable preparation\s+continues to require explicit\s+`--target-version`/,
       );
-      expect(instructions, label).not.toMatch(/GITHUB_RUN_NUMBER|run[- ]number|offset 82/i);
+      expect(instructions, label).not.toMatch(/offset 82/i);
     }
 
     for (const instructions of [packagingGuide, releaseSkill]) {
@@ -152,16 +157,36 @@ describe("package publication orchestration", () => {
       "  --target-version X.Y.Z --source-commit COMMIT",
     ].join("\n"));
 
-    expect(changelog).toContain("publishes the checked-in development version");
-    expect(changelog).not.toContain("CI-allocated rolling");
+    for (const [label, instructions] of [
+      ["release skill", releaseSkill],
+      ["verification skill", verificationSkill],
+    ] as const) {
+      const normalizedInstructions = instructions.replace(/\s+/g, " ");
+      expect(normalizedInstructions, label).toContain("GITHUB_RUN_NUMBER + 80");
+      expect(normalizedInstructions, label).toContain("runs 4, 5, and 6 map to");
+      expect(normalizedInstructions, label).toContain("`3.0.0-dev.84`, `3.0.0-dev.85`, and `3.0.0-dev.86`");
+      expect(normalizedInstructions, label).toContain("Only copied manifest `version` and `agentera.gitRef` change");
+      expect(normalizedInstructions, label).toContain("no pre-push development version bump or metadata-only release commit");
+      expect(normalizedInstructions, label).toContain("Failed runs can leave gaps");
+      expect(normalizedInstructions, label).toContain("rerun reuses the same run number, `GITHUB_SHA`, and candidate version");
+
+      const normalPushGuidance = instructions
+        .split(/\n\s*\n/)
+        .filter((paragraph) => /(?:normal|development|queued) push/i.test(paragraph))
+        .join("\n");
+      expect(normalPushGuidance, label).not.toMatch(/checked-in (?:candidate |package )?version/i);
+      expect(normalPushGuidance, label).not.toMatch(/(?:changes|sets) only\s+`agentera\.gitRef`/i);
+    }
+
+    expect(changelog).toContain("deterministically allocates development versions");
   });
 
-  it("rejects the retired development allocation command", () => {
-    const result = spawnSync(process.execPath, [
-      "packages/cli/scripts/release-qualification.mjs", "allocate", "--run-number", "2",
-    ], { cwd: REPO_ROOT, encoding: "utf8" });
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain("<verify|source|source-check|candidate|approval|attest>");
+  it("passes the allocated candidate through construction, classification, and mutation", () => {
+    expect(qualificationYaml).toContain("allocateDevelopmentVersion");
+    expect(qualificationYaml).toContain("process.env.GITHUB_RUN_NUMBER");
+    expect(qualificationYaml).toContain('--package-version "${{ steps.version.outputs.value }}"');
+    expect(qualificationYaml.match(/--package-version "\$\{\{ steps\.version\.outputs\.value \}\}"/g)).toHaveLength(3);
+    expect(qualificationYaml).not.toContain("require('./packages/cli/package.json').version");
   });
 
   it("keeps readiness resumable and hard-paused before approval or registry work", () => {
@@ -203,14 +228,14 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).toContain("queue: max");
     expect(qualificationYaml).not.toContain("cancel-in-progress");
     expect(qualificationYaml).not.toContain("github.run_number");
-    expect(qualificationYaml).not.toContain("GITHUB_RUN_NUMBER");
-    expect(qualificationYaml).toContain("require('./packages/cli/package.json').version");
+    expect(qualificationYaml).toContain("GITHUB_RUN_NUMBER");
+    expect(qualificationYaml).not.toContain("require('./packages/cli/package.json').version");
     expect(qualificationYaml).toContain("GITHUB_SHA");
     expect(qualificationYaml).toContain("pack-package.mjs");
     expect(qualificationYaml).toContain("publish-development.mjs classify");
     expect(qualificationYaml).toContain("publish-development.mjs mutate");
     expect(qualificationYaml).not.toContain("publish-development.mjs publish");
-    expect(qualificationYaml.match(/--package-version \"\$\{\{ steps\.version\.outputs\.value \}\}\"/g)).toHaveLength(2);
+    expect(qualificationYaml.match(/--package-version \"\$\{\{ steps\.version\.outputs\.value \}\}\"/g)).toHaveLength(3);
     expect(qualificationYaml).toContain("--git-ref \"${GITHUB_SHA}\"");
     expect(qualificationYaml.match(/agentera-\$\{\{ steps\.version\.outputs\.value \}\}\.tgz/g)).toHaveLength(2);
     expect(qualificationYaml).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
@@ -224,7 +249,7 @@ describe("package publication orchestration", () => {
     const construction = workflow.jobs["publish-development"].steps.find(
       (step: { name?: string }) => step.name === "Build one isolated package tarball",
     );
-    expect(construction.run).not.toContain("--package-version");
+    expect(construction.run).toContain("--package-version");
     const steps = workflow.jobs["publish-development"].steps;
     const credentialSteps = steps.filter((step: { env?: Record<string, string> }) => step.env?.NPM_TOKEN);
     expect(credentialSteps).toHaveLength(1);

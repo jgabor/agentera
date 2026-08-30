@@ -22,7 +22,7 @@ const npmrc = path.join(temporary, "npmrc");
 const globalNpmrc = path.join(temporary, "global-npmrc");
 const flags = parseReleaseFlags(process.argv.slice(2), {
   boolean: ["--dry-run", "--with-dry-run", "--json", "--verbose"],
-  value: ["--output-dir", "--git-ref"],
+  value: ["--output-dir", "--git-ref", "--package-version"],
 });
 const dryRun = flags.has("--dry-run");
 const withDryRun = flags.has("--with-dry-run");
@@ -30,6 +30,7 @@ const json = flags.has("--json");
 const verbose = flags.has("--verbose");
 const outputDir = flags.has("--output-dir") ? path.resolve(flags.get("--output-dir")) : packageRoot;
 const gitRef = flags.get("--git-ref");
+const packageVersion = flags.get("--package-version");
 
 function run(command, args, cwd) {
   const result = spawnSync(command, args, {
@@ -87,6 +88,9 @@ try {
   for (const file of ["package.json", "README.md"]) {
     fs.copyFileSync(path.join(packageRoot, file), path.join(construction, file));
   }
+  if (packageVersion !== undefined && gitRef === undefined) {
+    throw new Error("--package-version requires --git-ref");
+  }
   if (gitRef !== undefined) {
     if (!/^[0-9a-f]{40}$/.test(gitRef)) {
       throw new Error("--git-ref must be a 40-character lowercase commit SHA");
@@ -95,6 +99,12 @@ try {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
     if (!/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(manifest.version)) {
       throw new Error("package manifest version must match 3.0.0-dev.N");
+    }
+    if (packageVersion !== undefined) {
+      if (!/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(packageVersion)) {
+        throw new Error("--package-version must match 3.0.0-dev.N on the package manifest base line");
+      }
+      manifest.version = packageVersion;
     }
     manifest.agentera = { ...manifest.agentera, gitRef };
     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);

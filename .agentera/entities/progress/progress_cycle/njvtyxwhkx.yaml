@@ -1,0 +1,15 @@
+id: njvtyxwhkx
+artifact: progress
+record:
+  timestamp: 2026-08-30 14:52
+  type: feat
+  phase: build
+  what: Replaced committed per-push development versions with deterministic CI candidate allocation.
+  context:
+    intent: Make ordinary feat/v3 pushes allocate immutable development candidates from the workflow run number without editing the checkout.
+    constraints: Keep package version 3.0.0-dev.84 and suite metadata unchanged; preserve stable publication; perform no push, publication, credential inspection, or npm mutation.
+    scope: Development allocator, isolated package construction, push workflow, release authorities, maintainer guidance, tests, and changelog.
+  discovered: The run-number offset must remain 80 to preserve run 4 as dev.84; failed runs become harmless gaps while reruns retain their original candidate and source.
+  verified: Focused release, workflow, construction, publication-state, authority, and runtime-surface tests passed. Typecheck, build, the eleven-gate release conjunction, compact validation, and package dry-run passed without registry effects.
+  next: Audit the uncommitted implementation and then create the single local conventional commit.
+  publication_order: 264

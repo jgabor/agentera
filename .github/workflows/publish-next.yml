@@ -34,11 +34,16 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile
-      - name: Read committed development version
+      - name: Allocate candidate development version
         id: version
         timeout-minutes: 1
         run: |
-          version="$(node -p "require('./packages/cli/package.json').version")"
+          version="$(node --input-type=module -e "
+            import fs from 'node:fs';
+            import { allocateDevelopmentVersion } from './packages/cli/scripts/development-publication-state.mjs';
+            const manifest = JSON.parse(fs.readFileSync('./packages/cli/package.json', 'utf8'));
+            process.stdout.write(allocateDevelopmentVersion(manifest.version, process.env.GITHUB_RUN_NUMBER));
+          ")"
           printf 'value=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
           printf 'Publishing %s from %s\n' "${version}" "${GITHUB_SHA}"
       - name: Build one isolated package tarball
@@ -46,6 +51,7 @@ jobs:
         run: |
           node packages/cli/scripts/pack-package.mjs \
             --output-dir "${RUNNER_TEMP}/agentera-package" \
+            --package-version "${{ steps.version.outputs.value }}" \
             --git-ref "${GITHUB_SHA}" --json
       - name: Validate, smoke, and classify the exact tarball
         id: classification

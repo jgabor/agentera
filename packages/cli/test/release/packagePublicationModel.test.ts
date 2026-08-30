@@ -34,7 +34,10 @@ describe("strict package publication model", () => {
     expect(model.activationConjunction.checkIds).toHaveLength(42);
     expect(model.sourceQualificationMs).toBe(2_400_000);
     expect(model.versionCallerInventory).toMatchObject({
-      development: { authority: "checked-in packages/cli/package.json version", currentExplicitTargetCallers: [] },
+      development: {
+        authority: "CI candidate from GITHUB_RUN_NUMBER plus 80 on checked-in manifest base line",
+        currentExplicitTargetCallers: ["packages/cli/scripts/pack-package.mjs#--package-version with --git-ref"],
+      },
       stable: { authority: "explicit target-version" },
       suite: { requiredVersion: "3.0.0" },
     });
@@ -42,7 +45,7 @@ describe("strict package publication model", () => {
   });
 
   it("rejects reassigned development, stable, or suite version authority", () => {
-    expect(mutate((copy) => { copy.ci.developmentPush.versionAuthority = "GitHub run number"; })).toThrow(/development push version authority/);
+    expect(mutate((copy) => { copy.ci.developmentPush.versionAuthority = "packages/cli/package.json#version"; })).toThrow(/development push version authority/);
     expect(mutate((copy) => { copy.ci.developmentPush.runNumberOffset = 82; })).toThrow(/development push version authority/);
     expect(mutate((copy) => { copy.versionCallerInventory.development.currentExplicitTargetCallers.push("obsolete caller"); })).toThrow(/development version callers/);
     expect(mutate((copy) => { copy.versionCallerInventory.stable.authority = "checked-in manifest"; })).toThrow(/version authority/);
