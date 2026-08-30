@@ -1,0 +1,26 @@
+id: oyxoxajkvd
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Correct nested check and state JSON error routing
+  requirements:
+    - Resolve blocked plan task xwxcchoypp by recognizing omitted or explicit JSON output selection before nested check and state subcommand resolution.
+    - Return bounded JSON errors with unchanged exit codes and no plaintext diagnostic for missing or unsupported nested check and state routes.
+    - Add behavioral passing and failing producer coverage so the live output inventory cannot diverge from nested dispatcher behavior.
+  acceptance:
+    - GIVEN check or state without a nested subcommand WHEN invoked with omitted or explicit JSON selection THEN equivalent structured missing-subcommand errors are returned.
+    - GIVEN an unsupported nested check or state subcommand WHEN invoked THEN a structured JSON error is returned without plaintext diagnostics.
+    - GIVEN the shared output inventory WHEN tested THEN nested check and state producer behavior is exercised rather than inferred from static labels.
+    - GIVEN the correction WHEN evaluated THEN blocked task xwxcchoypp can be replaced or replanned with passing evidence.
+  release_blocker: true
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Correct nested check and state JSON error routing"
+      severity: degraded
+      status: open
+      order: 2

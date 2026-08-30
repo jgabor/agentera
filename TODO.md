@@ -10,6 +10,7 @@
 ## ⇉ Degraded
 
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
+- [ ] [id:oyxoxajkvd] [fix:3.0.0] Correct nested check and state JSON error routing
 
 ## → Normal
 
