@@ -4,7 +4,7 @@ record:
   name: Revalidate the eight-worker decision
   depends_on:
     - kozmasfkdb
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN task 1 is complete WHEN three serial four-worker runs and three serial eight-worker runs execute on Node 24.19.0 and the current 16-logical-CPU runner THEN every run passes without retries, timeouts, or shared-output failures.
     - GIVEN both timing samples WHEN their medians are compared THEN the eight-worker median is at least 20 percent lower.
