@@ -282,12 +282,12 @@ describe("prime --context build --input", () => {
     ["other capability", ["--context", "audit"]],
     ["dashboard", ["--context", "build", "--dashboard"]],
     ["guidance", ["--context", "build", "--guidance"]],
-  ])("rejects %s input use before reading input through the canonical envelope", (_name, mode) => {
+  ])("rejects %s input use before reading input through the canonical envelope", (name, mode) => {
     const { rc, out } = capture((io) => main([
       "node", "agentera", "prime", ...mode, "--input", "sensitive-request.yaml", "--format", "json",
     ], io));
     expect(rc).toBe(2);
-    expect(JSON.parse(out)).toMatchObject({ schemaVersion: "agentera.invalidInputEnvelope.v2", error: { class: "unsupported_target" } });
+    expect(JSON.parse(out)).toMatchObject({ schemaVersion: "agentera.invalidInputEnvelope.v2", error: { class: name === "guidance" ? "unrecognized_argument" : "unsupported_target" } });
     expect(out).not.toContain("sensitive-request");
   });
 

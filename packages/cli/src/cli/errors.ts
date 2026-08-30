@@ -54,6 +54,7 @@ export interface EmitInvalidInputOptions {
 }
 
 export const INVALID_INPUT_EXIT_CODE = 2;
+const INVALID_INPUT_MAX_UTF8_BYTES = 32_768;
 
 const DEFAULT_RECOVERY = "Correct the input and retry; no state was changed.";
 
@@ -80,7 +81,18 @@ export function emitInvalidInput(
         recovery: opts.body.recovery ?? DEFAULT_RECOVERY,
       },
     };
-    if (opts.format === "json") out(JSON.stringify(envelope) + "\n");
+    if (opts.format === "json") {
+      let serialized = JSON.stringify(envelope) + "\n";
+      if (Buffer.byteLength(serialized, "utf8") > INVALID_INPUT_MAX_UTF8_BYTES) {
+        envelope.error = {
+          class: opts.body.class,
+          message: `Invalid input exceeded the ${INVALID_INPUT_MAX_UTF8_BYTES}-byte error budget.`,
+          recovery: opts.body.recovery ?? DEFAULT_RECOVERY,
+        };
+        serialized = JSON.stringify(envelope) + "\n";
+      }
+      out(serialized);
+    }
     else out(YAML.stringify(envelope));
     return opts.exitCode ?? INVALID_INPUT_EXIT_CODE;
   }

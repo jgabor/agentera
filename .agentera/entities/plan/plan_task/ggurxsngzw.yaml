@@ -1,0 +1,13 @@
+id: ggurxsngzw
+artifact: plan
+record:
+  name: Convert startup and routing surfaces
+  depends_on:
+    - xwxcchoypp
+  status: pending
+  acceptance:
+    - GIVEN prime, schema, route, or capability routing WHEN invoked without a selector THEN existing JSON contracts return.
+    - GIVEN invalid, alias, or migration paths WHEN they fail THEN no plaintext diagnostic accompanies the JSON error.
+    - GIVEN prime --guidance WHEN invoked correctly THEN it remains text-only.
+    - GIVEN each distinct parser or emitter family WHEN tested THEN one success and one failure cover the rule.
+  plan: nkvbedieaf

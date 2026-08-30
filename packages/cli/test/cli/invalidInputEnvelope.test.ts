@@ -121,15 +121,13 @@ describe("invalid-input envelope (oracle parity)", () => {
       expect(envelope.error.example).toBeDefined();
     });
 
-    it("emits the four-question template in text mode when no family is given and returns rc 2", () => {
+    it("emits JSON when no family is given and returns rc 2", () => {
       const { rc, out, err } = capture((io) =>
         main(["node", "agentera", "check", "validate"], io),
       );
       expect(rc).toBe(2);
-      expect(out).toBe("");
-      expect(err).toContain("What happened:");
-      expect(err).toContain("validate_family");
-      expect(err).toContain("Valid values:");
+      expect(err).toBe("");
+      expect(readEnvelope(out).error).toMatchObject({ class: "missing_argument" });
     });
 
     it("emits the envelope in json mode for an unsupported family and returns rc 2", () => {
@@ -147,10 +145,7 @@ describe("invalid-input envelope (oracle parity)", () => {
       expect(envelope.error.message).toContain("bogus");
     });
 
-    it("emits the four-question template in text mode for an invalid --format choice and returns rc 2", () => {
-      // When --format is the *invalid* value, the format variable is still the
-      // default "text" (no valid override took effect), so the user gets the
-      // plain-text repair template rather than a JSON envelope.
+    it("emits JSON for an invalid --format choice and returns rc 2", () => {
       const { rc, out, err } = capture((io) =>
         main(
           ["node", "agentera", "check", "validate", "--format", "xml"],
@@ -158,11 +153,8 @@ describe("invalid-input envelope (oracle parity)", () => {
         ),
       );
       expect(rc).toBe(2);
-      expect(out).toBe("");
-      expect(err).toContain("What happened:");
-      expect(err).toContain("invalid choice");
-      expect(err).toContain("text");
-      expect(err).toContain("json");
+      expect(err).toBe("");
+      expect(readEnvelope(out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
     });
   });
 

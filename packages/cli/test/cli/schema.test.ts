@@ -248,9 +248,8 @@ describe("cli dispatch: schema/describe routing", () => {
   it("rejects removed top-level describe with the unknown-command envelope", () => {
     const { rc, out, err } = capture((io) => main(["node", "agentera", "describe"], io));
     expect(rc).toBe(2);
-    expect(out).toBe("");
-    expect(err).toContain("What happened:");
-    expect(err).toContain("unknown or not-yet-ported command: describe");
+    expect(err).toBe("");
+    expect(JSON.parse(out).error.message).toContain("unknown or not-yet-ported command: describe");
   });
 
   it("rejects an invalid --format choice", () => {

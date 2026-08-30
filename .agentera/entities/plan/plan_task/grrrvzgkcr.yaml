@@ -1,0 +1,13 @@
+id: grrrvzgkcr
+artifact: plan
+record:
+  name: Convert lifecycle and reporting surfaces
+  depends_on:
+    - xwxcchoypp
+  status: pending
+  acceptance:
+    - GIVEN doctor, app-home, report, usage, or upgrade WHEN invoked without a selector THEN existing JSON contracts return.
+    - GIVEN --version WHEN invoked without a selector THEN it remains plain text and rejects format selectors.
+    - GIVEN previewed or approved lifecycle work WHEN output changes THEN effect and approval semantics remain unchanged.
+    - GIVEN each lifecycle parser or emitter family WHEN tested THEN one success and one failure cover the rule.
+  plan: nkvbedieaf

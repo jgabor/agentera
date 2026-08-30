@@ -32,6 +32,7 @@ import {
 } from "./lifecycle.js";
 import { detectTopLevelFormat, emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
+import { applyOutputPolicy } from "../outputPolicy.js";
 import { verbsForArtifact } from "../../state/write/operations.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../commands/schema.js";
 import {
@@ -45,7 +46,10 @@ import { enforceProductV1Eol } from "../productV1Eol.js";
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const out = io.out ?? ((t: string) => process.stdout.write(t));
-  const args = argv.slice(2);
+  const requestedArgs = argv.slice(2);
+  const governedArgs = applyOutputPolicy(requestedArgs, io);
+  if (typeof governedArgs === "number") return governedArgs;
+  const args = governedArgs;
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
     out(printTopLevelHelp() + "\n");
     return 0;

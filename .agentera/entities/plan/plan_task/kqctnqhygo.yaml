@@ -1,0 +1,17 @@
+id: kqctnqhygo
+artifact: plan
+record:
+  name: Align active contracts and package surfaces
+  depends_on:
+    - ggurxsngzw
+    - wwhdreldlf
+    - jeqrmofzfx
+    - grrrvzgkcr
+  status: pending
+  acceptance:
+    - GIVEN active skills, schemas, help, examples, corrections, or generated commands WHEN inspected THEN operational commands omit --format json.
+    - GIVEN historical records WHEN inspected THEN they remain unchanged.
+    - GIVEN an old explicit operational JSON invocation WHEN run THEN it remains compatible.
+    - GIVEN source, bundled, and extracted CLIs WHEN run without selectors THEN representative success and rejected non-JSON cases agree.
+    - GIVEN output measurements WHEN rerun THEN existing byte and token budgets still pass.
+  plan: nkvbedieaf

@@ -1,0 +1,28 @@
+id: yfpppnyyzm
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Make JSON the sole operational CLI output protocol
+  requirements:
+    - Default all operational command results and structured errors to JSON without requiring a format flag.
+    - Remove operational text and YAML output modes while preserving plain text for --help, --version, and prime --guidance.
+    - Continue accepting --format json on operational commands, but omit it from canonical skills, help, schemas, examples, corrections, and generated commands.
+    - Preserve existing exit-code semantics, bounded projections, and output budgets.
+  acceptance:
+    - Representative prime, state read, state write, check, report, doctor, schema, route, and error paths emit parseable JSON when no format flag is supplied.
+    - Operational --format text and --format yaml requests are rejected, while --format json produces the same contract as the default.
+    - Only --help, --version, and prime --guidance retain plain-text output.
+    - Current canonical repository and bundled-skill commands no longer add --format json.
+    - Relevant CLI, contract, package, and compact gates pass.
+  release_blocker: true
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Make JSON the sole operational CLI output protocol"
+      severity: normal
+      status: open
+      order: 27

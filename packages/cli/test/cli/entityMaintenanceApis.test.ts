@@ -121,7 +121,7 @@ describe("entity-mode retrieval and maintenance APIs", () => {
       expect(json.rc, alias).toBe(1); expect(json.err).toBe("");
       expect(json.json.error).toMatchObject({ class: "unsupported_target", recovery: expect.stringContaining(`agentera state ${canonical}`) });
       expect(json.out).not.toContain("LEGACY_");
-      const text = capture(root, ["state", "query", alias]); expect(text.rc).toBe(1); expect(text.out).toBe(""); expect(text.err).toContain(`agentera state ${canonical}`); expect(text.err).not.toContain("LEGACY_");
+      const implicit = capture(root, ["state", "query", alias]); expect(implicit.rc).toBe(1); expect(implicit.err).toBe(""); expect(implicit.json.error.recovery).toContain(`agentera state ${canonical}`); expect(implicit.out).not.toContain("LEGACY_");
     }
   });
 

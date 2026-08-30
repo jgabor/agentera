@@ -361,15 +361,17 @@ describe("final entity retrieval public-contract parity", () => {
     const root = cutoverProject();
     for (const family of entityListFamilies(REPO_ROOT)) {
       const validValues = entityListValidValues(family);
-      const text = capture(root, ["state", ...family.commandTokens, "list", "--not-a-selector"]);
-      expect(text).toMatchObject({ rc: 2, out: "" });
-      expect(text.err).toContain("Error: unrecognized argument '--not-a-selector'");
-      expect(text.err).toContain(`Example: ${family.example}`);
-      expect(text.err).toContain(`Recovery: Run \`${family.example}\`; no state was changed.`);
-      for (const value of validValues) expect(text.err).toContain(value);
+      const implicit = capture(root, ["state", ...family.commandTokens, "list", "--not-a-selector"]);
+      expect(implicit).toMatchObject({ rc: 2, err: "" });
+      const implicitError = JSON.parse(implicit.out).error;
+      expect(implicitError.message).toContain("unrecognized argument '--not-a-selector'");
+      expect(implicitError.example).toBe(family.example);
+      expect(implicitError.recovery).toBe(`Run \`${family.example}\`; no state was changed.`);
+      for (const value of validValues) expect(implicitError.valid_values).toContain(value);
 
       const json = capture(root, ["state", ...family.commandTokens, "list", "--not-a-selector", "--format", "json"]);
       expect(json).toMatchObject({ rc: 2, err: "" });
+      expect(json).toEqual(implicit);
       expect(JSON.parse(json.out).error).toMatchObject({
         class: "invalid_request",
         syntax: family.syntax,

@@ -149,10 +149,10 @@ describe("cli lint: command output", () => {
   it.each([false, true])("returns nonzero with recovery guidance for invalid input (strict=%s)", (strict) => {
     const argv = ["node", "agentera", "check", "lint", "--text", "draft"];
     if (strict) argv.push("--strict");
-    const { rc, err } = capture((io) => main(argv, io));
+    const { rc, out, err } = capture((io) => main(argv, io));
     expect(rc).toBe(2);
-    expect(err).toContain("the following arguments are required: --artifact");
-    expect(err).toContain("Recovery: Correct the input and retry; no state was changed.");
+    expect(err).toBe("");
+    expect(JSON.parse(out).error.message).toContain("the following arguments are required: --artifact");
   });
 
   it("keeps internal full-artifact lint strict for publication callers", () => {
@@ -174,7 +174,7 @@ describe("cli dispatch: lint routing", () => {
     expect(ok.rc).toBe(0);
     const missing = capture((io) => main(["node", "agentera", "check", "lint", "--file", f], io));
     expect(missing.rc).toBe(2);
-    expect(missing.err).toContain("--artifact");
+    expect(JSON.parse(missing.out).error.message).toContain("--artifact");
   });
 
   it("emits a deprecation alias for top-level `lint`", () => {
@@ -187,10 +187,11 @@ describe("cli dispatch: lint routing", () => {
   it("rejects mutually-exclusive --file and --text", () => {
     const f = path.join(tmp, "d.yaml");
     fs.writeFileSync(f, "x");
-    const { rc, err } = capture((io) =>
+    const { rc, out, err } = capture((io) =>
       main(["node", "agentera", "check", "lint", "--artifact", "PLAN.md", "--file", f, "--text", "y"], io),
     );
     expect(rc).toBe(2);
-    expect(err).toContain("not allowed with argument --file");
+    expect(err).toBe("");
+    expect(JSON.parse(out).error.message).toContain("not allowed with argument --file");
   });
 });

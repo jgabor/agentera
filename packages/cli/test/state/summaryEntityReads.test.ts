@@ -340,14 +340,12 @@ describe("summary entity ordinary reads", () => {
       const id = String.fromCharCode("a".charCodeAt(0) + index).repeat(10);
       summary(root, "health", id, `retained health history ${index}`);
     }
-    const human = cli(root, ["prime"]);
-    expect(human.rc, human.err).toBe(0);
-    expect(human.out).toContain("health: degraded_history | summaries=12 | returned=0 | omitted=12 | detail=summary-only");
-    expect(human.out).toContain("progress: degraded_history | summaries=1 | returned=0 | omitted=1 | detail=summary-only");
-    expect(human.out).not.toContain("health: id=unknown");
+    const implicit = cli(root, ["prime"]);
+    expect(implicit.rc, implicit.err).toBe(0);
     const json = cli(root, ["prime", "--format", "json"]);
     expect(json.rc, json.err).toBe(0);
     const payload = JSON.parse(json.out);
+    expect(implicit).toEqual(json);
     expect(Buffer.byteLength(json.out, "utf8")).toBeLessThanOrEqual(12_000);
     expect(payload.progress).toMatchObject({ status: "degraded_history", degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 } });
     expect(payload.health).toMatchObject({ exists: true, degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 } });
@@ -362,14 +360,15 @@ describe("summary entity ordinary reads", () => {
       summary(root, "decisions", `d${suffix}`, `retained decision ${index}`);
       summary(root, "health", `h${suffix}`, `retained health ${index}`);
     }
-    const human = cli(root, ["prime"]);
-    expect(human.rc, human.err).toBe(0);
-    expect(human.out).toContain("progress: id=aaaaaaaaaa | artifact=progress | what=full progress");
-    expect(human.out).toContain("health: id=cccccccccc | artifact=health");
+    const implicit = cli(root, ["prime"]);
+    expect(implicit.rc, implicit.err).toBe(0);
+    const implicitPayload = JSON.parse(implicit.out);
+    expect(implicitPayload.progress.latest).toMatchObject({ id: "aaaaaaaaaa", artifact: "progress", what: "full progress" });
+    expect(implicitPayload.health).toMatchObject({ id: "cccccccccc", artifact: "health" });
     for (const artifact of ["progress", "decisions", "health"]) {
-      expect(human.out).toContain(`${artifact}: degraded_history | summaries=12 | returned=0 | omitted=12 | detail=summary-only`);
+      expect(implicitPayload.history[artifact].degraded_history).toMatchObject({ summary_count: 12, returned_count: 0, omitted_count: 12 });
     }
-    expect(Buffer.byteLength(human.out, "utf8")).toBeLessThan(25_000);
+    expect(Buffer.byteLength(implicit.out, "utf8")).toBeLessThan(25_000);
 
     const authority = YAML.parse(fs.readFileSync(path.join(SOURCE_ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
     const dashboard = cli(root, ["prime", "--dashboard", "--format", "json"]);
@@ -419,9 +418,9 @@ describe("summary entity ordinary reads", () => {
         expect(body).toMatchObject({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: "unsupported_state", message: expect.stringContaining("incomplete historical evidence is read-only"), syntax: expect.stringContaining(`decisions ${args[2]}`), example: "agentera state decisions get --id eeeeeeeeee --format json", recovery: expect.stringContaining("agentera state decisions append") } });
       }
     }
-    const text = cli(root, ["state", "decisions", "update", "--id", "eeeeeeeeee", "--satisfaction-state", "open"]);
-    expect(text.rc).toBe(1);
-    expect(text.err).toContain("Recovery: Run agentera state decisions get --id eeeeeeeeee --format json");
+    const implicit = cli(root, ["state", "decisions", "update", "--id", "eeeeeeeeee", "--satisfaction-state", "open"]);
+    expect(implicit.rc).toBe(1);
+    expect(JSON.parse(implicit.out).error.recovery).toContain("agentera state decisions get --id eeeeeeeeee --format json");
     expect(fs.readdirSync(path.join(root, ".agentera/entities/decisions")).sort()).toEqual(before);
   });
 

@@ -824,8 +824,9 @@ describe("one-way Git entity cutover", () => {
     for (const args of [["--apply"], ["--resume", "deadbeef"], ["--rollback", "deadbeef"]]) {
       const rejected = capture(root, ["state", "migrate", "entities", ...args]);
       expect(rejected.code).toBe(1);
-      expect(rejected.err).toContain("upgrade --channel development");
-      expect(rejected.err).toContain("--yes");
+      expect(rejected.err).toBe("");
+      expect(rejected.out).toContain("upgrade --channel development");
+      expect(rejected.out).toContain("--yes");
     }
     expect(capture(root, ["upgrade", "--restore"]).code).toBe(2);
   });

@@ -1,0 +1,40 @@
+id: nkvbedieaf
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-30
+    status: open
+    reviewed: 2026-08-30
+    critic_issues: 6 found, 5 addressed, 1 dismissed
+    revised: Defined text-exception precedence, expanded inventory and error coverage, split oversized command-family tasks, and added no-flag extracted-package proof.
+    title: "Plan: JSON-only operational CLI output"
+  what: Make JSON the sole operational CLI output protocol. Preserve plain text only for bare/help output, --version, and prime --guidance. Keep --format json as a permanent operational compatibility spelling, but remove it from active canonical commands.
+  why: Agents should not repeat a redundant format flag. One operational protocol also removes format drift while preserving current JSON schemas, exit codes, bounds, and projections. This implements firm decision kicksvpwep and release-blocking TODO yfpppnyyzm before the v3 latest cutover.
+  constraints: Text exceptions are text-only and reject format selectors. Structured inputs, JSON payload shapes, exit codes, output streams, and output budgets remain stable. Active external text or YAML parsers may break before v3 reaches latest. Historical artifacts remain unchanged. Do not publish, push, or increase versions beyond 3.0.0.
+  overall_acceptance: GIVEN any live operational success or error path WHEN invoked without a format selector THEN it emits its existing bounded JSON contract with unchanged exit behavior; explicit JSON remains equivalent; text and YAML selectors are rejected; only the approved text exceptions remain; active canonical commands omit the redundant flag; source, bundle, extracted package, gates, and typed state agree.
+  scope:
+    included:
+      - All live operational success and error paths
+      - Format parsing and text-exception precedence
+      - Active skills, schemas, help, examples, corrections, and generated commands
+      - JSON output measurements and budgets
+      - Source, bundled, and extracted-package behavior
+      - Tests and typed closeout state
+    excluded:
+      - JSON payload schema redesign
+      - Compact-versus-pretty encoding changes
+      - Structured input format changes
+      - Historical artifact rewrites
+      - Unrelated CLI cleanup
+      - Publication, push, and unauthorized version changes
+  design: Establish one complete output classification from the live command tree. Apply shared defaults and error rules first, migrate coherent command families, update active command producers, prove package parity, then synchronize project state.
+  unknowns:
+    - question: Do active repository consumers parse text or YAML output instead of relying on exit codes?
+      affects_task: 2
+      resolve_by: Task 1 classifies hooks, CI, scripts, and package consumers. Any active consumer receives an explicit migration in Tasks 2 through 6 before its format disappears. Historical references do not count.
+  rejected:
+    - issue: Make plan publication and task-record creation the first implementation task.
+      rationale: Publishing this approved plan creates its plan and task entities before execution. It is not product implementation.
+  surprises:
+    []

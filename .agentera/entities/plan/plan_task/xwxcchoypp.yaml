@@ -1,0 +1,14 @@
+id: xwxcchoypp
+artifact: plan
+record:
+  name: Establish output authority and shared semantics
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN live routes and active producers WHEN inventoried THEN every success and error path is classified.
+    - GIVEN an operational invocation WHEN its selector is omitted or JSON THEN both return equivalent JSON.
+    - GIVEN an operational text or YAML selector WHEN parsed THEN a structured invalid-choice error occurs before effects.
+    - GIVEN a text exception WHEN valid THEN it emits text; selectors or invalid combinations return JSON errors.
+    - GIVEN each shared rule WHEN tested THEN it has one passing and one failing case.
+  plan: nkvbedieaf

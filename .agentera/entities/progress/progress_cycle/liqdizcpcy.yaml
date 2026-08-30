@@ -1,0 +1,15 @@
+id: liqdizcpcy
+artifact: progress
+record:
+  timestamp: 2026-08-30 22:43
+  type: feat
+  phase: build
+  what: Established shared JSON-only operational output authority and selector preflight.
+  context:
+    intent: Establish the shared output classification and JSON default/error semantics for plan nkvbedieaf.
+    constraints: Preserve payload schemas, streams, exit codes, bounds, and effects; do not convert later command families.
+    unknowns: Resolved active consumer parsing audit; one maintainer evidence script remains for the later state-family conversion task.
+    scope: Shared dispatch preflight, bounded invalid-input emission, and shared-contract regressions.
+  discovered: No active text/YAML parsing was found in hooks or CI. scripts/verify-task4-retrieval-evidence.mjs is the sole active maintainer script parsing plan-list YAML; package matches are tests, not external consumers.
+  verified: packages/cli/src/cli/outputPolicy.ts tests prove operational omission equals explicit JSON, text/YAML reject before dispatch, text exceptions succeed without selectors, and invalid combinations return JSON. Focused runs passed 4 files/166 tests and 2 files/41 tests; typecheck, build, local schema parity/rejection, capability-contract validation, and compact passed. The full 256-file source run reached 4224 passing tests and four stale parameterized expectations; the corrected file then passed all 34 tests in the targeted rerun.
+  publication_order: 275

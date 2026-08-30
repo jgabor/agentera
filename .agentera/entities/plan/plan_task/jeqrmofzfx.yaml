@@ -1,0 +1,13 @@
+id: jeqrmofzfx
+artifact: plan
+record:
+  name: Convert check surfaces
+  depends_on:
+    - xwxcchoypp
+  status: pending
+  acceptance:
+    - GIVEN lint, compact, validate, verify, durability, or related aliases WHEN invoked without a selector THEN existing JSON and exit codes remain authoritative.
+    - GIVEN the compact hook WHEN it runs THEN it remains non-interactive and relies only on the exit result.
+    - GIVEN an invalid or deprecated check route WHEN it fails THEN it emits no plaintext diagnostic.
+    - GIVEN each check parser or emitter family WHEN tested THEN one success and one failure cover the rule.
+  plan: nkvbedieaf

@@ -1,0 +1,19 @@
+id: kicksvpwep
+artifact: decisions
+record:
+  date: 2026-08-30
+  question: What should Agentera's supported v3 CLI output contract be?
+  context: Agents currently repeat --format json across routine commands, while operational commands maintain text, JSON, and sometimes YAML output paths. Prior policy already treats agent-facing JSON as protocol. Before the v3 latest cutover, breaking callers that parse operational text output is acceptable.
+  alternatives:
+    - name: Use JSON as the sole operational output protocol, with narrow plain-text exceptions and permanent acceptance of the explicit JSON flag.
+      status: chosen
+    - name: Default to JSON but retain explicit text and YAML output modes.
+      status: rejected
+    - name: Choose output defaults separately for each operational command.
+      status: rejected
+    - name: Remove support for the explicit --format json spelling.
+      status: rejected
+  choice: All operational commands and structured errors emit JSON by default and expose no text or YAML output mode. Plain text remains only for --help, --version, and prime --guidance. Operational commands continue to accept --format json, but canonical skills, help, schemas, examples, and corrections omit the redundant flag.
+  reasoning: One operational protocol shortens agent commands, prevents omitted-format mistakes, and removes duplicate renderers and format-dependent error behavior. JSON can be larger than terse text, so existing output bounds and projections remain required. The v3 pre-cutover boundary carries the accepted compatibility break, while permanent acceptance of --format json keeps old explicit invocations valid at little semantic cost.
+  confidence: firm
+  feeds_into: The v3 CLI output-contract implementation TODO.

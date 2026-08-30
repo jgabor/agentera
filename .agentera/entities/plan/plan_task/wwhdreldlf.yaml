@@ -1,0 +1,13 @@
+id: wwhdreldlf
+artifact: plan
+record:
+  name: Convert state surfaces
+  depends_on:
+    - xwxcchoypp
+  status: pending
+  acceptance:
+    - GIVEN state reads, queries, or writes WHEN invoked without a selector THEN existing JSON contracts return.
+    - GIVEN a state mutation WHEN output behavior changes THEN validation, approval, idempotency, and effects remain unchanged.
+    - GIVEN a non-JSON selector WHEN supplied THEN the request fails before effects.
+    - GIVEN each state parser or emitter family WHEN tested THEN one success and one failure cover the rule.
+  plan: nkvbedieaf

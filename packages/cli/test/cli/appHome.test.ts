@@ -32,7 +32,7 @@ describe("agentera app-home", () => {
         : process.platform === "win32"
           ? path.join(home, "AppData", "Roaming", "agentera")
           : path.join(home, ".local", "share", "agentera");
-    expect(out.trim()).toBe(resolvePath(expected));
+    expect(JSON.parse(out).path).toBe(resolvePath(expected));
   });
 
   it("supports json output", () => {

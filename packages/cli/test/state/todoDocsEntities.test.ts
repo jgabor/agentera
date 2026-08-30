@@ -360,10 +360,10 @@ describe("TODO item and documentation inventory entity authority", () => {
     const id = created.json.id;
     expect(created.json.record).toMatchObject({ kind: "fix", target_version: "3.0.0", title: "Typed boundary", requirements: ["Use typed input"], acceptance: ["Preserve omissions"], release_blocker: true, severity: "normal", status: "open" });
     expect(created.json.record).not.toHaveProperty("description");
-    const bareText = capture(root, ["state", "todo", "--format", "text"]);
-    const explicitText = capture(root, ["state", "todo", "list", "--format", "text"]);
-    expect(bareText).toEqual(explicitText);
-    expect(bareText.out).toContain(`id: ${id}`);
+    const implicitJson = capture(root, ["state", "todo"]);
+    const explicitJson = capture(root, ["state", "todo", "list", "--format", "json"]);
+    expect(implicitJson).toEqual(explicitJson);
+    expect(implicitJson.out).toContain(id);
 
     const omitted = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { title: "Typed boundary v2" });
     expect(omitted.rc).toBe(0);
@@ -1450,14 +1450,12 @@ describe("TODO item and documentation inventory entity authority", () => {
     }
 
     const yaml = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", first.json.next_cursor, "--format", "yaml"]);
-    expect(yaml.rc).toBe(1);
-    expect(loadYamlMapping(yaml.out)).toMatchObject({ status: "fail", error: { class: "cursor_invalid", recovery: "agentera state todo list --ids-only --limit 5 --format json" } });
-    expect(loadYamlMapping(yaml.out)).not.toHaveProperty("entries");
+    expect(yaml.rc).toBe(2);
+    expect(yaml.json).toMatchObject({ status: "fail", error: { class: "invalid_choice" } });
     const text = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", first.json.next_cursor, "--format", "text"]);
-    expect(text.rc).toBe(1);
-    expect(text.out).toBe("");
-    expect(text.err).toContain("Class: cursor_invalid");
-    expect(text.err).toContain("Recovery: agentera state todo list --ids-only --limit 5 --format json");
+    expect(text.rc).toBe(2);
+    expect(text.err).toBe("");
+    expect(text.json).toMatchObject({ status: "fail", error: { class: "invalid_choice" } });
     expect(files(root)).toEqual(before);
   });
 
@@ -1631,8 +1629,8 @@ describe("TODO item and documentation inventory entity authority", () => {
       ]),
     });
     const bare = capture(root, ["state", "todo", "--format", "json"]); expect(bare).toEqual(read);
-    expect(capture(root, ["state", "todo", "list", "--format", "yaml"]).rc).toBe(0);
-    expect(capture(root, ["state", "todo", "list", "--format", "text"]).rc).toBe(0);
+    expect(capture(root, ["state", "todo", "list", "--format", "yaml"]).rc).toBe(2);
+    expect(capture(root, ["state", "todo", "list", "--format", "text"]).rc).toBe(2);
     const page = capture(root, ["state", "todo", "list", "--limit", "1", "--format", "json"]); expect(page.json.next_cursor).toEqual(expect.any(String));
     expect(capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", page.json.next_cursor, "--format", "json"]).rc).toBe(0);
     expect(capture(root, ["state", "todo", "get", "--id", second.id, "--format", "json"]).rc).toBe(0);

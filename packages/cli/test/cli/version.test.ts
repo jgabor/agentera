@@ -22,10 +22,10 @@ describe("cli dispatch: --version / version command", () => {
     expect(err).toBe("");
   });
 
-  it("prints version for version subcommand", () => {
+  it("prints JSON for the operational version subcommand", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "version"], io));
     expect(rc).toBe(0);
-    expect(out.trim()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(JSON.parse(out).version).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it("prints version as JSON with --format json", () => {
@@ -46,14 +46,13 @@ describe("cli dispatch: --version / version command", () => {
     expect(err).toContain("unrecognized argument");
   });
 
-  it("rejects invalid --format value", () => {
-    const { rc, err } = capture((io) =>
+  it("rejects invalid --format value as JSON", () => {
+    const { rc, out, err } = capture((io) =>
       main(["node", "agentera", "version", "--format", "yaml"], io),
     );
     expect(rc).toBe(2);
-    expect(err).toContain("invalid choice");
-    expect(err).toContain("text");
-    expect(err).toContain("json");
+    expect(err).toBe("");
+    expect(JSON.parse(out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
   });
 
   it("shows help for version --help", () => {

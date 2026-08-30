@@ -39,6 +39,7 @@
 - [ ] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
 - [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
+- [ ] [id:yfpppnyyzm] [feat:3.0.0] Make JSON the sole operational CLI output protocol
 
 ## ⇢ Annoying
 

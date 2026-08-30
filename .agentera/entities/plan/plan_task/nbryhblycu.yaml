@@ -1,0 +1,18 @@
+id: nbryhblycu
+artifact: plan
+record:
+  name: Verify and synchronize state
+  depends_on:
+    - xwxcchoypp
+    - ggurxsngzw
+    - wwhdreldlf
+    - jeqrmofzfx
+    - grrrvzgkcr
+    - kqctnqhygo
+  status: pending
+  acceptance:
+    - GIVEN the completed change WHEN targeted and broad gates run THEN source, type, build, capability, compact, package, and dry-run checks pass.
+    - GIVEN the live command inventory WHEN reconciled THEN no operational output path remains unverified.
+    - GIVEN acceptance is proven WHEN state closes THEN TODO yfpppnyyzm, plan tasks, progress, and required changelog state agree.
+    - GIVEN closeout WHEN complete THEN no publication, push, or unauthorized version change occurred.
+  plan: nkvbedieaf

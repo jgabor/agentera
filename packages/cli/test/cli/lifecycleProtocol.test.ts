@@ -166,7 +166,7 @@ describe("final lifecycle protocol", () => {
     const root = project();
     expect(capture(root, ["state", "query", "--list-artifacts", "--format", "json"]).rc).toBe(0);
     expect(capture(root, ["schema", "--format", "json"]).rc).toBe(0);
-    expect(capture(root, ["prime", "--guidance", "--format", "json"]).rc).toBe(0);
+    expect(capture(root, ["prime", "--guidance"]).rc).toBe(0);
     const explain = capture(root, ["state", "progress", "explain", "--format", "json"]);
     expect(explain.rc).toBe(0);
     expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);

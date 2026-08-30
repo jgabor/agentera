@@ -241,9 +241,8 @@ describe("cli dispatch: removed top-level parsers (T8)", () => {
     it(`rejects agentera ${command} with rc 2 and the unknown-command envelope`, () => {
       const { rc, out, err } = capture((io) => main(["node", "agentera", command], io));
       expect(rc).toBe(2);
-      expect(out).toBe("");
-      expect(err).toContain("What happened:");
-      expect(err).toContain(`unknown or not-yet-ported command: ${command}`);
+      expect(err).toBe("");
+      expect(JSON.parse(out).error.message).toContain(`unknown or not-yet-ported command: ${command}`);
     });
   }
 });

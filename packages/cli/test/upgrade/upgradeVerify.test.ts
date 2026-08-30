@@ -175,8 +175,7 @@ describe("cli dispatch: upgrade --verify", () => {
       "3.0.0",
     ]);
     expect(rc).toBe(1);
-    expect(out).toContain("status: failed");
-    expect(out).toContain("doctor: failed");
+    expect(JSON.parse(out)).toMatchObject({ status: "failed", checks: expect.arrayContaining([expect.objectContaining({ name: "doctor", passed: false })]) });
   });
 
   it("upgrade --verify --format json emits the envelope on stdout", () => {
@@ -239,7 +238,7 @@ describe("verify", () => {
     ]);
 
     expect(rc, `${out}\n${err}`).toBe(0);
-    expect(out).toContain("state and startup validation passed");
+    expect(JSON.parse(out)).toMatchObject({ status: "success", state_validation: { status: "passed" }, startup_validation: { status: "passed" } });
     expect(err).toBe("");
   });
 

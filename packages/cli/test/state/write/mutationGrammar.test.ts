@@ -118,10 +118,8 @@ describe("declarative state mutation grammar", () => {
       write_operations: ["create"],
     };
     const schemaJson = runCli(root, ["schema", "--format", "json"], "", false);
-    const schemaYaml = runCli(root, ["schema", "--format", "yaml"], "", false);
     expect(schemaJson.rc, schemaJson.err).toBe(0);
-    expect(schemaYaml.rc, schemaYaml.err).toBe(0);
-    for (const payload of [schemaJson.json, loadYamlMapping(schemaYaml.out)]) {
+    for (const payload of [schemaJson.json]) {
       const plan = payload.artifact_schemas.find((artifact: any) => artifact.name === "plan");
       expect(plan.fields.find((field: any) => field.id === "PT17")).toEqual(expected);
     }

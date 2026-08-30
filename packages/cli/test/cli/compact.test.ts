@@ -64,9 +64,10 @@ describe("cli compact", () => {
   });
 
   it("validates --mode in the dispatcher", () => {
-    const { rc, err } = capture((io) => main(["node", "agentera", "compact", "--mode", "bogus"], io));
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "compact", "--mode", "bogus"], io));
     expect(rc).toBe(2);
-    expect(err).toContain("argument --mode: invalid choice");
+    expect(err).toContain("Deprecation:");
+    expect(JSON.parse(out).error.message).toContain("argument --mode: invalid choice");
   });
 
   it("emits a deprecation alias for top-level compact", () => {
