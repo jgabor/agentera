@@ -1,0 +1,25 @@
+id: ghdtppoyma
+artifact: plan
+record:
+  name: Prove packaged runtime parity
+  depends_on:
+    - qysdrnuaex
+    - kpfjgjxtmw
+    - wojtfusijv
+  status: complete
+  acceptance:
+    - GIVEN the changed CLI is built and packaged WHEN cleanup commands run against isolated fixtures THEN source and package behavior agree.
+    - GIVEN known stale examples WHEN dry-run executes THEN expected removals, preservations, primary agents, and empty-directory effects are visible.
+    - GIVEN package and capability gates WHEN verification runs THEN all relevant gates pass.
+    - GIVEN release metadata WHEN checked THEN no publication, push, or version beyond 3.0.0 occurs.
+  plan: ianhlyufws
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-facc9ccceffe-ghd-1
+      source: audit re-evaluation task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 18:06
+      writer_command: agentera state plan record-evaluation

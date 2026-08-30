@@ -1,0 +1,29 @@
+id: zhfksamefa
+artifact: plan
+record:
+  plan: ianhlyufws
+  name: Make declared managed markers authoritative
+  status: complete
+  depends_on:
+    - qysdrnuaex
+    - kpfjgjxtmw
+    - wojtfusijv
+    - ghdtppoyma
+    - ypkqsistdg
+    - jmxutuffyz
+    - jlygiqgnip
+  acceptance:
+    - GIVEN all declared Codex descriptors and OpenCode agents or commands WHEN authority, doctor, or focused cleanup evaluates the expected marker THEN ownership is eligible despite missing or stale ledger evidence.
+    - GIVEN real-install fixtures and bounded real-home dry-run WHEN full cleanup previews marker-owned leaves THEN all are removable or absent, no ownership blocker remains, and preview mutates nothing.
+    - GIVEN approved isolated cleanup and replay WHEN exact marked files coexist with counterexamples THEN only marked regular declared files are removed and replay converges.
+    - GIVEN markerless, opt-out, misplaced-marker, symlink, wrong-type, undeclared, template, hook, and shared-config cases WHEN verified THEN they remain preserved and source/package gates pass.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Focused Codex cleanup and doctor remained ledger-blocked despite exact markers; canonical authority retained contradictory marker-ineligible safety language; retained package parity lacked representative marker opt-out and malformed/unsafe counterexamples.
+    provenance:
+      attempt_id: audit-facc9ccceffe-zhf-2
+      source: audit re-evaluation task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 20:37
+      writer_command: agentera state plan record-evaluation

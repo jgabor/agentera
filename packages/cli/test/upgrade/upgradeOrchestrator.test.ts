@@ -449,9 +449,12 @@ describe("buildUpgradePlan", () => {
     expect(JSON.stringify(plan)).not.toContain("newText");
   });
 
-  it("renders the selected Codex descriptor resource instead of a Claude-only scope", () => {
+  it("routes a selected Codex descriptor through declared marker cleanup", () => {
     const project = path.join(tmp, "codex-cleanup-preview");
     fs.mkdirSync(project, { recursive: true });
+    const descriptor = path.join(home, ".codex", "agents", "build.toml");
+    fs.mkdirSync(path.dirname(descriptor), { recursive: true });
+    fs.writeFileSync(descriptor, "# agentera_managed: true\nname = 'build'\n");
     const plan = buildUpgradePlan({
       installRoot: REPO_ROOT,
       home,
@@ -461,9 +464,67 @@ describe("buildUpgradePlan", () => {
       dryRun: true,
     });
 
-    expect(renderUpgradePlan(plan)).toContain(
-      "scope: ownership-proven native Agentera resource codex.agent-descriptor.build; unrelated user-owned data excluded",
-    );
+    expect(plan.lifecycle).toBeNull();
+    expect(plan.phases).toHaveLength(1);
+    expect(plan.phases[0]?.items).toContainEqual(expect.objectContaining({
+      resourceId: "codex.agent-descriptor.build",
+      source: descriptor,
+      status: "pending",
+      action: "retire-declared-resource",
+      ownership: expect.objectContaining({ kind: "managed-marker-file" }),
+    }));
+    expect(renderUpgradePlan(plan)).toContain("codex.agent-descriptor.build");
+  });
+
+  it.each([
+    ["Codex without a ledger", "codex.agent-descriptor.build", ".codex/agents/build.toml", "# agentera_managed: true\nname = 'build'\n", false],
+    ["Codex with a mismatched ledger", "codex.agent-descriptor.build", ".codex/agents/build.toml", "# agentera_managed: true\nname = 'build'\n", true],
+    ["OpenCode command", "opencode.command.agentera", ".config/opencode/commands/agentera.md", "---\nagentera_managed: true\n---\nlegacy\n", false],
+    ["OpenCode agent", "opencode.agent.agentera", ".config/opencode/agents/agentera.md", "<!-- agentera: managed -->\nlegacy\n", false],
+  ] as const)("focuses, applies, and replays $0 through the marker planner", (_label, resourceId, relative, body, mismatchedLedger) => {
+    const bundle = v3Bundle();
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+    const project = path.join(tmp, `focused-${resourceId.replaceAll(".", "-")}-${mismatchedLedger}`);
+    fs.mkdirSync(project, { recursive: true });
+    const resource = path.join(home, relative);
+    fs.mkdirSync(path.dirname(resource), { recursive: true });
+    fs.writeFileSync(resource, body);
+    if (mismatchedLedger) {
+      const observed = observeLifecyclePath(resource, [home]);
+      appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(bundle), {
+        schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+        owner: "agentera",
+        records: [{
+          resourceId,
+          destination: resource,
+          kind: "file",
+          scope: "whole",
+          status: "managed",
+          fingerprint: `sha256:${"0".repeat(64)}`,
+          identity: observed.identity!,
+        }],
+      });
+    }
+
+    const args = { installRoot: bundle, home, project, channel: "development", legacyCleanup: resourceId } as const;
+    const preview = buildUpgradePlan({ ...args, dryRun: true });
+    expect(preview.lifecycle).toBeNull();
+    expect(preview.phases[0]?.items).toContainEqual(expect.objectContaining({
+      resourceId,
+      source: resource,
+      status: "pending",
+      action: "retire-declared-resource",
+      ownership: expect.objectContaining({ kind: "managed-marker-file" }),
+    }));
+    expect(fs.existsSync(resource)).toBe(true);
+
+    const applied = buildUpgradePlan({ ...args, yes: true });
+    expect(applied.phases[0]?.items).toContainEqual(expect.objectContaining({ resourceId, status: "applied" }));
+    expect(fs.existsSync(resource)).toBe(false);
+
+    const replay = buildUpgradePlan({ ...args, yes: true });
+    expect(replay.summary).toMatchObject({ pending: 0, failed: 0 });
+    expect(replay.phases[0]?.items).toContainEqual(expect.objectContaining({ resourceId, status: "noop" }));
   });
 
   it("keeps stable previews and applies without a selector app-only", () => {
@@ -607,6 +668,133 @@ describe("buildUpgradePlan", () => {
     expect(fs.readFileSync(plugin, "utf8")).toBe("changed before removal\n");
   });
 
+  it("aggregates declared leaves and applies owned cleanup beside manual review blockers", () => {
+    const bundle = v3Bundle();
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "aggregate-cleanup"));
+    initializeGit(project);
+    applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(project, bundle));
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+
+    const command = path.join(home, ".config", "opencode", "commands", "agentera.md");
+    const agent = path.join(home, ".config", "opencode", "agents", "agentera.md");
+    const descriptor = path.join(home, ".codex", "agents", "build.toml");
+    fs.mkdirSync(path.dirname(command), { recursive: true });
+    fs.mkdirSync(path.dirname(agent), { recursive: true });
+    fs.mkdirSync(path.dirname(descriptor), { recursive: true });
+    fs.writeFileSync(command, "# user-owned collision\n");
+    fs.writeFileSync(agent, "<!-- agentera: managed -->\nlegacy primary\n");
+    fs.writeFileSync(descriptor, "# agentera_managed: true\nname = 'build'\n");
+    const observed = observeLifecyclePath(descriptor, [home]);
+    appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(bundle), {
+      schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+      owner: "agentera",
+      records: [{
+        resourceId: "codex.agent-descriptor.build",
+        destination: descriptor,
+        kind: "file",
+        scope: "whole",
+        status: "managed",
+        fingerprint: observed.fingerprint!,
+        identity: observed.identity!,
+      }],
+    });
+
+    const preview = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", dryRun: true });
+    const cleanup = preview.phases.find((phase) => phase.name === "cleanup")!;
+    expect(cleanup.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ resourceId: "opencode.command.agentera", source: command, status: "blocked" }),
+      expect.objectContaining({ resourceId: "opencode.agent.agentera", source: agent, status: "pending" }),
+      expect.objectContaining({ resourceId: "codex.agent-descriptor.build", source: descriptor, status: "pending" }),
+    ]));
+    expect(preview.applyCommand, JSON.stringify(preview.phases, null, 2)).not.toBeNull();
+    expect(preview.applyCommand).toContain("--yes");
+    expect(preview.applyCommand).not.toContain("--only");
+    expect(validateUpgradeApply({ home, project, installRoot: bundle, channel: "development", yes: true }, preview)).toBeNull();
+
+    const applied = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", yes: true });
+    expect(applied.phases.find((phase) => phase.name === "cleanup")?.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ resourceId: "opencode.command.agentera", status: "blocked" }),
+      expect.objectContaining({ resourceId: "opencode.agent.agentera", status: "applied" }),
+      expect.objectContaining({ resourceId: "codex.agent-descriptor.build", status: "applied" }),
+    ]));
+    expect(fs.existsSync(agent)).toBe(false);
+    expect(fs.existsSync(descriptor)).toBe(false);
+    expect(fs.readFileSync(command, "utf8")).toBe("# user-owned collision\n");
+
+    const replay = buildUpgradePlan({
+      installRoot: bundle,
+      home,
+      project,
+      channel: "development",
+      legacyCleanup: "opencode.agent.agentera",
+      yes: true,
+    });
+    expect(replay.phases[0]?.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ resourceId: "opencode.agent.agentera", status: "noop" }),
+    ]));
+  });
+
+  it("previews, removes, and replays every declared marker form while preserving counterexamples", () => {
+    const bundle = v3Bundle();
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "marker-install"));
+    initializeGit(project);
+    applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(project, bundle));
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+    const configured = path.join(home, "configured-opencode");
+    process.env.OPENCODE_CONFIG_DIR = configured;
+
+    const codexNames = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate", "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera"];
+    const agentNames = ["agentera", "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera"];
+    const owned: string[] = [];
+    for (const name of codexNames) {
+      const file = path.join(home, ".codex", "agents", `${name}.toml`);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, `# agentera_managed: true\nname = '${name}'\n`);
+      owned.push(file);
+    }
+    for (const root of [path.join(home, ".config", "opencode"), configured]) for (const name of agentNames) {
+      const file = path.join(root, "agents", `${name}.md`);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, "<!-- agentera: managed -->\nlegacy\n");
+      owned.push(file);
+    }
+    for (const name of ["agentera", "hej"]) {
+      const file = path.join(configured, "commands", `${name}.md`);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, "---\nagentera_managed: true\n---\nlegacy\n");
+      owned.push(file);
+    }
+
+    const preserved = new Map<string, "file" | "directory" | "symlink">();
+    const preserveFile = (file: string, body: string): void => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, body); preserved.set(file, "file"); };
+    preserveFile(path.join(home, ".cursor", "agents", "build.md"), "markerless\n");
+    preserveFile(path.join(home, ".cursor", "agents", "plan.md"), "intro\n<!-- agentera: managed -->\n");
+    preserveFile(path.join(home, ".codex", "agents", "custom.toml"), "# agentera_managed: true\n");
+    preserveFile(path.join(configured, "commands", "custom.md"), "---\nagentera_managed: true\n---\n");
+    preserveFile(path.join(configured, "plugins", "agentera.js"), "const template = '<!-- agentera: managed -->';\n");
+    preserveFile(path.join(bundle, "hooks", "template.md"), "<!-- agentera: managed -->\n");
+    preserveFile(path.join(configured, "opencode.json"), "{\"agentera_managed\":true}\n");
+    const wrongType = path.join(home, ".cursor", "agents", "audit.md"); fs.mkdirSync(wrongType, { recursive: true }); preserved.set(wrongType, "directory");
+    const symlinkTarget = path.join(tmp, "marker-target.md"); fs.writeFileSync(symlinkTarget, "<!-- agentera: managed -->\n");
+    const symlink = path.join(home, ".cursor", "agents", "design.md"); fs.symlinkSync(symlinkTarget, symlink); preserved.set(symlink, "symlink");
+
+    const preview = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", dryRun: true });
+    const markerItems = preview.phases.find((phase) => phase.name === "cleanup")!.items.filter((item) => item.ownership?.kind === "managed-marker-file");
+    const missingOwned = owned.filter((file) => !markerItems.some((item) => item.source === file));
+    if (missingOwned.length) throw new Error(`missing marker previews: ${missingOwned.join(", ")}`);
+    expect(markerItems.every((item) => item.status === "pending" && item.source && item.ownership?.fingerprint.startsWith("sha256:"))).toBe(true);
+    expect(owned.every((file) => fs.existsSync(file))).toBe(true);
+
+    const applied = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", yes: true });
+    expect(applied.phases.find((phase) => phase.name === "cleanup")!.items.filter((item) => item.ownership?.kind === "managed-marker-file" && (item.status === "applied" || item.status === "noop"))).toHaveLength(owned.length);
+    expect(owned.every((file) => !fs.existsSync(file))).toBe(true);
+    for (const [file, kind] of preserved) expect(kind === "file" ? fs.lstatSync(file).isFile() : kind === "directory" ? fs.lstatSync(file).isDirectory() : fs.lstatSync(file).isSymbolicLink()).toBe(true);
+
+    const replay = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", legacyCleanup: "codex.agent-descriptor.build", yes: true });
+    expect(replay.summary.pending).toBe(0);
+    expect(replay.summary.failed).toBe(0);
+  });
+
   it("preserves an unproven plugin while applying unrelated upgrade work", () => {
     const bundle = v3Bundle();
     const project = copyFixture("v2-yaml-project", path.join(tmp, "unproven-project"));
@@ -624,6 +812,133 @@ describe("buildUpgradePlan", () => {
       "automatic retirement requires manual review: unproven_content",
     );
     expect(validateEntityState(project).valid).toBe(true);
+  });
+
+  it("focuses Copilot hook cleanup, preserves unsafe hooks, prunes an emptied hooks directory, and replays", () => {
+    const bundle = v3Bundle();
+    const project = path.join(tmp, "copilot-hooks");
+    const hooks = path.join(project, ".github", "hooks");
+    fs.mkdirSync(hooks, { recursive: true });
+    fs.mkdirSync(path.join(project, ".github", "workflows"), { recursive: true });
+    const owned = path.join(hooks, "sessionStart.json");
+    fs.writeFileSync(owned, JSON.stringify({ hooks: [{ command: "npx -y agentera@next hook session-start" }] }));
+
+    const preview = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development",
+      legacyCleanup: "copilot.hooks.sessionStart", dryRun: true });
+    expect(preview.phases[0]?.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ resourceId: "copilot.hook.sessionStart", source: owned, status: "pending" }),
+      expect.objectContaining({ resourceId: "copilot.hooks-directory.project", source: hooks, status: "pending" }),
+    ]));
+
+    const applied = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development",
+      legacyCleanup: "copilot.hook.sessionStart", yes: true });
+    expect(applied.phases[0]?.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ resourceId: "copilot.hook.sessionStart", status: "applied" }),
+      expect.objectContaining({ resourceId: "copilot.hooks-directory.project", status: "applied" }),
+    ]));
+    expect(fs.existsSync(hooks)).toBe(false);
+    expect(fs.existsSync(path.join(project, ".github"))).toBe(true);
+
+    const replay = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development",
+      legacyCleanup: "copilot.hook.sessionStart", yes: true });
+    expect(replay.phases[0]?.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ resourceId: "copilot.hook.sessionStart", status: "noop" }),
+    ]));
+
+    fs.mkdirSync(hooks, { recursive: true });
+    for (const [name, value] of [
+      ["agentera.json", JSON.stringify({ hooks: [{ command: "npx -y agentera hook x" }, { command: "user-tool" }] })],
+      ["postToolUse.json", "{"],
+    ] as const) fs.writeFileSync(path.join(hooks, name), value);
+    const target = path.join(tmp, "hook-target.json");
+    fs.writeFileSync(target, JSON.stringify({ command: "npx -y agentera hook x" }));
+    fs.symlinkSync(target, path.join(hooks, "preToolUse.json"));
+    for (const id of ["agentera", "postToolUse", "preToolUse"]) {
+      const result = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development",
+        legacyCleanup: `copilot.hook.${id}`, yes: true });
+      expect(result.phases[0]?.items[0]).toEqual(expect.objectContaining({ status: "blocked" }));
+    }
+    expect(fs.existsSync(hooks)).toBe(true);
+  });
+
+  it("applies an owned Copilot hook beside blocked hooks and converges", () => {
+    const bundle = v3Bundle();
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "mixed-copilot-hooks"));
+    initializeGit(project);
+    applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(project, bundle));
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = bundle;
+
+    const hooks = path.join(project, ".github", "hooks");
+    const owned = path.join(hooks, "sessionStart.json");
+    const mixed = path.join(hooks, "agentera.json");
+    const malformed = path.join(hooks, "postToolUse.json");
+    const wrongType = path.join(hooks, "sessionEnd.json");
+    const unsafe = path.join(hooks, "preToolUse.json");
+    const unsafeTarget = path.join(tmp, "outside-hook.json");
+    const mixedText = JSON.stringify({ hooks: [
+      { command: "npx -y agentera hook x" },
+      { command: "user-tool" },
+    ] });
+    fs.mkdirSync(hooks, { recursive: true });
+    fs.writeFileSync(owned, JSON.stringify({ hooks: [{ command: "npx -y agentera@next hook session-start" }] }));
+    fs.writeFileSync(mixed, mixedText);
+    fs.writeFileSync(malformed, "{");
+    fs.mkdirSync(wrongType);
+    fs.writeFileSync(unsafeTarget, JSON.stringify({ command: "npx -y agentera hook x" }));
+    fs.symlinkSync(unsafeTarget, unsafe);
+    const expectBlockersPreserved = (): void => {
+      expect(fs.readFileSync(mixed, "utf8")).toBe(mixedText);
+      expect(fs.readFileSync(malformed, "utf8")).toBe("{");
+      expect(fs.lstatSync(wrongType).isDirectory()).toBe(true);
+      expect(fs.lstatSync(unsafe).isSymbolicLink()).toBe(true);
+      expect(fs.readlinkSync(unsafe)).toBe(unsafeTarget);
+    };
+
+    const preview = buildUpgradePlan({ installRoot: bundle, home, project, channel: "development", dryRun: true });
+    const previewCleanup = preview.phases.find((phase) => phase.name === "cleanup")!;
+    expect(previewCleanup.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ resourceId: "copilot.hook.sessionStart", source: owned, status: "pending", action: "retire-hooks" }),
+      ...["agentera", "postToolUse", "sessionEnd", "preToolUse"].map((id) => expect.objectContaining({
+        resourceId: `copilot.hook.${id}`,
+        status: "blocked",
+        action: "retire-hooks",
+      })),
+    ]));
+    expect(preview.applyCommand).toContain("--yes");
+    expect(validateUpgradeApply({ installRoot: bundle, home, project, channel: "development", yes: true }, preview)).toBeNull();
+    expect(fs.existsSync(owned)).toBe(true);
+    expectBlockersPreserved();
+
+    const code = cmdUpgrade({ installRoot: bundle, home, project, channel: "development", yes: true, format: "json" }, {
+      out: (text) => { stdout += text; },
+      err: (text) => { stderr += text; },
+    });
+    const applied = JSON.parse(stdout);
+    expect(code).toBe(1);
+    expect(stderr).toBe("");
+    expect(applied.status).toBe("blocked");
+    expect(applied.phases.find((phase: { name: string }) => phase.name === "cleanup").items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ resourceId: "copilot.hook.sessionStart", status: "applied" }),
+      ...["agentera", "postToolUse", "sessionEnd", "preToolUse"].map((id) => expect.objectContaining({
+        resourceId: `copilot.hook.${id}`,
+        status: "blocked",
+      })),
+    ]));
+    expect(fs.existsSync(owned)).toBe(false);
+    expect(fs.existsSync(hooks)).toBe(true);
+    expect(fs.existsSync(path.join(project, ".github"))).toBe(true);
+    expectBlockersPreserved();
+
+    stdout = "";
+    const replayCode = cmdUpgrade({ installRoot: bundle, home, project, channel: "development", yes: true, format: "json" }, {
+      out: (text) => { stdout += text; },
+      err: (text) => { stderr += text; },
+    });
+    const replay = JSON.parse(stdout);
+    expect(replayCode).toBe(1);
+    expect(replay.phases.find((phase: { name: string }) => phase.name === "cleanup").summary.applied).toBe(0);
+    expect(fs.existsSync(owned)).toBe(false);
+    expectBlockersPreserved();
   });
 
   it("limits phases with --only artifacts", () => {

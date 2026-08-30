@@ -11,12 +11,17 @@ import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { opencodeConfigDir } from "../../src/setup/opencode.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import {
+  RETIRE_DECLARED_RESOURCE_ACTION,
+} from "../../src/upgrade/declaredRetiredResourceCleanup.js";
+import {
   REMOVE_LEGACY_AGENT_ACTION,
+  PRUNE_LEGACY_DIRECTORY_ACTION,
   V2_ENGLISH_CAPABILITY_AGENT_FILES,
   V2_SWEDISH_VERB_AGENT_FILES,
   applyLegacyAgentCleanupItems,
   planLegacyAgentCleanupItems,
   planLegacyCapabilityAgentCleanupItems,
+  planLegacyDirectoryCleanupItems,
   scanLegacyCapabilityAgentPaths,
   scanLegacySwedishVerbAgentViolations,
 } from "../../src/upgrade/legacyAgentCleanup.js";
@@ -218,7 +223,7 @@ describe("legacy Swedish-verb agent cleanup (#20)", () => {
     expect(fs.readFileSync(path.join(agentsDir, "design.md"), "utf8")).toContain("user-authored");
   });
 
-  it("apply removes exactly the closed set and preserves agentera.md, custom, and .bak agents", () => {
+  it("apply removes marker-owned primary and capability agents and preserves custom files", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const project = copyFixture("v2-yaml-project", path.join(tmp, "project-apply"));
@@ -238,14 +243,15 @@ describe("legacy Swedish-verb agent cleanup (#20)", () => {
       expect(fs.existsSync(path.join(cursorAgents, name))).toBe(false);
       expect(fs.existsSync(path.join(opencodeAgents, name))).toBe(false);
     }
-    expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(true);
+    expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(false);
     expect(fs.existsSync(path.join(cursorAgents, "custom-agent.md"))).toBe(true);
     expect(fs.existsSync(path.join(cursorAgents, "agentera.md.bak"))).toBe(true);
-    expect(fs.existsSync(path.join(opencodeAgents, "agentera.md"))).toBe(true);
+    expect(fs.existsSync(path.join(opencodeAgents, "agentera.md"))).toBe(false);
     expect(fs.existsSync(path.join(opencodeAgents, "custom-agent.md"))).toBe(true);
     expect(fs.existsSync(path.join(opencodeAgents, "agentera.md.bak"))).toBe(true);
 
-    const legacyItems = preview.items.filter((item) => item.action === REMOVE_LEGACY_AGENT_ACTION);
+    const legacyItems = preview.items.filter((item) => item.action === RETIRE_DECLARED_RESOURCE_ACTION);
+    expect(legacyItems.length).toBeGreaterThan(0);
     expect(legacyItems.every((item) => item.status === "applied")).toBe(true);
   });
 
@@ -261,13 +267,61 @@ describe("legacy Swedish-verb agent cleanup (#20)", () => {
     expect(items).toEqual([]);
 
     const preview = dryRunMigration(ctx);
-    const legacyItems = preview.cleanup.items.filter((item) => item.action === REMOVE_LEGACY_AGENT_ACTION);
-    expect(legacyItems).toEqual([]);
+    const legacyItems = preview.cleanup.items.filter((item) => item.action === RETIRE_DECLARED_RESOURCE_ACTION);
+    expect(legacyItems.map((item) => path.basename(item.source!))).toEqual(["agentera.md"]);
+  });
+});
+
+describe("declared legacy directory pruning", () => {
+  function directoryItem(project: string) {
+    const ctx = migrationCtx(path.join(home, "agentera"), project, home, REPO_ROOT);
+    const source = path.join(project, ".claude-plugin");
+    const item = planLegacyDirectoryCleanupItems(ctx, []).find((candidate) => candidate.source === source);
+    if (!item) throw new Error(`missing declared directory item for ${source}`);
+    return { ctx, item, source };
+  }
+
+  it("removes an empty real declared directory non-recursively", () => {
+    const project = path.join(tmp, "empty-directory");
+    const source = path.join(project, ".claude-plugin");
+    fs.mkdirSync(source, { recursive: true });
+    const { ctx, item } = directoryItem(project);
+
+    expect(item).toMatchObject({ status: "pending", action: PRUNE_LEGACY_DIRECTORY_ACTION });
+    applyLegacyAgentCleanupItems([item], ctx);
+    expect(item.status).toBe("applied");
+    expect(fs.existsSync(source)).toBe(false);
+  });
+
+  it("reports and preserves a non-empty declared directory", () => {
+    const project = path.join(tmp, "non-empty-directory");
+    const source = path.join(project, ".claude-plugin");
+    fs.mkdirSync(source, { recursive: true });
+    fs.writeFileSync(path.join(source, "user.txt"), "owned by user\n");
+    const { item } = directoryItem(project);
+
+    expect(item).toMatchObject({ status: "noop", action: PRUNE_LEGACY_DIRECTORY_ACTION });
+    expect(item.message).toContain("preserved non-empty");
+    expect(fs.readFileSync(path.join(source, "user.txt"), "utf8")).toBe("owned by user\n");
+  });
+
+  it("reports and preserves a symlinked declared directory", () => {
+    const project = path.join(tmp, "symlink-directory");
+    const target = path.join(tmp, "directory-target");
+    const source = path.join(project, ".claude-plugin");
+    fs.mkdirSync(project, { recursive: true });
+    fs.mkdirSync(target);
+    fs.symlinkSync(target, source, "dir");
+    const { item } = directoryItem(project);
+
+    expect(item).toMatchObject({ status: "blocked", action: PRUNE_LEGACY_DIRECTORY_ACTION });
+    expect(item.message).toContain("not a real directory");
+    expect(fs.lstatSync(source).isSymbolicLink()).toBe(true);
   });
 });
 
 describe("cmdUpgrade legacy agent cleanup integration", () => {
-  it("upgrade --dry-run lists each Swedish-verb agent as pending remove-legacy-agent", () => {
+  it("upgrade --dry-run lists each Swedish-verb agent through declared marker cleanup", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const project = copyFixture("v2-yaml-project", path.join(tmp, "cli-project"));
@@ -294,9 +348,9 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
     const payload = JSON.parse(stdout);
     const cleanupItems = payload.phases.find((phase: { name: string }) => phase.name === "cleanup")?.items ?? [];
     const legacyItems = cleanupItems.filter(
-      (item: { action: string }) => item.action === REMOVE_LEGACY_AGENT_ACTION,
+      (item: { action: string }) => item.action === RETIRE_DECLARED_RESOURCE_ACTION,
     );
-    expect(legacyItems).toHaveLength(V2_SWEDISH_VERB_AGENT_FILES.length * 2);
+    expect(legacyItems).toHaveLength(V2_SWEDISH_VERB_AGENT_FILES.length * 2 + 1);
     expect(legacyItems.every((item: { status: string; source?: string }) => item.status === "pending" && item.source))
       .toBe(true);
   });
@@ -333,9 +387,9 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
       expect(fs.existsSync(path.join(cursorAgents, name))).toBe(false);
       expect(fs.existsSync(path.join(opencodeAgents, name))).toBe(false);
     }
-    expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(true);
+    expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(false);
     expect(fs.existsSync(path.join(cursorAgents, "custom-agent.md"))).toBe(true);
-    expect(fs.existsSync(path.join(opencodeAgents, "agentera.md"))).toBe(true);
+    expect(fs.existsSync(path.join(opencodeAgents, "agentera.md"))).toBe(false);
   });
 
   it("applies owned cleanup beside a preserved collision and replays without deleting it", () => {
@@ -475,14 +529,14 @@ describe("legacy English per-capability agent cleanup", () => {
 
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planLegacyCapabilityAgentCleanupItems(ctx);
-    expect(items).toHaveLength(V2_ENGLISH_CAPABILITY_AGENT_FILES.length);
+    expect(items).toHaveLength(V2_ENGLISH_CAPABILITY_AGENT_FILES.length + 1);
     expect(items.every((item) => item.action === REMOVE_LEGACY_AGENT_ACTION && item.status === "pending")).toBe(
       true,
     );
     for (const name of V2_ENGLISH_CAPABILITY_AGENT_FILES) {
       expect(items.some((item) => item.source?.endsWith(path.join(".cursor", "agents", name)))).toBe(true);
     }
-    expect(items.some((item) => item.source?.endsWith("agentera.md"))).toBe(false);
+    expect(items.some((item) => item.source?.endsWith("agentera.md"))).toBe(true);
   });
 
   it("planLegacyCapabilityAgentCleanupItems blocks unmanaged English collisions", () => {
@@ -499,7 +553,7 @@ describe("legacy English per-capability agent cleanup", () => {
     expect(items.every((item) => item.status === "blocked" && item.message.includes("filename does not prove"))).toBe(true);
   });
 
-  it("does not target agentera.md (primary v3 agent is preserved)", () => {
+  it("targets marker-owned agentera.md as a retired primary agent", () => {
     const appHome = path.join(home, "agentera");
     managedV2(appHome);
     const project = copyFixture("v2-yaml-project", path.join(tmp, "cap-primary"));
@@ -509,8 +563,8 @@ describe("legacy English per-capability agent cleanup", () => {
 
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planLegacyCapabilityAgentCleanupItems(ctx);
-    expect(items).toHaveLength(1);
-    expect(items[0]?.source).toMatch(/audit\.md$/);
+    expect(items).toHaveLength(2);
+    expect(items.map((item) => path.basename(item.source!)).sort()).toEqual(["agentera.md", "audit.md"]);
     expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(true);
   });
 
@@ -529,10 +583,10 @@ describe("legacy English per-capability agent cleanup", () => {
 
     expect(fs.existsSync(path.join(cursorAgents, "audit.md"))).toBe(false);
     expect(fs.existsSync(path.join(cursorAgents, "build.md"))).toBe(true);
-    expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(true);
+    expect(fs.existsSync(path.join(cursorAgents, "agentera.md"))).toBe(false);
     expect(fs.existsSync(path.join(cursorAgents, "custom-agent.md"))).toBe(true);
 
-    const legacyItems = preview.items.filter((item) => item.action === REMOVE_LEGACY_AGENT_ACTION);
+    const legacyItems = preview.items.filter((item) => item.resourceId?.startsWith("cursor.agent."));
     expect(legacyItems.find((item) => item.source?.endsWith("audit.md"))?.status).toBe("applied");
     expect(legacyItems.find((item) => item.source?.endsWith("build.md"))?.status).toBe("blocked");
   });
@@ -550,10 +604,10 @@ describe("legacy English per-capability agent cleanup", () => {
 
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const preview = planCleanupPhase(ctx);
-    const legacyItems = preview.items.filter((item) => item.action === REMOVE_LEGACY_AGENT_ACTION);
+    const legacyItems = preview.items.filter((item) => item.action === RETIRE_DECLARED_RESOURCE_ACTION);
     expect(legacyItems).toHaveLength(
-      V2_SWEDISH_VERB_AGENT_FILES.length + V2_ENGLISH_CAPABILITY_AGENT_FILES.length,
+      V2_SWEDISH_VERB_AGENT_FILES.length + V2_ENGLISH_CAPABILITY_AGENT_FILES.length + 1,
     );
-    expect(legacyItems.some((item) => item.source?.endsWith("agentera.md"))).toBe(false);
+    expect(legacyItems.some((item) => item.source?.endsWith("agentera.md"))).toBe(true);
   });
 });

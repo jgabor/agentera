@@ -170,7 +170,11 @@ describe("dryRunMigration", () => {
     expect(result.cleanup.name).toBe("cleanup");
     expect(result.artifacts.status).toBe("pending");
     expect(result.runtime.status).toBe("pending");
-    expect(result.cleanup.status).toBe("pending");
+    expect(result.cleanup.status).toBe("blocked");
+    expect(result.cleanup.items).toContainEqual(expect.objectContaining({
+      resourceId: "agentera.registration.restorer.codex",
+      status: "blocked",
+    }));
   });
 
   it("applyMigrationPhases honors --only phase limits", () => {
@@ -181,7 +185,7 @@ describe("dryRunMigration", () => {
     const preview = dryRunMigration(ctx);
     const applied = applyMigrationPhases(ctx, preview, ["runtime"]);
     expect(applied.runtime.status).toBe("applied");
-    expect(applied.cleanup.status).toBe("pending");
+    expect(applied.cleanup.status).toBe("blocked");
     expect(fs.existsSync(path.join(appHome, "app"))).toBe(true);
   });
 });

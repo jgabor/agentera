@@ -19,7 +19,9 @@ import {
   nativeResourceCleanupHistoricalIds,
   nativeResourceCleanupIds,
   previewNativeResourceCleanup,
+  resolveRetiredResourceDiagnosticId,
   resolveNativeResourceCleanupId,
+  retiredResourceSelectorIds,
   validateNativeResourceCleanupContractData,
   validateNativeResourceCleanupContractRoot,
 } from "../../src/runtime/nativeResourceCleanup.js";
@@ -78,6 +80,7 @@ const retiredResourceClasses = [
 
 const codexDescriptors = [
   "status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate",
+  "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera",
 ] as const;
 
 function contractData(): Record<string, unknown> {
@@ -158,6 +161,8 @@ describe("native resource cleanup contract", () => {
     expect(source).toContain("OpenCode's native CLI listed ~/.agents/skills/agentera/SKILL.md.");
     expect(source).toContain("Copilot's native CLI listed the canonical personal-agents skill; its disabled state is intentional.");
     expect(source).toContain("those former template labels are not resource identities");
+    expect(source).toContain("A valid expected marker establishes migration-only ownership");
+    expect(source).not.toContain("A managed marker, descriptor name, or matching content never establishes ownership");
     expect(validateNativeResourceCleanupContractRoot()).toEqual([]);
   });
 
@@ -192,6 +197,12 @@ describe("native resource cleanup contract", () => {
     (extraInventory.resources as Array<Record<string, unknown>>).push({
       vocabulary: "opencode.plugin",
       id: "opencode.plugin.unowned",
+      aliases: [],
+      roots: ["home"],
+      kind: "file",
+      ownership_mode: "manual_review",
+      ownership_evidence: "none",
+      focused_preview: "manual_review_only",
       destinations: ["{home}/.config/opencode/plugins/unowned.js"],
     });
     expect(validateNativeResourceCleanupContractData(extra)).toContain(
@@ -199,32 +210,33 @@ describe("native resource cleanup contract", () => {
     );
   });
 
-  it("rejects marker, value, name, and file equality as ownership proof", () => {
-    const data = {
-      schema_version: "agentera.nativeResourceCleanup.v1",
-      status: "resource_retirement_contract",
-      decision: "nksvqmnevm",
-      authority: "references/adapters/runtime-lifecycle-authority.yaml",
-      operation_contract: "references/adapters/runtime-lifecycle-operation-contract.yaml",
-      policy: {
-        host_inventory_exposure: "evidence_only",
-        selection: "native_agentera_resource_only",
-        preview: "strictly_read_only",
-        apply_requires: "explicit_approval",
-        ownership: "matching_whole_resource_ledger_identity_and_fingerprint",
-        shared_configuration: "action_required_without_key_level_ownership",
-        forbidden_ownership_evidence: [],
-        unsupported_platform_result: "action_required",
-      },
-      hosts: [],
-      accepted_host_evidence: [],
-      resources: [],
-      configuration_inventory: [],
-    };
+  it("bounds the managed marker exception to canonical forms on declared pre-ledger files", () => {
+    const data = contractData();
+    const policy = data.policy as Record<string, unknown>;
+    const exception = policy.migration_only_managed_marker_exception as Record<string, unknown>;
+    exception.scope = "all_managed_markers";
 
     expect(validateNativeResourceCleanupContractData(data)).toContain(
-      "policy must reject managed_marker as ownership evidence",
+      "policy must declare the closed migration-only managed-marker regular-file exception",
     );
+
+    const malformed = contractData();
+    const malformedException = (malformed.policy as Record<string, any>).migration_only_managed_marker_exception;
+    malformedException.expected_structural_marker_forms.first_line_exact = "agentera_managed = true";
+    expect(validateNativeResourceCleanupContractData(malformed)).toContain(
+      "policy must declare the closed migration-only managed-marker regular-file exception",
+    );
+  });
+
+  it("derives Swedish Codex aliases and every focused selector from authority", () => {
+    expect(retiredResourceSelectorIds()).toContain("codex.agents.hej");
+    expect(resolveRetiredResourceDiagnosticId("codex.agents.hej")).toMatchObject({
+      id: "codex.agent-descriptor.hej",
+      aliases: ["codex.agents.hej"],
+    });
+    expect(loadNativeResourceCleanupContract().diagnosticResources.every((resource) =>
+      resource.roots.length > 0 && resource.ownershipEvidence.length > 0,
+    )).toBe(true);
   });
 
   it("keeps every shared Codex configuration unit action-required without key-level ownership", () => {

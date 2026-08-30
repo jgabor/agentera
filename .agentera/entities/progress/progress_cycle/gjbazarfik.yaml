@@ -1,0 +1,15 @@
+id: gjbazarfik
+artifact: progress
+record:
+  timestamp: 2026-08-30 18:56
+  type: fix
+  phase: build
+  what: Reconciled the preserved Copilot cleanup changelog classification and activation-census package contract without closing task jmxutuffyz.
+  context:
+    intent: Resolve the authoritative source-gate blockers left after progress qmsuqcfqqo while preserving its accepted Copilot-hook behavior.
+    constraints: Keep task and plan state open; do not resolve TODO, publish health, commit, push, publish, tag, change versions, or mutate real-home cleanup targets.
+    scope: CHANGELOG scalar-location authority and the activation-census mutation oracle only.
+  discovered: "The drift was introduced by the preserved change set: the Unreleased cleanup entry added four lines after the prior passing source gate, moving all 147 CHANGELOG exact scalar regions by four; the package-census test also retained an incorrect 9530db5d oracle while code, contract, and independently recomputed census agreed on 472adb93."
+  verified: "Retired-runtime owner: 194/194 passed. Activation/package owners: 70/70 passed. Focused Copilot and retirement suites: 221/221 passed across 7 files. Full source gate: 255/255 files, 4213 passed and 2 platform skips. Typecheck and build passed. Package verification: 24/24 passed across 3 files. Compact passed. Isolated compiled-CLI full preview/apply and focused preview/apply/replay removed the proven sessionStart hook, pruned only .github/hooks, converged to noop, and preserved .github/workflows/keep.yml and .github."
+  next: Leave jmxutuffyz pending for evaluation and the separately planned state closeout.
+  publication_order: 269

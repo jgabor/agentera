@@ -1,0 +1,15 @@
+id: ctgknymhvl
+artifact: progress
+record:
+  timestamp: 2026-08-30 18:00
+  type: fix
+  phase: build
+  what: Corrected the accepted blocking retired-resource cleanup audit findings for plan ianhlyufws tasks 1–4 without closing plan state.
+  context:
+    intent: Make authority, full and focused cleanup, directory pruning, diagnostics, and packaged behavior agree for every declared retired external leaf.
+    constraints: Preserve manual-review resources, typed state, unrelated work, product-v1 behavior, package-internal paths, host-root namespaces, and the 3.0.0 ceiling; do not close tasks, TODO, or plan.
+    unknowns: None remaining in the accepted correction scope.
+    scope: Plan ianhlyufws tasks 1–4 accepted audit findings only.
+  discovered: The prior change split canonical diagnostics from executable cleanup, hard-coded Swedish selectors in dispatch, omitted configured-root and ledger-backed leaves from full orchestration, and suppressed non-empty directory outcomes.
+  verified: "Focused cleanup tests: 165 passed. Full source gate: 255 files, 4211 passed, 2 platform skips. Typecheck and build passed. Package boundary: 3 files, 24 passed, including retained local-build/constructed/extracted cleanup parity. Pack dry-run: 486 files, no warnings. Compact and capability contract passed. Isolated smoke proved full preview aggregation, focused preview command validity, full apply beside two blockers, and noop focused replay."
+  publication_order: 266

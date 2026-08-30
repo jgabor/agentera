@@ -1,0 +1,23 @@
+id: kpfjgjxtmw
+artifact: plan
+record:
+  name: Converge preview apply and directory pruning
+  depends_on:
+    - qysdrnuaex
+  status: complete
+  acceptance:
+    - GIVEN mixed eligible and ambiguous resources WHEN full preview runs THEN every exact leaf and directory effect is reported without mutation.
+    - GIVEN that preview is approved WHEN full upgrade runs THEN eligible leaves are removed independently, blockers remain, and the advertised command is runnable.
+    - GIVEN a targeted ID or repeated upgrade WHEN executed THEN unrelated resources stay outside scope and settled effects are no-ops.
+    - GIVEN declared directories after leaf removal WHEN apply continues THEN only real empty directories are pruned deepest-first, with success and safety-failure coverage.
+  plan: ianhlyufws
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-facc9ccceffe-kpf-1
+      source: audit re-evaluation task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 18:06
+      writer_command: agentera state plan record-evaluation

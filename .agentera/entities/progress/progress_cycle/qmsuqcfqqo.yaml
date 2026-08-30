@@ -1,0 +1,14 @@
+id: qmsuqcfqqo
+artifact: progress
+record:
+  timestamp: 2026-08-30 18:37
+  type: fix
+  phase: build
+  what: Closed the declared Copilot hook cleanup gap with closed authority IDs, whole-resource proof, focused and aggregate cleanup, replay convergence, and bounded empty hooks-directory pruning.
+  context:
+    intent: Implement active plan task jmxutuffyz without completing plan state.
+    constraints: Preserve existing uncommitted implementation and do not complete the task, plan, TODO, health, or release lifecycle.
+    scope: Closed Copilot project hook authority and local empty-directory residue only.
+  verified: Focused authority/doctor/orchestrator tests passed (140 tests); Copilot entity-cutover and focused cleanup regressions passed; typecheck and build passed; packaged verification passed (24 tests); isolated compiled-CLI focused preview/apply/replay removed only the owned hook and .github/hooks while preserving .github/workflows. Full source verification reached 4204 passing tests but remains blocked by pre-existing CHANGELOG scalar-classification drift in the preserved uncommitted implementation.
+  next: Reconcile the existing CHANGELOG scalar-classification inventory before rerunning the complete source gate.
+  publication_order: 268

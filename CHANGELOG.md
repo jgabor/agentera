@@ -24,11 +24,11 @@
 
 ### Changed
 
+- Retired external integrations now use a complete, authority-backed ownership inventory. Exact managed markers declare ownership for declared Codex descriptors, OpenCode agents, and OpenCode commands; removing the marker opts out, and marker text in unrelated resources does not qualify. Full and focused cleanup remain preview- and approval-gated, preserve unsafe or unowned resources, and prune declared empty directories without removing host namespaces.
 - The `feat/v3` publication workflow now deterministically allocates development versions from `GITHUB_RUN_NUMBER + 80`, injects the candidate version and pushed SHA only into isolated package construction, and requires no pre-push version bump or metadata-only release commit. Reruns reuse the same identity and failed runs leave harmless version gaps.
-- Structured-input inventory now derives active writer, report, and startup
-  identities from parser-consumed specifications, validates its envelope,
-  routes, ownership, and closure counts, and returns bounded diagnostics for
-  unreadable or malformed input without claiming recent-host usage.
+- Structured-input inventory now derives active writer, report, and startup identities from parser-consumed specifications,
+  validates its envelope, routes, ownership, and closure counts, and returns bounded diagnostics for unreadable or malformed
+  input without claiming recent-host usage.
 - Consolidated package generation in `packages/cli/package.json` under `pnpm -C packages/cli build` and removed the duplicate `bundle:data` command.
 - `pnpm -C packages/cli build` now stages outside the checkout and synchronizes
   only byte or mode differences into `dist/` and `bundle/`. Release verification

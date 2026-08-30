@@ -74,10 +74,37 @@ export interface NativeResourceCleanupConfigurationUnit {
 
 export interface RetiredResourceDiagnosticDefinition {
   id: string;
+  aliases: string[];
   vocabulary: string;
   names: string[];
+  roots: string[];
+  kind: NativeResourceKind;
+  ownershipMode: RetiredResourceOwnershipMode;
+  ownershipEvidence: string;
+  focusedPreview: "remove_if_owned_else_manual_review" | "manual_review_only";
+  boundary: "external_install_only" | null;
   destinations: string[];
   contains: string | null;
+  markerKind: "first_line_exact" | "body_first_line_exact" | "yaml_frontmatter_boolean" | null;
+  markerSyntax: string | null;
+}
+
+export type RetiredResourceOwnershipMode =
+  | "ledger_identity_fingerprint"
+  | "bounded_fingerprint_and_ledger"
+  | "managed_marker_regular_file"
+  | "managed_bundle_identity"
+  | "whole_resource_retired_hook"
+  | "manual_review";
+
+export interface RetiredResourceDirectoryDefinition {
+  id: string;
+  aliases: string[];
+  root: string;
+  destination: string;
+  kind: "directory";
+  ownershipMode: "declared_empty_directory";
+  postcondition: "remove_if_empty_after_declared_leaf_cleanup_else_preserve" | "remove_if_empty_else_preserve";
 }
 
 export interface NativeResourceCleanupContract {
@@ -86,6 +113,7 @@ export interface NativeResourceCleanupContract {
   diagnosticMaximumResources: number;
   diagnosticMaximumFileBytes: number;
   diagnosticResources: RetiredResourceDiagnosticDefinition[];
+  directoryResources: RetiredResourceDirectoryDefinition[];
   resources: NativeResourceCleanupDefinition[];
   configuration: NativeResourceCleanupConfigurationDefinition[];
   automaticRetirement: AutomaticRetirementDefinition[];
@@ -115,6 +143,7 @@ const REQUIRED_RESOURCE_VOCABULARY: Record<string, string> = {
   "legacy.capability-agent": "capability_agent",
   "opencode.stale-skill-link": "stale_skill_link",
   "installed.hook": "installed_hook",
+  "copilot.hook": "project_hook",
   "agentera.registration": "registration",
 };
 
@@ -198,15 +227,34 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
     || policy.selection !== "native_agentera_resource_only"
     || policy.preview !== "strictly_read_only"
     || policy.apply_requires !== "explicit_approval"
-    || policy.ownership !== "matching_whole_resource_ledger_identity_and_fingerprint"
+    || policy.ownership !== "declared_per_leaf_mode"
     || policy.shared_configuration !== "action_required_without_key_level_ownership"
     || policy.unsupported_platform_result !== "action_required"
   ) {
     errors.push("policy must expose resource-only selection, pure preview, explicit approval, and fail-closed ownership");
   }
   const forbidden = stringList(policy.forbidden_ownership_evidence);
-  for (const evidence of ["value_equality", "managed_marker", "resource_name", "file_equality"]) {
+  for (const evidence of ["value_equality", "resource_name", "file_equality"]) {
     if (!forbidden.includes(evidence)) errors.push(`policy must reject ${evidence} as ownership evidence`);
+  }
+  const markerException = isMapping(policy.migration_only_managed_marker_exception)
+    ? policy.migration_only_managed_marker_exception
+    : {};
+  const markerForms = isMapping(markerException.expected_structural_marker_forms)
+    ? markerException.expected_structural_marker_forms
+    : {};
+  const frontmatterMarker = isMapping(markerForms.yaml_frontmatter_boolean)
+    ? markerForms.yaml_frontmatter_boolean
+    : {};
+  if (markerException.scope !== "exact_declared_pre_ledger_regular_files"
+    || markerException.authority !== "diagnostic_inventory resources whose ownership_mode is managed_marker_regular_file"
+    || markerForms.first_line_exact !== "# agentera_managed: true"
+    || markerForms.body_first_line_exact !== "<!-- agentera: managed -->"
+    || frontmatterMarker.key !== "agentera_managed"
+    || frontmatterMarker.value !== true
+    || !requiredString(markerException, "opt_out")
+    || !requiredString(markerException, "boundary")) {
+    errors.push("policy must declare the closed migration-only managed-marker regular-file exception");
   }
 
   const automatic = isMapping(value.automatic_retirement) ? value.automatic_retirement : {};
@@ -317,16 +365,47 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   }
   const diagnosticResources = Array.isArray(diagnosticInventory?.resources) ? diagnosticInventory.resources : [];
   const diagnosticIds = new Map<string, string>();
+  const diagnosticSelectors = new Set<string>();
+  const ownershipModes = new Set<RetiredResourceOwnershipMode>([
+    "ledger_identity_fingerprint",
+    "bounded_fingerprint_and_ledger",
+    "managed_marker_regular_file",
+    "managed_bundle_identity",
+    "whole_resource_retired_hook",
+    "manual_review",
+  ]);
   for (const resource of diagnosticResources) {
     if (!isMapping(resource)
       || !requiredString(resource, "id")
       || !requiredString(resource, "vocabulary")
+      || !Array.isArray(resource.aliases)
+      || stringList(resource.roots).length === 0
+      || !(resource.kind === "file" || resource.kind === "directory" || resource.kind === "symlink")
+      || !ownershipModes.has(resource.ownership_mode as RetiredResourceOwnershipMode)
+      || !requiredString(resource, "ownership_evidence")
+      || !(resource.focused_preview === "remove_if_owned_else_manual_review" || resource.focused_preview === "manual_review_only")
+      || (resource.boundary !== undefined && resource.boundary !== "external_install_only")
       || !Array.isArray(resource.destinations)
       || !stringList(resource.destinations).length
       || (resource.names !== undefined && !Array.isArray(resource.names))
-      || (resource.contains !== undefined && !requiredString(resource, "contains"))) {
+      || (resource.contains !== undefined && !requiredString(resource, "contains"))
+      || (resource.ownership_mode === "managed_marker_regular_file"
+        && (!(resource.marker_kind === "first_line_exact" || resource.marker_kind === "body_first_line_exact" || resource.marker_kind === "yaml_frontmatter_boolean")
+          || !requiredString(resource, "marker_syntax")))) {
       errors.push("diagnostic_inventory resources must declare bounded resource IDs and paths");
       continue;
+    }
+    if (resource.ownership_mode === "managed_marker_regular_file") {
+      const expectedSyntax = resource.marker_kind === "first_line_exact"
+        ? markerForms.first_line_exact
+        : resource.marker_kind === "body_first_line_exact"
+          ? "html_comment_agentera_managed"
+          : resource.marker_kind === "yaml_frontmatter_boolean"
+            ? `${String(frontmatterMarker.key)}: ${String(frontmatterMarker.value)}`
+            : null;
+      if (resource.marker_syntax !== expectedSyntax) {
+        errors.push(`diagnostic_inventory ${String(resource.id)} must use its canonical structural marker form`);
+      }
     }
     const vocabularyId = resource.vocabulary as string;
     if (!vocabularyById.has(vocabularyId)) {
@@ -334,6 +413,7 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
     }
     const template = resource.id as string;
     const ids = expandedDiagnosticIds(resource);
+    const names = stringList(resource.names);
     if (template.includes("{") && (template.match(/\{name\}/g)?.length !== 1 || ids.length === 0)) {
       errors.push(`diagnostic_inventory must expand ${template} with one or more names`);
     }
@@ -347,10 +427,43 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
       } else {
         diagnosticIds.set(id, vocabularyId);
       }
+      if (diagnosticSelectors.has(id)) errors.push(`diagnostic_inventory must not duplicate selector ${id}`);
+      diagnosticSelectors.add(id);
+    }
+    for (const aliasTemplate of stringList(resource.aliases)) {
+      const aliases = template.includes("{name}")
+        ? names.map((name) => aliasTemplate.replace("{name}", name))
+        : [aliasTemplate];
+      if (aliases.some((alias) => alias.includes("{") || alias.length === 0)) {
+        errors.push(`diagnostic_inventory ${template} has an invalid alias template`);
+      }
+      for (const alias of aliases) {
+        if (diagnosticSelectors.has(alias)) errors.push(`diagnostic_inventory must not duplicate selector ${alias}`);
+        diagnosticSelectors.add(alias);
+      }
     }
   }
   for (const id of declaredDiagnosticIds.keys()) {
     if (!diagnosticIds.has(id)) errors.push(`diagnostic_inventory must define ${id}`);
+  }
+
+  const directoryInventory = isMapping(value.directory_inventory) ? value.directory_inventory : {};
+  const directoryResources = Array.isArray(directoryInventory.resources) ? directoryInventory.resources : [];
+  if (directoryInventory.removal !== "non_recursive_deepest_first" || directoryResources.length === 0) {
+    errors.push("directory_inventory must declare non-recursive deepest-first removal candidates");
+  }
+  const directoryIds = new Set<string>();
+  for (const resource of directoryResources) {
+    if (!isMapping(resource) || !requiredString(resource, "id") || !Array.isArray(resource.aliases)
+      || !requiredString(resource, "root") || !requiredString(resource, "destination")
+      || resource.kind !== "directory" || resource.ownership_mode !== "declared_empty_directory"
+      || !(resource.postcondition === "remove_if_empty_after_declared_leaf_cleanup_else_preserve"
+        || resource.postcondition === "remove_if_empty_else_preserve")) {
+      errors.push("directory_inventory resources must declare ID, root, destination, kind, ownership, and postcondition");
+      continue;
+    }
+    if (directoryIds.has(resource.id as string)) errors.push(`directory_inventory must not duplicate ${resource.id as string}`);
+    directoryIds.add(resource.id as string);
   }
 
   const resources = Array.isArray(value.resources) ? value.resources : [];
@@ -368,7 +481,10 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   }
   const codex = resourceById.get("codex.agent-descriptor");
   const descriptors = codex ? stringList(codex.descriptors) : [];
-  const expectedDescriptors = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"];
+  const expectedDescriptors = [
+    "status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate",
+    "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera",
+  ];
   if (!codex || codex.host !== "codex" || codex.kind !== "file" || codex.intent !== "remove"
     || codex.destination !== "{home}/.codex/agents/{descriptor}.toml" || codex.ledger_status !== "managed"
     || codex.vocabulary !== "codex.agent-descriptor" || !requiredString(codex, "durable_proof")
@@ -473,10 +589,28 @@ export function loadNativeResourceCleanupContract(
     diagnosticMaximumFileBytes: (data.diagnostic_inventory as Record<string, unknown>).maximum_file_bytes as number,
     diagnosticResources: ((data.diagnostic_inventory as Record<string, unknown>).resources as Record<string, unknown>[]).map((entry) => ({
       id: entry.id as string,
+      aliases: stringList(entry.aliases),
       vocabulary: entry.vocabulary as string,
       names: stringList(entry.names),
+      roots: stringList(entry.roots),
+      kind: entry.kind as NativeResourceKind,
+      ownershipMode: entry.ownership_mode as RetiredResourceOwnershipMode,
+      ownershipEvidence: entry.ownership_evidence as string,
+      focusedPreview: entry.focused_preview as RetiredResourceDiagnosticDefinition["focusedPreview"],
+      boundary: (entry.boundary as "external_install_only" | undefined) ?? null,
       destinations: stringList(entry.destinations),
       contains: typeof entry.contains === "string" ? entry.contains : null,
+      markerKind: entry.marker_kind === "first_line_exact" || entry.marker_kind === "body_first_line_exact" || entry.marker_kind === "yaml_frontmatter_boolean" ? entry.marker_kind : null,
+      markerSyntax: typeof entry.marker_syntax === "string" ? entry.marker_syntax : null,
+    })),
+    directoryResources: ((data.directory_inventory as Record<string, unknown>).resources as Record<string, unknown>[]).map((entry) => ({
+      id: entry.id as string,
+      aliases: stringList(entry.aliases),
+      root: entry.root as string,
+      destination: entry.destination as string,
+      kind: "directory",
+      ownershipMode: "declared_empty_directory",
+      postcondition: entry.postcondition as RetiredResourceDirectoryDefinition["postcondition"],
     })),
     resources: (data.resources as Record<string, unknown>[]).flatMap((resource) =>
       expandResource(resource, statuses.get(resource.host as string)!),
@@ -568,6 +702,41 @@ export function retiredResourceDiagnosticIds(contract = loadNativeResourceCleanu
       ? resource.names.map((name) => resource.id.replace("{name}", name))
       : [resource.id],
   ).sort();
+}
+
+export interface ResolvedRetiredResourceDiagnostic {
+  id: string;
+  aliases: string[];
+  name: string | null;
+  definition: RetiredResourceDiagnosticDefinition;
+}
+
+function expandedRetiredResourceDiagnostics(
+  contract: NativeResourceCleanupContract,
+): ResolvedRetiredResourceDiagnostic[] {
+  return contract.diagnosticResources.flatMap((definition) => {
+    const names = definition.id.includes("{name}") ? definition.names : [null];
+    return names.map((name) => ({
+      id: name ? definition.id.replace("{name}", name) : definition.id,
+      aliases: definition.aliases.map((alias) => name ? alias.replace("{name}", name) : alias),
+      name,
+      definition,
+    }));
+  });
+}
+
+export function retiredResourceSelectorIds(contract = loadNativeResourceCleanupContract()): string[] {
+  return [...new Set(expandedRetiredResourceDiagnostics(contract).flatMap(({ id, aliases }) => [id, ...aliases]))].sort();
+}
+
+export function resolveRetiredResourceDiagnosticId(
+  selector: string,
+  contract = loadNativeResourceCleanupContract(),
+): ResolvedRetiredResourceDiagnostic | null {
+  const matches = expandedRetiredResourceDiagnostics(contract).filter(({ id, aliases }) =>
+    id === selector || aliases.includes(selector),
+  );
+  return matches.length === 1 ? matches[0]! : null;
 }
 
 export function nativeResourceCleanupHistoricalIds(contract = loadNativeResourceCleanupContract()): string[] {
@@ -673,6 +842,7 @@ function canonicalizeHistoricalOwnershipIds(
 export function previewNativeResourceCleanup(opts: {
   resourceId: string;
   home: string;
+  destination?: string;
   ledger?: LifecycleOwnershipLedger;
   contract?: NativeResourceCleanupContract;
   automaticRetirement?: boolean;
@@ -696,7 +866,7 @@ export function previewNativeResourceCleanup(opts: {
   if (!resource) throw new Error(`unknown native Agentera resource cleanup id: ${opts.resourceId}`);
   const operations: LifecycleOperationSpec[] = [{
     id: resource.id,
-    destination: expandHome(resource.destination, opts.home),
+    destination: opts.destination ? path.resolve(opts.destination) : expandHome(resource.destination, opts.home),
     kind: resource.kind,
     intent: "remove",
     required: true,

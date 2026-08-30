@@ -28,7 +28,10 @@ const ENGLISH_CAPABILITIES = [
 const SWEDISH_CAPABILITIES = [
   "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera",
 ] as const;
-const CODEX_DESCRIPTORS = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"] as const;
+const CODEX_DESCRIPTORS = [
+  "status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate",
+  ...SWEDISH_CAPABILITIES,
+] as const;
 const INSTALLED_HOOKS = [
   "validate_artifact.py", "cursor_session_start.py", "cursor_pre_tool_use.py", "cursor_session_stop.py", "session_start.py", "session_stop.py", "codex-hooks.json",
 ] as const;
@@ -38,6 +41,11 @@ const EXPECTED_RETIRED_RESOURCE_IDS = [
   "opencode.plugin.agentera",
   "opencode.command.agentera",
   "opencode.command.hej",
+  "copilot.hook.agentera",
+  "copilot.hook.postToolUse",
+  "copilot.hook.preToolUse",
+  "copilot.hook.sessionEnd",
+  "copilot.hook.sessionStart",
   "cursor.agent.agentera",
   "opencode.agent.agentera",
   ...[...ENGLISH_CAPABILITIES, ...SWEDISH_CAPABILITIES].flatMap((name) => [
@@ -82,6 +90,7 @@ function expand(template: string, name = ""): string {
     .replace("{home}", home)
     .replace("{project}", project)
     .replace("{install_root}", installRoot)
+    .replace("{opencode_config}", path.join(home, ".config", "opencode"))
     .replace("{name}", name);
 }
 
@@ -91,7 +100,7 @@ function captureDoctor(opts: { retiredResource?: string; installRoot?: string } 
     home,
     project,
     retiredResource: opts.retiredResource,
-    installRoot: opts.installRoot,
+    installRoot: opts.installRoot ?? installRoot,
     format: "json",
   }, { out: (text) => (output += text) });
   return { rc, payload: JSON.parse(output) as Record<string, any> };
@@ -107,7 +116,7 @@ function previewInstallRoot(preview: string, expectedRoot: string): string {
 
 function replayPreview(preview: string, expectedRoot: string, resourceId: string): { rc: number; payload: Record<string, any> } {
   const root = previewInstallRoot(preview, expectedRoot);
-  if (!preview.includes(`--retired-resource ${resourceId}`)) {
+  if (!preview.includes(`--legacy-cleanup ${resourceId}`)) {
     throw new Error(`retired-resource preview must carry ${resourceId}`);
   }
   let output = "";
@@ -154,13 +163,11 @@ describe("retired native resource doctor diagnostics", () => {
     expect(diagnosis.resources.length).toBeLessThanOrEqual(contract.diagnosticMaximumResources);
     expect(new Set(resources.map((resource) => resource.id))).toEqual(expected);
     for (const resource of resources) {
-      expect(resource.preview_command).toContain("npx -y agentera@next doctor");
-      expect(resource.preview_command).toContain(" doctor ");
+      expect(resource.preview_command).toContain("npx -y agentera@next upgrade");
+      expect(resource.preview_command).toContain(" upgrade ");
       expect(resource.preview_command).toContain(`--install-root ${installRoot}`);
-      expect(resource.preview_command).toContain(`--retired-resource ${resource.id}`);
-      expect(resource.preview_command).toContain("--format json");
-      expect(resource.preview_command).not.toContain("--legacy-cleanup");
-      expect(resource.preview_command).not.toContain(" upgrade ");
+      expect(resource.preview_command).toContain(`--legacy-cleanup ${resource.id}`);
+      expect(resource.preview_command).toContain("--dry-run");
     }
     expect(JSON.stringify(diagnosis)).not.toContain("USER_SECRET_MUST_NOT_LEAK");
     expect(JSON.stringify(payload)).not.toContain("USER_SECRET_MUST_NOT_LEAK");
@@ -172,9 +179,62 @@ describe("retired native resource doctor diagnostics", () => {
   it("reports clean state without a retired-resource signal", () => {
     const { payload } = captureDoctor();
 
-    expect(payload.status).toBe("up_to_date");
+    expect(payload.status).toBe("manual_review_needed");
     expect(payload.retired_resources).toMatchObject({ status: "clean", resources: [], omittedResourceCount: 0 });
     expect(payload.signals.some((signal: { kind: string }) => signal.kind === "retired_native_resources")).toBe(false);
+  });
+
+  it("accepts an authority-declared Swedish Codex alias and canonicalizes its marker cleanup", () => {
+    const descriptor = path.join(home, ".codex", "agents", "hej.toml");
+    fs.mkdirSync(path.dirname(descriptor), { recursive: true });
+    fs.writeFileSync(descriptor, "# agentera_managed: true\nname = 'hej'\n");
+    let output = "";
+    const rc = main([
+      "node", "agentera", "upgrade", "--home", home, "--project", project,
+      "--install-root", installRoot, "--legacy-cleanup", "codex.agents.hej", "--dry-run", "--format", "json",
+    ], { out: (text) => { output += text; } });
+    const payload = JSON.parse(output) as Record<string, any>;
+
+    expect(rc).toBe(1);
+    expect(payload.lifecycle).toBeNull();
+    expect(payload.phases).toHaveLength(1);
+    expect(payload.phases[0].items).toContainEqual(expect.objectContaining({
+      resourceId: "codex.agent-descriptor.hej",
+      source: descriptor,
+      status: "pending",
+      action: "retire-declared-resource",
+    }));
+  });
+
+  it.each([false, true])("reports an exact marked Codex descriptor as cleanup-eligible with mismatched ledger=%s", (mismatchedLedger) => {
+    const descriptor = path.join(home, ".codex", "agents", "build.toml");
+    fs.mkdirSync(path.dirname(descriptor), { recursive: true });
+    fs.writeFileSync(descriptor, "# agentera_managed: true\nname = 'build'\n");
+    if (mismatchedLedger) {
+      const observed = observeLifecyclePath(descriptor, [home]);
+      appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(installRoot), {
+        schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
+        owner: "agentera",
+        records: [{
+          resourceId: "codex.agent-descriptor.build",
+          destination: descriptor,
+          kind: "file",
+          scope: "whole",
+          status: "managed",
+          fingerprint: `sha256:${"0".repeat(64)}`,
+          identity: observed.identity!,
+        }],
+      });
+    }
+
+    const { payload } = captureDoctor({ retiredResource: "codex.agent-descriptor.build" });
+    expect(payload.retired_resources.resources).toEqual([
+      expect.objectContaining({
+        id: "codex.agent-descriptor.build",
+        status: "pending_automatic_removal",
+        next_action: expect.stringContaining("--legacy-cleanup codex.agent-descriptor.build"),
+      }),
+    ]);
   });
 
   it("reports a proven plugin as pending automatic removal through normal upgrade in JSON and default text", () => {

@@ -1,0 +1,24 @@
+id: wojtfusijv
+artifact: plan
+record:
+  name: Align diagnostics and user guidance
+  depends_on:
+    - qysdrnuaex
+    - kpfjgjxtmw
+  status: complete
+  acceptance:
+    - GIVEN retired resources WHEN doctor, help, and upgrade describe them THEN IDs, statuses, and recovery commands agree.
+    - GIVEN users compare full and targeted cleanup WHEN reading guidance THEN approval scope and preservation rules are explicit.
+    - GIVEN shared configuration lacks key-level proof WHEN diagnosed THEN guidance remains manual and never implies automatic mutation.
+    - GIVEN clean and action-required examples WHEN contract tests run THEN both paths pass.
+  plan: ianhlyufws
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-facc9ccceffe-woj-1
+      source: audit re-evaluation task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 18:06
+      writer_command: agentera state plan record-evaluation

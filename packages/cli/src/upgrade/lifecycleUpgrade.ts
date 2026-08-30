@@ -11,6 +11,7 @@ import {
   previewNativeResourceCleanup,
   type NativeResourceCleanupPreview,
   type NativeResourceCleanupResult,
+  resolveNativeResourceCleanupId,
 } from "../runtime/nativeResourceCleanup.js";
 import type {
   LifecycleApplyOptions,
@@ -44,10 +45,15 @@ export interface LifecycleUpgradeArgs {
   appHome: string;
   apply: boolean;
   resourceCleanup: string;
+  destination?: string;
   automaticRetirement?: boolean;
 }
 
 export interface LifecycleUpgradeApplyOptions extends LifecycleApplyOptions {}
+
+export function isLifecycleCleanupResource(resourceId: string): boolean {
+  return resolveNativeResourceCleanupId(resourceId) !== null;
+}
 
 function emptySummary(): LifecycleCleanupSummary {
   return {
@@ -121,6 +127,7 @@ export function runLifecycleUpgrade(
   let preview = previewNativeResourceCleanup({
     resourceId: args.resourceCleanup,
     home: args.home,
+    destination: args.destination,
     ledger: journal.ledger,
     automaticRetirement: args.automaticRetirement,
   });

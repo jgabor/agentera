@@ -1,0 +1,33 @@
+id: zylyajhugj
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Complete ownership-gated cleanup of retired external runtime integrations
+  requirements:
+    - Extend the retired-resource inventory, full-upgrade cleanup, and targeted cleanup IDs to every declared external Agentera integration leaf across declared roots.
+    - For the closed marker-managed resource classes, treat an exact authority-declared regular file with its expected Codex comment, OpenCode agent comment, or OpenCode command frontmatter marker as Agentera-owned even when ledger evidence is missing or stale; removing the marker opts out.
+    - Keep ledger and fingerprint checks for non-marker resources, whole-resource proof for hooks, and manual review for shared configuration without key-level proof; never infer ownership from marker text embedded in plugins, templates, undeclared paths, symlinks, or wrong-type resources.
+    - Make one full dry-run enumerate every eligible cleanup effect and one full approved upgrade converge them with a runnable apply command while retaining --legacy-cleanup ID for focused preview and retry.
+    - After leaf removal, prune exact declared empty legacy directories and declared parents deepest-first with non-recursive empty-directory removal while preserving runtime namespace parents and user content.
+  acceptance:
+    - Authority, doctor, full upgrade, and focused cleanup apply the expected marker ownership rule consistently to all 24 Codex descriptors, OpenCode primary and Swedish agents in default and configured roots, and both OpenCode commands.
+    - Real-install-shaped fixtures prove marker-owned files remain mutation-free in preview, are removable after approval despite missing or stale ledger evidence, and converge on replay.
+    - Markerless, marker-in-wrong-location, edited-with-marker-removed, symlinked, wrong-type, undeclared, plugin-template, mixed-hook, and shared-configuration counterexamples remain preserved with bounded guidance.
+    - A bounded real-home local dry-run reports every marker-owned declared leaf as removable or absent with zero ownership blockers and performs no mutation.
+    - Focused cleanup tests, full source gates, and source/constructed/extracted package parity pass before any published @next support claim.
+  release_blocker: false
+  severity: normal
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Complete ownership-gated cleanup of retired external runtime integrations"
+      status: resolved
+      order: 125
+      severity: normal
+  lifecycle:
+    operation: resolve
+    reason: Marker-authority cleanup passed audit after bounded correction; progress gazmmmgrwr records focused and full replay, the mutation-free real-home dry-run, and passing source and package gates.
+    date: 2026-08-30

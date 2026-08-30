@@ -54,9 +54,11 @@ explicit cleanup route for other retired native resources.
 `prime`, status, and project-integration output use the app/project recommendation
 and shared-skill diagnosis to select the next action.
 
-Supported hosts continue to use the canonical shared skill and CLI. Cleanup
-selects a native Agentera resource, never a host. Claude Code is retired from
-active support; its legacy link remains one selectable resource:
+Supported hosts use the canonical shared skill and CLI. Full and focused cleanup
+require preview and explicit approval. For declared Codex descriptors, OpenCode
+agents, and OpenCode commands, the exact managed marker declares Agentera ownership;
+removing it opts out, and marker text in unrelated resources does not qualify. This
+behavior is supported by the development package. Claude is retired:
 
 ```bash
 npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --dry-run

@@ -1,0 +1,23 @@
+id: qysdrnuaex
+artifact: plan
+record:
+  name: Establish the complete retirement inventory
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the external retirement inventory WHEN queried THEN each leaf has one stable ID, declared root, kind, ownership rule, and targeted preview.
+    - GIVEN OpenCode or Cursor primary-agent descriptors, including ~/.config/opencode/agents/agentera.md, WHEN marker-owned regular files are previewed THEN they are eligible without mutation.
+    - GIVEN package-internal or host-root paths WHEN classified THEN they are excluded from removal.
+    - GIVEN each ownership mode WHEN tested THEN at least one success and one failure case pass.
+  plan: ianhlyufws
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Integrated audit found incomplete authority metadata and ownership-mode coverage, non-aggregated full preview/apply, missing visible and tested directory safety outcomes, doctor/upgrade ID drift, and no retained packaged cleanup parity test.
+    provenance:
+      attempt_id: audit-facc9ccceffe-2
+      source: audit re-evaluation task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 18:06
+      writer_command: agentera state plan record-evaluation

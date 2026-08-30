@@ -93,7 +93,7 @@ describe("planStaleCommandCleanupItems", () => {
     expect(items.some((item) => item.source?.endsWith("brainstorm.md"))).toBe(false);
   });
 
-  it("does not target agentera.md (it is in OPENCODE_COMMAND_NAMES)", () => {
+  it("targets both authority-declared managed commands", () => {
     const commandsDir = commandsDirFor(home);
     writeCommand(commandsDir, "agentera", MANAGED_AGENTERA);
     writeCommand(commandsDir, "hej", MANAGED_HEJ);
@@ -102,12 +102,12 @@ describe("planStaleCommandCleanupItems", () => {
     const items: MigrationPhaseItem[] = [];
     planStaleCommandCleanupItems(ctx, items);
 
-    expect(items).toHaveLength(1);
-    expect(items[0]?.source).toBe(path.join(commandsDir, "hej.md"));
-    expect(items.some((item) => item.source?.endsWith("agentera.md"))).toBe(false);
+    expect(items).toHaveLength(2);
+    expect(items.some((item) => item.source === path.join(commandsDir, "hej.md"))).toBe(true);
+    expect(items.some((item) => item.source === path.join(commandsDir, "agentera.md"))).toBe(true);
   });
 
-  it("targets multiple stale managed commands", () => {
+  it("preserves undeclared managed-looking commands", () => {
     const commandsDir = commandsDirFor(home);
     writeCommand(commandsDir, "hej", MANAGED_HEJ);
     writeCommand(commandsDir, "lira.todo", MANAGED_LIRA);
@@ -116,9 +116,9 @@ describe("planStaleCommandCleanupItems", () => {
     const items: MigrationPhaseItem[] = [];
     planStaleCommandCleanupItems(ctx, items);
 
-    expect(items).toHaveLength(2);
+    expect(items).toHaveLength(1);
     expect(items.some((item) => item.source?.endsWith("hej.md"))).toBe(true);
-    expect(items.some((item) => item.source?.endsWith("lira.todo.md"))).toBe(true);
+    expect(items.some((item) => item.source?.endsWith("lira.todo.md"))).toBe(false);
   });
 
   it("skips unmanaged files even if the name is a stale verb", () => {

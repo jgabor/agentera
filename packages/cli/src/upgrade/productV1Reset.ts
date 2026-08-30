@@ -170,6 +170,9 @@ function runtimeTargets(roots: Record<string, string>, contract: NativeResourceC
   for (const resource of contract.diagnosticResources) {
     const names = resource.names.length > 0 ? resource.names : [null];
     for (const name of names) for (const destination of resource.destinations) {
+      // Product-v1 reset remains bound to its own declared roots; configured
+      // OpenCode migration roots belong only to retired-resource cleanup.
+      if (destination.includes("{opencode_config}")) continue;
       const declared = name === null ? destination : destination.replaceAll("{name}", name);
       const target = expandTemplate(declared, roots);
       const root = declared.startsWith("{project}") ? roots.project

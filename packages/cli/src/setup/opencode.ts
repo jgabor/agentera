@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { expanduser, resolvePath } from "../core/paths.js";
+import { parseYaml } from "../core/yaml.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -15,8 +16,11 @@ export function opencodeConfigDir(home: string, env: Env): string {
 
 /** Migration-only ownership marker reader. */
 export function hasManagedMarker(text: string): boolean {
-  const lines = text.split("\n");
-  if (lines[0] !== "---") return false;
-  const closing = lines.indexOf("---", 1);
-  return closing !== -1 && lines.slice(1, closing).some((line) => line.trim() === "agentera_managed: true");
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
+  if (!match) return false;
+  try {
+    const frontmatter = parseYaml(match[1]);
+    return typeof frontmatter === "object" && frontmatter !== null
+      && (frontmatter as Record<string, unknown>).agentera_managed === true;
+  } catch { return false; }
 }

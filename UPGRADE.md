@@ -89,9 +89,10 @@ apply command.
 
 ## Native Agentera resource cleanup
 
-Normal upgrade retires only the proven OpenCode plugin automatically. Restart
-OpenCode after a successful removal. No OpenCode gate or `hook` command replaced
-the plugin; `npx -y agentera@next` remains the supported entry point.
+Full upgrade previews every declared retired external Agentera leaf and removes
+each independently eligible owned leaf after approval. Restart OpenCode after a
+successful plugin removal. The shared skill plus CLI remains the supported integration.
+No OpenCode gate or `hook` command replaced the retired plugin.
 
 Cleanup is a distinct resource route, not a host selection. Codex, Cursor,
 OpenCode, and Copilot remain supported through the canonical shared skill and
@@ -99,8 +100,8 @@ CLI. Accepted smoke evidence records that Codex and Cursor loaded Agentera's
 skill instructions, OpenCode listed the canonical skill, and Copilot's listed
 canonical skill is intentionally disabled.
 
-Use the separate `@next` preview and apply commands below with one declared
-native Agentera resource ID.
+Use the development package's separate preview and apply commands below with
+one declared native Agentera resource ID.
 The cleanup option pair is `--legacy-cleanup RESOURCE_ID --dry-run|--yes`.
 
 ```bash
@@ -110,11 +111,19 @@ npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --yes
 
 The retirement contract gives historical plugins, commands, primary and
 capability agents, stale skill links, installed hooks, and registrations one
-vocabulary. It keeps the v2-only inventory separate from the explicit cleanup
-route until cutover approves more cleanup selectors. The current cleanup route
+vocabulary and gives every leaf a focused cleanup preview. The cleanup route
 also recognizes the historical `codex.agents.NAME` descriptor identity as
-`codex.agent-descriptor.NAME`. Each selected file needs a matching
-whole-resource ledger identity and fingerprint before it can be removed. Codex
+`codex.agent-descriptor.NAME`, including the twelve Swedish-era descriptor names.
+For the three marker-managed classes—Codex descriptors, OpenCode agents, and
+OpenCode commands—the exact declared regular file and its expected marker mean
+Agentera owns the whole file. The accepted forms are the first-line
+`# agentera_managed: true` Codex marker, first-line
+OpenCode managed HTML-comment agent marker, or boolean
+`agentera_managed: true` OpenCode command frontmatter. They prove ownership even
+if lifecycle ledger evidence is missing or stale. Remove the
+marker to opt the file out. Markers in undeclared files, plugins, templates,
+hooks, or shared configuration do not qualify. Other ledger-backed files still
+need a matching whole-resource ledger identity and fingerprint. Codex
 descriptor previews report each shared configuration key as `action_required`
 without adding it to the selected resource's apply work. Agentera has no durable
 key-level ownership proof, so matching values, markers, names, or whole file
@@ -125,7 +134,10 @@ bounded configuration report, and ownership blockers; it does not include
 app/project migration phases. During v2 cleanup, a preserved user-owned legacy
 agent collision remains manual-review work but does not stop independently
 proven legacy-agent removals. The collision still leaves the cleanup non-success
-until it is resolved outside Agentera.
+until it is resolved outside Agentera. Empty declared legacy directories are
+removed deepest-first with non-recursive removal; non-empty and symlinked paths
+are preserved with visible outcomes. Package-internal paths and host-root
+namespaces are not cleanup candidates.
 
 V2 hook retirement never rewrites a native hook to another Agentera command.
 Upgrade removes a whole hook resource only when its complete content proves

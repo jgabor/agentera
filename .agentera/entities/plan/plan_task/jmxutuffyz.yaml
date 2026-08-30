@@ -1,0 +1,27 @@
+id: jmxutuffyz
+artifact: plan
+record:
+  plan: ianhlyufws
+  name: Integrate Copilot hook retirement gap
+  status: complete
+  depends_on:
+    - qysdrnuaex
+    - kpfjgjxtmw
+    - wojtfusijv
+    - ghdtppoyma
+    - ypkqsistdg
+  acceptance:
+    - GIVEN known Agentera Copilot hook files under project .github/hooks WHEN authority, doctor, or focused cleanup is queried THEN stable IDs, aliases, kind, root, whole-resource ownership, and recovery agree.
+    - GIVEN owned, mixed, unsafe, or absent Copilot hooks WHEN full or focused preview and approved cleanup run THEN only whole-resource-proven hooks are removed, all outcomes are visible, and replay converges.
+    - GIVEN hook cleanup leaves .github/hooks empty WHEN apply completes THEN that child directory is pruned non-recursively while .github and non-empty or unsafe paths remain.
+    - GIVEN the bounded correction is verified WHEN source and package gates run THEN focused pass/fail coverage and packaged cleanup parity pass, and empty local .codex-plugin and .github/plugin residue is removed.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Full mixed cleanup omitted an apply command and aborted eligible Copilot hook removal because retire-hooks blockers were not independent; retained package cleanup parity did not include a Copilot hook fixture or assertion.
+    provenance:
+      attempt_id: audit-facc9ccceffe-jmx-2
+      source: audit re-evaluation task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 19:18
+      writer_command: agentera state plan record-evaluation

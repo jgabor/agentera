@@ -115,6 +115,7 @@ export function detectStaleInstalledHooksSurface(appHome: string): boolean {
 
 export function planInstalledHooksRetirementItems(ctx: MigrationContext): MigrationPhaseItem[] {
   const appHome = resolvePath(ctx.appHome);
+  if (ctx.sourceRoot && appHome === resolvePath(ctx.sourceRoot)) return [];
   const roots = doctorRoots(appHome);
   if (!hasBundleRootEvidence(roots.activeBundleRoot)) {
     return [{

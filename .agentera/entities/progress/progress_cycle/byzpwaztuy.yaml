@@ -1,0 +1,13 @@
+id: byzpwaztuy
+artifact: progress
+record:
+  timestamp: 2026-08-30 17:06
+  type: fix
+  phase: build
+  what: Implemented the integrated retired external runtime cleanup work for plan ianhlyufws tasks qysdrnuaex, kpfjgjxtmw, wojtfusijv, and ghdtppoyma.
+  context:
+    intent: Record durable delegated-build evidence for the approved integrated retirement cleanup implementation.
+    constraints: Leave changelog, TODO resolution, plan/task evaluation and completion, health, final synchronization, commits, publication, and real-home mutation to the coordinator.
+    scope: Plan ianhlyufws implementation tasks qysdrnuaex, kpfjgjxtmw, wojtfusijv, and ghdtppoyma.
+  verified: Focused verification passed 108 tests across 6 files; full source verification passed 4,181 tests in 255 files with 2 skipped. pnpm typecheck and build passed. Package verification passed 23 tests in 3 files; pack dry run packed 485 files with no warnings and created no artifact. Local check compact and capability-contract validation passed. Built local CLI smoke in isolated roots showed full dry-run reporting the exact marker-owned primary-agent leaf and planned directory pruning, focused apply removing only the selected owned leaf, and replay converging to no-op. Real-home inspection used local --dry-run only; no real-home cleanup target was mutated.
+  publication_order: 265

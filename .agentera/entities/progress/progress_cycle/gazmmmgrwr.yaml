@@ -1,0 +1,14 @@
+id: gazmmmgrwr
+artifact: progress
+record:
+  timestamp: 2026-08-30 20:32
+  type: fix
+  phase: build
+  what: Corrected marker-managed retired-resource cleanup so authority-declared Codex descriptors and OpenCode agents and commands share one marker planner across aggregate, focused, doctor, apply, and replay behavior.
+  context:
+    intent: Record durable correction and gate evidence for failed task zhfksamefa without closing or evaluating task state.
+    constraints: Preserve unrelated work; real home dry-run only; no task, TODO, plan, health, release, commit, push, publication, tag, or version transition.
+    scope: "Three accepted audit findings: focused/doctor marker routing, canonical marker authority, and package negative parity."
+  discovered: The failed attempt checked generic lifecycle membership before marker authority, left Codex focused cleanup ledger-gated, kept doctor ledger-based, and omitted package counterexamples.
+  verified: "Targeted marker, doctor, apply/replay, authority, and counterexample tests passed: 4 files, 175 tests; follow-up lifecycle-edge tests passed: 2 files, 13 tests. Full source passed: 255 files, 4221 passed, 2 skipped. Typecheck and build passed. Package verification passed: 3 files, 24 tests, including equivalent local-build, constructed, and extracted negative-marker preservation. Built-CLI isolated Codex preview/doctor/apply/replay returned pending/pending_automatic_removal/applied/noop. Bounded real-home local-built dry-run reported 52 exact marked leaves pending/removable, 0 marker blockers, and preserved 2 opt-out files; identity/stat/SHA-256 snapshots were identical before and after for all 54 observed declared paths and the 52 marked subset. Compact passed with 0 errors, capability contract passed 3/3, pack dry-run created no artifact with no warnings, and git diff --check passed."
+  publication_order: 273

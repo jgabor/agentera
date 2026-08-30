@@ -61,7 +61,6 @@ export function buildUpgradeCommands(args: BuildUpgradeCommandsArgs): {
   if (args.only && args.only.length > 0) {
     for (const phase of args.only) {
       previewParts.push("--only", phase);
-      applyParts.push("--only", phase);
     }
   }
   if (args.legacyCleanup) {

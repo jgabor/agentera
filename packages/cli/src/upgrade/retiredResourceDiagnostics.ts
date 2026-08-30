@@ -3,14 +3,21 @@ import path from "node:path";
 
 import {
   loadNativeResourceCleanupContract,
-  retiredResourceDiagnosticIds,
+  resolveRetiredResourceDiagnosticId,
   type NativeResourceCleanupContract,
   type RetiredResourceDiagnosticDefinition,
 } from "../runtime/nativeResourceCleanup.js";
+import { opencodeConfigDir } from "../setup/opencode.js";
 
 export interface RetiredResourceDiagnostic {
   id: string;
   status: "action_required";
+  kind: RetiredResourceDiagnosticDefinition["kind"];
+  ownershipMode: RetiredResourceDiagnosticDefinition["ownershipMode"];
+  ownershipEvidence: string;
+  focusedPreview: RetiredResourceDiagnosticDefinition["focusedPreview"];
+  markerKind: RetiredResourceDiagnosticDefinition["markerKind"];
+  markerSyntax: string | null;
   evidence: {
     paths: string[];
     observation: "path_present" | "uninspectable";
@@ -30,18 +37,26 @@ interface ResourceObservation {
   observation: RetiredResourceDiagnostic["evidence"]["observation"];
 }
 
-function templateRoot(template: string, roots: Record<string, string>): string {
-  const match = /^\{(home|project|install_root)\}\//.exec(template);
-  if (!match) throw new Error(`unsafe retired-resource diagnostic path template: ${template}`);
-  return roots[match[1]]!;
+export interface RetiredResourceRoots {
+  home: string;
+  project: string;
+  install_root: string;
+  opencode_config: string;
 }
 
-function expandTemplate(template: string, roots: Record<string, string>, name: string | null): string {
+function templateRoot(template: string, roots: RetiredResourceRoots): string {
+  const match = /^\{(home|project|install_root|opencode_config)\}\//.exec(template);
+  if (!match) throw new Error(`unsafe retired-resource diagnostic path template: ${template}`);
+  return roots[match[1] as "home" | "project" | "install_root" | "opencode_config"];
+}
+
+export function expandRetiredResourcePath(template: string, roots: RetiredResourceRoots, name: string | null = null): string {
   const root = templateRoot(template, roots);
   const expanded = template
     .replace("{home}", roots.home)
     .replace("{project}", roots.project)
     .replace("{install_root}", roots.install_root)
+    .replace("{opencode_config}", roots.opencode_config)
     .replace("{name}", name ?? "");
   if (expanded.includes("{") || expanded.includes("..")) {
     throw new Error(`unsafe retired-resource diagnostic path template: ${template}`);
@@ -52,6 +67,27 @@ function expandTemplate(template: string, roots: Record<string, string>, name: s
     throw new Error(`retired-resource diagnostic path escapes its root: ${template}`);
   }
   return resolved;
+}
+
+export function resolveRetiredResourceRoots(opts: {
+  home: string;
+  project: string;
+  installRoot: string;
+  env?: Record<string, string | undefined>;
+}): RetiredResourceRoots {
+  const home = path.resolve(opts.home);
+  const configured = path.resolve(opencodeConfigDir(home, { ...opts.env, HOME: home }));
+  const configuredRelative = path.relative(home, configured);
+  const opencodeConfig = configuredRelative === ""
+    || (configuredRelative !== ".." && !configuredRelative.startsWith(`..${path.sep}`) && !path.isAbsolute(configuredRelative))
+    ? configured
+    : path.join(home, ".config", "opencode");
+  return {
+    home,
+    project: path.resolve(opts.project),
+    install_root: path.resolve(opts.installRoot),
+    opencode_config: opencodeConfig,
+  };
 }
 
 function fileContains(pathname: string, marker: string, maximumFileBytes: number): ResourceObservation["observation"] | null {
@@ -107,36 +143,43 @@ export function diagnoseRetiredResources(
     installRoot: string;
     resourceId?: string | null;
     contract?: NativeResourceCleanupContract;
+    env?: Record<string, string | undefined>;
+    sourceRoot?: string | null;
   },
 ): RetiredResourceDiagnosis {
   const contract = opts.contract ?? loadNativeResourceCleanupContract();
-  if (opts.resourceId && !retiredResourceDiagnosticIds(contract).includes(opts.resourceId)) {
+  const selected = opts.resourceId ? resolveRetiredResourceDiagnosticId(opts.resourceId, contract) : null;
+  if (opts.resourceId && !selected) {
     throw new Error(`unknown retired Agentera resource ID: ${opts.resourceId}`);
   }
-  const roots = {
-    home: path.resolve(opts.home),
-    project: path.resolve(opts.project),
-    install_root: path.resolve(opts.installRoot),
-  };
-  const observed = new Map<string, ResourceObservation[]>();
+  const roots = resolveRetiredResourceRoots(opts);
+  const observed = new Map<string, { definition: RetiredResourceDiagnosticDefinition; observations: ResourceObservation[] }>();
   for (const definition of contract.diagnosticResources) {
+    if (definition.boundary === "external_install_only"
+      && opts.sourceRoot && path.resolve(opts.sourceRoot) === roots.install_root) continue;
     for (const name of namesFor(definition)) {
       const id = definition.id.replace("{name}", name);
-      if (opts.resourceId && id !== opts.resourceId) continue;
+      if (selected && id !== selected.id) continue;
       for (const destination of definition.destinations) {
-        const pathname = expandTemplate(destination, roots, name || null);
+        const pathname = expandRetiredResourcePath(destination, roots, name || null);
         const observation = observeDestination(pathname, definition, contract.diagnosticMaximumFileBytes);
         if (!observation) continue;
-        const current = observed.get(id) ?? [];
-        current.push(observation);
+        const current = observed.get(id) ?? { definition, observations: [] };
+        if (!current.observations.some((item) => item.path === observation.path)) current.observations.push(observation);
         observed.set(id, current);
       }
     }
   }
   const entries = [...observed.entries()].sort(([left], [right]) => left.localeCompare(right));
-  const retained = entries.slice(0, contract.diagnosticMaximumResources).map(([id, observations]) => ({
+  const retained = entries.slice(0, contract.diagnosticMaximumResources).map(([id, { definition, observations }]) => ({
     id,
     status: "action_required" as const,
+    kind: definition.kind,
+    ownershipMode: definition.ownershipMode,
+    ownershipEvidence: definition.ownershipEvidence,
+    focusedPreview: definition.focusedPreview,
+    markerKind: definition.markerKind,
+    markerSyntax: definition.markerSyntax,
     evidence: {
       paths: [...new Set(observations.map((observation) => observation.path))].sort(),
       observation: observations.some((observation) => observation.observation === "uninspectable")
@@ -147,7 +190,7 @@ export function diagnoseRetiredResources(
   return {
     schemaVersion: "agentera.retiredResourceDiagnosis.v1",
     status: retained.length > 0 || entries.length > contract.diagnosticMaximumResources ? "action_required" : "clean",
-    selectedResourceId: opts.resourceId ?? null,
+    selectedResourceId: selected?.id ?? null,
     resources: retained,
     omittedResourceCount: Math.max(0, entries.length - retained.length),
   };

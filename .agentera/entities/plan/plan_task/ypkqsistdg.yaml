@@ -1,0 +1,25 @@
+id: ypkqsistdg
+artifact: plan
+record:
+  name: Synchronize project state
+  depends_on:
+    - qysdrnuaex
+    - kpfjgjxtmw
+    - wojtfusijv
+    - ghdtppoyma
+  status: complete
+  acceptance:
+    - GIVEN all behavioral acceptance passes WHEN state closes THEN TODO zylyajhugj is resolved with evidence.
+    - GIVEN user-facing behavior changed WHEN documentation state is reconciled THEN required changelog and progress records are current.
+    - GIVEN closeout completes WHEN repository state is inspected THEN plan status is accurate and unrelated work remains untouched.
+  plan: ianhlyufws
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-facc9ccceffe-ypk-1
+      source: audit task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 18:10
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,19 @@
+id: vawlbdsquq
+artifact: decisions
+record:
+  date: 2026-08-30
+  question: How should Agentera retire outdated runtime-native artifacts during v3 upgrades?
+  context: Current cleanup is split between migration-only marker cleanup and one-resource lifecycle cleanup. Read-only previews found 12 removable Swedish OpenCode agents in each selected config root, while ~/.codex/agents/dokumentera.toml is outside the cleanup vocabulary and survives. Existing firm decisions require the shared skill plus CLI to be the sole permanent integration while preserving user-owned state.
+  alternatives:
+    - name: Use one ownership-gated full-upgrade preview and apply that scans Codex plus both known OpenCode roots and removes every eligible retired resource.
+      status: chosen
+    - name: Keep migration cleanup and per-resource native cleanup fragmented.
+      status: rejected
+    - name: Require lifecycle ledgers for every file and leave pre-ledger Agentera-marked resources manual.
+      status: rejected
+    - name: Delete known legacy filenames without ownership evidence.
+      status: rejected
+  choice: One full upgrade preview must enumerate all eligible retired resources across Codex and the default and explicitly configured OpenCode roots; one explicit approval then removes them. A closed migration-only exception may treat an exact declared retired filename, regular file, and Agentera managed marker as ownership proof when no historical ledger exists. Ledger-backed resources keep ledger and fingerprint checks. Ambiguous collisions are preserved and must not block independent proven removals.
+  reasoning: This converges stale installations to the single shared-skill and CLI boundary without turning filenames into ownership. The bounded marker exception covers Agentera-created pre-ledger files using the same safety shape already used for OpenCode migration, while exact preview and approval preserve user control.
+  confidence: firm
+  feeds_into: v3 upgrade cleanup authority, Codex and OpenCode migration, lifecycle previews, documentation, and verification.

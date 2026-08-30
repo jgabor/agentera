@@ -95,12 +95,16 @@ describe("idempotency", () => {
       channel: "development",
     });
     expect(second.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
-    expect(second.lifecycleStatus).toBe("ready_to_apply");
+    expect(second.lifecycleStatus).toBe("manual_review_needed");
     expect(second.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ action: "entity-cutover", status: "pending" });
+    expect(second.phases.find((phase) => phase.name === "cleanup")?.items).toContainEqual(expect.objectContaining({
+      resourceId: "agentera.registration.restorer.codex",
+      status: "blocked",
+    }));
     expect(upgradeExitCode(second)).toBe(1);
   });
 
-  it("applyRepeatYes: a second upgrade --yes on an already-applied install exits 0 with no pending items and unchanged file checksums", () => {
+  it("applyRepeatYes: a second upgrade preserves the same manual-review leaf with no pending items or checksum changes", () => {
     const { appHome, project } = seedLayout(tmp);
 
     buildUpgradePlan({
@@ -124,9 +128,13 @@ describe("idempotency", () => {
       yes: true,
     });
 
-    expect(upgradeExitCode(second)).toBe(0);
+    expect(upgradeExitCode(second)).toBe(1);
     expect(second.summary.pending).toBe(0);
     expect(second.summary.failed).toBe(0);
+    expect(second.phases.find((phase) => phase.name === "cleanup")?.items).toContainEqual(expect.objectContaining({
+      resourceId: "agentera.registration.restorer.codex",
+      status: "blocked",
+    }));
     assertChecksumsUnchanged(project, projectBefore);
     assertChecksumsUnchanged(home, runtimeBefore);
   });

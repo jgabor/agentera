@@ -3,10 +3,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
-import {
-  hasManagedMarker,
-  opencodeConfigDir,
-} from "../setup/opencode.js";
+import { hasManagedMarker, opencodeConfigDir } from "../setup/opencode.js";
 import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
 import { doctorRoots } from "./appModel.js";
 import {
@@ -42,8 +39,6 @@ export function projectHasProjectLevelRuntimeHooks(project: string): boolean {
   ];
   return candidates.some((candidate) => isFile(candidate) || pathExists(candidate));
 }
-
-const OPENCODE_COMMAND_NAMES = ["agentera"] as const;
 
 export function textUsesPythonManagedEntrypoint(text: string): boolean {
   if (/AGENTERA_HOME\s*=/.test(text)) {
@@ -123,6 +118,33 @@ function pushRetireHookItem(
   items.push(item);
 }
 
+export function planDeclaredCopilotHookItem(filePath: string, project: string, resourceId: string): MigrationPhaseItem {
+  let stat: fs.Stats;
+  try {
+    stat = fs.lstatSync(filePath);
+  } catch (error) {
+    return { resourceId, status: (error as NodeJS.ErrnoException).code === "ENOENT" ? "noop" : "blocked",
+      action: "retire-hooks", runtime: "copilot", source: filePath,
+      message: (error as NodeJS.ErrnoException).code === "ENOENT"
+        ? `retired Copilot hook already absent at ${filePath}`
+        : `retired Copilot hook preserved: path could not be inspected` };
+  }
+  if (!stat.isFile()) return { resourceId, status: "blocked", action: "retire-hooks", runtime: "copilot", source: filePath,
+    message: `retired Copilot hook preserved: declared path is not a regular file` };
+  const items: MigrationPhaseItem[] = [];
+  try {
+    pushRetireHookItem(items, "copilot", filePath, project);
+  } catch {
+    return { resourceId, status: "blocked", action: "retire-hooks", runtime: "copilot", source: filePath,
+      message: `retired Copilot hook preserved: declared file could not be read` };
+  }
+  const item = items[0];
+  if (!item) return { resourceId, status: "blocked", action: "retire-hooks", runtime: "copilot", source: filePath,
+    message: `retired Copilot hook preserved: complete resource ownership is unproven; review it manually` };
+  item.resourceId = resourceId;
+  return item;
+}
+
 function planCodexItems(
   items: MigrationPhaseItem[],
   home: string,
@@ -178,39 +200,16 @@ export function planStaleCommandCleanupItems(
 ): void {
   const env = ctx.env ?? process.env;
   const home = resolvePath(ctx.home);
-  const commandsDir = path.join(opencodeConfigDir(home, env), "commands");
-  if (!pathExists(commandsDir) || !fs.statSync(commandsDir).isDirectory()) {
-    return;
-  }
-  const currentNames = new Set<string>(OPENCODE_COMMAND_NAMES);
-  for (const entry of fs.readdirSync(commandsDir)) {
-    if (!entry.endsWith(".md")) {
-      continue;
-    }
+  const configDir = opencodeConfigDir(home, env);
+  const commandsDir = path.join(configDir, "commands");
+  if (!pathExists(commandsDir) || !fs.statSync(commandsDir).isDirectory()) return;
+  for (const entry of ["agentera.md", "hej.md"]) {
     const filePath = path.join(commandsDir, entry);
-    if (!isFile(filePath)) {
-      continue;
-    }
-    const body = fs.readFileSync(filePath, "utf8");
-    if (!hasManagedMarker(body)) {
-      continue;
-    }
-    const name = entry.slice(0, -3);
-    if (currentNames.has(name)) {
-      continue;
-    }
-    const item: MigrationPhaseItem = {
-      status: "pending",
-      action: "remove-stale-command",
-      runtime: "opencode",
-      source: filePath,
-      message: `will remove stale managed command ${path.basename(filePath)}`,
-    };
+    if (!isFile(filePath) || !hasManagedMarker(fs.readFileSync(filePath, "utf8"))) continue;
+    const item: MigrationPhaseItem = { status: "pending", action: "remove-stale-command", runtime: "opencode", source: filePath,
+      message: `will remove stale managed command ${entry}` };
     const evidenceError = bindMigrationResource(item, "source", filePath, [home], "file");
-    if (evidenceError) {
-      item.status = "blocked";
-      item.message = `stale command preserved: ${evidenceError}; review the unsafe path manually`;
-    }
+    if (evidenceError) { item.status = "blocked"; item.message = `stale command preserved: ${evidenceError}; review the unsafe path manually`; }
     items.push(item);
   }
 }
@@ -221,7 +220,8 @@ export function planStaleSkillCleanupItems(
 ): void {
   const env = ctx.env ?? process.env;
   const home = resolvePath(ctx.home);
-  const skillsDir = path.join(opencodeConfigDir(home, env), "skills");
+  const configDir = opencodeConfigDir(home, env);
+  const skillsDir = path.join(configDir, "skills");
   let skillsDirectory: fs.Stats;
   try {
     skillsDirectory = fs.lstatSync(skillsDir);
@@ -297,44 +297,6 @@ export function planStaleSkillCleanupItems(
   }
 }
 
-function walkJsonHookFiles(dir: string): string[] {
-  if (!pathExists(dir)) {
-    return [];
-  }
-  const out: string[] = [];
-  const walk = (current: string): void => {
-    for (const entry of fs.readdirSync(current)) {
-      const full = path.join(current, entry);
-      const st = fs.statSync(full);
-      if (st.isDirectory()) {
-        walk(full);
-      } else if (entry.endsWith(".json")) {
-        out.push(full);
-      }
-    }
-  };
-  walk(dir);
-  return out;
-}
-
-function planCopilotItems(
-  items: MigrationPhaseItem[],
-  project: string,
-): void {
-  const hooksDir = path.join(project, ".github", "hooks");
-  for (const hookFile of walkJsonHookFiles(hooksDir)) {
-    pushRetireHookItem(items, "copilot", hookFile, project);
-  }
-  if (!items.some((item) => item.runtime === "copilot")) {
-    items.push({
-      status: "noop",
-      action: "configure",
-      runtime: "copilot",
-      message: "Copilot uses per-invocation AGENTERA_HOME; Agentera does not write shell startup files",
-    });
-  }
-}
-
 export function planRuntimeMigrationItems(
   ctx: MigrationContext,
 ): MigrationPhaseItem[] {
@@ -352,7 +314,8 @@ export function planRuntimeMigrationItems(
   planCursorItems(items, home, project);
   planStaleCommandCleanupItems(ctx, items);
   planStaleSkillCleanupItems(ctx, items);
-  planCopilotItems(items, project);
+  items.push({ status: "noop", action: "configure", runtime: "copilot",
+    message: "Copilot uses per-invocation AGENTERA_HOME; Agentera does not write shell startup files" });
   return items;
 }
 

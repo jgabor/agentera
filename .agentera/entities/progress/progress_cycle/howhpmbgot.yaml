@@ -1,0 +1,13 @@
+id: howhpmbgot
+artifact: progress
+record:
+  timestamp: 2026-08-30 19:20
+  type: fix
+  phase: build
+  what: Resynchronized retired-integration cleanup state after the audited Copilot-hook correction.
+  context:
+    intent: Resolve the reopened cleanup TODO and reconcile user-facing completion state without evaluating or completing task jlygiqgnip.
+    constraints: Preserve unrelated work, plan status, task evaluation state, versions, and publication lifecycle.
+    scope: TODO resolution, Unreleased cleanup outcome, exact empty integration-directory convergence, and durable progress evidence.
+  verified: Exact TODO get shows zylyajhugj resolved with final Copilot-hook PASS evidence from progress icculfoamt. The Unreleased changelog describes authority-backed Copilot hook cleanup and empty .github/hooks convergence while preserving .github. Plan ianhlyufws showed six tasks complete with latest PASS and jlygiqgnip pending before evaluation. Exact local checks showed .codex-plugin, .github/hooks, and .github/plugin absent; .github and .github/workflows remained non-empty directories. Repository status retained the pre-existing implementation and state scope; git diff --check passed.
+  publication_order: 271

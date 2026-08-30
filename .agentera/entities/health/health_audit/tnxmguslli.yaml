@@ -1,0 +1,27 @@
+id: tnxmguslli
+artifact: health
+record:
+  date: 2026-08-30
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: marker-authority cleanup and synchronized artifacts are current."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-open closure for plan ianhlyufws, not a codebase-wide audit. All nine tasks have latest PASS evaluations; marker ownership authority, aggregate and focused cleanup, doctor behavior, negative package parity, guidance, TODO, progress, decision revision, and plan artifacts are current through audited worktree changes. Diff checking, retired-runtime ownership tests, compact, source, and package evidence passed.
+      findings:
+        []
+  trends:
+    improved: Exact declared Codex, OpenCode agent, and OpenCode command markers now establish bounded ownership across aggregate, focused, doctor, apply, and replay behavior with marker-removal opt-out.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: Stale or missing ledger blockers, focused and doctor routing drift, contradictory marker authority, and negative package-parity gaps are resolved.
+    carried_forward: Decision, vision, and profile detail remain deferred; profile grounding remains stale; behavior remains local until a future @next package includes it; no commit, push, or publication is claimed.
+  appended_at: 2026-08-30T18:44:17.695Z

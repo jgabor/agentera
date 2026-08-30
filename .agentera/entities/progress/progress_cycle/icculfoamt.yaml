@@ -1,0 +1,14 @@
+id: icculfoamt
+artifact: progress
+record:
+  timestamp: 2026-08-30 19:14
+  type: fix
+  phase: build
+  what: Allowed full upgrade to apply an ownership-proven Copilot hook independently of blocked hook resources and extended packaged preview parity to cover the canonical Copilot hook outcome.
+  context:
+    intent: Correct failed task jmxutuffyz without closing task or plan state.
+    constraints: Preserve existing uncommitted work, ownership proof, resource IDs, directory safety, blocked resources, versions, and publication state.
+    scope: Only cleanup-phase retire-hooks blocker independence plus retained package Copilot preview parity.
+  discovered: The cleanup blocker exception covered installed-hook retirement but omitted the declared Copilot retire-hooks action, so preview suppressed the apply command and CLI preflight aborted all cleanup.
+  verified: "Focused orchestrator and native-hook tests: 32/32 passed; focused constructed/extracted package parity: 17/17 passed; full source lane: 4214 passed, 2 skipped; typecheck and build passed; package lane: 24/24 passed within budget; compact, git diff --check, and capability contract passed. An isolated compiled-CLI full preview/apply/replay returned the expected blocked exit 1, advertised --yes, removed the owned sessionStart hook, preserved mixed, malformed, wrong-type, symlink blockers and .github, then replayed with zero applied cleanup effects."
+  publication_order: 270

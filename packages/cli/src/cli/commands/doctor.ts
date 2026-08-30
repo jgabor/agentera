@@ -33,6 +33,7 @@ import { commandText } from "../../upgrade/upgradeCommands.js";
 import { inspectTodoReconciliationState } from "../../state/todoReconciliationInspection.js";
 import { classifyAutomaticRetirement } from "../../runtime/nativeResourceCleanup.js";
 import { lifecycleOwnershipJournalPath } from "../../runtime/lifecycleOwnershipJournal.js";
+import { planDeclaredMarkerManagedFileItem } from "../../upgrade/declaredRetiredResourceCleanup.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -69,17 +70,16 @@ function previewCommand(
     "npx",
     "-y",
     "agentera@next",
-    "doctor",
+    "upgrade",
     "--home",
     context.home,
     "--project",
     context.project,
     "--install-root",
     context.installRoot,
-    "--retired-resource",
+    "--legacy-cleanup",
     resource.id,
-    "--format",
-    "json",
+    "--dry-run",
   ]);
 }
 
@@ -90,6 +90,18 @@ function doctorRetiredResources(
   return {
     ...diagnosis,
     resources: diagnosis.resources.map((resource) => {
+      if (resource.ownershipMode === "managed_marker_regular_file") {
+        const items = resource.evidence.paths.map((source) =>
+          planDeclaredMarkerManagedFileItem(resource, source, [context.home, context.project, context.installRoot]));
+        if (items.length > 0 && items.every((item) => item.status === "pending")) {
+          return {
+            id: resource.id,
+            status: "pending_automatic_removal",
+            evidence: resource.evidence,
+            next_action: previewCommand(resource, context),
+          };
+        }
+      }
       const qualification = classifyAutomaticRetirement(
         resource.id,
         resource.evidence.paths[0]!,
@@ -193,7 +205,7 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
     lines.push("Next: review each read-only retirement preview before any explicit cleanup.");
   } else if (resources.some((resource) => resource.status === "pending_automatic_removal")) {
     lines.push("");
-    lines.push("Next: run the reported normal upgrade action.");
+    lines.push("Next: run the reported cleanup preview.");
   } else {
     lines.push("");
     lines.push(
@@ -271,6 +283,8 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     project,
     installRoot,
     resourceId: args.retiredResource ?? null,
+    env: process.env,
+    sourceRoot,
   });
   const retiredResources = doctorRetiredResources(retiredDiagnosis, { home, project, installRoot });
   const retiredResourceEntries = retiredResources.resources as Array<{ id: string; status: string }>;
@@ -290,7 +304,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     status.signals.push({
       status: APP_REPAIR_NEEDED,
       kind: "retired_native_resources_pending_automatic_removal",
-      message: "proven retired OpenCode plugin is pending automatic removal by normal upgrade",
+      message: "ownership-proven retired resources are pending cleanup",
       resourceIds: pendingAutomaticResources.map((resource) => resource.id),
     });
     if (status.status === APP_UP_TO_DATE) status.status = APP_REPAIR_NEEDED;

@@ -1,0 +1,16 @@
+id: pxicbwidri
+artifact: decisions
+record:
+  decision: vawlbdsquq
+  date: 2026-08-30
+  provenance: historical_revision
+  base_sha256: 7a389931936d5a4ac61a9d81a84db9dcbac44913b590346d1fba48c83cd8158c
+  changes:
+    context: Bounded live inspection found 24 Codex descriptors, OpenCode primary and Swedish agents in default and configured roots, and two OpenCode commands explicitly marked as Agentera-managed. Current local cleanup inventories these paths but blocks all Codex descriptors and both commands because marker evidence does not override missing or stale lifecycle records. Published agentera@next does not yet expose the expanded selectors.
+    alternatives.chosen: Treat the expected Agentera-managed marker as whole-file ownership for exact authority-declared regular files even when ledger evidence is missing or stale.
+    alternatives.rejected:
+      - Keep stale or missing ledger evidence authoritative and strand explicitly managed files.
+    choice: For the closed marker-managed resource classes, an exact authority-declared path, regular-file type, and expected marker syntax establish Agentera ownership even when lifecycle ledger evidence is absent or stale. Supported forms are the Codex managed comment, OpenCode managed-agent HTML comment, and OpenCode command frontmatter flag. Marker text embedded in plugins, templates, unrelated locations, non-regular files, or undeclared paths never qualifies. Dry-run must report the exact path and fingerprint before explicit approval. Removing the marker opts a user-modified file out. Ledger, fingerprint, whole-resource hook, symlink, plugin, and shared-configuration rules remain unchanged for non-marker classes.
+    reasoning: The marker is an explicit ownership declaration written by Agentera; refusing it leaves resources Agentera labeled as managed permanently unretireable. Exact paths, expected syntax, regular-file checks, read-only preview, and explicit approval preserve the trust boundary while giving users a simple opt-out by removing the marker.
+    confidence: firm
+    feeds_into: v3 cleanup ownership authority, complete marker inventory, focused and aggregate cleanup, real-install fixtures, package parity, and published @next verification.

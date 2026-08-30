@@ -1,0 +1,16 @@
+id: edtmuhfopx
+artifact: decisions
+record:
+  decision: vawlbdsquq
+  date: 2026-08-30
+  provenance: historical_revision
+  base_sha256: 1b2c4731506e031467c2d5d8c69ee83b063aea9e26bde88e64e6db45cfe01934
+  changes:
+    context: Current cleanup is split across migration-only marker cleanup, one-resource lifecycle cleanup, and diagnostic-only retired resources. Read-only previews found removable OpenCode agents while Codex Swedish descriptors and other external integration leaves lack complete cleanup coverage. This repository also retains empty obsolete directories such as .claude-plugin, .cursor-plugin, and .cursor/agents. Existing firm decisions require the shared skill plus CLI to be the sole permanent integration while preserving user-owned state.
+    alternatives.chosen: Use one ownership-gated full-upgrade preview and apply that inventories every retired external Agentera integration leaf, prunes declared directories left empty, and retains targeted selectors for diagnosis and retry.
+    alternatives.rejected:
+      - Recursively remove runtime namespaces or inventory obsolete files confined to a replaced package.
+    choice: One full upgrade preview must enumerate every eligible retired external Agentera integration leaf across declared project and host roots; one explicit approval then removes them. Each leaf remains available through --legacy-cleanup ID for focused preview and retry. A closed migration-only exception may treat an exact declared retired file, regular-file identity, and Agentera managed marker as ownership proof when no historical ledger exists; ledger-backed resources keep ledger and fingerprint checks. After leaf removal, cleanup may prune exact declared directories and declared parents deepest-first using non-recursive empty-directory removal only. Non-empty, symlinked, unknown, ambiguous, and package-internal paths are preserved or retired through their owning package replacement.
+    reasoning: This converges stale installations and the current repository to the shared-skill and CLI boundary without treating host directories or filenames as ownership. Aggregated cleanup prevents stranded resources, targeted selectors support diagnosis, and empty-only pruning removes obsolete scaffolding without risking user content.
+    confidence: firm
+    feeds_into: v3 upgrade cleanup authority, external runtime retirement inventory, targeted cleanup previews, repository housekeeping, documentation, and verification.

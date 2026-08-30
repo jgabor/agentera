@@ -1,0 +1,22 @@
+id: jlygiqgnip
+artifact: plan
+record:
+  plan: ianhlyufws
+  name: Resynchronize corrected cleanup state
+  status: complete
+  depends_on:
+    - jmxutuffyz
+  acceptance:
+    - GIVEN the Copilot-hook correction passes evaluation WHEN state closes THEN TODO zylyajhugj is resolved with the new evidence.
+    - GIVEN the user-facing cleanup contract changed WHEN documentation and progress are reconciled THEN current guidance and state describe the completed scope without internal verification detail.
+    - GIVEN terminal closure runs WHEN repository state is inspected THEN all seven tasks have latest PASS, obsolete empty integration directories are absent, .github remains, and unrelated work is preserved.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-facc9ccceffe-jly-1
+      source: audit task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 19:23
+      writer_command: agentera state plan record-evaluation

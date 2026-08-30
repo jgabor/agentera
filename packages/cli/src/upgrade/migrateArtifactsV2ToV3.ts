@@ -23,6 +23,7 @@ import {
 } from "../migrate/v2HandoffManifest.js";
 import {
   applyLegacyAgentCleanupItems,
+  planLegacyDirectoryCleanupItems,
   planLegacyAgentCleanupItems,
   planLegacyCapabilityAgentCleanupItems,
 } from "./legacyAgentCleanup.js";
@@ -36,6 +37,11 @@ import {
   applyInstalledHooksRetirementItems,
   planInstalledHooksRetirementItems,
 } from "./installedHooksRetirement.js";
+import {
+  applyDeclaredRetiredResourceCleanupItems,
+  planDeclaredRetiredResourceCleanupItems,
+  resolveDeclaredMarkerManagedResource,
+} from "./declaredRetiredResourceCleanup.js";
 import type { ResolvedUpdateChannel } from "./channels.js";
 
 /**
@@ -49,6 +55,7 @@ export interface MigrationPhaseItem {
   status: MigrationStatus;
   action: string;
   message: string;
+  resourceId?: string;
   source?: string;
   target?: string;
   runtime?: string;
@@ -483,6 +490,7 @@ function listManagedBundlePreview(managedAppRoot: string, limit = 20): string[] 
 
 export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
   const appHome = resolvePath(ctx.appHome);
+  const packageInternalAppRoot = Boolean(ctx.sourceRoot && appHome === resolvePath(ctx.sourceRoot));
   const roots = doctorRoots(appHome);
   const managedAppRoot = roots.managedAppRoot;
   const preflight = resolveMigrationUserStatePreflight(appHome, {
@@ -498,13 +506,24 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
   const hasOwnedRootHooks = installedHookItems.some((item) =>
     item.source?.startsWith(`${path.join(appHome, "hooks")}${path.sep}`)
   );
-  const unknown = appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight)
+  const unknown = packageInternalAppRoot ? [] : appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight)
     .filter((name) => !(name === "hooks" && hasOwnedRootHooks));
-  const managedBundle = hasManagedBundleEvidence(managedAppRoot);
-  const refreshAuthorized = managedBundle
+  const managedBundle = !packageInternalAppRoot && hasManagedBundleEvidence(managedAppRoot);
+  const refreshAuthorized = !packageInternalAppRoot && (managedBundle
     || hasBundleRootEvidence(roots.activeBundleRoot)
-    || (pathExists(appHome) && fs.readdirSync(appHome).length === 0);
+    || (pathExists(appHome) && fs.readdirSync(appHome).length === 0));
   const appRootUnknown = managedBundle ? markedBundleInventoryViolations(managedAppRoot) : [];
+  const installedHookPaths = new Set(installedHookItems.flatMap((item) =>
+    item.source ? [path.resolve(item.source)] : []));
+  const declaredItems = planDeclaredRetiredResourceCleanupItems(ctx, installedHookPaths);
+  const declaredMarkerPaths = new Set(declaredItems.flatMap((item) =>
+    item.resourceId && resolveDeclaredMarkerManagedResource(item.resourceId)
+      ? item.source ? [path.resolve(item.source)] : []
+      : []));
+  const legacyAgentItems = [
+    ...planLegacyAgentCleanupItems(ctx),
+    ...planLegacyCapabilityAgentCleanupItems(ctx),
+  ].filter((item) => !item.source || !declaredMarkerPaths.has(path.resolve(item.source)));
   const items: MigrationPhaseItem[] = [
     ...preflight.handoffCatalog.map((entry) => ({
       status: "noop" as const,
@@ -513,8 +532,9 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
       preserved: entry.entries,
       message: handoffCatalogMessage(entry),
     })),
-    ...planLegacyAgentCleanupItems(ctx),
-    ...planLegacyCapabilityAgentCleanupItems(ctx),
+    ...legacyAgentItems,
+    ...declaredItems,
+    ...planLegacyDirectoryCleanupItems(ctx, [...legacyAgentItems, ...declaredItems]),
     ...installedHookItems,
     ...(refreshAuthorized
       ? planAppContentRefreshItems(ctx).filter((item) => item.action === "refresh-app-content")
@@ -542,6 +562,10 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
       message: `managed app bundle does not match the supported v2 recursive inventory (${appRootUnknown.slice(0, 10).join(", ")}${appRootUnknown.length > 10 ? `; ${appRootUnknown.length - 10} more` : ""}); cleanup preserved the entire app directory for manual review`,
     });
     return summarizePhase("cleanup", items);
+  }
+
+  if (packageInternalAppRoot) {
+    return summarizePhase("cleanup", items, "package-internal app content excluded from retired external cleanup");
   }
 
   if (!managedBundle) {
@@ -583,6 +607,7 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
 
 export function applyCleanupPhase(phase: MigrationPhase, ctx?: MigrationContext): void {
   if (ctx) {
+    applyDeclaredRetiredResourceCleanupItems(phase.items, ctx);
     applyLegacyAgentCleanupItems(phase.items, ctx);
     applyInstalledHooksRetirementItems(phase.items, ctx);
     applyAppContentRefreshItems(phase.items, ctx);

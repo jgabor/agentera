@@ -1,0 +1,27 @@
+id: xiidivpdns
+artifact: health
+record:
+  date: 2026-08-30
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: reopened cleanup correction and synchronized artifacts are current."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-open closure for reopened plan ianhlyufws, not a codebase-wide audit. All seven tasks have latest PASS evaluations; Copilot hook authority, mixed full cleanup, package parity, documentation, TODO, progress, and plan artifacts are current through audited worktree changes. Diff checking, retired-runtime ownership tests, and compact validation passed.
+      findings:
+        []
+  trends:
+    improved: Copilot project hooks now share the canonical retirement authority, focused and full cleanup, independent convergence, directory pruning, and package parity.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: Missing .github hook authority, mixed cleanup blocking, package parity coverage, and obsolete empty integration directories are resolved.
+    carried_forward: Decision, vision, and profile detail remain deferred; profile grounding remains stale; no commit, push, or publication is claimed.
+  appended_at: 2026-08-30T17:24:43.975Z

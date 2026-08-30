@@ -140,9 +140,11 @@ describe("active shared-skill lifecycle contract", () => {
       "--project", project, "--dry-run", "--format", "json",
     ]);
     expect(historicalCleanup.rc).toBe(0);
-    expect(JSON.parse(historicalCleanup.out)).toHaveProperty(
-      "lifecycle.nativeResourceCleanup.resourceId",
-      "codex.agent-descriptor.status",
-    );
+    const historicalPayload = JSON.parse(historicalCleanup.out);
+    expect(historicalPayload.lifecycle).toBeNull();
+    expect(historicalPayload.phases[0].items).toContainEqual(expect.objectContaining({
+      resourceId: "codex.agent-descriptor.status",
+      status: "noop",
+    }));
   });
 });

@@ -56,26 +56,26 @@ describe("whole-resource v2 hook ownership", () => {
 });
 
 describe("runtime hook retirement", () => {
-  it("removes proven Codex, Cursor, and Copilot hook files without rewriting configuration", () => {
+  it("removes proven Codex and Cursor hooks while leaving declared Copilot cleanup to its authority seam", () => {
     const ctx = context();
     const codexConfig = write(ctx.home, ".codex/config.toml", '[shell_environment_policy]\nset = { USER = "keep" }\n');
     const hooks = [
       write(ctx.home, ".codex/hooks/codex-hooks.json", ownedHook()),
       write(ctx.project, ".cursor/hooks.json", ownedHook()),
-      write(ctx.project, ".github/hooks/agentera.json", ownedHook()),
     ];
+    const copilotHook = write(ctx.project, ".github/hooks/agentera.json", ownedHook());
     const configBefore = fs.readFileSync(codexConfig, "utf8");
 
     const phase = planRuntimeRetirementPhase(ctx);
 
-    expect(phase.items).toHaveLength(3);
-    expect(phase.items.every((item) => item.action === "retire-hooks" && item.status === "pending")).toBe(true);
-    expect(phase.items.every((item) => item.target === undefined && item.newText === undefined)).toBe(true);
+    expect(phase.items.filter((item) => item.action === "retire-hooks")).toHaveLength(2);
+    expect(phase.items.filter((item) => item.action === "retire-hooks").every((item) => item.status === "pending")).toBe(true);
 
     applyRuntimeRetirementPhase(phase, ctx);
 
     expect(phase.status).toBe("applied");
     for (const hook of hooks) expect(fs.existsSync(hook)).toBe(false);
+    expect(fs.existsSync(copilotHook)).toBe(true);
     expect(fs.readFileSync(codexConfig, "utf8")).toBe(configBefore);
   });
 

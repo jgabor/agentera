@@ -1,0 +1,13 @@
+id: vqcydvmvid
+artifact: progress
+record:
+  timestamp: 2026-08-30 20:01
+  type: fix
+  phase: build
+  what: Made exact authority-declared Codex descriptor, OpenCode agent, and OpenCode command markers authoritative for safe retired-resource cleanup while preserving markerless and out-of-class resources.
+  context:
+    intent: Record durable verification evidence for authority decision vawlbdsquq revision pxicbwidri and plan task zhfksamefa.
+    constraints: Dry-run only against real home; no task, TODO, plan, release, commit, or publication state transition.
+    scope: Declared retired runtime resource marker ownership and package parity.
+  verified: "Focused marker/counterexample and aggregate apply/replay coverage passed; source lane: 255 files, 4215 passed and 2 skipped; package lane: 3 files, 24 passed with local/constructed/extracted marker parity; typecheck, build, compact, capability contract, pack dry-run, and diff check passed. Bounded real-home local-built dry-run found 52 marker-owned declared leaves (24 Codex, 26 OpenCode agents across two roots, 2 OpenCode commands): 52 pending/removable, 0 absent, 0 marker-ownership blockers, and all identity/stat/SHA-256 snapshots unchanged."
+  publication_order: 272

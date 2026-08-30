@@ -309,8 +309,8 @@
               "sha256": "007e1157a892fec54182b1803aeaa442cf8e2e332e6a055c3bd020e2b0731867"
             },
             "runtime": {
-              "count": 81,
-              "sha256": "03fe600a3a27f05daf0d1b59c16b00bedc354a13c70ea60be0b457175fdf743c"
+              "count": 98,
+              "sha256": "9986cd87660308dc8fe6574768f14aec80f8b7eb55dffcdf1dfe7fc1c80f0251"
             },
             "reference": {
               "count": 27,
@@ -321,8 +321,8 @@
               "sha256": "7ab0dd6ef1b1b1ce66bd9ea94d1de3d542528233e928a44102e289bf12416681"
             },
             "package": {
-              "count": 67,
-              "sha256": "d73cd86fed39057cf9ae73e462a59e842372392b1e88846f2b220378a2ff75cc"
+              "count": 68,
+              "sha256": "b237db48078d6f00e1418c43e1df9fbafb7dc86f950cb544e5866f5079ad8995"
             },
             "bootstrap": {
               "count": 34,
@@ -330,8 +330,8 @@
             }
           },
           "total": {
-            "count": 286,
-            "sha256": "68b71f1e7d450771d7a323456cb6b557fc6ae3ce6c11e8c93ecd8ed005e1227b"
+            "count": 304,
+            "sha256": "472adb93e4fbbc35172846684dc1cb2aa9f07ed90ef0f85cfd103b4ad2ec9839"
           }
         }
       },

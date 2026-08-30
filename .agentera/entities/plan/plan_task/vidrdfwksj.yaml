@@ -1,0 +1,22 @@
+id: vidrdfwksj
+artifact: plan
+record:
+  plan: ianhlyufws
+  name: Resynchronize marker-authority cleanup state
+  status: complete
+  depends_on:
+    - zhfksamefa
+  acceptance:
+    - GIVEN marker-authority cleanup passes evaluation WHEN state closes THEN TODO zylyajhugj is resolved with the final evidence.
+    - GIVEN the ownership contract changed WHEN guidance, changelog, and progress are reconciled THEN they describe marker ownership and opt-out without internal verification detail or premature @next claims.
+    - GIVEN terminal closure runs WHEN repository state is inspected THEN all nine tasks have latest PASS, the plan is accurate, and unrelated work is preserved.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-facc9ccceffe-vid-1
+      source: audit task ses_facc9ccceffeB8iiboUqQIz0g1
+      recorded_at: 2026-08-30 20:42
+      writer_command: agentera state plan record-evaluation

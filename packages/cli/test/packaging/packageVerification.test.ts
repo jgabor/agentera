@@ -86,6 +86,83 @@ function packageEnvironment(
   return env;
 }
 
+function cleanupPreviewObservation(bin: string, root: string) {
+  const home = path.join(root, "home");
+  const project = path.join(root, "project");
+  const installRoot = path.join(root, "app");
+  const command = path.join(home, ".config", "opencode", "commands", "agentera.md");
+  const agent = path.join(home, ".config", "opencode", "agents", "agentera.md");
+  const descriptor = path.join(home, ".codex", "agents", "hej.toml");
+  const copilotHook = path.join(project, ".github", "hooks", "sessionStart.json");
+  const markerlessDescriptor = path.join(home, ".codex", "agents", "build.toml");
+  const misplacedDescriptor = path.join(home, ".codex", "agents", "audit.toml");
+  const malformedCommand = path.join(home, ".config", "opencode", "commands", "hej.md");
+  const symlinkAgent = path.join(home, ".config", "opencode", "agents", "status.md");
+  const wrongTypeAgent = path.join(home, ".config", "opencode", "agents", "plan.md");
+  const undeclaredDescriptor = path.join(home, ".codex", "agents", "custom.toml");
+  const symlinkTarget = path.join(root, "marked-agent-target.md");
+  fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+  fs.mkdirSync(installRoot, { recursive: true });
+  fs.mkdirSync(path.dirname(command), { recursive: true });
+  fs.mkdirSync(path.dirname(agent), { recursive: true });
+  fs.mkdirSync(path.dirname(descriptor), { recursive: true });
+  fs.mkdirSync(path.dirname(copilotHook), { recursive: true });
+  fs.writeFileSync(path.join(project, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  fs.writeFileSync(command, "---\nagentera_managed: true\n---\nlegacy command\n");
+  fs.writeFileSync(agent, "<!-- agentera: managed -->\nlegacy primary\n");
+  fs.writeFileSync(descriptor, "# agentera_managed: true\nname = 'hej'\n");
+  fs.writeFileSync(copilotHook, JSON.stringify({ hooks: [{ command: "npx -y agentera@next hook session-start" }] }));
+  fs.writeFileSync(markerlessDescriptor, "name = 'build'\n");
+  fs.writeFileSync(misplacedDescriptor, "name = 'audit'\n# agentera_managed: true\n");
+  fs.writeFileSync(malformedCommand, "---\nagentera_managed: \"true\"\n---\nlegacy\n");
+  fs.writeFileSync(symlinkTarget, "<!-- agentera: managed -->\nlegacy\n");
+  fs.symlinkSync(symlinkTarget, symlinkAgent);
+  fs.mkdirSync(wrongTypeAgent);
+  fs.writeFileSync(undeclaredDescriptor, "# agentera_managed: true\nname = 'custom'\n");
+  const resources = [command, agent, descriptor, copilotHook];
+  const before = resources.map((file) => fs.readFileSync(file, "utf8"));
+  const result = spawnSync(process.execPath, [
+    bin, "upgrade", "--home", home, "--project", project, "--install-root", installRoot,
+    "--channel", "development", "--dry-run", "--format", "json",
+  ], { cwd: project, env: packageEnvironment(home), encoding: "utf8" });
+  const payload = JSON.parse(result.stdout) as { phases: Array<{ name: string; items: Array<Record<string, unknown>> }> };
+  const wanted = new Set([
+    "opencode.command.agentera",
+    "opencode.agent.agentera",
+    "codex.agent-descriptor.hej",
+    "copilot.hook.sessionStart",
+  ]);
+  const negative = new Set([
+    "codex.agent-descriptor.audit",
+    "codex.agent-descriptor.build",
+    "opencode.agent.plan",
+    "opencode.agent.status",
+    "opencode.command.hej",
+  ]);
+  const cleanupItems = payload.phases.find((phase) => phase.name === "cleanup")!.items;
+  return {
+    status: result.status,
+    items: cleanupItems
+      .filter((item) => wanted.has(String(item.resourceId)))
+      .map((item) => ({ resourceId: item.resourceId, status: item.status, action: item.action }))
+      .sort((left, right) => String(left.resourceId).localeCompare(String(right.resourceId))),
+    negativeItems: cleanupItems
+      .filter((item) => negative.has(String(item.resourceId)))
+      .map((item) => ({ resourceId: item.resourceId, status: item.status, action: item.action }))
+      .sort((left, right) => String(left.resourceId).localeCompare(String(right.resourceId))),
+    unchanged: resources.map((file, index) => fs.readFileSync(file, "utf8") === before[index]),
+    preserved: [
+      fs.readFileSync(markerlessDescriptor, "utf8") === "name = 'build'\n",
+      fs.readFileSync(misplacedDescriptor, "utf8") === "name = 'audit'\n# agentera_managed: true\n",
+      fs.readFileSync(malformedCommand, "utf8").includes('agentera_managed: "true"'),
+      fs.lstatSync(symlinkAgent).isSymbolicLink(),
+      fs.lstatSync(wrongTypeAgent).isDirectory(),
+      fs.readFileSync(undeclaredDescriptor, "utf8").startsWith("# agentera_managed: true"),
+    ],
+    undeclaredReported: cleanupItems.some((item) => item.source === undeclaredDescriptor),
+  };
+}
+
 function selectedTermObservation(
   bin: string,
   root: string,
@@ -376,6 +453,40 @@ describe("npm distribution boundary", () => {
       expect(contents[1], relative).toBe(contents[0]);
       expect(contents[2], relative).toBe(contents[0]);
     }
+  });
+
+  it("retains cleanup preview parity across local build, constructed, and extracted package surfaces", () => {
+    const bins = [
+      path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),
+      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
+      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
+    ];
+    const observations = bins.map((bin, index) => cleanupPreviewObservation(
+      bin,
+      path.join(fixture.root, `cleanup-parity-${index}`),
+    ));
+
+    expect(observations[1]).toEqual(observations[0]);
+    expect(observations[2]).toEqual(observations[0]);
+    expect(observations[0]).toEqual({
+      status: 1,
+      items: [
+        { resourceId: "codex.agent-descriptor.hej", status: "pending", action: "retire-declared-resource" },
+        { resourceId: "copilot.hook.sessionStart", status: "pending", action: "retire-hooks" },
+        { resourceId: "opencode.agent.agentera", status: "pending", action: "retire-declared-resource" },
+        { resourceId: "opencode.command.agentera", status: "pending", action: "retire-declared-resource" },
+      ],
+      negativeItems: [
+        { resourceId: "codex.agent-descriptor.audit", status: "blocked", action: "review-declared-resource" },
+        { resourceId: "codex.agent-descriptor.build", status: "blocked", action: "review-declared-resource" },
+        { resourceId: "opencode.agent.plan", status: "blocked", action: "review-declared-resource" },
+        { resourceId: "opencode.agent.status", status: "blocked", action: "review-declared-resource" },
+        { resourceId: "opencode.command.hej", status: "blocked", action: "review-declared-resource" },
+      ],
+      unchanged: [true, true, true, true],
+      preserved: [true, true, true, true, true, true],
+      undeclaredReported: false,
+    });
   });
 
   it("isolates selected-term startup from an empty inherited XDG profile root", () => {

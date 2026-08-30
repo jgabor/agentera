@@ -8,13 +8,23 @@ policy:
   selection: native_agentera_resource_only
   preview: strictly_read_only
   apply_requires: explicit_approval
-  ownership: matching_whole_resource_ledger_identity_and_fingerprint
+  ownership: declared_per_leaf_mode
   shared_configuration: action_required_without_key_level_ownership
   forbidden_ownership_evidence:
     - value_equality
-    - managed_marker
     - resource_name
     - file_equality
+  migration_only_managed_marker_exception:
+    scope: exact_declared_pre_ledger_regular_files
+    authority: diagnostic_inventory resources whose ownership_mode is managed_marker_regular_file
+    expected_structural_marker_forms:
+      first_line_exact: "# agentera_managed: true"
+      body_first_line_exact: "<!-- agentera: managed -->"
+      yaml_frontmatter_boolean:
+        key: agentera_managed
+        value: true
+    opt_out: Removing, moving, malforming, or setting the expected marker to false or a non-boolean value opts the exact file out of automatic cleanup.
+    boundary: A valid expected marker establishes migration-only ownership only for a regular file at an exact destination declared by a managed-marker diagnostic resource. Symlinks, directories, wrong types, undeclared names, templates, hooks, plugins, shared configuration, package-internal paths, and every non-marker resource class retain their stronger declared ownership rules.
   unsupported_platform_result: action_required
 automatic_retirement:
   enabled_resource_ids:
@@ -92,6 +102,18 @@ resource_vocabulary:
       - codex.agent-descriptor.profile
       - codex.agent-descriptor.design
       - codex.agent-descriptor.orchestrate
+      - codex.agent-descriptor.dokumentera
+      - codex.agent-descriptor.hej
+      - codex.agent-descriptor.inspektera
+      - codex.agent-descriptor.inspirera
+      - codex.agent-descriptor.optimera
+      - codex.agent-descriptor.orkestrera
+      - codex.agent-descriptor.planera
+      - codex.agent-descriptor.profilera
+      - codex.agent-descriptor.realisera
+      - codex.agent-descriptor.resonera
+      - codex.agent-descriptor.visionera
+      - codex.agent-descriptor.visualisera
     historical_ids:
       - codex.agents.status
       - codex.agents.vision
@@ -105,6 +127,18 @@ resource_vocabulary:
       - codex.agents.profile
       - codex.agents.design
       - codex.agents.orchestrate
+      - codex.agents.dokumentera
+      - codex.agents.hej
+      - codex.agents.inspektera
+      - codex.agents.inspirera
+      - codex.agents.optimera
+      - codex.agents.orkestrera
+      - codex.agents.planera
+      - codex.agents.profilera
+      - codex.agents.realisera
+      - codex.agents.resonera
+      - codex.agents.visionera
+      - codex.agents.visualisera
   - id: opencode.plugin
     resource_class: plugin
     migration_scope: v2_upgrade_only
@@ -197,6 +231,21 @@ resource_vocabulary:
       - agentera.installed-hook.session_stop.py
       - agentera.installed-hook.codex-hooks.json
     historical_ids: []
+  - id: copilot.hook
+    resource_class: project_hook
+    migration_scope: explicit_cleanup
+    resource_ids:
+      - copilot.hook.agentera
+      - copilot.hook.postToolUse
+      - copilot.hook.preToolUse
+      - copilot.hook.sessionEnd
+      - copilot.hook.sessionStart
+    historical_ids:
+      - copilot.hooks.agentera
+      - copilot.hooks.postToolUse
+      - copilot.hooks.preToolUse
+      - copilot.hooks.sessionEnd
+      - copilot.hooks.sessionStart
   - id: agentera.registration
     resource_class: registration
     migration_scope: v2_upgrade_only
@@ -216,66 +265,226 @@ diagnostic_inventory:
   resources:
     - vocabulary: claude.skill-link
       id: claude.agentera-skill-link
+      aliases: []
+      roots: [home]
+      kind: symlink
+      ownership_mode: ledger_identity_fingerprint
+      ownership_evidence: matching whole-resource legacy ledger identity and target fingerprint
+      focused_preview: remove_if_owned_else_manual_review
       destinations:
         - "{home}/.claude/skills/agentera"
     - vocabulary: codex.agent-descriptor
       id: codex.agent-descriptor.{name}
-      names: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate]
+      aliases: ["codex.agents.{name}"]
+      roots: [home]
+      kind: file
+      ownership_mode: managed_marker_regular_file
+      ownership_evidence: exact declared regular file whose first line is the Codex managed comment
+      marker_kind: first_line_exact
+      marker_syntax: "# agentera_managed: true"
+      focused_preview: remove_if_owned_else_manual_review
+      names: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate, dokumentera, hej, inspektera, inspirera, optimera, orkestrera, planera, profilera, realisera, resonera, visionera, visualisera]
       destinations:
         - "{home}/.codex/agents/{name}.toml"
     - vocabulary: opencode.plugin
       id: opencode.plugin.agentera
+      aliases: []
+      roots: [home, opencode_config]
+      kind: file
+      ownership_mode: bounded_fingerprint_and_ledger
+      ownership_evidence: bounded official SHA-256 plus matching whole-resource installer ledger identity and fingerprint
+      focused_preview: remove_if_owned_else_manual_review
       destinations:
         - "{home}/.config/opencode/plugins/agentera.js"
+        - "{opencode_config}/plugins/agentera.js"
     - vocabulary: opencode.command
       id: opencode.command.{name}
+      aliases: []
+      roots: [home, opencode_config]
+      kind: file
+      ownership_mode: managed_marker_regular_file
+      ownership_evidence: exact declared regular file whose YAML frontmatter has boolean agentera_managed true
+      marker_kind: yaml_frontmatter_boolean
+      marker_syntax: "agentera_managed: true"
+      focused_preview: remove_if_owned_else_manual_review
       names: [agentera, hej]
       destinations:
+        - "{opencode_config}/commands/{name}.md"
         - "{home}/.config/opencode/commands/{name}.md"
+    - vocabulary: copilot.hook
+      id: copilot.hook.{name}
+      aliases: ["copilot.hooks.{name}"]
+      roots: [project]
+      kind: file
+      ownership_mode: whole_resource_retired_hook
+      ownership_evidence: exact declared regular file whose every command is a retired Agentera invocation
+      focused_preview: remove_if_owned_else_manual_review
+      names: [agentera, postToolUse, preToolUse, sessionEnd, sessionStart]
+      destinations:
+        - "{project}/.github/hooks/{name}.json"
     - vocabulary: legacy.primary-agent
       id: cursor.agent.agentera
+      aliases: []
+      roots: [home, project]
+      kind: file
+      ownership_mode: managed_marker_regular_file
+      ownership_evidence: exact declared regular file whose first line is the OpenCode managed-agent comment
+      marker_kind: body_first_line_exact
+      marker_syntax: html_comment_agentera_managed
+      focused_preview: remove_if_owned_else_manual_review
       destinations:
         - "{home}/.cursor/agents/agentera.md"
         - "{project}/.cursor/agents/agentera.md"
     - vocabulary: legacy.primary-agent
       id: opencode.agent.agentera
+      aliases: []
+      roots: [home, opencode_config]
+      kind: file
+      ownership_mode: managed_marker_regular_file
+      ownership_evidence: exact declared regular file whose first line is the OpenCode managed-agent comment
+      marker_kind: body_first_line_exact
+      marker_syntax: html_comment_agentera_managed
+      focused_preview: remove_if_owned_else_manual_review
       destinations:
+        - "{opencode_config}/agents/agentera.md"
         - "{home}/.config/opencode/agents/agentera.md"
     - vocabulary: legacy.capability-agent
       id: cursor.agent.{name}
+      aliases: []
+      roots: [home, project]
+      kind: file
+      ownership_mode: managed_marker_regular_file
+      ownership_evidence: exact declared regular file whose first line is the OpenCode managed-agent comment
+      marker_kind: body_first_line_exact
+      marker_syntax: html_comment_agentera_managed
+      focused_preview: remove_if_owned_else_manual_review
       names: [audit, build, design, discuss, document, optimize, orchestrate, plan, profile, research, status, vision, dokumentera, hej, inspektera, inspirera, optimera, orkestrera, planera, profilera, realisera, resonera, visionera, visualisera]
       destinations:
         - "{home}/.cursor/agents/{name}.md"
         - "{project}/.cursor/agents/{name}.md"
     - vocabulary: legacy.capability-agent
       id: opencode.agent.{name}
+      aliases: []
+      roots: [home, opencode_config]
+      kind: file
+      ownership_mode: managed_marker_regular_file
+      ownership_evidence: exact declared regular file whose first line is the OpenCode managed-agent comment
+      marker_kind: body_first_line_exact
+      marker_syntax: html_comment_agentera_managed
+      focused_preview: remove_if_owned_else_manual_review
       names: [audit, build, design, discuss, document, optimize, orchestrate, plan, profile, research, status, vision, dokumentera, hej, inspektera, inspirera, optimera, orkestrera, planera, profilera, realisera, resonera, visionera, visualisera]
       destinations:
+        - "{opencode_config}/agents/{name}.md"
         - "{home}/.config/opencode/agents/{name}.md"
     - vocabulary: opencode.stale-skill-link
       id: opencode.skill-link.{name}
+      aliases: []
+      roots: [home, opencode_config]
+      kind: symlink
+      ownership_mode: manual_review
+      ownership_evidence: no durable whole-resource ownership record
+      focused_preview: manual_review_only
       names: [agentera, status]
       destinations:
+        - "{opencode_config}/skills/{name}"
         - "{home}/.config/opencode/skills/{name}"
     - vocabulary: installed.hook
       id: agentera.installed-hook.{name}
+      aliases: []
+      roots: [install_root]
+      kind: file
+      ownership_mode: managed_bundle_identity
+      ownership_evidence: exact declared regular file under a managed external v2 app bundle with bound path identity
+      focused_preview: remove_if_owned_else_manual_review
+      boundary: external_install_only
       names: [validate_artifact.py, cursor_session_start.py, cursor_pre_tool_use.py, cursor_session_stop.py, session_start.py, session_stop.py, codex-hooks.json]
       destinations:
         - "{install_root}/hooks/{name}"
+        - "{install_root}/app/hooks/{name}"
     - vocabulary: agentera.registration
       id: agentera.registration.marketplace.cursor
+      aliases: []
+      roots: [project]
+      kind: file
+      ownership_mode: manual_review
+      ownership_evidence: no durable whole-resource ownership record for the manifest
+      focused_preview: manual_review_only
       destinations:
         - "{project}/.cursor-plugin/plugin.json"
     - vocabulary: agentera.registration
       id: agentera.registration.plugin.codex
+      aliases: []
+      roots: [home]
+      kind: file
+      ownership_mode: manual_review
+      ownership_evidence: shared configuration lacks key-level ownership evidence
+      focused_preview: manual_review_only
       destinations:
         - "{home}/.codex/config.toml"
       contains: '[plugins."agentera@agentera"]'
     - vocabulary: agentera.registration
       id: agentera.registration.restorer.codex
+      aliases: []
+      roots: [home]
+      kind: file
+      ownership_mode: manual_review
+      ownership_evidence: shared configuration lacks key-level ownership evidence
+      focused_preview: manual_review_only
       destinations:
         - "{home}/.codex/config.toml"
       contains: AGENTERA_HOME
+directory_inventory:
+  removal: non_recursive_deepest_first
+  resources:
+    - id: copilot.hooks-directory.project
+      aliases: []
+      root: project
+      destination: "{project}/.github/hooks"
+      kind: directory
+      ownership_mode: declared_empty_directory
+      postcondition: remove_if_empty_after_declared_leaf_cleanup_else_preserve
+    - id: cursor.agents-directory.project
+      aliases: []
+      root: project
+      destination: "{project}/.cursor/agents"
+      kind: directory
+      ownership_mode: declared_empty_directory
+      postcondition: remove_if_empty_after_declared_leaf_cleanup_else_preserve
+    - id: cursor.agents-directory.home
+      aliases: []
+      root: home
+      destination: "{home}/.cursor/agents"
+      kind: directory
+      ownership_mode: declared_empty_directory
+      postcondition: remove_if_empty_after_declared_leaf_cleanup_else_preserve
+    - id: opencode.agents-directory.configured
+      aliases: []
+      root: opencode_config
+      destination: "{opencode_config}/agents"
+      kind: directory
+      ownership_mode: declared_empty_directory
+      postcondition: remove_if_empty_after_declared_leaf_cleanup_else_preserve
+    - id: opencode.agents-directory.default
+      aliases: []
+      root: home
+      destination: "{home}/.config/opencode/agents"
+      kind: directory
+      ownership_mode: declared_empty_directory
+      postcondition: remove_if_empty_after_declared_leaf_cleanup_else_preserve
+    - id: project.claude-plugin-directory
+      aliases: []
+      root: project
+      destination: "{project}/.claude-plugin"
+      kind: directory
+      ownership_mode: declared_empty_directory
+      postcondition: remove_if_empty_else_preserve
+    - id: project.cursor-plugin-directory
+      aliases: []
+      root: project
+      destination: "{project}/.cursor-plugin"
+      kind: directory
+      ownership_mode: declared_empty_directory
+      postcondition: remove_if_empty_else_preserve
 resources:
   - id: claude.agentera-skill-link
     vocabulary: claude.skill-link
@@ -302,12 +511,12 @@ resources:
     kind: file
     intent: remove
     destination: "{home}/.codex/agents/{descriptor}.toml"
-    descriptors: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate]
+    descriptors: [status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate, dokumentera, hej, inspektera, inspirera, optimera, orkestrera, planera, profilera, realisera, resonera, visionera, visualisera]
     historical_ids:
       - codex.agents.{descriptor}
     ledger_status: managed
-    durable_proof: matching whole-resource ledger identity and fingerprint for each declared descriptor file
-    safety_note: Each descriptor is an independently owned file. A managed marker, descriptor name, or matching content never establishes ownership.
+    durable_proof: the canonical migration-only marker rule for each exact declared regular descriptor file
+    safety_note: Each descriptor is independently removable only when its exact declared regular file has the canonical first-line Codex marker. Missing, misplaced, malformed, non-regular, or undeclared cases remain preserved.
 configuration_inventory:
   - id: codex.config.shell_environment_policy.set.AGENTERA_HOME
     host: codex

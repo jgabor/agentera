@@ -1,0 +1,37 @@
+id: ianhlyufws
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-30
+    status: complete
+    reviewed: 2026-08-30
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    revised: Split inventory from apply, bounded directory pruning, required local package verification, and named primary-agent cleanup explicitly.
+    title: "Plan: Retire External Runtime Integrations"
+  what: Complete the v3 cleanup contract so full upgrade and targeted cleanup consistently discover, preview, and retire every eligible external Agentera integration leaf, then prune declared directories left empty.
+  why: Decision vawlbdsquq revision edtmuhfopx makes the shared skill plus CLI the sole permanent integration. Current split cleanup strands diagnostic-only resources, Swedish Codex descriptors, alternate OpenCode roots, primary native agents, and empty repository scaffolding tracked by TODO zylyajhugj.
+  constraints: Preserve user-owned and ambiguous resources; keep dry-run mutation-free; bind apply to explicit approval; permit the managed-marker exception only for the closed pre-ledger migration set; never mutate shared configuration without key-level proof; never recursively remove host data; preserve stable v2, product-v1 reset, unrelated work, and the 3.0.0 version ceiling; do not publish or push.
+  overall_acceptance: GIVEN owned, absent, ambiguous, unsafe, and user-owned retired resources across declared roots WHEN preview and approved cleanup run THEN exact effects are observable, only eligible leaves and empty declared directories are removed, retries converge, and the packaged CLI matches source behavior.
+  scope:
+    included:
+      - Canonical inventory and targeted selectors for every retired external Agentera integration leaf.
+      - OpenCode and Cursor primary agents, including ~/.config/opencode/agents/agentera.md and declared Cursor equivalents.
+      - Capability agents, hooks, manifests, commands, plugins, stale skill links, registrations, and the Claude skill link.
+      - Default and explicitly configured OpenCode roots plus declared Codex, Cursor, Claude, project, home, and install roots.
+      - Aggregate preview and apply, declared empty-directory pruning, diagnostics, guidance, package parity, and state closeout.
+    excluded:
+      - Recursive deletion of runtime namespaces or user data under .claude, .cursor, .codex, or .config/opencode.
+      - Shared-configuration mutation without durable key-level ownership evidence.
+      - Historical files confined to a replaced package or managed app.
+      - Product-v1 reset behavior and stable-v2 distribution behavior.
+      - Publication, pushing, or any version beyond 3.0.0.
+    deferred:
+      []
+  design: Drive diagnosis, targeted preview, aggregate preview, approved apply, empty-directory pruning, and replay from one declared retirement inventory. Classify ownership before apply, execute independent resource outcomes without letting ambiguous collisions block proven removals, then prune only declared directories that the approved operation leaves empty.
+  unknowns:
+    - question: Which diagnostic-only external resources have sufficient historical evidence for automatic removal rather than manual review?
+      affects_task: 2
+      resolve_by: Task 1 classifies each resource from bounded installer records, exact markers, and fingerprints; Task 2 removes only classes satisfying the approved ownership rule.
+  surprises:
+    []
