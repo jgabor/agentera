@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   isRetainedReferenceSourceCheckout,
@@ -96,6 +96,25 @@ describe("retained reference authority", () => {
     const { root } = fixture();
     expect(isRetainedReferenceSourceCheckout(root)).toBe(true);
     expect(validateRetainedReferenceAuthority(root)).toEqual([]);
+  });
+
+  it("analyzes reachable modules once per validation invocation", () => {
+    const { root } = fixture();
+    const entrypoint = path.join(root, "packages/cli/src/bin/agentera.ts");
+    const readFileSync = vi.spyOn(fs, "readFileSync");
+
+    expect(validateRetainedReferenceAuthority(root)).toEqual([]);
+    expect(readFileSync.mock.calls.filter(([file]) => file === entrypoint)).toHaveLength(2);
+  });
+
+  it("rebuilds reachability analysis for each validation invocation", () => {
+    const { root } = fixture();
+    expect(validateRetainedReferenceAuthority(root)).toEqual([]);
+
+    write(root, "packages/cli/src/bin/agentera.ts", "\n");
+    expect(validateRetainedReferenceAuthority(root)).toContain(
+      "references/current.yaml: consumers[0].symbol is not reachable from a production CLI or package-script entrypoint",
+    );
   });
 
   it("rejects a current reference supported only by a test module", () => {

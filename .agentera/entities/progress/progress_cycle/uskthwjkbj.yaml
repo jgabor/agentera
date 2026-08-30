@@ -1,0 +1,14 @@
+id: uskthwjkbj
+artifact: progress
+record:
+  timestamp: 2026-08-30 23:01
+  type: refactor
+  phase: build
+  what: Reused retained-reference reachability and parsed-module analysis within each validation invocation.
+  context:
+    intent: Complete plan task kozmasfkdb without beginning worker-policy tasks.
+    constraints: Keep analysis invocation-local and preserve outcomes and diagnostic text.
+    scope: Retained-reference validator analysis reuse and regression coverage.
+  verified: Focused CLI test medians fell from 8.80s (9.15, 8.80, 8.79) to 6.45s (6.16, 6.74, 6.45); retained-reference and CLI validator tests passed 54/54, and typecheck passed.
+  next: Revalidate the separate worker-policy decision using the optimized validator.
+  publication_order: 275

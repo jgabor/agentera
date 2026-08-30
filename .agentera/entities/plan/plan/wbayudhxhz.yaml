@@ -1,0 +1,34 @@
+id: wbayudhxhz
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-08-30
+    status: open
+    reviewed: 2026-08-30
+    critic_issues: 4 found, 4 addressed, 0 dismissed
+    title: "Plan: Accelerate Source Verification"
+  what: Reduce source-suite wall time by reusing retained-reference analysis within each validation invocation and exposing an explicitly selected eight-worker policy for the current measured local runner.
+  why: The four-worker source suite takes about four minutes, while measured eight-worker execution and repeated retained-reference analysis show two concrete opportunities to shorten feedback without weakening coverage.
+  constraints: Preserve retained-reference outcomes and diagnostics; retain the three slow end-to-end tests; keep ordinary unmeasured source runs and verify-changes at four workers; preserve invocation-specific overrides and specialized-owner isolation; do not auto-detect hardware or generalize local measurements to CI.
+  overall_acceptance: GIVEN the plan is complete WHEN source verification runs THEN retained-reference behavior remains unchanged, repeated graph analysis is eliminated, the explicit measured-local command is repeatably at least 20 percent faster, and default and CI concurrency remain unchanged.
+  scope:
+    included:
+      - Invocation-local reuse of retained-reference reachability and parsing.
+      - A current-runtime explicit local eight-worker command and policy.
+      - Focused regression coverage and repeatable timing evidence.
+    excluded:
+      - Increasing CI worker counts.
+      - Changing performance or capacity owner isolation.
+      - Removing or weakening existing tests.
+      - Unrelated validator cleanup.
+    deferred:
+      - Automatic hardware detection.
+      - Any CI worker policy change before separate runner-specific measurement.
+  design: First eliminate repeated immutable analysis within one validation call while preserving fresh reads between calls. Then benchmark the final suite under conservative and measured-local worker policies, activating the local policy only if its advantage repeats. Finish by synchronizing project state and verification evidence.
+  unknowns:
+    - question: Will eight workers still reduce median wall time by at least 20 percent after the validator optimization on the current Node 24 and 16-logical-CPU runner?
+      affects_task: 2
+      resolve_by: Compare three serial full-suite runs at four workers with three at eight workers after task 1; activate the policy only if every run passes and the threshold holds.
+  surprises:
+    []

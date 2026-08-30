@@ -1,0 +1,24 @@
+id: kozmasfkdb
+artifact: plan
+record:
+  name: Reuse retained-reference analysis per invocation
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN fixed source and runner conditions WHEN three pre-change focused runs complete THEN their median establishes the retained-reference timing baseline.
+    - GIVEN existing valid and invalid fixtures WHEN the optimized validator runs THEN outcomes and diagnostic text remain unchanged.
+    - GIVEN an inventory with multiple consumers WHEN one validation invocation runs THEN common reachability and parsed-module work occurs once for that invocation rather than once per consumer.
+    - GIVEN source bytes change between separate validation calls WHEN the second call runs THEN its result reflects the changed bytes without stale cached analysis.
+    - GIVEN the baseline and unchanged runner conditions WHEN three post-change focused runs complete THEN their median is materially lower than the pre-change median.
+  plan: wbayudhxhz
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: optimize-build-1
+      source: Focused CLI medians 8.80s to 6.45s; validator and CLI tests 54/54; typecheck passed
+      recorded_at: 2026-08-30 23:01
+      writer_command: agentera state plan record-evaluation

@@ -20,6 +20,11 @@ const READER_CALLS = [
 
 type Mapping = Record<string, unknown>;
 type ImportedSymbol = { module: string; symbol: string };
+type ReachabilityAnalysis = Map<string, {
+  source: string;
+  functions: Map<string, FunctionDeclaration>;
+  imports: Map<string, ImportedSymbol>;
+}>;
 
 function mapping(value: unknown): Mapping | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -539,14 +544,9 @@ function topLevelExecutionSource(source: string, declarations: FunctionDeclarati
   return characters.join("");
 }
 
-function symbolIsReachable(root: string, modulePath: string, symbol: string): boolean {
+function analyzeReachability(root: string): ReachabilityAnalysis {
   const reachable = reachableProductionModules(root);
-  if (!reachable.has(modulePath)) return false;
-  const modules = new Map<string, {
-    source: string;
-    functions: Map<string, FunctionDeclaration>;
-    imports: Map<string, ImportedSymbol>;
-  }>();
+  const modules: ReachabilityAnalysis = new Map();
   for (const candidate of reachable) {
     const absolute = regularContainedFile(root, candidate);
     if (!absolute) continue;
@@ -558,6 +558,10 @@ function symbolIsReachable(root: string, modulePath: string, symbol: string): bo
       imports: importedSymbols(root, candidate, source),
     });
   }
+  return modules;
+}
+
+function symbolIsReachable(modules: ReachabilityAnalysis, modulePath: string, symbol: string): boolean {
   const target = modules.get(modulePath);
   if (!target) return false;
   // A reachable module executes non-function declarations while loading.
@@ -640,6 +644,7 @@ function listLiveFiles(root: string, relative: string, errors: string[]): string
 
 function validateProductionParticipant(
   root: string,
+  reachability: () => ReachabilityAnalysis,
   referencePath: string,
   label: string,
   raw: unknown,
@@ -683,7 +688,7 @@ function validateProductionParticipant(
   if (!hasExactReadOrParse(fragments, referencePath)) {
     errors.push(`${referencePath}: ${label} must read or parse the exact reference; unrelated reads and emitted strings do not count`);
   }
-  if (!symbolIsReachable(root, modulePath, symbol)) {
+  if (!symbolIsReachable(reachability(), modulePath, symbol)) {
     errors.push(`${referencePath}: ${label}.symbol is not reachable from a production CLI or package-script entrypoint`);
   }
   return errors;
@@ -791,6 +796,8 @@ export function validateRetainedReferenceAuthority(root: string = resolveSourceR
   }
 
   const errors: string[] = [];
+  let reachabilityAnalysis: ReachabilityAnalysis | undefined;
+  const reachability = (): ReachabilityAnalysis => reachabilityAnalysis ??= analyzeReachability(resolvedRoot);
   if (authority.schema_version !== "agentera.retainedReferenceAuthority.v1") {
     errors.push(`${AUTHORITY_RELATIVE_PATH}: unsupported schema_version`);
   }
@@ -853,12 +860,12 @@ export function validateRetainedReferenceAuthority(root: string = resolveSourceR
       if (classification === "migration-only" && !/^references\/(?:adapters|cli)\//u.test(referencePath)) {
         errors.push(`${referencePath}: migration-only references must remain in references/adapters or references/cli`);
       }
-      errors.push(...validateProductionParticipant(resolvedRoot, referencePath, "production_owner", entry.production_owner, false));
+      errors.push(...validateProductionParticipant(resolvedRoot, reachability, referencePath, "production_owner", entry.production_owner, false));
       if (!Array.isArray(entry.consumers) || entry.consumers.length === 0) {
         errors.push(`${referencePath}: ${classification} references require a runtime or validator consumer`);
       } else {
         for (const [index, consumer] of entry.consumers.entries()) {
-          errors.push(...validateProductionParticipant(resolvedRoot, referencePath, `consumers[${index}]`, consumer, true));
+          errors.push(...validateProductionParticipant(resolvedRoot, reachability, referencePath, `consumers[${index}]`, consumer, true));
         }
       }
     } else if (classification === "runbook") {

@@ -1,0 +1,13 @@
+id: hywnwpdiww
+artifact: plan
+record:
+  name: Revalidate the eight-worker decision
+  depends_on:
+    - kozmasfkdb
+  status: pending
+  acceptance:
+    - GIVEN task 1 is complete WHEN three serial four-worker runs and three serial eight-worker runs execute on Node 24.19.0 and the current 16-logical-CPU runner THEN every run passes without retries, timeouts, or shared-output failures.
+    - GIVEN both timing samples WHEN their medians are compared THEN the eight-worker median is at least 20 percent lower.
+    - GIVEN the benchmark completes WHEN evidence is retained THEN it records runner identity, runtime, suite counts, and every measured wall time.
+    - GIVEN the performance or reliability gate fails WHEN task 2 concludes THEN four workers remain authoritative, the result is recorded, and activation stops pending replanning.
+  plan: wbayudhxhz

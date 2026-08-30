@@ -1,0 +1,13 @@
+id: cphoikgzll
+artifact: plan
+record:
+  name: Expose the measured local command
+  depends_on:
+    - hywnwpdiww
+  status: pending
+  acceptance:
+    - GIVEN task 2 passes WHEN `pnpm -C packages/cli run test:source:local` runs THEN it explicitly selects eight workers through the current Node 24 and 16-logical-CPU policy.
+    - GIVEN plain test, ordinary source-test, or unmeasured verify-changes execution WHEN worker policy resolves THEN it continues to select four workers.
+    - GIVEN an explicit or invocation-specific worker override WHEN source verification runs THEN that override retains precedence.
+    - GIVEN the current policy replaces the stale Node 22 policy WHEN policy behavior is tested THEN selected, fallback, command, and override cases pass without redundant coverage.
+  plan: wbayudhxhz

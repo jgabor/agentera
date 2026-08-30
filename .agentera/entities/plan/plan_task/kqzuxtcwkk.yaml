@@ -1,0 +1,15 @@
+id: kqzuxtcwkk
+artifact: plan
+record:
+  name: Synchronize final state and evidence
+  depends_on:
+    - kozmasfkdb
+    - hywnwpdiww
+    - cphoikgzll
+  status: pending
+  acceptance:
+    - GIVEN the implementation is complete WHEN focused validator and worker-policy checks run THEN they pass.
+    - GIVEN focused checks pass WHEN typecheck, build, default source verification, measured-local source verification, and compact state validation run THEN every required check passes.
+    - GIVEN the final source breakdown WHEN inventory and timing are reviewed THEN no existing test was removed and only intended test additions affect counts.
+    - GIVEN actual timings and implementation surprises WHEN project state is synchronized THEN typed plan and progress records contain the current evidence.
+  plan: wbayudhxhz
