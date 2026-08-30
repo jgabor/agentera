@@ -1,0 +1,14 @@
+id: hswuhshyfh
+artifact: progress
+record:
+  timestamp: 2026-08-30 23:07
+  type: chore
+  phase: audit
+  what: Retained fixed-condition timing evidence for retained-reference analysis reuse.
+  context:
+    intent: Correct only the auditability gap in retained timing evidence.
+    constraints: Do not change validator behavior, record another verdict, complete the task, or begin later tasks.
+    scope: Timing command, source, runtime, runner, policy, samples, and arithmetic metadata.
+  verified: "Retained session evidence, not a rerun. Exact command from repository root for each serial sample: TIMEFORMAT='ELAPSED %R'; pnpm -C packages/cli exec vp test run test/cli/validate.test.ts -t 'validates the retained-reference inventory through the delegated CLI family' --maxWorkers=1. Pre source identity: Git tree abb022b4db15b330ae4455a183cccf99e5ec7dd0; validator blob 20c518af32872aa97b86055ada3e2b21b5801741. Post source identity: Git tree 7fc897ff7865df396bcb5d2ca537fd795c19c21f; validator blob 8610797207e36d06e57ba4188e448bf8c2e72178. Runtime and runner: Node v24.19.0, pnpm 10.30.3, Linux 7.2.2-1-cachyos x86_64, AMD Ryzen 7 9800X3D 8-Core Processor, 8 physical cores/16 logical CPUs (nproc 16). Policy/conditions: same checkout and host, runs serial with no competing benchmark command, one Vitest worker selected explicitly by --maxWorkers=1, same named real repository CLI validation test. Retained Vitest test-duration outputs: pre 9.15s, 8.80s, 8.79s, median 8.80s; post 6.16s, 6.74s, 6.45s, median 6.45s; post median is 2.35s or 26.7% lower. Retained shell wall outputs: pre 11.783s, 11.410s, 11.251s, median 11.410s; post 8.868s, 10.338s, 9.884s, median 9.884s, 13.4% lower."
+  next: Orchestrator re-audits criteria 1 and 5; task remains in_progress.
+  publication_order: 276

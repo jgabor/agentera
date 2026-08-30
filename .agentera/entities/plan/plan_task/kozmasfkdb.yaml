@@ -4,7 +4,7 @@ record:
   name: Reuse retained-reference analysis per invocation
   depends_on:
     []
-  status: complete
+  status: in_progress
   acceptance:
     - GIVEN fixed source and runner conditions WHEN three pre-change focused runs complete THEN their median establishes the retained-reference timing baseline.
     - GIVEN existing valid and invalid fixtures WHEN the optimized validator runs THEN outcomes and diagnostic text remain unchanged.
@@ -13,12 +13,12 @@ record:
     - GIVEN the baseline and unchanged runner conditions WHEN three post-change focused runs complete THEN their median is materially lower than the pre-change median.
   plan: wbayudhxhz
   evaluation:
-    attempt_count: 1
-    failure_count: 0
-    last_verdict: pass
-    last_failure_evidence: null
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Timing evidence omitted the command, source identity, runtime, runner identity, and retained outputs needed to prove fixed pre/post conditions.
     provenance:
-      attempt_id: optimize-build-1
-      source: Focused CLI medians 8.80s to 6.45s; validator and CLI tests 54/54; typecheck passed
-      recorded_at: 2026-08-30 23:01
+      attempt_id: orchestrate-audit-1
+      source: Independent task audit
+      recorded_at: 2026-08-30 23:06
       writer_command: agentera state plan record-evaluation
