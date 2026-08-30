@@ -1,0 +1,27 @@
+id: alzkgldwls
+artifact: health
+record:
+  date: 2026-08-30
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: source-verification optimization artifacts and evidence are current."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-task closure for plan wbayudhxhz, not a codebase-wide audit. All four tasks have persisted PASS evaluations; delegated validator, regression-test, worker-policy, command, plan, and progress artifacts were updated on or after the plan creation date. Final focused checks, typecheck, build, compact, default source verification, and measured-local source verification passed with matching inventories. Closure Audit verdict PASS and the checkout was clean.
+      findings:
+        []
+  trends:
+    improved: Retained-reference analysis is reused within each invocation, and the measured local source command reduces median wall time while preserving conservative defaults.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: Repeated per-consumer graph analysis and the stale measured-local Node 22 policy are resolved.
+    carried_forward: Decision detail remains deferred, degraded, and compacted; vision detail remains deferred; profile grounding remains valid but stale.
+  appended_at: 2026-08-30T21:54:26.363Z
