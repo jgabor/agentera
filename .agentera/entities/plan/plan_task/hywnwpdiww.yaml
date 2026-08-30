@@ -4,10 +4,20 @@ record:
   name: Revalidate the eight-worker decision
   depends_on:
     - kozmasfkdb
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN task 1 is complete WHEN three serial four-worker runs and three serial eight-worker runs execute on Node 24.19.0 and the current 16-logical-CPU runner THEN every run passes without retries, timeouts, or shared-output failures.
     - GIVEN both timing samples WHEN their medians are compared THEN the eight-worker median is at least 20 percent lower.
     - GIVEN the benchmark completes WHEN evidence is retained THEN it records runner identity, runtime, suite counts, and every measured wall time.
     - GIVEN the performance or reliability gate fails WHEN task 2 concludes THEN four workers remain authoritative, the result is recorded, and activation stops pending replanning.
   plan: wbayudhxhz
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-audit-1
+      source: Independent audit confirmed six clean serial runs, retained runner and source identity, and a 35.397 percent shell median reduction with no activation changes.
+      recorded_at: 2026-08-30 23:32
+      writer_command: agentera state plan record-evaluation
