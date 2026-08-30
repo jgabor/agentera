@@ -6,7 +6,7 @@ record:
     - kozmasfkdb
     - hywnwpdiww
     - cphoikgzll
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the implementation is complete WHEN focused validator and worker-policy checks run THEN they pass.
     - GIVEN focused checks pass WHEN typecheck, build, default source verification, measured-local source verification, and compact state validation run THEN every required check passes.
