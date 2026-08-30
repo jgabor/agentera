@@ -1,0 +1,14 @@
+id: mvgdivaxts
+artifact: progress
+record:
+  timestamp: 2026-08-30 23:34
+  type: feat
+  phase: build
+  what: Exposed an opt-in local source-test command for the measured Node 24 and 16-logical-CPU worker policy.
+  context:
+    intent: Complete plan task cphoikgzll without changing ordinary or CI worker defaults.
+    constraints: Keep unmeasured execution at four workers and preserve explicit and invocation-specific overrides.
+    scope: Source-test command wiring and worker-policy selection.
+  verified: pnpm -C packages/cli run test:source:local -- test/config/vitestShared.test.ts test/release/routineCiOwnership.test.ts passed 14/14 tests across 2 files and exercised the named eight-worker policy; pnpm -C packages/cli run typecheck passed. Focused coverage confirms the local command selects the Node 24/16-logical-CPU policy at eight workers, unmeasured and GitHub execution remain at four, and VITEST_MAX_WORKERS retains precedence.
+  next: Leave task cphoikgzll in_progress for orchestrator audit and resolution; task 4 owns plan-wide synchronization.
+  publication_order: 278

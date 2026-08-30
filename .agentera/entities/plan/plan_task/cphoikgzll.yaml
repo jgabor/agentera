@@ -4,7 +4,7 @@ record:
   name: Expose the measured local command
   depends_on:
     - hywnwpdiww
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN task 2 passes WHEN `pnpm -C packages/cli run test:source:local` runs THEN it explicitly selects eight workers through the current Node 24 and 16-logical-CPU policy.
     - GIVEN plain test, ordinary source-test, or unmeasured verify-changes execution WHEN worker policy resolves THEN it continues to select four workers.

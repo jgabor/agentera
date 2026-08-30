@@ -33,6 +33,7 @@
     "prepack": "node scripts/reject-direct-prepack.mjs",
     "test": "pnpm run test:source",
     "test:source": "node scripts/verify-lane.mjs source",
+    "test:source:local": "AGENTERA_VITEST_RUNNER_POLICY=local-16-logical-cpu-node24 node scripts/verify-lane.mjs source",
     "test:stress": "node scripts/verify-lane.mjs stress",
     "test:performance": "node scripts/verify-lane.mjs performance",
     "test:performance:integration": "node test/integration/performanceOwner.integration.mjs",

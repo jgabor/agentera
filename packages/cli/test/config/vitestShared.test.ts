@@ -20,6 +20,13 @@ describe("source worker policy", () => {
     });
   });
 
+  it("wires the local source command to the measured runner policy", () => {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
+    expect(packageJson.scripts["test:source:local"]).toBe(
+      `AGENTERA_VITEST_RUNNER_POLICY=${MEASURED_LOCAL_WORKER_POLICY} node scripts/verify-lane.mjs source`,
+    );
+  });
+
   it("keeps unmeasured runners at the conservative fallback", () => {
     expect(workerPolicyFor({})).toEqual({ name: UNMEASURED_WORKER_POLICY, workers: 4 });
     expect(workerPolicyFor({ AGENTERA_VITEST_RUNNER_POLICY: "unknown-runner" })).toEqual({

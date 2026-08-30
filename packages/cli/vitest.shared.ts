@@ -1,6 +1,6 @@
 // The local eight-worker result is selected only by its named policy; other
 // runners remain at the unmeasured fallback. See the linked benchmark record.
-export const MEASURED_LOCAL_WORKER_POLICY = "local-16-logical-cpu-node22";
+export const MEASURED_LOCAL_WORKER_POLICY = "local-16-logical-cpu-node24";
 export const UNMEASURED_WORKER_POLICY = "unmeasured";
 
 export function workerPolicyFor(environment: NodeJS.ProcessEnv = process.env): {
