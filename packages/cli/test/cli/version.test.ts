@@ -39,11 +39,12 @@ describe("cli dispatch: --version / version command", () => {
   });
 
   it("rejects unknown arguments after --version", () => {
-    const { rc, err } = capture((io) =>
+    const { rc, out, err } = capture((io) =>
       main(["node", "agentera", "--version", "--bogus"], io),
     );
     expect(rc).toBe(2);
-    expect(err).toContain("unrecognized argument");
+    expect(err).toBe("");
+    expect(JSON.parse(out).error).toMatchObject({ class: "unrecognized_argument" });
   });
 
   it("rejects invalid --format value as JSON", () => {

@@ -79,7 +79,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const input = args.input ?? null;
   const termInput = args.termInput ?? null;
   const format = args.format ?? "text";
-  const inputErrorFormat = args.format === "json" || args.format === "yaml" ? args.format : "text";
+  const inputErrorFormat = args.format === "json" || args.format === "yaml" ? args.format : guidance ? "json" : "text";
   const rejectInput = (body: Parameters<typeof emitInvalidInput>[1]["body"]): number =>
     emitInvalidInput(io, { format: inputErrorFormat, body });
   if (input !== null && (!capability || !PRIME_INPUT_CONTEXTS.has(capability) || dashboard || guidance)) {
@@ -104,12 +104,10 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     return 2;
   }
   if (capability !== null && guidance) {
-    err("Error: prime --context and prime --guidance are mutually exclusive\n");
-    return 2;
+    return rejectInput({ class: "mutually_exclusive", message: "prime --context and prime --guidance are mutually exclusive" });
   }
   if (dashboard && guidance) {
-    err("Error: prime --dashboard/--orientation and prime --guidance are mutually exclusive\n");
-    return 2;
+    return rejectInput({ class: "mutually_exclusive", message: "prime --dashboard/--orientation and prime --guidance are mutually exclusive" });
   }
   if (dashboard && args.fields !== undefined) {
     const migrationCommand = preCutoverCommand("prime --context status --format json");

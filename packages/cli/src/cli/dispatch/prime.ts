@@ -62,6 +62,7 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
 
 export function runPrime(command: string, argv: string[], io: Io, prog: string): number {
   const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text", input: null, termInput: null };
+  const invalidInputFormat = () => argv.includes("--guidance") ? "json" as const : asEnvelopeFormat(args.format);
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
     i = n;
@@ -75,38 +76,38 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
     else if ((v = value("--context")) !== null) args.context = v;
     else if (a === "--input" && (!argv[i + 1] || argv[i + 1].startsWith("--"))) {
       return emitInvalidInput(io, {
-        format: asEnvelopeFormat(args.format),
+        format: invalidInputFormat(),
         body: { class: "missing_argument", message: "--input requires a file path or -", syntax: "--input <file|->" },
       });
     } else if ((v = value("--input")) !== null) {
       if (v.length === 0) {
         return emitInvalidInput(io, {
-          format: asEnvelopeFormat(args.format),
+          format: invalidInputFormat(),
           body: { class: "missing_argument", message: "--input requires a file path or -", syntax: "--input <file|->" },
         });
       }
       if (args.input !== null) {
         return emitInvalidInput(io, {
-          format: asEnvelopeFormat(args.format),
+          format: invalidInputFormat(),
           body: { class: "mutually_exclusive", message: "--input may only be supplied once" },
         });
       }
       args.input = v;
     } else if (a === "--term-input" && (!argv[i + 1] || argv[i + 1].startsWith("--"))) {
       return emitInvalidInput(io, {
-        format: asEnvelopeFormat(args.format),
+        format: invalidInputFormat(),
         body: { class: "missing_argument", message: "--term-input requires a file path or -", syntax: "--term-input <file|->" },
       });
     } else if ((v = value("--term-input")) !== null) {
       if (v.length === 0) {
         return emitInvalidInput(io, {
-          format: asEnvelopeFormat(args.format),
+          format: invalidInputFormat(),
           body: { class: "missing_argument", message: "--term-input requires a file path or -", syntax: "--term-input <file|->" },
         });
       }
       if (args.termInput !== null) {
         return emitInvalidInput(io, {
-          format: asEnvelopeFormat(args.format),
+          format: invalidInputFormat(),
           body: { class: "mutually_exclusive", message: "--term-input may only be supplied once" },
         });
       }
@@ -114,7 +115,7 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
     } else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json" && v !== "yaml") {
         return emitInvalidInput(io, {
-          format: asEnvelopeFormat(args.format),
+          format: invalidInputFormat(),
           body: {
             class: "invalid_choice",
             message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')`,
@@ -127,7 +128,7 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
       args.fields = v;
     } else {
       return emitInvalidInput(io, {
-        format: asEnvelopeFormat(args.format),
+        format: invalidInputFormat(),
         body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
       });
     }
@@ -137,7 +138,7 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
   } catch (exc) {
     if (exc instanceof StateRetrievalFailure) return emitStateFailure(exc, args.format, io);
     return emitInvalidInput(io, {
-      format: asEnvelopeFormat(args.format),
+      format: invalidInputFormat(),
       body: { class: "unsupported_target", message: (exc as Error).message },
     });
   }

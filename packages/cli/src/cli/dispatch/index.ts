@@ -63,7 +63,7 @@ export function main(argv: string[], io: Io = {}): number {
       return 0;
     }
     return emitInvalidInput(io, {
-      format: "text",
+      format: "json",
       body: {
         class: "unsupported_target",
         message: `unknown or not-yet-ported command: ${command}`,

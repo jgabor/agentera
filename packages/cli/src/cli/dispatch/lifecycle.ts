@@ -640,7 +640,6 @@ function resolveCliVersion(): string {
 
 export function runVersion(argv: string[], io: Io): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   let format: "text" | "json" = "text";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -661,8 +660,10 @@ export function runVersion(argv: string[], io: Io): number {
       out("usage: agentera --version [--format {text,json}]\n\nPrint the installed Agentera CLI version.\n");
       return 0;
     } else {
-      err(`agentera --version: unrecognized argument: ${a}\n`);
-      return 2;
+      return emitInvalidInput(io, {
+        format: "json",
+        body: { class: "unrecognized_argument", message: `agentera --version: unrecognized argument: ${a}` },
+      });
     }
   }
   const version = resolveCliVersion();

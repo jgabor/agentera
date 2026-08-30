@@ -4,7 +4,7 @@ record:
   name: Establish output authority and shared semantics
   depends_on:
     []
-  status: complete
+  status: in_progress
   acceptance:
     - GIVEN live routes and active producers WHEN inventoried THEN every success and error path is classified.
     - GIVEN an operational invocation WHEN its selector is omitted or JSON THEN both return equivalent JSON.
@@ -12,3 +12,13 @@ record:
     - GIVEN a text exception WHEN valid THEN it emits text; selectors or invalid combinations return JSON errors.
     - GIVEN each shared rule WHEN tested THEN it has one passing and one failing case.
   plan: nkvbedieaf
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Live producer inventory is incomplete; invalid version, help, and guidance combinations still emit plaintext errors; shared negative tests preserve the wrong behavior; the full source suite was not rerun after corrections.
+    provenance:
+      attempt_id: audit-xwxcchoypp-1
+      source: orchestrate audit evaluation for task xwxcchoypp
+      recorded_at: 2026-08-30 22:48
+      writer_command: agentera state plan record-evaluation

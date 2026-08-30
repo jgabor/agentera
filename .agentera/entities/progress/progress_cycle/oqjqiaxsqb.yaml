@@ -1,0 +1,15 @@
+id: oqjqiaxsqb
+artifact: progress
+record:
+  timestamp: 2026-08-30 23:09
+  type: fix
+  phase: build
+  what: Corrected shared output authority after the failed xwxcchoypp evaluation.
+  context:
+    intent: Make the live route and producer inventory complete and make invalid text-exception invocations return bounded JSON.
+    constraints: Preserve payload schemas, exit codes, effects, bounds, and later command-family tasks; keep xwxcchoypp in progress for evaluation.
+    scope: Shared output inventory, bare/help/version/guidance exception errors, and acceptance regressions.
+  discovered: The live dispatch boundary has 27 dispatcher commands plus the operational version route, five text-exception routes, and two error-only boundaries. The prior four-label table did not bind those routes to their direct producers.
+  verified: Targeted source run passed 6 files and 311 tests, including valid and invalid bare, help, version, guidance, operational-selector, and producer-inventory cases. Final full source run passed 256 files, 4236 tests, with 2 skipped. Typecheck and build passed. Built-CLI assertions proved schema omitted/JSON parity, text/YAML invalid-choice errors, bounded JSON for invalid bare/help/version/guidance calls, and text-only valid exceptions. Capability contract passed 3/3 checks; compact passed with no over-limit or formatting findings.
+  next: Keep task xwxcchoypp in progress until the orchestrator records the next evaluator verdict.
+  publication_order: 276

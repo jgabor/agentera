@@ -205,10 +205,13 @@ describe("cli help", () => {
   });
 
   it("rejects help for unknown commands", () => {
-    const { rc, err } = capture((io) => main(["node", "agentera", "bogus", "--help"], io));
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "bogus", "--help"], io));
     expect(rc).toBe(2);
-    expect(err).toContain("What happened:");
-    expect(err).toContain("unknown or not-yet-ported command: bogus");
+    expect(err).toBe("");
+    expect(JSON.parse(out).error).toMatchObject({
+      class: "unsupported_target",
+      message: "unknown or not-yet-ported command: bogus",
+    });
   });
 
   it("routes report --help through main with runtime deselection flags", () => {
