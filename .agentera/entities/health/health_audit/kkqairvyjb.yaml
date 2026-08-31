@@ -1,0 +1,27 @@
+id: kkqairvyjb
+artifact: health
+record:
+  date: 2026-08-31
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: terminal closure evidence and expected Build-owned artifacts are current."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal-open closure for plan nkvbedieaf, not a codebase-wide audit. All ten tasks are terminal with persisted PASS on completed and replacement tasks. TODO, changelog, progress, and plan artifacts are fresh relative to plan creation. Current prime, source, type, build, capability, compact, package, dry-run, inventory, and parity evidence passed.
+      findings:
+        []
+  trends:
+    improved: Operational commands now default to bounded JSON across active source, bundled, and extracted-package surfaces while approved text exceptions remain.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: No expected delegated artifact is stale; temporary blocked tasks were replaced by complete tasks with latest PASS evaluations.
+    carried_forward: Decision and vision detail remain deferred; profile-derived state remains stale and was not refreshed; decision satisfaction was not assessed; changes remain local and unpushed.
+  appended_at: 2026-08-31T08:27:59.550Z
