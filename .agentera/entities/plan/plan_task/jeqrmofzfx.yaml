@@ -4,7 +4,7 @@ record:
   name: Convert check surfaces
   depends_on:
     - xwxcchoypp
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN lint, compact, validate, verify, durability, or related aliases WHEN invoked without a selector THEN existing JSON and exit codes remain authoritative.
     - GIVEN the compact hook WHEN it runs THEN it remains non-interactive and relies only on the exit result.

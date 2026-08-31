@@ -1,0 +1,15 @@
+id: yzpvhbglpu
+artifact: progress
+record:
+  timestamp: 2026-08-31 06:57
+  type: feat
+  phase: build
+  what: Converted check lint, compact, validate, verify, durability, and aliases to default to bounded JSON.
+  context:
+    intent: Make check surfaces JSON-only without changing payloads, exit codes, effects, bounds, or hook behavior.
+    constraints: No lifecycle replacement, active guidance migration, final closeout, push, or publication.
+    unknowns: No active check consumer required text or YAML output; the compact hook relies on exit status.
+    scope: Check lint, compact and fix, validate, verify, durability, and direct check aliases/errors.
+  verified: Targeted tests passed 103 tests. Full source tests passed 257 files and 4,255 tests with 2 skipped. Typecheck, build, local changed-CLI success and failure checks, capability contract, compact, and package verification passed.
+  next: Orchestrate evaluation must decide task completion; task jeqrmofzfx remains in_progress.
+  publication_order: 281

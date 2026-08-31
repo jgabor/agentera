@@ -11,18 +11,8 @@ import {
 } from "../../state/durability.js";
 import { entityArtifactValues } from "../../state/entityStorage.js";
 
-export function requestedDurabilityFormat(argv: string[]): "text" | "json" | "yaml" {
-  for (let index = 0; index < argv.length; index += 1) {
-    if (argv[index] === "--format") {
-      const value = argv[index + 1];
-      if (value === "json" || value === "yaml") return value;
-    }
-    if (argv[index].startsWith("--format=")) {
-      const value = argv[index].slice("--format=".length);
-      if (value === "json" || value === "yaml") return value;
-    }
-  }
-  return "text";
+export function requestedDurabilityFormat(_argv: string[]): "text" | "json" | "yaml" {
+  return "json";
 }
 
 export function validateDurabilityArgs(args: DurabilityArgs, sourceRoot: string): void {

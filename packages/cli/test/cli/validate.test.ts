@@ -275,11 +275,17 @@ describe("cli dispatch: validate routing", () => {
     expect(rc).toBe(0);
   });
 
-  it("emits a deprecation alias for top-level validate", () => {
-    const { err } = capture((io) => main(["node", "agentera", "validate", "cross-capability"], io));
-    expect(err).toContain(
-      "Deprecation: agentera validate is deprecated; use agentera check validate",
-    );
+  it("keeps the top-level validate alias JSON-only", () => {
+    const { out, err } = capture((io) => main(["node", "agentera", "validate", "cross-capability"], io));
+    expect(JSON.parse(out).status).toBe("pass");
+    expect(err).toBe("");
+  });
+
+  it("rejects text output with a JSON error", () => {
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "check", "validate", "cross-capability", "--format", "text"], io));
+    expect(rc).toBe(2);
+    expect(JSON.parse(out).error.valid_values).toEqual(["json"]);
+    expect(err).toBe("");
   });
 
   it("requires a family", () => {

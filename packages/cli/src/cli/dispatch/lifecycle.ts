@@ -41,7 +41,7 @@ export function runGate(argv: string[], io: Io, prog: string): number {
   const parsed = parseCompactArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
-      format: detectTopLevelFormat(argv),
+      format: "json",
       body: classifyParseError(parsed.error),
     });
   }
@@ -388,7 +388,7 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
   const args: VerifyArgs = {
     family: null,
     target: null,
-    format: "text",
+    format: "json",
     run: false,
     dryRun: false,
     skill: null,
@@ -406,13 +406,13 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
     const a = argv[i];
     let v: string | null;
     if ((v = value("--format")) !== null) {
-      if (v !== "text" && v !== "json") {
+      if (v !== "json") {
         return emitInvalidInput(io, {
           format: asEnvelopeFormat(args.format),
           body: {
             class: "invalid_choice",
-            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
-            valid_values: ["text", "json"],
+            message: `argument --format: invalid choice: '${v}' (choose from 'json')`,
+            valid_values: ["json"],
           },
         });
       }
@@ -425,7 +425,7 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
     else if (a === "--dry-run") args.dryRun = true;
     else if (a.startsWith("--")) {
       return emitInvalidInput(io, {
-        format: detectTopLevelFormat(argv),
+        format: "json",
         body: { class: "unrecognized_argument", message: `unrecognized arguments: ${a}` },
       });
     } else {

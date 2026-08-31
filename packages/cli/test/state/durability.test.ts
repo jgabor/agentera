@@ -103,7 +103,7 @@ describe("read-only entity and Git durability", () => {
     const target = writeEntity(root);
     const before = fs.readFileSync(target);
     let out = "";
-    const rc = main(["node", "agentera", "check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa", "--format", "json"], { out: (text) => out += text });
+    const rc = main(["node", "agentera", "check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa"], { out: (text) => out += text });
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload).toMatchObject({ read_only: true, remote_contact: false, entries: [{ id: "aaaaaaaaaa", artifact: "progress", retrieval: { get: "agentera state progress get --id aaaaaaaaaa --format json" } }] });
@@ -112,6 +112,20 @@ describe("read-only entity and Git durability", () => {
     out = "";
     expect(main(["node", "agentera", "check", "durability", "--project", root, "--artifact", "progress", "--number", "1", "--format", "json"], { out: (text) => out += text })).toBe(2);
     expect(JSON.parse(out).error).toMatchObject({ artifact: "progress" });
+  });
+
+  it("rejects non-JSON output selectors", () => {
+    const root = nonGitProject();
+    writeEntity(root);
+    let out = "";
+    let err = "";
+    const rc = main(["node", "agentera", "check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa", "--format", "yaml"], {
+      out: (text) => (out += text),
+      err: (text) => (err += text),
+    });
+    expect(rc).toBe(2);
+    expect(JSON.parse(out).error.valid_values).toEqual(["json"]);
+    expect(err).toBe("");
   });
 
   it("reports committed, dirty, and locally missing entity recovery through Git", () => {

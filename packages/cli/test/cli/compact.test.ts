@@ -66,14 +66,15 @@ describe("cli compact", () => {
   it("validates --mode in the dispatcher", () => {
     const { rc, out, err } = capture((io) => main(["node", "agentera", "compact", "--mode", "bogus"], io));
     expect(rc).toBe(2);
-    expect(err).toContain("Deprecation:");
+    expect(err).toBe("");
     expect(JSON.parse(out).error.message).toContain("argument --mode: invalid choice");
   });
 
-  it("emits a deprecation alias for top-level compact", () => {
+  it("keeps the top-level compact alias JSON-only", () => {
     activate();
-    const { err } = capture((io) => main(["node", "agentera", "compact", "--project", tmp], io));
-    expect(err).toContain("Deprecation: agentera compact is deprecated; use agentera check compact");
+    const { out, err } = capture((io) => main(["node", "agentera", "compact", "--project", tmp], io));
+    expect(JSON.parse(out).status).toBe("pass");
+    expect(err).toBe("");
   });
 });
 
@@ -97,6 +98,14 @@ describe("cli check compact", () => {
     const payload = JSON.parse(fix.out);
     expect(payload.command).toBe("check compact");
     expect(payload.summary.mode).toBe("fix");
+  });
+
+  it("rejects text output before a fix can run", () => {
+    activate();
+    const result = capture((io) => main(["node", "agentera", "check", "compact", "--mode", "fix", "--project", tmp, "--format", "text"], io));
+    expect(result.rc).toBe(2);
+    expect(JSON.parse(result.out).error.valid_values).toEqual(["json"]);
+    expect(result.err).toBe("");
   });
 });
 

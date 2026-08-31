@@ -8,6 +8,7 @@ import {
 import { evaluateHybridRoute } from "../../eval/hybridRouteEvaluation.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { routeEvaluationExitCode } from "./route.js";
+import { emitInvalidInput } from "../errors.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
@@ -324,15 +325,16 @@ function emitVerifyText(payload: VerifyPayload, out: (t: string) => void): void 
 
 export function cmdVerify(args: VerifyArgs, io: Io = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   let family: string;
   let target: string;
   let outputFormat: string;
   try {
     [family, target, outputFormat] = validateVerifyRequest(args);
   } catch (exc) {
-    err(`Error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitInvalidInput(io, {
+      format: "json",
+      body: { class: "unsupported_target", message: (exc as Error).message },
+    });
   }
   const { result, safety } = runVerifyEngine(family, target, args);
   const payload = buildVerifyPayload(family, target, outputFormat, result, safety);

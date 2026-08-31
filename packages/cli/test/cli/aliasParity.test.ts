@@ -23,6 +23,8 @@ type AdvertisedAlias = AliasEntry & {
   structured_example_argv: string[];
 };
 
+const QUIET_CHECK_ALIASES = new Set(["compact", "lint", "validate", "verify"]);
+
 function capture(argv: string[]): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
@@ -82,9 +84,9 @@ describe("schema-advertised alias/runtime parity", () => {
       const canonical = capture(canonicalArgv(alias, argv));
       expect(legacy.rc, alias.legacy).toBe(canonical.rc);
       expect(parseStructured(legacy, alias.legacy)).toEqual(parseStructured(canonical, alias.canonical));
-      expect(legacy.err).toBe(
-        `Deprecation: agentera ${alias.legacy} is deprecated; use agentera ${alias.canonical}\n`,
-      );
+      expect(legacy.err).toBe(QUIET_CHECK_ALIASES.has(alias.legacy)
+        ? ""
+        : `Deprecation: agentera ${alias.legacy} is deprecated; use agentera ${alias.canonical}\n`);
       expect(canonical.err, alias.canonical).toBe("");
     }
   });
@@ -97,7 +99,8 @@ describe("schema-advertised alias/runtime parity", () => {
       expect(legacy.rc, alias.legacy).toBe(2);
       expect(legacy.rc, alias.legacy).toBe(canonical.rc);
       expect(parseStructured(legacy, alias.legacy)).toEqual(parseStructured(canonical, alias.canonical));
-      expect(legacy.err).toContain(`Deprecation: agentera ${alias.legacy} is deprecated`);
+      if (QUIET_CHECK_ALIASES.has(alias.legacy)) expect(legacy.err).toBe("");
+      else expect(legacy.err).toContain(`Deprecation: agentera ${alias.legacy} is deprecated`);
       expect(canonical.err, alias.canonical).toBe("");
     }
   });

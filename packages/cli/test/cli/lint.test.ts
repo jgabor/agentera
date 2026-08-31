@@ -177,11 +177,19 @@ describe("cli dispatch: lint routing", () => {
     expect(JSON.parse(missing.out).error.message).toContain("--artifact");
   });
 
-  it("emits a deprecation alias for top-level `lint`", () => {
-    const { err } = capture((io) =>
+  it("keeps the top-level lint alias JSON-only", () => {
+    const { out, err } = capture((io) =>
       main(["node", "agentera", "lint", "--artifact", "PLAN.md", "--text", "wrote foo/bar.ts line 3"], io),
     );
-    expect(err).toContain("Deprecation: agentera lint is deprecated; use agentera check lint");
+    expect(JSON.parse(out).status).toBe("pass");
+    expect(err).toBe("");
+  });
+
+  it("rejects text output with a JSON error", () => {
+    const result = capture((io) => main(["node", "agentera", "check", "lint", "--artifact", "PLAN.md", "--text", "x", "--format", "text"], io));
+    expect(result.rc).toBe(2);
+    expect(JSON.parse(result.out).error.valid_values).toEqual(["json"]);
+    expect(result.err).toBe("");
   });
 
   it("rejects mutually-exclusive --file and --text", () => {

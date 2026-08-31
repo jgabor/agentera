@@ -12,7 +12,7 @@ import {
   cmdValidateActivationConjunction,
 } from "../commands/validate.js";
 import { makeArgvValueReader } from "./argvParser.js";
-import { asEnvelopeFormat, classifyParseError, detectTopLevelFormat, type Io } from "./shared.js";
+import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { StateWriteInputError } from "../../state/write/errors.js";
 import {
@@ -28,7 +28,7 @@ import { StateRetrievalFailure } from "../../state/directRetrieval.js";
 
 /** Minimal flag parser for the `lint` command surface. */
 export function parseLintArgs(argv: string[]): LintArgs | { error: string } {
-  const args: LintArgs = { artifact: "", file: null, text: null, strict: false, format: "text" };
+  const args: LintArgs = { artifact: "", file: null, text: null, strict: false, format: "json" };
   let sawArtifact = false;
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
@@ -47,8 +47,8 @@ export function parseLintArgs(argv: string[]): LintArgs | { error: string } {
     } else if (a === "--strict") {
       args.strict = true;
     } else if ((v = value("--format")) !== null) {
-      if (v !== "text" && v !== "json") {
-        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')` };
+      if (v !== "json") {
+        return { error: `argument --format: invalid choice: '${v}' (choose from 'json')` };
       }
       args.format = v;
     } else {
@@ -66,7 +66,7 @@ export function runLint(argv: string[], io: Io, prog = "agentera lint"): number 
   const parsed = parseLintArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
-      format: detectTopLevelFormat(argv),
+      format: "json",
       body: classifyParseError(parsed.error),
     });
   }
@@ -91,7 +91,7 @@ export function compactModeOf(argv: string[]): string {
 }
 
 export function parseCompactArgs(argv: string[]): CompactArgs | { error: string } {
-  const args: CompactArgs = { project: null, mode: "check", format: "text" };
+  const args: CompactArgs = { project: null, mode: "check", format: "json" };
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
     i = n;
@@ -108,8 +108,8 @@ export function parseCompactArgs(argv: string[]): CompactArgs | { error: string 
       }
       args.mode = v;
     } else if ((v = value("--format")) !== null) {
-      if (v !== "text" && v !== "json") {
-        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')` };
+      if (v !== "json") {
+        return { error: `argument --format: invalid choice: '${v}' (choose from 'json')` };
       }
       args.format = v;
     } else return { error: `unrecognized arguments: ${a}` };
@@ -121,7 +121,7 @@ export function runCompact(argv: string[], io: Io, prog: string): number {
   const parsed = parseCompactArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
-      format: "text",
+      format: "json",
       body: classifyParseError(parsed.error),
     });
   }
@@ -138,7 +138,7 @@ export function runCompact(argv: string[], io: Io, prog: string): number {
 }
 
 export function parseDurabilityArgs(argv: string[]): DurabilityArgs | { error: string } {
-  const args: DurabilityArgs = { project: null, artifact: null, format: "text" };
+  const args: DurabilityArgs = { project: null, artifact: null, format: "json" };
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
     i = n;
@@ -160,8 +160,8 @@ export function parseDurabilityArgs(argv: string[]): DurabilityArgs | { error: s
       if (!Number.isSafeInteger(limit)) return { error: `argument --limit: invalid int value: '${parsed}'` };
       args.limit = limit;
     } else if ((parsed = value("--format")) !== null) {
-      if (parsed !== "text" && parsed !== "json" && parsed !== "yaml") {
-        return { error: `argument --format: invalid choice: '${parsed}' (choose from 'text', 'json', 'yaml')` };
+      if (parsed !== "json") {
+        return { error: `argument --format: invalid choice: '${parsed}' (choose from 'json')` };
       }
       args.format = parsed;
     } else return { error: `unrecognized arguments: ${token}` };
@@ -197,37 +197,37 @@ export function runDurability(argv: string[], io: Io, prog: string): number {
 }
 
 export function runValidate(argv: string[], io: Io, prog: string): number {
-  const requestedFormat = detectTopLevelFormat(argv);
+  const requestedFormat = "json";
   let family: string | null = null;
   let capabilityTarget: string | null = null;
   let artifactFlag: string | null = null;
   let fileFlag: string | null = null;
   let cwdFlag: string | null = null;
-  let format: "text" | "json" = "text";
+  let format: "text" | "json" = "json";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--format") {
       const v = argv[++i];
-      if (v !== "text" && v !== "json") {
+      if (v !== "json") {
         return emitInvalidInput(io, {
           format,
           body: {
             class: "invalid_choice",
-            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
-            valid_values: ["text", "json"],
+            message: `argument --format: invalid choice: '${v}' (choose from 'json')`,
+            valid_values: ["json"],
           },
         });
       }
       format = v;
     } else if (a.startsWith("--format=")) {
       const v = a.slice("--format=".length);
-      if (v !== "text" && v !== "json") {
+      if (v !== "json") {
         return emitInvalidInput(io, {
           format,
           body: {
             class: "invalid_choice",
-            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json')`,
-            valid_values: ["text", "json"],
+            message: `argument --format: invalid choice: '${v}' (choose from 'json')`,
+            valid_values: ["json"],
           },
         });
       }

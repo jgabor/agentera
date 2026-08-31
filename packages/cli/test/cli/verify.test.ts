@@ -10,6 +10,7 @@ import {
   VerifyArgs,
 } from "../../src/cli/commands/verify.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
+import { main } from "../../src/cli/dispatch.js";
 import { setGlossaryEvaluationRunnerForTest } from "../../src/eval/glossaryEvaluationProcess.js";
 import { sourceGlossaryEvaluationRunnerPath } from "../helpers/sourceSubprocess.js";
 
@@ -58,21 +59,32 @@ describe("verify request validation", () => {
   });
 });
 
+describe("verify dispatch output", () => {
+  it("defaults to JSON and rejects text selectors with JSON", () => {
+    let out = "";
+    let err = "";
+    expect(main(["node", "agentera", "check", "verify", "eval", "skills", "--dry-run"], { out: (text) => (out += text), err: (text) => (err += text) })).toBe(0);
+    expect(JSON.parse(out).status).toBe("pass");
+    out = "";
+    expect(main(["node", "agentera", "check", "verify", "eval", "skills", "--dry-run", "--format", "text"], { out: (text) => (out += text), err: (text) => (err += text) })).toBe(2);
+    expect(JSON.parse(out).error.valid_values).toEqual(["json"]);
+    expect(err).toBe("");
+  });
+});
+
 describe("cmdVerify", () => {
   it("retires smoke verify on npm CLI", () => {
     const { rc, out, err } = run({ family: "smoke", target: "installed-skills", format: "json" });
     expect(rc).toBe(2);
-    expect(out).toBe("");
-    expect(err).toContain("verify smoke is retired on the npm self-contained CLI");
-    expect(err).toContain("agentera check verify eval skills");
-    expect(err).not.toContain('"command": "verify"');
+    expect(JSON.parse(out).error.message).toContain("verify smoke is retired on the npm self-contained CLI");
+    expect(err).toBe("");
   });
 
   it("emits an Error and rc 2 for an invalid request", () => {
     const { rc, out, err } = run({ family: "eval", target: "bogus", format: "json" });
     expect(rc).toBe(2);
-    expect(out).toBe("");
-    expect(err).toContain("Error: unsupported verify target 'bogus' for family 'eval'");
+    expect(JSON.parse(out).error.message).toContain("unsupported verify target 'bogus' for family 'eval'");
+    expect(err).toBe("");
   });
 
   it("runs the semantic eval engine in-process and passes a valid fixture", () => {

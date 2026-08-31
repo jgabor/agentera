@@ -155,7 +155,6 @@ export function main(argv: string[], io: Io = {}): number {
     case "upgrade":
       return runUpgrade(rest, io, "agentera upgrade");
     case "verify":
-      emitDeprecationAlias("verify", "check verify", err);
       return runVerify(rest, io, "agentera verify");
     case "report":
       return runReport(rest, io, "agentera report");
@@ -165,13 +164,12 @@ export function main(argv: string[], io: Io = {}): number {
     case "schema":
       return runSchema(rest, io, "agentera schema");
     case "lint":
-      emitDeprecationAlias("lint", "check lint", err);
       return runLint(rest, io);
     case "check": {
       const [sub, subArgs] = splitNestedSubcommand(rest);
       if (!sub) {
         return emitInvalidInput(io, {
-          format: detectTopLevelFormat(rest),
+          format: "json",
           body: {
             class: "missing_argument",
             message: "the following arguments are required: check_command",
@@ -190,7 +188,7 @@ export function main(argv: string[], io: Io = {}): number {
         return runGate(subArgs, io, "agentera check compact");
       }
       return emitInvalidInput(io, {
-        format: detectTopLevelFormat(rest),
+        format: "json",
         body: {
           class: "unsupported_target",
           message: `unknown or not-yet-ported check subcommand: ${sub}`,
@@ -249,12 +247,10 @@ export function main(argv: string[], io: Io = {}): number {
         },
       });
     case "compact":
-      emitDeprecationAlias("compact", "check compact", err);
       return compactModeOf(rest) === "fix"
         ? runCompact(rest, io, "agentera compact")
         : runGate(rest, io, "agentera compact");
     case "validate":
-      emitDeprecationAlias("validate", "check validate", err);
       return runValidate(rest, io, "agentera validate");
     default:
       if (command && CAPABILITY_ROUTING_NAMES.includes(command)) {
