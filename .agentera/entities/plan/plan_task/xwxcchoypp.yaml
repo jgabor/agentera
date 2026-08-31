@@ -4,7 +4,7 @@ record:
   name: Establish output authority and shared semantics
   depends_on:
     []
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN live routes and active producers WHEN inventoried THEN every success and error path is classified.
     - GIVEN an operational invocation WHEN its selector is omitted or JSON THEN both return equivalent JSON.
@@ -22,3 +22,6 @@ record:
       source: orchestrate audit re-evaluation for task xwxcchoypp
       recorded_at: 2026-08-30 23:14
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - ztqzpffdfs
+  superseded_reason: Replacement task completed the shared output authority after nested check and state dispatch gaps were corrected and independently evaluated.

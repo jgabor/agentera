@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: nkvbedieaf
   name: Complete shared output authority
-  status: in_progress
+  status: complete
   depends_on:
     []
   acceptance:
@@ -13,3 +13,13 @@ record:
     - GIVEN a text exception WHEN valid THEN it emits text; selectors or invalid combinations return JSON errors.
     - GIVEN each shared producer rule WHEN tested THEN it has one passing and one failing behavioral case.
   evidence: Replacement for blocked task xwxcchoypp after audit identified unhandled nested check and state dispatcher errors.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-ztqzpffdfs-1
+      source: orchestrate audit evaluation for replacement task ztqzpffdfs
+      recorded_at: 2026-08-31 05:55
+      writer_command: agentera state plan record-evaluation

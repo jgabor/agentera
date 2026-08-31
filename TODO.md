@@ -10,7 +10,6 @@
 ## ⇉ Degraded
 
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
-- [ ] [id:oyxoxajkvd] [fix:3.0.0] Correct nested check and state JSON error routing
 
 ## → Normal
 
@@ -171,3 +170,4 @@
 - [x] [id:jyxnnzvysl] [fix:3.0.0] Replace the 10 ms generated-tree polling loop with bounded overlap observation that preserves continuous-reader evidence without repeatedly validating the complete generated generation.
 - [x] [id:uaobzdvzlr] [fix:3.0.0] Couple personal glossary review parsing to its structured-input specification.
 - [x] [id:zylyajhugj] [fix:3.0.0] Complete ownership-gated cleanup of retired external runtime integrations
+- [x] [id:oyxoxajkvd] [fix:3.0.0] Correct nested check and state JSON error routing
