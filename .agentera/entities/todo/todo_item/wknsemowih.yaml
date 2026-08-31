@@ -15,12 +15,16 @@ record:
     - GIVEN a replacement task passes evaluation WHEN kqctnqhygo is superseded THEN final verification becomes dependency-ready.
   release_blocker: true
   severity: degraded
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Restore output history and prime token compliance"
+      status: resolved
+      order: 128
       severity: degraded
-      status: open
-      order: 2
+  lifecycle:
+    operation: resolve
+    reason: Replacement task passed audit and superseded the blocked contract task.
+    date: 2026-08-31

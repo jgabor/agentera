@@ -7,7 +7,7 @@ record:
     - wwhdreldlf
     - jeqrmofzfx
     - grrrvzgkcr
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN active skills, schemas, help, examples, corrections, or generated commands WHEN inspected THEN operational commands omit --format json.
     - GIVEN historical records WHEN inspected THEN they remain unchanged.
@@ -25,3 +25,6 @@ record:
       source: orchestrate audit re-evaluation for task kqctnqhygo
       recorded_at: 2026-08-31 08:51
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - aperfiquzx
+  superseded_reason: Replacement restored historical evidence, completed active guidance alignment, and passed pinned byte and GPT-5 token budgets across package surfaces.

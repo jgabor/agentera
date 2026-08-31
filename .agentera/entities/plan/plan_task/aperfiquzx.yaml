@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: nkvbedieaf
   name: Complete contract and budget alignment
-  status: in_progress
+  status: complete
   depends_on:
     - ggurxsngzw
     - wwhdreldlf
@@ -16,3 +16,13 @@ record:
     - GIVEN source, bundled, and extracted CLIs WHEN run without selectors or with rejected non-JSON selectors THEN representative outputs, streams, and exit codes agree.
     - GIVEN live output measurements WHEN run through reproducible authoritative gates THEN byte budgets pass and prime is at or below the enforced 3,000 GPT-5-token budget without increasing limits.
   evidence: Replacement for blocked task kqctnqhygo after audit found historical evidence rewrites and an unenforced prime token-budget overage.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-aperfiquzx-1
+      source: orchestrate audit evaluation for replacement task aperfiquzx
+      recorded_at: 2026-08-31 09:33
+      writer_command: agentera state plan record-evaluation
