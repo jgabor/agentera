@@ -4,10 +4,20 @@ record:
   name: Convert state surfaces
   depends_on:
     - xwxcchoypp
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN state reads, queries, or writes WHEN invoked without a selector THEN existing JSON contracts return.
     - GIVEN a state mutation WHEN output behavior changes THEN validation, approval, idempotency, and effects remain unchanged.
     - GIVEN a non-JSON selector WHEN supplied THEN the request fails before effects.
     - GIVEN each state parser or emitter family WHEN tested THEN one success and one failure cover the rule.
   plan: nkvbedieaf
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-wwhdreldlf-1
+      source: orchestrate audit evaluation for task wwhdreldlf
+      recorded_at: 2026-08-31 07:19
+      writer_command: agentera state plan record-evaluation
