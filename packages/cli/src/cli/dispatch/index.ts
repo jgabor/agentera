@@ -43,6 +43,28 @@ import {
 } from "../migrationRequired.js";
 import { enforceProductV1Eol } from "../productV1Eol.js";
 
+function splitNestedSubcommand(argv: string[]): [string | undefined, string[]] {
+  let subcommand: string | undefined;
+  const nestedArgs: string[] = [];
+  const formatArgs: string[] = [];
+  for (let index = 0; index < argv.length; index++) {
+    const token = argv[index];
+    if (token === "--format") {
+      formatArgs.push(token);
+      if (argv[index + 1] !== undefined) formatArgs.push(argv[index + 1]);
+      index++;
+      continue;
+    }
+    if (token.startsWith("--format=")) {
+      formatArgs.push(token);
+      continue;
+    }
+    if (subcommand === undefined) subcommand = token;
+    else nestedArgs.push(token);
+  }
+  return [subcommand, [...nestedArgs, ...formatArgs]];
+}
+
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const out = io.out ?? ((t: string) => process.stdout.write(t));
@@ -146,10 +168,10 @@ export function main(argv: string[], io: Io = {}): number {
       emitDeprecationAlias("lint", "check lint", err);
       return runLint(rest, io);
     case "check": {
-      const sub = rest[0];
+      const [sub, subArgs] = splitNestedSubcommand(rest);
       if (!sub) {
         return emitInvalidInput(io, {
-          format: "text",
+          format: detectTopLevelFormat(rest),
           body: {
             class: "missing_argument",
             message: "the following arguments are required: check_command",
@@ -157,19 +179,18 @@ export function main(argv: string[], io: Io = {}): number {
           },
         });
       }
-      if (sub === "validate") return runValidate(rest.slice(1), io, "agentera check validate");
-      if (sub === "verify") return runVerify(rest.slice(1), io, "agentera check verify");
+      if (sub === "validate") return runValidate(subArgs, io, "agentera check validate");
+      if (sub === "verify") return runVerify(subArgs, io, "agentera check verify");
       if (sub === "durability")
-        return runDurability(rest.slice(1), io, "agentera check durability");
-      if (sub === "lint") return runLint(rest.slice(1), io, "agentera check lint");
+        return runDurability(subArgs, io, "agentera check durability");
+      if (sub === "lint") return runLint(subArgs, io, "agentera check lint");
       if (sub === "compact") {
-        const subArgs = rest.slice(1);
         const mode = compactModeOf(subArgs);
         if (mode === "fix") return runCompact(subArgs, io, "agentera check compact");
         return runGate(subArgs, io, "agentera check compact");
       }
       return emitInvalidInput(io, {
-        format: "text",
+        format: detectTopLevelFormat(rest),
         body: {
           class: "unsupported_target",
           message: `unknown or not-yet-ported check subcommand: ${sub}`,
@@ -178,7 +199,7 @@ export function main(argv: string[], io: Io = {}): number {
       });
     }
     case "state": {
-      const sub = rest[0];
+      const [sub, subArgs] = splitNestedSubcommand(rest);
       const stateCommands = stateCommandNames();
       const stateSyntax = printStateHelp()
         .split("\n", 1)[0]
@@ -186,7 +207,7 @@ export function main(argv: string[], io: Io = {}): number {
       const stateExample = "agentera state progress list --format json";
       if (!sub) {
         return emitInvalidInput(io, {
-          format: "text",
+          format: detectTopLevelFormat(rest),
           body: {
             class: "missing_argument",
             message: "the following arguments are required: state_command",
@@ -196,11 +217,11 @@ export function main(argv: string[], io: Io = {}): number {
           },
         });
       }
-      if (sub === "query") return runQuery(rest.slice(1), io, "agentera state query");
-      if (runtimeEntityFamiliesForCommand(sub).length > 0 || verbsForArtifact(sub).some((verb) => verb === rest[1]))
-        return runState(sub, rest.slice(1), io, `agentera state ${sub}`);
+      if (sub === "query") return runQuery(subArgs, io, "agentera state query");
+      if (runtimeEntityFamiliesForCommand(sub).length > 0 || verbsForArtifact(sub).some((verb) => verb === subArgs[0]))
+        return runState(sub, subArgs, io, `agentera state ${sub}`);
       return emitInvalidInput(io, {
-        format: "text",
+        format: detectTopLevelFormat(rest),
         body: {
           class: "unsupported_target",
           message: `unknown or not-yet-ported state subcommand: ${sub}`,

@@ -1,0 +1,15 @@
+id: ztqzpffdfs
+artifact: plan
+record:
+  plan: nkvbedieaf
+  name: Complete shared output authority
+  status: in_progress
+  depends_on:
+    []
+  acceptance:
+    - GIVEN live routes and active producers WHEN inventoried and exercised THEN every success and error path matches its declared classification, including nested check and state dispatchers.
+    - GIVEN an operational invocation WHEN its selector is omitted or JSON THEN both return equivalent bounded JSON with unchanged exit behavior.
+    - GIVEN an operational text or YAML selector WHEN parsed THEN a structured invalid-choice error occurs before effects.
+    - GIVEN a text exception WHEN valid THEN it emits text; selectors or invalid combinations return JSON errors.
+    - GIVEN each shared producer rule WHEN tested THEN it has one passing and one failing behavioral case.
+  evidence: Replacement for blocked task xwxcchoypp after audit identified unhandled nested check and state dispatcher errors.

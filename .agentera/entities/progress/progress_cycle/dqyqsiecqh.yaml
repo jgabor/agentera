@@ -1,0 +1,14 @@
+id: dqyqsiecqh
+artifact: progress
+record:
+  timestamp: 2026-08-31 05:51
+  type: fix
+  phase: build
+  what: Corrected nested check and state output dispatch and added behavioral inventory proof.
+  context:
+    intent: Make nested operational boundaries honor the shared JSON output authority.
+    constraints: Preserve payload schemas, streams, exit codes, effects, bounds, text exceptions, and downstream command-family scope. Keep scripts/verify-task4-retrieval-evidence.mjs deferred.
+  discovered: The top-level policy appended --format json, but nested dispatch selected rest[0]. Bare check and state routes therefore treated --format as a subcommand and forced plaintext errors. Extracting the nested subcommand before the selector preserves handler inputs and omitted or explicit JSON parity.
+  verified: The output-policy test passed 18 tests. Targeted output, help, version, and prime tests passed 4 files and 86 tests. The full source suite passed 256 files and 4,239 tests with 2 skipped. Typecheck and build passed. Built CLI assertions passed for nested success and error parity, selector rejection, bounds, streams, and text exceptions. Capability contract passed 3 of 3 checks. Compact and git diff checks passed.
+  next: Keep task ztqzpffdfs in_progress and TODO oyxoxajkvd open until orchestrate records evaluator review.
+  publication_order: 277

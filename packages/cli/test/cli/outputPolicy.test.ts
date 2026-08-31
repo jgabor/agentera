@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
@@ -9,6 +13,37 @@ function capture(args: string[]) {
   let err = "";
   const rc = main(["node", "agentera", ...args], { out: (text) => (out += text), err: (text) => (err += text) });
   return { rc, out, err };
+}
+
+function withEntityProject<T>(run: (root: string) => T): T {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "output-policy-"));
+  const previous = process.cwd();
+  const entities = path.join(root, ".agentera/entities/progress/progress_cycle");
+  fs.mkdirSync(entities, { recursive: true });
+  fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  fs.writeFileSync(path.join(entities, "aaaaaaaaaa.yaml"), [
+    "id: aaaaaaaaaa",
+    "artifact: progress",
+    "record:",
+    "  timestamp: 2026-08-31 00:00",
+    "  type: test",
+    "  phase: build",
+    "  what: Exercise output policy",
+    "  context:",
+    "    intent: Test nested dispatch",
+    "",
+  ].join("\n"));
+  process.chdir(root);
+  try {
+    return run(root);
+  } finally {
+    process.chdir(previous);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+function explicitNestedJson(args: string[]): string[] {
+  return [args[0], "--format", "json", ...args.slice(1)];
 }
 
 describe("shared output policy", () => {
@@ -29,6 +64,73 @@ describe("shared output policy", () => {
     const explicit = capture(["schema", "--format", "json"]);
     expect(implicit).toEqual(explicit);
     expect(JSON.parse(implicit.out).command).toBe("schema");
+  });
+
+  it("exercises every inventoried nested handler with passing and failing JSON behavior", () => {
+    withEntityProject((root) => {
+      const passing = [
+        { route: "check", producer: "runValidate", args: ["check", "validate", "vocabularyAuthority"] },
+        { route: "check", producer: "runVerify", args: ["check", "verify", "eval", "skills", "--dry-run"] },
+        { route: "check", producer: "runDurability", args: ["check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa"] },
+        { route: "check", producer: "runLint", args: ["check", "lint", "--artifact", "PLAN.md", "--text", "Clear draft text."] },
+        { route: "check", producer: "runCompact", args: ["check", "compact", "--project", root, "--mode", "fix"] },
+        { route: "check", producer: "runGate", args: ["check", "compact", "--project", root] },
+        { route: "state", producer: "runQuery", args: ["state", "query", "--list-artifacts"] },
+        { route: "state", producer: "runState", args: ["state", "progress", "list", "--limit", "1"] },
+      ];
+      const failing = [
+        { route: "check", producer: "runValidate", args: ["check", "validate"] },
+        { route: "check", producer: "runVerify", args: ["check", "verify", "--bogus"] },
+        { route: "check", producer: "runDurability", args: ["check", "durability", "--artifact", "progress"] },
+        { route: "check", producer: "runLint", args: ["check", "lint", "--text", "draft"] },
+        { route: "state", producer: "runQuery", args: ["state", "query", "--bogus"] },
+        { route: "state", producer: "runState", args: ["state", "progress", "bogus"] },
+      ];
+
+      for (const { producer, args } of passing) {
+        const implicit = capture(args);
+        const explicit = capture(explicitNestedJson(args));
+        expect(implicit, producer).toEqual(explicit);
+        expect(implicit.rc, producer).toBe(0);
+        expect(implicit.err, producer).toBe("");
+        expect(() => JSON.parse(implicit.out), producer).not.toThrow();
+        expect(Buffer.byteLength(implicit.out), producer).toBeLessThanOrEqual(32_768);
+      }
+
+      fs.writeFileSync(path.join(root, ".agentera/entities/progress/progress_cycle/bbbbbbbbbb.yaml"), "invalid: [\n");
+      failing.push(
+        { route: "check", producer: "runCompact", args: ["check", "compact", "--project", root, "--mode", "fix"] },
+        { route: "check", producer: "runGate", args: ["check", "compact", "--project", root] },
+      );
+      for (const route of ["check", "state"]) {
+        const inventoried = LIVE_OUTPUT_ROUTE_INVENTORY.find((entry) => entry.route === route)?.producers
+          .filter((producer) => producer !== "applyOutputPolicy" && producer !== "emitInvalidInput")
+          .sort();
+        expect(passing.filter((entry) => entry.route === route).map(({ producer }) => producer).sort()).toEqual(inventoried);
+        expect(failing.filter((entry) => entry.route === route).map(({ producer }) => producer).sort()).toEqual(inventoried);
+      }
+      for (const { producer, args } of failing) {
+        const implicit = capture(args);
+        const explicit = capture(explicitNestedJson(args));
+        expect(implicit, producer).toEqual(explicit);
+        expect(implicit.rc, producer).not.toBe(0);
+        expect(implicit.err, producer).toBe("");
+        expect(() => JSON.parse(implicit.out), producer).not.toThrow();
+        expect(Buffer.byteLength(implicit.out), producer).toBeLessThanOrEqual(32_768);
+      }
+    });
+  });
+
+  it.each(["check", "state"])("keeps missing and unsupported nested %s routes bounded and equivalent", (route) => {
+    for (const tail of [[], ["unsupported"]]) {
+      const implicit = capture([route, ...tail]);
+      const explicit = capture([route, "--format=json", ...tail]);
+      expect(implicit).toEqual(explicit);
+      expect(implicit.rc).toBe(2);
+      expect(implicit.err).toBe("");
+      expect(JSON.parse(implicit.out).error.class).toBe(tail.length === 0 ? "missing_argument" : "unsupported_target");
+      expect(Buffer.byteLength(implicit.out)).toBeLessThanOrEqual(32_768);
+    }
   });
 
   it.each(["text", "yaml"])("rejects operational %s before dispatch", (format) => {
