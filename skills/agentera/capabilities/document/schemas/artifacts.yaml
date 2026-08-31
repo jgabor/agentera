@@ -44,8 +44,8 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Document reads this to discover documentation gaps surfaced during health
-      audits through bounded `npx -y agentera@next state health list --limit 20 --format
-       json` discovery or exact `state health get --id ID` retrieval. Raw reads
+      audits through bounded `npx -y agentera@next state health list --limit 20`
+      discovery or exact `state health get --id ID` retrieval. Raw reads
       are diagnostic-only for corruption or CLI-defect investigation.
   6:
     id: A6

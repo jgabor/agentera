@@ -469,9 +469,9 @@ pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
 node packages/cli/dist/bin/agentera.js check compact
 node packages/cli/dist/bin/agentera.js check validate \
-  capability-contract --format json
+  capability-contract
 node packages/cli/dist/bin/agentera.js check validate \
-  release-metadata --format json
+  release-metadata
 pnpm -C packages/cli run pack:dry-run
 ```
 

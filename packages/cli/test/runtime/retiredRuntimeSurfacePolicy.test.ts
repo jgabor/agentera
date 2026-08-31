@@ -16,8 +16,10 @@ import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
 import {
   printCapabilityHelp,
   printRouteHelp,
+  printStateHelp,
   printTopLevelHelp,
   printUpgradeHelp,
+  stateCommandNames,
 } from "../../src/cli/help.js";
 import {
   preCutoverBootstrapAuthorityDiagnostics,
@@ -1334,6 +1336,72 @@ describe("retired runtime current-surface policy", () => {
     }
     expect(printTopLevelHelp()).toContain("Examples: npx -y agentera@next prime --context status");
     expect(PRIME_BLOB).toContain("npx -y agentera@next doctor");
+  });
+
+  it("keeps inventoried active command producers free of redundant JSON selectors", () => {
+    const surfaces: Array<{ category: string; name: string; body: string }> = [];
+    const addFile = (category: string, relativePath: string, body = read(relativePath)) => {
+      surfaces.push({ category, name: relativePath, body });
+    };
+
+    addFile("package guidance", "packages/cli/README.md");
+    addFile("package guidance", "docs/packaging/v3-packaging.md");
+
+    const maintainerSkills = fs.readdirSync(path.join(repoRoot, ".opencode/skills"), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(repoRoot, ".opencode/skills", entry.name, "SKILL.md")))
+      .map((entry) => `.opencode/skills/${entry.name}/SKILL.md`)
+      .sort();
+    for (const relativePath of maintainerSkills) addFile("maintainer skills", relativePath);
+
+    const retainedReferences = YAML.parse(read("references/meta/retained-reference-authority.yaml"));
+    for (const entry of retainedReferences.inventory.filter(({ classification }: any) => ["current", "runbook"].includes(classification))) {
+      const relativePath = String(entry.path);
+      if (relativePath === "references/artifacts/state-storage-authority.yaml") {
+        const activeAuthority = read(relativePath).replace(/\n  gap_closure_evidence:[\s\S]*?(?=\nconsumer_matrix:)/u, "");
+        addFile("active authorities", relativePath, activeAuthority);
+      } else {
+        addFile("active authorities", relativePath);
+      }
+    }
+
+    const verificationPolicy = YAML.parse(read("references/analysis/verification-policy.yaml"));
+    const currentScripts = verificationPolicy.conservative_routing.exact
+      .filter((relativePath: string) => relativePath.startsWith("packages/cli/scripts/") && relativePath.endsWith(".mjs"));
+    for (const relativePath of currentScripts) addFile("measurement and release scripts", relativePath);
+
+    const existingSourcePaths = new Set<string>();
+    for (const relativePath of publicInstallSurfaceRoots.filter((entry) => entry !== "UPGRADE.md" && entry !== "packages/cli/README.md")) {
+      collectTextSurfaces(relativePath, existingSourcePaths);
+    }
+    for (const relativePath of registryBundledAuthorityPaths(repoRoot).filter((entry) => entry.startsWith("skills/agentera/"))) {
+      existingSourcePaths.add(relativePath);
+    }
+    for (const relativePath of [...existingSourcePaths].sort()) addFile("existing active source sets", relativePath);
+    surfaces.push(
+      { category: "existing active source sets", name: "served capability instructions", body: Object.values(CAPABILITY_INSTRUCTIONS).join("\n") },
+      {
+        category: "existing active source sets",
+        name: "generated CLI help",
+        body: [
+          PRIME_BLOB,
+          printTopLevelHelp(),
+          printRouteHelp(),
+          printUpgradeHelp(),
+          ...Object.keys(CAPABILITY_INSTRUCTIONS).map((capability) => printCapabilityHelp(capability)),
+          ...stateCommandNames().map((artifact) => printStateHelp(artifact)),
+        ].join("\n"),
+      },
+    );
+
+    expect(new Set(surfaces.map(({ category }) => category))).toEqual(new Set([
+      "package guidance",
+      "maintainer skills",
+      "active authorities",
+      "measurement and release scripts",
+      "existing active source sets",
+    ]));
+    const redundantSelector = /--format(?:\s+|=)json|["']--format["']\s*,\s*["']json["']/u;
+    expect(surfaces.filter(({ body }) => redundantSelector.test(body)).map(({ category, name }) => `${category}: ${name}`)).toEqual([]);
   });
 
   it.each([

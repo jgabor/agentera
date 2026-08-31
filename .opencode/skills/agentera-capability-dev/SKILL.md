@@ -24,7 +24,7 @@ The schema directory contains `triggers.yaml`, `artifacts.yaml`,
 `validation.yaml`, and `exit.yaml`. The runtime serves instructions through:
 
 ```bash
-npx -y agentera@next prime --context <name> --format json
+npx -y agentera@next prime --context <name>
 ```
 
 The primary capability list is `status`, `vision`, `discuss`, `research`,
@@ -67,7 +67,7 @@ validation:
 
 ```bash
 npx -y agentera@next check validate capability <name-or-path>
-npx -y agentera@next check validate capability-contract --format json
+npx -y agentera@next check validate capability-contract
 ```
 
 When modifying CLI source, build before invoking the local runtime:
@@ -76,7 +76,7 @@ When modifying CLI source, build before invoking the local runtime:
 pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
 node packages/cli/dist/bin/agentera.js check validate \
-  capability-contract --format json
+  capability-contract
 ```
 
 Top-level `agentera validate` is a migration alias. Prefer

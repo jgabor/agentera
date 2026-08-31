@@ -17,8 +17,8 @@ Read project state through the CLI before reading artifacts directly:
 
 ```bash
 npx -y agentera@next prime
-npx -y agentera@next state todo list --format json
-npx -y agentera@next state plan list --status open --format json
+npx -y agentera@next state todo list
+npx -y agentera@next state plan list --status open
 npx -y agentera@next state query --list-artifacts
 ```
 
@@ -35,15 +35,15 @@ Never edit `.agentera/entities/` directly. Discover each mutation contract
 before constructing a write:
 
 ```bash
-npx -y agentera@next state decisions explain --format json
-npx -y agentera@next state decisions explain --verb update --format json
-npx -y agentera@next state progress explain --verb append --format json
-npx -y agentera@next state plan explain --verb create --format json
-npx -y agentera@next state health explain --verb append --format json
+npx -y agentera@next state decisions explain
+npx -y agentera@next state decisions explain --verb update
+npx -y agentera@next state progress explain --verb append
+npx -y agentera@next state plan explain --verb create
+npx -y agentera@next state health explain --verb append
 ```
 
 Use returned examples and field definitions. Add `--dry-run` when a preview is
-appropriate. `npx -y agentera@next schema --format json` exposes the complete
+appropriate. `npx -y agentera@next schema` exposes the complete
 writer operation matrix.
 
 Bounded retrieval is governed by

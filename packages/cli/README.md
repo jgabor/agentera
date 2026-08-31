@@ -10,8 +10,8 @@ surface.
 Until the stable dist-tag is promoted, run 3.0 through `@next`:
 
 ```bash
-npx -y agentera@next prime --context status --format json
-npx -y agentera@next doctor --format json
+npx -y agentera@next prime --context status
+npx -y agentera@next doctor
 ```
 
 The first command is the one-call pre-cutover bootstrap. Clean, v2, and
@@ -31,7 +31,7 @@ adjacent ordered stable-v2 preview/apply pair in `UPGRADE.md` may execute
 `@latest`. The second command is an independent read-only evidence probe on the
 same channel.
 
-`prime --format json` returns a bounded decision brief (at most 12000 UTF-8
+`prime` returns a bounded decision brief (at most 12000 UTF-8
 bytes). Status startup returns
 `capability_context.instructions` and bounded
 `capability_context.context.status_context` together (at most 25000 UTF-8
@@ -42,16 +42,16 @@ instead of `ok` or `up_to_date`. A safe inactive project reports an activation
 preview and its exact effect-bound apply command:
 
 ```bash
-npx -y agentera@next state todo activate --dry-run --format json
-npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json
+npx -y agentera@next state todo activate --dry-run
+npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes
 ```
 
 An unsafe active project with an existing marker reports the separate repair
 preview and effect-bound apply path:
 
 ```bash
-npx -y agentera@next state todo repair --dry-run --format json
-npx -y agentera@next state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json
+npx -y agentera@next state todo repair --dry-run
+npx -y agentera@next state todo repair --effect-sha256 EFFECT_SHA256 --yes
 ```
 
 Unsafe inactive evidence (unmatched projections, duplicate public work, stale
@@ -103,14 +103,14 @@ Historical transcript import is also explicit (`agentera report refresh
 
 The executable contract is
 [`references/artifacts/state-storage-authority.yaml`](../../references/artifacts/state-storage-authority.yaml)
-and is projected by `agentera schema --format json`.
+and is projected by `agentera schema`.
 
 ```bash
-agentera state plan list --format json
-agentera state plan get --id PLAN_ID --format json
-agentera state plan tasks list --limit 20 --format json
-agentera state experiments list --objective OBJECTIVE_ID --format json
-agentera state experiments get --id EXPERIMENT_ID --format json
+agentera state plan list
+agentera state plan get --id PLAN_ID
+agentera state plan tasks list --limit 20
+agentera state experiments list --objective OBJECTIVE_ID
+agentera state experiments get --id EXPERIMENT_ID
 ```
 
 Pages use opaque snapshot cursors, explicit omission fields, whole-entry output
@@ -141,10 +141,10 @@ The user-local candidate projection has a separate read-only surface. It does
 not need a project checkout and never reads a project glossary.
 
 ```bash
-npx -y agentera@next report personal-glossary-candidates list --limit 20 --format json
+npx -y agentera@next report personal-glossary-candidates list --limit 20
 npx -y agentera@next report personal-glossary-candidates get \
   --candidate-id ID --candidate-revision REVISION \
-  --generation GENERATION --policy-version POLICY --format json
+  --generation GENERATION --policy-version POLICY
 ```
 
 List cursors bind the current generation, policy, filters, limit, order, and
@@ -164,7 +164,7 @@ current projection and evidence, then returns an admission outcome without
 writing a review, profile entry, or project state.
 
 ```bash
-npx -y agentera@next report personal-glossary-decision --input receipt.json --format json
+npx -y agentera@next report personal-glossary-decision --input receipt.json
 ```
 
 Only a current explicit personal definition with a complete resolved
@@ -179,7 +179,7 @@ Publish one current explicit automatic admission through the separate,
 user-local mutation boundary:
 
 ```bash
-npx -y agentera@next report personal-glossary-publish --input publication.json --format json
+npx -y agentera@next report personal-glossary-publish --input publication.json
 ```
 
 The bounded request contains `schema_version`, `receipt`, `decision`, and
@@ -202,12 +202,12 @@ The queue takes the same bounded host receipt shape as the decision command and
 revalidates it before writing private metadata.
 
 ```bash
-npx -y agentera@next report personal-glossary-reviews queue --input receipt.json --format json
-npx -y agentera@next report personal-glossary-reviews disposition --input disposition.json --format json
-npx -y agentera@next report personal-glossary-reviews list --status pending --limit 20 --format json
+npx -y agentera@next report personal-glossary-reviews queue --input receipt.json
+npx -y agentera@next report personal-glossary-reviews disposition --input disposition.json
+npx -y agentera@next report personal-glossary-reviews list --status pending --limit 20
 npx -y agentera@next report personal-glossary-reviews get \
   --review-id ID --candidate-id ID --candidate-revision REVISION \
-  --generation GENERATION --policy-version POLICY --format json
+  --generation GENERATION --policy-version POLICY
 ```
 
 Records live only under the configured user profile. Queue metadata retains opaque

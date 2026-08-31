@@ -34,7 +34,7 @@ working on generated output and package construction.
 
 ```bash
 node packages/cli/dist/bin/agentera.js check validate \
-  capability-contract --format json
+  capability-contract
 ```
 
 Build before invoking the local compiled CLI or the compact gate.

@@ -1376,7 +1376,7 @@ export function smokePublishedCandidate(options = {}) {
 }
 
 function releaseMetadataGate(repo, adapterName, manifest, execute = run) {
-  execute(process.execPath, ["packages/cli/dist/bin/agentera.js", "check", "validate", "release-metadata", "--format", "json"], {
+  execute(process.execPath, ["packages/cli/dist/bin/agentera.js", "check", "validate", "release-metadata"], {
     cwd: repo,
     env: {
       ...npmChildEnvironment(process.env),

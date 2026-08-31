@@ -85,7 +85,7 @@ describe("cold CLI heap measurement", () => {
       process.env.NODE_OPTIONS = "--no-warnings";
       process.env.NODE_INSPECT_RESUME_ON_START = "0";
       measured = measureColdCli({
-        args: ["state", "progress", "list", "--limit", "100", "--format", "json"],
+        args: ["state", "progress", "list", "--limit", "100"],
         project,
         home,
         repoRoot: REPO_ROOT,
@@ -106,7 +106,7 @@ describe("cold CLI heap measurement", () => {
     expect(failure?.message.startsWith(prefix)).toBe(true);
     const evidence = JSON.parse(failure!.message.slice(prefix.length));
     expect(evidence).toMatchObject({
-      operation: "state progress list --limit 100 --format json",
+      operation: "state progress list --limit 100",
       exitCode: 1,
       childArgs: [
         "--inspect-brk=127.0.0.1:0",

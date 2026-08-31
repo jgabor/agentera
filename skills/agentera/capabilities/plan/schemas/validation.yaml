@@ -129,8 +129,8 @@ VALIDATION:
     rule: approved_plan_publication
     description: >-
       Plan MUST publish an approved plan that does not require preview with
-      exactly one `npx -y agentera@next state plan create --input PATH --format
-      json` call and MUST NOT run standalone lint or dry-run first. When the user
+      exactly one `npx -y agentera@next state plan create --input PATH` call and
+      MUST NOT run standalone lint or dry-run first. When the user
       explicitly requests preview, dry-run and final publication MUST reference
       the same unchanged temporary input rather than reserializing plan content.
     severity: critical

@@ -15,3 +15,13 @@ record:
     - GIVEN source, bundled, and extracted CLIs WHEN run without selectors THEN representative success and rejected non-JSON cases agree.
     - GIVEN output measurements WHEN rerun THEN existing byte and token budgets still pass.
   plan: nkvbedieaf
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Active package README, maintainer skills, state authority commands, measurement scripts, and a release qualification invocation still advertise --format json, so active and extracted-package guidance remains incomplete.
+    provenance:
+      attempt_id: audit-kqctnqhygo-1
+      source: orchestrate audit evaluation for task kqctnqhygo
+      recorded_at: 2026-08-31 08:19
+      writer_command: agentera state plan record-evaluation

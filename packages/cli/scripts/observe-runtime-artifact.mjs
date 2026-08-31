@@ -35,7 +35,7 @@ const served = {};
 let statusPayload = null;
 const servedCapabilityIds = observationMode === "package-smoke" ? ["status"] : capabilityIds;
 for (const capability of servedCapabilityIds) {
-  const result = spawnSync(process.execPath, [path.join(runtimeRoot, "dist/bin/agentera.js"), "prime", "--context", capability, "--format", "json"], {
+  const result = spawnSync(process.execPath, [path.join(runtimeRoot, "dist/bin/agentera.js"), "prime", "--context", capability], {
     cwd,
     env: { ...process.env, AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.join(runtimeRoot, "bundle") },
     encoding: "utf8",
@@ -59,9 +59,9 @@ function commandValues(value, current = "$", output = []) {
 
 function bootstrapCandidate(id) {
   const project = "/tmp/agentera-bootstrap-evidence/project";
-  if (id.startsWith("prime-") || id === "prime") return preCutover.preCutoverCommand("prime --context status --format json");
-  if (id === "recommended-startup") return preCutover.preCutoverCommand("prime --context build --format json");
-  if (id.startsWith("doctor-") || id === "doctor") return upgrade.commandText(["npx", "-y", "agentera@next", "doctor", "--format", "json", "--home", "/tmp/agentera-bootstrap-evidence/home", "--project", project, "--install-root", "/tmp/agentera-bootstrap-evidence/app"]);
+  if (id.startsWith("prime-") || id === "prime") return preCutover.preCutoverCommand("prime --context status");
+  if (id === "recommended-startup") return preCutover.preCutoverCommand("prime --context build");
+  if (id.startsWith("doctor-") || id === "doctor") return upgrade.commandText(["npx", "-y", "agentera@next", "doctor", "--home", "/tmp/agentera-bootstrap-evidence/home", "--project", project, "--install-root", "/tmp/agentera-bootstrap-evidence/app"]);
   if (id === "recovery-0") return upgrade.fullEntityUpgradePreviewCommand(project);
   throw new Error(`unknown accepted bootstrap specification '${id}'`);
 }
@@ -74,7 +74,7 @@ for (const entry of matrix.accepted) {
   rows.push({ id: entry.id, states: entry.states, classification: "accepted", argv: bound.argv });
 }
 for (const entry of matrix.rejections) {
-  const source = preCutover.preCutoverCommand("prime --context status --format json");
+  const source = preCutover.preCutoverCommand("prime --context status");
   try {
     development.bindDevelopmentInvocation({ owner: `activation.${entry.id}`, source }, entry.candidate);
     rows.push({ id: entry.id, states: entry.states, classification: "unexpected_accept", diagnostic: null });

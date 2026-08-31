@@ -1,0 +1,15 @@
+id: akovznzebm
+artifact: progress
+record:
+  timestamp: 2026-08-31 08:42
+  type: fix
+  phase: build
+  what: Corrected the failed active-command inventory so canonical guidance and current command producers omit redundant JSON selectors.
+  context:
+    intent: Complete task kqctnqhygo after its first failed evaluation without closing the task or plan.
+    constraints: Preserved the orchestrator-owned failed evaluation, explicit JSON compatibility, historical and migration records, compatibility fixtures, versions, and publication boundaries.
+    scope: Package README, maintainer skills, packaging runbook, active state authority commands, two bundled capability schemas, runtime observation and release qualification scripts, active measurement invocation, and an inventory-backed regression.
+  discovered: The prior regression covered served capability and state-help output but omitted package documentation, maintainer-only guidance, active reference commands, split argv producers, and multiline schema commands.
+  verified: Focused inventory and contract tests passed (243 tests, then 98 tests with 1 skipped; release qualification rerun passed 43 tests after pinning spawned pnpm to 10.30.3). Full source passed 258 files and 4,261 tests with 2 skipped. Typecheck, build, capability contract, and compact passed. Prime measured 11,049/12,000 bytes and status context 21,473/22,500 bytes. Package verification passed 24 tests in 29,234 ms under its 60,000 ms budget. Pack dry-run produced 487 files, 1,298,201 packed bytes, 5,758,152 unpacked bytes, and no warnings. Source, bundled, and installed extracted runtimes returned identical implicit and explicit JSON status payloads; text was rejected with exit 2 and invalid_choice. The extracted package README contains the canonical commands without the redundant selector.
+  next: Keep kqctnqhygo in_progress for the next orchestrator verdict; do not perform final plan or TODO closeout.
+  publication_order: 285
