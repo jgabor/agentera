@@ -10,7 +10,6 @@
 ## ⇉ Degraded
 
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
-- [ ] [id:ilohqcvysj] [fix:3.0.0] Stabilize usage JSON parity verification
 
 ## → Normal
 
@@ -172,3 +171,4 @@
 - [x] [id:uaobzdvzlr] [fix:3.0.0] Couple personal glossary review parsing to its structured-input specification.
 - [x] [id:zylyajhugj] [fix:3.0.0] Complete ownership-gated cleanup of retired external runtime integrations
 - [x] [id:oyxoxajkvd] [fix:3.0.0] Correct nested check and state JSON error routing
+- [x] [id:ilohqcvysj] [fix:3.0.0] Stabilize usage JSON parity verification

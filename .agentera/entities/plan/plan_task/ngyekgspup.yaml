@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: nkvbedieaf
   name: Complete lifecycle output conversion
-  status: in_progress
+  status: complete
   depends_on:
     - xwxcchoypp
   acceptance:
@@ -13,3 +13,13 @@ record:
     - GIVEN omitted and explicit JSON usage invocations cross a clock-second boundary WHEN parity is tested THEN stable fields match and each generated_at value is independently valid.
     - GIVEN each lifecycle parser or emitter family WHEN tested THEN it has one repeatable success and one failure case, including packaged privacy coverage.
   evidence: Replacement for blocked task grrrvzgkcr after audit reproduced a generated_at-dependent usage parity test.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-ngyekgspup-1
+      source: orchestrate audit evaluation for replacement task ngyekgspup
+      recorded_at: 2026-08-31 07:35
+      writer_command: agentera state plan record-evaluation

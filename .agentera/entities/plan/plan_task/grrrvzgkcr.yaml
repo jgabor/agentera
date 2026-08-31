@@ -4,7 +4,7 @@ record:
   name: Convert lifecycle and reporting surfaces
   depends_on:
     - xwxcchoypp
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN doctor, app-home, report, usage, or upgrade WHEN invoked without a selector THEN existing JSON contracts return.
     - GIVEN --version WHEN invoked without a selector THEN it remains plain text and rejects format selectors.
@@ -21,3 +21,6 @@ record:
       source: orchestrate audit re-evaluation for task grrrvzgkcr
       recorded_at: 2026-08-31 06:40
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - ngyekgspup
+  superseded_reason: Replacement task stabilized usage parity across clock boundaries and independently re-proved lifecycle output, effects, and package privacy.

@@ -15,12 +15,16 @@ record:
     - GIVEN a replacement task passes evaluation WHEN the blocked task is superseded THEN downstream contract/package work becomes eligible.
   release_blocker: true
   severity: degraded
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Stabilize usage JSON parity verification"
+      status: resolved
+      order: 127
       severity: degraded
-      status: open
-      order: 2
+  lifecycle:
+    operation: resolve
+    reason: Replacement task passed audit and superseded the blocked lifecycle task.
+    date: 2026-08-31
