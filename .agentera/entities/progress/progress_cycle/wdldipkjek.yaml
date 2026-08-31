@@ -1,0 +1,14 @@
+id: wdldipkjek
+artifact: progress
+record:
+  timestamp: 2026-08-31 07:31
+  type: test
+  phase: build
+  what: Made lifecycle usage parity deterministic across a clock-second boundary without changing runtime behavior.
+  context:
+    intent: Complete replacement lifecycle output task ngyekgspup by correcting the audit-reproduced generated_at parity flake and re-proving all lifecycle criteria.
+    constraints: Changed only the reporting output contract test. Preserved lifecycle payloads, validation, approval, retries, idempotency, effects, bounded selector privacy, package behavior, TODO ilohqcvysj, and orchestrator-owned closeout.
+    scope: packages/cli/test/cli/reportingOutputContract.test.ts and replacement task ngyekgspup.
+  verified: The forced one-second usage parity case passed 10 consecutive runs; stable payload fields match and each generated_at parses independently. Focused lifecycle tests passed 9 files and 138 tests, including upgrade validation, approval, idempotency, and effects. Full source passed 258 files and 4,260 tests with 2 skipped. Typecheck and build passed. The built CLI passed omitted/explicit JSON assertions for doctor, app-home, report, usage, and upgrade, plus bounded version and privacy assertions. Capability contract passed 3 checks, compact passed, and package verification passed 3 files and 24 tests.
+  next: Orchestrate must evaluate replacement task ngyekgspup before any lifecycle transition. Leave it in_progress; TODO ilohqcvysj remains open until evaluator PASS and supersession.
+  publication_order: 283

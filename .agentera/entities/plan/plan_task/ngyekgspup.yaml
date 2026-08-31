@@ -1,0 +1,15 @@
+id: ngyekgspup
+artifact: plan
+record:
+  plan: nkvbedieaf
+  name: Complete lifecycle output conversion
+  status: in_progress
+  depends_on:
+    - xwxcchoypp
+  acceptance:
+    - GIVEN doctor, app-home, report, usage, or upgrade WHEN invoked without a selector THEN existing bounded JSON contracts return with explicit JSON parity.
+    - GIVEN --version WHEN invoked without a selector THEN it remains plain text and rejects format selectors with bounded JSON errors.
+    - GIVEN previewed, rejected, retried, or approved lifecycle work WHEN output defaults change THEN validation, approval, idempotency, and effects remain unchanged.
+    - GIVEN omitted and explicit JSON usage invocations cross a clock-second boundary WHEN parity is tested THEN stable fields match and each generated_at value is independently valid.
+    - GIVEN each lifecycle parser or emitter family WHEN tested THEN it has one repeatable success and one failure case, including packaged privacy coverage.
+  evidence: Replacement for blocked task grrrvzgkcr after audit reproduced a generated_at-dependent usage parity test.

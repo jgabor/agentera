@@ -2,13 +2,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
 
 const roots: string[] = [];
 
 afterEach(() => {
+  vi.useRealTimers();
   for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
 });
 
@@ -29,11 +30,21 @@ describe("reporting output contract", () => {
     const corpus = path.join(root, "corpus.json");
     fs.writeFileSync(corpus, JSON.stringify({ records: [{ source_kind: "conversation_turn", data: { text: "hello" } }] }));
 
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-31T12:00:00Z"));
     const implicit = capture(["usage", "--corpus", corpus]);
+    vi.setSystemTime(new Date("2026-08-31T12:00:01Z"));
     const explicit = capture(["usage", "--corpus", corpus, "--format", "json"]);
-    expect(implicit).toEqual(explicit);
+    const { generated_at: implicitGeneratedAt, ...implicitPayload } = JSON.parse(implicit.out);
+    const { generated_at: explicitGeneratedAt, ...explicitPayload } = JSON.parse(explicit.out);
+    expect(implicit.rc).toBe(explicit.rc);
+    expect(implicit.err).toBe(explicit.err);
+    expect(implicitPayload).toEqual(explicitPayload);
+    for (const generatedAt of [implicitGeneratedAt, explicitGeneratedAt]) {
+      expect(generatedAt).toBeTypeOf("string");
+      expect(Number.isNaN(Date.parse(generatedAt))).toBe(false);
+    }
     expect(implicit.rc).toBe(0);
-    expect(JSON.parse(implicit.out)).toBeTypeOf("object");
   });
 
   it("keeps report preview JSON and rejects malformed report arguments as JSON", () => {
