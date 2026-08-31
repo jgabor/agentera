@@ -4,7 +4,7 @@ record:
   name: Convert lifecycle and reporting surfaces
   depends_on:
     - xwxcchoypp
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN doctor, app-home, report, usage, or upgrade WHEN invoked without a selector THEN existing JSON contracts return.
     - GIVEN --version WHEN invoked without a selector THEN it remains plain text and rejects format selectors.
@@ -12,12 +12,12 @@ record:
     - GIVEN each lifecycle parser or emitter family WHEN tested THEN one success and one failure cover the rule.
   plan: nkvbedieaf
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: An invalid private format selector is interpolated into the structured report error, violating the packaged producer privacy contract; package verification fails at the authoritative assertion.
+    last_failure_evidence: The usage omitted-versus-explicit JSON test compares complete payloads from separate invocations; generated_at can cross a second boundary, making the required lifecycle test nondeterministic.
     provenance:
-      attempt_id: audit-grrrvzgkcr-1
-      source: orchestrate audit evaluation for task grrrvzgkcr
-      recorded_at: 2026-08-31 06:28
+      attempt_id: audit-grrrvzgkcr-2
+      source: orchestrate audit re-evaluation for task grrrvzgkcr
+      recorded_at: 2026-08-31 06:40
       writer_command: agentera state plan record-evaluation

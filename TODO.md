@@ -10,6 +10,7 @@
 ## ⇉ Degraded
 
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
+- [ ] [id:ilohqcvysj] [fix:3.0.0] Stabilize usage JSON parity verification
 
 ## → Normal
 

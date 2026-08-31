@@ -1,0 +1,26 @@
+id: ilohqcvysj
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Stabilize usage JSON parity verification
+  requirements:
+    - Resolve blocked plan task grrrvzgkcr by comparing omitted and explicit JSON usage contracts without requiring separately generated timestamps to be identical.
+    - Validate each generated_at value independently while preserving parity for every stable contract field.
+    - Re-prove lifecycle and reporting behavior with repeatable targeted, source, and package evidence.
+  acceptance:
+    - GIVEN omitted and explicit JSON usage invocations cross a clock-second boundary WHEN parity is tested THEN stable contract fields still compare equal.
+    - GIVEN either usage result WHEN its generated_at value is inspected THEN the timestamp is present and valid.
+    - GIVEN the lifecycle reporting suite WHEN repeated THEN the usage parity case does not fail because of wall-clock timing.
+    - GIVEN a replacement task passes evaluation WHEN the blocked task is superseded THEN downstream contract/package work becomes eligible.
+  release_blocker: true
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Stabilize usage JSON parity verification"
+      severity: degraded
+      status: open
+      order: 2
