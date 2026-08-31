@@ -1,0 +1,26 @@
+id: wknsemowih
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Restore output history and prime token compliance
+  requirements:
+    - Restore every command string changed inside the retired historical_retrieval_evidence subtree and exclude that complete subtree from active command inventory checks.
+    - Provide reproducible pinned GPT-5 token measurement for live manifest surfaces and reduce prime briefing below its enforced 3,000-token budget without increasing existing budgets.
+    - Re-prove active guidance cleanup, historical immutability, compatibility, package parity, and byte/token limits before replacing blocked task kqctnqhygo.
+  acceptance:
+    - GIVEN the historical retrieval evidence subtree WHEN compared with its pre-task bytes THEN its command records are unchanged and excluded from active scanning.
+    - GIVEN the live prime briefing WHEN measured with the pinned GPT-5 tokenizer THEN it is at or below 3,000 tokens and within its byte budget.
+    - GIVEN active source, bundle, and extracted package surfaces WHEN inspected and invoked THEN canonical commands omit the flag while explicit JSON remains compatible.
+    - GIVEN a replacement task passes evaluation WHEN kqctnqhygo is superseded THEN final verification becomes dependency-ready.
+  release_blocker: true
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Restore output history and prime token compliance"
+      severity: degraded
+      status: open
+      order: 2

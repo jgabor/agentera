@@ -10,6 +10,7 @@
 ## ⇉ Degraded
 
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
+- [ ] [id:wknsemowih] [fix:3.0.0] Restore output history and prime token compliance
 
 ## → Normal
 

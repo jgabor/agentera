@@ -7,7 +7,7 @@ record:
     - wwhdreldlf
     - jeqrmofzfx
     - grrrvzgkcr
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN active skills, schemas, help, examples, corrections, or generated commands WHEN inspected THEN operational commands omit --format json.
     - GIVEN historical records WHEN inspected THEN they remain unchanged.
@@ -16,12 +16,12 @@ record:
     - GIVEN output measurements WHEN rerun THEN existing byte and token budgets still pass.
   plan: nkvbedieaf
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Active package README, maintainer skills, state authority commands, measurement scripts, and a release qualification invocation still advertise --format json, so active and extracted-package guidance remains incomplete.
+    last_failure_evidence: Historical retrieval evidence was rewritten and misclassified as active, while the live prime manifest still enforces a 3,000-token budget against a reported 3,110-token payload with no pinned passing token gate.
     provenance:
-      attempt_id: audit-kqctnqhygo-1
-      source: orchestrate audit evaluation for task kqctnqhygo
-      recorded_at: 2026-08-31 08:19
+      attempt_id: audit-kqctnqhygo-2
+      source: orchestrate audit re-evaluation for task kqctnqhygo
+      recorded_at: 2026-08-31 08:51
       writer_command: agentera state plan record-evaluation
