@@ -8,14 +8,12 @@ import { emitStructured } from "../structured.js";
 
 function emitStateFailure(error: StateRetrievalFailure, format: string | undefined, io: Io): number {
   const output = io.out ?? ((text: string) => process.stdout.write(text));
-  const diagnostic = io.err ?? ((text: string) => process.stderr.write(text));
-  if (format === "json" || format === "yaml") emitStructured(error.body, format, output);
-  else diagnostic(`Error: ${error.body.error.message}\nRecovery: ${error.body.error.recovery}\n`);
+  emitStructured(error.body, "json", output);
   return error.exitCode;
 }
 
 export function runCapability(command: string, argv: string[], io: Io, prog: string): number {
-  let format = "text";
+  let format = "json";
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
     i = n;
@@ -36,13 +34,13 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
       });
     }
     if (v !== null) {
-      if (v !== "text" && v !== "json" && v !== "yaml") {
+      if (v !== "json") {
         return emitInvalidInput(io, {
           format: asEnvelopeFormat(format),
           body: {
             class: "invalid_choice",
-            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')`,
-            valid_values: ["text", "json", "yaml"],
+            message: `argument --format: invalid choice: '${v}' (choose from 'json')`,
+            valid_values: ["json"],
           },
         });
       }
@@ -61,8 +59,8 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
 }
 
 export function runPrime(command: string, argv: string[], io: Io, prog: string): number {
-  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "text", input: null, termInput: null };
-  const invalidInputFormat = () => argv.includes("--guidance") ? "json" as const : asEnvelopeFormat(args.format);
+  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "json", input: null, termInput: null };
+  const invalidInputFormat = () => "json" as const;
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
     i = n;
@@ -113,13 +111,13 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
       }
       args.termInput = v;
     } else if ((v = value("--format")) !== null) {
-      if (v !== "text" && v !== "json" && v !== "yaml") {
+      if (v !== "json") {
         return emitInvalidInput(io, {
           format: invalidInputFormat(),
           body: {
             class: "invalid_choice",
-            message: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')`,
-            valid_values: ["text", "json", "yaml"],
+            message: `argument --format: invalid choice: '${v}' (choose from 'json')`,
+            valid_values: ["json"],
           },
         });
       }

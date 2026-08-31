@@ -1,0 +1,14 @@
+id: evapsgdeur
+artifact: progress
+record:
+  timestamp: 2026-08-31 06:09
+  type: feat
+  phase: build
+  what: Converted startup and routing operational output to JSON while preserving text-only prime guidance.
+  context:
+    intent: Convert prime, schema, route, and capability routing output without redesigning shared authority.
+    constraints: Preserved JSON payloads, streams, exit codes, bounds, structured input, prime budgets, and text-only valid guidance.
+    scope: Startup and routing runtime code and direct tests only.
+  verified: Targeted startup/routing tests passed 59 tests; follow-up integration tests passed 22 tests; full source tests passed 256 files and 4,239 tests with 2 skipped. Typecheck, build, local prime/schema/route/capability/guidance smoke checks, capability contract validation, and compact passed.
+  next: Orchestrate must evaluate task ggurxsngzw before any lifecycle transition; the task remains in_progress.
+  publication_order: 278

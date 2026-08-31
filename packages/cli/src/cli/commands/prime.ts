@@ -8,7 +8,6 @@ import {
   rejectRetiredPrimeFields,
   PRIME_BRIEF_MAX_UTF8_BYTES,
   PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES,
-  printOrientationTextBriefing,
 } from "./prime/orientationOutput.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 import type { OrientationState } from "../contracts/orientationState.js";
@@ -65,8 +64,8 @@ export function finalizeStatusCapabilityContextPayload(
 
 /**
  * prime orientation command. Port of scripts/agentera cmd_prime / cmd_status.
- * The text briefing (default), --guidance, deprecated --dashboard, --context,
- * and --format json paths are all wired.
+ * The JSON orientation, --guidance, deprecated --dashboard, and --context
+ * paths are all wired.
  */
 
 export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
@@ -78,10 +77,17 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const guidance = Boolean(args.guidance);
   const input = args.input ?? null;
   const termInput = args.termInput ?? null;
-  const format = args.format ?? "text";
-  const inputErrorFormat = args.format === "json" || args.format === "yaml" ? args.format : guidance ? "json" : "text";
+  const format = args.format ?? "json";
+  const inputErrorFormat = "json";
   const rejectInput = (body: Parameters<typeof emitInvalidInput>[1]["body"]): number =>
     emitInvalidInput(io, { format: inputErrorFormat, body });
+  if (format !== "json") {
+    return rejectInput({
+      class: "invalid_choice",
+      message: `argument --format: invalid choice: '${format}' (choose from 'json')`,
+      valid_values: ["json"],
+    });
+  }
   if (input !== null && (!capability || !PRIME_INPUT_CONTEXTS.has(capability) || dashboard || guidance)) {
     return rejectInput({
       class: "unsupported_target",
@@ -100,8 +106,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     return rejectInput({ class: "conflicting_stdin", message: "--input and --term-input cannot both read stdin" });
   }
   if (capability !== null && dashboard) {
-    err("Error: prime --context and prime --dashboard/--orientation are mutually exclusive\n");
-    return 2;
+    return rejectInput({ class: "mutually_exclusive", message: "prime --context and prime --dashboard/--orientation are mutually exclusive" });
   }
   if (capability !== null && guidance) {
     return rejectInput({ class: "mutually_exclusive", message: "prime --context and prime --guidance are mutually exclusive" });
@@ -139,12 +144,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     try {
       validatePrimeCapability(capability);
     } catch (exc) {
-      err(`Error: ${(exc as Error).message}\n`);
-      return 2;
-    }
-    if (format === "text") {
-      err("Error: prime --context requires --format json\n");
-      return 2;
+      return rejectInput({ class: "unsupported_target", message: (exc as Error).message });
     }
     let buildRequest: BuildExecutionRequest | null = null;
     let selectedTerm: string | null = null;
@@ -195,10 +195,6 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     });
   }
   if (dashboard) {
-    if (format === "text") {
-      err("Error: prime --dashboard requires --format json\n");
-      return 2;
-    }
     err("Deprecation: prime --dashboard is retained as an alias for `prime --context status --format json`; use the status startup capsule directly.\n");
     const state = collectOrientationState(collectOpts);
     const payload = buildStatusCapabilityContextPayload(state, command);
@@ -207,12 +203,8 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     });
   }
   const state = collectOrientationState(collectOpts);
-  if (format !== "text") {
-    const payload = buildOrientationJsonPayload(state, command);
-    // Bare default: project to the bounded decision brief (prime-briefing,
-    // 12000-byte budget). Explicit `--fields` selection keeps full payload.
-    return emitPrime(command, payload, format, args.fields, out, err, { bareBrief: true });
-  }
-  printOrientationTextBriefing(state, command, out);
-  return 0;
+  const payload = buildOrientationJsonPayload(state, command);
+  // Bare default: project to the bounded decision brief (prime-briefing,
+  // 12000-byte budget). Explicit `--fields` selection keeps full payload.
+  return emitPrime(command, payload, format, args.fields, out, err, { bareBrief: true });
 }

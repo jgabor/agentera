@@ -87,27 +87,16 @@ describe("cli prime", () => {
     expect(out).not.toContain("Pre-write artifact prose self-audit");
   });
 
-  it("renders the default text orientation briefing", () => {
+  it("renders the default JSON orientation briefing", () => {
     const { rc, out } = capture((io) => cmdPrime({ command: "prime" }, io));
     expect(rc).toBe(0);
-    expect(out.startsWith("npx -y agentera@next prime\n")).toBe(true);
-    expect(out).toContain("app_home: install_track=");
-    expect(out).toContain("status=");
-    expect(out).toContain("mode: ");
-    expect(out).toContain("shared_skill: status=");
-    expect(out).toContain("todo: critical=");
-    expect(out).toContain("next_action:");
-    expect(out).toContain("| phase=");
-    expect(out).toContain("- alt: ");
-    expect(out).toContain("source_contract:");
-    expect(out).toMatch(/startup_outcome=(ok|degraded|blocked)/);
-    expect(out).toContain("detail_discovery=npx -y agentera@next schema --format json");
+    expect(JSON.parse(out)).toMatchObject({ command: "prime", todo: { critical: 0 } });
   });
 
   it.each([
     ["explicit", "issues"],
     ["comma-form", "todo,issues"],
-  ])("rejects a default-text %s retired-field request before rendering", (_label, fields) => {
+  ])("rejects a default %s retired-field request before rendering", (_label, fields) => {
     const { rc, out, err } = capture((io) => cmdPrime({ command: "prime", fields }, io));
     expect(rc).toBe(2);
     expect(err).toBe("");
@@ -209,7 +198,7 @@ describe("cli prime", () => {
     }
   });
 
-  it("requires json for --dashboard and --context", () => {
+  it("rejects text for --dashboard and --context with JSON errors", () => {
     expect(capture((io) => cmdPrime({ dashboard: true, format: "text" }, io)).rc).toBe(2);
     expect(capture((io) => cmdPrime({ context: "plan", format: "text" }, io)).rc).toBe(2);
   });
@@ -531,9 +520,10 @@ describe("cli prime", () => {
   });
 
   it("rejects an unknown --context capability", () => {
-    const { rc, err } = capture((io) => cmdPrime({ context: "bogus", format: "json" }, io));
+    const { rc, out, err } = capture((io) => cmdPrime({ context: "bogus", format: "json" }, io));
     expect(rc).toBe(2);
-    expect(err).toContain("unsupported capability 'bogus'");
+    expect(err).toBe("");
+    expect(JSON.parse(out).error.message).toContain("unsupported capability 'bogus'");
   });
 });
 

@@ -4,7 +4,7 @@ record:
   name: Convert startup and routing surfaces
   depends_on:
     - xwxcchoypp
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN prime, schema, route, or capability routing WHEN invoked without a selector THEN existing JSON contracts return.
     - GIVEN invalid, alias, or migration paths WHEN they fail THEN no plaintext diagnostic accompanies the JSON error.

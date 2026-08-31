@@ -167,7 +167,7 @@ describe("status TODO readiness integration", () => {
     });
   });
 
-  it("keeps JSON, terminal, and host projections byte-exact on TODO recommendation fields", () => {
+  it("keeps bare and host JSON projections byte-exact on TODO recommendation fields", () => {
     publish([todo(
       "aaaaaaaaaa",
       "Resolve the glossary boundary",
@@ -176,10 +176,8 @@ describe("status TODO readiness integration", () => {
 
     const json = runPrime("json");
     const host = runPrime("json", "status");
-    const terminal = runPrime("text");
     expect(json.rc, json.err).toBe(0);
     expect(host.rc, host.err).toBe(0);
-    expect(terminal.rc, terminal.err).toBe(0);
 
     const expected = {
       object: "TODO aaaaaaaaaa: Resolve the glossary boundary",
@@ -194,9 +192,6 @@ describe("status TODO readiness integration", () => {
     };
     expect(json.payload!.next_action).toMatchObject(expected);
     expect(host.payload!.capability_context.context.status_context.next_action).toEqual(json.payload!.next_action);
-    expect(terminal.out).toContain(
-      "- object=TODO aaaaaaaaaa: Resolve the glossary boundary | capability=discuss | reason=Resolve the declared glossary boundary. | phase=deliberate | id=aaaaaaaaaa | artifact=todo | outcome=actionable | eligible=true | retrieval=npx -y agentera@next state todo get --id aaaaaaaaaa --format json\n",
-    );
   });
 
   it("projects blocked recovery without selecting an implementation destination", () => {

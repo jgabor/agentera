@@ -171,7 +171,8 @@ describe("installed SKILL.md v3 English routing (B6-2, defect #4)", () => {
 
       const swedish = capturePrime("planera", env);
       expect(swedish.rc).toBe(2);
-      expect(swedish.err).toContain("unsupported capability 'planera'");
+      expect(swedish.err).toBe("");
+      expect(JSON.parse(swedish.out).error.message).toContain("unsupported capability 'planera'");
 
       const english = capturePrime("plan", env);
       expect(english.rc).toBe(0);

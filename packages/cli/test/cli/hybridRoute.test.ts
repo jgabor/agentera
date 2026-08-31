@@ -9,7 +9,7 @@ import { main } from "../../src/cli/dispatch/index.js";
 import { runRouteReceipt, runRouteRequest } from "../../src/cli/commands/route.js";
 import { BOOTSTRAP_SOURCE_ROOT_ENV } from "../../src/core/sourceRoot.js";
 
-function invoke(input: string, args = ["route", "request", "--input", "-", "--format", "json"]) {
+function invoke(input: string, args = ["route", "request", "--input", "-"]) {
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", ...args], {

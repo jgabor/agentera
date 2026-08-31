@@ -24,12 +24,10 @@ describe("cli capability routing", () => {
     expect(CAPABILITY_ROUTING_NAMES).toHaveLength(11);
   });
 
-  it("emits text routing guidance", () => {
+  it("emits JSON routing guidance without a selector", () => {
     const { rc, out } = capture((io) => cmdCapability("plan", {}, io));
     expect(rc).toBe(0);
-    expect(out).toContain("agentera plan");
-    expect(out).toContain("invoke: /agentera plan via Agentera skill routing");
-    expect(out).toContain("startup context: npx -y agentera@next prime --context plan --format json");
+    expect(JSON.parse(out)).toMatchObject({ command: "plan", capability: "plan" });
   });
 
   it("emits a JSON routing payload", () => {
@@ -41,10 +39,11 @@ describe("cli capability routing", () => {
     expect(payload.routing.skill_invocation).toBe("/agentera discuss");
   });
 
-  it("treats yaml like text (only json is structured)", () => {
-    const yaml = capture((io) => cmdCapability("optimize", { format: "yaml" }, io));
-    const text = capture((io) => cmdCapability("optimize", { format: "text" }, io));
-    expect(yaml.out).toBe(text.out);
+  it("rejects a non-JSON selector with JSON only", () => {
+    const result = capture((io) => main(["node", "agentera", "optimize", "--format", "yaml"], io));
+    expect(result.rc).toBe(2);
+    expect(result.err).toBe("");
+    expect(JSON.parse(result.out).error.class).toBe("invalid_choice");
   });
 
   it("gates capability startup through the dispatcher before cutover", () => {
