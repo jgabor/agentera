@@ -140,6 +140,16 @@ describe("shared output policy", () => {
     expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
   });
 
+  it("does not expose a rejected format selector", () => {
+    const rejected = "PRIVATE_FORMAT_TRAP";
+    const result = capture(["report", "profile-grounding", `--format=${rejected}`]);
+    expect(result.rc).toBe(2);
+    expect(result.err).toBe("");
+    expect(result.out).not.toContain(rejected);
+    expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+    expect(Buffer.byteLength(result.out)).toBeLessThanOrEqual(32_768);
+  });
+
   it("keeps each text exception text-only", () => {
     for (const args of [[], ["--help"], ["--version"], ["prime", "--guidance"]]) {
       const result = capture(args);

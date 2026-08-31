@@ -140,12 +140,11 @@ export function applyOutputPolicy(args: readonly string[], io: { out?: (text: st
   }
 
   if (selectors.length > 1 || (selectors.length === 1 && selectors[0].value !== "json")) {
-    const value = selectors.length > 1 ? "multiple selectors" : String(selectors[0].value);
     return emitInvalidInput(io, {
       format: "json",
       body: {
         class: "invalid_choice",
-        message: `argument --format: invalid choice: '${value}' (choose from 'json')`,
+        message: "argument --format: invalid choice (choose from 'json')",
         valid_values: ["json"],
         recovery: "Use --format json or omit the selector; no state was changed.",
       },

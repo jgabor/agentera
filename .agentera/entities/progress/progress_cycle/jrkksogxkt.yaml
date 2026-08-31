@@ -1,0 +1,13 @@
+id: jrkksogxkt
+artifact: progress
+record:
+  timestamp: 2026-08-31 06:36
+  type: fix
+  phase: build
+  what: Sanitized invalid output-format rejections so converted reporting surfaces do not expose rejected selector values.
+  context:
+    intent: Correct the persisted privacy evaluation failure with the smallest runtime and source regression change.
+    constraints: Preserve the orchestrator-owned failed evaluation and all lifecycle approval and effect semantics; do not perform task closeout.
+  verified: Targeted source tests passed 6 files and 53 tests. Full source tests passed 257 files and 4,250 tests with 2 skipped. Typecheck and build passed. The local built CLI privacy assertion preserved invalid_choice, valid_values [json], exit code 2, a 270-byte JSON envelope, empty stderr, and no effects while hiding the selector. Capability contract passed 3 checks, compact passed, and package verification passed 3 files and 24 tests.
+  next: Orchestrate must record the next verdict for task grrrvzgkcr; leave it in_progress.
+  publication_order: 280

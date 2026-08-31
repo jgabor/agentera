@@ -11,3 +11,13 @@ record:
     - GIVEN previewed or approved lifecycle work WHEN output changes THEN effect and approval semantics remain unchanged.
     - GIVEN each lifecycle parser or emitter family WHEN tested THEN one success and one failure cover the rule.
   plan: nkvbedieaf
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: An invalid private format selector is interpolated into the structured report error, violating the packaged producer privacy contract; package verification fails at the authoritative assertion.
+    provenance:
+      attempt_id: audit-grrrvzgkcr-1
+      source: orchestrate audit evaluation for task grrrvzgkcr
+      recorded_at: 2026-08-31 06:28
+      writer_command: agentera state plan record-evaluation
