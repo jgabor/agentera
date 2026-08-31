@@ -378,8 +378,8 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
     },
     raw_artifact_reads_required: false,
     raw_artifact_read_policy:
-       "Use `agentera state decisions list --limit 20 --format json` for bounded normal deliberation discovery; " +
-       "use `agentera state decisions get --id ID --format json` for exact detail, and key normal use off " +
+       "Use `agentera state decisions list --limit 20` for bounded normal deliberation discovery; " +
+       "use `agentera state decisions get --id ID` for exact detail, and key normal use off " +
       "complete_for_normal_deliberation_context. " +
       "Do not read raw decision state unless investigating entity corruption or CLI defects; " +
       "historical compacted gaps are exposed through missing_fields and caveats.",

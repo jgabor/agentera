@@ -153,126 +153,126 @@ function projection(
 
 const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionContract> = {
   "progress.append": projection(
-    `Run \`${developmentCommand("state progress explain --verb append --format json")}\` and correct the rejected field; no state was changed.`,
-    developmentCommand("state progress append --input progress.yaml --format json"),
+    `Run \`${developmentCommand("state progress explain --verb append")}\` and correct the rejected field; no state was changed.`,
+    developmentCommand("state progress append --input progress.yaml"),
   ),
   "decisions.append": projection(
-    `Run \`${developmentCommand("state decisions explain --verb append --format json")}\` and supply every required field; no state was changed.`,
-    developmentCommand("state decisions append --input decision.yaml --format json"),
+    `Run \`${developmentCommand("state decisions explain --verb append")}\` and supply every required field; no state was changed.`,
+    developmentCommand("state decisions append --input decision.yaml"),
   ),
   "decisions.update": projection(
-    `Run ${developmentCommand("state decisions explain --verb update --format json")}, use the returned bare decision ID, and provide a valid satisfaction transition.`,
-    developmentCommand('state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..." --format json'),
+    `Run ${developmentCommand("state decisions explain --verb update")}, use the returned bare decision ID, and provide a valid satisfaction transition.`,
+    developmentCommand('state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."'),
   ),
   "decisions.amend": projection(
     "Reread the exact decision, copy its current effective SHA-256, and retry with at least one amendable field; no state was changed.",
-    developmentCommand("state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml --format json"),
+    developmentCommand("state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml"),
   ),
   "plan.append": projection(
-    `Use ${developmentCommand("state plan explain --verb append --format json")}, select an open plan, and supply one complete task record with bare same-plan dependencies.`,
-    developmentCommand("state plan append --plan qjtrmnpvka --input task.yaml --format json"),
+    `Use ${developmentCommand("state plan explain --verb append")}, select an open plan, and supply one complete task record with bare same-plan dependencies.`,
+    developmentCommand("state plan append --plan qjtrmnpvka --input task.yaml"),
   ),
   "plan.update": projection(
     "Reread the plan task by its bare ID, supply an omission-preserving patch through --input, and retry; no state was changed.",
-    developmentCommand("state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml --format json"),
+    developmentCommand("state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml"),
   ),
   "plan.set-status": projection(
     "Reread the task list, copy its bare task ID, and use one of complete, in_progress, pending, or blocked.",
-    developmentCommand("state plan set-status --id qjtrmnpvka --status complete --format json"),
+    developmentCommand("state plan set-status --id qjtrmnpvka --status complete"),
   ),
   "plan.supersede": projection(
     "Complete and evaluate each replacement task with latest PASS evidence, then retry with the returned bare IDs.",
-    developmentCommand('state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement task" --format json'),
+    developmentCommand('state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement task"'),
   ),
   "plan.set-plan-status": projection(
     "Keep the plan open or resolve every incomplete task and replacement evaluation before retrying completion.",
-    developmentCommand("state plan set-plan-status --status complete --format json"),
+    developmentCommand("state plan set-plan-status --status complete"),
   ),
   "plan.record-evaluation": projection(
     "Use the task's bare ID, a stable attempt ID, and evaluator provenance, then retry without changing published evidence.",
-    developmentCommand('state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report" --format json'),
+    developmentCommand('state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report"'),
   ),
   "plan.archive": projection(
     "Archive a complete plan normally. With --force, archive the selected open plan unchanged only after the locked canonical snapshot identifies it; multiple implicit open-plan candidates are rejected without effects.",
-    developmentCommand("state plan archive --dry-run --format json"),
-    developmentCommand("state plan archive --force --dry-run --format json"),
+    developmentCommand("state plan archive --dry-run"),
+    developmentCommand("state plan archive --force --dry-run"),
   ),
   "plan.create": projection(
-    `Run ${developmentCommand("state plan explain --verb create --format json")}, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and use --force only when the locked canonical snapshot has exactly one open predecessor to archive unchanged.`,
-    developmentCommand("state plan create --input plan.yaml --format json"),
-    developmentCommand("state plan create --force --input plan.yaml --format json"),
+    `Run ${developmentCommand("state plan explain --verb create")}, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and use --force only when the locked canonical snapshot has exactly one open predecessor to archive unchanged.`,
+    developmentCommand("state plan create --input plan.yaml"),
+    developmentCommand("state plan create --force --input plan.yaml"),
   ),
   "plan.replace": projection(
-    "Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects. Competing-open diagnostics retain bounded bare IDs without assigning roles and recover through npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json.",
-    developmentCommand("state plan replace --predecessor abcdefghij --successor klmnopqrst --format json"),
-    developmentCommand("state plan replace --predecessor abcdefghij --input plan.yaml --format json"),
+    "Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects. Competing-open diagnostics retain bounded bare IDs without assigning roles and recover through npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID.",
+    developmentCommand("state plan replace --predecessor abcdefghij --successor klmnopqrst"),
+    developmentCommand("state plan replace --predecessor abcdefghij --input plan.yaml"),
   ),
   "health.append": projection(
-    `Run ${developmentCommand("check validate state --format json")}, preserve audit evidence, and retry with one schema-valid audit entry.`,
-    developmentCommand("state health append --input audit.yaml --format json"),
+    `Run ${developmentCommand("check validate state")}, preserve audit evidence, and retry with one schema-valid audit entry.`,
+    developmentCommand("state health append --input audit.yaml"),
   ),
   "objective.create": projection(
     "Remove identity fields assigned by the CLI and retry with one schema-valid objective document.",
-    developmentCommand("state objective create --input objective.yaml --format json"),
+    developmentCommand("state objective create --input objective.yaml"),
   ),
   "objective.update": projection(
     "Reread the objective, copy its bare ID to --id, remove CLI-owned fields, and retry.",
-    developmentCommand("state objective update --id qjtrmnpvka --input objective.yaml --format json"),
+    developmentCommand("state objective update --id qjtrmnpvka --input objective.yaml"),
   ),
   "experiments.publish": projection(
     "Use a bare objective ID, omit numeric legacy selectors, and retry the exact input; divergent immutable identities remain untouched.",
-    developmentCommand("state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json"),
+    developmentCommand("state experiments publish --objective qjtrmnpvka --input experiment.yaml"),
   ),
   "todo.activate": projection(
     "Preview and review every reported safe activation effect before explicit confirmed apply; unsafe inactive evidence requires the separate effect-bound owner-correction operation.",
-    developmentCommand("state todo activate --dry-run --format json"),
-    developmentCommand("state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json"),
+    developmentCommand("state todo activate --dry-run"),
+    developmentCommand("state todo activate --effect-sha256 EFFECT_SHA256 --yes"),
   ),
   "todo.repair": projection(
     "Preview and review every diagnosed repair decision before explicit confirmed apply; ambiguous evidence is rejected without effects.",
-    developmentCommand("state todo repair --dry-run --format json"),
-    developmentCommand("state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json"),
+    developmentCommand("state todo repair --dry-run"),
+    developmentCommand("state todo repair --effect-sha256 EFFECT_SHA256 --yes"),
   ),
   "todo.correct-owners": projection(
     "Supply one complete id/source_line owner mapping, preview its bounded effect, then apply only the exact returned effect; malformed, ambiguous, unmatched, or stale evidence is rejected without effects.",
-    developmentCommand("state todo correct-owners --input owner-mapping.yaml --dry-run --format json"),
-    developmentCommand("state todo correct-owners --input owner-mapping.yaml --effect-sha256 EFFECT_SHA256 --yes --format json"),
+    developmentCommand("state todo correct-owners --input owner-mapping.yaml --dry-run"),
+    developmentCommand("state todo correct-owners --input owner-mapping.yaml --effect-sha256 EFFECT_SHA256 --yes"),
   ),
   "todo.create": projection(
     "For one item, preserve the existing full-record form. For a batch, supply agentera.todoCreateBatch.v1, preview with --dry-run, then repeat the same input with its effect SHA-256 and --yes.",
-    developmentCommand("state todo create --input todo.yaml --format json"),
+    developmentCommand("state todo create --input todo.yaml"),
   ),
   "todo.update": projection(
     "For one item, preserve the existing --id and patch form. For a batch, supply agentera.todoUpdateBatch.v1, preview with --dry-run, then repeat the same input with its effect SHA-256 and --yes.",
-    developmentCommand("state todo update --id qjtrmnpvka --input todo-patch.yaml --format json"),
+    developmentCommand("state todo update --id qjtrmnpvka --input todo-patch.yaml"),
   ),
   "todo.set-severity": projection(
     "Use singleton flags unchanged, or supply agentera.todoSetSeverityBatch.v1 through --input, preview it, then exact-apply it with the effect SHA-256 and --yes.",
-    developmentCommand('state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31 --format json'),
+    developmentCommand('state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31'),
   ),
   "todo.supersede": projection(
     "Use the selected bare TODO ID, an existing distinct replacement ID, a reason, and a YYYY-MM-DD date; no record input is accepted.",
-    developmentCommand('state todo supersede --id qjtrmnpvka --replacement zqtrmnpvka --reason "Replaced by narrower work" --date 2026-07-31 --format json'),
+    developmentCommand('state todo supersede --id qjtrmnpvka --replacement zqtrmnpvka --reason "Replaced by narrower work" --date 2026-07-31'),
   ),
   "todo.resolve": projection(
     "Use singleton flags unchanged, or supply agentera.todoResolveBatch.v1 through --input, preview it, then exact-apply it with the effect SHA-256 and --yes.",
-    developmentCommand('state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31 --format json'),
+    developmentCommand('state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31'),
   ),
   "todo.reopen": projection(
     "Use the bare resolved TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.",
-    developmentCommand('state todo reopen --id qjtrmnpvka --reason "Scope returned" --date 2026-07-31 --format json'),
+    developmentCommand('state todo reopen --id qjtrmnpvka --reason "Scope returned" --date 2026-07-31'),
   ),
   "docs.create": projection(
     "Remove id and artifact from the input and retry with one schema-valid documentation inventory entry.",
-    developmentCommand("state docs create --input documentation.yaml --format json"),
+    developmentCommand("state docs create --input documentation.yaml"),
   ),
   "docs.update": projection(
     "Reread the documentation entry, copy its bare ID to --id, remove CLI-owned fields, and retry.",
-    developmentCommand("state docs update --id qjtrmnpvka --input documentation.yaml --format json"),
+    developmentCommand("state docs update --id qjtrmnpvka --input documentation.yaml"),
   ),
   "glossary.publish": projection(
-    `Run ${developmentCommand("state glossary explain --verb publish --format json")} and correct the bounded request or confirmation.`,
-    developmentCommand("state glossary publish --input glossary-publication.yaml --format json"),
+    `Run ${developmentCommand("state glossary explain --verb publish")} and correct the bounded request or confirmation.`,
+    developmentCommand("state glossary publish --input glossary-publication.yaml"),
   ),
 };
 

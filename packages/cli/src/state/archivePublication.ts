@@ -158,7 +158,7 @@ function rejectConflict(stableId: string, message: string): never {
   reject({
     class: "conflict",
     message,
-    syntax: "agentera state <artifact-id> append ... --format json",
+    syntax: "agentera state <artifact-id> append ...",
     example: "retry the same append for an identical record; change the entry content for a new record",
     violations: [`immutable archive identity: ${stableId}`],
   });
@@ -181,7 +181,7 @@ function assertNoSymlinkPath(projectRoot: string, candidate: string): void {
       reject({
         class: "unsupported_target",
         message: `numbered archive path contains a symbolic link: '${cursor}'`,
-        syntax: "agentera state <artifact-id> append ... --format json",
+        syntax: "agentera state <artifact-id> append ...",
         example: "remove the symbolic link and retry the append",
       });
   }
@@ -213,7 +213,7 @@ function archivePath(
     reject({
       class: "unsupported_target",
       message: (error as Error).message,
-      syntax: "agentera state <artifact-id> append ... --format json",
+      syntax: "agentera state <artifact-id> append ...",
       example: "select a project-local archive path and retry",
     });
   }

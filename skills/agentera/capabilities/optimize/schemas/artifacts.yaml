@@ -65,5 +65,5 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       CLI-provided startup benchmark summary from `npx -y agentera@next prime --context
-      optimize --format json`. Optimize consumes this before any direct
+      optimize`. Optimize consumes this before any direct
       latest-report.json, latest-report.md, or runs.jsonl diagnostic read.

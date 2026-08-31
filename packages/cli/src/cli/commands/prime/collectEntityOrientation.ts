@@ -66,8 +66,8 @@ function healthSummary(latest: JsonObject | undefined, history: JsonObject | und
       omitted_count: currentCount,
       omission_reason: "startup_health_detail",
       retrieval: {
-        list: preCutoverCommand("state health list --limit 20 --format json"),
-        get: preCutoverCommand("state health get --id ID --format json"),
+        list: preCutoverCommand("state health list --limit 20"),
+        get: preCutoverCommand("state health get --id ID"),
       },
     } : {};
     return history
@@ -114,8 +114,8 @@ function degradedHistory(
     returned_count: 0,
     omitted_count: totalSummaryCount,
     retrieval: {
-      list: preCutoverCommand(`state ${artifact} list --limit 20 --format json`),
-      get: preCutoverCommand(`state ${artifact} get --id ID --format json`),
+      list: preCutoverCommand(`state ${artifact} list --limit 20`),
+      get: preCutoverCommand(`state ${artifact} get --id ID`),
     },
   };
 }
@@ -128,8 +128,8 @@ function projectedHistory(
   degraded: JsonObject | undefined,
 ): JsonObject {
   const total = fullCount + summaryCount;
-  const listCommand = preCutoverCommand(`state ${artifact} list --limit 20 --format json`);
-  const getCommand = preCutoverCommand(`state ${artifact} get --id ID --format json`);
+  const listCommand = preCutoverCommand(`state ${artifact} list --limit 20`);
+  const getCommand = preCutoverCommand(`state ${artifact} get --id ID`);
   return {
     schemaVersion: list.schemaVersion,
     command: list.command,
@@ -164,7 +164,7 @@ function selected(
   if (candidateIds.length < 2) return entries[0];
   const ids = candidateIds.slice().sort();
   const noun = artifact === "plan" ? "open plans" : "active objectives";
-  const list = preCutoverCommand(`state ${artifact} list --format json`);
+  const list = preCutoverCommand(`state ${artifact} list`);
   const planConflict = artifact === "plan" ? openPlanConflictDiagnostic(ids, sourceRoot) : undefined;
   throw new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
@@ -173,8 +173,8 @@ function selected(
       class: "ambiguous",
       artifact,
       message: planConflict?.message ?? `multiple ${noun} require explicit selection: ${ids.join(", ")}`,
-      syntax: preCutoverCommand(`state ${artifact} get --id ID --format json`),
-      example: preCutoverCommand(`state ${artifact} get --id ${String(entries[0]?.id)} --format json`),
+      syntax: preCutoverCommand(`state ${artifact} get --id ID`),
+      example: preCutoverCommand(`state ${artifact} get --id ${String(entries[0]?.id)}`),
       recovery: planConflict?.recovery ?? `Run ${list}, resolve the competing ${noun}, and retry prime.`,
       ...(planConflict ? { details: planConflict.details } : {}),
     },
@@ -278,7 +278,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const publicTaskEntries = taskEntries.slice(0, STARTUP_ARRAY_LIMIT);
   const taskDetailOmitted = allTaskEntries.length > publicTaskEntries.length;
   const taskRetrieval: JsonObject = selectedPlan
-    ? { list: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100 --format json`), restart: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100 --format json`), get: preCutoverCommand("state plan tasks get --id ID --format json") }
+    ? { list: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100`), restart: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100`), get: preCutoverCommand("state plan tasks get --id ID") }
     : {};
   const plan: PlanSummary = selectedPlan ? {
     exists: true,

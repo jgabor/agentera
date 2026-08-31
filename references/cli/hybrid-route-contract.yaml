@@ -24,7 +24,7 @@ protocol:
       The transient, unmodified user message. It is accepted for routing and is
        never persisted by this protocol.
     cli_seam:
-      command: npx -y agentera@next route request --input PATH --format json
+      command: npx -y agentera@next route request --input PATH
       input: >-
         A YAML or JSON mapping supplied by --input PATH or --input -. The request
         field is never accepted in argv; --input - reads it from stdin.
@@ -65,7 +65,7 @@ protocol:
           A self-describing semantic-receipt guide returned only with deterministic
           abstention. It contains the exact nullable receipt schema, legal outcomes,
           nullability, compound and span rules, and one current stdin round trip.
-        stdin_command: npx -y agentera@next route receipt --input - --format json
+        stdin_command: npx -y agentera@next route receipt --input -
         input_schema:
           type: object
           additionalProperties: false
@@ -85,7 +85,7 @@ protocol:
     version: agentera.route_receipt.v1
     required_fields: [version, request_sha256, semantic_capsule_sha256, outcome]
     cli_seam:
-      command: npx -y agentera@next route receipt --input PATH --format json
+      command: npx -y agentera@next route receipt --input PATH
       input: >-
         A YAML or JSON mapping supplied by --input PATH or --input -. It has the
          transient original request in request and the complete nullable host output
@@ -255,7 +255,7 @@ protocol:
       version: agentera.route_receipt_result.v1
       selected: >-
         Emits the selected canonical capability, bounded semantic-receipt
-        provenance, and npx -y agentera@next prime --context <capability> --format json as
+        provenance, and npx -y agentera@next prime --context <capability> as
         the existing startup path. It authorizes that capability only.
       clarification: >-
         Emits exactly one validated question and semantic-receipt provenance; it
@@ -393,7 +393,7 @@ privacy:
 
 evaluation:
   conformance_owner: packages/cli/test/registries/hybridRouteContract.test.ts
-  visible_corpus_entrypoint: npx -y agentera@next route evaluate --format json
+  visible_corpus_entrypoint: npx -y agentera@next route evaluate
   visible_corpus_exit_codes: { pass: 0, failed_evaluation: 1, authority_conflict: 2 }
   visible_corpus_output: >-
     agentera.hybrid_route_evaluation.v1 reports only case IDs, partitions,

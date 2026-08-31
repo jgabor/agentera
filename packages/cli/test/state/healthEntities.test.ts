@@ -174,7 +174,7 @@ describe("health entity authority", () => {
       artifact: "health",
       record: { dimensions_detail: [{ findings: [{ evidence: "validator output and exact command", suggested_action: "run agentera check validate state" }] }] },
       provenance: { storage: "canonical_entity_file", boundary: "health_audit", detail: "full" },
-      retrieval: { get: "agentera state health get --id aaaaaaaaaa --format json" },
+      retrieval: { get: "agentera state health get --id aaaaaaaaaa" },
     });
     const listed = listHealthEntities(root, 20) as any;
     expect(listed.entries.map((entry: any) => entry.id)).toEqual(["aaaaaaaaaa", "cccccccccc", "bbbbbbbbbb"]);
@@ -211,7 +211,7 @@ describe("health entity authority", () => {
     expect(JSON.parse(out).entry.id).toBe("aaaaaaaaaa"); out = "";
     expect(runStateList("health", ["--limit", "1", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
     const first = JSON.parse(out);
-    expect(first).toMatchObject({ omitted: true, omitted_count: 1, omission_reason: "page_limit", retrieval: { get: "agentera state health get --id ID --format json" } });
+    expect(first).toMatchObject({ omitted: true, omitted_count: 1, omission_reason: "page_limit", retrieval: { get: "agentera state health get --id ID" } });
     expect(JSON.stringify(first.entries[0])).toContain("validator output and exact command"); out = "";
     expect(runStateList("health", ["--limit", "1", "--cursor", first.next_cursor, "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
     expect(JSON.parse(out).entries[0].id).toBe("bbbbbbbbbb");
@@ -232,7 +232,7 @@ describe("health entity authority", () => {
     expect(runStateList("health", ["--dimension", dimension, "--fields", "trajectory", "--limit", "1", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
     const first = JSON.parse(out);
     const argv = shellCommandArgs(first.retrieval.continue);
-    expect(argv).toEqual(["state", "health", "list", "--dimension", dimension, "--fields", "trajectory", "--limit", "1", "--cursor", first.next_cursor, "--format", "json"]);
+    expect(argv).toEqual(["state", "health", "list", "--dimension", dimension, "--fields", "trajectory", "--limit", "1", "--cursor", first.next_cursor]);
     out = "";
     expect(runStateList("health", argv.slice(3), { out: (text) => { out += text; } }, root)).toBe(0);
     const second = JSON.parse(out);

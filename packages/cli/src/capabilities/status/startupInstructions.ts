@@ -8,10 +8,10 @@ export function statusStartupInstructions(canonical: string): string {
   const replacements: Array<[string, string]> = [
     [
       "Glyph: **⌂** (SG1). Status reads suite state through `agentera prime` and writes nothing.",
-      "Glyph: **⌂** (SG1). Status reads its startup capsule through `agentera prime --context status --format json` and writes nothing.",
+      "Glyph: **⌂** (SG1). Status reads its startup capsule through `agentera prime --context status` and writes nothing.",
     ],
     [
-      "Build the dashboard from `agentera prime --format json` output.",
+      "Build the dashboard from `agentera prime` output.",
       "Build the dashboard from `capability_context.context.status_context` in the status startup response.",
     ],
     [

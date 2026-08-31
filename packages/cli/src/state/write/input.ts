@@ -70,7 +70,7 @@ const PROGRESS_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   ownedFields: ["id", "artifact", "publication_order"],
   immutableFields: [],
   bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 },
-  examples: ["agentera state progress append --input progress.yaml --format json"],
+  examples: ["agentera state progress append --input progress.yaml"],
 };
 
 const DECISION_APPEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
@@ -95,7 +95,7 @@ const DECISION_APPEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   ownedFields: ["id", "artifact"],
   immutableFields: ["number", "satisfaction"],
   bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 },
-  examples: ["agentera state decisions append --input decision.yaml --format json"],
+  examples: ["agentera state decisions append --input decision.yaml"],
 };
 
 const DECISION_AMEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
@@ -112,7 +112,7 @@ const DECISION_AMEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   ownedFields: ["id", "artifact", "base_sha256"],
   immutableFields: ["date", "number", "satisfaction"],
   bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 },
-  examples: ["agentera state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml --format json"],
+  examples: ["agentera state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml"],
 };
 
 const PLAN_TASK_APPEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
@@ -133,7 +133,7 @@ const PLAN_TASK_APPEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
   immutableFields: [],
   bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 },
-  examples: ["agentera state plan append --plan qjtrmnpvka --input task.yaml --format json"],
+  examples: ["agentera state plan append --plan qjtrmnpvka --input task.yaml"],
 };
 
 const PLAN_TASK_UPDATE_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
@@ -157,7 +157,7 @@ const PLAN_TASK_UPDATE_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
   immutableFields: ["status", "superseded_by", "superseded_reason", "evaluation", "plan"],
   bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 },
-  examples: ["agentera state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml --format json"],
+  examples: ["agentera state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml"],
 };
 
 const TODO_OWNER_CORRECTION_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
@@ -176,7 +176,7 @@ const TODO_OWNER_CORRECTION_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   ownedFields: ["reconciliation", "public_document", "activation"],
   immutableFields: ["id", "artifact", "readiness", "dependencies", "gates", "evidence", "lifecycle"],
   bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256 },
-  examples: ["agentera state todo correct-owners --input owner-mapping.yaml --dry-run --format json"],
+  examples: ["agentera state todo correct-owners --input owner-mapping.yaml --dry-run"],
 };
 
 const STRUCTURED_INPUT_SCHEMAS: Record<string, StructuredInputSchemaDescriptor> = {

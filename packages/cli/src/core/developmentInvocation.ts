@@ -85,13 +85,13 @@ function developmentCommand(argumentsText: string): string {
   return `${CANONICAL_DEVELOPMENT_INVOCATION} ${argumentsText}`;
 }
 
-const profileGroundingCommand = developmentCommand("report profile-grounding --format json");
+const profileGroundingCommand = developmentCommand("report profile-grounding");
 const GLOSSARY_PROJECTIONS = {
   "profile_output.command": developmentCommand("report personal-glossary-publish"),
   "profile_grounding.command": profileGroundingCommand,
   "profile_grounding.repair": `Use the Profile capability to repair or regenerate PROFILE.md, then retry \`${profileGroundingCommand}\`; no profile bytes were changed.`,
   "profile_grounding.absent": `Use the Profile capability to generate PROFILE.md, then retry ${profileGroundingCommand}.`,
-  "advice.command": developmentCommand("report glossary-advice --input REQUEST --format json"),
+  "advice.command": developmentCommand("report glossary-advice --input REQUEST"),
   "candidate_retrieval.command": developmentCommand("report personal-glossary-candidates"),
   "candidate_decision.command": developmentCommand("report personal-glossary-decision"),
   "review_records.command": developmentCommand("report personal-glossary-reviews"),
@@ -300,7 +300,6 @@ function validateOperationExample(spec: RuntimeOperationSpec, template: RuntimeO
   const fields = new Map(spec.fields.map((field) => [field.flag, field]));
   const seen = new Map<string, number>();
   let input = false;
-  let format = false;
   for (let index = prefix.length; index < words.length;) {
     const flag = words[index++];
     if (!flag.startsWith("--") || flag === "--") invalid(`${spec.artifact}.${spec.verb} example has an extra positional argument`);
@@ -320,7 +319,6 @@ function validateOperationExample(spec: RuntimeOperationSpec, template: RuntimeO
     if (argument === undefined || argument.startsWith("--")) invalid(`${spec.artifact}.${spec.verb} ${flag} needs one non-option value`);
     if (flag === "--format") {
       if (count > 1 || !spec.projection.formatValues.includes(argument as "text" | "json")) invalid(`${spec.artifact}.${spec.verb} example has an invalid format`);
-      format = true;
       continue;
     }
     if (flag === "--input") {
@@ -334,7 +332,6 @@ function validateOperationExample(spec: RuntimeOperationSpec, template: RuntimeO
     const issue = fieldValueIssue(field, argument);
     if (issue) invalid(`${spec.artifact}.${spec.verb} example has ${issue} for ${flag}`);
   }
-  if (!format) invalid(`${spec.artifact}.${spec.verb} example omits --format`);
   if (spec.inputMode === "structured" && !spec.inputOptional && !input) invalid(`${spec.artifact}.${spec.verb} example omits --input`);
   for (const field of spec.fields) {
     if (field.required && !seen.has(field.flag)) invalid(`${spec.artifact}.${spec.verb} example omits ${field.flag}`);

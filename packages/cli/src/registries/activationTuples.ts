@@ -87,10 +87,10 @@ const decodedCatalog = gunzipSync(Buffer.from(CATALOG, "base64")).toString("utf8
 const emittedReasons = JSON.parse(gunzipSync(Buffer.from(EMITTED_REASON_CATALOG, "base64")).toString("utf8")) as Record<string, string>;
 const rawTuples = JSON.parse(decodedCatalog.slice(decodedCatalog.indexOf("[", 2)).replace(/,\s*]$/, "]")) as ActivationCanonicalTuple[];
 const addedTuples: ActivationCanonicalTuple[] = [
-  { class: "state", surface_id: "write:plan.replace", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "plan.replace", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
-  { class: "state", surface_id: "write:todo.activate", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.activate", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
-  { class: "state", surface_id: "write:todo.correct-owners", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.correct-owners", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
-  { class: "state", surface_id: "write:todo.repair", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.repair", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state --format json" },
+  { class: "state", surface_id: "write:plan.replace", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "plan.replace", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state" },
+  { class: "state", surface_id: "write:todo.activate", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.activate", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state" },
+  { class: "state", surface_id: "write:todo.correct-owners", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.correct-owners", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state" },
+  { class: "state", surface_id: "write:todo.repair", owner_path: "packages/cli/src/state/write/runtimeOperations.ts", owner_symbol_or_selector: "runtimeOperationSpecs", owner_selector: "todo.repair", semantic_selector_if_any: null, canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state" },
   { class: "package", surface_id: "emitted:packages/cli/src/cli/commands/doctor.ts", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: "packages/cli/src/cli/commands/doctor.ts", semantic_selector_if_any: JSON.stringify({ path: "packages/cli/src/cli/commands/doctor.ts", selector: null, format: null, classification: null, reason: "Doctor project-state signals publish bounded reconciliation preview and apply guidance." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
   { class: "package", surface_id: "emitted:packages/cli/src/upgrade/declaredRetiredResourceCleanup.ts", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: "packages/cli/src/upgrade/declaredRetiredResourceCleanup.ts", semantic_selector_if_any: JSON.stringify({ path: "packages/cli/src/upgrade/declaredRetiredResourceCleanup.ts", selector: null, format: null, classification: null, reason: "Retired-resource planning emits authority-bound IDs and bounded outcomes exercised by source and extracted-package cleanup parity checks." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
   { class: "package", surface_id: "emitted:packages/cli/src/state/todoReconciliationInspection.ts", owner_path: "packages/cli/src/registries/packageRegistry.ts", owner_symbol_or_selector: "loadRegistry", owner_selector: "packages/cli/src/state/todoReconciliationInspection.ts", semantic_selector_if_any: JSON.stringify({ path: "packages/cli/src/state/todoReconciliationInspection.ts", selector: null, format: null, classification: null, reason: "TODO reconciliation inspection publishes bounded preview and effect-bound apply guidance." }), canonical_correction: "pnpm -C packages/cli run verify:package" },
@@ -102,7 +102,7 @@ const addedTuples: ActivationCanonicalTuple[] = [
     owner_symbol_or_selector: "loadProductV1ResetAuthority",
     owner_selector: "references/adapters/product-v1-reset.yaml",
     semantic_selector_if_any: null,
-    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
   },
   {
     class: "reference",
@@ -111,7 +111,7 @@ const addedTuples: ActivationCanonicalTuple[] = [
     owner_symbol_or_selector: "loadGlossaryEvaluationAuthority",
     owner_selector: "references/analysis/personal-glossary-evaluation-authority.yaml",
     semantic_selector_if_any: null,
-    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
   },
   {
     class: "reference",
@@ -120,7 +120,7 @@ const addedTuples: ActivationCanonicalTuple[] = [
     owner_symbol_or_selector: "loadGlossaryEvaluationHoldout",
     owner_selector: "references/analysis/personal-glossary-holdout.yaml",
     semantic_selector_if_any: null,
-    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
   },
   {
     class: "reference",
@@ -129,7 +129,7 @@ const addedTuples: ActivationCanonicalTuple[] = [
     owner_symbol_or_selector: "loadGlossaryEvaluationBehaviorFixture",
     owner_selector: "references/analysis/personal-glossary-evaluation-corpus.yaml",
     semantic_selector_if_any: null,
-    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
   },
   {
     class: "reference",
@@ -138,7 +138,7 @@ const addedTuples: ActivationCanonicalTuple[] = [
     owner_symbol_or_selector: "validateStructuredInputInventory",
     owner_selector: "references/analysis/structured-input-inventory.yaml",
     semantic_selector_if_any: null,
-    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
   },
   ...[
     "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera",
@@ -164,9 +164,10 @@ const addedTuples: ActivationCanonicalTuple[] = [
 ];
 const tuples = [...rawTuples, ...addedTuples].map((tuple): ActivationCanonicalTuple => {
   const reason = emittedReasons[tuple.surface_id];
-  if (tuple.class !== "package" || reason === undefined || tuple.semantic_selector_if_any === null) return tuple;
+  const current = { ...tuple, canonical_correction: tuple.canonical_correction.replaceAll(" --format json", "") };
+  if (tuple.class !== "package" || reason === undefined || tuple.semantic_selector_if_any === null) return current;
   const semantic = JSON.parse(tuple.semantic_selector_if_any) as Record<string, unknown>;
-  return { ...tuple, semantic_selector_if_any: JSON.stringify({ ...semantic, reason }) };
+  return { ...current, semantic_selector_if_any: JSON.stringify({ ...semantic, reason }) };
 });
 export const ACTIVATION_CANONICAL_TUPLES: readonly ActivationCanonicalTuple[] = Object.freeze(
   tuples.map((tuple) => Object.freeze(tuple)),
@@ -177,12 +178,12 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
     cli: { count: 27, sha256: "9d0db6cafe592da30ea3469c91dc514bdd1b3b22e8229a0519e680cbcb01c2fa" },
     capability: { count: 12, sha256: "892e6e5e2a57b41064bc44fa2946453225f1b1195aff77aad05365fd0a1071c2" },
     runtime: { count: 98, sha256: "089cf633c18625404ed7e19730a0c609f29f8f3f89bb89e184033e84ae9bba74" },
-    reference: { count: 27, sha256: "2fa3cb9811d7a0c97078effa546e6f157a5e67cea95ca44cc8e9ce84bc887a43" },
-    state: { count: 38, sha256: "697de8dcd13ac521124c35058ba222aa5cb6cae546f00bb54652ceaca4b662aa" },
+    reference: { count: 27, sha256: "1a808828a89be6373712f4bd98889d3665e147c9661dde6c67d0bb564ee047f5" },
+    state: { count: 38, sha256: "d3fa99f049a9e3a17f5a20e3aa77ebf8f4a9788bbc76a632c2d7d9a5b7049777" },
     package: { count: 68, sha256: "068465a0fbfd1ee189961eb7fbd4cf52309e3d9a1d0672bbfca43adb2740b6a7" },
     bootstrap: { count: 34, sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc" },
   },
-  total: { count: 304, sha256: "6b7fdf7cc412272d132f520e86e06ac2b39cc3dc6683f7c6a8472b3d8ba31da6" },
+  total: { count: 304, sha256: "22611a72d0f8038699a8cfb9533c92666477a876d7b11734917c32ff8cfe5707" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string { return JSON.stringify(value); }
 export function digestCanonicalTuples(values: readonly ActivationCanonicalTuple[]): string {

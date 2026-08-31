@@ -339,7 +339,7 @@ describe("packaged Build glossary advice seam", () => {
     const error = JSON.parse(result.stdout).error;
     expect(error.class).toBe("invalid_selected_term");
     expect(error.recovery).toBe(
-      "agentera report glossary-advice --term-input <file|-> --format json",
+      "agentera report glossary-advice --term-input <file|->",
     );
     expect(result.stdout + result.stderr).not.toContain("   ");
     expect(snapshotTree(root)).toEqual(before);
@@ -479,7 +479,7 @@ describe("packaged Build glossary advice seam", () => {
     const root = project();
     const profileRoot = profile("Ship Shape", "Project meaning");
     const instructions = discussInstructions(root, profileRoot);
-    const command = "npx -y agentera@next report glossary-advice --input <file|-> --format json";
+    const command = "npx -y agentera@next report glossary-advice --input <file|->";
 
     expect(instructions).toContain("initial meaning-sensitive user input");
     expect(instructions).toContain(command);
@@ -500,7 +500,7 @@ describe("packaged Build glossary advice seam", () => {
 
   it("serves Plan review-before-fixing and autonomous Build handoff semantics", () => {
     const instructions = planInstructions(project(), temporary("missing-profile"));
-    const command = "npx -y agentera@next report glossary-advice --input <file|-> --format json";
+    const command = "npx -y agentera@next report glossary-advice --input <file|->";
 
     expect(instructions).toContain("initial meaning-sensitive planning input");
     expect(instructions).toContain(command);

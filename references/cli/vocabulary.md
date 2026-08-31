@@ -21,7 +21,7 @@ included when they shape cross-suite usage.
 | `references/cli/update-channels.yaml`                              | Stable and development update channels, dist-tag/git resolution, default channel, and override keys.                                                                                                                                                                                                                         |
 | `references/cli/capability-instruction-contract.yaml`              | Decision 57 capability instruction-file contract, current `packages/cli/src/capabilities/<name>/instructions.ts` authority, and implemented `first_invocation_read` CLI/schema discoverability (D65 collapsed the legacy `full`/`compact_startup` distinction into a single `prime_context` value with runtime enforcement). |
 | `skills/agentera/SKILL.md`                                         | Agentera routing entry point, routing model, CLI-first state access, installed-app status checks, and safety rails.                                                                                                                                                                                                          |
-| `packages/cli/src/capabilities/*/instructions.ts`                  | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. Loaded as a default-exported string constant and served pre-cutover via `npx -y agentera@next prime --context <name> --format json`.                                                                                                                           |
+| `packages/cli/src/capabilities/*/instructions.ts`                  | Capability behavior, workflow grammar, step markers, and cross-capability boundaries. Loaded as a default-exported string constant and served pre-cutover via `npx -y agentera@next prime --context <name>`.                                                                                                                           |
 | `the agentera CLI` and `packages/cli/src/upgrade (doctor/upgrade)` | CLI-visible command labels, upgrade output, and doctor diagnostics.                                                                                                                                                                                                                                                          |
 | `README.md`, `UPGRADE.md`, `DESIGN.md`, `.agentera/*.yaml`         | User-facing phrasing, design vocabulary, and current project-state examples.                                                                                                                                                                                                                                                 |
 
@@ -91,15 +91,15 @@ The machine-readable authority is
 instruction-file boundary, including the canonical `instructions.ts` module,
 legacy `prose.md` and `instructions.md` compatibility boundaries, the
 implemented `first_invocation_read: prime_context` value, the
-`prime --context <name> --format json` ownership statement, and the runtime
+`prime --context <name>` ownership statement, and the runtime
 enforcement boundary promoted to `true` in D65.
 
 Use this prose as guidance only: the default is that the first capability
-invocation shells out to `npx -y agentera@next prime --context <name> --format json` and
+invocation shells out to `npx -y agentera@next prime --context <name>` and
 reads the returned `instructions` field. Today, capability directories carry
 the `schemas/` files only, the instructions module lives at
 `packages/cli/src/capabilities/<name>/instructions.ts`, and the
-`npx -y agentera@next prime --context <name> --format json` response emits
+`npx -y agentera@next prime --context <name>` response emits
 `capability_context.instructions` plus
 `first_invocation_read` metadata.
 
@@ -110,7 +110,7 @@ CLI process; agent runtimes shell out to the prime command instead of reading
 the prose module directly.
 
 Status startup is the one-call exception to the general compact-data wording
-above: `npx -y agentera@next prime --context status --format json` returns
+above: `npx -y agentera@next prime --context status` returns
 `capability_context.instructions` and bounded
 `capability_context.context.status_context` together with the one
 `capability_context.startup` availability projection. Consumers do not make a
@@ -515,7 +515,7 @@ High-signal source surfaces for this vocabulary:
 | `skills/agentera/SKILL.md`                                    | Routing entry, routing layers, CLI-first access, installed-app status check, and product-v1 reset boundary.                                                                               |
 | `skills/agentera/protocol.yaml`                               | Protocol primitives, glyphs, phases, visual tokens, exit signals.                                                                                                                         |
 | `skills/agentera/capability_schema_contract.yaml`             | Schema groups, priorities, stable IDs, primitive-reference fields.                                                                                                                        |
-| `packages/cli/src/capabilities/*/instructions.ts`             | Workflow grammar, capability roles, safety rails, exit marker forms. Loaded as a default-exported string constant; pre-cutover runtime serves it via `npx -y agentera@next prime --context <name> --format json`. |
+| `packages/cli/src/capabilities/*/instructions.ts`             | Workflow grammar, capability roles, safety rails, exit marker forms. Loaded as a default-exported string constant; pre-cutover runtime serves it via `npx -y agentera@next prime --context <name>`. |
 | `skills/agentera/capabilities/*/schemas/*.yaml`               | Trigger patterns, artifact roles, validation rules, exit conditions.                                                                                                                      |
 | `skills/agentera/schemas/artifacts/*.yaml`                    | Artifact fields, status enums, validation vocabulary, and protected current-state fields.                                                                                                 |
 | `references/artifacts/artifact-registry-interface-model.yaml` | Canonical artifact registry language.                                                                                                                                                     |

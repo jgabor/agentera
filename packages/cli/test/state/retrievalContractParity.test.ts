@@ -223,7 +223,7 @@ describe("final entity retrieval public-contract parity", () => {
 
   it.each([
     ["removed docs family", (value: any) => { delete value.entity_target.public_retrieval.commands.docs; delete value.entity_target.public_retrieval.list_help.families.docs; }, ".missing.docs"],
-    ["unknown ghost family", (value: any) => { value.entity_target.public_retrieval.commands.ghost = { list: "agentera state ghost list --format json", get: "agentera state ghost get --id ID --format json" }; value.entity_target.public_retrieval.list_help.families.ghost = { command_tokens: ["ghost"], filters: [], example: "agentera state ghost list --format json" }; }, ".unknown.ghost"],
+    ["unknown ghost family", (value: any) => { value.entity_target.public_retrieval.commands.ghost = { list: "agentera state ghost list", get: "agentera state ghost get --id ID" }; value.entity_target.public_retrieval.list_help.families.ghost = { command_tokens: ["ghost"], filters: [], example: "agentera state ghost list" }; }, ".unknown.ghost"],
     ["removed TODO summary fields", (value: any) => { delete value.entity_target.public_retrieval.list_help.families.todo.summary_fields; }, ".todo.summary_fields"],
     ["removed TODO summary notes", (value: any) => { delete value.entity_target.public_retrieval.list_help.families.todo.summary_field_notes; }, ".todo.summary_field_notes.required"],
     ["unknown TODO metadata", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.ghost = true; }, ".todo.unknown.ghost"],
@@ -252,12 +252,12 @@ describe("final entity retrieval public-contract parity", () => {
   it.each([
     ["missing example", (value: any) => { delete value.entity_target.public_retrieval.list_help.families.progress.example; }, ".progress.example.type"],
     ["non-string example", (value: any) => { value.entity_target.public_retrieval.list_help.families.decisions.example = ["agentera"]; }, ".decisions.example.type"],
-    ["non-canonical spacing", (value: any) => { value.entity_target.public_retrieval.list_help.families.health.example = "npx  -y agentera@next state health list --limit 20 --format json"; }, ".health.example.lexical_form"],
-    ["unknown argument", (value: any) => { value.entity_target.public_retrieval.list_help.families.docs.example = "npx -y agentera@next state docs list --ghost value --limit 20 --format json"; }, ".docs.example.argument"],
-    ["invalid positional identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.plan_tasks.example = "npx -y agentera@next state plan tasks list not-an-id --limit 20 --format json"; }, ".plan_tasks.example.identifier"],
-    ["missing required identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.experiments.example = "npx -y agentera@next state experiments list --limit 20 --format json"; }, ".experiments.example.identifier_required"],
-    ["invalid filter value", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.example = "npx -y agentera@next state plan list --status ghost --limit 20 --format json"; }, ".plans.example.filter_value"],
-    ["mutually exclusive selectors", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.example = "npx -y agentera@next state todo list --ids-only --fields status --limit 20 --format json"; }, ".todo.example.selector"],
+    ["non-canonical spacing", (value: any) => { value.entity_target.public_retrieval.list_help.families.health.example = "npx  -y agentera@next state health list --limit 20"; }, ".health.example.lexical_form"],
+    ["unknown argument", (value: any) => { value.entity_target.public_retrieval.list_help.families.docs.example = "npx -y agentera@next state docs list --ghost value --limit 20"; }, ".docs.example.argument"],
+    ["invalid positional identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.plan_tasks.example = "npx -y agentera@next state plan tasks list not-an-id --limit 20"; }, ".plan_tasks.example.identifier"],
+    ["missing required identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.experiments.example = "npx -y agentera@next state experiments list --limit 20"; }, ".experiments.example.identifier_required"],
+    ["invalid filter value", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.example = "npx -y agentera@next state plan list --status ghost --limit 20"; }, ".plans.example.filter_value"],
+    ["mutually exclusive selectors", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.example = "npx -y agentera@next state todo list --ids-only --fields status --limit 20"; }, ".todo.example.selector"],
     ["invalid format", (value: any) => { value.entity_target.public_retrieval.list_help.families.objective.example = "npx -y agentera@next state objective list --limit 20 --format toml"; }, ".objective.example.format"],
   ])("fails closed for example grammar: %s", (_name, mutate, expected) => {
     const authority = authorityDocument();
@@ -318,7 +318,7 @@ describe("final entity retrieval public-contract parity", () => {
     const surfaces = [printStateHelp("plan"), printStateHelp("experiments"), ...Object.values(CAPABILITY_INSTRUCTIONS)].join("\n");
     expect(surfaces).toContain("--id ID");
     expect(surfaces).not.toMatch(/--(?:number|task)\s+[A-Z]/);
-    expect(surfaces).not.toMatch(/agentera state (?:progress|decisions|health|plan|objective|experiments|todo|docs) --format json/);
+    expect(surfaces).not.toMatch(/agentera state (?:progress|decisions|health|plan|objective|experiments|todo|docs).* --format json/);
     expect(surfaces).not.toMatch(/agentera state experiments get --objective/);
     expect(printStateHelp("plan")).toContain("Only the displayed bare-ID selectors are accepted");
   });
@@ -453,8 +453,8 @@ describe("final entity retrieval public-contract parity", () => {
     const plan = capabilityContext("plan")?.availability as Record<string, any>[];
     const optimize = capabilityContext("optimize")?.availability as Record<string, any>[];
     expect(plan).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }),
-      expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding --format json" }),
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }),
+      expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding" }),
     ]));
     expect(optimize).toEqual(expect.arrayContaining([
       expect.objectContaining({ family: "experiments", availability: "deferred", detail_command: expect.stringContaining("--objective OBJECTIVE_ID") }),

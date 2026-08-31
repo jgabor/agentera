@@ -56,19 +56,19 @@ describe("cli help", () => {
 
   it("points state help at the live writer discovery contract", () => {
     expect(printStateHelp()).toContain(
-      "agentera state <artifact> explain --format json",
+      "agentera state <artifact> explain",
     );
     const decisions = printStateHelp("decisions");
     expect(decisions).toContain("{append,update,amend,explain}");
-    expect(decisions).toContain("agentera state decisions explain --format json");
-    expect(decisions).toContain("agentera state decisions explain --verb VERB --format json");
+    expect(decisions).toContain("agentera state decisions explain");
+    expect(decisions).toContain("agentera state decisions explain --verb VERB");
   });
 
   it("documents singleton and strict effect-bound TODO create forms", () => {
     const text = printStateHelp("todo");
-    expect(text).toContain("agentera state todo create --input TODO.yaml --format json");
-    expect(text).toContain("agentera state todo create --input TODO-CREATE-BATCH.yaml --dry-run --format json");
-    expect(text).toContain("agentera state todo create --input TODO-CREATE-BATCH.yaml --effect-sha256 SHA256 --yes --format json");
+    expect(text).toContain("agentera state todo create --input TODO.yaml");
+    expect(text).toContain("agentera state todo create --input TODO-CREATE-BATCH.yaml --dry-run");
+    expect(text).toContain("agentera state todo create --input TODO-CREATE-BATCH.yaml --effect-sha256 SHA256 --yes");
     expect(text).toContain("strict agentera.todoCreateBatch.v1 envelope");
     expect(text).toContain("apply the same input with the returned --effect-sha256 and --yes");
   });
@@ -76,7 +76,7 @@ describe("cli help", () => {
   it("makes the offline routing evaluation discoverable from canonical route help", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "route", "--help"], io));
     expect(rc).toBe(0);
-    expect(out).toContain("npx -y agentera@next route evaluate --format json");
+    expect(out).toContain("npx -y agentera@next route evaluate");
     expect(out).toContain("frozen offline conformance corpus");
     expect(out).toContain("exits 1 when its report status is fail");
   });
@@ -87,7 +87,7 @@ describe("cli help", () => {
     const rendered = (value: unknown) => JSON.stringify(value, null, 2).split("\n").map((line) => `  ${line}`).join("\n");
 
     expect(rc).toBe(0);
-    expect(receipt.stdin_command).toBe("npx -y agentera@next route receipt --input - --format json");
+    expect(receipt.stdin_command).toBe("npx -y agentera@next route receipt --input -");
     expect(out).not.toMatch(/(^|\n)(?:usage:\s*)?agentera route/m);
     expect(out).toContain("agentera.route_receipt_contract.v1");
     expect(out).toContain(rendered(receipt.nullable_schema));
@@ -101,7 +101,7 @@ describe("cli help", () => {
     const plan = printStateHelp("plan");
     expect(plan).toContain("agentera state plan tasks list [PLAN_ID] [--limit N]");
     expect(plan).toContain("agentera state plan tasks get --id ID");
-    expect(plan).toContain("agentera state plan get --id ID --format json");
+    expect(plan).toContain("agentera state plan get --id ID");
     expect(plan).toContain("Plan and task reads use bare canonical IDs");
     expect(plan).toContain("Invalid historical archives remain non-fatal compatibility diagnostics unless selected");
     expect(plan).toContain("Plan create rejects an open predecessor unless --force");
@@ -114,7 +114,7 @@ describe("cli help", () => {
     const experiments = printStateHelp("experiments");
     expect(experiments).toContain("agentera state experiments list --objective ID");
     expect(experiments).toContain("agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml");
-    expect(experiments).toContain("agentera state experiments explain --verb publish --format json");
+    expect(experiments).toContain("agentera state experiments explain --verb publish");
     const glossary = printStateHelp("glossary");
     expect(glossary).toContain("agentera state glossary publish --input REQUEST.yaml");
     expect(glossary).toContain("proposal-specific user confirmation");
@@ -168,7 +168,7 @@ describe("cli help", () => {
   it("routes top-level -h through main", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "-h"], io));
     expect(rc).toBe(0);
-    expect(out).toContain("npx -y agentera@next prime --context status --format json");
+    expect(out).toContain("npx -y agentera@next prime --context status");
   });
 
   it("routes upgrade --help through main", () => {

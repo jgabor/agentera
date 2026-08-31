@@ -92,7 +92,7 @@ VALIDATION:
     rule: sanitized_profile_grounding
     description: >-
       Plan MUST ground only from the `content` returned by `npx -y agentera@next report
-      profile-grounding --format json` when shared validity is valid; it MUST
+      profile-grounding` when shared validity is valid; it MUST
       preserve absent/repair-needed recovery and MUST NOT direct-read PROFILE.md.
     severity: critical
     checks:
@@ -104,7 +104,7 @@ VALIDATION:
     rule: governed_terminology_advice
     description: >-
       Plan MUST consume initial advice from `npx -y agentera@next prime
-      --context plan --term-input <file|-> --format json` without a second
+      --context plan --term-input <file|->` without a second
       report. Later changed meaning uses compact `report glossary-advice
       --term-input`, while structured host-review clarification uses `--input`.
       Interactive review

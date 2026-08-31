@@ -55,7 +55,7 @@ export interface ProjectionGateResult {
   recovery: ProjectionRecoveryReport;
 }
 
-const PROJECTION_COMMAND = "agentera check compact --mode fix --format json";
+const PROJECTION_COMMAND = "agentera check compact --mode fix";
 
 function entryNumber(record: JsonObject, contract: NumberedArchiveContract): number | null {
   const value = record[contract.entryNumberField];

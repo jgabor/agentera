@@ -93,7 +93,7 @@ export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems
 }
 
 export function evidenceProtectedStateChecks(): JsonObject {
-  const source = sourceProvenance("evidence_context", preCutoverCommand("prime --context audit --format json"), "protected_state_checks");
+  const source = sourceProvenance("evidence_context", preCutoverCommand("prime --context audit"), "protected_state_checks");
   return {
     status: "not_checked_by_design",
     allowed_status_values: ["verified_local", "not_checked_by_design", "requires_manual_check", "unavailable"],
@@ -125,7 +125,7 @@ export function evidenceVersionChecks(docs: JsonObject): JsonObject {
   const versionFiles = asList(conventions.version_files);
   const semverPolicy = conventions.semver_policy && typeof conventions.semver_policy === "object" && !Array.isArray(conventions.semver_policy) ? conventions.semver_policy : {};
   const source = sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.conventions");
-  const ec = (field: string) => sourceProvenance("evidence_context", preCutoverCommand("prime --context audit --format json"), field);
+  const ec = (field: string) => sourceProvenance("evidence_context", preCutoverCommand("prime --context audit"), field);
   const checks: JsonObject[] = [
     {
       name: "docs_version_policy",
@@ -366,27 +366,27 @@ export function auditEvidenceContext(
   for (const family of deferredStartupFamilies(capabilityContract)) {
     const message = `${family} detail is deferred from prime --context startup.`;
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("deferred_state_detail", "caveated", message, sourceProvenance("prime", preCutoverCommand("prime --context audit --format json"), "capability_context.startup.availability")));
+    attributedRisks.push(residualRiskEntry("deferred_state_detail", "caveated", message, sourceProvenance("prime", preCutoverCommand("prime --context audit"), "capability_context.startup.availability")));
   }
   if (bundle.status !== "up_to_date") {
     const message = "Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.";
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("installed_app_state", "caveated", message, sourceProvenance("status", preCutoverCommand("prime --format json"), "app.status")));
+    attributedRisks.push(residualRiskEntry("installed_app_state", "caveated", message, sourceProvenance("status", preCutoverCommand("prime"), "app.status")));
   }
   if (profile.status !== "valid") {
     const message = "profile-derived state is unavailable in prime --context response.";
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("profile_state", "unavailable", message, sourceProvenance("status", preCutoverCommand("prime --format json"), "profile.status")));
+    attributedRisks.push(residualRiskEntry("profile_state", "unavailable", message, sourceProvenance("status", preCutoverCommand("prime"), "profile.status")));
   } else if (profile.stale === true) {
     const message = "profile-derived state is stale; this is a caveat, not approval to refresh profile state.";
     stateCaveats.push(message);
-    attributedRisks.push(residualRiskEntry("profile_state", "caveated", message, sourceProvenance("status", preCutoverCommand("prime --format json"), "profile.stale")));
+    attributedRisks.push(residualRiskEntry("profile_state", "caveated", message, sourceProvenance("status", preCutoverCommand("prime"), "profile.stale")));
   }
   for (const component of [evaluationTarget, planCriteria, progressVerification, docsState, healthState, todoState, protectedStateChecks, versionChecks]) {
     for (const caveat of (component.caveats ?? []) as string[]) {
       stateCaveats.push(caveat);
       // cast: component source_provenance comes from evidence builders backed by parsed artifact/decision state
-      const componentSp = component.source_provenance ?? sourceProvenance("evidence_context", preCutoverCommand("prime --context audit --format json"));
+      const componentSp = component.source_provenance ?? sourceProvenance("evidence_context", preCutoverCommand("prime --context audit"));
       attributedRisks.push(residualRiskEntry("evidence_family", "caveated", caveat, componentSp as JsonObject));
     }
   }
@@ -429,7 +429,7 @@ export function auditEvidenceContext(
     STATE_FAMILY_FALLBACK_COMMANDS.docs,
     STATE_FAMILY_FALLBACK_COMMANDS.health,
     STATE_FAMILY_FALLBACK_COMMANDS.todo,
-    preCutoverCommand("state query --list-artifacts --format json"),
+    preCutoverCommand("state query --list-artifacts"),
   ]);
   return {
     capability: "audit",

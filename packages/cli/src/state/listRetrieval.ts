@@ -169,13 +169,13 @@ function hashValue(value: JsonValue): string {
 }
 
 function listSyntax(artifactId = "<artifact-id>"): string {
-  return `agentera state ${artifactId} list [--limit N] [--cursor TOKEN] --format json`;
+  return `agentera state ${artifactId} list [--limit N] [--cursor TOKEN]`;
 }
 
 function listExample(artifactId: string, cursor = false): string {
   return cursor
-    ? `agentera state ${artifactId} list --limit 20 --cursor TOKEN --format json`
-    : `agentera state ${artifactId} list --limit 20 --format json`;
+    ? `agentera state ${artifactId} list --limit 20 --cursor TOKEN`
+    : `agentera state ${artifactId} list --limit 20`;
 }
 
 function listFailure(
@@ -669,7 +669,7 @@ function listEntry(candidate: ListCandidate, overlay: OverlayState | null, proje
       physical_rows: physicalRows,
     },
     ...(addressable
-      ? { retrieval: { command: `agentera state ${candidate.artifactId} get --number ${candidate.entryNumber} --format json`, available: candidate.classification !== "conflict" && candidate.classification !== "ambiguous" && candidate.classification !== "corrupt" } }
+      ? { retrieval: { command: `agentera state ${candidate.artifactId} get --number ${candidate.entryNumber}`, available: candidate.classification !== "conflict" && candidate.classification !== "ambiguous" && candidate.classification !== "corrupt" } }
       : { retrieval: { available: false, reason: "unaddressable", message: "No stable ID was inferred from this physical row; list output is the only supported view." } }),
   };
   if (overlay && addressable) {
@@ -727,7 +727,7 @@ function omissionMetadata(
     omitted: count > 0,
     omitted_count: count,
     omission_reason: "list_output_byte_budget",
-    retrieval: { available: true, command: `agentera ${command} [--cursor TOKEN] --format json` },
+    retrieval: { available: true, command: `agentera ${command} [--cursor TOKEN]` },
     omission_provenance: provenanceCounts(entries),
   };
 }
@@ -863,7 +863,7 @@ export function listStateEntries(
       authority: LIST_AUTHORITY,
       compatibility: blocked ? "blocked" : degraded ? "degraded" : "complete",
       detail: "Rows preserve explicit canonical numbers and decision Dnn shorthand. Unaddressable rows remain list-only; mirrors, duplicates, conflicts, and ambiguity are classified without inferred identity.",
-      retrieval: `agentera state ${artifactId} get --number N --format json`,
+      retrieval: `agentera state ${artifactId} get --number N`,
       cursor: "opaque; bound to artifact, filters, order, candidate identity, archive hashes, and overlay revision",
     },
     ...(nextCursor ? { next_cursor: nextCursor } : {}),

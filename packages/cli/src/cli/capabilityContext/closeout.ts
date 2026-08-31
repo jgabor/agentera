@@ -142,14 +142,14 @@ export function closeoutReleaseBoundary(changelogBoundary: JsonObject, bundle: J
       remote_push: "not_recorded_in_cli_state",
       remote_checks_performed: false,
       registry_checks_performed: false,
-      source_provenance: sourceProvenance("closeout_context", preCutoverCommand("prime --context document --format json"), "release_boundary.publication_evidence"),
+      source_provenance: sourceProvenance("closeout_context", preCutoverCommand("prime --context document"), "release_boundary.publication_evidence"),
       caveats: ["Closeout context does not contact remotes or package registries."],
     },
     app_refresh_evidence: {
       installed_app_status: bundle.status ?? null,
       refresh: "not_recorded_in_cli_state",
       approval_recorded: false,
-      source_provenance: sourceProvenance("status", preCutoverCommand("prime --format json"), "app.status"),
+      source_provenance: sourceProvenance("status", preCutoverCommand("prime"), "app.status"),
     },
     caveats,
   };
@@ -202,8 +202,8 @@ export function documentCloseoutContext(
     STATE_FAMILY_FALLBACK_COMMANDS.todo,
     STATE_FAMILY_FALLBACK_COMMANDS.docs,
     STATE_FAMILY_FALLBACK_COMMANDS.progress,
-    preCutoverCommand("state query changelog --format json"),
-    preCutoverCommand("state query --list-artifacts --format json"),
+    preCutoverCommand("state query changelog"),
+    preCutoverCommand("state query --list-artifacts"),
   ]);
   return {
     capability: "document",

@@ -73,7 +73,7 @@ describe("invalid-input envelope (oracle parity)", () => {
             message: "--format: bogus",
             valid_values: ["text", "json"],
             syntax: "--format {text|json}",
-            example: "agentera --format json state plan",
+            example: "agentera state plan",
           },
         }),
       );
@@ -88,7 +88,7 @@ describe("invalid-input envelope (oracle parity)", () => {
       expect(err).toContain("json");
       expect(err).toContain("Syntax: --format {text|json}");
       expect(err).toContain("Example:");
-      expect(err).toContain("agentera --format json state plan");
+      expect(err).toContain("agentera state plan");
       expect(err).toContain("Recovery:");
     });
 

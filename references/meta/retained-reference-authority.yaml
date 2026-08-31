@@ -134,13 +134,13 @@ inventory:
     maintainer: Agentera CLI maintainers
     source_checkout_root: .
     working_directory: .
-    command: node packages/cli/dist/bin/agentera.js route evaluate --format json
+    command: node packages/cli/dist/bin/agentera.js route evaluate
   - path: references/cli/trigger-schema-enrichment.md
     classification: runbook
     maintainer: Agentera CLI maintainers
     source_checkout_root: .
     working_directory: .
-    command: node packages/cli/dist/bin/agentera.js check validate capability-contract --format json
+    command: node packages/cli/dist/bin/agentera.js check validate capability-contract
   - path: references/meta/retained-reference-authority.yaml
     classification: current
     production_owner: { module: packages/cli/src/validate/retainedReferenceAuthority.ts, symbol: validateRetainedReferenceAuthority }

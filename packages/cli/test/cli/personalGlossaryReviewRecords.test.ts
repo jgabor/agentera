@@ -293,8 +293,8 @@ function writeLegacyStore(record: PersonalGlossaryReviewRecord): string {
 describe("agentera report personal-glossary-reviews", () => {
   it("documents private queue/list/get grammar, schema, and no-cutover access", () => {
     const help = printReportHelp();
-    expect(help).toContain("personal-glossary-reviews queue --input <file|-> --format json");
-    expect(help).toContain("personal-glossary-reviews disposition --input <file|-> --format json");
+    expect(help).toContain("personal-glossary-reviews queue --input <file|->");
+    expect(help).toContain("personal-glossary-reviews disposition --input <file|->");
     expect(help).toContain("personal-glossary-reviews list [--status pending|terminal]");
     expect(help).toContain("fresh signed current-user");
     expect(requiresCompletedEntityCutover(["report", "personal-glossary-reviews", "list"])).toBe(false);

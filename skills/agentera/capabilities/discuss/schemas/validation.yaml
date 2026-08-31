@@ -81,7 +81,7 @@ VALIDATION:
     rule: sanitized_profile_grounding
     description: >-
       Discuss MUST ground only from the `content` returned by `npx -y agentera@next report
-      profile-grounding --format json` when shared validity is valid; it MUST
+      profile-grounding` when shared validity is valid; it MUST
       preserve absent/repair-needed recovery and MUST NOT direct-read PROFILE.md.
     severity: critical
     checks:
@@ -93,7 +93,7 @@ VALIDATION:
     rule: governed_glossary_advice_events
     description: >-
       Discuss MUST consume `capability_context.glossary_advice` from `npx -y
-      agentera@next prime --context discuss --term-input <file|-> --format json`
+      agentera@next prime --context discuss --term-input <file|->`
       for initial meaning-sensitive input without a second report. Later
       user-authored premise changes use compact `report glossary-advice
       --term-input`, while structured host-review clarification uses `--input`.

@@ -208,7 +208,7 @@ describe("decision entity authority", () => {
     expect(runStateList("decisions", ["--topic", topic, "--ids-only", "--limit", "1", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
     const first = JSON.parse(out);
     const argv = shellCommandArgs(first.retrieval.continue);
-    expect(argv).toEqual(["state", "decisions", "list", "--topic", topic, "--ids-only", "--limit", "1", "--cursor", first.next_cursor, "--format", "json"]);
+    expect(argv).toEqual(["state", "decisions", "list", "--topic", topic, "--ids-only", "--limit", "1", "--cursor", first.next_cursor]);
     out = "";
     expect(runStateList("decisions", argv.slice(3), { out: (text) => { out += text; } }, root)).toBe(0);
     const second = JSON.parse(out);

@@ -38,7 +38,7 @@ function stateCutover(project: string, sourceRoot: string): OrientationState["st
       recovery_command: projectState === "legacy" ? fullEntityUpgradeCommand(project) : fullEntityUpgradePreviewCommand(project),
     };
   } catch {
-    return { status: "invalid_lifecycle", project_state: "invalid_lifecycle", recovery_command: preCutoverCommand("check validate state --format json") };
+    return { status: "invalid_lifecycle", project_state: "invalid_lifecycle", recovery_command: preCutoverCommand("check validate state") };
   }
 }
 

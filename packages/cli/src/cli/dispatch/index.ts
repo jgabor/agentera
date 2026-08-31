@@ -101,8 +101,8 @@ export function main(argv: string[], io: Io = {}): number {
       : undefined;
     const family = runtimeFamily ? entityListFamily(runtimeFamily.key as EntityListRuntimeFamilyKey) : undefined;
     const example = family
-      ? family.bareRecovery ?? `agentera state ${family.commandTokens.join(" ")} list --limit ${family.bounds.default} --format json`
-      : `agentera ${canonical} --format json`;
+      ? family.bareRecovery ?? `agentera state ${family.commandTokens.join(" ")} list --limit ${family.bounds.default}`
+      : `agentera ${canonical}`;
     return emitInvalidInput(io, {
       format: detectTopLevelFormat(rest),
       body: {
@@ -202,7 +202,7 @@ export function main(argv: string[], io: Io = {}): number {
       const stateSyntax = printStateHelp()
         .split("\n", 1)[0]
         .replace(/^usage:\s*/, "");
-      const stateExample = "agentera state progress list --format json";
+      const stateExample = "agentera state progress list";
       if (!sub) {
         return emitInvalidInput(io, {
           format: detectTopLevelFormat(rest),
@@ -242,8 +242,8 @@ export function main(argv: string[], io: Io = {}): number {
           class: "unsupported_target",
           message: "route requires the request subcommand",
             valid_values: ["request", "receipt", "evaluate"],
-            syntax: `${preCutoverCommand("route <request|receipt> --input PATH --format json")} | ${preCutoverCommand("route evaluate --format json")}`,
-          example: preCutoverCommand("route receipt --input - --format json"),
+            syntax: `${preCutoverCommand("route <request|receipt> --input PATH")} | ${preCutoverCommand("route evaluate")}`,
+          example: preCutoverCommand("route receipt --input -"),
         },
       });
     case "compact":

@@ -54,8 +54,8 @@ describe("staged package migration contract", () => {
     expect(harness).toMatch(/if \[\[ "\$TIER" == "L2" \]\]; then\s+unset AGENTERA_BOOTSTRAP_SOURCE_ROOT/);
     expect(assertions).toContain('PIN="${AGENTERA_NPM_PIN:?npm package assertions require AGENTERA_NPM_PIN}"');
     expect(assertions).toContain('CLI=(npx -y "$PIN")');
-    expect(assertions).toContain('env -i "${prime_env[@]}" "${CLI[@]}" prime --format json');
-    expect(assertions).toContain('"${CLI[@]}" report profile-grounding --format json');
+    expect(assertions).toContain('env -i "${prime_env[@]}" "${CLI[@]}" prime');
+    expect(assertions).toContain('"${CLI[@]}" report profile-grounding');
     expect(assertions).toContain("unset AGENTERA_BOOTSTRAP_SOURCE_ROOT");
   });
 

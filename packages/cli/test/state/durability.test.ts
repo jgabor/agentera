@@ -106,7 +106,7 @@ describe("read-only entity and Git durability", () => {
     const rc = main(["node", "agentera", "check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa"], { out: (text) => out += text });
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
-    expect(payload).toMatchObject({ read_only: true, remote_contact: false, entries: [{ id: "aaaaaaaaaa", artifact: "progress", retrieval: { get: "agentera state progress get --id aaaaaaaaaa --format json" } }] });
+    expect(payload).toMatchObject({ read_only: true, remote_contact: false, entries: [{ id: "aaaaaaaaaa", artifact: "progress", retrieval: { get: "agentera state progress get --id aaaaaaaaaa" } }] });
     expect(JSON.stringify(payload)).not.toMatch(/stable_id|artifact_id|entry_number/);
     expect(fs.readFileSync(target)).toEqual(before);
     out = "";
@@ -415,7 +415,7 @@ describe("read-only entity and Git durability", () => {
       error: {
         class: "invalid_request",
         message,
-        syntax: "agentera check durability --artifact ARTIFACT --id ID --format json",
+        syntax: "agentera check durability --artifact ARTIFACT --id ID",
         example: expect.stringContaining("agentera check durability"),
         recovery: expect.any(String),
       },

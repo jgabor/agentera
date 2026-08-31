@@ -66,7 +66,7 @@ VALIDATION:
     rule: benchmark_context_first
     description: >-
       For benchmark-oriented startup, Optimize MUST start from `npx -y agentera@next prime
-      --context optimize --format json` and consume complete
+      --context optimize` and consume complete
       benchmark_context before direct retained benchmark file reads. Direct
       latest-report.json, latest-report.md, or runs.jsonl reads are last-resort
       diagnostics only when the CLI context is incomplete.

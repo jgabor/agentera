@@ -60,11 +60,11 @@ function mapping(value: unknown): value is Mapping {
 }
 
 function listSyntax(value: ReviewRecordsReadContract): string {
-  return `${value.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN] --format json`;
+  return `${value.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN]`;
 }
 
 function exactSyntax(value: ReviewRecordsReadContract): string {
-  return `${value.command} get --review-id ID --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY --format json`;
+  return `${value.command} get --review-id ID --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY`;
 }
 
 function failure(io: Io, schemaVersion: string, command: string, syntax: string, example: string, body: ReviewFailure): number {
@@ -120,7 +120,7 @@ function currentRecords(io: Io, value: ReviewRecordsReadContract, operation: "li
     value.retrievalSchemaVersion,
     `${value.command} ${operation}`,
     operation === "list" ? listSyntax(value) : exactSyntax(value),
-    operation === "list" ? `${value.command} list --limit ${value.defaultLimit} --format json` : exactSyntax(value),
+    operation === "list" ? `${value.command} list --limit ${value.defaultLimit}` : exactSyntax(value),
     {
       class: result.status === "projection_unavailable" ? "current_binding_mismatch" : "review_records_unavailable",
       message: result.status === "projection_unavailable"
@@ -149,21 +149,21 @@ export function listPersonalGlossaryReviewRecords(
     let cursor: Mapping;
     try { cursor = decodeListCursor(options.cursor, personalGlossaryReviewRecordsPath(), glossaryEntryAuthorityPath()); }
     catch {
-      return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit} --format json`, {
+      return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit}`, {
         class: "cursor_invalid",
         message: "review-list cursor is malformed or belongs to another local profile",
         recovery: "Copy next_cursor exactly, or omit --cursor to restart from the current private review records; no review metadata was changed.",
       });
     }
     if (cursor.version !== CURSOR_VERSION || cursor.collection !== COLLECTION || cursor.owner !== value.owner || cursor.limit !== options.limit || !mapping(cursor.filters) || canonicalGlossaryJson(cursor.filters) !== canonicalGlossaryJson(selectedFilters)) {
-      return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit} --format json`, {
+      return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit}`, {
         class: "cursor_invalid",
         message: "review-list cursor filters, owner, or limit do not match this request",
         recovery: "Repeat the original status filter and limit, or omit --cursor to restart; no review metadata was changed.",
       });
     }
     if (cursor.order !== value.order || cursor.snapshot_id !== snapshotId || typeof cursor.after !== "string") {
-      return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit} --format json`, {
+      return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit}`, {
         class: "cursor_snapshot_unavailable",
         message: "review-list cursor cannot resume the current private review snapshot",
         recovery: "Omit --cursor to restart from the current private review records; no review metadata was changed.",
@@ -171,7 +171,7 @@ export function listPersonalGlossaryReviewRecords(
     }
     const position = records.findIndex((record) => record.review_id === cursor.after);
     if (position < 0) {
-      return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit} --format json`, {
+      return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit}`, {
         class: "cursor_snapshot_unavailable",
         message: "review-list cursor continuation is unavailable",
         recovery: "Omit --cursor to restart from the current private review records; no review metadata was changed.",
@@ -204,13 +204,13 @@ export function listPersonalGlossaryReviewRecords(
       cursor_unavailable_behavior: value.cursorUnavailableBehavior,
     },
     retrieval: {
-      get: `${value.command} get --review-id ID --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY --format json`,
-      ...(nextCursor ? { continue: `${value.command} list${listFlags(options)} --limit ${options.limit} --cursor ${nextCursor} --format json` } : {}),
+      get: `${value.command} get --review-id ID --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY`,
+      ...(nextCursor ? { continue: `${value.command} list${listFlags(options)} --limit ${options.limit} --cursor ${nextCursor}` } : {}),
     },
     ...(remaining > 0 ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: nextCursor } : {}),
   };
   if (serializedBytes(response) > value.listMaxSerializedUtf8Bytes) {
-    return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit} --format json`, {
+    return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit}`, {
       class: "output_bound_exceeded",
       message: `review-list response exceeds its ${value.listMaxSerializedUtf8Bytes}-byte bound`,
       recovery: "Request fewer rows and retry; no partial review metadata was returned.",

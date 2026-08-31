@@ -201,9 +201,9 @@ export function requestedSatisfaction(
       class: "schema_violation",
       message: "decision satisfaction update contains invalid overlay fields",
       violations,
-      syntax: "agentera state decisions update --id ID --satisfaction-state STATE --format json",
+      syntax: "agentera state decisions update --id ID --satisfaction-state STATE",
       example:
-        "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified' --format json",
+        "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified'",
     });
   }
   const result: Record<string, unknown> = {};
@@ -253,9 +253,9 @@ export function validateTransition(
     reject({
       class: "schema_violation",
       message: "provisionally_satisfied requires non-empty --satisfaction-evidence",
-      syntax: "agentera state decisions update --id ID --satisfaction-state STATE --satisfaction-evidence TEXT --format json",
+      syntax: "agentera state decisions update --id ID --satisfaction-state STATE --satisfaction-evidence TEXT",
       example:
-        "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified' --format json",
+        "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified'",
     });
   }
   if (nextState === "user_confirmed_satisfied") {
@@ -264,9 +264,9 @@ export function validateTransition(
       reject({
         class: "schema_violation",
         message: "user_confirmed_satisfied requires explicit current user confirmation metadata",
-        syntax: "agentera state decisions update --id ID --satisfaction-state user_confirmed_satisfied --confirmed-by USER --confirmed-at TIME --format json",
+        syntax: "agentera state decisions update --id ID --satisfaction-state user_confirmed_satisfied --confirmed-by USER --confirmed-at TIME",
         example:
-          "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z --format json",
+          "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z",
       });
     }
   }
@@ -280,9 +280,9 @@ export function validateTransition(
         reject({
           class: "conflict",
           message: `decision satisfaction cannot transition from ${currentState} to ${String(nextState)} without explicit current user confirmation`,
-          syntax: "agentera state decisions update --id ID --satisfaction-state STATE --format json",
+          syntax: "agentera state decisions update --id ID --satisfaction-state STATE",
           example:
-            "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z --format json",
+            "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z",
         });
       }
     }

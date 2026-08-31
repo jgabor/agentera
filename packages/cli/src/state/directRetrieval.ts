@@ -96,11 +96,11 @@ function isMapping(value: unknown): value is JsonObject {
 }
 
 function stateSyntax(artifactId = "<artifact-id>"): string {
-  return `agentera state ${artifactId} get --number N --format json`;
+  return `agentera state ${artifactId} get --number N`;
 }
 
 function stateExample(artifactId: string, entryNumber: number | null = null): string {
-  return `agentera state ${artifactId} get --number ${entryNumber ?? 1} --format json`;
+  return `agentera state ${artifactId} get --number ${entryNumber ?? 1}`;
 }
 
 function failure(

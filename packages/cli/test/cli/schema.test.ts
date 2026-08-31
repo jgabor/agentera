@@ -117,7 +117,7 @@ describe("cli schema", () => {
     expect(payload.state_writer).toMatchObject({
       schemaVersion: "agentera.stateWriterDiscovery.v1",
       namespace: "agentera state",
-      discovery_command: "agentera schema --format json",
+      discovery_command: "agentera schema",
     });
     expect(payload.state_writer.artifacts).toEqual(
       expect.arrayContaining([
@@ -125,16 +125,16 @@ describe("cli schema", () => {
           artifact: "decisions",
           mutations: ["append", "update", "amend"],
           explain_by_verb: {
-            append: "agentera state decisions explain --verb append --format json",
-            update: "agentera state decisions explain --verb update --format json",
-            amend: "agentera state decisions explain --verb amend --format json",
+            append: "agentera state decisions explain --verb append",
+            update: "agentera state decisions explain --verb update",
+            amend: "agentera state decisions explain --verb amend",
           },
         }),
         expect.objectContaining({
           artifact: "experiments",
           mutations: ["publish"],
           explain_by_verb: {
-            publish: "agentera state experiments explain --verb publish --format json",
+            publish: "agentera state experiments explain --verb publish",
           },
         }),
       ]),
@@ -145,13 +145,13 @@ describe("cli schema", () => {
       status: "final",
       commands: {
         plan_tasks: {
-          get: "agentera state plan tasks get --id ID --format json",
+          get: "agentera state plan tasks get --id ID",
         },
         plans: {
-          get: "agentera state plan get --id ID --format json",
+          get: "agentera state plan get --id ID",
         },
         experiments: {
-          get: "agentera state experiments get --id ID --format json",
+          get: "agentera state experiments get --id ID",
         },
       },
     });
@@ -173,7 +173,7 @@ describe("cli schema", () => {
     ).find((artifact) => artifact.name === "decisions");
     expect(decisions?.write_interface).toMatchObject({
       artifact: "decisions",
-      explain_command: "agentera state decisions explain --format json",
+      explain_command: "agentera state decisions explain",
     });
     const progress = (
       payload.artifact_schemas as Array<{ name: string; write_interface: unknown; fields: unknown[] }>

@@ -427,7 +427,7 @@ export function publicDoctorStatus(status: BundleStatus): PublicBundleStatus {
   return result;
 }
 
-/** Oracle-pinned keys for `agentera doctor --format json` (parity-remaining-families.json). */
+/** Oracle-pinned keys for `agentera doctor` (parity-remaining-families.json). */
 export const DOCTOR_PARITY_JSON_KEYS = [
   "status",
   "expectedVersion",

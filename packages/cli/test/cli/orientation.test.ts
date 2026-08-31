@@ -321,7 +321,7 @@ describe("orientation: artifact summaries", () => {
             fields: ["timings", "integrity", "digests", "retries", "replay"],
           },
         },
-        guidance_command: "npx -y agentera@next state progress explain --verb append --format json",
+        guidance_command: "npx -y agentera@next state progress explain --verb append",
       },
     });
   });

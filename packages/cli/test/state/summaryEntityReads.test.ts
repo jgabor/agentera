@@ -255,8 +255,8 @@ describe("summary entity ordinary reads", () => {
       omitted_count: 10,
       omission_reason: "startup_health_detail",
       retrieval: {
-        list: "npx -y agentera@next state health list --limit 20 --format json",
-        get: "npx -y agentera@next state health get --id ID --format json",
+        list: "npx -y agentera@next state health list --limit 20",
+        get: "npx -y agentera@next state health get --id ID",
       },
     });
     expect(Buffer.byteLength(status.out, "utf8")).toBeLessThanOrEqual(22_500);
@@ -273,8 +273,8 @@ describe("summary entity ordinary reads", () => {
         compatibility: "current",
         counts: { total: 1, returned: 0, remaining: 1, full: 1, summary: 0 },
         retrieval: {
-          list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
-          get: `npx -y agentera@next state ${artifact} get --id ID --format json`,
+          list: `npx -y agentera@next state ${artifact} list --limit 20`,
+          get: `npx -y agentera@next state ${artifact} get --id ID`,
         },
         source_contract: {
           authority: "references/artifacts/state-storage-authority.yaml",
@@ -314,8 +314,8 @@ describe("summary entity ordinary reads", () => {
           omitted_count: 1,
         },
         retrieval: {
-          list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
-          get: `npx -y agentera@next state ${artifact} get --id ID --format json`,
+          list: `npx -y agentera@next state ${artifact} list --limit 20`,
+          get: `npx -y agentera@next state ${artifact} get --id ID`,
         },
         source_contract: {
           authority: "references/artifacts/state-storage-authority.yaml",
@@ -415,12 +415,12 @@ describe("summary entity ordinary reads", () => {
         const rejected = cli(root, [...args, ...(dryRun ? ["--dry-run"] : []), "--format", "json"]);
         expect(rejected.rc).toBe(1);
         const body = JSON.parse(rejected.out);
-        expect(body).toMatchObject({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: "unsupported_state", message: expect.stringContaining("incomplete historical evidence is read-only"), syntax: expect.stringContaining(`decisions ${args[2]}`), example: "agentera state decisions get --id eeeeeeeeee --format json", recovery: expect.stringContaining("agentera state decisions append") } });
+        expect(body).toMatchObject({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: "unsupported_state", message: expect.stringContaining("incomplete historical evidence is read-only"), syntax: expect.stringContaining(`decisions ${args[2]}`), example: "agentera state decisions get --id eeeeeeeeee", recovery: expect.stringContaining("agentera state decisions append") } });
       }
     }
     const implicit = cli(root, ["state", "decisions", "update", "--id", "eeeeeeeeee", "--satisfaction-state", "open"]);
     expect(implicit.rc).toBe(1);
-    expect(JSON.parse(implicit.out).error.recovery).toContain("agentera state decisions get --id eeeeeeeeee --format json");
+    expect(JSON.parse(implicit.out).error.recovery).toContain("agentera state decisions get --id eeeeeeeeee");
     expect(fs.readdirSync(path.join(root, ".agentera/entities/decisions")).sort()).toEqual(before);
   });
 

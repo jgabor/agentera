@@ -62,12 +62,12 @@ VALIDATION:
     rule: orchestration_context_first
     description: >-
       Orchestrate startup and evaluation MUST use
-      `npx -y agentera@next prime --context orchestrate --format json` and the
+      `npx -y agentera@next prime --context orchestrate` and the
       returned orchestration context before raw plan, progress, health, TODO,
       or decisions artifact reads.
     severity: critical
     checks:
-      - "orchestrate instructions contains npx -y agentera@next prime --context orchestrate --format json"
+      - "orchestrate instructions contains npx -y agentera@next prime --context orchestrate"
       - "orchestrate instructions contains complete_for_orchestration_context"
       - "orchestrate instructions contains no raw plan, progress, health, TODO, or decisions reads"
   7:

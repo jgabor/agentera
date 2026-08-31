@@ -349,7 +349,7 @@ function invalidDecisionAuthorityRoot(): string {
 describe("agentera report personal-glossary-decision", () => {
   it("exposes a bounded read-only decision contract and replays an authorized explicit admission without effects", () => {
     expect(printReportHelp()).toContain(
-      "agentera report personal-glossary-decision --input <file|-> --format json",
+      "agentera report personal-glossary-decision --input <file|->",
     );
     expect(requiresCompletedEntityCutover(["report", "personal-glossary-decision"])).toBe(false);
     expect((buildSchemaPayload().integration as any).personal_glossary.candidate_decision).toMatchObject({

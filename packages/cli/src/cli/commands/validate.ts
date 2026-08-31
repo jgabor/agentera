@@ -467,7 +467,7 @@ function validateArtifactLabel(artifact: string): void {
     throw new Error(
       `unsupported artifact ${pyRepr(artifact)}; valid artifact_id values: ${valid}. ` +
         "Syntax: agentera check validate artifact --artifact <ARTIFACT_ID> [--file <PATH>] [--format text|json]. " +
-        "Example: agentera check validate artifact --artifact plan --file .agentera/plan.yaml --format json",
+        "Example: agentera check validate artifact --artifact plan --file .agentera/plan.yaml",
     );
   }
 }
@@ -551,7 +551,7 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
         : "confirmed_glossary_variant",
       artifact: "glossary",
       message,
-      recovery: "Apply the reported correction, then rerun npx -y agentera@next check validate state --format json; no state was changed.",
+      recovery: "Apply the reported correction, then rerun npx -y agentera@next check validate state; no state was changed.",
     });
   }
   additionalOmittedIssues += Math.max(0, glossaryViolations.length - glossaryIssueCapacity);

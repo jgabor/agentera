@@ -61,11 +61,11 @@ function fail(
   details: Partial<StateFailureBody["error"]> = {},
 ): StateRetrievalFailure {
   const syntax = verb === "list"
-    ? "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] --format json"
-    : "agentera state plan tasks get --id ID --format json";
+    ? "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN]"
+    : "agentera state plan tasks get --id ID";
   const example = verb === "list"
-    ? "agentera state plan tasks list --limit 20 --format json"
-    : "agentera state plan tasks get --id qjtrmnpvka --format json";
+    ? "agentera state plan tasks list --limit 20"
+    : "agentera state plan tasks get --id qjtrmnpvka";
   return new StateRetrievalFailure(
     {
       schemaVersion: "agentera.stateFailure.v1",
@@ -214,7 +214,7 @@ function parseCursor(token: string, projectRoot: string, selectedPlan?: string):
 }
 
 function taskEntry(plan: LoadedPlan, task: LoadedPlan["tasks"][number]): JsonObject {
-  const get = `agentera state plan tasks get --id ${task.id} --format json`;
+  const get = `agentera state plan tasks get --id ${task.id}`;
   const record = structuredClone(task.record); delete record.number;
   return {
     id: task.id,
@@ -253,7 +253,7 @@ function baseList(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], pageTask
       storage_ownership: "owning_active_plan_file",
       cursor: "opaque_snapshot_cursor",
     },
-     retrieval: { get: "agentera state plan tasks get --id ID --format json" },
+     retrieval: { get: "agentera state plan tasks get --id ID" },
   };
 }
 
@@ -279,8 +279,8 @@ function withPage(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], candidat
     response.omitted_count = remaining;
     response.omission_reason = reason;
     response.retrieval = {
-      continue: `agentera state plan tasks list --cursor ${token} --format json`,
-      get: "agentera state plan tasks get --id ID --format json",
+      continue: `agentera state plan tasks list --cursor ${token}`,
+      get: "agentera state plan tasks get --id ID",
     };
   }
   return response;
@@ -324,7 +324,7 @@ export function listPlanTasks(
     }
     if (serializedBytes(response) > MAX_LIST_BYTES || (candidates.length > 0 && response.entries.length === 0)) {
       throw fail(1, "unsupported_state", `one task cannot fit within the ${MAX_LIST_BYTES}-byte ${options.format.toUpperCase()} list budget`, "list", {
-       recovery: "Fetch the task directly with agentera state plan tasks get --id ID --format json.",
+       recovery: "Fetch the task directly with agentera state plan tasks get --id ID.",
       });
     }
   }
@@ -338,7 +338,7 @@ export function getPlanTask(projectRoot: string, activePath: string, taskId: str
   if (!task) {
     throw fail(1, "not_found", `task '${taskId}' was not found in active plan '${plan.planId}'`, "get", {
       id: taskId,
-      recovery: "List valid active-plan task IDs with agentera state plan tasks list --format json, then retry.",
+      recovery: "List valid active-plan task IDs with agentera state plan tasks list, then retry.",
     });
   }
   return {

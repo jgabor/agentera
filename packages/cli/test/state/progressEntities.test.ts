@@ -442,7 +442,7 @@ describe("progress entity authority", () => {
     expect(() => listProgressEntities(root, 2, {}, first.next_cursor)).toThrow(/source changed/);
 
     const filtered = listProgressEntities(root, 1, { topic: "deliver", status: "feat" }, undefined, { selector: { idsOnly: true } }) as any;
-    expect(filtered.retrieval.continue).toMatch(/^agentera state progress list --topic 'deliver' --status 'feat' --ids-only --limit 1 --cursor \S+ --format json$/);
+    expect(filtered.retrieval.continue).toMatch(/^agentera state progress list --topic 'deliver' --status 'feat' --ids-only --limit 1 --cursor \S+$/);
 
     const authorityPath = path.resolve(import.meta.dirname, "../../../..", "references/artifacts/state-storage-authority.yaml");
     const prior = decodeListCursor(first.next_cursor, root, authorityPath) as any;
@@ -623,7 +623,7 @@ describe("progress entity authority", () => {
     appendProgressEntity(request(root, "x".repeat(40_000)), { id: "aaaaaaaaaa" });
     expect(listProgressEntities(root, 20)).toMatchObject({
       status: "degraded",
-      entries: [{ id: "aaaaaaaaaa", retrieval: { get: "agentera state progress get --id aaaaaaaaaa --format json" } }],
+      entries: [{ id: "aaaaaaaaaa", retrieval: { get: "agentera state progress get --id aaaaaaaaaa" } }],
       counts: { candidate: 1, returned: 1, omitted: 0 },
       degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 1 },
     });

@@ -53,8 +53,8 @@ describe("canonical state retrieval authority", () => {
     ["historical commands", (value: any) => { value.historical_retrieval_evidence.commands = { plans: {} }; }, "historical_retrieval_evidence.commands"],
     ["historical identity", (value: any) => { value.historical_retrieval_evidence.identity = { plan: {} }; }, "historical_retrieval_evidence.identity"],
     ["plan filters", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.filters = []; }, "plans.filters.runtime_parity"],
-    ["plan command filter", (value: any) => { value.entity_target.public_retrieval.commands.plans.list = "agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json"; }, "plans.list_command"],
-    ["experiment exact get", (value: any) => { value.entity_target.public_retrieval.commands.experiments.get = "agentera state experiments get --objective ID --id ID --format json"; }, "experiments.get_command"],
+    ["plan command filter", (value: any) => { value.entity_target.public_retrieval.commands.plans.list = "agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]"; }, "plans.list_command"],
+    ["experiment exact get", (value: any) => { value.entity_target.public_retrieval.commands.experiments.get = "agentera state experiments get --objective ID --id ID"; }, "experiments.get_command"],
     ["composite IDs", (value: any) => { value.entity_target.identity.accepted_pattern = "^plan:[a-z]{10}$"; }, "identity.accepted_pattern"],
   ])("fails closed when a second map or canonical grammar can contradict %s", (_name, mutate, expected) => {
     const value = authority();

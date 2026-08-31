@@ -160,7 +160,7 @@ describe("doctor upgrade safety parity (D56 T4)", () => {
     expect((report.summary as { fail: number }).fail).toBe(0);
   });
 
-  it("doctor --smoke --format json attaches a smoke block", () => {
+  it("doctor --smoke attaches a smoke block", () => {
     const { out } = capture((io) => main(["node", "agentera", "doctor", "--smoke", "--format", "json"], io));
     const payload = JSON.parse(out);
     expect(payload.smoke.enabled).toBe(true);

@@ -408,7 +408,7 @@ describe("TODO item and documentation inventory entity authority", () => {
         class: "missing_argument",
         message: "--id is required for todo update",
         syntax: "--id VALUE",
-        example: "agentera state todo update --id qjtrmnpvka --input todo-patch.yaml --format json",
+        example: "agentera state todo update --id qjtrmnpvka --input todo-patch.yaml",
         recovery: "Correct the input and retry; no state was changed.",
       },
     };
@@ -705,7 +705,7 @@ describe("TODO item and documentation inventory entity authority", () => {
       error: {
         class: "mutually_exclusive",
         message: "todo set-severity accepts field flags, not --input",
-        example: "agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason \"Impact changed\" --date 2026-07-31 --format json",
+        example: "agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason \"Impact changed\" --date 2026-07-31",
         recovery: "Correct the input and retry; no state was changed.",
       },
     });
@@ -724,7 +724,7 @@ describe("TODO item and documentation inventory entity authority", () => {
       error: {
         class: "mutually_exclusive",
         message: "todo resolve accepts field flags, not --input",
-        example: "agentera state todo resolve --id qjtrmnpvka --reason \"Shipped\" --date 2026-07-31 --format json",
+        example: "agentera state todo resolve --id qjtrmnpvka --reason \"Shipped\" --date 2026-07-31",
         recovery: "Correct the input and retry; no state was changed.",
       },
     });
@@ -754,8 +754,8 @@ describe("TODO item and documentation inventory entity authority", () => {
           class: "unrecognized_argument",
           message: `unrecognized arguments: ${flag}`,
           example: verb === "set-severity"
-            ? "agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason \"Impact changed\" --date 2026-07-31 --format json"
-            : "agentera state todo resolve --id qjtrmnpvka --reason \"Shipped\" --date 2026-07-31 --format json",
+            ? "agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason \"Impact changed\" --date 2026-07-31"
+            : "agentera state todo resolve --id qjtrmnpvka --reason \"Shipped\" --date 2026-07-31",
           recovery: "Correct the input and retry; no state was changed.",
         },
       });
@@ -1272,14 +1272,14 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(todoPage.json).toMatchObject({ status: "degraded", order: "severity_then_status_then_markdown_order_then_id", omitted: true, omitted_count: 1, entries: [{ id: high.id, artifact: "todo", queue_rank: 1, provenance: { storage: "canonical_entity_file" } }] });
     todo(root, "critical second", "critical");
     const filteredTodo = capture(root, ["state", "todo", "list", "--status", "open", "--severity", "critical", "--ids-only", "--limit", "1", "--format", "json"]);
-    expect(filteredTodo.json.retrieval.continue).toMatch(/^agentera state todo list --severity 'critical' --status 'open' --ids-only --limit 1 --cursor \S+ --format json$/);
+    expect(filteredTodo.json.retrieval.continue).toMatch(/^agentera state todo list --severity 'critical' --status 'open' --ids-only --limit 1 --cursor \S+$/);
     const todoGet = capture(root, ["state", "todo", "get", "--id", low.id, "--format", "json"]); expect(todoGet.json.entry.record.title).toBe("normal");
     const docsList = capture(root, ["state", "docs", "list", "--format", "json"]); expect(docsList.json.entries.map((entry: any) => entry.id)).toEqual([secondDoc.id, firstDoc.id]);
     const filteredDocs = capture(root, ["state", "docs", "list", "--status", "current", "--topic", ".md", "--ids-only", "--limit", "1", "--format", "json"]);
-    expect(filteredDocs.json.retrieval.continue).toMatch(/^agentera state docs list --topic '\.md' --status 'current' --ids-only --limit 1 --cursor \S+ --format json$/);
+    expect(filteredDocs.json.retrieval.continue).toMatch(/^agentera state docs list --topic '\.md' --status 'current' --ids-only --limit 1 --cursor \S+$/);
     const docsDefault = capture(root, ["state", "docs", "--format", "json"]); expect(docsDefault.rc).toBe(2); expect(docsDefault.json.error).toMatchObject({ class: "invalid_request", recovery: expect.stringContaining("state docs list") });
     todo(root, "cursor invalidator"); const stale = capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", todoPage.json.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
-    const detail = "x".repeat(18_000); const large = todo(root, detail); todo(root, `y${detail}`); const bounded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]); expect(Buffer.byteLength(bounded.out)).toBeLessThanOrEqual(32_768); expect(bounded.json).toMatchObject({ status: "degraded", counts: { returned: 6, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 6 }, retrieval: { get: "agentera state todo get --id ID --format json" } }); expect(bounded.json.entries.map((entry: any) => entry.queue_rank)).toEqual([1, 2, 3, 4, 5, 6]); expect(capture(root, ["state", "todo", "get", "--id", large.id, "--format", "json"]).json.entry.record.title).toBe(detail);
+    const detail = "x".repeat(18_000); const large = todo(root, detail); todo(root, `y${detail}`); const bounded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]); expect(Buffer.byteLength(bounded.out)).toBeLessThanOrEqual(32_768); expect(bounded.json).toMatchObject({ status: "degraded", counts: { returned: 6, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 6 }, retrieval: { get: "agentera state todo get --id ID" } }); expect(bounded.json.entries.map((entry: any) => entry.queue_rank)).toEqual([1, 2, 3, 4, 5, 6]); expect(capture(root, ["state", "todo", "get", "--id", large.id, "--format", "json"]).json.entry.record.title).toBe(detail);
     expect(capture(root, ["state", "docs", "get", "--id", secondDoc.id, "--format", "json"]).json.entry.record).toEqual({ document: "Alpha", path: "a.md", last_updated: "2026-07-17", status: "current" });
   });
 
@@ -1365,32 +1365,32 @@ describe("TODO item and documentation inventory entity authority", () => {
     assertInvalid(
       ["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", first.json.next_cursor, "--format", "json"],
       "todo cursor is bound to --limit 10, not --limit 5",
-      "agentera state todo list --ids-only --limit 5 --format json",
+      "agentera state todo list --ids-only --limit 5",
       orderedIds.slice(0, 5),
     );
     assertInvalid(
       ["state", "todo", "list", "--ids-only", "--limit", "20", "--cursor", first.json.next_cursor, "--format", "json"],
       "todo cursor is bound to --limit 10, not --limit 20",
-      "agentera state todo list --ids-only --limit 20 --format json",
+      "agentera state todo list --ids-only --limit 20",
       orderedIds.slice(0, 20),
     );
     assertInvalid(
       ["state", "todo", "list", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"],
       "todo cursor selectors do not match this request",
-      "agentera state todo list --limit 10 --format json",
+      "agentera state todo list --limit 10",
       orderedIds.slice(0, 10),
     );
     assertInvalid(
       ["state", "todo", "list", "--status", "open", "--ids-only", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"],
       "todo cursor filters do not match this request",
-      "agentera state todo list --status 'open' --ids-only --limit 10 --format json",
+      "agentera state todo list --status 'open' --ids-only --limit 10",
       orderedIds.slice(0, 10),
     );
     const changedOrder = structuredClone(payload); changedOrder.order = "changed_order";
     assertInvalid(
       ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(changedOrder, root, authorityPath), "--format", "json"],
       "todo cursor order does not match this request",
-      "agentera state todo list --ids-only --limit 10 --format json",
+      "agentera state todo list --ids-only --limit 10",
       orderedIds.slice(0, 10),
     );
 
@@ -1414,7 +1414,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
     const [body, signature] = String(first.json.next_cursor).split(".");
     const legacy = structuredClone(payload); delete legacy.limit;
-    const recovery = "agentera state todo list --ids-only --limit 10 --format json";
+    const recovery = "agentera state todo list --ids-only --limit 10";
     const variants = [
       { label: "malformed", cursor: "not-a-cursor", message: "todo cursor is malformed or belongs to another project" },
       { label: "signature", cursor: `${body}.${signature.slice(0, -1)}${signature.endsWith("A") ? "B" : "A"}`, message: "todo cursor is malformed or belongs to another project" },
@@ -1445,7 +1445,7 @@ describe("TODO item and documentation inventory entity authority", () => {
       const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(invalid, root, authorityPath), "--format", "json"]);
       expect(result.rc, String(invalidLimit)).toBe(1);
       expect(result.json).not.toHaveProperty("entries");
-      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message: "todo cursor has an invalid effective limit binding", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
+      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message: "todo cursor has an invalid effective limit binding", recovery: "agentera state todo list --ids-only --limit 10" });
       expect(capture(root, shellCommandArgs(result.json.error.recovery)).rc).toBe(0);
     }
 
@@ -1469,7 +1469,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const missing = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(missingAfter, root, authorityPath), "--format", "json"]);
     expect(missing.rc).toBe(1);
     expect(missing.json).not.toHaveProperty("entries");
-    expect(missing.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor continuation identity is no longer available", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
+    expect(missing.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor continuation identity is no longer available", recovery: "agentera state todo list --ids-only --limit 10" });
     expect(capture(root, shellCommandArgs(missing.json.error.recovery)).json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
     expect(files(root)).toEqual(initial);
 
@@ -1478,7 +1478,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const stale = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"]);
     expect(stale.rc).toBe(1);
     expect(stale.json).not.toHaveProperty("entries");
-    expect(stale.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor snapshot is no longer available", recovery: "agentera state todo list --ids-only --limit 10 --format json" });
+    expect(stale.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor snapshot is no longer available", recovery: "agentera state todo list --ids-only --limit 10" });
     expect(capture(root, shellCommandArgs(stale.json.error.recovery)).rc).toBe(0);
     expect(files(root)).toEqual(mutated);
   }, REALISTIC_TODO_CURSOR_TIMEOUT_MS);
@@ -1715,8 +1715,8 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(blocked.rc).toBe(2);
     expect(blocked.json.error).toMatchObject({
       class: "conflict",
-      syntax: "npx -y agentera@next state todo activate --dry-run --format json",
-      example: "npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json",
+      syntax: "npx -y agentera@next state todo activate --dry-run",
+      example: "npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes",
     });
     expect(files(root)).toEqual(beforePreview);
 
@@ -1944,8 +1944,8 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
       expect(result.rc, testCase.args[2]).toBe(2);
       expect(result.json.error).toMatchObject({
         class: "conflict",
-        syntax: "npx -y agentera@next state todo activate --dry-run --format json",
-        example: "npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json",
+        syntax: "npx -y agentera@next state todo activate --dry-run",
+        example: "npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes",
       });
       expect(files(root), testCase.args[2]).toEqual(before);
     }
@@ -2068,7 +2068,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
         ]),
         effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       },
-      apply_command: expect.stringMatching(/state todo correct-owners --input OWNER_MAPPING\.yaml --effect-sha256 [a-f0-9]{64} --yes --format json/),
+      apply_command: expect.stringMatching(/state todo correct-owners --input OWNER_MAPPING\.yaml --effect-sha256 [a-f0-9]{64} --yes/),
     });
     expect(preview.json.correction.targets).toHaveLength(163);
     expect(preview.json.correction.diagnosis.items).toHaveLength(20);

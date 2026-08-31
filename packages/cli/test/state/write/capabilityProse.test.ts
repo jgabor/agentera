@@ -153,7 +153,7 @@ describe("producer capability writer integration", () => {
     expect(discussInstructions).not.toContain("Append with `agentera state decisions append`");
     expect(discussInstructions).toContain("agentera state decisions update --id ID");
     expect(planInstructions).toContain("agentera state plan create --input PATH");
-    expect(planInstructions).toContain("agentera state plan archive --format json");
+    expect(planInstructions).toContain("agentera state plan archive");
     expect(orchestrateInstructions).toContain("agentera state plan set-status");
     expect(orchestrateInstructions).toContain("agentera state plan record-evaluation");
     expect(orchestrateInstructions).toContain("before marking the task complete");
@@ -180,7 +180,7 @@ describe("producer capability writer integration", () => {
     ) as Record<string, any>;
 
     for (const text of variants) {
-      expect(text).toContain("agentera state progress explain --verb append --format json");
+      expect(text).toContain("agentera state progress explain --verb append");
       expect(text).toContain("apply its `progress_write_policy`");
       expect(text).toContain("If it requires progress");
       expect(text).toContain("If it only allows progress");
@@ -293,9 +293,9 @@ describe("producer capability writer integration", () => {
     expect(health.meta.description).toContain("Audit normally owns health records.");
     expect(health.meta.description).toContain("limited artifact_freshness record for terminal-plan closure after Audit passes.");
     expect(orchestrateInstructions).toContain("Plan exists, `active: true` and `complete_plan: true`");
-    expect(closure).toContain("agentera state health append --input PATH --format json");
-    expect(closure.indexOf("agentera state health append --input PATH --format json")).toBeLessThan(
-      closure.indexOf("agentera state plan set-plan-status --status complete --format json"),
+    expect(closure).toContain("agentera state health append --input PATH");
+    expect(closure.indexOf("agentera state health append --input PATH")).toBeLessThan(
+      closure.indexOf("agentera state plan set-plan-status --status complete"),
     );
     expect(closure).toContain("WARN or FAIL requiring follow-up");
     expect(closure).toContain("keep the plan open");

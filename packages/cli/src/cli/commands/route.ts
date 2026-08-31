@@ -61,7 +61,7 @@ function parse(argv: string[]): { input: string; format: "json" } | InvalidInput
     }
     return { class: "unrecognized_argument", message: "unrecognized route argument; request text must be supplied through --input" };
   }
-  if (!input) return { class: "missing_argument", message: "--input is required so request text is not placed in argv", syntax: "--input PATH", example: preCutoverCommand("route request --input - --format json") };
+  if (!input) return { class: "missing_argument", message: "--input is required so request text is not placed in argv", syntax: "--input PATH", example: preCutoverCommand("route request --input -") };
   return { input, format };
 }
 
@@ -128,8 +128,8 @@ export function runRouteEvaluation(argv: string[], io: RouteIo): number {
   if (argv.length !== 2 || argv[0] !== "--format" || argv[1] !== "json") {
     return invalidRouteInput(io, {
       class: "unrecognized_argument",
-      message: "route evaluation accepts only --format json and never accepts request text or corpus overrides",
-      syntax: preCutoverCommand("route evaluate --format json"),
+      message: "route evaluation accepts only and never accepts request text or corpus overrides",
+      syntax: preCutoverCommand("route evaluate"),
     });
   }
   try {

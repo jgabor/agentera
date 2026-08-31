@@ -32,11 +32,11 @@ ENTITY_AUTHORITY:
   boundaries: [plan, plan_task]
   relationship: plan_task.record.plan is a bare plan ID
   retrieval:
-    list: npx -y agentera@next state plan list --format json
-    get: npx -y agentera@next state plan get --id ID --format json
-    tasks_list: npx -y agentera@next state plan tasks list [PLAN_ID] --format json
-    task_get: npx -y agentera@next state plan tasks get --id ID --format json
-  mutation: npx -y agentera@next state plan explain --format json
+    list: npx -y agentera@next state plan list
+    get: npx -y agentera@next state plan get --id ID
+    tasks_list: npx -y agentera@next state plan tasks list [PLAN_ID]
+    task_get: npx -y agentera@next state plan tasks get --id ID
+  mutation: npx -y agentera@next state plan explain
   direct_file_edits: forbidden
   aggregate_schema_below: atomic_create_input
   migration_compatibility: explicitly_labeled_fields_only

@@ -305,7 +305,7 @@ function publicationConflict(markerPath: string): never {
   reject({
     class: "conflict",
     message: `state mode marker '${markerPath}' changed after entity mode detection; this is a conflict and cannot fall back to legacy state`,
-    syntax: "agentera state <artifact-id> <verb> ... --format json",
+    syntax: "agentera state <artifact-id> <verb> ...",
     example: `restore the exact '${markerPath}' marker selected at command start and retry`,
   });
 }
@@ -314,7 +314,7 @@ function initializationConflict(markerPath: string): never {
   reject({
     class: "conflict",
     message: `state mode marker '${markerPath}' appeared during fresh plan initialization`,
-    syntax: "agentera state plan create --input PLAN.yaml --format json",
+    syntax: "agentera state plan create --input PLAN.yaml",
     example: "remove no files; inspect the competing state publication and retry",
   });
 }

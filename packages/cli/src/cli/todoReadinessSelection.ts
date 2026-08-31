@@ -162,7 +162,7 @@ export function evaluateTodoReadinessQueue(
       eligible: authority.eligible === true,
       attention: String(authority.attention),
       recovery: declaredRecovery ?? (typeof authority.recovery === "string" ? authority.recovery : null),
-      retrieval: { exact: preCutoverCommand(`state todo get --id ${entity.id} --format json`) },
+      retrieval: { exact: preCutoverCommand(`state todo get --id ${entity.id}`) },
       ...(capability ? {
         capability,
         phase: contract.phaseByCapability.get(capability),

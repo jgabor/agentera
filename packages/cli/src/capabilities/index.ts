@@ -47,5 +47,5 @@ export function capabilityInstructionModulePath(capability: string): string {
 }
 
 export function capabilityStartupCommand(capability: string): string {
-  return preCutoverCommand(`prime --context ${capability} --format json`);
+  return preCutoverCommand(`prime --context ${capability}`);
 }

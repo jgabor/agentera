@@ -305,7 +305,7 @@ function servedContract(root: string): ServedProfileFullContract {
   assert(!instructions.includes("Run Step 1 refresh"), "Profile Full still routes through an implicit refresh");
   assert(instructions.includes("never reads a project glossary"), "Profile Full lost project-glossary isolation");
 
-  const candidateLimit = /personal-glossary-candidates list --limit (\d+) --format json/.exec(instructions);
+  const candidateLimit = /personal-glossary-candidates list --limit (\d+)/.exec(instructions);
   const questionLimit = /show at most (\d+) queued review cards/.exec(instructions);
   assert(candidateLimit, "served Profile instructions omit the bounded candidate command");
   assert(questionLimit, "served Profile instructions omit the bounded question limit");

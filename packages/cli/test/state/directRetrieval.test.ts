@@ -266,8 +266,8 @@ describe.each(artifacts)("read-only migration fixture retrieval: %s", (artifact)
           status: "fail",
           error: {
             class: "not_found",
-            syntax: `agentera state ${artifact} get --number N --format json`,
-            example: `agentera state ${artifact} get --number 1 --format json`,
+            syntax: `agentera state ${artifact} get --number N`,
+            example: `agentera state ${artifact} get --number 1`,
           },
         },
       });

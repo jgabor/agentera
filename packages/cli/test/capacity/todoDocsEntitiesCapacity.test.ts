@@ -147,7 +147,7 @@ describe("TODO entity capacity", () => {
       expect(result.json.entries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: limit }, (_, index) => index + 1));
       for (const entry of result.json.entries) {
         expect(Object.keys(entry).sort()).toEqual(["artifact", "id", "queue_rank", "retrieval"]);
-        expect(entry.retrieval.get).toBe(`agentera state todo get --id ${entry.id} --format json`);
+        expect(entry.retrieval.get).toBe(`agentera state todo get --id ${entry.id}`);
       }
     }
 

@@ -33,9 +33,9 @@ ENTITY_AUTHORITY:
   artifact: progress
   boundary: progress_cycle
   retrieval:
-    list: npx -y agentera@next state progress list --format json
-    get: npx -y agentera@next state progress get --id ID --format json
-  mutation: npx -y agentera@next state progress explain --verb append --format json
+    list: npx -y agentera@next state progress list
+    get: npx -y agentera@next state progress get --id ID
+  mutation: npx -y agentera@next state progress explain --verb append
   write_policy: input_schema.semantics.progress_write_policy
   direct_file_edits: forbidden
   legacy_schema_below: migration_input_only

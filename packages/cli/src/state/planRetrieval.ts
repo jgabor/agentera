@@ -78,11 +78,11 @@ function fail(
       class: className,
       message,
       syntax: list
-        ? "agentera state plan list [--limit N] [--cursor TOKEN] --format json"
-        : "agentera state plan get --plan PLAN_ID --format json",
+        ? "agentera state plan list [--limit N] [--cursor TOKEN]"
+        : "agentera state plan get --plan PLAN_ID",
       example: list
-        ? "agentera state plan list --limit 20 --format json"
-        : "agentera state plan get --plan plan:123e4567-e89b-42d3-a456-426614174000 --format json",
+        ? "agentera state plan list --limit 20"
+        : "agentera state plan get --plan plan:123e4567-e89b-42d3-a456-426614174000",
       recovery: details.recovery ?? "Correct the command using one of the valid forms and retry; no state was changed.",
       valid_values: list
         ? ["list", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
@@ -131,7 +131,7 @@ function catalogEntry(plan: LogicalPlan): JsonObject {
     paths: plan.paths,
     ...(plan.paths.length > 1 ? { mirrored_paths: plan.paths } : { path: plan.paths[0]! }),
   };
-  entry.retrieval = { get: `agentera state plan get --plan ${plan.stableId} --format json` };
+  entry.retrieval = { get: `agentera state plan get --plan ${plan.stableId}` };
   return entry;
 }
 
@@ -229,7 +229,7 @@ function baseList(plans: LogicalPlan[], selected: LogicalPlan[], diagnostics: Pl
       complete_for_plan_list_retrieval: true,
       storage_ownership: "active_plan_file_and_immutable_plan_archive_files",
     },
-    retrieval: { get: "agentera state plan get --plan PLAN_ID --format json" },
+    retrieval: { get: "agentera state plan get --plan PLAN_ID" },
     omitted: false,
     omitted_count: 0,
     omission_reason: null,
@@ -259,8 +259,8 @@ function withPage(plans: LogicalPlan[], diagnostics: PlanArtifactDiagnostic[], s
     response.omitted_count = remaining;
     response.omission_reason = reason;
     response.retrieval = {
-      continue: `agentera state plan list --cursor ${token} --format json`,
-      get: "agentera state plan get --plan PLAN_ID --format json",
+      continue: `agentera state plan list --cursor ${token}`,
+      get: "agentera state plan get --plan PLAN_ID",
     };
   }
   return response;
@@ -295,7 +295,7 @@ export function listPlans(
     }
     if (serializedListBytes(response, options.format) > MAX_LIST_BYTES || (plans.length > start && response.entries.length === 0)) {
       throw fail(1, "unsupported_state", `one plan cannot fit within the ${MAX_LIST_BYTES}-byte ${options.format.toUpperCase()} list budget`, "list", {
-        recovery: "Fetch a plan directly with agentera state plan get --plan PLAN_ID --format json.",
+        recovery: "Fetch a plan directly with agentera state plan get --plan PLAN_ID.",
       });
     }
   }
@@ -346,7 +346,7 @@ export function getPlan(activePath: string, selectedPlan: string): JsonObject {
   if (!plan) {
     throw fail(1, "not_found", `plan '${selectedPlan}' was not found`, "get", {
       stable_id: selectedPlan,
-      recovery: "List active and archived plan identities with agentera state plan list --format json, then retry.",
+      recovery: "List active and archived plan identities with agentera state plan list, then retry.",
       details: { compatibility_diagnostics: discovery.diagnostics },
     });
   }

@@ -79,8 +79,8 @@ function failure(kind: StateFailureClass, message: string, recovery: string, id?
     error: {
       class: kind,
       message,
-      syntax: "agentera state health get --id ID --format json",
-      example: `agentera state health get --id ${id ?? "qjtrmnpvka"} --format json`,
+      syntax: "agentera state health get --id ID",
+      example: `agentera state health get --id ${id ?? "qjtrmnpvka"}`,
       recovery,
       artifact: ARTIFACT,
       ...(id ? { id } : {}),
@@ -90,8 +90,8 @@ function failure(kind: StateFailureClass, message: string, recovery: string, id?
 
 function listFailure(kind: StateFailureClass, message: string, recovery: string, exitCode: 1 | 2 = 1): StateRetrievalFailure {
   const result = failure(kind, message, recovery, undefined, exitCode);
-  result.body.error.syntax = "agentera state health list [--limit N] [--cursor TOKEN] --format json";
-  result.body.error.example = "agentera state health list --limit 20 --format json";
+  result.body.error.syntax = "agentera state health list [--limit N] [--cursor TOKEN]";
+  result.body.error.example = "agentera state health list --limit 20";
   return result;
 }
 
@@ -185,7 +185,7 @@ function entry(root: string, entity: DiscoveredEntity): JsonObject {
     record: entity.record!,
     ...detailMetadata(entity),
     provenance: detailProvenance(relative(root, entity.path), entity),
-    retrieval: { get: `agentera state health get --id ${id} --format json` },
+    retrieval: { get: `agentera state health get --id ${id}` },
   };
 }
 
@@ -198,7 +198,7 @@ export function getHealthEntity(root: string, id: string, sourceRoot = resolveSo
   const expectedPath = path.join(path.resolve(root), contract(sourceRoot).entityRoot, ARTIFACT, selected?.boundary === SUMMARY ? SUMMARY : BOUNDARY, `${id}.yaml`);
   const canonical = all.find((entity) => entity.path === expectedPath);
   if (!selected && canonical) throw failure("corrupt", `health entity '${canonical.relativePath}' does not match its canonical ID envelope`, "Run agentera check validate state and repair the canonical entity file.", id);
-  if (!selected || selected.artifact !== ARTIFACT || ![BOUNDARY, SUMMARY].includes(selected.boundary ?? "")) throw failure("not_found", `no health entity exists with ID '${id}'`, "Copy an ID from agentera state health list --format json and retry.", id);
+  if (!selected || selected.artifact !== ARTIFACT || ![BOUNDARY, SUMMARY].includes(selected.boundary ?? "")) throw failure("not_found", `no health entity exists with ID '${id}'`, "Copy an ID from agentera state health list and retry.", id);
   if (selected.classification !== "valid" || !selected.record || (selected.boundary === BOUNDARY && healthEntityViolations(selected.record).length > 0)) throw failure("corrupt", `health entity '${selected.relativePath}' is corrupt or violates the audit contract`, "Run agentera check validate state, preserve its evidence, and repair the canonical entity file.", id);
   return {
     schemaVersion: "agentera.stateRetrieval.v1",
@@ -270,7 +270,7 @@ export function listHealthEntities(root: string, limit?: number, dimension?: str
       schemaVersion: "agentera.stateList.v1", command: "state health list", status: remaining || filtered.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => entry(root, entity)),
       counts: { total: filtered.length, returned: selected.length, remaining }, filters: { dimension: dimension ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: filtered.length },
       source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: filtered.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
-      retrieval: { ...(next ? { continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next} --format json` } : {}) },
+      retrieval: { ...(next ? { continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next}` } : {}) },
       ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}),
     };
   };

@@ -129,7 +129,7 @@ describe("Decision 94 entity authority", () => {
         },
       },
       retrieval: {
-        exact: "npx -y agentera@next state progress get --id ID --format json",
+        exact: "npx -y agentera@next state progress get --id ID",
         ordering: "timestamp_desc_then_publication_order_desc_then_id_asc",
         cursor: "opaque_snapshot_cursor_v2",
         scalar_truncation: "forbidden",
@@ -140,7 +140,7 @@ describe("Decision 94 entity authority", () => {
       implementation: "implemented",
       publication: "immutable",
       retrieval: {
-        exact: "npx -y agentera@next state decisions get --id ID --format json",
+        exact: "npx -y agentera@next state decisions get --id ID",
         cursor: "opaque_snapshot_cursor",
         ordering: "date_desc_then_id_asc",
       },
@@ -168,7 +168,7 @@ describe("Decision 94 entity authority", () => {
         semantics: expect.stringMatching(/Interrupted create retry.*original created ID.*without allocating another entity.*Missing post-activation baselines.*reject before effects/s),
         bounds: { managed_items: 256, retained_pre_activation_legacy_rows: 256, transaction_targets: 258, activation_utf8_bytes: 32768 },
       },
-      retrieval: { exact: "npx -y agentera@next state todo get --id ID --format json", ordering: "severity_then_status_then_markdown_order_then_id" },
+      retrieval: { exact: "npx -y agentera@next state todo get --id ID", ordering: "severity_then_status_then_markdown_order_then_id" },
     });
     const todoSchema = YAML.parse(fs.readFileSync(TODO_SCHEMA_PATH, "utf8"));
     expect(todoSchema.READINESS.ordering.modes.projected_startup).toEqual({
@@ -195,7 +195,7 @@ describe("Decision 94 entity authority", () => {
       artifact: "docs",
       implementation: "implemented",
       publication: "replace_owned_entity",
-      retrieval: { exact: "npx -y agentera@next state docs get --id ID --format json", ordering: "path_then_id" },
+      retrieval: { exact: "npx -y agentera@next state docs get --id ID", ordering: "path_then_id" },
     });
     expect(target.entities.find((entity: any) => entity.boundary === "decision_satisfaction")).toMatchObject({
       publication: "replace_owned_entity",
@@ -216,7 +216,7 @@ describe("Decision 94 entity authority", () => {
         legacy_optional_fields: ["appended_at"],
       },
       retrieval: {
-        exact: "npx -y agentera@next state health get --id ID --format json",
+        exact: "npx -y agentera@next state health get --id ID",
         ordering: "appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc",
         cursor: "opaque_snapshot_cursor",
         scalar_truncation: "forbidden",
@@ -308,19 +308,19 @@ describe("Decision 94 entity authority", () => {
       [
         "progress_summary",
         "progress",
-        "npx -y agentera@next state progress get --id ID --format json",
+        "npx -y agentera@next state progress get --id ID",
         "full_timestamp_desc_then_publication_order_desc_then_id_asc_then_summary_id_asc",
       ],
       [
         "decision_summary",
         "decisions",
-        "npx -y agentera@next state decisions get --id ID --format json",
+        "npx -y agentera@next state decisions get --id ID",
         "full_date_desc_then_id_asc_then_summary_id_asc",
       ],
       [
         "health_summary",
         "health",
-        "npx -y agentera@next state health get --id ID --format json",
+        "npx -y agentera@next state health get --id ID",
         "full_date_desc_then_id_asc_then_summary_id_asc",
       ],
     ]) {

@@ -82,7 +82,7 @@ if [[ "$SCENARIO" == "noisy-app-home" ]]; then
 fi
 
 collect_manifest() {
-  python3 - <<'PY' "$APP_HOME" "$PROJECT" "$SANDBOX/manifest-before.json"
+  python3 - "$APP_HOME" "$PROJECT" "$SANDBOX/manifest-before.json" <<'PY'
 import hashlib, json, os, sys
 app_home, project, out = sys.argv[1:4]
 manifest = {}
@@ -102,7 +102,7 @@ collect_manifest
 
 set +e
 "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-  "${CHANNEL[@]}" "${TARGET[@]}" "${ONLY[@]}" --dry-run --format json \
+  "${CHANNEL[@]}" "${TARGET[@]}" "${ONLY[@]}" --dry-run \
   >"$SANDBOX/preview.json" 2>"$SANDBOX/preview.stderr"
 preview_rc=$?
 set -e
@@ -113,7 +113,8 @@ if [[ ! -s "$SANDBOX/preview.json" ]]; then
   exit 1
 fi
 
-preview_lifecycle="$(python3 - <<'PY' "$SANDBOX/preview.json"
+preview_lifecycle="$(
+  python3 - "$SANDBOX/preview.json" <<'PY'
 import json, sys
 print(json.load(open(sys.argv[1])).get("lifecycleStatus", "unknown"))
 PY
@@ -123,8 +124,8 @@ overall="pass"
 if [[ "$SCENARIO" == "stable-safety" ]]; then
   if [[ "$preview_rc" -ne 1 && "$preview_rc" -ne 0 ]]; then overall="fail"; fi
 elif [[ "$SCENARIO" == "partial-only-runtime" ]]; then
-  if [[ "$preview_rc" -ne 1 || "$preview_lifecycle" != "manual_review_needed" ]] \
-    || ! python3 - <<'PY' "$SANDBOX/preview.json"
+  if [[ "$preview_rc" -ne 1 || "$preview_lifecycle" != "manual_review_needed" ]] ||
+    ! python3 - "$SANDBOX/preview.json" <<'PY'; then
 import json, sys
 payload = json.load(open(sys.argv[1]))
 runtime = next((phase for phase in payload.get("phases", []) if phase.get("name") == "runtime"), None)
@@ -135,7 +136,6 @@ if (
 ):
     raise SystemExit(1)
 PY
-  then
     overall="fail"
   fi
 elif [[ "$preview_rc" -ne 1 ]]; then
@@ -146,7 +146,7 @@ apply_lifecycle="skipped"
 if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "partial-only-runtime" ]]; then
   set +e
   "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-    "${CHANNEL[@]}" "${TARGET[@]}" "${ONLY[@]}" "${FORCE[@]}" --yes --format json \
+    "${CHANNEL[@]}" "${TARGET[@]}" "${ONLY[@]}" "${FORCE[@]}" --yes \
     >"$SANDBOX/apply.json" 2>"$SANDBOX/apply.stderr"
   apply_rc=$?
   set -e
@@ -157,7 +157,8 @@ if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "partial-only-runtime" ]]
     exit 1
   fi
 
-  apply_lifecycle="$(python3 - <<'PY' "$SANDBOX/apply.json"
+  apply_lifecycle="$(
+    python3 - "$SANDBOX/apply.json" <<'PY'
 import json, sys
 payload = json.load(open(sys.argv[1]))
 lifecycle = payload.get("lifecycleStatus")
@@ -173,7 +174,7 @@ elif (
 else:
     print("unknown")
 PY
-)"
+  )"
   if [[ "$apply_rc" -ne 0 ]]; then
     overall="fail"
   elif [[ "$SCENARIO" != "noisy-app-home" ]]; then
@@ -192,7 +193,7 @@ if [[ "$TIER" == "L2" ]]; then
   cli_version="${AGENTERA_NPM_PIN:-agentera@3.0.0-next.0}"
 fi
 
-python3 - <<'PY' "$report" "$SCENARIO" "$TIER" "$cli_version" "$preview_lifecycle" "$apply_lifecycle" "$overall"
+python3 - "$report" "$SCENARIO" "$TIER" "$cli_version" "$preview_lifecycle" "$apply_lifecycle" "$overall" <<'PY'
 import json, sys
 report, fixture, tier, cli_version, preview_lifecycle, apply_lifecycle, overall = sys.argv[1:8]
 payload = {

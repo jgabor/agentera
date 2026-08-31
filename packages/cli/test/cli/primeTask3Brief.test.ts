@@ -79,7 +79,7 @@ function capturePrime(): { rc: number; out: string; err: string; payload: Record
     { command: "prime", format: "json", home, installRoot: appHome },
     { out: (t: string) => (out += t), err: (t: string) => (err += t) },
   );
-  expect(rc, "bare prime --format json must exit 0").toBe(0);
+  expect(rc, "bare prime must exit 0").toBe(0);
   return { rc, out, err, payload: JSON.parse(out) };
 }
 
@@ -90,7 +90,7 @@ function capturePrimeDashboard(): { rc: number; out: string; err: string; payloa
     { command: "prime", format: "json", dashboard: true, home, installRoot: appHome },
     { out: (t: string) => (out += t), err: (t: string) => (err += t) },
   );
-  expect(rc, "prime --dashboard --format json must exit 0").toBe(0);
+  expect(rc, "prime --dashboard must exit 0").toBe(0);
   return { rc, out, err, payload: JSON.parse(out) };
 }
 
@@ -121,7 +121,7 @@ function docsRichFixture(): Record<string, unknown> {
         path: `.agentera/entities/docs/documentation_inventory_entry/${String.fromCharCode(97 + index)}ddddddddd.yaml`,
         immutable: false,
       },
-      retrieval: { get: `agentera state docs get --id ${String.fromCharCode(97 + index)}ddddddddd --format json` },
+      retrieval: { get: `agentera state docs get --id ${String.fromCharCode(97 + index)}ddddddddd` },
     })),
   };
 }
@@ -444,7 +444,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       ],
       acceptance_count: 2,
       omitted_acceptance_count: 0,
-      retrieval: { get: "agentera state plan tasks get --id vvvvvvvvvv --format json" },
+      retrieval: { get: "agentera state plan tasks get --id vvvvvvvvvv" },
     };
     const historyEntry = (artifact: string) => ({
       artifact,
@@ -467,13 +467,13 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         returned_count: 0,
         omitted_count: 12,
         retrieval: {
-          list: `agentera state ${artifact} list --limit 20 --format json`,
-          get: `agentera state ${artifact} get --id ID --format json`,
+          list: `agentera state ${artifact} list --limit 20`,
+          get: `agentera state ${artifact} get --id ID`,
         },
       },
       retrieval: {
-        list: `agentera state ${artifact} list --limit 20 --format json`,
-        get: `agentera state ${artifact} get --id ID --format json`,
+        list: `agentera state ${artifact} list --limit 20`,
+        get: `agentera state ${artifact} get --id ID`,
       },
       source_contract: {
         authority: "references/artifacts/state-storage-authority.yaml",
@@ -517,7 +517,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         })),
         task_count: 21,
         omitted_task_count: 11,
-        source_contract: { detail_availability: "summary", retrieval: "agentera state plan list --format json" },
+        source_contract: { detail_availability: "summary", retrieval: "agentera state plan list" },
       },
       next_action: {
         object: "PLAN Task vvvvvvvvvv: Run the dependency-ready host task",
@@ -528,7 +528,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         artifact: "plan",
         outcome: "pending",
         eligible: true,
-        retrieval: { exact: "agentera state plan tasks get --id vvvvvvvvvv --format json" },
+        retrieval: { exact: "agentera state plan tasks get --id vvvvvvvvvv" },
         alternatives: Array.from({ length: 3 }, (_, index) => ({
           object: `Optional route ${index}: ${"context ".repeat(40)}`,
           capability: "status",
@@ -551,8 +551,8 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           omitted_count: 12,
           caveats: ["Progress summary history remains exact and read-only."],
           retrieval: {
-            list: "agentera state progress list --limit 20 --format json",
-            get: "agentera state progress get --id ID --format json",
+            list: "agentera state progress list --limit 20",
+            get: "agentera state progress get --id ID",
           },
         },
       },
@@ -565,8 +565,8 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           omitted_count: 12,
           caveats: ["Health summary history remains exact and read-only."],
           retrieval: {
-            list: "agentera state health list --limit 20 --format json",
-            get: "agentera state health get --id ID --format json",
+            list: "agentera state health list --limit 20",
+            get: "agentera state health get --id ID",
           },
         },
       },
@@ -577,15 +577,15 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         empty_state: "explicit",
         capability_context: {
           capability: "status",
-          fetch_command: "agentera prime --context status --format json",
+          fetch_command: "agentera prime --context status",
           required_before_rendering: true,
         },
       },
       startup: {
         schemaVersion: "agentera.primeStartup.v1",
         outcome: "ok",
-        availability: Array.from({ length: 8 }, (_, index) => ({ family: `optional-${index}`, availability: "deferred", detail_command: "agentera schema --format json" })),
-        detail_discovery: { schema: "agentera schema --format json" },
+        availability: Array.from({ length: 8 }, (_, index) => ({ family: `optional-${index}`, availability: "deferred", detail_command: "agentera schema" })),
+        detail_discovery: { schema: "agentera schema" },
         raw_artifact_reads_required: false,
         raw_artifact_read_policy: "Use the exact detail command.",
       },
@@ -611,7 +611,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       caveats: (docs as any).caveats,
       source_contract: {
         detail_availability: "summary",
-        retrieval: "npx -y agentera@next state docs list --format json",
+        retrieval: "npx -y agentera@next state docs list",
       },
       entries: [{
         id: "addddddddd",
@@ -621,7 +621,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           status: "stale",
           caveats: ["This stale entry needs exact review before update."],
         },
-        retrieval: { get: "agentera state docs get --id addddddddd --format json" },
+        retrieval: { get: "agentera state docs get --id addddddddd" },
       }],
     });
     expect(projectedDocs.entries).toHaveLength(1);
@@ -639,8 +639,8 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       });
       expect(projected.degraded_history).not.toHaveProperty("retrieval");
       for (const route of [
-        `agentera state ${artifact} list --limit 20 --format json`,
-        `agentera state ${artifact} get --id ID --format json`,
+        `agentera state ${artifact} list --limit 20`,
+        `agentera state ${artifact} get --id ID`,
       ]) {
         expect(JSON.stringify(docsRich).split(route)).toHaveLength(2);
       }
@@ -695,7 +695,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           id: "vvvvvvvvvv",
           depends_on: ["uuuuuuuuuu"],
           acceptance: expect.arrayContaining([expect.stringContaining("Preserve selected task identity")]),
-          retrieval: { get: "agentera state plan tasks get --id vvvvvvvvvv --format json" },
+          retrieval: { get: "agentera state plan tasks get --id vvvvvvvvvv" },
         },
       });
       expect(payload.plan).not.toHaveProperty("tasks");
@@ -703,7 +703,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         id: "vvvvvvvvvv",
         capability: "orchestrate",
         eligible: true,
-        retrieval: { exact: "agentera state plan tasks get --id vvvvvvvvvv --format json" },
+        retrieval: { exact: "agentera state plan tasks get --id vvvvvvvvvv" },
       });
       expect(payload.history).toMatchObject({
         progress: { counts: { total: 13, returned: 0, remaining: 13, full: 1, summary: 12 } },
@@ -751,7 +751,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         fields: ["plan", "state_presence", "source_contract"],
         capability_context: {
           capability: "status",
-          fetch_command: "agentera prime --context status --format json",
+          fetch_command: "agentera prime --context status",
           required_before_rendering: true,
           attacker_controlled: attackerControlled,
         },
@@ -788,7 +788,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     });
     expect(payload.source_contract).toMatchObject({
       fields: ["plan", "state_presence", "source_contract"],
-      capability_context: { fetch_command: "agentera prime --context status --format json" },
+      capability_context: { fetch_command: "agentera prime --context status" },
     });
   });
 
@@ -833,7 +833,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           id: fixture.selectedTaskId,
           object: expect.any(String),
           capability: expect.any(String),
-          retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId} --format json` },
+          retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}` },
         },
         history: {
           progress: {
@@ -845,7 +845,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         },
       });
       expect(["ok", "degraded"]).toContain((bare.payload.brief as Record<string, unknown>).projection);
-      expect((bare.payload.brief as Record<string, unknown>).path_diagnostics_recovery).toBe("npx -y agentera@next doctor --format json");
+      expect((bare.payload.brief as Record<string, unknown>).path_diagnostics_recovery).toBe("npx -y agentera@next doctor");
       expect(Buffer.byteLength(bare.out, "utf8")).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
       outputs.push({ bytes: Buffer.byteLength(bare.out, "utf8"), payload: bare.payload });
     }
@@ -899,12 +899,12 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         error: {
           class: "brief_output_budget",
           message: "brief exceeds byte budget",
-          recovery: "Run `npx -y agentera@next prime --context status --format json`.",
+          recovery: "Run `npx -y agentera@next prime --context status`.",
         },
       },
     });
-    expect(compactBytes).toBe(11_934);
-    expect(PRIME_BRIEF_MAX_UTF8_BYTES - compactBytes).toBe(66);
+    expect(compactBytes).toBe(11_906);
+    expect(PRIME_BRIEF_MAX_UTF8_BYTES - compactBytes).toBe(94);
     expect(() => briefOrientationPayload(payload, {
       budgetBytes: compactBytes - 1,
       degradedMode: "status_routing",
@@ -915,8 +915,8 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     const reconciliation = {
       state: "unsafe_inactive",
       status: "action_required",
-      preview_command: "npx -y agentera@next state todo correct-owners --input OWNER_MAPPING.yaml --dry-run --format json",
-      apply_command: "npx -y agentera@next state todo correct-owners --input OWNER_MAPPING.yaml --effect-sha256 SHA256 --yes --format json",
+      preview_command: "npx -y agentera@next state todo correct-owners --input OWNER_MAPPING.yaml --dry-run",
+      apply_command: "npx -y agentera@next state todo correct-owners --input OWNER_MAPPING.yaml --effect-sha256 SHA256 --yes",
       risks: { resurrected_count: 161, resurrected_ids: Array.from({ length: 20 }, (_, index) => `todo-${index}`), omitted_count: 141 },
     };
     const payload: Record<string, unknown> = {

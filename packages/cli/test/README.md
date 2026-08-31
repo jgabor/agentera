@@ -18,7 +18,7 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 | Package boundary | Distribution-only checks from the canonical two-construction fixture, focused bundle safety, exact package inventory and integrity, path independence, and one extracted smoke | `pnpm -C packages/cli run verify:package` |
 | Repo-state fixtures | Pinned `.agentera/` + `TODO.md` variants via `useFixtureProject(name)` | `packages/cli/test/fixtures/repo-state/` |
 | Repo gate | Committed `.agentera/*` and `TODO.md` within `uniform_10_40_50` | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
-| Release gate | Version-bearing surfaces and governed provenance aligned in the live checkout | `agentera check validate release-metadata --format json` |
+| Release gate | Version-bearing surfaces and governed provenance aligned in the live checkout | `agentera check validate release-metadata` |
 
 Generated-output construction, consumers, package publication, and temporary-root
 lifecycle are defined once in the
@@ -96,7 +96,7 @@ oracle JSON are not couplings.
 
 | Entry point | Live coupling | Notes |
 | ----------- | ------------- | ----- |
-| `agentera check validate release-metadata --format json` | Validates version surfaces and `agentera.gitRef` against governed checkout inputs | Run explicitly for release readiness; fixture-level validator tests remain in ordinary vitest |
+| `agentera check validate release-metadata` | Validates version surfaces and `agentera.gitRef` against governed checkout inputs | Run explicitly for release readiness; fixture-level validator tests remain in ordinary vitest |
 
 ## Static-contract REPO_ROOT couplings (documented; no migration)
 

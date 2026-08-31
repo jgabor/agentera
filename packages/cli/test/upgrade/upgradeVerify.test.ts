@@ -178,7 +178,7 @@ describe("cli dispatch: upgrade --verify", () => {
     expect(JSON.parse(out)).toMatchObject({ status: "failed", checks: expect.arrayContaining([expect.objectContaining({ name: "doctor", passed: false })]) });
   });
 
-  it("upgrade --verify --format json emits the envelope on stdout", () => {
+  it("upgrade --verify emits the envelope on stdout", () => {
     const { rc, out } = capture([
       "node",
       "agentera",

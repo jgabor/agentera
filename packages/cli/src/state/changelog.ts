@@ -10,7 +10,7 @@ import { ARTIFACT_PROTOCOL_PATHS } from "../registries/artifactProtocolIds.js";
 import { validateRealProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
-export const CHANGELOG_QUERY_COMMAND = "agentera state query changelog --format json";
+export const CHANGELOG_QUERY_COMMAND = "agentera state query changelog";
 export const CHANGELOG_SCANNER_ID = "agentera.changelogHeadingScanner.v1";
 export const CHANGELOG_MAX_READ_BYTES = 1_048_576;
 export const CHANGELOG_DOCS_MAX_READ_BYTES = 262_144;

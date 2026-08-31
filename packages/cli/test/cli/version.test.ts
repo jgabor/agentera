@@ -28,7 +28,7 @@ describe("cli dispatch: --version / version command", () => {
     expect(JSON.parse(out).version).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it("prints version as JSON with --format json", () => {
+  it("prints version as JSON with", () => {
     const { rc, out } = capture((io) =>
       main(["node", "agentera", "version", "--format", "json"], io),
     );

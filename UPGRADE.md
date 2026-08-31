@@ -49,11 +49,11 @@ npx -y agentera@next upgrade --yes --channel development
 state:
 
 ```bash
-npx -y agentera@next prime --format json
-npx -y agentera@next doctor --format json
+npx -y agentera@next prime
+npx -y agentera@next doctor
 ```
 
-Before stable promotion, `prime --context status --format json` is the one-call
+Before stable promotion, `prime --context status` is the one-call
 bootstrap for fresh, v2, partially migrated, and v3 projects. A Git-root project
 with no `.agentera` state is `fresh_uninitialized`: `prime --context plan` stays
 read-only and operable, and the first `state plan create` is its sole initializer.
@@ -70,12 +70,12 @@ the complete plan graph and then the entity-state marker, rolling back ordinary
 publication failures. Other state writers never initialize fresh state.
 
 ```bash
-npx -y agentera@next prime --context plan --format json
-npx -y agentera@next state plan create --input PLAN.yaml --dry-run --format json
-npx -y agentera@next state plan create --input PLAN.yaml --format json
+npx -y agentera@next prime --context plan
+npx -y agentera@next state plan create --input PLAN.yaml --dry-run
+npx -y agentera@next state plan create --input PLAN.yaml
 ```
 
-`doctor --format json` also reports bounded `retired_resources` candidates. A
+`doctor` also reports bounded `retired_resources` candidates. A
 proven Agentera-installed OpenCode plugin reports `pending_automatic_removal`
 and points to normal `upgrade`; it needs no separate cleanup selector. An
 unproven or uninspectable resource reports `manual_review` and a read-only,
@@ -233,7 +233,7 @@ The only continuation is a fresh-v3 reset. Preview the exact bounded project,
 profile, installation, and runtime effects first:
 
 ```bash
-npx -y agentera@next upgrade --reset-product-v1 --dry-run --format json
+npx -y agentera@next upgrade --reset-product-v1 --dry-run
 ```
 
 To apply after review, rerun the same scoped command and replace `--dry-run`
@@ -254,8 +254,8 @@ restore, and downgrade are unsupported.
 After apply:
 
 ```bash
-npx -y agentera@next doctor --format json
-npx -y agentera@next prime --format json
+npx -y agentera@next doctor
+npx -y agentera@next prime
 ```
 
 `upgrade --verify` without `--yes` is a read-only doctor and capability-context
@@ -273,7 +273,7 @@ Release preparation does not publish, tag, or push:
 pnpm -C packages/cli test
 pnpm -C packages/cli run typecheck
 pnpm -C packages/cli build
-node packages/cli/dist/bin/agentera.js check validate capability-contract --format json
+node packages/cli/dist/bin/agentera.js check validate capability-contract
 node packages/cli/dist/bin/agentera.js check validate release-metadata
 ```
 

@@ -24,8 +24,8 @@ import { deferredStartupFamilies } from "./startupAggregation.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 import { progressWritePolicy } from "../../state/progressWritePolicy.js";
 
-const TRANSIENT_BUILD_INPUT_COMMAND = preCutoverCommand("prime --context build --input <file|-> --format json");
-const TRANSIENT_BUILD_STDIN_COMMAND = preCutoverCommand("prime --context build --input - --format json");
+const TRANSIENT_BUILD_INPUT_COMMAND = preCutoverCommand("prime --context build --input <file|->");
+const TRANSIENT_BUILD_STDIN_COMMAND = preCutoverCommand("prime --context build --input -");
 
 function transientSourceProvenance(request: BuildExecutionRequest, field: string): JsonObject {
   return {
@@ -110,7 +110,7 @@ export function buildExecutionContext(
   }
   if (changelogBoundary.status !== "available") {
     stateCaveats.push(...((changelogBoundary.caveats ?? []) as string[]));
-    fallbackCommands.push(preCutoverCommand("state query changelog --format json"));
+    fallbackCommands.push(preCutoverCommand("state query changelog"));
   }
   if (profile.status !== "valid") {
     stateCaveats.push("profile-derived state is unavailable in prime --context response.");
@@ -232,7 +232,7 @@ export function buildExecutionContext(
       requirement: progressRequirement,
       verified_field_mandatory_when_appended: true,
       policy: progressWritePolicy(),
-      guidance_command: preCutoverCommand("state progress explain --verb append --format json"),
+      guidance_command: preCutoverCommand("state progress explain --verb append"),
       latest_progress_verification_pointer: progressVerification.latest_progress_verification_pointer ?? null,
       source_provenance: sourceProvenance("progress", STATE_FAMILY_LIST_COMMANDS.progress),
     },
@@ -241,7 +241,7 @@ export function buildExecutionContext(
       remote_push_allowed: false,
       commit_allowed_only_with_explicit_user_request: true,
       tag_or_publication_allowed: false,
-      source_provenance: sourceProvenance("execution_context", preCutoverCommand("prime --context build --format json"), "git_boundary"),
+      source_provenance: sourceProvenance("execution_context", preCutoverCommand("prime --context build"), "git_boundary"),
     },
     plan_completion_sweep: sweep,
     plan_lifecycle_state: lifecycle,

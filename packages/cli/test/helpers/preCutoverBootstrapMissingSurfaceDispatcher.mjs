@@ -4,7 +4,7 @@ import path from "node:path";
 import { dispatchPreCutoverBootstrap } from "./preCutoverBootstrapDispatcher.mjs";
 
 const [runtimeRootInput, requiredFilesJson] = process.argv.slice(2);
-const command = "npx -y agentera@next prime --context status --format json";
+const command = "npx -y agentera@next prime --context status";
 
 function containedRelativePath(root, relative) {
   if (typeof relative !== "string" || relative.length === 0 || path.isAbsolute(relative)) {

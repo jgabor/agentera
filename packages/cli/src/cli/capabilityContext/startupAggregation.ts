@@ -14,22 +14,22 @@ export const STARTUP_INCLUDED_FAMILIES = new Set([
 ]);
 
 const DETAIL_COMMANDS: Record<string, string> = {
-  plan: preCutoverCommand("state plan list --format json"),
-  docs: preCutoverCommand("state docs list --format json"),
-  progress: preCutoverCommand("state progress list --format json"),
-  health: preCutoverCommand("state health list --format json"),
-  todo: preCutoverCommand("state todo list --format json"),
-  decisions: preCutoverCommand("state decisions list --format json"),
-  changelog: preCutoverCommand("state query changelog --format json"),
-  objective: preCutoverCommand("state objective list --format json"),
-  experiments: preCutoverCommand("state experiments list --objective OBJECTIVE_ID --format json"),
-  vision: preCutoverCommand("state query vision --format json"),
-  design: preCutoverCommand("state query design --format json"),
-  profile: preCutoverCommand("report profile-grounding --format json"),
+  plan: preCutoverCommand("state plan list"),
+  docs: preCutoverCommand("state docs list"),
+  progress: preCutoverCommand("state progress list"),
+  health: preCutoverCommand("state health list"),
+  todo: preCutoverCommand("state todo list"),
+  decisions: preCutoverCommand("state decisions list"),
+  changelog: preCutoverCommand("state query changelog"),
+  objective: preCutoverCommand("state objective list"),
+  experiments: preCutoverCommand("state experiments list --objective OBJECTIVE_ID"),
+  vision: preCutoverCommand("state query vision"),
+  design: preCutoverCommand("state query design"),
+  profile: preCutoverCommand("report profile-grounding"),
 };
 
 function detailCommand(family: string): string {
-  return DETAIL_COMMANDS[family] ?? preCutoverCommand("schema --format json");
+  return DETAIL_COMMANDS[family] ?? preCutoverCommand("schema");
 }
 
 /**
@@ -75,7 +75,7 @@ export function startupAggregation(
     state_cutover: cutover ?? { status: "complete", project_state: "v3", recovery_command: null },
     ...(reconciliationRequired ? { todo_reconciliation: todoReconciliation } : {}),
     availability: Array.isArray(contract.availability) ? contract.availability : [],
-    detail_discovery: { schema: preCutoverCommand("schema --format json") },
+    detail_discovery: { schema: preCutoverCommand("schema") },
     raw_artifact_reads_required: false,
     raw_artifact_read_policy:
       "Use included bounded state first. For deferred detail, run that family's detail_command; raw reads are only for a named corruption or CLI-defect diagnostic.",

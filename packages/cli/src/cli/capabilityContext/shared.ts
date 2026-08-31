@@ -31,7 +31,7 @@ export function validatePrimeCapability(capability: string): void {
     const valid = CAPABILITY_NAMES.join(", ");
     throw new Error(
       `unsupported capability ${pyRepr(capability)}; valid capabilities: ${valid}. ` +
-        `Example: ${preCutoverCommand("prime --context plan --format json")}`,
+        `Example: ${preCutoverCommand("prime --context plan")}`,
     );
   }
 }

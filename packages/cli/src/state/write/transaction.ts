@@ -25,8 +25,8 @@ export function executeStateWrite(
       class: "schema_violation",
       message: inputViolations[0],
       violations: inputViolations,
-      syntax: `agentera state ${req.artifact} ${req.spec.verb} --input PATH --format json`,
-      example: `agentera state ${req.artifact} ${req.spec.verb} --input - --format json`,
+      syntax: `agentera state ${req.artifact} ${req.spec.verb} --input PATH`,
+      example: `agentera state ${req.artifact} ${req.spec.verb} --input -`,
     });
   if (req.artifact === "plan" && req.spec.verb === "create") {
     const initialized = createFreshPlanEntities(req);

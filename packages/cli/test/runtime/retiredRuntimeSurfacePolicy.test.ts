@@ -119,7 +119,7 @@ function commandAuthorityFixture(): string {
   fs.mkdirSync(path.join(root, "docs"), { recursive: true });
   fs.mkdirSync(path.join(root, "packages/cli/src/cli"), { recursive: true });
   fs.mkdirSync(path.join(root, "packages/cli/src/emitted"), { recursive: true });
-  fs.writeFileSync(path.join(root, "docs/guidance.md"), "Run `npx -y agentera@next prime --format json`.\n");
+  fs.writeFileSync(path.join(root, "docs/guidance.md"), "Run `npx -y agentera@next prime`.\n");
   fs.writeFileSync(path.join(root, "LICENSE"), "fixture license\n");
   fs.writeFileSync(path.join(root, "packages/cli/src/cli/preCutoverCommand.ts"), [
     "export const preCutoverCommand = (value: string) => value;",
@@ -129,7 +129,7 @@ function commandAuthorityFixture(): string {
   ].join("\n"));
   fs.writeFileSync(path.join(root, "packages/cli/src/emitted/guidance.ts"), [
     'import { preCutoverCommand } from "../cli/preCutoverCommand.js";',
-    'preCutoverCommand("prime --format json");',
+    'preCutoverCommand("prime");',
     "",
   ].join("\n"));
   fs.writeFileSync(path.join(root, "references/adapters/package-registry.yaml"), YAML.stringify({
@@ -239,7 +239,7 @@ describe("retired runtime current-surface policy", () => {
         `${capability} complete served body`,
       ).toEqual([]);
       expect(body, `${capability} development bootstrap`).toContain(
-        `npx -y agentera@next prime --context ${capability} --format json`,
+        `npx -y agentera@next prime --context ${capability}`,
       );
     }
     const authorities = registryBundledAuthorityPaths(repoRoot);
@@ -255,7 +255,7 @@ describe("retired runtime current-surface policy", () => {
 
   it("rejects a wrong-channel executable injected into a formerly omitted Markdown tail", () => {
     const target = "references/cli/routing-model.md";
-    const injected = `${read(target)}\n## Recovery regression\nRun \`agentera prime --context status --format json\`.\n`;
+    const injected = `${read(target)}\n## Recovery regression\nRun \`agentera prime --context status\`.\n`;
     const violations = registryBundledAuthorityViolations(repoRoot, new Map([[target, injected]]));
     expect(violations).toContain(`${target}: bare_executable`);
   });
@@ -273,7 +273,7 @@ describe("retired runtime current-surface policy", () => {
   it("exempts only the two exact stable-v2 upgrade commands", () => {
     const content = read("UPGRADE.md").replace(
       "npx -y agentera@latest upgrade --dry-run",
-      "npx -y agentera@latest prime --context status --format json",
+      "npx -y agentera@latest prime --context status",
     );
     expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]])))
       .toContain("UPGRADE.md: stable_v2_sequence");
@@ -284,23 +284,23 @@ describe("retired runtime current-surface policy", () => {
       "CLI-visible `agentera prime` labels are source labels; `agentera doctor` is a diagnostic name.",
     )).toEqual([]);
     expect(preCutoverBootstrapGuidanceViolations(
-      "Recovery: Run `agentera doctor --format json`.",
+      "Recovery: Run `agentera doctor`.",
     )).toEqual(["bare_executable"]);
     expect(preCutoverBootstrapGuidanceViolations(
-      "```bash\nagentera prime --context status --format json\n```",
+      "```bash\nagentera prime --context status\n```",
     )).toEqual(["bare_executable"]);
   });
 
   it.each([
-    ["shell prompt", "$ agentera prime --context status --format json"],
-    ["numbered list", "1. agentera doctor --format json"],
-    ["prose", "For recovery, run agentera prime --context status --format json."],
-    ["table", "| Recovery | agentera doctor --format json |"],
-    ["wrapper", "```bash\nenv CI=1 agentera prime --context status --format json\n```"],
-    ["quoted wrapper", "```bash\nbash -c 'agentera doctor --format json'\n```"],
-    ["composition", "```bash\nnpx -y agentera@next doctor --format json && agentera prime --context status --format json\n```"],
-    ["multiline continuation", "```bash\nagentera \\\n  prime --context status --format json\n```"],
-    ["unicode whitespace", "```bash\nnpx\u00a0-y\u2003agentera@next prime --context status --format json\n```"],
+    ["shell prompt", "$ agentera prime --context status"],
+    ["numbered list", "1. agentera doctor"],
+    ["prose", "For recovery, run agentera prime --context status."],
+    ["table", "| Recovery | agentera doctor |"],
+    ["wrapper", "```bash\nenv CI=1 agentera prime --context status\n```"],
+    ["quoted wrapper", "```bash\nbash -c 'agentera doctor'\n```"],
+    ["composition", "```bash\nnpx -y agentera@next doctor && agentera prime --context status\n```"],
+    ["multiline continuation", "```bash\nagentera \\\n  prime --context status\n```"],
+    ["unicode whitespace", "```bash\nnpx\u00a0-y\u2003agentera@next prime --context status\n```"],
   ])("rejects Markdown command evasion with complete diagnostics: %s", (_label, content) => {
     const diagnostics = preCutoverBootstrapAuthorityDiagnostics("fixture.md", content);
     expect(diagnostics).not.toEqual([]);
@@ -314,11 +314,11 @@ describe("retired runtime current-surface policy", () => {
   });
 
   it.each([
-    ["env wrapper", "```bash\nenv CI=1 npx -y agentera@next prime --format json\n```", "command_wrapper"],
-    ["and composition", "```bash\nnpx -y agentera@next prime --format json && true\n```", "command_composition"],
-    ["pipeline", "```bash\nnpx -y agentera@next doctor --format json | jq .\n```", "command_composition"],
-    ["substitution", "```bash\nresult=$(npx -y agentera@next prime --format json)\n```", "command_substitution"],
-    ["split dist-tag", "```bash\nnpx -y agentera@ne\"xt\" prime --format json\n```", "noncanonical_development_executable"],
+    ["env wrapper", "```bash\nenv CI=1 npx -y agentera@next prime\n```", "command_wrapper"],
+    ["and composition", "```bash\nnpx -y agentera@next prime && true\n```", "command_composition"],
+    ["pipeline", "```bash\nnpx -y agentera@next doctor | jq .\n```", "command_composition"],
+    ["substitution", "```bash\nresult=$(npx -y agentera@next prime)\n```", "command_substitution"],
+    ["split dist-tag", "```bash\nnpx -y agentera@ne\"xt\" prime\n```", "noncanonical_development_executable"],
   ])("rejects a non-exact complete shell context: %s", (_label, content, violation) => {
     const [diagnostic] = preCutoverBootstrapAuthorityDiagnostics("shell.md", content);
     expect(diagnostic).toEqual(expect.objectContaining({
@@ -459,14 +459,14 @@ describe("retired runtime current-surface policy", () => {
   it("scans stable commands in a Markdown text fence", () => {
     expect(preCutoverBootstrapAuthorityDiagnostics(
       "stable-text.md",
-      "```text\nnpx -y agentera@latest prime --format json\n```\n",
+      "```text\nnpx -y agentera@latest prime\n```\n",
     )).toEqual([expect.objectContaining({ violation: "stable_channel_outside_exemption" })]);
   });
 
   it("does not treat documented angle placeholders as shell operators", () => {
     expect(preCutoverBootstrapAuthorityDiagnostics(
       "placeholder.md",
-      "```bash\nnpx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb> --format json\n```\n",
+      "```bash\nnpx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb>\n```\n",
     )).toEqual([]);
   });
 
@@ -534,8 +534,8 @@ describe("retired runtime current-surface policy", () => {
       "  prompts:",
       "    - >-",
       "        First run agentera prime",
-      "        --context status --format json.",
-      "    - recovery: npx -y agentera@latest doctor --format json",
+      "        --context status.",
+      "    - recovery: npx -y agentera@latest doctor",
     ].join("\n"));
     expect(yamlDiagnostics).toHaveLength(2);
     expect(yamlDiagnostics.map(({ location }) => location)).toEqual([
@@ -543,7 +543,7 @@ describe("retired runtime current-surface policy", () => {
       { structured_path: '$["outer"]["prompts"][1]["recovery"]', offset: 7 },
     ]);
     const jsonDiagnostics = preCutoverBootstrapAuthorityDiagnostics("fixture.json", JSON.stringify({
-      nested: [{ command: "agentera doctor --format json; agentera prime --format json" }],
+      nested: [{ command: "agentera doctor; agentera prime" }],
     }));
     expect(jsonDiagnostics).toHaveLength(2);
     expect(jsonDiagnostics).toEqual(Array.from({ length: 2 }, () => expect.objectContaining({
@@ -571,8 +571,8 @@ describe("retired runtime current-surface policy", () => {
   );
 
   it.each([
-    ["YAML literal", "commands.yaml", "command: |\n  npx -y agentera@next prime --format json\n  agentera state todo list\n", ["bare_executable"]],
-    ["YAML folded", "commands.yaml", "command: >-\n  npx -y agentera@next prime --format json;\n  agentera schema --format json\n", ["command_composition", "command_composition"]],
+    ["YAML literal", "commands.yaml", "command: |\n  npx -y agentera@next prime\n  agentera state todo list\n", ["bare_executable"]],
+    ["YAML folded", "commands.yaml", "command: >-\n  npx -y agentera@next prime;\n  agentera schema\n", ["command_composition", "command_composition"]],
     ["JSON multiline", "commands.json", JSON.stringify({ command: "npx -y agentera@next check compact\nagentera report profile-grounding" }), ["bare_executable"]],
   ])("inspects every command boundary in %s", (_label, surface, content, expectedViolations) => {
     const diagnostics = preCutoverBootstrapAuthorityDiagnostics(surface, content);
@@ -694,11 +694,11 @@ describe("retired runtime current-surface policy", () => {
 
     expect(preCutoverBootstrapAuthorityDiagnostics(
       "split-latest.md",
-      "```bash\nnpx -y agentera@la\"test\" doctor --format json\n```\n",
+      "```bash\nnpx -y agentera@la\"test\" doctor\n```\n",
     )).toEqual([expect.objectContaining({
       location: { line: 2, column: 8 },
-      candidate: { raw: 'npx -y agentera@la"test" doctor --format json', normalized: "npx -y agentera@latest doctor --format json" },
-      correction: "npx -y agentera@next doctor --format json",
+      candidate: { raw: 'npx -y agentera@la"test" doctor', normalized: "npx -y agentera@latest doctor" },
+      correction: "npx -y agentera@next doctor",
     })]);
   });
 
@@ -838,7 +838,7 @@ describe("retired runtime current-surface policy", () => {
 
   it.each([
     ["time", "command: time agentera state todo list\n", "command_wrapper"],
-    ["eval", "command: eval agentera schema --format json\n", "command_wrapper"],
+    ["eval", "command: eval agentera schema\n", "command_wrapper"],
     ["nested bash", "command: bash -c \"printf ok; agentera check compact\"\n", "command_composition"],
   ])("rejects the %s wrapper without recognizing its subcommand", (_label, content, violation) => {
     expect(preCutoverBootstrapAuthorityDiagnostics("wrapper.yaml", content)).toEqual([
@@ -857,7 +857,7 @@ describe("retired runtime current-surface policy", () => {
       ["unquoted to inline", "Run agentera one; then `agentera two`.\n", 2],
       ["all grouping operators", "Run (agentera one) && agentera two || agentera three | agentera four; agentera five.\n", 5],
       ["repeated identical", "Run agentera same; then agentera same.\n", 2],
-      ["canonical composition", "npx -y agentera@next prime --format json && true\n", 1],
+      ["canonical composition", "npx -y agentera@next prime && true\n", 1],
     ] as const;
 
     for (const [label, content, count] of cases) {
@@ -996,7 +996,7 @@ describe("retired runtime current-surface policy", () => {
   it("accepts exact development commands and descriptive command vocabulary", () => {
     expect(preCutoverBootstrapAuthorityDiagnostics("fixture.md", [
       "```bash",
-      "npx -y agentera@next prime --context status --format json",
+      "npx -y agentera@next prime --context status",
       "```",
       "CLI-visible `agentera prime` labels and the `agentera doctor` diagnostic name are vocabulary.",
     ].join("\n"))).toEqual([]);
@@ -1015,8 +1015,8 @@ describe("retired runtime current-surface policy", () => {
 
   it("rejects stable-channel execution outside the sole exemption", () => {
     const content = read("UPGRADE.md").replace(
-      "npx -y agentera@next doctor --format json",
-      "npx -y agentera@latest doctor --format json",
+      "npx -y agentera@next doctor",
+      "npx -y agentera@latest doctor",
     );
     expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]])))
       .toContain("UPGRADE.md: stable_channel_outside_exemption");
@@ -1024,8 +1024,8 @@ describe("retired runtime current-surface policy", () => {
 
   it.each([
     ["inline no-arg", "Use `npx -y agentera@latest prime` only as a probe."],
-    ["split quoted", "```bash\nnpx -y agentera@la\"test\" doctor --format json\n```"],
-    ["continued", "```bash\nnpx -y agentera@latest \\\n  prime --format json\n```"],
+    ["split quoted", "```bash\nnpx -y agentera@la\"test\" doctor\n```"],
+    ["continued", "```bash\nnpx -y agentera@latest \\\n  prime\n```"],
     ["unknown subcommand", "Use `npx -y agentera@latest future-command` only as a probe."],
     ["unknown wrapped subcommand", "```bash\ntime npx -y agentera@latest future-command\n```"],
     ["nested split quoted", "```bash\nbash -c 'npx -y agentera@la\"test\" future-command'\n```"],
@@ -1193,7 +1193,7 @@ describe("retired runtime current-surface policy", () => {
     ["malformed", (root: string) => fs.writeFileSync(path.join(root, "docs/new.yaml"), "value: [unterminated"), "malformed_yaml"],
     ["unclassified", (root: string) => fs.writeFileSync(path.join(root, "docs/new.txt"), "new surface\n"), "inventory_unclassified"],
     ["omitted", (root: string) => fs.rmSync(path.join(root, "docs"), { recursive: true }), "inventory_omission"],
-    ["producer", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/new.ts"), 'import { preCutoverCommand } from "../cli/preCutoverCommand.js";\npreCutoverCommand("doctor --format json");\n'), "emitted_producer_omitted"],
+    ["producer", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/new.ts"), 'import { preCutoverCommand } from "../cli/preCutoverCommand.js";\npreCutoverCommand("doctor");\n'), "emitted_producer_omitted"],
   ])("fails closed for a %s inventory change", (_label, mutate, violation) => {
     const root = commandAuthorityFixture();
     mutate(root);
@@ -1332,13 +1332,13 @@ describe("retired runtime current-surface policy", () => {
       expect(preCutoverBootstrapAuthorityDiagnostics(`${surface}.md`, body), surface).toEqual([]);
       expect(body, `${surface} stable channel`).not.toContain("agentera@latest");
     }
-    expect(printTopLevelHelp()).toContain("Examples: npx -y agentera@next prime --context status --format json");
+    expect(printTopLevelHelp()).toContain("Examples: npx -y agentera@next prime --context status");
     expect(PRIME_BLOB).toContain("npx -y agentera@next doctor");
   });
 
   it.each([
-    ["omitted tail", `${CAPABILITY_INSTRUCTIONS.build}\n### Tail\nRun \`agentera prime --context build --format json\`.`],
-    ["stable tail", `${CAPABILITY_INSTRUCTIONS.build}\n### Tail\nRun \`npx -y agentera@latest prime --context build --format json\`.`],
+    ["omitted tail", `${CAPABILITY_INSTRUCTIONS.build}\n### Tail\nRun \`agentera prime --context build\`.`],
+    ["stable tail", `${CAPABILITY_INSTRUCTIONS.build}\n### Tail\nRun \`npx -y agentera@latest prime --context build\`.`],
   ])("rejects bootstrap authority outside sampled sections: %s", (_label, body) => {
     expect(preCutoverBootstrapGuidanceViolations(body)).not.toEqual([]);
   });

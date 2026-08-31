@@ -80,7 +80,7 @@ function usageSyntax(): string {
   return "agentera usage [--format text|json] [--corpus PATH] [--project VALUE] [--sources active|all]";
 }
 function usageExample(): string {
-  return "agentera usage --format json --project agentera";
+  return "agentera usage --project agentera";
 }
 
 /** Faithful port of scripts/agentera `_validate_usage_request` (shared by usage/stats/report). */

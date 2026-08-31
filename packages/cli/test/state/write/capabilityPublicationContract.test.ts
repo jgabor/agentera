@@ -64,10 +64,10 @@ function served(capability: keyof typeof sources): string {
 
 function adviceViolations(capability: keyof typeof sources, text: string): string[] {
   const required = [
-    `prime --context ${capability} --term-input <file|-> --format json`,
+    `prime --context ${capability} --term-input <file|->`,
     "capability_context.glossary_advice",
-    "report glossary-advice --term-input <file|-> --format json",
-    "report glossary-advice --input <file|-> --format json",
+    "report glossary-advice --term-input <file|->",
+    "report glossary-advice --input <file|->",
     "do not issue a second initial glossary report",
   ];
   return required.filter((value) => !text.includes(value));
@@ -83,7 +83,7 @@ function selectedAdviceRoute(
 
   if (event === "initial_no_review") {
     const clause = contract.match(/At initial meaning-sensitive[^.]*\./)?.[0] ?? "";
-    return clause.includes(`prime --context ${capability} --term-input <file|-> --format json`)
+    return clause.includes(`prime --context ${capability} --term-input <file|->`)
       && contract.includes("do not issue a second initial glossary report")
       ? "startup_advice"
       : "invalid_contract";
@@ -91,13 +91,13 @@ function selectedAdviceRoute(
   if (event === "later_changed_no_review") {
     const clause = contract.match(/For a later user-authored[^.]*\./)?.[0] ?? "";
     return clause.includes("that can alter the affected meaning, refresh compact no-review advice")
-      && clause.includes("report glossary-advice --term-input <file|-> --format json")
+      && clause.includes("report glossary-advice --term-input <file|->")
       ? "compact_term_input"
       : "invalid_contract";
   }
   if (event === "host_review_clarification") {
     const clause = contract.match(/When a clarification answer supplies structured host review[^.]*\./)?.[0] ?? "";
-    return clause.includes("report glossary-advice --input <file|-> --format json")
+    return clause.includes("report glossary-advice --input <file|->")
       ? "structured_input"
       : "invalid_contract";
   }
@@ -120,7 +120,7 @@ describe("capability advice and plan publication contracts", () => {
         expect(
           adviceViolations(capability, text.replace(" --term-input <file|->", " --input <file|->")),
           `${capability} stale startup route`,
-        ).toContain(`prime --context ${capability} --term-input <file|-> --format json`);
+        ).toContain(`prime --context ${capability} --term-input <file|->`);
       }
     }
   });
@@ -147,8 +147,8 @@ describe("capability advice and plan publication contracts", () => {
   it("rejects a stale host-review route on source and served contracts", () => {
     for (const [surface, text] of [["source", planInstructions], ["served", served("plan")]]) {
       const stale = text.replace(
-        "report glossary-advice --input <file|-> --format json",
-        "report glossary-advice --term-input <file|-> --format json",
+        "report glossary-advice --input <file|->",
+        "report glossary-advice --term-input <file|->",
       );
       expect(stale, `${surface} fixture changed`).not.toBe(text);
       expect(selectedAdviceRoute("plan", stale, "host_review_clarification"), surface).toBe("invalid_contract");
@@ -161,7 +161,7 @@ describe("capability advice and plan publication contracts", () => {
       expect(text).toContain("Explicit preview or review is a reusable-input workflow");
       expect(text).toContain("Approval or effect confirmation is trust-boundary multi-phase");
       expect(text).toContain("Structured input remains required");
-      expect(text).toMatch(/exactly one `(?:agentera|npx -y agentera@next) state plan create --input PATH --format json` call/);
+      expect(text).toMatch(/exactly one `(?:agentera|npx -y agentera@next) state plan create --input PATH` call/);
       expect(text).toContain("do not run standalone lint or dry-run first on the normal path");
       expect(text).toContain("run the same create command with `--dry-run`");
       expect(text).toContain("referencing that unchanged PATH without reserializing its content");

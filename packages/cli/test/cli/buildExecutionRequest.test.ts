@@ -196,7 +196,7 @@ describe("Build no-plan execution context", () => {
         scope: "Repair bounded startup",
         source_provenance: {
           source_family: "transient_build_execution_request",
-          command: "npx -y agentera@next prime --context build --input <file|-> --format json",
+          command: "npx -y agentera@next prime --context build --input <file|->",
           source_kind: "stdin",
           persisted: false,
         },
@@ -228,7 +228,7 @@ describe("Build no-plan execution context", () => {
       plan_lifecycle_state: { status: "unavailable" },
       source_contract: { complete_for_execution_context: false },
     });
-    expect(context?.fallback_commands).toContain("npx -y agentera@next prime --context build --input - --format json");
+    expect(context?.fallback_commands).toContain("npx -y agentera@next prime --context build --input -");
     expect(context?.fallback_commands).not.toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);
     expect(context?.state_family_caveats).toContain("Explicit no-plan scope and acceptance are required before Build can execute without a current plan.");
   });

@@ -188,7 +188,7 @@ describe("final lifecycle protocol", () => {
     expect(plan.first_pending).toEqual(expect.objectContaining({
       id: "eeeeeeeeee",
       artifact: "plan",
-      retrieval: { get: "npx -y agentera@next state plan tasks get --id eeeeeeeeee --format json" },
+      retrieval: { get: "npx -y agentera@next state plan tasks get --id eeeeeeeeee" },
     }));
     expect(plan.first_pending).not.toHaveProperty("number");
     const state = collectOrientationState({ projectRoot: root });
@@ -239,7 +239,7 @@ describe("final lifecycle protocol", () => {
       capability: "optimize",
       outcome: "active",
       eligible: true,
-      retrieval: { exact: "npx -y agentera@next state objective get --id zzzzzzzzzc --format json" },
+      retrieval: { exact: "npx -y agentera@next state objective get --id zzzzzzzzzc" },
     }));
   });
 
@@ -274,7 +274,7 @@ describe("final lifecycle protocol", () => {
         id: readyId,
         artifact: "plan",
         name: "Ready outside projection",
-        retrieval: { get: `npx -y agentera@next state plan tasks get --id ${readyId} --format json` },
+        retrieval: { get: `npx -y agentera@next state plan tasks get --id ${readyId}` },
       },
     });
     expect(orientation.plan).not.toHaveProperty("tasks");
@@ -285,7 +285,7 @@ describe("final lifecycle protocol", () => {
       artifact: "plan",
       outcome: "pending",
       eligible: true,
-      retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${readyId} --format json` },
+      retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${readyId}` },
     });
 
     const build = capture(root, ["prime", "--context", "build", "--format", "json"]);
@@ -323,7 +323,7 @@ describe("final lifecycle protocol", () => {
     expect(result.out).toContain("yyyyyyyyyb");
     if (artifact === "plan") {
       expect(error).toMatchObject({
-        recovery: "npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json",
+        recovery: "npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID",
         details: { open_plan_candidates: { total: 2, sample_ids: ["yyyyyyyyya", "yyyyyyyyyb"], omitted_count: 0 } },
       });
     } else expect(result.out).toContain(`state ${artifact} list`);

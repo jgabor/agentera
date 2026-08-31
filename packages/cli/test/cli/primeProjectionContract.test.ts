@@ -114,9 +114,9 @@ describe("prime projection contract", () => {
       error: {
         class: "mutually_exclusive",
         message: expect.stringContaining("prime --dashboard --fields"),
-        example: "npx -y agentera@next prime --context status --format json",
+        example: "npx -y agentera@next prime --context status",
         diagnosis: {
-          migration_command: "npx -y agentera@next prime --context status --format json",
+          migration_command: "npx -y agentera@next prime --context status",
           consumer_path: "capability_context.context.status_context",
         },
       },
@@ -138,8 +138,8 @@ describe("prime projection contract", () => {
     const latest = status.progress.latest;
     expect(latest).toMatchObject({ id: expect.any(String), artifact: "progress", what: expect.any(String) });
     expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "progress", availability: "included", detail_command: "npx -y agentera@next state progress list --format json" }),
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }),
+      expect.objectContaining({ family: "progress", availability: "included", detail_command: "npx -y agentera@next state progress list" }),
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }),
     ]));
     expect(status).not.toHaveProperty("history");
 

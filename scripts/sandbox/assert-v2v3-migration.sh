@@ -32,7 +32,7 @@ manifest_after="$SANDBOX/manifest-after.json"
 
 collect_manifest() {
   local out="$1"
-  python3 - <<'PY' "$APP_HOME" "$PROJECT" "$out"
+  python3 - "$APP_HOME" "$PROJECT" "$out" <<'PY'
 import hashlib, json, os, sys
 app_home, project, out = sys.argv[1:4]
 paths = []
@@ -68,7 +68,7 @@ PY
 
 if [[ -f "$manifest_before" ]]; then
   collect_manifest "$manifest_after"
-  python3 - <<'PY' "$manifest_before" "$manifest_after"
+  python3 - "$manifest_before" "$manifest_after" <<'PY'
 import json, sys
 before, after = map(json.load, (open(sys.argv[1]), open(sys.argv[2])))
 for k, v in before.items():
@@ -89,9 +89,9 @@ fi
 if [[ "$SCENARIO" == "stable-safety" ]]; then
   stable_out="$SANDBOX/stable-preview.json"
   "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-    --dry-run --format json --channel stable >"$stable_out" 2>"$SANDBOX/stable.stderr" || rc=$?
+    --dry-run --channel stable >"$stable_out" 2>"$SANDBOX/stable.stderr" || rc=$?
   rc="${rc:-0}"
-  python3 - <<'PY' "$stable_out"
+  python3 - "$stable_out" <<'PY'
 import json, sys
 payload = json.load(open(sys.argv[1]))
 text = json.dumps(payload)
@@ -103,9 +103,9 @@ fi
 
 second_out="$SANDBOX/second-dry-run.json"
 "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-  --dry-run --format json --channel development >"$second_out" 2>"$SANDBOX/second.stderr" || rc2=$?
+  --dry-run --channel development >"$second_out" 2>"$SANDBOX/second.stderr" || rc2=$?
 rc2="${rc2:-0}"
-python3 - <<'PY' "$second_out" "$SCENARIO" "$rc2"
+python3 - "$second_out" "$SCENARIO" "$rc2" <<'PY'
 import json, sys
 payload = json.load(open(sys.argv[1]))
 scenario, rc = sys.argv[2], int(sys.argv[3])
@@ -148,7 +148,7 @@ else
 fi
 (
   cd "$PROJECT"
-  env -i "${prime_env[@]}" "${CLI[@]}" prime --format json
+  env -i "${prime_env[@]}" "${CLI[@]}" prime
 ) >"$prime_out" 2>"$prime_stderr"
 prime_rc=$?
 set -e
@@ -163,7 +163,7 @@ expected_install_track="source"
 if [[ "$TIER" == "L2" ]]; then
   expected_install_track="v3"
 fi
-python3 - <<'PY' "$prime_out" "$expected_install_track"
+python3 - "$prime_out" "$expected_install_track" <<'PY'
 import json, sys
 payload = json.load(open(sys.argv[1]))
 expected_install_track = sys.argv[2]
@@ -177,7 +177,7 @@ cutover = startup.get("state_cutover") or {}
 if startup.get("outcome") != "ok" or cutover.get("status") != "complete" or cutover.get("project_state") != "v3":
     raise SystemExit(f"assert_post_migration_prime: invalid startup {startup!r}")
 profile = next((row for row in startup.get("availability", []) if row.get("family") == "profile"), {})
-if profile.get("availability") != "deferred" or profile.get("detail_command") != "npx -y agentera@next report profile-grounding --format json":
+if profile.get("availability") != "deferred" or profile.get("detail_command") != "npx -y agentera@next report profile-grounding":
     raise SystemExit(f"assert_post_migration_prime: invalid profile seam {profile!r}")
 print("assert_post_migration_prime: ok")
 PY
@@ -185,7 +185,7 @@ PY
 set +e
 (
   cd "$PROJECT"
-  env -i "${prime_env[@]}" "${CLI[@]}" report profile-grounding --format json
+  env -i "${prime_env[@]}" "${CLI[@]}" report profile-grounding
 ) >"$profile_out" 2>"$profile_stderr"
 profile_rc=$?
 set -e
@@ -196,7 +196,7 @@ if [[ "$profile_rc" -ne 0 ]]; then
   exit 1
 fi
 
-python3 - <<'PY' "$profile_out"
+python3 - "$profile_out" <<'PY'
 import json, sys
 payload = json.load(open(sys.argv[1]))
 validity = payload.get("validity") or {}

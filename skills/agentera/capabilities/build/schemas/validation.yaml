@@ -72,8 +72,8 @@ VALIDATION:
     id: V7
     rule: execution_context_first
     description: >-
-      Build startup SHOULD begin from `npx -y agentera@next prime --context build
-      --format json` and consume complete execution_context
+      Build startup SHOULD begin from `npx -y agentera@next prime --context build`
+      and consume complete execution_context
       state before direct reads of plan, progress, TODO, docs, health,
       decisions, changelog, vision, profile, or design artifacts.
     severity: warning
@@ -121,7 +121,7 @@ VALIDATION:
     rule: sanitized_profile_grounding
     description: >-
       Build MUST ground only from the `content` returned by `npx -y agentera@next report
-      profile-grounding --format json` when shared validity is valid; it MUST
+      profile-grounding` when shared validity is valid; it MUST
       preserve absent/repair-needed recovery and MUST NOT direct-read PROFILE.md.
     severity: critical
     checks:
@@ -133,7 +133,7 @@ VALIDATION:
     rule: governed_glossary_advice
     description: >-
       Build MUST consume startup advice from `npx -y agentera@next prime
-      --context build --term-input <file|-> --format json` without a second
+      --context build --term-input <file|->` without a second
       initial report. Later changed meaning MUST use compact `report
       glossary-advice --term-input`; structured host-review clarification MUST
       use `--input`. Unchanged replay, unrelated turns, rendering, tool output,
@@ -177,7 +177,7 @@ VALIDATION:
     description: >-
       When no current executable plan owns startup, Build MAY accept one bounded
       `agentera.buildExecutionRequest.v1` through `prime --context build --input
-      <file|-> --format json`. The request supplies explicit scope and acceptance
+      <file|->`. The request supplies explicit scope and acceptance
       transiently; it MUST NOT persist, create, or mutate plan state. Current
       plan-owned execution conflicts instead of silently ignoring the request.
     severity: critical

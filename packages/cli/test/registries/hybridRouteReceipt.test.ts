@@ -47,7 +47,7 @@ describe("semantic route receipt validator", () => {
       route_provenance: {
         source: "semantic_receipt",
         receipt_version: "agentera.route_receipt.v1",
-        startup_command: "npx -y agentera@next prime --context plan --format json",
+        startup_command: "npx -y agentera@next prime --context plan",
       },
     });
   });
@@ -60,7 +60,7 @@ describe("semantic route receipt validator", () => {
     expect(validateRouteReceiptSubmission(api("What time is the train?", { outcome: "no_match" }), ROOT)).toMatchObject({
       outcome: "status_fallback",
       capability: "status",
-      route_provenance: { status_reason: "no_match", startup_command: "npx -y agentera@next prime --context status --format json" },
+      route_provenance: { status_reason: "no_match", startup_command: "npx -y agentera@next prime --context status" },
     });
   });
 

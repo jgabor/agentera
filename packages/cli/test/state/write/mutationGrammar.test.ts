@@ -288,7 +288,7 @@ describe("declarative state mutation grammar", () => {
       class: "missing_argument",
       message: "--id is required for decisions update",
       syntax: "--id VALUE",
-      example: "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence \"...\" --format json",
+      example: "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence \"...\"",
       recovery: "Correct the input and retry; no state was changed.",
     });
     const amendId = run(rejectRoot, ["decisions", "amend", "--base-sha256", "abc", "--input", "-", "--format", "json"]);
@@ -397,24 +397,24 @@ describe("declarative state mutation grammar", () => {
 
   it.each([
     ["unknown command", "npx -y agentera@next destroy --yes"],
-    ["composed command", "npx -y agentera@next state progress append --input progress.yaml --format json && printf x"],
-    ["numeric redirect", "npx -y agentera@next state progress append --input progress.yaml --format json 2>err"],
-    ["substitution", "npx -y agentera@next state progress append --input $(printf x) --format json"],
-    ["wrong channel", "npx -y agentera@latest state progress append --input progress.yaml --format json"],
-    ["malformed quote", 'npx -y agentera@next state progress append --input "progress.yaml --format json'],
-    ["extra sibling", "npx -y agentera@next state progress append --input progress.yaml --format json npx -y agentera@next prime"],
-    ["force", "npx -y agentera@next state progress append --input progress.yaml --format json --force"],
-    ["garbage", "npx -y agentera@next state progress append --input progress.yaml --format json garbage"],
-    ["quoted operator", 'npx -y agentera@next state progress append --input progress.yaml --format json "&&"'],
-    ["adjacent prefix", "xnpx -y agentera@next state progress append --input progress.yaml --format json"],
-    ["adjacent suffix", "npx -y agentera@next state progress append --input progress.yaml --format jsonoops"],
-    ["continuation", "npx -y agentera@next state progress append --input progress.yaml --format json " + "\\" + "\n--force"],
+    ["composed command", "npx -y agentera@next state progress append --input progress.yaml && printf x"],
+    ["numeric redirect", "npx -y agentera@next state progress append --input progress.yaml 2>err"],
+    ["substitution", "npx -y agentera@next state progress append --input $(printf x)"],
+    ["wrong channel", "npx -y agentera@latest state progress append --input progress.yaml"],
+    ["malformed quote", 'npx -y agentera@next state progress append --input "progress.yaml'],
+    ["extra sibling", "npx -y agentera@next state progress append --input progress.yaml npx -y agentera@next prime"],
+    ["force", "npx -y agentera@next state progress append --input progress.yaml --force"],
+    ["garbage", "npx -y agentera@next state progress append --input progress.yaml garbage"],
+    ["quoted operator", 'npx -y agentera@next state progress append --input progress.yaml "&&"'],
+    ["adjacent prefix", "xnpx -y agentera@next state progress append --input progress.yaml"],
+    ["adjacent suffix", "npx -y agentera@next state progress append --input progress.yamloops"],
+    ["continuation", "npx -y agentera@next state progress append --input progress.yaml " + "\\" + "\n--force"],
     ["invalid format", "npx -y agentera@next state progress append --input progress.yaml --format invalid"],
-    ["wrong operation family", "npx -y agentera@next state decisions append --input progress.yaml --format json"],
-    ["duplicate flag", "npx -y agentera@next state progress append --input progress.yaml --input other.yaml --format json"],
-    ["omitted required value", "npx -y agentera@next state progress append --input --format json"],
-    ["extra positional", "npx -y agentera@next state progress append extra --input progress.yaml --format json"],
-    ["option-like value", "npx -y agentera@next state progress append --input -- --format json"],
+    ["wrong operation family", "npx -y agentera@next state decisions append --input progress.yaml"],
+    ["duplicate flag", "npx -y agentera@next state progress append --input progress.yaml --input other.yaml"],
+    ["omitted required value", "npx -y agentera@next state progress append --input"],
+    ["extra positional", "npx -y agentera@next state progress append extra --input progress.yaml"],
+    ["option-like value", "npx -y agentera@next state progress append --input --"],
   ])("rejects an inexact recovery or example before projection: %s", (_label, badCommand) => {
     for (const field of ["recovery", "examples"] as const) {
       const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-mutation-guidance-"));
@@ -478,7 +478,7 @@ describe("declarative state mutation grammar", () => {
     )) as any;
     for (const [artifact, verb, mutate] of [
       ["plan", "set-status", (value: string) => value.replace("--status complete", "--status retired")],
-      ["progress", "append", (value: string) => value.replace("--format json", "--format invalid")],
+      ["progress", "append", (value: string) => `${value} --format invalid`],
     ] as const) {
       const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-mutation-domain-"));
       roots.push(sourceRoot);

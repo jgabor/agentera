@@ -1,0 +1,14 @@
+id: tslrjhepew
+artifact: progress
+record:
+  timestamp: 2026-08-31 08:09
+  type: feat
+  phase: build
+  what: Aligned active canonical commands and package surfaces with default JSON output while retaining explicit JSON compatibility.
+  context:
+    intent: Remove redundant --format json from active operational command producers without changing historical records or compatibility.
+    constraints: No version bump, publication, push, historical rewrite, or final plan/TODO closeout.
+    scope: Active shared skill, capability instructions and schemas, help, corrections, authorities, generated producers, measurement argv, and source/package tests.
+  verified: "Full source suite passed: 258 files, 4260 tests passed, 2 skipped. Typecheck and build passed. Capability contract and compact passed. Representative bare prime and explicit --format json succeeded; --format text returned bounded JSON with exit 2. Prime briefing measured 11,906 bytes against the existing 12,000-byte budget. Package owner passed 24 tests in 3 files within its 60,000 ms wall budget at 29,294 ms. Pack dry-run produced 487 files, 1,298,252 packed bytes, 5,758,533 unpacked bytes, with no warnings."
+  next: Evaluate task kqctnqhygo while it remains in_progress, then perform plan closeout separately.
+  publication_order: 284

@@ -5,7 +5,7 @@ import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../capabilityContext/types.js";
 
 /**
- * Bounded default decision brief for the bare `agentera prime --format json`
+ * Bounded default decision brief for the bare `agentera prime`
  * emission (Plan Task 3).
  *
  * The bare default projects the full orientation payload
@@ -62,26 +62,26 @@ interface OmittedRichStateEntry {
 /** Rich-state sub-detail projected out of the default brief, each with a named
  *  authoritative recovery command. */
 const planTaskFamily = entityListFamily("plan_tasks");
-const planTaskListRecovery = preCutoverCommand(`state ${planTaskFamily.commandTokens.join(" ")} list --format json`);
+const planTaskListRecovery = preCutoverCommand(`state ${planTaskFamily.commandTokens.join(" ")} list`);
 
 const OMITTED_RICH_STATE: readonly OmittedRichStateEntry[] = [
-  { field: "startup.path_diagnostics", reason: "startup_path_diagnostics", recovery: preCutoverCommand("doctor --format json") },
+  { field: "startup.path_diagnostics", reason: "startup_path_diagnostics", recovery: preCutoverCommand("doctor") },
   { field: "plan.tasks", reason: "plan_task_detail", recovery: planTaskListRecovery },
   { field: "plan.archived_plans", reason: "archive_catalog", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
   { field: "plan.diagnostics", reason: "plan_diagnostics", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
   { field: "history.progress.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.progress },
   { field: "history.decisions.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.decisions },
   { field: "history.health.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.health },
-  { field: "project_integration.phases", reason: "phase_blockers", recovery: preCutoverCommand("doctor --format json") },
+  { field: "project_integration.phases", reason: "phase_blockers", recovery: preCutoverCommand("doctor") },
   { field: "docs.source_contract", reason: "docs_state_families", recovery: STATE_FAMILY_FALLBACK_COMMANDS.docs },
-  { field: "profile.bounded_signals", reason: "profile_signal_detail", recovery: preCutoverCommand("report profile-grounding --format json") },
+  { field: "profile.bounded_signals", reason: "profile_signal_detail", recovery: preCutoverCommand("report profile-grounding") },
 ];
 
 /** Maximum number of ranked next_action alternatives retained in the brief.
  *  The recommended entry is always kept; overflow alternatives recover via the
  *  state-derived readiness cascade rather than raw artifact access. */
 const BRIEF_NEXT_ACTION_ALTERNATIVES = 3;
-const PATH_DIAGNOSTICS_RECOVERY = preCutoverCommand("doctor --format json");
+const PATH_DIAGNOSTICS_RECOVERY = preCutoverCommand("doctor");
 
 /** Code-point cap for routing-essential free-text scalars retained in the brief
  *  (e.g. progress.latest.what/next). Matches the boundStartupValue 200-cp
@@ -336,7 +336,7 @@ function briefProjectIntegration(integration: unknown): Record<string, unknown> 
 function briefProfile(profile: unknown): Record<string, unknown> {
   // opencode reads profile.status; the dashboard glyph reads profile.status.
   // bounded_signals (a legacy recovery blob) is omitted and recovers via
-  // `agentera profile --format json`.
+  // `agentera profile`.
   return pick(profile, [
     "status",
     "validity",
@@ -485,7 +485,7 @@ function briefProgress(progress: unknown, omitDegradedRetrieval = false): Record
   // opencode reads progress.latest.number/what/next; the brief keeps the
   // latest cycle but caps free-text scalars at BRIEF_SCALAR_MAX_CHARS so a
   // pathological value cannot blow the budget. Full detail recovers via
-  // `agentera state progress get --id ID --format json`.
+  // `agentera state progress get --id ID`.
   if (!isObject(progress)) return {};
   const out = pick(progress, ["exists", "status", "latest_verification", "cycle_count"]);
   const degradedHistory = briefDegradedHistory(progress.degraded_history, omitDegradedRetrieval);
@@ -808,7 +808,7 @@ function degradedBriefEnvelope(
       message:
         "the projected decision brief exceeded the authority byte budget; a bounded degraded envelope was emitted instead of the over-budget payload",
       recovery:
-        `Run \`${preCutoverCommand("prime --context status --format json")}\` for status startup, or \`${preCutoverCommand("state <artifact> list --format json")}\` for a specific record family.`,
+        `Run \`${preCutoverCommand("prime --context status")}\` for status startup, or \`${preCutoverCommand("state <artifact> list")}\` for a specific record family.`,
     },
   };
   const body = (projection: SourceContractProjection): Record<string, unknown> =>
@@ -830,7 +830,7 @@ function degradedBriefEnvelope(
     error: {
       class: "brief_output_budget",
       message: "brief exceeds byte budget",
-      recovery: `Run \`${preCutoverCommand("prime --context status --format json")}\`.`,
+      recovery: `Run \`${preCutoverCommand("prime --context status")}\`.`,
     },
   };
   const compact = settledBriefEnvelope(body("compact"), compactMeta);
@@ -853,7 +853,7 @@ function degradedBriefEnvelope(
     error: {
       class: "brief_output_budget",
       message: "the configured budget cannot contain the detailed recovery envelope",
-      recovery: `Increase the budget or run \`${preCutoverCommand("prime --context status --format json")}\`.`,
+      recovery: `Increase the budget or run \`${preCutoverCommand("prime --context status")}\`.`,
     },
   };
   const minimum = settledBriefEnvelope(body("irreducible"), minimumMeta);

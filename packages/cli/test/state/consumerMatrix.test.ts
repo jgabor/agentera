@@ -41,7 +41,7 @@ describe("state consumer matrix", () => {
     expect(matrix.access_contract.get).toContain("get --id ID");
 
     const rawReadPattern = /(?:fs\.)?readFile(?:Sync)?\([^)]*(?:decisions|progress|health)/i;
-    const staleCommandPattern = /agentera (?:state )?(?:decisions|progress|health) --format json/;
+    const staleCommandPattern = /agentera (?:state )?(?:decisions|progress|health)/;
     for (const entry of consumers) {
       const sourcePath = String(entry.source);
       const bundlePath = String(entry.bundle);
@@ -58,7 +58,7 @@ describe("state consumer matrix", () => {
       expect(instruction, entry.name).not.toMatch(rawReadPattern);
       expect(bundleSource, bundlePath).not.toMatch(rawReadPattern);
       expect(instruction, entry.name).toContain(
-        `npx -y agentera@next prime --context ${entry.name} --format json`,
+        `npx -y agentera@next prime --context ${entry.name}`,
       );
     }
   });

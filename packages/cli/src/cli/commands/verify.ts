@@ -55,8 +55,8 @@ function verifySyntax(): string {
 }
 
 function verifyExample(family?: string | null): string {
-  if (family === "eval") return "agentera verify eval skills --format json";
-  return "agentera verify eval skills --format json";
+  if (family === "eval") return "agentera verify eval skills";
+  return "agentera verify eval skills";
 }
 
 /** Faithful port of scripts/agentera `_validate_verify_request`. Throws ValueError-style messages. */
@@ -97,7 +97,7 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
       "unsupported eval skills request combines --run and --dry-run; choose one mode. " +
         "Safe default: omit --run to list the bounded dry-run plan without invoking a runtime. " +
         "Syntax: agentera verify eval skills [--run] [--skill NAME] [--timeout SECONDS] [--parallel N] [--runtime auto|opencode|cursor] [--format text|json]. " +
-        "Example: agentera verify eval skills --dry-run --format json",
+        "Example: agentera verify eval skills --dry-run",
     );
   }
   if (family === "eval" && target === "skills") {
@@ -106,14 +106,14 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
       throw new Error(
         `unsupported eval skills runtime '${runtime}'; valid runtimes: auto, opencode, cursor. ` +
           "Syntax: agentera verify eval skills [--run] [--runtime auto|opencode|cursor] [--format text|json]. " +
-          "Example: agentera verify eval skills --format json",
+          "Example: agentera verify eval skills",
       );
     }
     if ((args.parallel ?? 1) < 1 || (args.timeout ?? 120) < 1) {
       throw new Error(
         "eval skills bounds must be positive integers. " +
           "Syntax: agentera verify eval skills [--parallel N] [--timeout SECONDS] [--format text|json]. " +
-          "Example: agentera verify eval skills --parallel 1 --timeout 120 --format json",
+          "Example: agentera verify eval skills --parallel 1 --timeout 120",
       );
     }
   }
@@ -122,7 +122,7 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
       "semantic verify requires explicit fixture path(s); broad fixture discovery is not a safe default. " +
         "Valid targets for eval: skills, semantic, routing, glossary. " +
         "Syntax: agentera verify eval semantic <fixture> [<fixture>...] [--format text|json]. " +
-        "Example: agentera verify eval semantic fixtures/semantic/bare-agentera-message.md --format json",
+        "Example: agentera verify eval semantic fixtures/semantic/bare-agentera-message.md",
     );
   }
   if (family === "eval" && target === "glossary" && (args.fixtures ?? []).length > 0) {

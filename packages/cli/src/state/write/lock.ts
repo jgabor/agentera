@@ -781,7 +781,7 @@ function timeout(lockPath: string): never {
   reject({
     class: "conflict",
     message: `writer lock timeout at '${lockPath}'; retry the command after the active writer finishes`,
-    syntax: "agentera state <artifact-id> <verb> ... --format json",
+    syntax: "agentera state <artifact-id> <verb> ...",
     example: "retry the same command after the active writer finishes",
   });
 }
@@ -799,7 +799,7 @@ function privateResidue(lockPath: string, names: string[]): never {
   reject({
     class: "conflict",
     message: `private writer preparation residue at ${listed}${omitted} has unknown or unverifiable ownership and cannot be reclaimed safely; verify no Agentera writer is running, remove the listed residue, and retry`,
-    syntax: "agentera state <artifact-id> <verb> ... --format json",
+    syntax: "agentera state <artifact-id> <verb> ...",
     example: `after verifying no Agentera writer is running, remove '${path.join(directory, names[0]!)}' and retry the same command`,
   });
 }
@@ -809,7 +809,7 @@ function unsupportedLock(lockPath: string, kind: string): never {
   reject({
     class: "conflict",
     message: `${legacy} at '${lockPath}' cannot be reclaimed safely; verify no Agentera writer is running, remove the entry, and retry`,
-    syntax: "agentera state <artifact-id> <verb> ... --format json",
+    syntax: "agentera state <artifact-id> <verb> ...",
     example: `after verifying no Agentera writer is running, remove '${lockPath}' and retry the same command`,
   });
 }

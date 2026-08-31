@@ -81,8 +81,8 @@ Read project state through the CLI before direct artifact reads:
 
 ```bash
 npx -y agentera@next prime
-npx -y agentera@next state todo list --format json
-npx -y agentera@next state plan list --status open --format json
+npx -y agentera@next state todo list
+npx -y agentera@next state plan list --status open
 npx -y agentera@next state query --list-artifacts
 ```
 
@@ -155,7 +155,7 @@ node packages/cli/dist/bin/agentera.js check compact
 
 # Capability contract, after build
 node packages/cli/dist/bin/agentera.js check validate \
-  capability-contract --format json
+  capability-contract
 
 # Package dry run
 pnpm -C packages/cli run pack:dry-run

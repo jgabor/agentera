@@ -200,7 +200,7 @@ describe("status capability self-contained startup", () => {
       recovery_command: TODO_UNSAFE_INACTIVE_RECOVERY,
     });
     expect(startup.availability.filter((entry: Record<string, unknown>) => entry.family === "todo")).toEqual([
-      { family: "todo", availability: "included", detail_command: "npx -y agentera@next state todo list --format json" },
+      { family: "todo", availability: "included", detail_command: "npx -y agentera@next state todo list" },
     ]);
     expect(status.outcome).toBe("blocked");
     expect(status).not.toHaveProperty("todo_reconciliation");
@@ -324,7 +324,7 @@ describe("status capability self-contained startup", () => {
     expect(capsule.instructions).toContain("NEVER execute implementation work");
     expect(capsule.instructions).toContain("NEVER modify any state artifact");
     expect(capsule.instructions).toContain("detail_command");
-    expect(capsule.instructions).not.toContain("Status MUST source state from `agentera prime --format json`");
+    expect(capsule.instructions).not.toContain("Status MUST source state from `agentera prime`");
 
     expect(state.health).toBeDefined();
     expect(state.todo).toBeDefined();
@@ -341,12 +341,12 @@ describe("status capability self-contained startup", () => {
       schemaVersion: "agentera.primeStartup.v1",
       outcome: expect.any(String),
       availability: expect.any(Array),
-      detail_discovery: { schema: "npx -y agentera@next schema --format json" },
+      detail_discovery: { schema: "npx -y agentera@next schema" },
     }));
     expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-      { family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" },
-      { family: "vision", availability: "deferred", detail_command: "npx -y agentera@next state query vision --format json" },
-      { family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding --format json" },
+      { family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" },
+      { family: "vision", availability: "deferred", detail_command: "npx -y agentera@next state query vision" },
+      { family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding" },
     ]));
     expect(capsule.context).toHaveProperty("first_invocation_read");
     expect(capsule.context).toHaveProperty("schema_error");
@@ -394,7 +394,7 @@ describe("status capability self-contained startup", () => {
     [
       "corrupt artifact schema",
       {
-        availability: [{ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }],
+        availability: [{ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }],
         schema_error: "Capability artifact schema for status could not be read: malformed YAML",
       },
     ],
@@ -404,7 +404,7 @@ describe("status capability self-contained startup", () => {
     expect(blocked).toMatchObject({
       outcome: "blocked",
       availability: contract.availability,
-      detail_discovery: { schema: "npx -y agentera@next schema --format json" },
+      detail_discovery: { schema: "npx -y agentera@next schema" },
     });
     expect(blocked).not.toHaveProperty("write_contract");
     expect(blocked).not.toHaveProperty("operation");
@@ -455,8 +455,8 @@ describe("status capability self-contained startup", () => {
     expect(state.next_action).toMatchObject({ object: "TODO zzzzzzzzzz: Critical open", capability: "build" });
 
     const recovery = state.todo.detail.retrieval.continue as string;
-    expect(recovery).toMatch(/^agentera state todo list --status 'open' --limit 20 --cursor \S+ --format json$/);
-    const cursor = recovery.match(/--cursor (\S+) --format json$/)?.[1];
+    expect(recovery).toMatch(/^agentera state todo list --status 'open' --limit 20 --cursor \S+$/);
+    const cursor = recovery.match(/--cursor (\S+)$/)?.[1];
     expect(cursor).toBeTruthy();
 
     let recoveryOut = "";
@@ -499,7 +499,7 @@ describe("status capability self-contained startup", () => {
       reason: "Resolve the declared product boundary.",
       phase: "deliberate",
       outcome: "actionable",
-      retrieval: { exact: "npx -y agentera@next state todo get --id zzzzzzzzzz --format json" },
+      retrieval: { exact: "npx -y agentera@next state todo get --id zzzzzzzzzz" },
     });
     expect(state.next_action.alternatives).toContainEqual(expect.objectContaining({
       capability: "status",
@@ -526,7 +526,7 @@ describe("status capability self-contained startup", () => {
       annoying: 0,
       detail: { total: 20, returned: 20, omitted: 0 },
     });
-    expect(state.todo.detail.retrieval.get).toBe("agentera state todo get --id ID --format json");
+    expect(state.todo.detail.retrieval.get).toBe("agentera state todo get --id ID");
     expect(state.todo.detail.retrieval).not.toHaveProperty("continue");
   });
 

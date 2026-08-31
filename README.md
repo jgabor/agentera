@@ -19,7 +19,7 @@ dist-tag promotion, use `@next`; after promotion, the same commands work with
 the stable npm channel or an installed CLI binary.
 
 ```bash
-npx -y agentera@next prime --context status --format json
+npx -y agentera@next prime --context status
 ```
 
 Run that from a git project. In an editor runtime, invoke `/agentera`
@@ -37,7 +37,7 @@ Use the same channel for a separate read-only doctor probe when you need full
 app, project-state, shared-skill, and CLI evidence:
 
 ```bash
-npx -y agentera@next doctor --format json
+npx -y agentera@next doctor
 ```
 
 ## Runtime integration
@@ -75,10 +75,10 @@ Agentera resolves artifact paths through the CLI and `.agentera/docs.yaml`.
 Normal reads use the state namespace; supported writes use the typed writer.
 
 ```bash
-npx -y agentera@next state todo list --format json
-npx -y agentera@next state plan list --status open --format json
+npx -y agentera@next state todo list
+npx -y agentera@next state plan list --status open
 npx -y agentera@next state query --list-artifacts
-npx -y agentera@next state progress explain --verb append --format json
+npx -y agentera@next state progress explain --verb append
 ```
 
 Bounded collection retrieval uses stable identities, opaque snapshot cursors,
@@ -86,11 +86,11 @@ explicit omissions, and exact detail commands. The runtime contract is
 [`references/artifacts/state-storage-authority.yaml`](./references/artifacts/state-storage-authority.yaml).
 
 ```bash
-npx -y agentera@next state plan list --format json
-npx -y agentera@next state plan get --id PLAN_ID --format json
-npx -y agentera@next state plan tasks list --limit 20 --format json
-npx -y agentera@next state experiments list --objective OBJECTIVE_ID --format json
-npx -y agentera@next state experiments get --id EXPERIMENT_ID --format json
+npx -y agentera@next state plan list
+npx -y agentera@next state plan get --id PLAN_ID
+npx -y agentera@next state plan tasks list --limit 20
+npx -y agentera@next state experiments list --objective OBJECTIVE_ID
+npx -y agentera@next state experiments get --id EXPERIMENT_ID
 ```
 
 Plan list/get spans the active plan and immutable plan archives. Plan task

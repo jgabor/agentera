@@ -431,7 +431,7 @@ describe("agentera report personal-glossary-publish", () => {
     const help = printReportHelp();
     const schema = (buildSchemaPayload().integration as any).personal_glossary;
 
-    expect(help).toContain("agentera report personal-glossary-publish --input <file|-> [--dry-run] --format json");
+    expect(help).toContain("agentera report personal-glossary-publish --input <file|-> [--dry-run]");
     expect(help).not.toContain("report profile-glossary");
     expect(schema).toMatchObject({
       command: "agentera report personal-glossary-publish",

@@ -160,7 +160,7 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
       total_count: discovered.entities.length,
       over_limit_count: 0,
       reason: issueCount
-        ? `${issueCount} canonical entity validation issue(s); run agentera check validate state --format json`
+        ? `${issueCount} canonical entity validation issue(s); run agentera check validate state`
         : "canonical entity state is independently stored and is not compacted",
       protected_overflow_count: 0,
       exists: true,

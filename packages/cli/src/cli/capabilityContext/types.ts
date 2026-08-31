@@ -9,7 +9,7 @@ export const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);
 
 function canonicalListCommand(key: EntityListRuntimeFamilyKey): string {
   const family = entityListFamily(key);
-  return preCutoverCommand(`state ${family.commandTokens.join(" ")} list --format json`);
+  return preCutoverCommand(`state ${family.commandTokens.join(" ")} list`);
 }
 
 export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
@@ -19,7 +19,7 @@ export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
   health: canonicalListCommand("health"),
   todo: canonicalListCommand("todo"),
   decisions: canonicalListCommand("decisions"),
-  changelog: preCutoverCommand("state query changelog --format json"),
+  changelog: preCutoverCommand("state query changelog"),
   objective: canonicalListCommand("objective"),
   experiments: preCutoverCommandFromBare(entityListFamily("experiments").syntax),
 };

@@ -34,7 +34,7 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
         : family.get,
       example: list
         ? family.example
-        : "agentera state plan tasks get --id qjtrmnpvka --format json",
+        : "agentera state plan tasks get --id qjtrmnpvka",
       recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Correct the command using one of the valid forms and retry; no state was changed.",
       valid_values: list
         ? entityListValidValues(family)
@@ -113,7 +113,7 @@ export function runPlanTasks(argv: string[], io: Io): number {
         class: "unsupported_state",
         message: (error as Error).message,
         syntax: "agentera state plan tasks {list|get} [options]",
-        example: "agentera state plan tasks list --format json",
+        example: "agentera state plan tasks list",
         recovery: "Use a supported active plan and retry; no state was changed.",
       },
     }, 1), format, io);

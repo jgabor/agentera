@@ -77,7 +77,7 @@ function correction(
     class: classification,
     message,
     recovery,
-    example: "agentera state glossary publish --input glossary-publication.yaml --format json",
+    example: "agentera state glossary publish --input glossary-publication.yaml",
   });
 }
 

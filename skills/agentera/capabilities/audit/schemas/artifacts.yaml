@@ -9,7 +9,7 @@ ARTIFACTS:
       severity and confidence scores, trend comparisons, and de facto
       architecture patterns. During evaluation startup, Audit consumes health
       state through CLI `evidence_context`, then bounded `npx -y agentera@next state health
-       list --limit 20 --format json` and exact `state health get --id ID`.
+       list --limit 20` and exact `state health get --id ID`.
       Raw health reads are diagnostic-only for corruption or CLI-defect investigation.
   2:
     id: A2
@@ -25,7 +25,7 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Audit consumes decision caveats through CLI `evidence_context`, then
-      bounded `npx -y agentera@next state decisions list --limit 20 --format json` discovery
+      bounded `npx -y agentera@next state decisions list --limit 20` discovery
        and exact `state decisions get --id ID` retrieval. Raw decision reads
       are diagnostic-only for corruption or CLI-defect investigation. Compacted
       decision caveats must be preserved rather than reconstructed.
@@ -46,7 +46,7 @@ ARTIFACTS:
     description: >-
       Audit consumes latest progress verification and progress caveats through
       CLI `evidence_context`, then bounded `npx -y agentera@next state progress list --limit
-       20 --format json` discovery and exact `state progress get --id ID`
+       20` discovery and exact `state progress get --id ID`
       retrieval. Raw progress reads are diagnostic-only for corruption or
       CLI-defect investigation.
   6:

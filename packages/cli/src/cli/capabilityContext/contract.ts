@@ -131,7 +131,7 @@ export function planStartupContract(): JsonObject {
     seam_decision: {
       selected: "prime --context",
       not_changed: [
-        { surface: preCutoverCommand("schema --format json"), reason: "runtime/schema command discovery, not capability workflow startup context" },
+        { surface: preCutoverCommand("schema"), reason: "runtime/schema command discovery, not capability workflow startup context" },
         { surface: "dispatcher guidance", reason: "route and CLI-state separation guidance, not a bounded Plan workflow payload" },
       ],
     },

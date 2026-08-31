@@ -78,7 +78,7 @@ describe("cli prime", () => {
     const { rc, out } = capture((io) => cmdPrime({ guidance: true }, io));
     expect(rc).toBe(0);
     expect(out).toBe(PRIME_BLOB);
-    expect(out).toContain("npx -y agentera@next state <artifact> explain --format json");
+    expect(out).toContain("npx -y agentera@next state <artifact> explain");
     expect(out).toContain("Supported typed writes:");
     expect(out).toContain("--dry-run");
     expect(out.endsWith("repair preview.\n")).toBe(true);
@@ -130,11 +130,11 @@ describe("cli prime", () => {
     expect(payload.source_contract.capability_context).not.toBeNull();
     expect(typeof payload.source_contract.capability_context).toBe("object");
     expect(payload.source_contract.capability_context.capability).toBe("status");
-    expect(payload.source_contract.capability_context.fetch_command).toBe("npx -y agentera@next prime --context status --format json");
+    expect(payload.source_contract.capability_context.fetch_command).toBe("npx -y agentera@next prime --context status");
     expect(payload.source_contract.capability_context.required_before_rendering).toBe(true);
     expect(payload.startup).toMatchObject({
       outcome: "blocked",
-      detail_discovery: { schema: "npx -y agentera@next schema --format json" },
+      detail_discovery: { schema: "npx -y agentera@next schema" },
       availability: expect.any(Array),
     });
     expect(payload.startup).not.toHaveProperty("write_contract");
@@ -240,7 +240,7 @@ describe("cli prime", () => {
       error: {
         class: "invalid_choice",
         valid_values: ["todo"],
-        example: "npx -y agentera@next prime --fields todo --format json",
+        example: "npx -y agentera@next prime --fields todo",
       },
     });
     expect(payload.error.recovery).toContain("'todo'");
@@ -265,8 +265,8 @@ describe("cli prime", () => {
       "agentera.planeraStartup.v1",
     );
     expect(payload.capability_context.startup.availability).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "plan", availability: "included", detail_command: "npx -y agentera@next state plan list --format json" }),
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }),
+      expect.objectContaining({ family: "plan", availability: "included", detail_command: "npx -y agentera@next state plan list" }),
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }),
     ]));
     expect(payload.capability_context).not.toHaveProperty("state");
     const planning = payload.capability_context.context.planning_context.startup_contract.planning;
@@ -602,7 +602,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect((orch.selected_next_action as Record<string, unknown>)?.object).toBeTruthy();
   });
 
-  it("matches prime --context orchestrate --format json task_queue to task_summaries", () => {
+  it("matches prime --context orchestrate task_queue to task_summaries", () => {
     const { rc, out } = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
     expect(rc).toBe(0);
     const orch = JSON.parse(out).capability_context.context.orchestration_context;
@@ -704,7 +704,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect(queue).toMatchObject({ total: 22, complete: 12, superseded: 9, status_counts: { complete: 12, superseded: 9, pending: 1 }, dependency_ready_count: 1, blocked_count: 0 });
     expect(context.orchestration_context.selected_next_task.id).toBe(taskIds[21]);
     expect(context.orchestration_context.task_summaries.length).toBe(10);
-    expect(context.orchestration_context.task_summaries_omission).toMatchObject({ omitted: true, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID --format json" } });
+    expect(context.orchestration_context.task_summaries_omission).toMatchObject({ omitted: true, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" } });
     const emitted = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
     expect(emitted.rc).toBe(0); expect(emitted.out).not.toContain("x".repeat(1_000));
   });
@@ -726,7 +726,7 @@ describe("orkestrera orchestration_context task_queue", () => {
           "The executable next action points to exact task retrieval.",
         ],
         retrieval: {
-          get: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId} --format json`,
+          get: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}`,
         },
       },
     });
@@ -735,7 +735,7 @@ describe("orkestrera orchestration_context task_queue", () => {
       artifact: "plan",
       eligible: true,
       retrieval: {
-        exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId} --format json`,
+        exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}`,
       },
     });
 
@@ -758,7 +758,7 @@ describe("orkestrera orchestration_context task_queue", () => {
       id: fixture.selectedTaskId,
       capability: "orchestrate",
       eligible: true,
-      retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId} --format json` },
+      retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}` },
     });
     for (const artifact of ["progress", "decisions", "health"]) {
       expect(payload.history[artifact]).toMatchObject({
@@ -768,8 +768,8 @@ describe("orkestrera orchestration_context task_queue", () => {
         caveats: [expect.stringContaining("incomplete historical evidence")],
         degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 },
         retrieval: {
-          list: `npx -y agentera@next state ${artifact} list --limit 20 --format json`,
-          get: `npx -y agentera@next state ${artifact} get --id ID --format json`,
+          list: `npx -y agentera@next state ${artifact} list --limit 20`,
+          get: `npx -y agentera@next state ${artifact} get --id ID`,
         },
         source_contract: {
           authority: "references/artifacts/state-storage-authority.yaml",
@@ -805,13 +805,13 @@ describe("orkestrera orchestration_context task_queue", () => {
     for (const [index, id] of taskIds.entries()) fs.writeFileSync(path.join(taskDirectory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "plan", record: { plan: planId, name: `Small task ${index + 1}`, status: "pending", depends_on: [], acceptance: [] } }));
 
     const state = collectOrientationState({ env: process.env }); const statePlan = state.plan as any;
-    expect(statePlan).toMatchObject({ total: 22, task_status_counts: { pending: 22 }, task_omission: { omitted: true, total: 22, returned_count: 20, omitted_count: 2, omission_reason: "startup_detail_capacity", retrieval: { get: "npx -y agentera@next state plan tasks get --id ID --format json" } } });
+    expect(statePlan).toMatchObject({ total: 22, task_status_counts: { pending: 22 }, task_omission: { omitted: true, total: 22, returned_count: 20, omitted_count: 2, omission_reason: "startup_detail_capacity", retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" } } });
     expect(statePlan.tasks).toHaveLength(20);
     const ordinary = buildOrientationJsonPayload(state, "prime") as any;
-    expect(ordinary.plan).toMatchObject({ total: 22, task_count: 22, omitted_task_count: 12, task_omission: { omitted: true, total: 22, returned_count: 10, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID --format json" } } });
+    expect(ordinary.plan).toMatchObject({ total: 22, task_count: 22, omitted_task_count: 12, task_omission: { omitted: true, total: 22, returned_count: 10, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" } } });
     expect(ordinary.plan.tasks).toHaveLength(10);
     const payload = buildPrimeCapabilityContextPayload(state, "orchestrate") as any; const queue = payload.capability_context.context.orchestration_context.task_queue;
-    expect(queue).toMatchObject({ total: 22, status_counts: { pending: 22 }, dependency_ready_count: 22, dependency_ready_omission: { omitted: true, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID --format json" } } });
+    expect(queue).toMatchObject({ total: 22, status_counts: { pending: 22 }, dependency_ready_count: 22, dependency_ready_omission: { omitted: true, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" } } });
     expect(payload.capability_context.context.plan).toMatchObject({ total: 22, task_omission: { omitted: true, returned_count: 20, omitted_count: 2 } });
   });
 
@@ -825,7 +825,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     for (const [index, id] of taskIds.entries()) fs.writeFileSync(path.join(taskDirectory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "plan", record: { plan: planId, name: `Medium task ${index + 1}: ${"m".repeat(1_100)}`, status: "pending", depends_on: [], acceptance: [] } }));
 
     const state = collectOrientationState({ env: process.env }); const ordinary = buildOrientationJsonPayload(state, "prime") as any; const recovery = ordinary.plan.task_omission.retrieval;
-    expect(ordinary.plan.task_omission).toMatchObject({ omitted: true, total: 30, returned_count: 10, omitted_count: 20, retrieval: { restart: expect.stringContaining(`tasks list ${planId}`), get: "npx -y agentera@next state plan tasks get --id ID --format json" } });
+    expect(ordinary.plan.task_omission).toMatchObject({ omitted: true, total: 30, returned_count: 10, omitted_count: 20, retrieval: { restart: expect.stringContaining(`tasks list ${planId}`), get: "npx -y agentera@next state plan tasks get --id ID" } });
     expect(recovery).not.toHaveProperty("continue");
     const invoke = (command: string): any => { let out = ""; let err = ""; const local = command.replace(/^npx -y agentera@next /, "agentera "); const rc = main(["node", "agentera", ...local.split(" ").slice(1)], { out: (text) => { out += text; }, err: (text) => { err += text; } }); expect(rc, err || out).toBe(0); return JSON.parse(out); };
     const reached = new Set<string>(); let page = invoke(recovery.restart);

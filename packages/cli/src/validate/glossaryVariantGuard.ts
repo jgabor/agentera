@@ -17,7 +17,7 @@ const TEXT_EXTENSIONS = new Set([
   ".md", ".mjs", ".py", ".rs", ".sh", ".toml", ".ts", ".tsx", ".txt",
   ".xml", ".yaml", ".yml",
 ]);
-const RERUN = "npx -y agentera@next check validate state --format json";
+const RERUN = "npx -y agentera@next check validate state";
 
 interface ConfirmedVariant {
   variant: string;
@@ -114,7 +114,7 @@ export function scanConfirmedVariantViolations(root: string): string[] {
   } catch (error) {
     violations.push(
       `project glossary is malformed: ${(error as Error).message}. ` +
-      `Correction: restore a valid confirmed document or rerun agentera state glossary publish --input REQUEST.yaml --format json; rerun: ${RERUN}`,
+      `Correction: restore a valid confirmed document or rerun agentera state glossary publish --input REQUEST.yaml; rerun: ${RERUN}`,
     );
   }
   return violations.sort();

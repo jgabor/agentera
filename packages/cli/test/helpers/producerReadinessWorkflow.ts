@@ -500,11 +500,11 @@ export async function runProducerReadinessWorkflow(
     startupOutput.push(result.stdout);
     const served = JSON.parse(result.stdout).capability_context;
     const grounding = served.startup?.availability?.find((row: Record<string, unknown>) => row.family === "profile");
-    assert.equal(grounding?.detail_command, "npx -y agentera@next report profile-grounding --format json");
+    assert.equal(grounding?.detail_command, "npx -y agentera@next report profile-grounding");
     assert.equal(grounding?.availability, "deferred");
     assert.equal(served.profile, undefined);
     assert(
-      served.instructions.includes("npx -y agentera@next report profile-grounding --format json"),
+      served.instructions.includes("npx -y agentera@next report profile-grounding"),
       `${capability} pre-cutover instructions omit channel-bound grounding command`,
     );
     for (const forbidden of [
@@ -672,7 +672,7 @@ export async function runProducerReadinessWorkflow(
   assert.deepEqual(unavailablePayload.validity, {
     status: "absent",
     class: "absent",
-    recovery: "Use the Profile capability to generate PROFILE.md, then retry agentera report profile-grounding --format json.",
+    recovery: "Use the Profile capability to generate PROFILE.md, then retry agentera report profile-grounding.",
   });
   assertTrapsAbsent(unavailable, pathTraps, "path");
 
@@ -698,7 +698,7 @@ export async function runProducerReadinessWorkflow(
     selfContainedExecution?.work_selection?.status === "selected" &&
     selfContainedExecution?.acceptance_criteria?.status === "available" &&
     !selfContainedExecution?.fallback_commands?.includes(
-      "npx -y agentera@next report profile-grounding --format json",
+      "npx -y agentera@next report profile-grounding",
     );
   assert.equal(selfContainedRequestAvailable, true, "absent profile blocked self-contained Build work");
   const unavailablePrivateDataHidden = !trapValues(pathTraps).some(

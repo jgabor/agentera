@@ -159,7 +159,7 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
     }
   }
   if (jsonFlag) {
-    emitDeprecationAlias("doctor --json", "doctor --format json", err);
+    emitDeprecationAlias("doctor --json", "doctor", err);
     args.format = "json";
   }
   try {
@@ -216,7 +216,7 @@ export function runUsage(argv: string[], io: Io, prog: string): number {
         message: `unsupported usage format '${format}'; valid formats: text, json.`,
         valid_values: ["text", "json"],
         syntax: "agentera usage [--format text|json] [--corpus PATH] [--project VALUE]",
-        example: "agentera usage --format json --project agentera",
+        example: "agentera usage --project agentera",
       },
     });
   }
@@ -454,7 +454,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "personal-glossary-decision has no stats alias",
           valid_values: ["report personal-glossary-decision"],
-          recovery: `Run ${preCutoverCommand("report personal-glossary-decision --input - --format json")}; no bytes were changed.`,
+          recovery: `Run ${preCutoverCommand("report personal-glossary-decision --input -")}; no bytes were changed.`,
         },
       });
     }
@@ -468,7 +468,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "personal-glossary-candidates has no stats alias",
           valid_values: ["report personal-glossary-candidates"],
-          recovery: `Run ${preCutoverCommand("report personal-glossary-candidates list --limit 20 --format json")}; no projection bytes were changed.`,
+          recovery: `Run ${preCutoverCommand("report personal-glossary-candidates list --limit 20")}; no projection bytes were changed.`,
         },
       });
     }
@@ -482,7 +482,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "personal-glossary-reviews has no stats alias",
           valid_values: ["report personal-glossary-reviews"],
-          recovery: `Run ${preCutoverCommand("report personal-glossary-reviews list --limit 20 --format json")}; no review metadata was changed.`,
+          recovery: `Run ${preCutoverCommand("report personal-glossary-reviews list --limit 20")}; no review metadata was changed.`,
         },
       });
     }
@@ -496,7 +496,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "glossary-advice has no stats alias",
           valid_values: ["report glossary-advice"],
-          recovery: `Run ${preCutoverCommand("report glossary-advice --input - --format json")}; no state was changed.`,
+          recovery: `Run ${preCutoverCommand("report glossary-advice --input -")}; no state was changed.`,
         },
       });
     }
@@ -510,7 +510,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "profile-grounding has no stats alias",
           valid_values: ["report profile-grounding"],
-          recovery: `Run ${preCutoverCommand("report profile-grounding --format json")}; no profile bytes were changed.`,
+          recovery: `Run ${preCutoverCommand("report profile-grounding")}; no profile bytes were changed.`,
         },
       });
     }
@@ -524,7 +524,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
           class: "unsupported_target",
           message: "personal-glossary-publish has no stats alias",
           valid_values: ["report personal-glossary-publish"],
-          recovery: `Run ${preCutoverCommand("report personal-glossary-publish --input - --format json")}; no profile bytes were changed.`,
+          recovery: `Run ${preCutoverCommand("report personal-glossary-publish --input -")}; no profile bytes were changed.`,
         },
       });
     }

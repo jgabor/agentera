@@ -4,7 +4,7 @@ import { sourceProvenance } from "./capabilityContext/shared.js";
 import { asList } from "./stateQuery.js";
 import { preCutoverCommand } from "./preCutoverCommand.js";
 
-const PLAN_LIST_COMMAND = preCutoverCommand(`state ${entityListFamily("plans").commandTokens.join(" ")} list --format json`);
+const PLAN_LIST_COMMAND = preCutoverCommand(`state ${entityListFamily("plans").commandTokens.join(" ")} list`);
 
 function diagnosticEntries(value: unknown): JsonObject[] {
   return asList(value).filter(

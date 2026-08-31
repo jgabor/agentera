@@ -20,7 +20,7 @@ type Mapping = Record<string, unknown>;
 const contract = glossaryAdviceContract();
 const COMMAND = contract.command.replace("REQUEST", "<file|->");
 const RECOVERY = `Correct the bounded request and retry ${COMMAND}; no state was changed.`;
-const TERM_INPUT_RECOVERY = "agentera report glossary-advice --term-input <file|-> --format json";
+const TERM_INPUT_RECOVERY = "agentera report glossary-advice --term-input <file|->";
 export const GLOSSARY_ADVICE_STRUCTURED_INPUT_OPTIONS = ["--input", "--term-input"] as const;
 
 function mapping(value: unknown): Mapping | null {
@@ -58,7 +58,7 @@ function parseArgs(argv: string[]): AdviceSource | InvalidInputErrorBody {
     if (name === "--format" && value !== "json") {
       return {
         class: "invalid_choice",
-        message: "glossary-advice requires --format json",
+        message: "glossary-advice requires",
         valid_values: ["json"],
       };
     }

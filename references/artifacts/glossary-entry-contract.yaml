@@ -1933,7 +1933,7 @@ ownership_contracts:
         is absent or invalid; never invent a field or extend the shared entry.
     publication:
       owner: build
-      command: npx -y agentera@next state glossary publish --input REQUEST --format json
+      command: npx -y agentera@next state glossary publish --input REQUEST
       request:
         schema_version: agentera.glossaryPublicationRequest.v1
         required_fields: [schema_version, proposal, confirmation]
@@ -1990,7 +1990,7 @@ ownership_contracts:
     confirmed_variant_guard:
       owner: packages/cli/src/cli/commands/validate.ts#validateStatePayload
       scanner: packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations
-      command: npx -y agentera@next check validate state --format json
+      command: npx -y agentera@next check validate state
       validation_surface: packages/cli/test/cli/glossaryVariantGuard.test.ts
       loader: packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument
       source_rule: >-
@@ -2172,7 +2172,7 @@ consumer_boundary:
     runtime: packages/cli/src/analytics/glossaryAdviceResolution.ts#resolveGlossaryAdvice
     mutation: forbidden
     invocation:
-      command: npx -y agentera@next report glossary-advice --input REQUEST --format json
+      command: npx -y agentera@next report glossary-advice --input REQUEST
       request_schema_version: agentera.glossaryAdviceRequest.v1
       request_fields: [schema_version, requested_term, host_review]
       max_request_utf8_bytes: 131072
@@ -2538,7 +2538,7 @@ consumer_boundary:
       forbidden_fields: [caveat_id, capability, transition_id]
       forbidden_claims: [delivered, stored, persisted, published, durable_envelope]
       durable_writer: build
-      writer_interface: npx -y agentera@next state progress explain --verb append --format json
+      writer_interface: npx -y agentera@next state progress explain --verb append
       writer_result: authoritative_identity_and_six_field_envelope
       allowed_reason_state_pairs: consumer_boundary.autonomous_caveat.allowed_current_pairs
       rule: >-
@@ -2672,7 +2672,7 @@ consumer_boundary:
     publication_boundary: progress_cycle.glossary_caveat
     publication_status: active_build
     writer_runtime: packages/cli/src/state/progressEntities.ts#appendProgressEntity
-    writer_interface: npx -y agentera@next state progress explain --verb append --format json
+    writer_interface: npx -y agentera@next state progress explain --verb append
     envelope_validator: packages/cli/src/state/progressGlossaryCaveat.ts#validateProgressGlossaryCaveat
     lifecycle_validator: packages/cli/src/state/progressGlossaryCaveat.ts#glossaryCaveatLifecycleInvalidEntities
     allowed_current_pairs:
@@ -2813,7 +2813,7 @@ consumer_boundary:
   downstream_gate:
     status: blocked_until_contract_valid
     validator: packages/cli/src/registries/glossaryEntryContract.ts#validateGlossaryEntryContract
-    command: npx -y agentera@next check validate vocabularyAuthority --format json
+    command: npx -y agentera@next check validate vocabularyAuthority
     required_sections:
       - consumer_boundary.acquisition
       - consumer_boundary.advice_resolution
@@ -2834,7 +2834,7 @@ consumer_boundary:
   profile_grounding:
     implementation: active_exclusion_only
     capabilities: [discuss, plan, build]
-    command: npx -y agentera@next report profile-grounding --format json
+    command: npx -y agentera@next report profile-grounding
     schema_version: agentera.profileGrounding.v1
     parser: packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding
     max_profile_utf8_bytes: 65536
@@ -2846,9 +2846,9 @@ consumer_boundary:
       rule: Freshness is computed only after one source passes validity and never changes validity.
     recovery:
       repair: >-
-        Use the Profile capability to repair or regenerate PROFILE.md, then retry `npx -y agentera@next report profile-grounding --format json`; no profile bytes were changed.
+        Use the Profile capability to repair or regenerate PROFILE.md, then retry `npx -y agentera@next report profile-grounding`; no profile bytes were changed.
       absent: >-
-        Use the Profile capability to generate PROFILE.md, then retry npx -y agentera@next report profile-grounding --format json.
+        Use the Profile capability to generate PROFILE.md, then retry npx -y agentera@next report profile-grounding.
     raw_profile_read: forbidden
     content_rule: >-
       Return the complete profile with exactly the validated owned personal

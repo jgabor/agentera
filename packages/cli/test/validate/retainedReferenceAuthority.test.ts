@@ -46,7 +46,7 @@ function fixture(): { root: string; authority: Record<string, any> } {
     "- Maintainer: Agentera CLI maintainers",
     "- Source checkout root: `.`",
     "- Working directory: `.`",
-    "- Command: `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json`",
+    "- Command: `node packages/cli/dist/bin/agentera.js check validate capability-contract`",
     "",
   ].join("\n"));
   const authority = {
@@ -71,7 +71,7 @@ function fixture(): { root: string; authority: Record<string, any> } {
         maintainer: "Agentera CLI maintainers",
         source_checkout_root: ".",
         working_directory: ".",
-        command: "node packages/cli/dist/bin/agentera.js check validate capability-contract --format json",
+        command: "node packages/cli/dist/bin/agentera.js check validate capability-contract",
       },
       {
         path: "references/meta/retained-reference-authority.yaml",

@@ -198,8 +198,8 @@ function failure(
       error: {
         class: className,
         message,
-        syntax: "agentera state progress get --id ID --format json",
-        example: `agentera state progress get --id ${id ?? "qjtrmnpvka"} --format json`,
+        syntax: "agentera state progress get --id ID",
+        example: `agentera state progress get --id ${id ?? "qjtrmnpvka"}`,
         recovery,
         artifact: ARTIFACT,
         ...(id ? { id } : {}),
@@ -217,8 +217,8 @@ function listFailure(
 ): StateRetrievalFailure {
   const result = failure(className, message, recovery, undefined, exitCode);
   result.body.error.syntax =
-    "agentera state progress list [--limit N] [--cursor TOKEN] --format json";
-  result.body.error.example = "agentera state progress list --limit 20 --format json";
+    "agentera state progress list [--limit N] [--cursor TOKEN]";
+  result.body.error.example = "agentera state progress list --limit 20";
   return result;
 }
 
@@ -453,7 +453,7 @@ function entry(projectRoot: string, entity: DiscoveredEntity): JsonObject {
     record: entity.record!,
     ...detailMetadata(entity),
     provenance: detailProvenance(relative(projectRoot, entity.path), entity),
-    retrieval: { get: `agentera state progress get --id ${id} --format json` },
+    retrieval: { get: `agentera state progress get --id ${id}` },
   };
 }
 
@@ -564,7 +564,7 @@ export function getProgressEntity(
     throw failure(
       "not_found",
       `no progress entity exists with ID '${id}'`,
-      "Copy an ID from agentera state progress list --format json and retry.",
+      "Copy an ID from agentera state progress list and retry.",
       id,
     );
   if (
@@ -715,8 +715,8 @@ export function listProgressEntities(
             omitted_count: remaining,
             omission_reason: "page_limit",
             retrieval: {
-              continue: `agentera state progress list${filterFlags}${selectorFlags} --limit ${effectiveLimit} --cursor ${nextCursor} --format json`,
-              get: "agentera state progress get --id ID --format json",
+              continue: `agentera state progress list${filterFlags}${selectorFlags} --limit ${effectiveLimit} --cursor ${nextCursor}`,
+              get: "agentera state progress get --id ID",
             },
             next_cursor: nextCursor,
           }

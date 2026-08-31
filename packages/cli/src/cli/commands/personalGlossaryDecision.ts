@@ -32,7 +32,7 @@ export interface PersonalGlossaryEvaluationDecisionOptions
   precomputedDecisionContract?: PersonalGlossaryCandidateDecisionContract;
 }
 
-const COMMAND = "agentera report personal-glossary-decision --input <file|-> --format json";
+const COMMAND = "agentera report personal-glossary-decision --input <file|->";
 export const PERSONAL_GLOSSARY_DECISION_STRUCTURED_INPUT_OPTIONS = ["--input"] as const;
 const RECOVERY =
   "Correct the bounded decision request and retry; no projection, review, profile, or project bytes were changed.";
@@ -113,7 +113,7 @@ function parseArgs(argv: string[]): { input: string } | InvalidInputErrorBody {
       if (value !== "json") {
         return {
           class: "invalid_choice",
-          message: "personal-glossary-decision requires --format json",
+          message: "personal-glossary-decision requires",
           valid_values: ["json"],
         };
       }

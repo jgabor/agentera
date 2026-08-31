@@ -195,7 +195,7 @@ export function validatePlanPublicationCandidate(
     class: "schema_violation",
     message: "plan publication candidate failed strict prose lint or schema validation; correct the reported violations and retry",
     violations: effectiveViolations,
-    syntax: "agentera state plan create --input plan.yaml --format json",
-    example: "agentera state plan create --input plan.yaml --format json",
+    syntax: "agentera state plan create --input plan.yaml",
+    example: "agentera state plan create --input plan.yaml",
   });
 }

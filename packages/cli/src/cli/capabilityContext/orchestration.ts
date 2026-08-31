@@ -60,7 +60,7 @@ export function orchestrationContext(
   const selected = dependencyReady.length > 0 ? dependencyReady[0] : null;
   const planTasks = entityListFamily("plan_tasks");
   const queueCommand = plan.id
-    ? preCutoverCommand(`state ${planTasks.commandTokens.join(" ")} list ${String(plan.id)} --limit 100 --format json`)
+    ? preCutoverCommand(`state ${planTasks.commandTokens.join(" ")} list ${String(plan.id)} --limit 100`)
     : null;
   const queueRetrieval = queueCommand
     ? { list: queueCommand, restart: queueCommand, get: preCutoverCommandFromBare(planTasks.get) }

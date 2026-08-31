@@ -86,7 +86,7 @@ function invalidLifecycle(): TodoReconciliationInspection {
     omitted_count: 0,
     preview_command: null,
     apply_command: null,
-    recovery_command: "Restore the valid committed TODO reconciliation lifecycle metadata, then rerun `npx -y agentera@next check validate state --format json`; no state was changed.",
+    recovery_command: "Restore the valid committed TODO reconciliation lifecycle metadata, then rerun `npx -y agentera@next check validate state`; no state was changed.",
   };
 }
 

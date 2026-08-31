@@ -4,7 +4,7 @@ import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import { acquireProfile } from "../profileAcquisition.js";
 import { emitStructured } from "../structured.js";
 
-const COMMAND = "agentera report profile-grounding --format json";
+const COMMAND = "agentera report profile-grounding";
 const REQUEST_RECOVERY = `Run ${COMMAND}; no profile bytes were changed.`;
 const INVALID_PROFILE_MESSAGE = "PROFILE.md is unavailable for bounded profile grounding.";
 
@@ -17,11 +17,11 @@ export function runProfileGroundingCommand(argv: string[], io: Io): number {
     const argument = argv[index];
     const [name, inline] = argument.split("=", 2);
     if (name !== "--format") {
-      return invalid(io, { class: "unrecognized_argument", message: "profile-grounding accepts only --format json", syntax: COMMAND }, REQUEST_RECOVERY);
+      return invalid(io, { class: "unrecognized_argument", message: "profile-grounding accepts only", syntax: COMMAND }, REQUEST_RECOVERY);
     }
     const value = inline ?? argv[++index];
     if (value !== "json") {
-      return invalid(io, { class: "invalid_choice", message: "profile-grounding requires --format json", valid_values: ["json"] }, REQUEST_RECOVERY);
+      return invalid(io, { class: "invalid_choice", message: "profile-grounding requires", valid_values: ["json"] }, REQUEST_RECOVERY);
     }
   }
 

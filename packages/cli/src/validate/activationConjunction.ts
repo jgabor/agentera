@@ -870,7 +870,7 @@ function fixedFailure(reason: "source checkout required" | "bounded activation r
   return {
     schemaVersion: "agentera.activationConjunction.v1", command: "check validate activation-conjunction", target_family: "activation-conjunction",
     status: "fail", valid: false, rows: [], violation_count: 1,
-    violations: [{ owner: "packages/cli/src/validate/activationConjunction.ts#activationConjunctionMain", violation: reason, correction: "node packages/cli/dist/bin/agentera.js check validate activation-conjunction --format json" }],
+    violations: [{ owner: "packages/cli/src/validate/activationConjunction.ts#activationConjunctionMain", violation: reason, correction: "node packages/cli/dist/bin/agentera.js check validate activation-conjunction" }],
     side_effects: { activation: false, publication: false, receipt: false, candidate: false, registry: false },
   };
 }

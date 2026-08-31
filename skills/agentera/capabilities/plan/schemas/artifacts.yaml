@@ -54,7 +54,7 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Plan reads only sanitized non-glossary content from `npx -y agentera@next report
-      profile-grounding --format json` to calibrate planning depth and pattern
+      profile-grounding` to calibrate planning depth and pattern
       preferences. It never direct-reads the profile path and uses content only
       for shared validity `valid`; absent and repair-needed results fail closed.
   9:

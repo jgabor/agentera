@@ -53,7 +53,7 @@ function unreadableInput(): never {
   return fail({
     class: "invalid_format",
     message: "Build execution request input must be one readable regular file or bounded stdin stream",
-    syntax: preCutoverCommand("prime --context build --input <file|-> --format json"),
+    syntax: preCutoverCommand("prime --context build --input <file|->"),
   });
 }
 

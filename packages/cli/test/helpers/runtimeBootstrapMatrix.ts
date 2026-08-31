@@ -679,13 +679,13 @@ export function runRuntimeBootstrapMatrix(
         return result;
       };
 
-      const primeCommand = preCutoverCommand("prime --context status --format json");
+      const primeCommand = preCutoverCommand("prime --context status");
       const primeId = quotedPathKind ? `prime-quoted-${quotedPathKind}` : "prime";
       assertAcceptedApplicability(primeId, projectState);
       const prime = dispatch(primeId, { owner: "prime.status", source: primeCommand }, primeCommand, {
         accepted: true,
         classification: "accepted",
-        argv: ["prime", "--context", "status", "--format", "json"],
+        argv: ["prime", "--context", "status"],
       });
       const primePayload = JSON.parse(prime.stdout);
       const expectedOutcome = projectState === "v3" ? "ok" : "blocked";
@@ -710,14 +710,14 @@ export function runRuntimeBootstrapMatrix(
       const recoveries: string[] = [];
       const recoveryObservations: unknown[] = [];
       if (!options.bounded) {
-        const startupCommand = preCutoverCommand(`prime --context ${recommended} --format json`);
+        const startupCommand = preCutoverCommand(`prime --context ${recommended}`);
         assertAcceptedApplicability("recommended-startup", projectState);
         const startup = dispatch("recommended-startup", { owner: `prime.recommended.${recommended}`, source: startupCommand }, startupCommand, { accepted: true, classification: "accepted" });
         startupPayload = JSON.parse(startup.stdout);
         expect((startupPayload as any).capability_context.startup.outcome).toBe(expectedOutcome);
 
         const doctorCommand = commandText([
-        "npx", "-y", "agentera@next", "doctor", "--format", "json",
+        "npx", "-y", "agentera@next", "doctor",
         "--home", home, "--project", project, "--install-root", paths.appHome,
       ]);
         const doctorId = quotedPathKind ? `doctor-quoted-${quotedPathKind}` : "doctor";
@@ -725,7 +725,7 @@ export function runRuntimeBootstrapMatrix(
         const doctor = dispatch(doctorId, { owner: "doctor.status", source: doctorCommand }, doctorCommand, {
         accepted: true,
         classification: "accepted",
-        argv: ["doctor", "--format", "json", "--home", home, "--project", project, "--install-root", paths.appHome],
+        argv: ["doctor", "--home", home, "--project", project, "--install-root", paths.appHome],
       });
         doctorPayload = JSON.parse(doctor.stdout);
         expect(doctorPayload).toMatchObject({ status: "up_to_date", shared_skill: { status: "pass" } });

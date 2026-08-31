@@ -41,7 +41,7 @@ describe("status startup budget", () => {
     expect(payload.outcome).toBe(capsule.startup.outcome);
     expect(dashboard.outcome).toBe(capsule.startup.outcome);
     expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list --format json" }),
+      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }),
     ]));
     expect(dashboard).not.toHaveProperty("profile");
     expect(JSON.stringify(payload)).not.toContain('"write_contract"');
@@ -64,8 +64,8 @@ describe("status startup budget", () => {
         status: "action_required",
         counts: { matched: 0, converted: 0, retained: 0, duplicate: 0, stale: 1, conflicting: 0 },
         omitted_count: 0,
-        preview_command: "agentera state todo repair --dry-run --format json",
-        apply_command: "agentera state todo repair --yes --format json",
+        preview_command: "agentera state todo repair --dry-run",
+        apply_command: "agentera state todo repair --yes",
         recovery_command: "Run the preview, review it, then run its exact apply command.",
       },
     };

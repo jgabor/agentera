@@ -25,7 +25,7 @@ function response(rows: JsonObject[], remaining = 0): JsonObject {
     counts: { total: rows.length + remaining, returned: rows.length, remaining },
     filters: { plan: "abcdefghij" },
     snapshot: { id: "snapshot", candidate_count: rows.length + remaining, has_more: remaining > 0 },
-    retrieval: { get: "agentera state plan tasks get --id ID --format json" },
+    retrieval: { get: "agentera state plan tasks get --id ID" },
   };
 }
 
@@ -75,7 +75,7 @@ describe("bounded entity list projection", () => {
       degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 100 },
     });
     expect((projected.entries as JsonObject[])).toHaveLength(100);
-    expect((projected.entries as JsonObject[]).every((entry) => !entry.record && (entry.retrieval as JsonObject).get === `agentera state plan tasks get --id ${entry.id} --format json`)).toBe(true);
+    expect((projected.entries as JsonObject[]).every((entry) => !entry.record && (entry.retrieval as JsonObject).get === `agentera state plan tasks get --id ${entry.id}`)).toBe(true);
   });
 
   it("returns deterministic IDs-only and selected-field rows and rejects bounded selector pressure", () => {
@@ -84,8 +84,8 @@ describe("bounded entity list projection", () => {
     const ids = resolveEntityListSelector(idsConfig.selector, rows, idsConfig);
     expect(projectEntityList(response(rows), ids, idsConfig)).toMatchObject({
       entries: [
-        { id: rows[0].id, artifact: "plan", retrieval: { get: `agentera state plan tasks get --id ${rows[0].id} --format json` } },
-        { id: rows[1].id, artifact: "plan", retrieval: { get: `agentera state plan tasks get --id ${rows[1].id} --format json` } },
+        { id: rows[0].id, artifact: "plan", retrieval: { get: `agentera state plan tasks get --id ${rows[0].id}` } },
+        { id: rows[1].id, artifact: "plan", retrieval: { get: `agentera state plan tasks get --id ${rows[1].id}` } },
       ],
       counts: { candidate: 2, returned: 2, omitted: 0 },
       projection: { selector: "ids_only", detail: "identity" },
@@ -111,7 +111,7 @@ describe("bounded entity list projection", () => {
     expect((identity.entries as JsonObject[])).toHaveLength(100);
     expect((identity.entries as JsonObject[]).every((entry) => (
       Object.keys(entry).sort().join(",") === "artifact,id,queue_rank,retrieval"
-      && (entry.retrieval as JsonObject).get === `agentera state todo get --id ${entry.id} --format json`
+      && (entry.retrieval as JsonObject).get === `agentera state todo get --id ${entry.id}`
     ))).toBe(true);
 
     const defaultConfig = todoOptions();

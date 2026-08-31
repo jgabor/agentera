@@ -201,7 +201,7 @@ export function validateRouteReceiptSubmission(input: unknown, sourceRoot: strin
     };
   }
   const capability = receipt.outcome === "no_match" ? "status" : receipt.capability as string;
-  const startupCommand = preCutoverCommand(`prime --context ${capability} --format json`);
+  const startupCommand = preCutoverCommand(`prime --context ${capability}`);
   const span = receipt.remainder_span as { start: number; end: number } | undefined;
   return {
     schemaVersion: "agentera.route_receipt_result.v1",

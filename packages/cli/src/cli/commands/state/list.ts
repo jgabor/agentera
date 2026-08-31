@@ -27,14 +27,14 @@ function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
 }
 
 function syntax(artifactId: string): string {
-  return `agentera state ${artifactId} list [--limit N] [--cursor TOKEN] --format json`;
+  return `agentera state ${artifactId} list [--limit N] [--cursor TOKEN]`;
 }
 
 function failure(
   className: StateFailureBody["error"]["class"],
   artifactId: string,
   message: string,
-  example = `agentera state ${artifactId} list --limit 20 --format json`,
+  example = `agentera state ${artifactId} list --limit 20`,
   validValues?: string[],
 ): StateRetrievalFailure {
   const family = entityListFamilies().find(({ key }) => key === artifactId);
@@ -171,7 +171,7 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
             class: "unsupported_state",
             message: (error as Error).message,
             syntax: syntax(artifactId),
-            example: `agentera state ${artifactId} list --limit 20 --format json`,
+            example: `agentera state ${artifactId} list --limit 20`,
             recovery: "Use a state format supported by the storage authority, then retry.",
           },
         },

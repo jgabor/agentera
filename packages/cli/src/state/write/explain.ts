@@ -297,7 +297,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
   ];
   if (entityArtifact && artifact === "plan" && verb === "replace") return [
     "name the predecessor and successor with bare IDs from canonical evidence; never infer roles from list order",
-    "when competing open plans block selection, use npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json only after the complete recovery pair is known",
+    "when competing open plans block selection, use npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID only after the complete recovery pair is known",
     "pending plan replacement journals block plan reads until the exact retry completes or restores the operation",
     ...base,
   ];
@@ -347,7 +347,7 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
 export function exampleFor(artifact: WritableArtifact, verb: string): string {
   const declaration = loadMutationGrammar().operations.find((operation) => operation.artifact === artifact && operation.verb === verb);
   if (declaration?.examples[0]) return declaration.examples[0];
-  return `agentera state ${artifact} ${verb} --format json`;
+  return `agentera state ${artifact} ${verb}`;
 }
 
 export function renderExplainText(explain: Record<string, unknown>): string {

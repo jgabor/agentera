@@ -199,14 +199,14 @@ describe("decision amend command discovery", () => {
 
     expect(decisions.mutations).toEqual(["append", "update", "amend"]);
     expect(decisions.explain_by_verb.amend).toBe(
-      "agentera state decisions explain --verb amend --format json",
+      "agentera state decisions explain --verb amend",
     );
 
     const root = project();
     const help = runHelp(root, ["decisions"]);
     expect(help.rc).toBe(0);
     expect(help.out).toContain("{append,update,amend,explain}");
-    expect(help.out).toContain("agentera state decisions explain --verb VERB --format json");
+    expect(help.out).toContain("agentera state decisions explain --verb VERB");
   });
 
   it("refuses to amend a missing decision entity before side effects", () => {

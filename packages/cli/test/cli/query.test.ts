@@ -103,7 +103,7 @@ describe("cli query", () => {
         recognized_headings: ["## [Unreleased]", "## [1.2.3] - 2026-07-30"],
         boundary: "## [Unreleased]",
         source_provenance: {
-          command: "agentera state query changelog --format json",
+          command: "agentera state query changelog",
           scanner: "agentera.changelogHeadingScanner.v1",
         },
       });

@@ -343,7 +343,7 @@ function inspectEntityDurability(
   run: GitCommandRunner,
   sourceRoot: string,
 ): DurabilityResponse {
-  const entityCommand = "agentera check durability --project PATH --artifact ARTIFACT --id ID --format json";
+  const entityCommand = "agentera check durability --project PATH --artifact ARTIFACT --id ID";
   const git = gitContext(projectRoot, run);
   const discovery = discoverEntities(projectRoot, sourceRoot);
   const boundaries = entityBoundariesForArtifact(artifact, sourceRoot);
@@ -405,7 +405,7 @@ function inspectEntityDurability(
   if (git.available && git.before && !after) evidence = { status: "degraded", reason: "final_head_unavailable", reachableRecovery: false };
   else if (changed) evidence = { status: "degraded", reason: "changed_head", reachableRecovery: false };
   const status = entryStatus(local, evidence);
-  const get = artifact === "plan" ? `agentera state plan get --id ${id} --format json` : `agentera state ${artifact} get --id ${id} --format json`;
+  const get = artifact === "plan" ? `agentera state plan get --id ${id}` : `agentera state ${artifact} get --id ${id}`;
   const diagnostics: DurabilityResponse["diagnostics"] = [];
   if (local !== "verified") diagnostics.push({ class: local === "corrupt" ? "canonical_entity_corrupt" : "canonical_entity_missing", message: localMessage ?? `canonical ${artifact} entity '${id}' was not found`, recovery: `Run agentera check validate state, then recover exact detail with '${get}'; no state was changed.` });
   if (evidence.status !== "verified") diagnostics.push({ class: evidence.reason, message: `${artifact} entity '${id}' has no verified committed recovery (${evidence.reason})`, recovery: `Use '${get}' for local recovery and do not require Git for state writes.` });

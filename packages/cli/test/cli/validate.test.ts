@@ -192,7 +192,7 @@ describe("cli validate (delegated families)", () => {
       "consumer_boundary.primary_selection must be exhaustive and non-overlapping",
     );
     expect(payload.engine.stdout.join("\n")).toContain(
-      "correct outcome_matrix[*].match and rerun agentera check validate vocabularyAuthority --format json",
+      "correct outcome_matrix[*].match and rerun agentera check validate vocabularyAuthority",
     );
   });
 
@@ -213,7 +213,7 @@ describe("cli validate (delegated families)", () => {
       `consumer_boundary.outcome_matrix.${outcomeName}.${field}`,
     );
     expect(payload.engine.stdout.join("\n")).toContain(
-      "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json",
+      "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority",
     );
     expect(implementation).toEqual({
       acquisition: "active",
@@ -241,7 +241,7 @@ describe("cli validate (delegated families)", () => {
       );
       expect(payload.engine.stdout.join("\n")).toContain("(found missing)");
       expect(payload.engine.stdout.join("\n")).toContain(
-        "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json",
+        "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority",
       );
       expect(implementation).toEqual({
         acquisition: "active",

@@ -171,7 +171,7 @@ function artifactOrReject(raw: string): WritableArtifact {
       class: "unsupported_target",
       message: `artifact "${normalized}" is read-only through the state writer`,
       valid_values: [...WRITABLE_ARTIFACTS],
-      example: "agentera state progress append --input progress.yaml --format json",
+      example: "agentera state progress append --input progress.yaml",
     });
   }
   return normalized;
@@ -186,8 +186,8 @@ function specOrReject(artifact: WritableArtifact, verb: string): OperationSpec {
       message: `verb "${verb}" does not apply to ${artifact}`,
       valid_values: [...retrievalVerbs, ...verbsForArtifact(artifact)],
       example: artifact === "experiments"
-        ? "agentera state experiments list --objective OBJECTIVE_ID --format json"
-        : `agentera state ${artifact} ${artifact === "plan" ? "list --format json" : "explain --format json"}`,
+        ? "agentera state experiments list --objective OBJECTIVE_ID"
+        : `agentera state ${artifact} ${artifact === "plan" ? "list" : "explain"}`,
     });
   }
   return spec;

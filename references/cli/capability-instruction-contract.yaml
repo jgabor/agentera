@@ -55,7 +55,7 @@ current_state:
     field: first_invocation_read
     status: emitted_in_prime_capability_context
     current_behavior: >-
-      `npx -y agentera@next prime --context <name> --format json` emits
+      `npx -y agentera@next prime --context <name>` emits
       `capability_context` metadata including `first_invocation_read`
       (value: `prime_context`, runtime_enforcement: true) and the full instructions
       in the `instructions` field for supported capabilities. Historical
@@ -72,14 +72,14 @@ first_invocation_read:
     prime_context:
       meaning: >-
         The first capability invocation must shell out to
-        `npx -y agentera@next prime --context <name> --format json` and read the
+        `npx -y agentera@next prime --context <name>` and read the
         returned `instructions` field (the full Markdown body) before executing
         capability-specific work.
-      obligation: shell out to npx -y agentera@next prime --context <name> --format json
+      obligation: shell out to npx -y agentera@next prime --context <name>
   default_rule: prime_context
   full_read_obligation: >-
     On initial capability invocation, shell out to
-    `npx -y agentera@next prime --context <name> --format json` and read the
+    `npx -y agentera@next prime --context <name>` and read the
     `capability_context.instructions` field in full.
 implementation_state:
   instructions_ts_modules: implemented

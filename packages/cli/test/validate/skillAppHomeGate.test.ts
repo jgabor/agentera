@@ -13,7 +13,7 @@ const BOOTSTRAP = SKILL_TEXT.match(/^## Bootstrap\s*$([\s\S]*?)(?=^### Upgrade f
 describe("SKILL.md bootstrap contract", () => {
   it("documents agentera prime as the single bootstrap entry point", () => {
     expect(BOOTSTRAP).toContain("npx -y agentera@next prime");
-    expect(BOOTSTRAP).toContain("npx -y agentera@next prime --context <capability> --format json");
+    expect(BOOTSTRAP).toContain("npx -y agentera@next prime --context <capability>");
   });
 
   it("does not require a separate app-home preflight", () => {

@@ -156,7 +156,7 @@ describe("confirmed glossary variant guard", () => {
       expect(violations[0]).toContain("src/reintroduced.ts:1");
       expect(violations[0]).toContain(`approval ${digest}`);
       expect(violations[0]).toContain("terms.ts:1");
-      expect(violations[0]).toContain("npx -y agentera@next check validate state --format json");
+      expect(violations[0]).toContain("npx -y agentera@next check validate state");
       expect(scanConfirmedVariantViolations(root)).toEqual(violations);
       const validation = validateState(root);
       expect(validation.rc).toBe(1);

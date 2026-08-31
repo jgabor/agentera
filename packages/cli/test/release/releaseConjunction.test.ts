@@ -52,7 +52,7 @@ describe("no-receipt release verification", () => {
     expect(result.violation).toMatch(/TAIL$/);
     expect(result).toMatchObject({
       owner: "packages/cli/src/validate/activationConjunction.ts#activationConjunctionMain",
-      correction: "node packages/cli/dist/bin/agentera.js check validate activation-conjunction --format json",
+      correction: "node packages/cli/dist/bin/agentera.js check validate activation-conjunction",
     });
   });
 });

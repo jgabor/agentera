@@ -12,7 +12,7 @@ export const CAPABILITY_ROUTING_NAMES = [
   "optimize", "audit", "document", "profile", "design", "orchestrate",
 ];
 
-const PRIME_CAPABILITY_CONTEXT_COMMAND = preCutoverCommand("prime --context {capability} --format json");
+const PRIME_CAPABILITY_CONTEXT_COMMAND = preCutoverCommand("prime --context {capability}");
 
 export function cmdCapability(capability: string, args: { format?: string }, io: Io): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));

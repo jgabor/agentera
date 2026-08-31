@@ -49,8 +49,8 @@ function expectFailureReason(
   expect(recovery.error).toMatchObject({
     schemaVersion: "agentera.stateFailure.v1",
     class: reason,
-    syntax: "agentera check compact --mode fix --format json",
-    example: "agentera check compact --mode fix --format json",
+    syntax: "agentera check compact --mode fix",
+    example: "agentera check compact --mode fix",
   });
   expect(recovery.error?.recovery).toBeTruthy();
 }

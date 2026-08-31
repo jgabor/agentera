@@ -74,7 +74,7 @@ export function enforceCompletedEntityCutover(
   try {
     mode = detectStateMode(project);
   } catch (error) {
-    const recovery = `Restore the exact durable migration marker, then run ${preCutoverCommand("check validate state --format json")}.`;
+    const recovery = `Restore the exact durable migration marker, then run ${preCutoverCommand("check validate state")}.`;
     const envelope = {
       schemaVersion: "agentera.stateFailure.v1",
       status: "fail",

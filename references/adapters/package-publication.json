@@ -167,12 +167,10 @@
             "packages/cli/dist/bin/agentera.js",
             "check",
             "validate",
-            "capability-contract",
-            "--format",
-            "json"
+            "capability-contract"
           ],
           "owner": "packages/cli/src/cli/commands/validate.ts#cmdValidateCapabilityContract",
-          "correction": "node packages/cli/dist/bin/agentera.js check validate capability-contract --format json"
+          "correction": "node packages/cli/dist/bin/agentera.js check validate capability-contract"
         },
         {
           "name": "activation-conjunction",
@@ -181,12 +179,10 @@
             "packages/cli/dist/bin/agentera.js",
             "check",
             "validate",
-            "activation-conjunction",
-            "--format",
-            "json"
+            "activation-conjunction"
           ],
           "owner": "packages/cli/src/validate/activationConjunction.ts#activationConjunctionMain",
-          "correction": "node packages/cli/dist/bin/agentera.js check validate activation-conjunction --format json"
+          "correction": "node packages/cli/dist/bin/agentera.js check validate activation-conjunction"
         }
       ],
       "performanceEvidenceSchema": "agentera.entityAuthorityPerformanceEvidence.v1",
@@ -279,12 +275,12 @@
           "reference": {
             "path": "packages/cli/src/validate/retainedReferenceAuthority.ts",
             "symbol": "validateRetainedReferenceAuthority",
-            "correction": "node packages/cli/dist/bin/agentera.js check validate retained-references --format json"
+            "correction": "node packages/cli/dist/bin/agentera.js check validate retained-references"
           },
           "state": {
             "path": "packages/cli/src/state/write/runtimeOperations.ts",
             "symbol": "runtimeOperationSpecs",
-            "correction": "node packages/cli/dist/bin/agentera.js check validate state --format json"
+            "correction": "node packages/cli/dist/bin/agentera.js check validate state"
           },
           "package": {
             "path": "packages/cli/src/registries/packageRegistry.ts",

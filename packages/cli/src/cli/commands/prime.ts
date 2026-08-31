@@ -92,14 +92,14 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     return rejectInput({
       class: "unsupported_target",
       message: "--input is valid only with prime --context build",
-      syntax: preCutoverCommand("prime --context build --input <file|-> --format json"),
+      syntax: preCutoverCommand("prime --context build --input <file|->"),
     });
   }
   if (termInput !== null && (!capability || !PRIME_TERM_INPUT_CONTEXTS.has(capability) || dashboard || guidance)) {
     return rejectInput({
       class: "unsupported_target",
       message: "--term-input is valid only with prime --context discuss, plan, or build",
-      syntax: preCutoverCommand("prime --context <discuss|plan|build> --term-input <file|-> --format json"),
+      syntax: preCutoverCommand("prime --context <discuss|plan|build> --term-input <file|->"),
     });
   }
   if (input === "-" && termInput === "-") {
@@ -115,7 +115,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     return rejectInput({ class: "mutually_exclusive", message: "prime --dashboard/--orientation and prime --guidance are mutually exclusive" });
   }
   if (dashboard && args.fields !== undefined) {
-    const migrationCommand = preCutoverCommand("prime --context status --format json");
+    const migrationCommand = preCutoverCommand("prime --context status");
     return rejectInput({
       class: "mutually_exclusive",
       message: "Deprecated prime --dashboard --fields selectors are not supported during status-capsule migration",
@@ -195,7 +195,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     });
   }
   if (dashboard) {
-    err("Deprecation: prime --dashboard is retained as an alias for `prime --context status --format json`; use the status startup capsule directly.\n");
+    err("Deprecation: prime --dashboard is retained as an alias for `prime --context status`; use the status startup capsule directly.\n");
     const state = collectOrientationState(collectOpts);
     const payload = buildStatusCapabilityContextPayload(state, command);
     return emitPrime(command, payload, format, args.fields, out, err, {

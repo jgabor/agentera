@@ -50,12 +50,12 @@ function contract(sourceRoot = resolveSourceRoot()): Contract {
   return { authorityPath, entityRoot: requiredText(storage.canonical_root, "canonical_root"), defaultLimit: number(retrieval.default_limit, "default_limit"), maximumLimit: number(retrieval.maximum_limit, "maximum_limit"), maxUtf8Bytes: number(retrieval.max_utf8_bytes, "max_utf8_bytes") };
 }
 function failure(kind: StateFailureClass, message: string, recovery: string, id?: string): StateRetrievalFailure {
-  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: "agentera state decisions get --id ID --format json", example: `agentera state decisions get --id ${id ?? "qjtrmnpvka"} --format json`, recovery, artifact: ARTIFACT, ...(id ? { id } : {}) } }, kind === "invalid_request" ? 2 : 1);
+  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: "agentera state decisions get --id ID", example: `agentera state decisions get --id ${id ?? "qjtrmnpvka"}`, recovery, artifact: ARTIFACT, ...(id ? { id } : {}) } }, kind === "invalid_request" ? 2 : 1);
 }
 function summaryMutationFailure(id: string, verb: "amend" | "update"): StateRetrievalFailure {
   const syntax = verb === "amend"
-    ? "agentera state decisions amend --id ID --base-sha256 SHA256 --input PATH --format json"
-    : "agentera state decisions update --id ID --satisfaction-state STATE --format json";
+    ? "agentera state decisions amend --id ID --base-sha256 SHA256 --input PATH"
+    : "agentera state decisions update --id ID --satisfaction-state STATE";
   return new StateRetrievalFailure({
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
@@ -63,8 +63,8 @@ function summaryMutationFailure(id: string, verb: "amend" | "update"): StateRetr
       class: "unsupported_state",
       message: `decision '${id}' is an immutable migrated summary: incomplete historical evidence is read-only`,
       syntax,
-      example: `agentera state decisions get --id ${id} --format json`,
-      recovery: `Run agentera state decisions get --id ${id} --format json to inspect retained evidence and caveats. For new deliberation, run agentera state decisions append --input decision.yaml --format json.`,
+      example: `agentera state decisions get --id ${id}`,
+      recovery: `Run agentera state decisions get --id ${id} to inspect retained evidence and caveats. For new deliberation, run agentera state decisions append --input decision.yaml.`,
       artifact: ARTIFACT,
       id,
     },
@@ -159,7 +159,7 @@ function baseFor(root: string, id: string, sourceRoot: string, mutation?: "amend
   if (!ID_PATTERN.test(id)) throw failure("invalid_request", `decision ID '${id}' must be ten lowercase letters`, "Use an ID returned by decisions append or list.", id);
   const all = decisionEntities(root, sourceRoot);
   const summary = all.find((entity) => entity.id === id && entity.boundary === SUMMARY);
-  if (summary) throw mutation ? summaryMutationFailure(id, mutation) : failure("unsupported_state", `decision '${id}' is an immutable migrated summary: incomplete historical evidence is read-only`, "Use agentera state decisions get --id " + id + " --format json to inspect its retained caveat and provenance.", id);
+  if (summary) throw mutation ? summaryMutationFailure(id, mutation) : failure("unsupported_state", `decision '${id}' is an immutable migrated summary: incomplete historical evidence is read-only`, "Use agentera state decisions get --id " + id + " to inspect its retained caveat and provenance.", id);
   const matches = all.filter((entity) => entity.id === id && entity.boundary === BASE);
   if (matches.length !== 1) throw failure(matches.length ? "ambiguous" : "not_found", matches.length ? `decision ID '${id}' has multiple base entities` : `decision ID '${id}' was not found`, "Run agentera check validate state and resolve duplicate ownership, or use an ID returned by list.", id);
   return { base: matches[0], all };
@@ -220,7 +220,7 @@ function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[], 
   const legacyCaveat = legacyConfidenceEvidence
     ? knownLegacyConfidenceCaveat(effective, decisionLegacyCoexistence(sourceRoot), caveatSource)
     : null;
-  return { id: base.id!, artifact: ARTIFACT, ...detailMetadata(base), record: effective, effective_sha256: hash, provenance: { ...detailProvenance(relative(root, base.path), base), base: { id: base.id!, artifact: ARTIFACT, path: relative(root, base.path), ...(inherited ? { migration_provenance: inherited } : {}) }, revisions, satisfaction: satisfactionProvenance }, ...(legacyCaveat ? { caveats: [legacyCaveat.caveat] } : {}), retrieval: { get: `agentera state decisions get --id ${base.id} --format json` } };
+  return { id: base.id!, artifact: ARTIFACT, ...detailMetadata(base), record: effective, effective_sha256: hash, provenance: { ...detailProvenance(relative(root, base.path), base), base: { id: base.id!, artifact: ARTIFACT, path: relative(root, base.path), ...(inherited ? { migration_provenance: inherited } : {}) }, revisions, satisfaction: satisfactionProvenance }, ...(legacyCaveat ? { caveats: [legacyCaveat.caveat] } : {}), retrieval: { get: `agentera state decisions get --id ${base.id}` } };
 }
 export function getDecisionEntity(root: string, id: string, sourceRoot = resolveSourceRoot()): JsonObject {
   if (!ID_PATTERN.test(id)) throw failure("invalid_request", `decision ID '${id}' must be ten lowercase letters`, "Use an ID returned by decisions append or list.", id);
@@ -230,9 +230,9 @@ export function getDecisionEntity(root: string, id: string, sourceRoot = resolve
   if (summary.length || bases.length > 1) {
     if (summary.length !== 1 || bases.length) throw failure("ambiguous", `decision ID '${id}' has multiple base entities`, "Run agentera check validate state and resolve duplicate ownership.", id);
     const entity = summary[0];
-    return { schemaVersion: "agentera.stateRetrieval.v1", command: "state decisions get", status: "degraded", entry: { id, artifact: ARTIFACT, ...detailMetadata(entity), record: entity.record!, provenance: detailProvenance(relative(root, entity.path), entity), retrieval: { get: `agentera state decisions get --id ${id} --format json` } }, source: { artifact: ARTIFACT, authority: "canonical_entity_files" }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "summary" } };
+    return { schemaVersion: "agentera.stateRetrieval.v1", command: "state decisions get", status: "degraded", entry: { id, artifact: ARTIFACT, ...detailMetadata(entity), record: entity.record!, provenance: detailProvenance(relative(root, entity.path), entity), retrieval: { get: `agentera state decisions get --id ${id}` } }, source: { artifact: ARTIFACT, authority: "canonical_entity_files" }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "summary" } };
   }
-  if (bases.length !== 1) throw failure("not_found", `decision ID '${id}' was not found`, "Run agentera state decisions list --format json and retry with a returned ID.", id);
+  if (bases.length !== 1) throw failure("not_found", `decision ID '${id}' was not found`, "Run agentera state decisions list and retry with a returned ID.", id);
   return { schemaVersion: "agentera.stateRetrieval.v1", command: "state decisions get", status: "ok", entry: compose(root, bases[0], all, sourceRoot), source: { artifact: ARTIFACT, authority: "canonical_entity_files" }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full" } };
 }
 
@@ -290,7 +290,7 @@ export function amendDecisionEntity(req: StateWriteRequest, options: Options = {
 function key(entity: DiscoveredEntity): string { return `${String(entity.record!.date ?? "")}\0${entity.id}`; }
 function listEntry(root: string, entity: DiscoveredEntity, all: DiscoveredEntity[], sourceRoot: string): JsonObject {
   return entity.boundary === SUMMARY
-    ? { id: entity.id!, artifact: ARTIFACT, ...detailMetadata(entity), record: entity.record!, provenance: detailProvenance(relative(root, entity.path), entity), retrieval: { get: `agentera state decisions get --id ${entity.id} --format json` } }
+    ? { id: entity.id!, artifact: ARTIFACT, ...detailMetadata(entity), record: entity.record!, provenance: detailProvenance(relative(root, entity.path), entity), retrieval: { get: `agentera state decisions get --id ${entity.id}` } }
     : compose(root, entity, all, sourceRoot);
 }
 function snapshot(root: string, bases: DiscoveredEntity[], all: DiscoveredEntity[], sourceRoot: string, topic: string | undefined, entityRoot: string): string {
@@ -323,6 +323,6 @@ export function listDecisionEntities(root: string, limit?: number, topic?: strin
   const remaining = bases.length - start - selected.length; const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, selector: selectorKey, topic: topic ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined;
   const selectorFlags = entityListSelectorFlags(selector);
   const filterFlags = topic ? ` --topic ${shellQuoteArgument(topic)}` : "";
-  const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command: "state decisions list", status: remaining || bases.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => listEntry(root, entity, all, sourceRoot)), counts: { total: bases.length, returned: selected.length, remaining }, filters: { topic: topic ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: bases.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: bases.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" }, retrieval: { ...(next ? { continue: `agentera state decisions list${filterFlags}${selectorFlags} --limit ${effectiveLimit} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}) };
+  const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command: "state decisions list", status: remaining || bases.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => listEntry(root, entity, all, sourceRoot)), counts: { total: bases.length, returned: selected.length, remaining }, filters: { topic: topic ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: bases.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: bases.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" }, retrieval: { ...(next ? { continue: `agentera state decisions list${filterFlags}${selectorFlags} --limit ${effectiveLimit} --cursor ${next}` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}) };
   return projectEntityList(response, selector, projectionOptions);
 }

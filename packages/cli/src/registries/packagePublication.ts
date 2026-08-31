@@ -43,11 +43,11 @@ export const ACTIVATION_CLASS_AUTHORITIES: Readonly<Record<ActivationClassId, Ac
   },
   reference: {
     path: "packages/cli/src/validate/retainedReferenceAuthority.ts", symbol: "validateRetainedReferenceAuthority",
-    correction: "node packages/cli/dist/bin/agentera.js check validate retained-references --format json",
+    correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
   },
   state: {
     path: "packages/cli/src/state/write/runtimeOperations.ts", symbol: "runtimeOperationSpecs",
-    correction: "node packages/cli/dist/bin/agentera.js check validate state --format json",
+    correction: "node packages/cli/dist/bin/agentera.js check validate state",
   },
   package: {
     path: "packages/cli/src/registries/packageRegistry.ts", symbol: "loadRegistry",
@@ -194,8 +194,8 @@ const EXACT_COMMANDS: Record<string, readonly string[]> = {
   typecheck: ["pnpm", "-C", "packages/cli", "run", "typecheck"],
   build: ["pnpm", "-C", "packages/cli", "build"],
   compact: ["node", "packages/cli/dist/bin/agentera.js", "check", "compact"],
-  "capability-contract": ["node", "packages/cli/dist/bin/agentera.js", "check", "validate", "capability-contract", "--format", "json"],
-  "activation-conjunction": ["node", "packages/cli/dist/bin/agentera.js", "check", "validate", "activation-conjunction", "--format", "json"],
+  "capability-contract": ["node", "packages/cli/dist/bin/agentera.js", "check", "validate", "capability-contract"],
+  "activation-conjunction": ["node", "packages/cli/dist/bin/agentera.js", "check", "validate", "activation-conjunction"],
 };
 
 function fail(message: string): never { throw new Error(`package publication contract: ${message}`); }

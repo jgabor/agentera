@@ -50,7 +50,7 @@ const ALLOWED_RAW_ARTIFACT_USES = [
   "unavailable or incomplete CLI state after CLI fallbacks",
   "benchmark analysis",
 ];
-const BENCHMARK_CONTEXT_COMMAND = preCutoverCommand("prime --context optimize --format json");
+const BENCHMARK_CONTEXT_COMMAND = preCutoverCommand("prime --context optimize");
 const STATE_COMMAND_NAMES = new Set([
   "decisions",
   "docs",
@@ -95,7 +95,7 @@ function artifactReadInterfaces(name: string, record: ArtifactRecord | null): Js
     .replace(" [--limit N] [--cursor TOKEN]", " --limit 20");
   const routineCommand = artifactId === "experiments"
     ? experimentList
-    : STATE_FAMILY_LIST_COMMANDS[artifactId] ?? (STATE_COMMAND_NAMES.has(artifactId) ? `agentera state ${artifactId} --format json` : null);
+    : STATE_FAMILY_LIST_COMMANDS[artifactId] ?? (STATE_COMMAND_NAMES.has(artifactId) ? `agentera state ${artifactId}` : null);
   const requiredSelectors = artifactId === "experiments" ? ["--objective OBJECTIVE_ID"] : [];
   const detailCommand = artifactId === "experiments"
     ? retrieval.experiments.get
@@ -103,7 +103,7 @@ function artifactReadInterfaces(name: string, record: ArtifactRecord | null): Js
   let advancedCommand: string | null;
   if (artifactId === "benchmark_context") advancedCommand = BENCHMARK_CONTEXT_COMMAND;
   else if (STATE_COMMAND_NAMES.has(artifactId)) advancedCommand = null;
-  else advancedCommand = `agentera query ${artifactId} --format json`;
+  else advancedCommand = `agentera query ${artifactId}`;
   let policy: string;
   if (artifactId === "experiments") policy = "Replace OBJECTIVE_ID with one stable objective identity, use the objective-scoped bounded list for discovery, and use exact get for detail; no selector-free normal read exists.";
   else if (STATE_FAMILY_LIST_COMMANDS[artifactId]) policy = "Use bounded state list for discovery and exact state get for detail before any raw artifact access.";
@@ -298,7 +298,7 @@ function queryLastPhase(args: QueryArgs, schemas: Record<string, SchemaInfo>, io
   const record = entry?.record as JsonObject | undefined;
   const phase = String(record?.phase ?? "");
   if (format === "text") { if (phase) o(`${phase}\n`); }
-  else emitStructured(entry ? { phase, id: entry.id, artifact: entry.artifact, provenance: entry.provenance, snapshot: response.snapshot, retrieval: { get: `agentera state progress get --id ${entry.id} --format json` } } : null, format, o);
+  else emitStructured(entry ? { phase, id: entry.id, artifact: entry.artifact, provenance: entry.provenance, snapshot: response.snapshot, retrieval: { get: `agentera state progress get --id ${entry.id}` } } : null, format, o);
   return 0;
 }
 

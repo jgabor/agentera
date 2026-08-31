@@ -25,7 +25,7 @@ ARTIFACTS:
       Document reads this during explore-and-generate mode to understand
       recent project context. During closeout, latest progress evidence and
       verification pointers are consumed through CLI `closeout_context`, then
-      bounded `npx -y agentera@next state progress list --limit 20 --format json` discovery
+      bounded `npx -y agentera@next state progress list --limit 20` discovery
        or exact `state progress get --id ID` retrieval. Raw reads are
       diagnostic-only for corruption or CLI-defect investigation.
   4:
@@ -35,7 +35,7 @@ ARTIFACTS:
     description: >-
       Document reads this during explore-and-generate mode for project
       context and decision awareness through bounded `npx -y agentera@next state decisions
-      list --limit 20 --format json` discovery or exact `state decisions get
+      list --limit 20` discovery or exact `state decisions get
        --id ID` retrieval. Raw reads are diagnostic-only for corruption or
       CLI-defect investigation.
   5:

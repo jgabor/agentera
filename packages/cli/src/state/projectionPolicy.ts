@@ -39,7 +39,7 @@ export interface ProjectionOmissionProvenance extends JsonObject {
 const NUMBERED_ARTIFACTS = new Set(["progress", "decisions", "health"]);
 
 function canonicalRetrieval(family: EntityListFamilyHelp): JsonObject {
-  const list = `agentera state ${family.commandTokens.join(" ")} list --format json`;
+  const list = `agentera state ${family.commandTokens.join(" ")} list`;
   return { available: true, command: list, list, get: family.get };
 }
 
@@ -94,9 +94,9 @@ export function projectionRetrieval(command: string): JsonObject {
     const plans = entityListFamily("plans");
     return {
       available: true,
-      list: `agentera state ${tasks.commandTokens.join(" ")} list --format json`,
+      list: `agentera state ${tasks.commandTokens.join(" ")} list`,
       get: tasks.get,
-      plans_list: `agentera state ${plans.commandTokens.join(" ")} list --format json`,
+      plans_list: `agentera state ${plans.commandTokens.join(" ")} list`,
       plans_get: plans.get,
     };
   }
@@ -197,8 +197,8 @@ function minimalBudgetedProjection(
     error: {
       class: "projection_output_budget",
       message: "optional projection detail was omitted because required output fields exceeded the authority byte budget",
-      syntax: `agentera state ${command} --format json`,
-      example: `agentera state ${command} --format json`,
+      syntax: `agentera state ${command}`,
+      example: `agentera state ${command}`,
       recovery: omission.retrieval.available === true
         ? String(omission.retrieval.command ?? omission.retrieval.list)
         : "No direct retrieval route is declared for this artifact; use its supported state command.",

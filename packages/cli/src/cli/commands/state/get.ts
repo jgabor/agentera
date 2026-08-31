@@ -24,8 +24,8 @@ function failure(message: string, id?: string, artifact = "progress"): StateRetr
     error: {
       class: "invalid_request",
       message,
-      syntax: family?.get ?? `agentera state ${artifact} get --id ID --format json`,
-      example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`,
+      syntax: family?.get ?? `agentera state ${artifact} get --id ID`,
+      example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"}`,
       recovery: `Use a bare ten-letter ${artifact} ID returned by append or list; no state was changed.`,
       artifact,
       ...(id ? { id } : {}),

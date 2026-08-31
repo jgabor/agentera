@@ -7,7 +7,7 @@ record:
     - wwhdreldlf
     - jeqrmofzfx
     - grrrvzgkcr
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN active skills, schemas, help, examples, corrections, or generated commands WHEN inspected THEN operational commands omit --format json.
     - GIVEN historical records WHEN inspected THEN they remain unchanged.

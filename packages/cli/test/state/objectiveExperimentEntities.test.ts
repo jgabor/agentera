@@ -125,11 +125,11 @@ describe("objective and experiment entity authority", () => {
     const root = project(); const owner = createObjective(root, "latency"); const baseline = publish(root, owner.id, experiment("baseline", "baseline", "2026-07-16 09:00")); const candidate = publish(root, owner.id, experiment("candidate", "kept", "2026-07-17 09:00"));
     const exact = capture(root, ["state", "experiments", "get", "--id", baseline.id, "--format", "json"]); expect(exact.rc).toBe(0); expect(exact.json.entry.record).toEqual(baseline.record); expect(exact.json.entry.provenance.path).toContain(baseline.id);
     const first = capture(root, ["state", "experiments", "list", "--objective", owner.id, "--limit", "1", "--format", "json"]); expect(first.rc).toBe(0); expect(first.json.entries[0].id).toBe(candidate.id); expect(first.json.next_cursor).toBeTruthy(); expect(first.json.retrieval.get).toContain("--id ID");
-    expect(first.json.retrieval.continue).toMatch(new RegExp(`^agentera state experiments list --objective '${owner.id}' --limit 1 --cursor \\S+ --format json$`));
+    expect(first.json.retrieval.continue).toMatch(new RegExp(`^agentera state experiments list --objective '${owner.id}' --limit 1 --cursor \\S+$`));
     const topic = "Cache helps";
     const filtered = listCurrentExperimentEntities(root, owner.id, 1, undefined, { topic }, { format: "json" }) as any;
     expect(filtered.counts.candidate).toBe(2);
-    expect(filtered.retrieval.continue).toMatch(new RegExp(`^agentera state experiments --objective '${owner.id}' --topic 'Cache helps' --limit 1 --cursor \\S+ --format json$`));
+    expect(filtered.retrieval.continue).toMatch(new RegExp(`^agentera state experiments --objective '${owner.id}' --topic 'Cache helps' --limit 1 --cursor \\S+$`));
     expect(capture(root, ["state", "experiments", "list", "--objective", owner.id, "--limit", "101", "--format", "json"]).rc).toBe(2);
     const second = capture(root, ["state", "experiments", "list", "--objective", owner.id, "--limit", "1", "--cursor", first.json.next_cursor, "--format", "json"]); expect(second.rc).toBe(0); expect(second.json.entries[0].id).toBe(baseline.id);
     publish(root, owner.id, experiment("later", "kept", "2026-07-18 09:00"));
@@ -149,7 +149,7 @@ describe("objective and experiment entity authority", () => {
     }
     const expectedIds = new Set(published.map((entry) => entry.id));
     const observed = new Set<string>();
-    let command = `agentera state experiments list --objective ${owner.id} --limit 100 --format json`;
+    let command = `agentera state experiments list --objective ${owner.id} --limit 100`;
     let pageCount = 0;
     do {
       expect(command).toMatch(new RegExp(`^agentera state experiments list --objective ${owner.id} `));
@@ -161,14 +161,14 @@ describe("objective and experiment entity authority", () => {
       for (const entry of page.entries) {
         expect(expectedIds.has(entry.id)).toBe(true);
         expect(observed.has(entry.id)).toBe(false);
-        expect(entry.retrieval.get).toBe(`agentera state experiments get --id ${entry.id} --format json`);
+        expect(entry.retrieval.get).toBe(`agentera state experiments get --id ${entry.id}`);
         observed.add(entry.id);
       }
       if (page.omitted) {
         expect(page.omission_reason).toBe("page_limit");
         expect(page.omitted_count).toBeGreaterThan(0);
         expect(page.next_cursor).toEqual(expect.any(String));
-        expect(page.retrieval.get).toBe("agentera state experiments get --id ID --format json");
+        expect(page.retrieval.get).toBe("agentera state experiments get --id ID");
         command = page.retrieval.continue;
       } else command = "";
       pageCount += 1;
@@ -193,7 +193,7 @@ describe("objective and experiment entity authority", () => {
     publish(root, owner.id, experiment("candidate two", "kept", "2026-07-18 09:00"));
     const page = listCurrentExperimentEntities(root, owner.id, 1, undefined, { topic: "Cache helps", status: "kept" }, { format: "json" }) as any;
     expect(page).toMatchObject({ filters: { objective: owner.id, topic: "Cache helps", status: "kept" }, counts: { candidate: 2, returned: 1, continuation: 1 } });
-    expect(page.retrieval.continue).toMatch(new RegExp(`^agentera state experiments --objective '${owner.id}' --topic 'Cache helps' --status 'kept' --limit 1 --cursor \\S+ --format json$`));
+    expect(page.retrieval.continue).toMatch(new RegExp(`^agentera state experiments --objective '${owner.id}' --topic 'Cache helps' --status 'kept' --limit 1 --cursor \\S+$`));
   });
 
   it("lists objectives and infers only one active objective for the compatibility query", () => {
@@ -214,8 +214,8 @@ describe("objective and experiment entity authority", () => {
 
   it("renders final explain contracts before and after cutover", () => {
     const entity = project(); const objectiveCreate = capture(entity, ["state", "objective", "explain", "--format", "json"]); const objectiveUpdate = capture(entity, ["state", "objective", "explain", "--verb", "update", "--format", "json"]); const experiments = capture(entity, ["state", "experiments", "explain", "--format", "json"]); const rendered = JSON.stringify([objectiveCreate.json, objectiveUpdate.json, experiments.json]);
-    expect(objectiveCreate.json.fields).toEqual([]); expect(objectiveCreate.json.example).toBe("agentera state objective create --input objective.yaml --format json"); expect(objectiveUpdate.json.fields).toEqual([expect.objectContaining({ flag: "--id", field: "id", description: expect.stringContaining("Bare ten-letter") })]); expect(objectiveUpdate.json.example).toContain("objective update --id qjtrmnpvka"); expect(experiments.json.fields.map((field: any) => field.flag)).toEqual(["--objective", "--id"]); expect(experiments.json.input_schema.cli_owned_fields).toEqual(["id", "artifact", "objective"]); expect(experiments.json.example).toContain("--objective qjtrmnpvka"); expect(rendered).not.toMatch(/--number|OBJECTIVE_ID|objective:123e|RFC 9562|state plan|number is assigned by the CLI/i);
-    const legacy = project(false); const legacyExperiment = capture(legacy, ["state", "experiments", "explain", "--format", "json"]); const legacyObjective = capture(legacy, ["state", "objective", "explain", "--verb", "update", "--format", "json"]); expect(legacyExperiment.json.example).toBe("agentera state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json"); expect(legacyExperiment.json.fields.map((field: any) => field.flag)).toEqual(["--objective", "--id"]); expect(legacyObjective.json.example).toContain("objective update --id qjtrmnpvka");
+    expect(objectiveCreate.json.fields).toEqual([]); expect(objectiveCreate.json.example).toBe("agentera state objective create --input objective.yaml"); expect(objectiveUpdate.json.fields).toEqual([expect.objectContaining({ flag: "--id", field: "id", description: expect.stringContaining("Bare ten-letter") })]); expect(objectiveUpdate.json.example).toContain("objective update --id qjtrmnpvka"); expect(experiments.json.fields.map((field: any) => field.flag)).toEqual(["--objective", "--id"]); expect(experiments.json.input_schema.cli_owned_fields).toEqual(["id", "artifact", "objective"]); expect(experiments.json.example).toContain("--objective qjtrmnpvka"); expect(rendered).not.toMatch(/--number|OBJECTIVE_ID|objective:123e|RFC 9562|state plan|number is assigned by the CLI/i);
+    const legacy = project(false); const legacyExperiment = capture(legacy, ["state", "experiments", "explain", "--format", "json"]); const legacyObjective = capture(legacy, ["state", "objective", "explain", "--verb", "update", "--format", "json"]); expect(legacyExperiment.json.example).toBe("agentera state experiments publish --objective qjtrmnpvka --input experiment.yaml"); expect(legacyExperiment.json.fields.map((field: any) => field.flag)).toEqual(["--objective", "--id"]); expect(legacyObjective.json.example).toContain("objective update --id qjtrmnpvka");
   });
 
   it("lets Git merge unrelated entities, conflicts on one objective update, and validates distinct-path duplicate ownership", () => {

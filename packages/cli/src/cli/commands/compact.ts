@@ -223,8 +223,8 @@ function compactionGuidance(mode: string, operations: GateCompactionOperation[])
   const errors = operations.filter((op) => op.action === "error");
   const refused = operations.filter((op) => op.action === "refused");
   const volatileTodoReferences = operations.filter((op) => op.action === "volatile_todo_reference");
-  const checkCommand = "npx -y agentera check compact --mode check --format json";
-  const fixCommand = "npx -y agentera check compact --mode fix --format json";
+  const checkCommand = "npx -y agentera check compact --mode check";
+  const fixCommand = "npx -y agentera check compact --mode fix";
   if (errors.length > 0) {
     return `Inspect the reported errors, repair invalid artifacts, then rerun \`${checkCommand}\`.`;
   }

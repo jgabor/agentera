@@ -88,11 +88,11 @@ describe("shared glossary entry authority", () => {
   it("projects every glossary owner only from its exact code-owned source value", () => {
     expect(personalGlossaryOutputContract().command).toBe("agentera report personal-glossary-publish");
     expect(personalProfileGroundingContract()).toMatchObject({
-      command: "agentera report profile-grounding --format json",
-      repairRecovery: "Use the Profile capability to repair or regenerate PROFILE.md, then retry `agentera report profile-grounding --format json`; no profile bytes were changed.",
-      absentRecovery: "Use the Profile capability to generate PROFILE.md, then retry agentera report profile-grounding --format json.",
+      command: "agentera report profile-grounding",
+      repairRecovery: "Use the Profile capability to repair or regenerate PROFILE.md, then retry `agentera report profile-grounding`; no profile bytes were changed.",
+      absentRecovery: "Use the Profile capability to generate PROFILE.md, then retry agentera report profile-grounding.",
     });
-    expect(glossaryAdviceContract().command).toBe("agentera report glossary-advice --input REQUEST --format json");
+    expect(glossaryAdviceContract().command).toBe("agentera report glossary-advice --input REQUEST");
 
     const mutations: Array<{
       name: string;
@@ -111,7 +111,7 @@ describe("shared glossary entry authority", () => {
       },
       {
         name: "profile grounding repair",
-        mutate: (authority) => { authority.consumer_boundary.profile_grounding.recovery.repair = authority.consumer_boundary.profile_grounding.recovery.repair.replace("--format json", "--format invalid"); },
+        mutate: (authority) => { authority.consumer_boundary.profile_grounding.recovery.repair += " changed"; },
         load: (pathname) => personalProfileGroundingContract(pathname),
       },
       {
@@ -121,7 +121,7 @@ describe("shared glossary entry authority", () => {
       },
       {
         name: "advice command",
-        mutate: (authority) => { authority.consumer_boundary.advice_resolution.invocation.command = "npx -y agentera@latest report glossary-advice --input REQUEST --format json"; },
+        mutate: (authority) => { authority.consumer_boundary.advice_resolution.invocation.command = "npx -y agentera@latest report glossary-advice --input REQUEST"; },
         load: (pathname) => glossaryAdviceContract(pathname),
       },
     ];
@@ -740,7 +740,7 @@ describe("shared glossary entry authority", () => {
     expect(validateGlossaryEntryContract(pathname)).toEqual(
       expect.arrayContaining([
         expect.stringMatching(
-          /^consumer_boundary\.primary_selection must be exhaustive and non-overlapping: .*matched \[inferred_equivalence, no_applicable_entry\].*rerun agentera check validate vocabularyAuthority --format json$/,
+          /^consumer_boundary\.primary_selection must be exhaustive and non-overlapping: .*matched \[inferred_equivalence, no_applicable_entry\].*rerun agentera check validate vocabularyAuthority$/,
         ),
       ]),
     );
@@ -754,7 +754,7 @@ describe("shared glossary entry authority", () => {
     expect(validateGlossaryEntryContract(pathname)).toEqual(
       expect.arrayContaining([
         expect.stringMatching(
-          /^consumer_boundary\.primary_selection must be exhaustive and non-overlapping: .*matched \[\].*rerun agentera check validate vocabularyAuthority --format json$/,
+          /^consumer_boundary\.primary_selection must be exhaustive and non-overlapping: .*matched \[\].*rerun agentera check validate vocabularyAuthority$/,
         ),
       ]),
     );
@@ -774,7 +774,7 @@ describe("shared glossary entry authority", () => {
         authority.consumer_boundary.outcome_matrix[outcomeName][field] = contradictory;
       });
       expect(validateGlossaryEntryContract(pathname)).toContain(
-        `consumer_boundary.outcome_matrix.${outcomeName}.${field} must be ${JSON.stringify(expected)} (found ${JSON.stringify(contradictory)}); restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json`,
+        `consumer_boundary.outcome_matrix.${outcomeName}.${field} must be ${JSON.stringify(expected)} (found ${JSON.stringify(contradictory)}); restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority`,
       );
       fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
     },
@@ -791,7 +791,7 @@ describe("shared glossary entry authority", () => {
       delete authority.consumer_boundary.outcome_matrix.equivalent_exact_collision[field];
     });
     expect(validateGlossaryEntryContract(pathname)).toContain(
-      `consumer_boundary.outcome_matrix.equivalent_exact_collision.${field} must be ${JSON.stringify(expected)} (found missing); restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority --format json`,
+      `consumer_boundary.outcome_matrix.equivalent_exact_collision.${field} must be ${JSON.stringify(expected)} (found missing); restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority`,
     );
     fs.rmSync(path.dirname(pathname), { recursive: true, force: true });
   });

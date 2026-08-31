@@ -144,4 +144,4 @@ cannot change a natural-language classification.
 - Maintainer: Agentera CLI maintainers
 - Source checkout root: `.`
 - Working directory: `.`
-- Command: `node packages/cli/dist/bin/agentera.js check validate capability-contract --format json`
+- Command: `node packages/cli/dist/bin/agentera.js check validate capability-contract`

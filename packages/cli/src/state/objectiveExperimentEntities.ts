@@ -40,7 +40,7 @@ function contract(boundary: string, sourceRoot = resolveSourceRoot()): Contract 
   return { authorityPath, entityRoot: storage.canonical_root, defaultLimit: positive(retrieval.default_limit, "default_limit"), maximumLimit: positive(retrieval.maximum_limit, "maximum_limit"), maxUtf8Bytes: positive(retrieval.max_utf8_bytes, "max_utf8_bytes") };
 }
 function failure(kind: StateFailureClass, artifact: string, message: string, recovery: string, id?: string, exitCode: 1 | 2 = 1): StateRetrievalFailure {
-  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: `agentera state ${artifact} get --id ID --format json`, example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"} --format json`, recovery, artifact, ...(id ? { id } : {}) } }, exitCode);
+  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: `agentera state ${artifact} get --id ID`, example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"}`, recovery, artifact, ...(id ? { id } : {}) } }, exitCode);
 }
 function relevant(root: string, sourceRoot: string, precomputed?: EntityDiscoveryResult): DiscoveredEntity[] {
   const discovery = precomputed
@@ -57,11 +57,11 @@ function objectiveStatus(entity: DiscoveredEntity): string { return String(mappi
 function selectObjective(entities: DiscoveredEntity[], requested?: string): DiscoveredEntity {
   if (requested !== undefined && !ID.test(requested)) throw failure("invalid_request", OBJECTIVE_ARTIFACT, `objective ID '${requested}' must be ten lowercase letters`, "Use a bare objective ID returned by objective create or list.", requested, 2);
   const objectives = entities.filter(({ boundary }) => boundary === OBJECTIVE);
-  if (requested) { const matches = objectives.filter(({ id }) => id === requested); if (matches.length !== 1) throw failure(matches.length ? "ambiguous" : "not_found", OBJECTIVE_ARTIFACT, matches.length ? `objective ID '${requested}' has conflicting ownership` : `objective ID '${requested}' was not found`, "Run agentera state objective list --format json and select one canonical objective ID.", requested); return matches[0]; }
+  if (requested) { const matches = objectives.filter(({ id }) => id === requested); if (matches.length !== 1) throw failure(matches.length ? "ambiguous" : "not_found", OBJECTIVE_ARTIFACT, matches.length ? `objective ID '${requested}' has conflicting ownership` : `objective ID '${requested}' was not found`, "Run agentera state objective list and select one canonical objective ID.", requested); return matches[0]; }
   const active = objectives.filter((entity) => ACTIVE.has(objectiveStatus(entity)));
   if (active.length === 1) return active[0];
   if (!active.length) throw failure("not_found", OBJECTIVE_ARTIFACT, "no active objective exists", "Create an objective or select one explicitly with --id.");
-  throw failure("ambiguous", OBJECTIVE_ARTIFACT, `multiple active objectives require an explicit ID: ${active.map(({ id }) => id).sort().join(", ")}`, "Run agentera state objective list --format json and retry with --id ID.");
+  throw failure("ambiguous", OBJECTIVE_ARTIFACT, `multiple active objectives require an explicit ID: ${active.map(({ id }) => id).sort().join(", ")}`, "Run agentera state objective list and retry with --id ID.");
 }
 function experimentById(entities: DiscoveredEntity[], id: string, objective?: string): DiscoveredEntity {
   if (!ID.test(id)) throw failure("invalid_request", EXPERIMENT_ARTIFACT, `experiment ID '${id}' must be ten lowercase letters`, "Use a bare experiment ID returned by publish or list.", id, 2);
@@ -151,7 +151,7 @@ function boundedList(root: string, sourceRoot: string, artifact: string, boundar
   const listCommand = `state ${artifact} list`;
   const filterFlags = `${filter.objective ? ` --objective ${shellQuoteArgument(filter.objective)}` : ""}${filter.topic ? ` --topic ${shellQuoteArgument(filter.topic)}` : ""}${filter.status ? ` --status ${shellQuoteArgument(filter.status)}` : ""}`;
   const selectorFlags = entityListSelectorFlags(selector);
-  const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command: listCommand, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity)), counts: { total: selected.length, returned: page.length, remaining }, order, filters: filter, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" }, retrieval: { ...(next ? { continue: `agentera ${listCommand}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}) };
+  const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command: listCommand, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity)), counts: { total: selected.length, returned: page.length, remaining }, order, filters: filter, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" }, retrieval: { ...(next ? { continue: `agentera ${listCommand}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next}` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}) };
   return projectEntityList(response, selector, projectionOptions);
 }
 
@@ -168,8 +168,8 @@ export function listCurrentExperimentEntities(root: string, objective: string | 
   try { owner = selectObjective(entities, objective); }
   catch (error) {
     if (error instanceof StateRetrievalFailure && !objective) {
-      error.body.error.syntax = "agentera state experiments --objective ID [--limit N] [--cursor TOKEN] --format json";
-      error.body.error.example = "agentera state experiments --objective qjtrmnpvka --format json";
+      error.body.error.syntax = "agentera state experiments --objective ID [--limit N] [--cursor TOKEN]";
+      error.body.error.example = "agentera state experiments --objective qjtrmnpvka";
       error.body.error.recovery = "Pass --objective with one bare objective ID returned by state objective list; no state was changed.";
     }
     throw error;

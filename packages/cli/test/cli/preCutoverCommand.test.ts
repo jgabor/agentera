@@ -15,17 +15,17 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 
 describe("pre-cutover v3 command authority", () => {
   it("binds bootstrap and recovery commands to the development dist-tag", () => {
-    expect(preCutoverCommand("prime --context status --format json"))
-      .toBe("npx -y agentera@next prime --context status --format json");
-    expect(preCutoverCommandFromBare("agentera doctor --format json"))
-      .toBe("npx -y agentera@next doctor --format json");
+    expect(preCutoverCommand("prime --context status"))
+      .toBe("npx -y agentera@next prime --context status");
+    expect(preCutoverCommandFromBare("agentera doctor"))
+      .toBe("npx -y agentera@next doctor");
   });
 
   it("binds every executable in a complete served instruction body", () => {
     const body = [
-      "Start with `agentera prime --context build --format json`.",
-      "Recover with `agentera doctor --format json`.",
-      "Then run `agentera state progress list --format json`.",
+      "Start with `agentera prime --context build`.",
+      "Recover with `agentera doctor`.",
+      "Then run `agentera state progress list`.",
     ].join("\n");
     const bound = preCutoverInstructionBody(body);
     expect(bound.match(/npx -y agentera@next/g)).toHaveLength(3);
@@ -33,15 +33,15 @@ describe("pre-cutover v3 command authority", () => {
   });
 
   it.each([
-    "Run npx -y agentera@latest prime --context build --format json.",
-    "Run npx agentera prime --context build --format json.",
+    "Run npx -y agentera@latest prime --context build.",
+    "Run npx agentera prime --context build.",
   ])("rejects a complete instruction body that selects a wrong channel: %s", (body) => {
     expect(() => preCutoverInstructionBody(body)).toThrow(/bare or stable/);
   });
 
   it.each([
-    "agentera prime --context status --format json",
-    "npx -y agentera@latest prime --context status --format json",
+    "agentera prime --context status",
+    "npx -y agentera@latest prime --context status",
   ])("rejects the wrong pre-cutover channel: %s", (command) => {
     expect(() => assertPreCutoverCommand(command)).toThrow(/must use npx -y agentera@next/);
   });

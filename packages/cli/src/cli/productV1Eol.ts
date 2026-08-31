@@ -47,7 +47,7 @@ export function enforceProductV1Eol(projectRoot: string, format: Format, io: Io 
     message: "Agentera product v1 is end-of-life and cannot be used by the v3 CLI.",
     evidence,
     reset_workflow: [
-      "Run agentera upgrade --reset-product-v1 --dry-run --format json.",
+      "Run agentera upgrade --reset-product-v1 --dry-run.",
       "Review every deletion, recreation, and irreversible loss in that preview.",
       "Explicitly approve apply to remove scoped Agentera state and initialize fresh v3 state.",
     ],

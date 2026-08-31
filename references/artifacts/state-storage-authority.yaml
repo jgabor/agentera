@@ -78,32 +78,32 @@ entity_target:
     status: final
     commands:
       progress:
-        list: npx -y agentera@next state progress list [--topic TEXT] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state progress get --id ID --format json
+        list: npx -y agentera@next state progress list [--topic TEXT] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state progress get --id ID
       decisions:
-        list: npx -y agentera@next state decisions list [--topic TEXT] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state decisions get --id ID --format json
+        list: npx -y agentera@next state decisions list [--topic TEXT] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state decisions get --id ID
       health:
-        list: npx -y agentera@next state health list [--dimension DIMENSION] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state health get --id ID --format json
+        list: npx -y agentera@next state health list [--dimension DIMENSION] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state health get --id ID
       plans:
-        list: npx -y agentera@next state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state plan get --id ID --format json
+        list: npx -y agentera@next state plan list [--status open|complete|archived] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state plan get --id ID
       plan_tasks:
-        list: npx -y agentera@next state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state plan tasks get --id ID --format json
+        list: npx -y agentera@next state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state plan tasks get --id ID
       objective:
-        list: npx -y agentera@next state objective list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state objective get --id ID --format json
+        list: npx -y agentera@next state objective list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state objective get --id ID
       experiments:
-        list: npx -y agentera@next state experiments list --objective ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state experiments get --id ID --format json
+        list: npx -y agentera@next state experiments list --objective ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state experiments get --id ID
       todo:
-        list: npx -y agentera@next state todo list [--severity SEVERITY] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state todo get --id ID --format json
+        list: npx -y agentera@next state todo list [--severity SEVERITY] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state todo get --id ID
       docs:
-        list: npx -y agentera@next state docs list [--topic TEXT] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
-        get: npx -y agentera@next state docs get --id ID --format json
+        list: npx -y agentera@next state docs list [--topic TEXT] [--status STATUS] [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
+        get: npx -y agentera@next state docs get --id ID
     list_help:
       schema_version: agentera.entityListHelp.v1
       defaults:
@@ -125,53 +125,53 @@ entity_target:
           filters:
             - { flag: --topic TEXT, name: topic, values: free_text }
             - { flag: --status STATUS, name: status, values: free_text }
-          example: npx -y agentera@next state progress list --limit 20 --format json
+          example: npx -y agentera@next state progress list --limit 20
         decisions:
           command_tokens: [decisions]
           bare_read: alias
           filters:
             - { flag: --topic TEXT, name: topic, values: free_text }
-          example: npx -y agentera@next state decisions list --limit 20 --format json
+          example: npx -y agentera@next state decisions list --limit 20
         health:
           command_tokens: [health]
           bare_read: correction
-          bare_recovery: npx -y agentera@next state health list --limit 20 --format json
+          bare_recovery: npx -y agentera@next state health list --limit 20
           filters:
             - { flag: --dimension DIMENSION, name: dimension, values: free_text }
-          example: npx -y agentera@next state health list --limit 20 --format json
+          example: npx -y agentera@next state health list --limit 20
         plans:
           command_tokens: [plan]
           bare_read: correction
-          bare_recovery: npx -y agentera@next state plan list --status open --limit 20 --format json
+          bare_recovery: npx -y agentera@next state plan list --status open --limit 20
           filters:
             - { flag: '--status open|complete|archived', name: status, values: [open, complete, archived] }
-          example: npx -y agentera@next state plan list --status open --limit 20 --format json
+          example: npx -y agentera@next state plan list --status open --limit 20
         plan_tasks:
           command_tokens: [plan, tasks]
           bare_read: correction
-          bare_recovery: npx -y agentera@next state plan tasks list --limit 20 --format json
+          bare_recovery: npx -y agentera@next state plan tasks list --limit 20
           family_identifier:
             syntax: PLAN_ID
             required: false
             description: Optional bare plan ID; omit it to list tasks from the active plan.
           filters: []
-          example: npx -y agentera@next state plan tasks list --limit 20 --format json
+          example: npx -y agentera@next state plan tasks list --limit 20
         objective:
           command_tokens: [objective]
           bare_read: correction
-          bare_recovery: npx -y agentera@next state objective list --limit 20 --format json
+          bare_recovery: npx -y agentera@next state objective list --limit 20
           filters: []
-          example: npx -y agentera@next state objective list --limit 20 --format json
+          example: npx -y agentera@next state objective list --limit 20
         experiments:
           command_tokens: [experiments]
           bare_read: correction
-          bare_recovery: npx -y agentera@next state objective list --limit 20 --format json
+          bare_recovery: npx -y agentera@next state objective list --limit 20
           family_identifier:
             syntax: --objective ID
             required: true
             description: Required bare objective entity ID.
           filters: []
-          example: npx -y agentera@next state experiments list --objective qjtrmnpvka --limit 20 --format json
+          example: npx -y agentera@next state experiments list --objective qjtrmnpvka --limit 20
         todo:
           command_tokens: [todo]
           bare_read: alias
@@ -205,15 +205,15 @@ entity_target:
               ownership: computed_read_snapshot
               persisted: false
               filter: false
-          example: npx -y agentera@next state todo list --severity critical --ids-only --limit 20 --format json
+          example: npx -y agentera@next state todo list --severity critical --ids-only --limit 20
         docs:
           command_tokens: [docs]
           bare_read: correction
-          bare_recovery: npx -y agentera@next state docs list --limit 20 --format json
+          bare_recovery: npx -y agentera@next state docs list --limit 20
           filters:
             - { flag: --topic TEXT, name: topic, values: free_text }
             - { flag: --status STATUS, name: status, values: free_text }
-          example: npx -y agentera@next state docs list --limit 20 --format json
+          example: npx -y agentera@next state docs list --limit 20
     collections:
       - { artifact: progress, identity: id, classification: artifact }
       - { artifact: decisions, identity: id, classification: artifact }
@@ -425,8 +425,8 @@ entity_target:
           durability: persisted_in_each_new_progress_cycle_entity
           privacy: bounded_ordinal_without_time_identity_or_content
       retrieval:
-        exact: npx -y agentera@next state progress get --id ID --format json
-        list: npx -y agentera@next state progress list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        exact: npx -y agentera@next state progress get --id ID
+        list: npx -y agentera@next state progress list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
         ordering: timestamp_desc_then_publication_order_desc_then_id_asc
         semantic_recency: >-
           The first full progress cycle is latest. Timestamp remains the public
@@ -496,8 +496,8 @@ entity_target:
             binds the complete parsed source record before canonical alias removal.
             Current confidence values and ordinary decision writes omit this metadata.
       retrieval:
-        exact: npx -y agentera@next state decisions get --id ID --format json
-        list: npx -y agentera@next state decisions list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        exact: npx -y agentera@next state decisions get --id ID
+        list: npx -y agentera@next state decisions list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
         ordering: date_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -587,8 +587,8 @@ entity_target:
               Legacy canonical health audits omit appended_at and remain valid without
               reconstructed chronology.
       retrieval:
-        exact: npx -y agentera@next state health get --id ID --format json
-        list: npx -y agentera@next state health list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        exact: npx -y agentera@next state health get --id ID
+        list: npx -y agentera@next state health list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
         ordering: appended_at_desc_then_id_asc_then_legacy_date_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -660,8 +660,8 @@ entity_target:
               syntactically indistinguishable from the legacy encoding and falls
               under this source-form rule; no semantic intent is inferred.
       retrieval:
-        exact: npx -y agentera@next state plan get --id ID --format json
-        list: npx -y agentera@next state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        exact: npx -y agentera@next state plan get --id ID
+        list: npx -y agentera@next state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
         ordering: created_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -694,8 +694,8 @@ entity_target:
         required_paths: [header.title, header.status, objective.description, objective.measurement]
         forbidden_fields: [id, artifact, stable_id, objective_id]
       retrieval:
-        exact: npx -y agentera@next state objective get --id ID --format json
-        list: npx -y agentera@next state objective list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        exact: npx -y agentera@next state objective get --id ID
+        list: npx -y agentera@next state objective list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
         ordering: created_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -719,8 +719,8 @@ entity_target:
         required_paths: [objective, date, label, status]
         forbidden_fields: [id, artifact, number, experiment_number, stable_id, objective_id]
       retrieval:
-        exact: npx -y agentera@next state experiments get --id ID --format json
-        list: npx -y agentera@next state experiments list --objective ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        exact: npx -y agentera@next state experiments get --id ID
+        list: npx -y agentera@next state experiments list --objective ID [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
         ordering: date_desc_then_id_asc
         default_limit: 20
         maximum_limit: 100
@@ -863,8 +863,8 @@ entity_target:
           journal_utf8_bytes: 4194304
           todo_markdown_utf8_bytes: 1048576
       retrieval:
-        exact: npx -y agentera@next state todo get --id ID --format json
-        list: npx -y agentera@next state todo list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        exact: npx -y agentera@next state todo get --id ID
+        list: npx -y agentera@next state todo list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
         ordering: severity_then_status_then_markdown_order_then_id
         default_limit: 20
         maximum_limit: 100
@@ -884,8 +884,8 @@ entity_target:
         required_paths: []
         forbidden_fields: [id, artifact, number, stable_id, artifact_id, entry_number]
       retrieval:
-        exact: npx -y agentera@next state docs get --id ID --format json
-        list: npx -y agentera@next state docs list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+        exact: npx -y agentera@next state docs get --id ID
+        list: npx -y agentera@next state docs list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
         ordering: path_then_id
         default_limit: 20
         maximum_limit: 100
@@ -1061,8 +1061,8 @@ entity_target:
             source_path: project-relative v2 aggregate source path
             source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
         retrieval:
-          exact: npx -y agentera@next state progress get --id ID --format json
-          list: npx -y agentera@next state progress list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+          exact: npx -y agentera@next state progress get --id ID
+          list: npx -y agentera@next state progress list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
           detail_availability: summary
           compatibility: degraded
           caveats: required
@@ -1099,8 +1099,8 @@ entity_target:
             source_path: project-relative v2 aggregate source path
             source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
         retrieval:
-          exact: npx -y agentera@next state decisions get --id ID --format json
-          list: npx -y agentera@next state decisions list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+          exact: npx -y agentera@next state decisions get --id ID
+          list: npx -y agentera@next state decisions list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
           detail_availability: summary
           compatibility: degraded
           caveats: required
@@ -1133,8 +1133,8 @@ entity_target:
             source_path: project-relative v2 aggregate source path
             source_row_provenance: entity_target.declared_compacted_summary_contract.source_row_provenance
         retrieval:
-          exact: npx -y agentera@next state health get --id ID --format json
-          list: npx -y agentera@next state health list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+          exact: npx -y agentera@next state health get --id ID
+          list: npx -y agentera@next state health list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
           detail_availability: summary
           compatibility: degraded
           caveats: required
@@ -1794,9 +1794,9 @@ consumer_matrix:
     - design
     - orchestrate
   access_contract:
-    startup: npx -y agentera@next prime --context <capability> --format json
-    list: npx -y agentera@next state <artifact-id> list --limit 20 --format json
-    get: npx -y agentera@next state <artifact> get --id ID --format json
+    startup: npx -y agentera@next prime --context <capability>
+    list: npx -y agentera@next state <artifact-id> list --limit 20
+    get: npx -y agentera@next state <artifact> get --id ID
     policy: >-
       Use the bounded prime context first, then the bounded state list for
       discovery and exact state get for requested detail. Raw artifact or Git
@@ -2163,7 +2163,7 @@ revisions:
     migration preview and cutover and is never a current publication target.
     Amend execution refuses before side effects for an unsafe target, duplicate
     same-base claim, or stale base hash. Discover the current contract with
-    `npx -y agentera@next state decisions explain --verb amend --format json`.
+    `npx -y agentera@next state decisions explain --verb amend`.
 
 projections:
   archive:
@@ -2243,11 +2243,11 @@ api:
   artifact_syntax: agentera state <artifact-id>
   formats: [text, json, yaml]
   direct_get:
-    command: npx -y agentera@next state <artifact-id> get --id ID --format json
+    command: npx -y agentera@next state <artifact-id> get --id ID
     examples:
-      progress: npx -y agentera@next state progress get --id qjtrmnpvka --format json
-      decisions: npx -y agentera@next state decisions get --id imumkmffwh --format json
-      health: npx -y agentera@next state health get --id abcdefghij --format json
+      progress: npx -y agentera@next state progress get --id qjtrmnpvka
+      decisions: npx -y agentera@next state decisions get --id imumkmffwh
+      health: npx -y agentera@next state health get --id abcdefghij
     required_selector: --id ID
     result: >-
       One complete canonical entity record with id, artifact, detail availability,
@@ -2255,10 +2255,10 @@ api:
       compose immutable base, ordered revisions, and current satisfaction entities.
     exact_only: direct retrieval resolves one canonical entity ID without scanning unrelated records
   list:
-    command: npx -y agentera@next state <artifact-id> list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS] --format json
+    command: npx -y agentera@next state <artifact-id> list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]
     examples:
-      progress: npx -y agentera@next state progress list --limit 20 --format json
-      decisions_next_page: npx -y agentera@next state decisions list --limit 20 --cursor TOKEN --format json
+      progress: npx -y agentera@next state progress list --limit 20
+      decisions_next_page: npx -y agentera@next state decisions list --limit 20 --cursor TOKEN
     default_limit: 20
     minimum_limit: 1
     maximum_limit: 100
@@ -2272,7 +2272,7 @@ api:
       optional_entry: [summary, caveats]
     empty_result: status=ok with entries=[] and counts.total=0; absence is not an error
   durability:
-    command: npx -y agentera@next check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N] --format json
+    command: npx -y agentera@next check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N]
     formats: [text, json, yaml]
     selectors:
       artifact: optional supported entity artifact ID
@@ -2518,7 +2518,7 @@ budgets:
         outcome_values: [ok, degraded, blocked]
         availability_row_fields: [family, availability, detail_command]
         availability_values: [included, deferred]
-        detail_discovery: npx -y agentera@next schema --format json
+        detail_discovery: npx -y agentera@next schema
         single_projection_rule: >-
           Prime emits one per-family availability projection at startup. Status
           renders the same aggregate outcome without copying that projection.
@@ -2529,7 +2529,7 @@ budgets:
       prime_briefing:
         manifest_id: prime-briefing
         # Bounded default decision brief (Plan Task 3): the bare default
-        # `npx -y agentera@next prime --format json` projects the full orientation payload
+        # `npx -y agentera@next prime` projects the full orientation payload
         # to routing-essential leaves plus named recovery pointers for omitted
         # rich state. Pretty UTF-8 JSON + trailing newline is measured and an
         # over-budget brief is rejected in favor of a bounded degraded envelope;
@@ -2593,8 +2593,8 @@ mutation_grammar:
         sources: [file, stdin]
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, publication_order]
-      recovery: Run `npx -y agentera@next state progress explain --verb append --format json` and correct the rejected field; no state was changed.
-      examples: ['npx -y agentera@next state progress append --input progress.yaml --format json']
+      recovery: Run `npx -y agentera@next state progress explain --verb append` and correct the rejected field; no state was changed.
+      examples: ['npx -y agentera@next state progress append --input progress.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       compacts: true
       fields: []
@@ -2611,8 +2611,8 @@ mutation_grammar:
         sources: [file, stdin]
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact]
-      recovery: Run `npx -y agentera@next state decisions explain --verb append --format json` and supply every required field; no state was changed.
-      examples: ['npx -y agentera@next state decisions append --input decision.yaml --format json']
+      recovery: Run `npx -y agentera@next state decisions explain --verb append` and supply every required field; no state was changed.
+      examples: ['npx -y agentera@next state decisions append --input decision.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       compacts: true
       fields: []
@@ -2624,8 +2624,8 @@ mutation_grammar:
       preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, satisfaction_state_is_valid]
       owned_fields: [id, artifact, satisfaction]
       input: { mode: none, sources: [], cli_owned_fields: [] }
-      recovery: Run npx -y agentera@next state decisions explain --verb update --format json, use the returned bare decision ID, and provide a valid satisfaction transition.
-      examples: ['npx -y agentera@next state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..." --format json']
+      recovery: Run npx -y agentera@next state decisions explain --verb update, use the returned bare decision ID, and provide a valid satisfaction transition.
+      examples: ['npx -y agentera@next state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -2647,7 +2647,7 @@ mutation_grammar:
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, base_sha256]
       recovery: Reread the exact decision, copy its current effective SHA-256, and retry with at least one amendable field; no state was changed.
-      examples: ['npx -y agentera@next state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml --format json']
+      examples: ['npx -y agentera@next state decisions amend --id qjtrmnpvka --base-sha256 HASH --input amendment.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -2665,8 +2665,8 @@ mutation_grammar:
         sources: [file, stdin]
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
-      recovery: Use npx -y agentera@next state plan explain --verb append --format json, select an open plan, and supply one complete task record with bare same-plan dependencies.
-      examples: ['npx -y agentera@next state plan append --plan qjtrmnpvka --input task.yaml --format json']
+      recovery: Use npx -y agentera@next state plan explain --verb append, select an open plan, and supply one complete task record with bare same-plan dependencies.
+      examples: ['npx -y agentera@next state plan append --plan qjtrmnpvka --input task.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields:
          - { flag: --plan, field: plan, kind: string }
@@ -2684,7 +2684,7 @@ mutation_grammar:
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
       recovery: Reread the plan task by its bare ID, supply an omission-preserving patch through --input, and retry; no state was changed.
-      examples: ['npx -y agentera@next state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml --format json']
+      examples: ['npx -y agentera@next state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields:
          - { flag: --id, field: id, kind: string, required: true }
@@ -2698,7 +2698,7 @@ mutation_grammar:
       owned_fields: [id, artifact, plan, status]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Reread the task list, copy its bare task ID, and use one of complete, in_progress, pending, or blocked.
-      examples: ['npx -y agentera@next state plan set-status --id qjtrmnpvka --status complete --format json']
+      examples: ['npx -y agentera@next state plan set-status --id qjtrmnpvka --status complete']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -2713,7 +2713,7 @@ mutation_grammar:
       owned_fields: [id, artifact, plan, superseded_by, superseded_reason]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Complete and evaluate each replacement task with latest PASS evidence, then retry with the returned bare IDs.
-      examples: ['npx -y agentera@next state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement task" --format json']
+      examples: ['npx -y agentera@next state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement task"']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 100, max_reason_code_points: 500 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -2729,7 +2729,7 @@ mutation_grammar:
       owned_fields: [id, artifact, plan, header.status]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Keep the plan open or resolve every incomplete task and replacement evaluation before retrying completion.
-      examples: ['npx -y agentera@next state plan set-plan-status --status complete --format json']
+      examples: ['npx -y agentera@next state plan set-plan-status --status complete']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
       fields:
         - { flag: --plan, field: plan, kind: string }
@@ -2743,7 +2743,7 @@ mutation_grammar:
       owned_fields: [id, artifact, plan, evaluation]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Use the task's bare ID, a stable attempt ID, and evaluator provenance, then retry without changing published evidence.
-      examples: ['npx -y agentera@next state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report" --format json']
+      examples: ['npx -y agentera@next state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report"']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 1 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -2761,7 +2761,7 @@ mutation_grammar:
       owned_fields: [id, artifact, plan, header.status]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Archive a complete plan normally. With --force, archive the selected open plan unchanged only after the locked canonical snapshot identifies it; multiple implicit open-plan candidates are rejected without effects.
-      examples: ['npx -y agentera@next state plan archive --dry-run --format json', 'npx -y agentera@next state plan archive --force --dry-run --format json']
+      examples: ['npx -y agentera@next state plan archive --dry-run', 'npx -y agentera@next state plan archive --force --dry-run']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 100 }
       allow_force: true
       fields: [{ flag: --plan, field: plan, kind: string }]
@@ -2777,8 +2777,8 @@ mutation_grammar:
         root: complete plan document
         sources: [file, stdin]
         cli_owned_fields: [id, artifact, header.id, previous_plan_archived, task_ids]
-      recovery: Run npx -y agentera@next state plan explain --verb create --format json, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and use --force only when the locked canonical snapshot has exactly one open predecessor to archive unchanged.
-      examples: ['npx -y agentera@next state plan create --input plan.yaml --format json', 'npx -y agentera@next state plan create --force --input plan.yaml --format json']
+      recovery: Run npx -y agentera@next state plan explain --verb create, keep task ordinals and dependencies local to this atomic input, remove CLI-owned fields, and use --force only when the locked canonical snapshot has exactly one open predecessor to archive unchanged.
+      examples: ['npx -y agentera@next state plan create --input plan.yaml', 'npx -y agentera@next state plan create --force --input plan.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
       allow_force: true
       fields: []
@@ -2796,8 +2796,8 @@ mutation_grammar:
         sources: [file, stdin]
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, header.id, previous_plan_archived, replacement_input_sha256, task_ids]
-      recovery: Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects. Competing-open diagnostics retain bounded bare IDs without assigning roles and recover through npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json.
-      examples: ['npx -y agentera@next state plan replace --predecessor abcdefghij --successor klmnopqrst --format json', 'npx -y agentera@next state plan replace --predecessor abcdefghij --input plan.yaml --format json']
+      recovery: Name one bare predecessor and either one existing bare successor or one complete successor plan input. The operation archives only the named predecessor, derives reverse lineage from the successor, and rejects divergent retries before effects. Competing-open diagnostics retain bounded bare IDs without assigning roles and recover through npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID.
+      examples: ['npx -y agentera@next state plan replace --predecessor abcdefghij --successor klmnopqrst', 'npx -y agentera@next state plan replace --predecessor abcdefghij --input plan.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
       fields:
         - { flag: --predecessor, field: predecessor, kind: string, required: true, description: Bare plan ID to archive as the explicit predecessor. }
@@ -2814,8 +2814,8 @@ mutation_grammar:
         root: one audit entry
         sources: [file, stdin]
         cli_owned_fields: [id, artifact, appended_at]
-      recovery: Run npx -y agentera@next check validate state --format json, preserve audit evidence, and retry with one schema-valid audit entry.
-      examples: ['npx -y agentera@next state health append --input audit.yaml --format json']
+      recovery: Run npx -y agentera@next check validate state, preserve audit evidence, and retry with one schema-valid audit entry.
+      examples: ['npx -y agentera@next state health append --input audit.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
       compacts: true
       fields: []
@@ -2832,7 +2832,7 @@ mutation_grammar:
         sources: [file, stdin]
         cli_owned_fields: [id, artifact, header.id]
       recovery: Remove identity fields assigned by the CLI and retry with one schema-valid objective document.
-      examples: ['npx -y agentera@next state objective create --input objective.yaml --format json']
+      examples: ['npx -y agentera@next state objective create --input objective.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields: []
 
@@ -2848,7 +2848,7 @@ mutation_grammar:
         sources: [file, stdin]
         cli_owned_fields: [id, artifact, header.id]
       recovery: Reread the objective, copy its bare ID to --id, remove CLI-owned fields, and retry.
-      examples: ['npx -y agentera@next state objective update --id qjtrmnpvka --input objective.yaml --format json']
+      examples: ['npx -y agentera@next state objective update --id qjtrmnpvka --input objective.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields: [{ flag: --id, field: id, kind: string, required: true }]
 
@@ -2864,7 +2864,7 @@ mutation_grammar:
         sources: [file, stdin]
         cli_owned_fields: [id, artifact, objective]
       recovery: Use a bare objective ID, omit numeric legacy selectors, and retry the exact input; divergent immutable identities remain untouched.
-      examples: ['npx -y agentera@next state experiments publish --objective qjtrmnpvka --input experiment.yaml --format json']
+      examples: ['npx -y agentera@next state experiments publish --objective qjtrmnpvka --input experiment.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
       compacts: true
       fields:
@@ -2879,7 +2879,7 @@ mutation_grammar:
       owned_fields: [reconciliation, public_document, activation]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Preview and review every reported safe activation effect before explicit confirmed apply; unsafe inactive evidence requires the separate effect-bound owner-correction operation.
-      examples: ['npx -y agentera@next state todo activate --dry-run --format json', 'npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json']
+      examples: ['npx -y agentera@next state todo activate --dry-run', 'npx -y agentera@next state todo activate --effect-sha256 EFFECT_SHA256 --yes']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 256 }
       compacts: true
       fields:
@@ -2894,7 +2894,7 @@ mutation_grammar:
       owned_fields: [reconciliation, public_document, activation]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Preview and review every diagnosed repair decision before explicit confirmed apply; ambiguous evidence is rejected without effects.
-      examples: ['npx -y agentera@next state todo repair --dry-run --format json', 'npx -y agentera@next state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json']
+      examples: ['npx -y agentera@next state todo repair --dry-run', 'npx -y agentera@next state todo repair --effect-sha256 EFFECT_SHA256 --yes']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 256 }
       compacts: true
       fields:
@@ -2914,7 +2914,7 @@ mutation_grammar:
         structured_sources: [file, stdin]
         cli_owned_fields: []
       recovery: Supply one complete id/source_line owner mapping, preview its bounded effect, then apply only the exact returned effect; malformed, ambiguous, unmatched, or stale evidence is rejected without effects.
-      examples: ['npx -y agentera@next state todo correct-owners --input owner-mapping.yaml --dry-run --format json', 'npx -y agentera@next state todo correct-owners --input owner-mapping.yaml --effect-sha256 EFFECT_SHA256 --yes --format json']
+      examples: ['npx -y agentera@next state todo correct-owners --input owner-mapping.yaml --dry-run', 'npx -y agentera@next state todo correct-owners --input owner-mapping.yaml --effect-sha256 EFFECT_SHA256 --yes']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256 }
       compacts: true
       fields:
@@ -2934,7 +2934,7 @@ mutation_grammar:
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, status, public_order, lifecycle]
       recovery: For one item, preserve the existing full-record form. For a batch, supply agentera.todoCreateBatch.v1, preview with --dry-run, then repeat the same input with its effect SHA-256 and --yes.
-      examples: ['npx -y agentera@next state todo create --input todo.yaml --format json']
+      examples: ['npx -y agentera@next state todo create --input todo.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256 }
       fields:
         - { flag: --effect-sha256, field: effect_sha256, kind: string }
@@ -2953,7 +2953,7 @@ mutation_grammar:
         structured_sources: [file, stdin]
         cli_owned_fields: [id, artifact, status, public_order, lifecycle]
       recovery: For one item, preserve the existing --id and patch form. For a batch, supply agentera.todoUpdateBatch.v1, preview with --dry-run, then repeat the same input with its effect SHA-256 and --yes.
-      examples: ['npx -y agentera@next state todo update --id qjtrmnpvka --input todo-patch.yaml --format json']
+      examples: ['npx -y agentera@next state todo update --id qjtrmnpvka --input todo-patch.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -2968,7 +2968,7 @@ mutation_grammar:
       owned_fields: [id, artifact, severity, lifecycle]
       input: { mode: structured, root: agentera.todoSetSeverityBatch.v1 envelope, optional: true, sources: [file, stdin], structured_sources: [file, stdin], cli_owned_fields: [] }
       recovery: Use singleton flags unchanged, or supply agentera.todoSetSeverityBatch.v1 through --input, preview it, then exact-apply it with the effect SHA-256 and --yes.
-      examples: ['npx -y agentera@next state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31 --format json']
+      examples: ['npx -y agentera@next state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256, max_reason_code_points: 500 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -2986,7 +2986,7 @@ mutation_grammar:
       owned_fields: [id, artifact, status, lifecycle]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Use the selected bare TODO ID, an existing distinct replacement ID, a reason, and a YYYY-MM-DD date; no record input is accepted.
-      examples: ['npx -y agentera@next state todo supersede --id qjtrmnpvka --replacement zqtrmnpvka --reason "Replaced by narrower work" --date 2026-07-31 --format json']
+      examples: ['npx -y agentera@next state todo supersede --id qjtrmnpvka --replacement zqtrmnpvka --reason "Replaced by narrower work" --date 2026-07-31']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -3002,7 +3002,7 @@ mutation_grammar:
       owned_fields: [id, artifact, status, lifecycle]
       input: { mode: structured, root: agentera.todoResolveBatch.v1 envelope, optional: true, sources: [file, stdin], structured_sources: [file, stdin], cli_owned_fields: [] }
       recovery: Use singleton flags unchanged, or supply agentera.todoResolveBatch.v1 through --input, preview it, then exact-apply it with the effect SHA-256 and --yes.
-      examples: ['npx -y agentera@next state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31 --format json']
+      examples: ['npx -y agentera@next state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 256, max_reason_code_points: 500 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -3019,7 +3019,7 @@ mutation_grammar:
       owned_fields: [id, artifact, status, lifecycle]
       input: { mode: none, sources: [], cli_owned_fields: [] }
       recovery: Use the bare resolved TODO ID, a reason, and a YYYY-MM-DD date; no record input is accepted.
-      examples: ['npx -y agentera@next state todo reopen --id qjtrmnpvka --reason "Scope returned" --date 2026-07-31 --format json']
+      examples: ['npx -y agentera@next state todo reopen --id qjtrmnpvka --reason "Scope returned" --date 2026-07-31']
       bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
       fields:
         - { flag: --id, field: id, kind: string, required: true }
@@ -3038,7 +3038,7 @@ mutation_grammar:
         sources: [file, stdin]
         cli_owned_fields: [id, artifact]
       recovery: Remove id and artifact from the input and retry with one schema-valid documentation inventory entry.
-      examples: ['npx -y agentera@next state docs create --input documentation.yaml --format json']
+      examples: ['npx -y agentera@next state docs create --input documentation.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 100 }
       fields: []
 
@@ -3054,7 +3054,7 @@ mutation_grammar:
         sources: [file, stdin]
         cli_owned_fields: [id, artifact]
       recovery: Reread the documentation entry, copy its bare ID to --id, remove CLI-owned fields, and retry.
-      examples: ['npx -y agentera@next state docs update --id qjtrmnpvka --input documentation.yaml --format json']
+      examples: ['npx -y agentera@next state docs update --id qjtrmnpvka --input documentation.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields: [{ flag: --id, field: id, kind: string, required: true }]
 
@@ -3069,7 +3069,7 @@ mutation_grammar:
         root: one glossary publication request
         sources: [file, stdin]
         cli_owned_fields: []
-      recovery: Run npx -y agentera@next state glossary explain --verb publish --format json and correct the bounded request or confirmation.
-      examples: ['npx -y agentera@next state glossary publish --input glossary-publication.yaml --format json']
+      recovery: Run npx -y agentera@next state glossary explain --verb publish and correct the bounded request or confirmation.
+      examples: ['npx -y agentera@next state glossary publish --input glossary-publication.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
       fields: []

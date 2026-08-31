@@ -160,7 +160,6 @@ function exampleGrammarIssue(
   const seen = new Set<string>();
   let identifierSupplied = false;
   let idsOnly = false;
-  let formatSupplied = false;
   const argv = tokens.slice(prefix.length);
   for (let index = 0; index < argv.length;) {
     const token = argv[index];
@@ -217,12 +216,10 @@ function exampleGrammarIssue(
       return "fields";
     } else if (kind === "format") {
       if (!family.formats.includes(argument)) return "format";
-      formatSupplied = true;
     }
   }
 
   if (family.familyIdentifier?.required && !identifierSupplied) return "identifier_required";
-  if (!formatSupplied) return "format_required";
   return undefined;
 }
 

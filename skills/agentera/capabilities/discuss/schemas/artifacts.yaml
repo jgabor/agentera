@@ -5,8 +5,8 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Reasoning trail with confidence labels. Discuss reads existing decisions
-      through bounded `npx -y agentera@next state decisions list --limit 20 --format json`
-       discovery plus exact `npx -y agentera@next state decisions get --id ID --format json`
+      through bounded `npx -y agentera@next state decisions list --limit 20`
+       discovery plus exact `npx -y agentera@next state decisions get --id ID`
       retrieval and its source_contract to avoid re-deliberation, and writes new decision entries with confidence
       (DL1 firm, DL2 provisional, DL3 exploratory). Compact older entries by
       applying schema COMPACTION rules; incomplete compacted entries are
@@ -40,7 +40,7 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Discuss reads only sanitized non-glossary content from `npx -y agentera@next report
-      profile-grounding --format json` at session start. It never direct-reads
+      profile-grounding` at session start. It never direct-reads
       the profile path. It uses content only when the shared validity object is
       valid; absent or repair-needed results fail closed with exact recovery.
   6:

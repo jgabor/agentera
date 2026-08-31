@@ -27,16 +27,14 @@ scope:
     examples:
     - agentera query routine-artifact redirect surfaces that do not emit JSON
   notes:
-  - query design --format json routes to generic schema JSON when a design schema
+  - query design routes to generic schema JSON when a design schema
     exists; inventory defer row is retained for the text-only handler gap.
 surfaces:
 - id: schema
   command: agentera schema
-  selector: --format json (default)
+  selector: (default)
   argv:
   - schema
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -46,12 +44,10 @@ surfaces:
   token_budget: 26000
 - id: prime-dashboard
   command: agentera prime
-  selector: --dashboard --format json
+  selector: --dashboard
   argv:
   - prime
   - --dashboard
-  - --format
-  - json
   inventory_classification: change
   budget_classification: deprecated_status_alias
   measurement_scope: primary
@@ -61,13 +57,11 @@ surfaces:
   token_budget: 6000
 - id: prime-status-context
   command: agentera prime --context status
-  selector: --context status --format json
+  selector: --context status
   argv:
   - prime
   - --context
   - status
-  - --format
-  - json
   inventory_classification: change
   budget_classification: bounded_status_startup
   measurement_scope: primary
@@ -77,11 +71,9 @@ surfaces:
   token_budget: 6000
 - id: prime-briefing
   command: agentera prime
-  selector: --format json (default briefing)
+  selector: (default briefing)
   argv:
   - prime
-  - --format
-  - json
   inventory_classification: change
   budget_classification: bounded_brief
   measurement_scope: primary
@@ -96,11 +88,9 @@ surfaces:
   token_budget: 3000
 - id: prime-fields-sparse
   command: agentera prime
-  selector: --format json --fields plan,progress,docs
+  selector: --fields plan,progress,docs
   argv:
   - prime
-  - --format
-  - json
   - --fields
   - plan,progress,docs
   inventory_classification: change
@@ -126,14 +116,12 @@ surfaces:
   fixture: repo_root
   enforcement_tier: removed_3_0
 - id: prime-capability-context
-  command: agentera prime --context {capability} --format json
-  selector: --context <capability> --format json
+  command: agentera prime --context {capability}
+  selector: --context <capability>
   argv:
   - prime
   - --context
   - '{capability}'
-  - --format
-  - json
   - --fields
   - capability_context
   expand_by: capability
@@ -187,13 +175,11 @@ surfaces:
       token_budget: 14000
 - id: state-plan
   command: agentera state plan list
-  selector: --format json
+  selector:
   argv:
   - state
   - plan
   - list
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -203,13 +189,11 @@ surfaces:
   token_budget: 4500
 - id: state-progress
   command: agentera state progress list
-  selector: --format json
+  selector:
   argv:
   - state
   - progress
   - list
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -219,13 +203,11 @@ surfaces:
   token_budget: 3000
 - id: state-health
   command: agentera state health list
-  selector: --format json
+  selector:
   argv:
   - state
   - health
   - list
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -235,13 +217,11 @@ surfaces:
   token_budget: 6500
 - id: state-todo
   command: agentera state todo list
-  selector: --format json
+  selector:
   argv:
   - state
   - todo
   - list
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -251,13 +231,11 @@ surfaces:
   token_budget: 6500
 - id: state-decisions
   command: agentera state decisions list
-  selector: --format json
+  selector:
   argv:
   - state
   - decisions
   - list
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -267,13 +245,11 @@ surfaces:
   token_budget: 30000
 - id: state-docs
   command: agentera state docs list
-  selector: --format json
+  selector:
   argv:
   - state
   - docs
   - list
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -283,13 +259,11 @@ surfaces:
   token_budget: 6500
 - id: state-objective
   command: agentera state objective list
-  selector: --format json
+  selector:
   argv:
   - state
   - objective
   - list
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -299,15 +273,13 @@ surfaces:
   token_budget: 500
 - id: state-experiments
   command: agentera state experiments list
-  selector: --objective qjtrmnpvka --format json
+  selector: --objective qjtrmnpvka
   argv:
   - state
   - experiments
   - list
   - --objective
   - qjtrmnpvka
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -317,13 +289,11 @@ surfaces:
   token_budget: 500
 - id: state-query-list-artifacts
   command: agentera state query --list-artifacts
-  selector: --list-artifacts --format json
+  selector: --list-artifacts
   argv:
   - state
   - query
   - --list-artifacts
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -333,13 +303,11 @@ surfaces:
   token_budget: 6000
 - id: state-query-last-phase
   command: agentera state query last-phase
-  selector: --format json
+  selector:
   argv:
   - state
   - query
   - last-phase
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -349,13 +317,11 @@ surfaces:
   token_budget: 500
 - id: state-query-open-todos
   command: agentera state query open-todos
-  selector: --format json
+  selector:
   argv:
   - state
   - query
   - open-todos
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -365,13 +331,11 @@ surfaces:
   token_budget: 6500
 - id: state-query-vision
   command: agentera state query vision
-  selector: --format json
+  selector:
   argv:
   - state
   - query
   - vision
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -381,13 +345,11 @@ surfaces:
   token_budget: 1000
 - id: state-query-changelog
   command: agentera state query changelog
-  selector: --format json
+  selector:
   argv:
   - state
   - query
   - changelog
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -397,30 +359,26 @@ surfaces:
   token_budget: 500
 - id: state-query-design
   command: agentera state query design
-  selector: --format json
+  selector:
   argv:
   - state
   - query
   - design
-  - --format
-  - json
   inventory_classification: defer
   budget_classification: exempt
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: exempt
-  exemption_rationale: 'Inventory defer: parser accepts --format json but _query_design
+  exemption_rationale: 'Inventory defer: parser accepts but _query_design
     handler gap (.agentera/archive/d58-json-output-surface-inventory.md).'
 - id: check-compact-check
   command: agentera check compact --mode check
-  selector: --mode check --format json
+  selector: --mode check
   argv:
   - check
   - compact
   - --mode
   - check
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -430,14 +388,12 @@ surfaces:
   token_budget: 2000
 - id: check-compact-fix
   command: agentera check compact --mode fix
-  selector: --mode fix --format json
+  selector: --mode fix
   argv:
   - check
   - compact
   - --mode
   - fix
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -447,12 +403,10 @@ surfaces:
   token_budget: 2000
 - id: check-compact
   command: agentera check compact
-  selector: --format json
+  selector:
   argv:
   - check
   - compact
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -462,7 +416,7 @@ surfaces:
   token_budget: 2000
 - id: check-lint
   command: agentera check lint --artifact PROGRESS.md
-  selector: --format json
+  selector:
   argv:
   - check
   - lint
@@ -470,8 +424,6 @@ surfaces:
   - PROGRESS.md
   - --text
   - '# Progress'
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -481,14 +433,12 @@ surfaces:
   token_budget: 1000
 - id: check-validate-capability
   command: agentera check validate capability hej
-  selector: --format json
+  selector:
   argv:
   - check
   - validate
   - capability
   - hej
-  - --format
-  - json
   capability: hej
   inventory_classification: change
   budget_classification: unbudgeted
@@ -499,7 +449,7 @@ surfaces:
   token_budget: 1000
 - id: check-validate-artifact
   command: agentera check validate artifact --artifact PLAN.md
-  selector: --format json
+  selector:
   argv:
   - check
   - validate
@@ -508,8 +458,6 @@ surfaces:
   - PLAN.md
   - --file
   - .agentera/plan.yaml
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -519,13 +467,11 @@ surfaces:
   token_budget: 1000
 - id: check-validate-cross-capability
   command: agentera check validate cross-capability
-  selector: --format json
+  selector:
   argv:
   - check
   - validate
   - cross-capability
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -535,13 +481,11 @@ surfaces:
   token_budget: 1000
 - id: check-validate-lifecycle-adapters
   command: agentera check validate lifecycle-adapters
-  selector: --format json
+  selector:
   argv:
   - check
   - validate
   - lifecycle-adapters
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -551,13 +495,11 @@ surfaces:
   token_budget: 1000
 - id: check-validate-capability-contract
   command: agentera check validate capability-contract
-  selector: --format json
+  selector:
   argv:
   - check
   - validate
   - capability-contract
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -594,11 +536,9 @@ surfaces:
   token_budget: 500
 - id: usage
   command: agentera usage
-  selector: --format json
+  selector:
   argv:
   - usage
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -608,11 +548,9 @@ surfaces:
   token_budget: 30000
 - id: report-missing-corpus
   command: agentera report
-  selector: --format json (corpus missing)
+  selector: (corpus missing)
   argv:
   - report
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -622,11 +560,9 @@ surfaces:
   token_budget: 1000
 - id: report-ready-corpus
   command: agentera report
-  selector: --format json (corpus ready)
+  selector: (corpus ready)
   argv:
   - report
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -636,13 +572,11 @@ surfaces:
   token_budget: 1000
 - id: report-refresh-dry-run
   command: agentera report refresh
-  selector: --dry-run --format json
+  selector: --dry-run
   argv:
   - report
   - refresh
   - --dry-run
-  - --format
-  - json
   inventory_classification: change
   budget_classification: unbudgeted
   measurement_scope: primary
@@ -652,14 +586,12 @@ surfaces:
   token_budget: 1000
 - id: report-refresh-consent
   command: agentera report refresh
-  selector: --consent local-history --format json
+  selector: --consent local-history
   argv:
   - report
   - refresh
   - --consent
   - local-history
-  - --format
-  - json
   - --project-root
   - '{repo_root}'
   inventory_classification: change
@@ -684,13 +616,11 @@ surfaces:
     usage/stats (.agentera/archive/d58-json-output-surface-inventory.md).'
 - id: check-validate-app-home-contract
   command: agentera check validate app-home-contract
-  selector: --format json
+  selector:
   argv:
   - check
   - validate
   - app-home-contract
-  - --format
-  - json
   inventory_classification: diagnostic
   budget_classification: diagnostic
   measurement_scope: diagnostic
@@ -699,14 +629,12 @@ surfaces:
   monitor_byte_ceiling: 1000
 - id: check-verify-smoke-installed-skills
   command: agentera check verify smoke installed-skills
-  selector: --format json
+  selector:
   argv:
   - check
   - verify
   - smoke
   - installed-skills
-  - --format
-  - json
   inventory_classification: diagnostic
   budget_classification: diagnostic
   measurement_scope: diagnostic
@@ -715,14 +643,12 @@ surfaces:
   monitor_byte_ceiling: 2000
 - id: check-verify-smoke-live-hosts
   command: agentera check verify smoke live-hosts
-  selector: --format json
+  selector:
   argv:
   - check
   - verify
   - smoke
   - live-hosts
-  - --format
-  - json
   inventory_classification: diagnostic
   budget_classification: diagnostic
   measurement_scope: diagnostic
@@ -731,14 +657,12 @@ surfaces:
   monitor_byte_ceiling: 5000
 - id: check-verify-smoke-setup-helpers
   command: agentera check verify smoke setup-helpers
-  selector: --format json
+  selector:
   argv:
   - check
   - verify
   - smoke
   - setup-helpers
-  - --format
-  - json
   inventory_classification: diagnostic
   budget_classification: diagnostic
   measurement_scope: diagnostic
@@ -747,14 +671,12 @@ surfaces:
   monitor_byte_ceiling: 2000
 - id: check-verify-smoke-opencode-bootstrap
   command: agentera check verify smoke opencode-bootstrap
-  selector: --format json
+  selector:
   argv:
   - check
   - verify
   - smoke
   - opencode-bootstrap
-  - --format
-  - json
   inventory_classification: diagnostic
   budget_classification: diagnostic
   measurement_scope: diagnostic
@@ -763,14 +685,12 @@ surfaces:
   monitor_byte_ceiling: 2000
 - id: check-verify-eval-skills
   command: agentera check verify eval skills
-  selector: --format json
+  selector:
   argv:
   - check
   - verify
   - eval
   - skills
-  - --format
-  - json
   inventory_classification: diagnostic
   budget_classification: diagnostic
   measurement_scope: diagnostic
@@ -779,15 +699,13 @@ surfaces:
   monitor_byte_ceiling: 3000
 - id: check-verify-eval-semantic
   command: agentera check verify eval semantic
-  selector: --format json
+  selector:
   argv:
   - check
   - verify
   - eval
   - semantic
   - fixtures/semantic/hej-bare-message.md
-  - --format
-  - json
   inventory_classification: diagnostic
   budget_classification: diagnostic
   measurement_scope: diagnostic

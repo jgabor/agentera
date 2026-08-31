@@ -14,13 +14,13 @@ export const TODO_RECONCILIATION_ITEM_LIMIT = 256;
 
 const MAX_ACTIVATION_BYTES = 32 * 1024;
 const SHA256 = /^[a-f0-9]{64}$/;
-export const TODO_ACTIVATION_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo activate --dry-run --format json`;
-export const TODO_ACTIVATION_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo activate --effect-sha256 EFFECT_SHA256 --yes --format json`;
-export const TODO_REPAIR_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo repair --dry-run --format json`;
-export const TODO_REPAIR_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo repair --effect-sha256 EFFECT_SHA256 --yes --format json`;
+export const TODO_ACTIVATION_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo activate --dry-run`;
+export const TODO_ACTIVATION_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo activate --effect-sha256 EFFECT_SHA256 --yes`;
+export const TODO_REPAIR_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo repair --dry-run`;
+export const TODO_REPAIR_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo repair --effect-sha256 EFFECT_SHA256 --yes`;
 export const TODO_OWNER_CORRECTION_INPUT_VERSION = "agentera.todoOwnerCorrection.v1";
-export const TODO_OWNER_CORRECTION_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo correct-owners --input OWNER_MAPPING.yaml --dry-run --format json`;
-export const TODO_OWNER_CORRECTION_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo correct-owners --input OWNER_MAPPING.yaml --effect-sha256 EFFECT_SHA256 --yes --format json`;
+export const TODO_OWNER_CORRECTION_PREVIEW_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo correct-owners --input OWNER_MAPPING.yaml --dry-run`;
+export const TODO_OWNER_CORRECTION_APPLY_COMMAND = `${CANONICAL_DEVELOPMENT_CLI} state todo correct-owners --input OWNER_MAPPING.yaml --effect-sha256 EFFECT_SHA256 --yes`;
 export const TODO_UNSAFE_INACTIVE_RECOVERY = `Owner correction required: run exactly '${TODO_OWNER_CORRECTION_PREVIEW_COMMAND}', then use its exact apply_command; no state was changed.`;
 export const TODO_ACTIVATION_RISK_LIMIT = 20;
 

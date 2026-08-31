@@ -138,8 +138,8 @@ export function mutationParityMatrix(targets: readonly string[] = WRITABLE_ARTIF
         surfaces: {
           authority: `references/artifacts/state-storage-authority.yaml#mutation_grammar.${spec.artifact}.${spec.verb}`,
           runtime: `agentera state ${spec.artifact} ${spec.verb}`,
-          explain: `agentera state ${spec.artifact} explain --verb ${spec.verb} --format json`,
-          schema: "agentera schema --format json",
+          explain: `agentera state ${spec.artifact} explain --verb ${spec.verb}`,
+          schema: "agentera schema",
           help: `agentera state ${spec.artifact} --help`,
         },
         success: { command: declaration.examples[0], expected: "pass", evidence: "class-level runtime regression" },
@@ -180,9 +180,9 @@ export function stateWriterArtifactContract(
     contract_digest: grammar.contractDigest,
     mutations,
     operation_count: specs.length,
-    explain_command: `agentera state ${artifact} explain --format json`,
-    explain_all_command: `agentera state ${artifact} explain --all --format json`,
-    explain_by_verb: Object.fromEntries(mutations.map((verb) => [verb, `agentera state ${artifact} explain --verb ${verb} --format json`])),
+    explain_command: `agentera state ${artifact} explain`,
+    explain_all_command: `agentera state ${artifact} explain --all`,
+    explain_by_verb: Object.fromEntries(mutations.map((verb) => [verb, `agentera state ${artifact} explain --verb ${verb}`])),
     ...(writerOwnedFields(artifact).length ? { writer_owned_fields: writerOwnedFields(artifact) } : {}),
   };
   if (mode === "full") {
@@ -207,7 +207,7 @@ export function stateWriterContract(
       contract_digest: fullParity.contract_digest,
       counts: fullParity.counts,
       row_count: (fullParity.rows as unknown[]).length,
-      detail: "agentera state <artifact> explain --all --format json",
+      detail: "agentera state <artifact> explain --all",
     };
   return {
     schemaVersion: "agentera.stateWriterDiscovery.v1",
@@ -215,8 +215,8 @@ export function stateWriterContract(
     authority: grammar.authority,
     contract_digest: grammar.contractDigest,
     policy: "Use the state writer for supported artifact mutations; do not hand-edit those artifacts during normal capability execution.",
-    discovery_command: "agentera schema --format json",
-    mutation_grammar: `agentera state <artifact> explain --all --format json`,
+    discovery_command: "agentera schema",
+    mutation_grammar: `agentera state <artifact> explain --all`,
     artifacts,
     parity_matrix: parity,
     unsupported_targets: uniqueTargets.filter((target) => stateWriterArtifactContract(target, mode) === null),

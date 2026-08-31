@@ -49,7 +49,7 @@ host did not see.
 
 For `semantic_required`, the host sends the same transient original request and
 the complete nullable host receipt to
-`npx -y agentera@next route receipt --input - --format json`. The receipt binds
+`npx -y agentera@next route receipt --input -`. The receipt binds
 to the SHA-256 of the request's UTF-8 bytes and the
 `semantic_capsule_sha256` returned in phase one. The CLI first validates the
 unmodified host shape, removes only contract-listed nulls, then reruns
@@ -74,7 +74,7 @@ uses a fixed public request, never the transient request being classified.
 
 The resulting `selected` or `status_fallback` authorization contains bounded
 route provenance and the existing
-`npx -y agentera@next prime --context <capability> --format json` startup path.
+`npx -y agentera@next prime --context <capability>` startup path.
 A `clarification` contains exactly one bounded
 question and no startup. This is intentionally a shared CLI contract, not a
 runtime-specific adapter. The portable shared skill is the sole host integration
@@ -152,4 +152,4 @@ model calls.
 - Maintainer: Agentera CLI maintainers
 - Source checkout root: `.`
 - Working directory: `.`
-- Command: `node packages/cli/dist/bin/agentera.js route evaluate --format json`
+- Command: `node packages/cli/dist/bin/agentera.js route evaluate`

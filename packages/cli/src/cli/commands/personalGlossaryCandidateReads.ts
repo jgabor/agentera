@@ -179,11 +179,11 @@ function contract(): CandidateReadContract {
 }
 
 function listSyntax(value: CandidateReadContract): string {
-  return `${value.command} list [--source-family explicit|recurring] [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN] --format json`;
+  return `${value.command} list [--source-family explicit|recurring] [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN]`;
 }
 
 function exactSyntax(value: CandidateReadContract): string {
-  return `${value.command} get --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY --format json`;
+  return `${value.command} get --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY`;
 }
 
 function invalid(
@@ -597,7 +597,7 @@ function currentProjection(
     `${value.command} ${operation}`,
     operation === "list" ? listSyntax(value) : exactSyntax(value),
     operation === "list"
-      ? `${value.command} list --limit ${value.defaultLimit} --format json`
+      ? `${value.command} list --limit ${value.defaultLimit}`
       : exactSyntax(value),
     unavailable,
   );
@@ -641,7 +641,7 @@ function listCandidates(io: Io, options: ListOptions, value: CandidateReadContra
         io,
         `${value.command} list`,
         listSyntax(value),
-        `${value.command} list --limit ${value.defaultLimit} --format json`,
+        `${value.command} list --limit ${value.defaultLimit}`,
         {
           class: "cursor_invalid",
           message: "candidate-list cursor is malformed or belongs to another local profile",
@@ -660,7 +660,7 @@ function listCandidates(io: Io, options: ListOptions, value: CandidateReadContra
         io,
         `${value.command} list`,
         listSyntax(value),
-        `${value.command} list --limit ${value.defaultLimit} --format json`,
+        `${value.command} list --limit ${value.defaultLimit}`,
         {
           class: "cursor_invalid",
           message: "candidate-list cursor filters or limit do not match this request",
@@ -679,7 +679,7 @@ function listCandidates(io: Io, options: ListOptions, value: CandidateReadContra
         io,
         `${value.command} list`,
         listSyntax(value),
-        `${value.command} list --limit ${value.defaultLimit} --format json`,
+        `${value.command} list --limit ${value.defaultLimit}`,
         {
           class: "cursor_snapshot_unavailable",
           message: "candidate-list cursor cannot resume the current projection snapshot",
@@ -693,7 +693,7 @@ function listCandidates(io: Io, options: ListOptions, value: CandidateReadContra
         io,
         `${value.command} list`,
         listSyntax(value),
-        `${value.command} list --limit ${value.defaultLimit} --format json`,
+        `${value.command} list --limit ${value.defaultLimit}`,
         {
           class: "cursor_snapshot_unavailable",
           message: "candidate-list cursor continuation is unavailable",
@@ -768,10 +768,10 @@ function listCandidates(io: Io, options: ListOptions, value: CandidateReadContra
       },
     },
     retrieval: {
-      get: `${value.command} get --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY --format json`,
+      get: `${value.command} get --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY`,
       ...(nextCursor
         ? {
-          continue: `${value.command} list${listFlags(options)} --limit ${options.limit} --cursor ${nextCursor} --format json`,
+          continue: `${value.command} list${listFlags(options)} --limit ${options.limit} --cursor ${nextCursor}`,
         }
         : {}),
     },
@@ -789,7 +789,7 @@ function listCandidates(io: Io, options: ListOptions, value: CandidateReadContra
       io,
       `${value.command} list`,
       listSyntax(value),
-      `${value.command} list --limit ${value.defaultLimit} --format json`,
+      `${value.command} list --limit ${value.defaultLimit}`,
       {
         class: "output_bound_exceeded",
         message: `candidate-list response exceeds its ${value.maxSerializedUtf8Bytes}-byte bound`,
@@ -949,8 +949,8 @@ export function runPersonalGlossaryCandidateReadsCommand(argv: string[], io: Io)
     return failure(
       io,
       "agentera report personal-glossary-candidates",
-      "agentera report personal-glossary-candidates {list,get} --format json",
-      "agentera report personal-glossary-candidates list --limit 20 --format json",
+      "agentera report personal-glossary-candidates {list,get}",
+      "agentera report personal-glossary-candidates list --limit 20",
       {
         class: "unsupported_state",
         message: "personal glossary candidate retrieval contract is unavailable",
@@ -966,8 +966,8 @@ export function runPersonalGlossaryCandidateReadsCommand(argv: string[], io: Io)
         ? `unsupported personal glossary candidate operation: ${operation}`
         : "candidate operation is required",
       valid_values: ["list", "get"],
-      syntax: `${value.command} {list,get} --format json`,
-      example: `${value.command} list --limit ${value.defaultLimit} --format json`,
+      syntax: `${value.command} {list,get}`,
+      example: `${value.command} list --limit ${value.defaultLimit}`,
       recovery: "Choose list or get and retry; no projection bytes were changed.",
     });
   }

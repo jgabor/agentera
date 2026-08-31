@@ -50,7 +50,7 @@ const RESULT_FIELDS = [
   "result_sha256",
 ];
 const OUTPUT_STATUSES = ["changed", "unchanged_replay", "dry_run_candidate"];
-const COMMAND = "agentera report personal-glossary-publish --input <file|-> [--dry-run] --format json";
+const COMMAND = "agentera report personal-glossary-publish --input <file|-> [--dry-run]";
 export const PERSONAL_GLOSSARY_PUBLISH_STRUCTURED_INPUT_OPTIONS = ["--input"] as const;
 const RECOVERY =
   "Reread the current personal candidate and authorized decision, then retry; no profile bytes were changed.";
@@ -143,7 +143,7 @@ function parseArgs(argv: string[]): { input: string; dryRun: boolean } | Invalid
     }
     if (name === "--format") {
       if (format) return { class: "mutually_exclusive", message: "--format may only be supplied once", syntax: COMMAND };
-      if (value !== "json") return { class: "invalid_choice", message: "personal-glossary-publish requires --format json", valid_values: ["json"] };
+      if (value !== "json") return { class: "invalid_choice", message: "personal-glossary-publish requires", valid_values: ["json"] };
       format = true;
       continue;
     }

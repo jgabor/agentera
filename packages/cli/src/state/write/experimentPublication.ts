@@ -55,8 +55,8 @@ function rejectIdentity(error: ExperimentIdentityError): never {
         ? "unsupported_target"
         : "conflict",
     message: error.message,
-    syntax: "agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml --format json",
-    example: "agentera state experiments publish --objective objective:123e4567-e89b-42d3-a456-426614174000 --number 0 --input experiment.yaml --format json",
+    syntax: "agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml",
+    example: "agentera state experiments publish --objective objective:123e4567-e89b-42d3-a456-426614174000 --number 0 --input experiment.yaml",
     recovery: "Correct the objective or experiment identity and retry; no state was changed.",
   });
 }

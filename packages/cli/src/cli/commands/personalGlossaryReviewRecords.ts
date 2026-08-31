@@ -180,19 +180,19 @@ export const PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS = [
 const [QUEUE_STRUCTURED_INPUT_SPEC, DISPOSITION_STRUCTURED_INPUT_SPEC] = PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS;
 
 function queueSyntax(value: ReviewRecordsCommandContract): string {
-  return `${value.command} ${QUEUE_STRUCTURED_INPUT_SPEC.action} ${QUEUE_STRUCTURED_INPUT_SPEC.option} <file|-> --format json`;
+  return `${value.command} ${QUEUE_STRUCTURED_INPUT_SPEC.action} ${QUEUE_STRUCTURED_INPUT_SPEC.option} <file|->`;
 }
 
 function dispositionSyntax(value: ReviewRecordsCommandContract): string {
-  return `${value.command} ${DISPOSITION_STRUCTURED_INPUT_SPEC.action} ${DISPOSITION_STRUCTURED_INPUT_SPEC.option} <file|-> --format json`;
+  return `${value.command} ${DISPOSITION_STRUCTURED_INPUT_SPEC.action} ${DISPOSITION_STRUCTURED_INPUT_SPEC.option} <file|->`;
 }
 
 function listSyntax(value: ReviewRecordsCommandContract): string {
-  return `${value.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN] --format json`;
+  return `${value.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN]`;
 }
 
 function exactSyntax(value: ReviewRecordsCommandContract): string {
-  return `${value.command} get --review-id ID --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY --format json`;
+  return `${value.command} get --review-id ID --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY`;
 }
 
 function invalid(io: Io, body: InvalidInputErrorBody): number {
@@ -245,7 +245,7 @@ function parseQueue(argv: string[], value: ReviewRecordsCommandContract): { inpu
     }
     if (name === "--format") {
       if (format) return { class: "mutually_exclusive", message: "--format may only be supplied once", syntax: queueSyntax(value) };
-      if (option !== "json") return { class: "invalid_choice", message: "personal-glossary-reviews requires --format json", valid_values: ["json"] };
+      if (option !== "json") return { class: "invalid_choice", message: "personal-glossary-reviews requires", valid_values: ["json"] };
       format = true;
       continue;
     }
@@ -269,7 +269,7 @@ function parseDisposition(argv: string[], value: ReviewRecordsCommandContract): 
     }
     if (name === "--format") {
       if (format) return { class: "mutually_exclusive", message: "--format may only be supplied once", syntax: dispositionSyntax(value) };
-      if (option !== "json") return { class: "invalid_choice", message: "personal-glossary-reviews requires --format json", valid_values: ["json"] };
+      if (option !== "json") return { class: "invalid_choice", message: "personal-glossary-reviews requires", valid_values: ["json"] };
       format = true;
       continue;
     }
@@ -746,8 +746,8 @@ export function runPersonalGlossaryReviewRecordsCommand(argv: string[], io: Io):
       io,
       "agentera.personalGlossaryReviewRetrieval.v1",
       "agentera report personal-glossary-reviews",
-      "agentera report personal-glossary-reviews {queue,disposition,list,get} --format json",
-      "agentera report personal-glossary-reviews list --limit 20 --format json",
+      "agentera report personal-glossary-reviews {queue,disposition,list,get}",
+      "agentera report personal-glossary-reviews list --limit 20",
       {
         class: "unsupported_state",
         message: "personal glossary review-record contract is unavailable",
@@ -763,8 +763,8 @@ export function runPersonalGlossaryReviewRecordsCommand(argv: string[], io: Io):
       class: operation ? "unsupported_target" : "missing_argument",
       message: operation ? "unsupported personal glossary review operation" : "review operation is required",
       valid_values: validOperations,
-      syntax: `${value.command} {${validOperations.join(",")}} --format json`,
-      example: `${value.command} list --limit ${value.defaultLimit} --format json`,
+      syntax: `${value.command} {${validOperations.join(",")}}`,
+      example: `${value.command} list --limit ${value.defaultLimit}`,
       recovery: "Choose queue, disposition, list, or get and retry; no review metadata was changed.",
     });
   }

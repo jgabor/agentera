@@ -17,7 +17,7 @@ function lines(title: string, items: string[]): string[] {
 export function printTopLevelHelp(): string {
   const choices = HELP_TOP_LEVEL_COMMANDS.join(",");
   const plans = entityListFamilies().find(({ key }) => key === "plans")!;
-  const planListExample = `agentera state ${plans.commandTokens.join(" ")} list --format json`;
+  const planListExample = `agentera state ${plans.commandTokens.join(" ")} list`;
   return [
     `usage: agentera [-h] [--version] {${choices}} ...`,
     "",
@@ -47,7 +47,7 @@ export function printTopLevelHelp(): string {
     "  --version           print the installed Agentera CLI version and exit",
     "",
     [
-      `Examples: ${preCutoverCommand("prime --context status --format json")}`,
+      `Examples: ${preCutoverCommand("prime --context status")}`,
       `  ${preCutoverCommand(planListExample.slice("agentera ".length))}`,
       `  ${preCutoverCommand("check verify eval skills --dry-run")}`,
       `  ${preCutoverCommand("report refresh --dry-run")}`,
@@ -94,8 +94,8 @@ export function printUpgradeHelp(): string {
     `  Native resource cleanup apply:   ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --yes")}`,
     "",
     "product-v1 reset (irreversible, no backup or restore):",
-    `  Preview: ${preCutoverCommand("upgrade --reset-product-v1 --dry-run --format json")}`,
-    `  Authorize: ${preCutoverCommand("upgrade --reset-product-v1 --yes --authorization TOKEN --format json")}`,
+    `  Preview: ${preCutoverCommand("upgrade --reset-product-v1 --dry-run")}`,
+    `  Authorize: ${preCutoverCommand("upgrade --reset-product-v1 --yes --authorization TOKEN")}`,
   ].join("\n");
 }
 
@@ -167,19 +167,19 @@ export function printStateHelp(sub?: string): string {
        "Only the displayed bare-ID selectors are accepted.",
        "Plan create rejects an open predecessor unless --force can archive exactly one unchanged; create --force records that predecessor's bare ID in successor.previous_plan_archived.",
        "Targeted replacement is explicit: state plan replace --predecessor ID --successor ID, or --predecessor ID --input PLAN.yaml to create the successor. It changes only the named predecessor lifecycle and derived successor lineage.",
-       "Competing open-plan diagnostics retain bounded bare IDs and require explicit roles: state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json. They never infer a role from list order.",
+       "Competing open-plan diagnostics retain bounded bare IDs and require explicit roles: state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID. They never infer a role from list order.",
        "Archive completed plans normally. Archive an unfinished selected plan with --force; an implicit archive with multiple open plans rejects without effects.",
        "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
       "Legacy plan identity collisions return a structured ambiguous error.",
       "",
-       "Discover writes: agentera state plan explain --format json",
-       "All verbs:         agentera state plan explain --all --format json",
+       "Discover writes: agentera state plan explain",
+       "All verbs:         agentera state plan explain --all",
     ].join("\n");
   }
   if (sub === "experiments") {
     return [
       ...recordFamilyReadSection("experiments"),
-      "       agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml --format json",
+      "       agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml",
       "       (publish also accepts --dry-run and --format text)",
       "",
       "Publish is the validated mutation authority and atomically writes one schema-valid experiment.",
@@ -188,51 +188,51 @@ export function printStateHelp(sub?: string): string {
       "List and publish require one bare objective ID; get requires one bare experiment ID.",
       "Legacy objective/path collisions return a structured ambiguous error.",
       "",
-       "Discover writes: agentera state experiments explain --verb publish --format json",
-       "All verbs:         agentera state experiments explain --all --format json",
+       "Discover writes: agentera state experiments explain --verb publish",
+       "All verbs:         agentera state experiments explain --all",
     ].join("\n");
   }
   if (sub === "glossary") {
     return [
-      "usage: agentera state glossary publish --input REQUEST.yaml [--dry-run] --format json",
-      "       agentera state glossary explain [--verb publish] --format json",
+      "usage: agentera state glossary publish --input REQUEST.yaml [--dry-run]",
+      "       agentera state glossary explain [--verb publish]",
       "",
       "Build-owned publication validates one audit terminology proposal and proposal-specific user confirmation.",
       "The writer revalidates cited source lines and atomically records a separate immutable approval and shared glossary entry.",
       "Confirmed project variants are enforced by `agentera check validate state`; profile and docs-mapping mutation remain outside publication.",
       "Audit and discuss remain mutation-free. Discuss, Plan, and Build use read-only glossary advice with project precedence, proven-gap personal fallback, and host review for inferred equivalence.",
       "",
-       "Discover writes: agentera state glossary explain --verb publish --format json",
-       "All verbs:         agentera state glossary explain --all --format json",
+       "Discover writes: agentera state glossary explain --verb publish",
+       "All verbs:         agentera state glossary explain --all",
     ].join("\n");
   }
   if (sub === "objective") {
     return [
       ...recordFamilyReadSection("objective"),
-      "       agentera state objective create --input OBJECTIVE.yaml --format json",
-      "       agentera state objective update --id ID --input OBJECTIVE.yaml --format json",
+      "       agentera state objective create --input OBJECTIVE.yaml",
+      "       agentera state objective update --id ID --input OBJECTIVE.yaml",
       "",
       "Objective create publishes one independent entity; update replaces that entity through rollback-safe publication.",
       "Active-objective inference is not a public record-family read.",
       "",
-       "Discover writes: agentera state objective explain --format json",
-       "All verbs:         agentera state objective explain --all --format json",
+       "Discover writes: agentera state objective explain",
+       "All verbs:         agentera state objective explain --all",
     ].join("\n");
   }
   if (sub === "todo") {
     return [
       ...recordFamilyReadSection("todo"),
-       "       agentera state todo activate|repair --dry-run|--effect-sha256 SHA256 --yes --format json",
-       "       agentera state todo correct-owners --input OWNER_MAPPING.yaml --dry-run|--effect-sha256 SHA256 --yes --format json",
-       "       agentera state todo create --input TODO.yaml --format json",
-       "       agentera state todo create --input TODO-CREATE-BATCH.yaml --dry-run --format json",
-       "       agentera state todo create --input TODO-CREATE-BATCH.yaml --effect-sha256 SHA256 --yes --format json",
-       "       agentera state todo update --id ID --input TODO-PATCH.yaml --format json",
-       "       agentera state todo set-severity --id ID --severity LEVEL --reason TEXT --date YYYY-MM-DD --format json",
-       "       agentera state todo set-severity --input TODO-SEVERITY-BATCH.yaml --dry-run|--effect-sha256 SHA256 --yes --format json",
-       "       agentera state todo supersede --id ID --replacement ID --reason TEXT --date YYYY-MM-DD --format json",
-       "       agentera state todo resolve|reopen --id ID --reason TEXT --date YYYY-MM-DD --format json",
-       "       agentera state todo resolve --input TODO-RESOLVE-BATCH.yaml --dry-run|--effect-sha256 SHA256 --yes --format json",
+       "       agentera state todo activate|repair --dry-run|--effect-sha256 SHA256 --yes",
+       "       agentera state todo correct-owners --input OWNER_MAPPING.yaml --dry-run|--effect-sha256 SHA256 --yes",
+       "       agentera state todo create --input TODO.yaml",
+       "       agentera state todo create --input TODO-CREATE-BATCH.yaml --dry-run",
+       "       agentera state todo create --input TODO-CREATE-BATCH.yaml --effect-sha256 SHA256 --yes",
+       "       agentera state todo update --id ID --input TODO-PATCH.yaml",
+       "       agentera state todo set-severity --id ID --severity LEVEL --reason TEXT --date YYYY-MM-DD",
+       "       agentera state todo set-severity --input TODO-SEVERITY-BATCH.yaml --dry-run|--effect-sha256 SHA256 --yes",
+       "       agentera state todo supersede --id ID --replacement ID --reason TEXT --date YYYY-MM-DD",
+       "       agentera state todo resolve|reopen --id ID --reason TEXT --date YYYY-MM-DD",
+       "       agentera state todo resolve --input TODO-RESOLVE-BATCH.yaml --dry-run|--effect-sha256 SHA256 --yes",
       "",
       "Each TODO item is one independently mutable canonical entity. IDs are bare ten-letter project-wide identities.",
       "TODO views are bounded in severity/status and Markdown public order; exact get returns complete detail.",
@@ -242,22 +242,22 @@ export function printStateHelp(sub?: string): string {
        "Singleton lifecycle verbs remain flag-only. Set-severity and resolve also accept strict verb-specific batch envelopes that require preview and exact confirmed apply.",
        "Marker-absent repositories must complete migration before ordinary TODO access.",
       "",
-       "Discover writes: agentera state todo explain --format json",
-       "All verbs:         agentera state todo explain --all --format json",
+       "Discover writes: agentera state todo explain",
+       "All verbs:         agentera state todo explain --all",
     ].join("\n");
   }
   if (sub === "docs") {
     return [
       ...recordFamilyReadSection("docs"),
-      "       agentera state docs create --input ENTRY.yaml --format json",
-      "       agentera state docs update --id ID --input ENTRY.yaml --format json",
+      "       agentera state docs create --input ENTRY.yaml",
+      "       agentera state docs update --id ID --input ENTRY.yaml",
       "",
       "Each documentation inventory entry is one independently mutable canonical entity; path is record data, not identity.",
       "Mappings, conventions, coverage, and editorial configuration retain whole-document authority in .agentera/docs.yaml.",
       "List views are bounded by path then ID; exact get returns complete detail.",
       "",
-        "Discover writes: agentera state docs explain --format json",
-        "All verbs:         agentera state docs explain --all --format json",
+        "Discover writes: agentera state docs explain",
+        "All verbs:         agentera state docs explain --all",
     ].join("\n");
   }
   if (sub) {
@@ -268,20 +268,20 @@ export function printStateHelp(sub?: string): string {
       ...(readSection.length === 0 ? [`usage: agentera state ${sub} [operation] [options]`] : []),
       ...(verbs.length ? [`       agentera state ${sub} {${verbs.join(",")}} [write flags]`] : []),
       ...(sub === "progress"
-        ? ["       agentera state progress append --input <path|-> --format json"]
+        ? ["       agentera state progress append --input <path|->"]
         : sub === "decisions"
           ? [
-              "       agentera state decisions append --input <path|-> --format json",
-              "       agentera state decisions update --id ID --satisfaction-state STATE [transition flags] --format json",
-              "       agentera state decisions amend --id ID --base-sha256 HASH --input <path|-> --format json",
+              "       agentera state decisions append --input <path|->",
+              "       agentera state decisions update --id ID --satisfaction-state STATE [transition flags]",
+              "       agentera state decisions amend --id ID --base-sha256 HASH --input <path|->",
             ]
           : []),
       ...(verbs.length
         ? [
             "",
-             `Discover writes: agentera state ${sub} explain --format json`,
-             `All verbs:        agentera state ${sub} explain --all --format json`,
-            `Per verb:        agentera state ${sub} explain --verb VERB --format json`,
+             `Discover writes: agentera state ${sub} explain`,
+             `All verbs:        agentera state ${sub} explain --all`,
+            `Per verb:        agentera state ${sub} explain --verb VERB`,
           ]
         : []),
       ...(sub === "progress"
@@ -299,8 +299,8 @@ export function printStateHelp(sub?: string): string {
     `usage: agentera state [-h] {${stateCommands.join(",")}} ...`,
     "",
     "Routine artifact reads, writes, and advanced artifact query.",
-    "Discover typed writes: agentera state <artifact> explain --format json",
-    "Discover all verbs: agentera state <artifact> explain --all --format json",
+    "Discover typed writes: agentera state <artifact> explain",
+    "Discover all verbs: agentera state <artifact> explain --all",
   ].join("\n");
 }
 
@@ -438,20 +438,20 @@ export function printReportHelp(): string {
     "                       | agentera report refresh [--dry-run|--consent local-history]",
     "                         [--import-source claude]",
     "                         [--no-<runtime> ...] [--accept-coverage-gap]",
-     `                       | ${profileGlossary.command} --input <file|-> [--dry-run] --format json`,
-    "                       | agentera report glossary-advice --input <file|-> --format json",
-    "                       | agentera report glossary-advice --term-input <file|-> --format json",
-    "                       | agentera report profile-grounding --format json",
+     `                       | ${profileGlossary.command} --input <file|-> [--dry-run]`,
+    "                       | agentera report glossary-advice --input <file|->",
+    "                       | agentera report glossary-advice --term-input <file|->",
+    "                       | agentera report profile-grounding",
     `                       | ${candidateReads.candidateReadCommand} list [--source-family explicit|recurring]`,
-    "                         [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN] --format json",
+    "                         [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN]",
     `                       | ${candidateReads.candidateReadCommand} get --candidate-id ID --candidate-revision REVISION`,
-    "                         --generation GENERATION --policy-version POLICY --format json",
-     `                       | ${candidateDecision.command} --input <file|-> --format json`,
-     `                       | ${reviewRecords.command} queue --input <file|-> --format json`,
-     `                       | ${reviewRecords.command} disposition --input <file|-> --format json`,
-     `                       | ${reviewRecords.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN] --format json`,
+    "                         --generation GENERATION --policy-version POLICY",
+     `                       | ${candidateDecision.command} --input <file|->`,
+     `                       | ${reviewRecords.command} queue --input <file|->`,
+     `                       | ${reviewRecords.command} disposition --input <file|->`,
+     `                       | ${reviewRecords.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN]`,
      `                       | ${reviewRecords.command} get --review-id ID --candidate-id ID --candidate-revision REVISION`,
-     "                         --generation GENERATION --policy-version POLICY --format json",
+     "                         --generation GENERATION --policy-version POLICY",
     "",
     "Privacy-gated usage analytics over an existing corpus.",
     "Default analytics use --sources active and exclude historical imports.",
@@ -524,7 +524,7 @@ export function printPrimeHelp(): string {
     "  --orientation         Deprecated dashboard alias; incompatible with --fields",
     "  --fields FIELDS       Comma-separated field filter for JSON/YAML output",
     "",
-    "Dashboard consumers must use `npx -y agentera@next prime --context status --format json` and read capability_context.context.status_context.",
+    "Dashboard consumers must use `npx -y agentera@next prime --context status` and read capability_context.context.status_context.",
     "JSON output uses bounded surfaces: bare prime is at most 12000 UTF-8 bytes and status context at most 22500; startup contains one availability projection and aggregate outcome, while schema discovery owns writer detail.",
   ].join("\n");
 }
@@ -552,7 +552,7 @@ export function printCapabilityHelp(capability: string): string {
     "  -h, --help            show this help message and exit",
     "  --format FORMAT       Output format: text, json, or yaml",
     "",
-    `Startup context: ${preCutoverCommand(`prime --context ${capability} --format json`)}`,
+    `Startup context: ${preCutoverCommand(`prime --context ${capability}`)}`,
   ].join("\n");
 }
 
@@ -561,8 +561,8 @@ export function printRouteHelp(): string {
   const example = JSON.stringify(receipt.stdin_example.input);
   const inspect = (value: unknown): string[] => JSON.stringify(value, null, 2).split("\n").map((line) => `  ${line}`);
   return [
-    `usage: ${preCutoverCommand("route <request|receipt> --input PATH [--format json]")}`,
-    `       ${preCutoverCommand("route evaluate --format json")}`,
+    `usage: ${preCutoverCommand("route <request|receipt> --input PATH")}`,
+    `       ${preCutoverCommand("route evaluate")}`,
     "",
     "Route one transient request or validate one semantic host receipt through the shared hybrid contract.",
     "Request text is accepted only from the structured YAML or JSON input document, never argv.",

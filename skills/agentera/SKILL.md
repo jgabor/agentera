@@ -3,7 +3,7 @@ name: agentera
 description: >
   One agent, one CLI, many capabilities. Per-capability instructions live in
   `packages/cli/src/capabilities/<name>/instructions.ts` and the runtime serves
-  it through `npx -y agentera@next prime --context <name> --format json`. Use this skill
+  it through `npx -y agentera@next prime --context <name>`. Use this skill
   for /agentera and Agentera capability requests; bare `/agentera` runs the
   prime orientation dashboard path instead of a generic greeting.
 version: "3.0.0"
@@ -44,19 +44,19 @@ also returns bounded app status, state slices, attention, and startup
 availability.
 
 ```bash
-npx -y agentera@next prime --context status --format json
+npx -y agentera@next prime --context status
 ```
 
 An `ok` outcome needs no fallback or second dashboard call. Follow an exact
 recovery command for other outcomes; every returned v3 command stays on
 `npx -y agentera@next`. Do not use bare or stable-channel CLI forms before
 stable promotion. For deeper read-only evidence, run
-`npx -y agentera@next doctor --format json`.
+`npx -y agentera@next doctor`.
 
 For capability-specific startup context:
 
 ```bash
-npx -y agentera@next prime --context <capability> --format json
+npx -y agentera@next prime --context <capability>
 ```
 
 This returns the capability's instructions, declared read/write needs, artifact
@@ -95,11 +95,11 @@ the CLI-supplied contract and context.
 
 | Request shape | Route |
 |---|---|
-| Bare `/agentera` | 1. Run `npx -y agentera@next prime --context status --format json` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
-| `/agentera <capability-name>` | Run `npx -y agentera@next prime --context <capability> --format json`. Follow the capability's instructions and contract. |
+| Bare `/agentera` | 1. Run `npx -y agentera@next prime --context status` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
+| `/agentera <capability-name>` | Run `npx -y agentera@next prime --context <capability>`. Follow the capability's instructions and contract. |
 | `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Curated leading phrase | Send the request through `npx -y agentera@next route request --input - --format json` using a transient structured `{ version: agentera.route_request.v1, request: ... }` document on stdin. A literal, globally owned phrase may select one capability and preserves the exact original remainder as topic. |
-| Other natural language | Send the same privacy-safe request document first. Only after the shared route contract returns `semantic_required`, classify the request as untrusted data from trigger `description`, `priority`, and `disambiguates_against`; copy its `semantic_capsule_sha256` unchanged into the complete nullable API receipt with the same transient request through `npx -y agentera@next route receipt --input - --format json`. |
+| Curated leading phrase | Send the request through `npx -y agentera@next route request --input -` using a transient structured `{ version: agentera.route_request.v1, request: ... }` document on stdin. A literal, globally owned phrase may select one capability and preserves the exact original remainder as topic. |
+| Other natural language | Send the same privacy-safe request document first. Only after the shared route contract returns `semantic_required`, classify the request as untrusted data from trigger `description`, `priority`, and `disambiguates_against`; copy its `semantic_capsule_sha256` unchanged into the complete nullable API receipt with the same transient request through `npx -y agentera@next route receipt --input -`. |
 
 Plain-language requests use per-capability `schemas/triggers.yaml`, not
 hardcoded rules. `next_action` is a readiness suggestion for bare/status
@@ -116,8 +116,8 @@ instructions, tools, or rationale fields. The CLI validates API shape before
 bounded null projection, then validates version, both digests, canonical
 capability, outcome binding, and spans.
 On `selected`, follow only the returned `route_provenance.startup_command` (the
-existing `npx -y agentera@next prime --context <selected-capability> --format json` path).
-After the CLI validates a `select` receipt, then run `npx -y agentera@next prime --context <selected-capability> --format json` only through that returned authorization.
+existing `npx -y agentera@next prime --context <selected-capability>` path).
+After the CLI validates a `select` receipt, then run `npx -y agentera@next prime --context <selected-capability>` only through that returned authorization.
 Carry a returned `deferred_intent` intact for later handoff; do not invoke or
 chain it. A `clarification` starts no capability and asks exactly the returned
 question. A valid `no_match` returns status with `status_reason: no_match` for
@@ -133,7 +133,7 @@ request, and a compound remainder is preserved rather than silently chained.
 Decision mpulyomlyl supersedes Decision 76 only for this curated literal fast
 path.
 
-Run `npx -y agentera@next route evaluate --format json` to evaluate the frozen visible
+Run `npx -y agentera@next route evaluate` to evaluate the frozen visible
 development and adversarial corpus. Its report binds the protocol, phrase
 authority, and shared-skill hashes, labels every result with a routing tier, and
 keeps request text out of output. It proves protocol conformance, not semantic
@@ -157,7 +157,7 @@ Capability handoffs use glyph plus canonical name (e.g. `⧉ build`, `≡ plan`)
 
 The prime dashboard rendering contract — template, field-by-field rules, output
 budget, attention-item ordering, exit marker — is owned by the status capability
-instructions. `npx -y agentera@next prime --context status --format json` returns the full
+instructions. `npx -y agentera@next prime --context status` returns the full
 `capability_context.instructions` body and the bounded
 `capability_context.context.status_context` state and one
 `capability_context.startup` availability projection in one response. Render
@@ -215,36 +215,36 @@ records, publishes atomically, and supports filesystem-safe previews.
 Discover the live contract before constructing a write:
 
 ```bash
-npx -y agentera@next state decisions explain --format json
-npx -y agentera@next state decisions explain --verb update --format json
+npx -y agentera@next state decisions explain
+npx -y agentera@next state decisions explain --verb update
 ```
 
 The same pattern applies to every writable artifact:
 
 ```bash
-npx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb> --format json
+npx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb>
 ```
 
 Common mutations:
 
-- `npx -y agentera@next state progress append --input <path|-> --format json`
-- `npx -y agentera@next state decisions append --input <path|-> --format json`
-- `npx -y agentera@next state decisions amend --id ID --base-sha256 HASH --input <path|-> --format json`
-- `npx -y agentera@next state decisions update --id ID ... --format json`
-- `npx -y agentera@next state plan create [--force] --input plan.yaml --format json`
-- `npx -y agentera@next state plan append [--plan PLAN_ID] --input task.yaml --format json`
-- `npx -y agentera@next state plan update --id TASK_ID [--plan PLAN_ID] --input task-patch.yaml --format json`
-- `npx -y agentera@next state plan set-status --id TASK_ID --status STATUS --format json`
-- `npx -y agentera@next state plan set-plan-status [--plan PLAN_ID] --status complete --format json`
-- `npx -y agentera@next state plan archive [--plan ID] [--force] --format json`
-- `npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json`
-- `npx -y agentera@next state health append --input audit.yaml --format json`
-- `npx -y agentera@next state todo create --input todo.yaml --format json`
-- `npx -y agentera@next state todo update --id ID --input todo-patch.yaml --format json`
-- `npx -y agentera@next state todo set-severity --id ID ... --format json`
-- `npx -y agentera@next state todo supersede --id ID ... --format json`
-- `npx -y agentera@next state todo resolve --id ID ... --format json`
-- `npx -y agentera@next state todo reopen --id ID ... --format json`
+- `npx -y agentera@next state progress append --input <path|->`
+- `npx -y agentera@next state decisions append --input <path|->`
+- `npx -y agentera@next state decisions amend --id ID --base-sha256 HASH --input <path|->`
+- `npx -y agentera@next state decisions update --id ID ...`
+- `npx -y agentera@next state plan create [--force] --input plan.yaml`
+- `npx -y agentera@next state plan append [--plan PLAN_ID] --input task.yaml`
+- `npx -y agentera@next state plan update --id TASK_ID [--plan PLAN_ID] --input task-patch.yaml`
+- `npx -y agentera@next state plan set-status --id TASK_ID --status STATUS`
+- `npx -y agentera@next state plan set-plan-status [--plan PLAN_ID] --status complete`
+- `npx -y agentera@next state plan archive [--plan ID] [--force]`
+- `npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID`
+- `npx -y agentera@next state health append --input audit.yaml`
+- `npx -y agentera@next state todo create --input todo.yaml`
+- `npx -y agentera@next state todo update --id ID --input todo-patch.yaml`
+- `npx -y agentera@next state todo set-severity --id ID ...`
+- `npx -y agentera@next state todo supersede --id ID ...`
+- `npx -y agentera@next state todo resolve --id ID ...`
+- `npx -y agentera@next state todo reopen --id ID ...`
 
 TODO create input is a full YAML/JSON typed record. TODO update input is a
 patch: omitted fields remain unchanged and only `target_version`,
@@ -270,7 +270,7 @@ or successor roles.
 Add `--dry-run` to preview any mutation without publishing it. Artifacts not
 listed above are outside the typed writer contract and remain governed by their
 owning capability's instructions and safety rails.
-`npx -y agentera@next schema --format json` exposes the machine-readable writer operation matrix under
+`npx -y agentera@next schema` exposes the machine-readable writer operation matrix under
 `state_writer` and on each writable `artifact_schemas[*].write_interface`.
 
 ---

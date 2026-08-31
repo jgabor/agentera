@@ -281,8 +281,8 @@ describe("read-only migration fixture state listing", () => {
     expect(JSON.parse(invalid.out)).toMatchObject({
       error: {
         class: "cursor_invalid",
-        syntax: "agentera state progress list [--limit N] [--cursor TOKEN] --format json",
-        example: "agentera state progress list --limit 20 --cursor TOKEN --format json",
+        syntax: "agentera state progress list [--limit N] [--cursor TOKEN]",
+        example: "agentera state progress list --limit 20 --cursor TOKEN",
       },
     });
   });
@@ -522,7 +522,7 @@ describe("read-only migration fixture state listing", () => {
       source: { artifact: "progress", current_projection: { path: "x", exists: true }, archive: { root: "x", validated_entries: 0, rejected_count: 0 } },
       filters: { topic: null, status: null },
       snapshot: { id: "a".repeat(64), first_page: true, order: "entry_number_desc", has_more: false, candidate_count: entries.length, candidate_max: entries.length, page_start: entries.length + 1 },
-      source_contract: { authority: "references/artifacts/state-storage-authority.yaml", compatibility: "degraded", detail: "summary", retrieval: "agentera state progress get --number N --format json", cursor: "opaque" },
+      source_contract: { authority: "references/artifacts/state-storage-authority.yaml", compatibility: "degraded", detail: "summary", retrieval: "agentera state progress get --number N", cursor: "opaque" },
     };
     const rawJsonBytes = Buffer.byteLength(JSON.stringify(response, null, 2) + "\n", "utf8");
     const rawYamlBytes = Buffer.byteLength(YAML.stringify(response), "utf8");
@@ -586,8 +586,8 @@ describe("read-only migration fixture state listing", () => {
     expect(JSON.parse(invalid.out)).toMatchObject({
       error: {
         class: "invalid_request",
-        syntax: "agentera state progress list [--limit N] [--cursor TOKEN] --format json",
-        example: "agentera state progress list --limit 20 --format json",
+        syntax: "agentera state progress list [--limit N] [--cursor TOKEN]",
+        example: "agentera state progress list --limit 20",
       },
     });
   });

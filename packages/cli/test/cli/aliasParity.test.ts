@@ -167,7 +167,7 @@ describe("schema-advertised alias/runtime parity", () => {
       status: "fail",
       error: {
         valid_values: ["check compact"],
-        example: "agentera check compact --format json",
+        example: "agentera check compact",
       },
     });
   });

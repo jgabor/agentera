@@ -134,7 +134,7 @@ function verifyFixture() {
     assert(first.omission_reason === "serialized_output_byte_budget", "byte-pressure omission reason is not explicit");
     assert(typeof first.next_cursor === "string" && first.next_cursor.length > 0, "byte-pressure response omitted its cursor");
     assert(first.retrieval.continue.includes(`--cursor ${first.next_cursor}`), "response omitted usable cursor recovery");
-    assert(first.retrieval.get === "agentera state plan get --plan PLAN_ID --format json", "response omitted exact-get recovery");
+    assert(first.retrieval.get === "agentera state plan get --plan PLAN_ID", "response omitted exact-get recovery");
 
     const allEntries = [...first.entries];
     const firstIds = new Set(first.entries.map((entry) => entry.stable_id));

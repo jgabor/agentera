@@ -64,7 +64,7 @@ function contract(sourceRoot = resolveSourceRoot()): Contract {
 
 function failure(kind: StateFailureClass, message: string, recovery: string, id?: string, details?: JsonObject): StateRetrievalFailure {
   const exampleId = id && ID.test(id) ? id : "qjtrmnpvka";
-  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: "agentera state plan get --id ID --format json", example: `agentera state plan get --id ${exampleId} --format json`, recovery, artifact: ARTIFACT, ...(id ? { id } : {}), ...(details ? { details } : {}) } }, kind === "invalid_request" ? 2 : 1);
+  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: "agentera state plan get --id ID", example: `agentera state plan get --id ${exampleId}`, recovery, artifact: ARTIFACT, ...(id ? { id } : {}), ...(details ? { details } : {}) } }, kind === "invalid_request" ? 2 : 1);
 }
 function relative(root: string, file: string): string { return path.relative(path.resolve(root), file).split(path.sep).join("/"); }
 function all(root: string, sourceRoot: string, discovery?: EntityDiscoveryResult): DiscoveredEntity[] {
@@ -72,8 +72,8 @@ function all(root: string, sourceRoot: string, discovery?: EntityDiscoveryResult
     const pending = inspectPendingPlanReplacement(root);
     if (pending) {
       const recovery = pending.kind === "existing"
-        ? `Retry agentera state plan replace --predecessor ${pending.predecessor} --successor ${pending.successor} --format json to recover the exact pending replacement.`
-        : `Retry the exact original agentera state plan replace --predecessor ${pending.predecessor} --input PLAN.yaml --format json request to recover the pending replacement.`;
+        ? `Retry agentera state plan replace --predecessor ${pending.predecessor} --successor ${pending.successor} to recover the exact pending replacement.`
+        : `Retry the exact original agentera state plan replace --predecessor ${pending.predecessor} --input PLAN.yaml request to recover the pending replacement.`;
       throw failure("unsupported_state", `plan replacement from '${pending.predecessor}' to '${pending.successor}' is pending durable recovery`, recovery, pending.predecessor);
     }
   } catch (error) {
@@ -108,7 +108,7 @@ export function openPlanConflictDiagnostic(openIds: readonly string[], sourceRoo
   return {
     message: `multiple open plans exist: ${sampleIds.join(", ")} (total=${allIds.length}, omitted=${omittedCount}); canonical state does not assign predecessor or successor roles`,
     details: { open_plan_candidates: { total: allIds.length, sample_ids: sampleIds, omitted_count: omittedCount } },
-    recovery: preCutoverCommand("state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json"),
+    recovery: preCutoverCommand("state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID"),
   };
 }
 function multipleOpenPlanConflict(open: DiscoveredEntity[], sourceRoot: string): OpenPlanConflictDiagnostic {
@@ -119,7 +119,7 @@ function selectedPlan(entities: DiscoveredEntity[], requested?: string, sourceRo
   const plans = entities.filter((entity) => entity.boundary === PLAN);
   if (requested) {
     const matches = plans.filter((entity) => entity.id === requested);
-    if (matches.length !== 1) throw failure(matches.length ? "ambiguous" : "not_found", matches.length ? `plan ID '${requested}' has conflicting ownership` : `plan ID '${requested}' was not found`, "Run agentera state plan list --format json and select one canonical plan ID.", requested);
+    if (matches.length !== 1) throw failure(matches.length ? "ambiguous" : "not_found", matches.length ? `plan ID '${requested}' has conflicting ownership` : `plan ID '${requested}' was not found`, "Run agentera state plan list and select one canonical plan ID.", requested);
     return matches[0];
   }
   const open = plans.filter((entity) => OPEN.has(planStatus(entity)));
@@ -179,7 +179,7 @@ function planLifecycleDecision(
         reject({
           class: "conflict",
           message: `open plan '${predecessor.id}' blocks plan create`,
-          recovery: `Use agentera state plan create --force --input PLAN.yaml --format json only to archive '${predecessor.id}' unchanged and publish a successor.`,
+          recovery: `Use agentera state plan create --force --input PLAN.yaml only to archive '${predecessor.id}' unchanged and publish a successor.`,
         });
       }
       return {
@@ -216,7 +216,7 @@ function planLifecycleDecision(
     reject({
       class: "conflict",
       message: `open plan '${target.id}' cannot be archived without --force`,
-      recovery: `Complete '${target.id}', or use agentera state plan archive --plan ${target.id} --force --format json to preserve unfinished task history without claiming completion.`,
+      recovery: `Complete '${target.id}', or use agentera state plan archive --plan ${target.id} --force to preserve unfinished task history without claiming completion.`,
     });
   }
   const archivedRecord = archivedPlanRecord(target);
@@ -942,7 +942,7 @@ function boundedList(root: string, sourceRoot: string, selected: DiscoveredEntit
   const familyIdentifier = command.includes("tasks") && typeof filter.plan === "string" ? ` ${shellQuoteArgument(filter.plan)}` : "";
   const filterFlags = filter.status ? ` --status ${shellQuoteArgument(Array.isArray(filter.status) ? filter.status.join(",") : filter.status)}` : "";
   const selectorFlags = entityListSelectorFlags(selector);
-  const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity)), counts: { total: selected.length, returned: page.length, remaining }, order, filters: filter, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, retrieval: { ...(next ? { continue: `${command.replace("state ", "agentera state ")}${familyIdentifier}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next} --format json` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}), ...envelope };
+  const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command, status: remaining ? "degraded" : "ok", entries: page.map((entity) => entry(root, entity)), counts: { total: selected.length, returned: page.length, remaining }, order, filters: filter, snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, retrieval: { ...(next ? { continue: `${command.replace("state ", "agentera state ")}${familyIdentifier}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next}` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}), ...envelope };
   return projectEntityList(response, selector, projectionOptions);
 }
 export function getPlanEntity(root: string, id: string, sourceRoot = resolveSourceRoot()): JsonObject { const entities = all(root, sourceRoot); const plan = selectedPlan(entities, id, sourceRoot); return { schemaVersion: "agentera.stateGet.v1", command: "state plan get", status: "ok", entry: entry(root, plan), tasks: entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === id).sort((a, b) => a.id!.localeCompare(b.id!)).map((entity) => entry(root, entity)), source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full_entities" } }; }

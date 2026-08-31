@@ -26,7 +26,7 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
         : family.get,
       example: list
         ? family.example
-        : "agentera state experiments get --id qjtrmnpvka --format json",
+        : "agentera state experiments get --id qjtrmnpvka",
       recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Use bare ten-letter entity IDs and retry; no state was changed.",
       valid_values: list
         ? entityListValidValues(family)
@@ -110,7 +110,7 @@ export function runExperimentRecords(argv: string[], io: Io): number {
         class: "unsupported_state",
         message: (error as Error).message,
         syntax: "agentera state experiments list --objective ID [options] | agentera state experiments get --id ID [--format text|json|yaml]",
-        example: "agentera state experiments list --objective qjtrmnpvka --format json",
+        example: "agentera state experiments list --objective qjtrmnpvka",
         recovery: "Use supported objective-scoped experiment state and retry; no state was changed.",
       },
     }, 1), format, io);

@@ -146,7 +146,7 @@ export function applyOutputPolicy(args: readonly string[], io: { out?: (text: st
         class: "invalid_choice",
         message: "argument --format: invalid choice (choose from 'json')",
         valid_values: ["json"],
-        recovery: "Use --format json or omit the selector; no state was changed.",
+        recovery: "Use or omit the selector; no state was changed.",
       },
     });
   }

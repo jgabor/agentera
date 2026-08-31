@@ -558,7 +558,7 @@ export function validateGlossaryEntryContract(
   if (
     confirmedVariantGuard?.owner !== "packages/cli/src/cli/commands/validate.ts#validateStatePayload" ||
     confirmedVariantGuard?.scanner !== "packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations" ||
-    confirmedVariantGuard?.command !== "npx -y agentera@next check validate state --format json" ||
+    confirmedVariantGuard?.command !== "npx -y agentera@next check validate state" ||
     confirmedVariantGuard?.validation_surface !== "packages/cli/test/cli/glossaryVariantGuard.test.ts" ||
     confirmedVariantGuard?.loader !==
       "packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument" ||
@@ -628,7 +628,7 @@ export function validateGlossaryEntryContract(
   if (
     publication?.owner !== "build" ||
     publication?.command !==
-      "npx -y agentera@next state glossary publish --input REQUEST --format json" ||
+      "npx -y agentera@next state glossary publish --input REQUEST" ||
     publicationRequest?.schema_version !== "agentera.glossaryPublicationRequest.v1" ||
     !sameStrings(publicationRequest?.required_fields, [
       "schema_version",
@@ -676,7 +676,7 @@ export function validateGlossaryEntryContract(
     ]) ||
     profileGrounding?.implementation !== "active_exclusion_only" ||
     !sameStrings(profileGrounding?.capabilities, ["discuss", "plan", "build"]) ||
-    profileGrounding?.command !== "npx -y agentera@next report profile-grounding --format json" ||
+    profileGrounding?.command !== "npx -y agentera@next report profile-grounding" ||
     profileGrounding?.schema_version !== "agentera.profileGrounding.v1" ||
     profileGrounding?.parser !==
       "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||

@@ -88,7 +88,7 @@ export function surfaceMissingMessage(surface: string, p: string, model: ReturnT
     `Agentera directory: ${payload.appHome}. ` +
     `App files directory: ${payload.managedAppRoot}. ` +
     `Run \`${preCutoverCommand("doctor")}\` to preview the repair; run ` +
-    `\`${preCutoverCommand("doctor --format json")}\` for structured details. ` +
+    `\`${preCutoverCommand("doctor")}\` for structured details. ` +
     `Technical details: appHome=${payload.appHome} managedAppRoot=${payload.managedAppRoot} ` +
     `skillRoot=${payload.skillRoot} runtimeRoot=${payload.runtimeRoot}.`
   );

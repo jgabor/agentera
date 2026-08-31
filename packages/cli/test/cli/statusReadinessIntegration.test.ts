@@ -154,7 +154,7 @@ describe("status TODO readiness integration", () => {
       artifact: "todo",
       outcome: "actionable",
       eligible: true,
-      retrieval: { exact: "npx -y agentera@next state todo get --id aaaaaaaaaa --format json" },
+      retrieval: { exact: "npx -y agentera@next state todo get --id aaaaaaaaaa" },
     });
 
     const conflicting = todo("bbbbbbbbbb", `${capability} conflict`, readiness(capability));
@@ -188,7 +188,7 @@ describe("status TODO readiness integration", () => {
       artifact: "todo",
       outcome: "actionable",
       eligible: true,
-      retrieval: { exact: "npx -y agentera@next state todo get --id aaaaaaaaaa --format json" },
+      retrieval: { exact: "npx -y agentera@next state todo get --id aaaaaaaaaa" },
     };
     expect(json.payload!.next_action).toMatchObject(expected);
     expect(host.payload!.capability_context.context.status_context.next_action).toEqual(json.payload!.next_action);

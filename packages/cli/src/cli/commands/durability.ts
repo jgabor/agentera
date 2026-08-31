@@ -36,8 +36,8 @@ export function entityDurabilityFailure(message: string, artifact?: string | nul
     error: {
       class: "invalid_request",
       message,
-      syntax: "agentera check durability --artifact ARTIFACT --id ID --format json",
-      example: "agentera check durability --artifact progress --id qjtrmnpvka --format json",
+      syntax: "agentera check durability --artifact ARTIFACT --id ID",
+      example: "agentera check durability --artifact progress --id qjtrmnpvka",
       recovery: "Use one bare entity ID returned by the artifact list; no state was changed.",
       ...(artifact ? { artifact } : {}),
       ...(id ? { id } : {}),

@@ -20,7 +20,7 @@ import { entityListFamily } from "../../src/state/entityRetrievalHelp.js";
 
 const roots: string[] = [];
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
-const TARGETED_REPLACEMENT_RECOVERY = "npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID --format json";
+const TARGETED_REPLACEMENT_RECOVERY = "npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID";
 const supersessionWorker = fileURLToPath(new URL("./planSupersessionWorker.mjs", import.meta.url));
 const appendWorker = fileURLToPath(new URL("./planAppendWorker.mjs", import.meta.url));
 
@@ -203,8 +203,8 @@ describe("plan and task entity authority", () => {
       expect.objectContaining({ flag: "--successor", field: "successor", required: false }),
     ]));
     expect(explanation.examples).toEqual([
-      "agentera state plan replace --predecessor abcdefghij --successor klmnopqrst --format json",
-      "agentera state plan replace --predecessor abcdefghij --input plan.yaml --format json",
+      "agentera state plan replace --predecessor abcdefghij --successor klmnopqrst",
+      "agentera state plan replace --predecessor abcdefghij --input plan.yaml",
     ]);
   });
 
@@ -303,7 +303,7 @@ describe("plan and task entity authority", () => {
     const created = JSON.parse(publication.out);
     const expectedIds = new Set(created.tasks.map((task: any) => task.id));
     const observed = new Set<string>();
-    let command = "agentera state plan tasks list --limit 100 --format json";
+    let command = "agentera state plan tasks list --limit 100";
     let pageCount = 0;
     do {
       expect(command).toMatch(/^agentera state plan tasks list /);
@@ -316,14 +316,14 @@ describe("plan and task entity authority", () => {
       for (const task of page.entries) {
         expect(expectedIds.has(task.id)).toBe(true);
         expect(observed.has(task.id)).toBe(false);
-        expect(task.retrieval.get).toBe(`agentera state plan tasks get --id ${task.id} --format json`);
+        expect(task.retrieval.get).toBe(`agentera state plan tasks get --id ${task.id}`);
         observed.add(task.id);
       }
       if (page.omitted) {
         expect(page.omission_reason).toBe("page_limit");
         expect(page.omitted_count).toBeGreaterThan(0);
         expect(page.next_cursor).toEqual(expect.any(String));
-        expect(page.retrieval.get).toBe("agentera state plan tasks get --id ID --format json");
+        expect(page.retrieval.get).toBe("agentera state plan tasks get --id ID");
         command = page.retrieval.continue;
       } else command = "";
       pageCount += 1;
@@ -401,7 +401,7 @@ describe("plan and task entity authority", () => {
     expect(firstPage).toMatchObject({
       projection: { selector: "ids_only", detail: "identity" },
       counts: { candidate: 2, returned: 1, omitted: 1, continuation: 1 },
-      entries: [{ artifact: "plan", retrieval: { get: expect.stringMatching(/^agentera state plan tasks get --id [a-z]{10} --format json$/) } }],
+      entries: [{ artifact: "plan", retrieval: { get: expect.stringMatching(/^agentera state plan tasks get --id [a-z]{10}$/) } }],
     });
     expect(firstPage.entries[0]).not.toHaveProperty("record");
     expect(firstPage.retrieval.continue).toContain("--ids-only");
@@ -448,7 +448,7 @@ describe("plan and task entity authority", () => {
     expect(invalid.rc).toBe(2);
     expect(JSON.parse(invalid.out).error).toMatchObject({
       class: "invalid_request",
-      example: "agentera state plan get --id qjtrmnpvka --format json",
+      example: "agentera state plan get --id qjtrmnpvka",
       recovery: "Use a bare plan ID returned by plan create or list.",
     });
   });
@@ -1233,7 +1233,7 @@ finally { process.chdir(cwd); }
     expect(filtered.rc, filtered.err || filtered.out).toBe(0);
     expect(JSON.parse(filtered.out)).toMatchObject({ counts: { total: 21, returned: 21 }, filters: { status: ["archived"] } });
     const filteredPage = capture(root, ["state", "plan", "list", "--status", "archived", "--ids-only", "--limit", "1", "--format", "json"]);
-    expect(JSON.parse(filteredPage.out).retrieval.continue).toMatch(/^agentera state plan list --status 'archived' --ids-only --limit 1 --cursor \S+ --format json$/);
+    expect(JSON.parse(filteredPage.out).retrieval.continue).toMatch(/^agentera state plan list --status 'archived' --ids-only --limit 1 --cursor \S+$/);
     const exact = capture(root, ["state", "plan", "get", "--id", archived[0].id, "--format", "json"]);
     expect(exact.rc, exact.err || exact.out).toBe(0);
     expect(JSON.parse(exact.out).entry.record.header.status).toBe("archived");

@@ -111,7 +111,7 @@ describe("validateParity (D56 artifact-validation surface)", () => {
   });
 
   it.each(D56_SUBCOMMANDS.map((name) => [name, name] as const))(
-    "pass: check validate %s --format json matches the validate oracle envelope",
+    "pass: check validate %s matches the validate oracle envelope",
     (subcommand) => {
       const { rc, payload } = passEnvelope(subcommand);
       expect(rc).toBe(0);

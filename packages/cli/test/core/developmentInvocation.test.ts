@@ -33,14 +33,12 @@ function rejects(action: () => unknown): void {
 
 describe("exact code-owned development invocation projection", () => {
   it("binds shell-quoted path characters to one local argv element", () => {
-    const source = String.raw`npx -y agentera@next doctor --project '/tmp/a ; $() & '"'"'quote'"'"' [雪]' --format json`;
+    const source = String.raw`npx -y agentera@next doctor --project '/tmp/a ; $() & '"'"'quote'"'"' [雪]'`;
     const bound = bindDevelopmentInvocation({ owner: "doctor.runtime-proof", source }, source);
     expect(bound.argv).toEqual([
       "doctor",
       "--project",
       "/tmp/a ; $() & 'quote' [雪]",
-      "--format",
-      "json",
     ]);
     expect(Object.isFrozen(bound)).toBe(true);
     expect(Object.isFrozen(bound.argv)).toBe(true);
@@ -59,21 +57,21 @@ describe("exact code-owned development invocation projection", () => {
   );
 
   it.each([
-    ["bare", "agentera prime --context status --format json", "wrong_channel"],
-    ["stable", "npx -y agentera@latest prime --context status --format json", "wrong_channel"],
-    ["missing exact flag", "npx -y agentera@next prime --context status", "not_exact"],
-    ["reordered", "npx -y agentera@next prime --format json --context status", "not_exact"],
-    ["wrapped", "env npx -y agentera@next prime --context status --format json", "wrong_channel"],
-    ["split selector", "npx -y agentera @next prime --context status --format json", "wrong_channel"],
-    ["nested", "npx -y agentera@next prime --context 'bash -c whoami' --format json", "not_exact"],
-    ["composition", "npx -y agentera@next prime --context status --format json; whoami", "malformed"],
-    ["substitution", "npx -y agentera@next prime --context $(whoami) --format json", "malformed"],
-    ["unquoted newline", "npx -y agentera@next prime\n--context status --format json", "malformed"],
-    ["unquoted carriage return", "npx -y agentera@next prime\r--context status --format json", "malformed"],
-    ["continued newline", "npx -y agentera@next prime \\\n--context status --format json", "malformed"],
-    ["malformed quote", "npx -y agentera@next prime --context 'status --format json", "malformed"],
+    ["bare", "agentera prime --context status", "wrong_channel"],
+    ["stable", "npx -y agentera@latest prime --context status", "wrong_channel"],
+    ["missing exact flag", "npx -y agentera@next prime", "not_exact"],
+    ["reordered", "npx -y agentera@next prime status --context", "not_exact"],
+    ["wrapped", "env npx -y agentera@next prime --context status", "wrong_channel"],
+    ["split selector", "npx -y agentera @next prime --context status", "wrong_channel"],
+    ["nested", "npx -y agentera@next prime --context 'bash -c whoami'", "not_exact"],
+    ["composition", "npx -y agentera@next prime --context status; whoami", "malformed"],
+    ["substitution", "npx -y agentera@next prime --context $(whoami)", "malformed"],
+    ["unquoted newline", "npx -y agentera@next prime\n--context status", "malformed"],
+    ["unquoted carriage return", "npx -y agentera@next prime\r--context status", "malformed"],
+    ["continued newline", "npx -y agentera@next prime \\\n--context status", "malformed"],
+    ["malformed quote", "npx -y agentera@next prime --context 'status", "malformed"],
   ])("rejects %s before a caller receives argv", (_id, candidate, classification) => {
-    const source = "npx -y agentera@next prime --context status --format json";
+    const source = "npx -y agentera@next prime --context status";
     try {
       bindDevelopmentInvocation({ owner: "prime.status", source }, candidate);
       throw new Error("expected rejection");
@@ -135,38 +133,38 @@ describe("exact code-owned development invocation projection", () => {
       "decisions",
       "update",
     )).toEqual([
-      'agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..." --format json',
+      'agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."',
     ]);
 
     const progress = runtimeOperationSpec("progress", "append")!;
     expect(projectRuntimeOperationRecovery(progress.projection.recovery.source, "progress", "append"))
-      .toBe("Run `agentera state progress explain --verb append --format json` and correct the rejected field; no state was changed.");
+      .toBe("Run `agentera state progress explain --verb append` and correct the rejected field; no state was changed.");
 
     expect(projectGlossaryDevelopmentValue(
-      "Use the Profile capability to repair or regenerate PROFILE.md, then retry `npx -y agentera@next report profile-grounding --format json`; no profile bytes were changed.",
+      "Use the Profile capability to repair or regenerate PROFILE.md, then retry `npx -y agentera@next report profile-grounding`; no profile bytes were changed.",
       "profile_grounding.repair",
-    )).toBe("Use the Profile capability to repair or regenerate PROFILE.md, then retry `agentera report profile-grounding --format json`; no profile bytes were changed.");
+    )).toBe("Use the Profile capability to repair or regenerate PROFILE.md, then retry `agentera report profile-grounding`; no profile bytes were changed.");
   });
 
   it.each([
     ["unknown", "npx -y agentera@next destroy --yes"],
-    ["composition", "npx -y agentera@next state progress append --input progress.yaml --format json && printf x"],
-    ["numeric redirect", "npx -y agentera@next state progress append --input progress.yaml --format json 2>err"],
-    ["substitution", "npx -y agentera@next state progress append --input $(printf x) --format json"],
-    ["wrong channel", "npx -y agentera@latest state progress append --input progress.yaml --format json"],
-    ["unclosed quote", 'npx -y agentera@next state progress append --input "progress.yaml --format json'],
-    ["sibling", "npx -y agentera@next state progress append --input progress.yaml --format json npx -y agentera@next prime"],
-    ["force", "npx -y agentera@next state progress append --input progress.yaml --format json --force"],
-    ["garbage", "npx -y agentera@next state progress append --input progress.yaml --format json garbage"],
-    ["quoted operator", 'npx -y agentera@next state progress append --input progress.yaml --format json "&&"'],
-    ["adjacent prefix", "xnpx -y agentera@next state progress append --input progress.yaml --format json"],
-    ["adjacent suffix", "npx -y agentera@next state progress append --input progress.yaml --format jsonoops"],
-    ["continuation", "npx -y agentera@next state progress append --input progress.yaml --format json " + "\\" + "\n--force"],
-    ["wrong family", "npx -y agentera@next state decisions append --input progress.yaml --format json"],
-    ["duplicate flag", "npx -y agentera@next state progress append --input progress.yaml --input other.yaml --format json"],
-    ["omitted value", "npx -y agentera@next state progress append --input --format json"],
-    ["extra positional", "npx -y agentera@next state progress append extra --input progress.yaml --format json"],
-    ["option-like value", "npx -y agentera@next state progress append --input -- --format json"],
+    ["composition", "npx -y agentera@next state progress append --input progress.yaml && printf x"],
+    ["numeric redirect", "npx -y agentera@next state progress append --input progress.yaml 2>err"],
+    ["substitution", "npx -y agentera@next state progress append --input $(printf x)"],
+    ["wrong channel", "npx -y agentera@latest state progress append --input progress.yaml"],
+    ["unclosed quote", 'npx -y agentera@next state progress append --input "progress.yaml'],
+    ["sibling", "npx -y agentera@next state progress append --input progress.yaml npx -y agentera@next prime"],
+    ["force", "npx -y agentera@next state progress append --input progress.yaml --force"],
+    ["garbage", "npx -y agentera@next state progress append --input progress.yaml garbage"],
+    ["quoted operator", 'npx -y agentera@next state progress append --input progress.yaml "&&"'],
+    ["adjacent prefix", "xnpx -y agentera@next state progress append --input progress.yaml"],
+    ["adjacent suffix", "npx -y agentera@next state progress append --input progress.yamloops"],
+    ["continuation", "npx -y agentera@next state progress append --input progress.yaml " + "\\" + "\n--force"],
+    ["wrong family", "npx -y agentera@next state decisions append --input progress.yaml"],
+    ["duplicate flag", "npx -y agentera@next state progress append --input progress.yaml --input other.yaml"],
+    ["omitted value", "npx -y agentera@next state progress append --input"],
+    ["extra positional", "npx -y agentera@next state progress append extra --input progress.yaml"],
+    ["option-like value", "npx -y agentera@next state progress append --input --"],
   ])("rejects a complete example mutation before projection: %s", (_label, value) => {
     rejects(() => projectRuntimeOperationExamples([value], "progress", "append"));
   });
@@ -174,27 +172,27 @@ describe("exact code-owned development invocation projection", () => {
   it("rejects audit-2 recovery boundary mutations and invalid code-owned value domains", () => {
     const progress = runtimeOperationSpec("progress", "append")!.projection.recovery.source;
     for (const value of [
-      progress.replace(" --format json`", " --format json --force`"),
-      progress.replace(" --format json`", " --format json garbage`"),
-      progress.replace(" --format json`", ' --format json "&&"`'),
+      progress.replace("`", " --force`"),
+      progress.replace("`", " garbage`"),
+      progress.replace("`", ' "&&"`'),
       progress.replace("state progress", 'state progress "status'),
       progress.replace("npx -y", "xnpx -y"),
-      progress.replace(" --format json`", " --format jsonoops`"),
-      progress.replace(" --format json`", " --format json " + "\\" + "\n--force`"),
+      progress.replace("`", "oops`"),
+      progress.replace("`", " " + "\\" + "\n--force`"),
     ]) rejects(() => projectRuntimeOperationRecovery(value, "progress", "append"));
 
     const status = runtimeOperationSpec("plan", "set-status")!.projection.examples[0].source;
     rejects(() => projectRuntimeOperationExamples([status.replace("--status complete", "--status retired")], "plan", "set-status"));
-    rejects(() => projectRuntimeOperationExamples([status.replace("--format json", "--format invalid")], "plan", "set-status"));
+    rejects(() => projectRuntimeOperationExamples([`${status} --format invalid`], "plan", "set-status"));
     expect(projectRuntimeOperationExamples([status], "plan", "set-status"))
-      .toEqual(["agentera state plan set-status --id qjtrmnpvka --status complete --format json"]);
+      .toEqual(["agentera state plan set-status --id qjtrmnpvka --status complete"]);
   });
 
   it("does not expose mutable authority objects that callers can turn into allowlists", () => {
     const returned = runtimeOperationSpec("progress", "append")!;
     returned.projection.examples[0].source += " --force";
     expect(runtimeOperationSpec("progress", "append")!.projection.examples[0].source)
-      .toBe("npx -y agentera@next state progress append --input progress.yaml --format json");
+      .toBe("npx -y agentera@next state progress append --input progress.yaml");
     expect(() => {
       (ENTITY_LIST_RUNTIME_FAMILIES[0].projection as { example: string }).example += " garbage";
     }).toThrow(TypeError);

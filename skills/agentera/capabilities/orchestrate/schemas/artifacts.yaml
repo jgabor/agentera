@@ -5,7 +5,7 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Orchestrate consumes plan task queue state through
-      `npx -y agentera@next prime --context orchestrate --format json` before raw
+      `npx -y agentera@next prime --context orchestrate` before raw
        artifact access, then updates status (pending -> complete/blocked) only
        when resolving a task. Superseded tasks are terminal dependency
        satisfiers and stay out of ready and blocked queues. Failed evaluator results are recorded through the
@@ -17,7 +17,7 @@ ARTIFACTS:
     description: >-
       Orchestrate consumes progress verification state from the returned
       orchestration context first, then bounded `npx -y agentera@next state progress list
-      --limit 20 --format json` fallback output. Exact detail uses `state
+      --limit 20` fallback output. Exact detail uses `state
       progress get --id ID`; raw reads are diagnostic-only for corruption or
       CLI-defect investigation.
   3:
@@ -28,10 +28,10 @@ ARTIFACTS:
       For an active plan whose tasks are all terminal, Orchestrate consumes
       returned health state and delegates a limited staleness closure check.
       On PASS it publishes one typed `artifact_freshness` health record through
-      `npx -y agentera@next state health append --input PATH --format json` before setting
+      `npx -y agentera@next state health append --input PATH` before setting
       the still-open plan complete. WARN or FAIL leaves the plan open and
-      surfaces the finding. Bounded `npx -y agentera@next state health list --limit 20
-      --format json` and exact `state health get --id ID` are fallback
+       surfaces the finding. Bounded `npx -y agentera@next state health list --limit 20`
+       and exact `state health get --id ID` are fallback
       contracts. Raw reads are diagnostic-only for corruption or CLI-defect
       investigation.
   4:
@@ -47,7 +47,7 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Orchestrate consumes included decision context or bounded
-      `npx -y agentera@next state decisions list --limit 20 --format json` discovery and
+      `npx -y agentera@next state decisions list --limit 20` discovery and
       exact `state decisions get --id ID` retrieval, preserving firm
       constraints, exploratory uncertainties, and compacted-entry caveats.
       Raw reads are diagnostic-only for corruption or CLI-defect investigation.
