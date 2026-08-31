@@ -4,10 +4,20 @@ record:
   name: Convert check surfaces
   depends_on:
     - xwxcchoypp
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN lint, compact, validate, verify, durability, or related aliases WHEN invoked without a selector THEN existing JSON and exit codes remain authoritative.
     - GIVEN the compact hook WHEN it runs THEN it remains non-interactive and relies only on the exit result.
     - GIVEN an invalid or deprecated check route WHEN it fails THEN it emits no plaintext diagnostic.
     - GIVEN each check parser or emitter family WHEN tested THEN one success and one failure cover the rule.
   plan: nkvbedieaf
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-jeqrmofzfx-1
+      source: orchestrate audit evaluation for task jeqrmofzfx
+      recorded_at: 2026-08-31 07:00
+      writer_command: agentera state plan record-evaluation
