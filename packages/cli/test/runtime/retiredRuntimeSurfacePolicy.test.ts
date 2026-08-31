@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -113,6 +114,16 @@ const textExtensions = new Set([
 
 function read(relativePath: string): string {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+}
+
+function historicalRetrievalEvidence(content: string): string {
+  const match = content.match(/(?:^|\n)(historical_retrieval_evidence:[\s\S]*?)(?=\nconsumer_matrix:)/u);
+  if (!match) throw new Error("historical_retrieval_evidence subtree is missing");
+  return match[1];
+}
+
+function withoutHistoricalRetrievalEvidence(content: string): string {
+  return content.replace(/\nhistorical_retrieval_evidence:[\s\S]*?(?=\nconsumer_matrix:)/u, "");
 }
 
 function commandAuthorityFixture(): string {
@@ -1357,7 +1368,7 @@ describe("retired runtime current-surface policy", () => {
     for (const entry of retainedReferences.inventory.filter(({ classification }: any) => ["current", "runbook"].includes(classification))) {
       const relativePath = String(entry.path);
       if (relativePath === "references/artifacts/state-storage-authority.yaml") {
-        const activeAuthority = read(relativePath).replace(/\n  gap_closure_evidence:[\s\S]*?(?=\nconsumer_matrix:)/u, "");
+        const activeAuthority = withoutHistoricalRetrievalEvidence(read(relativePath));
         addFile("active authorities", relativePath, activeAuthority);
       } else {
         addFile("active authorities", relativePath);
@@ -1368,6 +1379,16 @@ describe("retired runtime current-surface policy", () => {
     const currentScripts = verificationPolicy.conservative_routing.exact
       .filter((relativePath: string) => relativePath.startsWith("packages/cli/scripts/") && relativePath.endsWith(".mjs"));
     for (const relativePath of currentScripts) addFile("measurement and release scripts", relativePath);
+
+    const outputManifest = YAML.parse(read("scripts/json_output_surface_manifest.yaml"));
+    const activeOutputSurfaces = outputManifest.surfaces.filter(
+      ({ enforcement_tier }: { enforcement_tier: string }) => ["enforce", "monitor"].includes(enforcement_tier),
+    );
+    surfaces.push({
+      category: "active command manifest",
+      name: "scripts/json_output_surface_manifest.yaml active surfaces",
+      body: YAML.stringify(activeOutputSurfaces),
+    });
 
     const existingSourcePaths = new Set<string>();
     for (const relativePath of publicInstallSurfaceRoots.filter((entry) => entry !== "UPGRADE.md" && entry !== "packages/cli/README.md")) {
@@ -1397,11 +1418,25 @@ describe("retired runtime current-surface policy", () => {
       "package guidance",
       "maintainer skills",
       "active authorities",
+      "active command manifest",
       "measurement and release scripts",
       "existing active source sets",
     ]));
     const redundantSelector = /--format(?:\s+|=)json|["']--format["']\s*,\s*["']json["']/u;
     expect(surfaces.filter(({ body }) => redundantSelector.test(body)).map(({ category, name }) => `${category}: ${name}`)).toEqual([]);
+  });
+
+  it("keeps the complete retired retrieval subtree byte-stable and outside active inventory", () => {
+    const authority = read("references/artifacts/state-storage-authority.yaml");
+    const historical = historicalRetrievalEvidence(authority);
+
+    expect(Buffer.byteLength(historical, "utf8")).toBe(14_507);
+    expect(createHash("sha256").update(historical).digest("hex"))
+      .toBe("1ff6c8a4228f0588c11cf01872ef940c9156c5e9d16eaf9bfd0ad03c62998f5d");
+    expect(historical).toContain("state progress get --id ID --format json");
+    expect(historical).toContain("state decisions get --id ID --format json");
+    expect(historical).toContain("state health get --id ID --format json");
+    expect(withoutHistoricalRetrievalEvidence(authority)).not.toContain("historical_retrieval_evidence");
   });
 
   it.each([

@@ -1,4 +1,13 @@
 version: 1
+measurement:
+  bytes: Buffer.byteLength(stdout, utf8)
+  tokens:
+    package: gpt-tokenizer
+    version: 4.0.0
+    model: gpt-5
+    implementation: gpt-tokenizer/model/gpt-5#encode
+    count: encode(stdout).length
+  authoritative_command: pnpm -C packages/cli run verify:prime-budget
 scope:
   in_scope: >-
     Live public JSON selectors in this manifest with measurement_scope primary or

@@ -1646,7 +1646,7 @@ historical_retrieval_evidence:
       bounds: count_1_to_100_and_serialized_utf8_budget
       cursor: opaque_snapshot_cursor
       omission: explicit_with_advancing_cursor_or_exact_get
-      get: npx -y agentera@next state progress get --id ID
+      get: npx -y agentera@next state progress get --id ID --format json
     - collection_id: decisions.records
       artifact_id: decisions
       growth: immutable_base_and_revision_entities_with_replaceable_satisfaction_entity
@@ -1656,7 +1656,7 @@ historical_retrieval_evidence:
       bounds: count_1_to_100_and_serialized_utf8_budget
       cursor: opaque_snapshot_cursor
       omission: explicit_with_advancing_cursor_or_exact_get
-      get: npx -y agentera@next state decisions get --id ID
+      get: npx -y agentera@next state decisions get --id ID --format json
     - collection_id: health.records
       artifact_id: health
       growth: append_only_unbounded
@@ -1666,7 +1666,7 @@ historical_retrieval_evidence:
       bounds: count_1_to_100_and_serialized_utf8_budget
       cursor: opaque_snapshot_cursor
       omission: explicit_with_advancing_cursor_or_exact_get
-      get: npx -y agentera@next state health get --id ID
+      get: npx -y agentera@next state health get --id ID --format json
     - collection_id: plan.plans
       artifact_id: plan
       growth: one_active_plus_append_only_immutable_file_archives

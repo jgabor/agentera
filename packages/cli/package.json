@@ -39,6 +39,7 @@
     "test:capacity": "node scripts/verify-lane.mjs capacity",
     "test:watch": "vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
+    "verify:prime-budget": "node scripts/measure-prime-budget.mjs",
     "verify:generated-overlap": "node scripts/verify-generated-overlap.mjs",
     "pack:dry-run": "node scripts/pack-package.mjs --dry-run",
     "release:prepare": "node scripts/publication-transaction.mjs prepare development",
@@ -69,6 +70,7 @@
   "devDependencies": {
     "@types/node": "^24.13.3",
     "@typescript/typescript6": "6.0.2",
+    "gpt-tokenizer": "4.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vite-plus": "^0.2.9"

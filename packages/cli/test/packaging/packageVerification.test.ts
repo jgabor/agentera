@@ -413,6 +413,49 @@ describe("npm distribution boundary", () => {
     expect(payload.capability_context.capability).toBe("status");
   });
 
+  it("matches no-selector, explicit JSON, and rejected-selector behavior across package boundaries", () => {
+    const bins = [
+      path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),
+      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
+      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
+    ];
+    const observe = (bin: string, args: string[]) => {
+      const result = spawnSync(process.execPath, [bin, ...args], {
+        cwd: fixture.root,
+        env: packageEnvironment(),
+        encoding: "utf8",
+      });
+      return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+    };
+
+    const omitted = bins.map((bin) => observe(bin, ["schema"]));
+    const explicit = bins.map((bin) => observe(bin, ["schema", "--format", "json"]));
+    const rejected = bins.map((bin) => observe(bin, ["schema", "--format", "yaml"]));
+
+    for (const [index, observation] of omitted.entries()) {
+      expect(explicit[index]).toEqual(observation);
+      expect(observation).toMatchObject({ status: 0, stderr: "" });
+    }
+    const successContracts = omitted.map(({ stdout }) => {
+      const { schemaVersion, command, status } = JSON.parse(stdout);
+      return { schemaVersion, command, status };
+    });
+    expect(successContracts[1]).toEqual(successContracts[0]);
+    expect(successContracts[2]).toEqual(successContracts[0]);
+    expect(successContracts[0]).toEqual({
+      schemaVersion: "agentera.schema.v1",
+      command: "schema",
+      status: "ok",
+    });
+    expect(rejected[1]).toEqual(rejected[0]);
+    expect(rejected[2]).toEqual(rejected[0]);
+    expect(rejected[0]).toMatchObject({ status: 2, stderr: "" });
+    expect(JSON.parse(rejected[0].stdout)).toMatchObject({
+      status: "fail",
+      error: { class: "invalid_choice", valid_values: ["json"] },
+    });
+  });
+
   it("matches selected-term startup across source, bundled, and extracted runtimes", () => {
     const bins = [
       path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),

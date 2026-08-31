@@ -93,7 +93,11 @@ const BRIEF_SCALAR_MAX_CHARS = 200;
 type SourceContractProjection = "normal" | "compact" | "irreducible";
 
 function projectionMaxChars(projection: SourceContractProjection): number {
-  return projection === "normal" ? BRIEF_SCALAR_MAX_CHARS : projection === "compact" ? 120 : 80;
+  return projection === "normal" ? BRIEF_SCALAR_MAX_CHARS : projection === "compact" ? 120 : 32;
+}
+
+function projectionDiagnosticMaxChars(projection: SourceContractProjection): number {
+  return projection === "irreducible" ? 16 : projectionMaxChars(projection);
 }
 
 function projectionMaxItems(projection: SourceContractProjection): number {
@@ -111,7 +115,7 @@ const BRIEF_SOURCE_STRING_MAX_CHARS = 256;
 const BRIEF_COMPACT_SOURCE_FIELDS_MAX = 32;
 const BRIEF_COMPACT_SOURCE_STRING_MAX_CHARS = 96;
 const BRIEF_IRREDUCIBLE_SOURCE_FIELDS_MAX = 32;
-const BRIEF_IRREDUCIBLE_SOURCE_STRING_MAX_CHARS = 64;
+const BRIEF_IRREDUCIBLE_SOURCE_STRING_MAX_CHARS = 16;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -313,7 +317,10 @@ function briefHistory(
   return out;
 }
 
-function briefProjectIntegration(integration: unknown): Record<string, unknown> {
+function briefProjectIntegration(
+  integration: unknown,
+  maxChars = BRIEF_SCALAR_MAX_CHARS,
+): Record<string, unknown> {
   // Keep the routing recommendation, message, pending counts, channel,
   // aggregate status, and any major-boundary block (which overrides
   // next_action). Upgrade commands are part of the executable upgrade route;
@@ -321,7 +328,6 @@ function briefProjectIntegration(integration: unknown): Record<string, unknown> 
   // detail recover via doctor.
   const fields = [
     "recommendation",
-    "message",
     "update_channel",
     "pending_artifacts",
     "aggregate_status",
@@ -330,7 +336,10 @@ function briefProjectIntegration(integration: unknown): Record<string, unknown> 
   if (isObject(integration) && integration.recommendation === "upgrade") {
     fields.push("dry_run_command", "apply_command");
   }
-  return pick(integration, fields);
+  const out = pick(integration, fields);
+  const message = isObject(integration) ? boundedString(integration.message, maxChars) : undefined;
+  if (message !== undefined) out.message = message;
+  return out;
 }
 
 function briefProfile(profile: unknown): Record<string, unknown> {
@@ -366,12 +375,15 @@ function briefAppHome(appHome: unknown): Record<string, unknown> {
   return pick(appHome, ["install_track", "status", "source"]);
 }
 
-function briefSharedSkill(sharedSkill: unknown): Record<string, unknown> {
+function briefSharedSkill(
+  sharedSkill: unknown,
+  maxChars = BRIEF_SCALAR_MAX_CHARS,
+): Record<string, unknown> {
   if (!isObject(sharedSkill)) return {};
   const out = pick(sharedSkill, ["name", "status", "source", "gap"]);
-  const message = boundedString(sharedSkill.message, BRIEF_SCALAR_MAX_CHARS);
+  const message = boundedString(sharedSkill.message, maxChars);
   if (message !== undefined) out.message = message;
-  const details = boundedStringList(sharedSkill.details, 3, BRIEF_SCALAR_MAX_CHARS);
+  const details = boundedStringList(sharedSkill.details, 3, maxChars);
   if (details !== undefined) out.details = details;
   return out;
 }
@@ -380,14 +392,14 @@ function briefSource(source: unknown): Record<string, unknown> {
   return pick(source, ["artifacts_present"]);
 }
 
-function briefAttention(attention: unknown): unknown {
+function briefAttention(attention: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): unknown {
   // opencode reads the attention array for routing hints, but each entry is an
   // advisory string. Cap each at BRIEF_SCALAR_MAX_CHARS so a pathological
   // lifecycle procedure text cannot blow the budget; the full detail recovers
   // via the named recovery commands in omitted_rich_state.
   if (!Array.isArray(attention)) return attention ?? [];
   return attention.map((entry) =>
-    typeof entry === "string" ? truncateCodePoints(entry, BRIEF_SCALAR_MAX_CHARS, "…") : entry,
+    typeof entry === "string" ? truncateCodePoints(entry, maxChars, "…") : entry,
   );
 }
 
@@ -481,20 +493,24 @@ function briefDegradedHistory(value: unknown, omitRetrieval: boolean): Record<st
   return out;
 }
 
-function briefProgress(progress: unknown, omitDegradedRetrieval = false): Record<string, unknown> {
+function briefProgress(
+  progress: unknown,
+  omitDegradedRetrieval = false,
+  maxChars = BRIEF_SCALAR_MAX_CHARS,
+): Record<string, unknown> {
   // opencode reads progress.latest.number/what/next; the brief keeps the
   // latest cycle but caps free-text scalars at BRIEF_SCALAR_MAX_CHARS so a
   // pathological value cannot blow the budget. Full detail recovers via
   // `agentera state progress get --id ID`.
   if (!isObject(progress)) return {};
-  const out = pick(progress, ["exists", "status", "latest_verification", "cycle_count"]);
+  const out = pick(progress, ["exists", "status", "cycle_count"]);
   const degradedHistory = briefDegradedHistory(progress.degraded_history, omitDegradedRetrieval);
   if (degradedHistory !== undefined) out.degraded_history = degradedHistory;
   const latest = progress.latest;
   if (isObject(latest)) {
     const boundedLatest: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(latest)) {
-      boundedLatest[key] = typeof value === "string" ? truncateCodePoints(value, BRIEF_SCALAR_MAX_CHARS, "…") : value;
+      boundedLatest[key] = typeof value === "string" ? truncateCodePoints(value, maxChars, "…") : value;
     }
     out.latest = boundedLatest;
   } else {
@@ -503,9 +519,15 @@ function briefProgress(progress: unknown, omitDegradedRetrieval = false): Record
   return out;
 }
 
-function briefHealth(health: unknown, omitDegradedRetrieval = false): Record<string, unknown> {
-  const out = pick(health, ["exists", "id", "artifact", "date", "trajectory", "grade"]);
+function briefHealth(
+  health: unknown,
+  omitDegradedRetrieval = false,
+  maxChars = BRIEF_SCALAR_MAX_CHARS,
+): Record<string, unknown> {
+  const out = pick(health, ["exists", "id", "artifact", "date", "grade"]);
   if (isObject(health)) {
+    const trajectory = boundedString(health.trajectory, maxChars);
+    if (trajectory !== undefined) out.trajectory = trajectory;
     const degradedHistory = briefDegradedHistory(health.degraded_history, omitDegradedRetrieval);
     if (degradedHistory !== undefined) out.degraded_history = degradedHistory;
   }
@@ -713,7 +735,16 @@ function boundedEnvelopeScalar(value: unknown, fallback: string): string {
   return boundedString(value, BRIEF_SCALAR_MAX_CHARS) ?? fallback;
 }
 
+function briefStartup(startup: unknown, maxChars: number): unknown {
+  if (!isObject(startup)) return startup;
+  const out = { ...startup };
+  const policy = boundedString(startup.raw_artifact_read_policy, maxChars);
+  if (policy !== undefined) out.raw_artifact_read_policy = policy;
+  return out;
+}
+
 function degradedBody(payload: Record<string, unknown>, projection: SourceContractProjection): Record<string, unknown> {
+  const maxChars = projectionDiagnosticMaxChars(projection);
   const out: Record<string, unknown> = {
     command: boundedEnvelopeScalar(payload.command, "prime"),
     outcome: boundedEnvelopeScalar(payload.outcome, "ok"),
@@ -724,19 +755,19 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   if ("app_home" in payload) out.app_home = briefAppHome(payload.app_home);
   if ("app" in payload) out.app = briefApp(payload.app);
   if ("profile" in payload) out.profile = briefProfile(payload.profile);
-  if ("shared_skill" in payload) out.shared_skill = briefSharedSkill(payload.shared_skill);
-  if ("project_integration" in payload) out.project_integration = briefProjectIntegration(payload.project_integration);
+  if ("shared_skill" in payload) out.shared_skill = briefSharedSkill(payload.shared_skill, maxChars);
+  if ("project_integration" in payload) out.project_integration = briefProjectIntegration(payload.project_integration, maxChars);
   if ("todo_reconciliation" in payload) out.todo_reconciliation = payload.todo_reconciliation;
   if ("startup" in payload) {
     // The top-level reconciliation object is the canonical bare-prime route.
     // Do not repeat it inside startup when compacting an over-budget envelope.
-    const startup = isObject(payload.startup) ? { ...payload.startup } : payload.startup;
+    const startup = briefStartup(payload.startup, maxChars);
     if (isObject(startup) && "todo_reconciliation" in out) delete startup.todo_reconciliation;
     out.startup = startup;
   }
-  if ("health" in payload) out.health = briefHealth(payload.health, hasCanonicalHistoryRetrieval(payload.history, "health"));
+  if ("health" in payload) out.health = briefHealth(payload.health, hasCanonicalHistoryRetrieval(payload.history, "health"), maxChars);
   if ("todo" in payload) out.todo = payload.todo;
-  if ("progress" in payload) out.progress = briefProgress(payload.progress, hasCanonicalHistoryRetrieval(payload.history, "progress"));
+  if ("progress" in payload) out.progress = briefProgress(payload.progress, hasCanonicalHistoryRetrieval(payload.history, "progress"), maxChars);
   if ("attention" in payload) out.attention = briefAttention(payload.attention);
   if ("source" in payload) out.source = briefSource(payload.source);
   if ("docs" in payload) out.docs = briefDocs(payload.docs, projection);

@@ -1,0 +1,15 @@
+id: vjbvmspjra
+artifact: progress
+record:
+  timestamp: 2026-08-31 09:23
+  type: fix
+  phase: build
+  what: Restored retired retrieval evidence and enforced the GPT-5 prime budget.
+  context:
+    intent: Complete contract and budget alignment without changing JSON schemas or limits.
+    constraints: Preserve explicit JSON compatibility, active guidance cleanup, historical bytes, package parity, output semantics, and evaluator-first closeout.
+    scope: Historical retrieval restoration, active producer inventory, deterministic GPT-5 budget gate, bounded prime projection, and source/package regressions.
+  discovered: The prior inventory removed only gap_closure_evidence, so it rewrote three inert historical commands; byte-only checks also allowed an enforced 3,000-token surface to reach 3,110 reported tokens.
+  verified: Pinned gpt-tokenizer 4.0.0 with the gpt-5 model and encode(stdout).length. pnpm -C packages/cli run verify:prime-budget measured prime at 10,245 UTF-8 bytes and 2,969 GPT-5 tokens against 12,000-byte and 3,000-token limits. The historical subtree is 14,507 bytes with SHA-256 1ff6c8a4228f0588c11cf01872ef940c9156c5e9d16eaf9bfd0ad03c62998f5d. Focused tests passed 217 tests and the repaired lifecycle case; pnpm -C packages/cli test passed 4,264 tests with 2 skipped. Typecheck, build, capability-contract validation, compact, verify:package (25 tests), and pack:dry-run passed.
+  next: Keep aperfiquzx in_progress for orchestrated evaluation. Keep TODO wknsemowih open and do not perform final plan or TODO closeout.
+  publication_order: 286

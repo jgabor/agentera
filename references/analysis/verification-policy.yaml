@@ -218,6 +218,7 @@ conservative_routing:
     - packages/cli/scripts/verify-lane.mjs
     - packages/cli/scripts/performance-evidence.mjs
     - packages/cli/scripts/overlap-pending.mjs
+    - packages/cli/scripts/measure-prime-budget.mjs
     - packages/cli/test/integration/performanceOwner.integration.mjs
     - packages/cli/scripts/build-package.mjs
     - packages/cli/scripts/generated-output.mjs
