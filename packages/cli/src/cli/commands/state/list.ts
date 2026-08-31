@@ -3,12 +3,11 @@ import type { StateListFilters } from "../../../state/listRetrieval.js";
 import { StateRetrievalFailure, type StateFailureBody } from "../../../state/directRetrieval.js";
 import { emitStructured } from "../../structured.js";
 import type { Io } from "../../dispatch/shared.js";
-import { listProgressEntities, renderProgressEntityListText } from "../../../state/progressEntities.js";
+import { listProgressEntities } from "../../../state/progressEntities.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
 import { listObjectiveEntities } from "../../../state/objectiveExperimentEntities.js";
 import { listTodoDocsEntities } from "../../../state/todoDocsEntities.js";
-import YAML from "yaml";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
 import { entityListFamilies, entityListValidValues } from "../../../state/entityRetrievalHelp.js";
@@ -23,18 +22,8 @@ interface StateListArgs {
 }
 
 function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
-  for (let index = 0; index < argv.length; index += 1) {
-    const token = argv[index];
-    if (token === "--format") {
-      const value = argv[index + 1];
-      if (value === "json" || value === "yaml") return value;
-    }
-    if (token.startsWith("--format=")) {
-      const value = token.slice("--format=".length);
-      if (value === "json" || value === "yaml") return value;
-    }
-  }
-  return "text";
+  void argv;
+  return "json";
 }
 
 function syntax(artifactId: string): string {
@@ -84,7 +73,7 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
   const family = entityListFamilies().find(({ key }) => key === runtime.key as EntityListRuntimeFamilyKey)!;
   let limit = family.bounds.default;
   let cursor: string | undefined;
-  let format: StateListArgs["format"] = "text";
+  let format: StateListArgs["format"] = "json";
   const filters: StateListFilters = {};
   const selector: EntityListSelectorInput = {};
   const allowedFilters = new Set(family.filters.map(({ name }) => `--${name}`));
@@ -134,7 +123,7 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
       }
       if (formatSupplied) throw failure("invalid_request", artifactId, "--format may only be supplied once");
       formatSupplied = true;
-      if (!family.formats.includes(parsed.value)) {
+      if (parsed.value !== "json") {
         throw failure("invalid_request", artifactId, `argument --format: invalid choice: '${parsed.value}' (choose from ${family.formats.map((value) => `'${value}'`).join(", ")})`);
       }
       format = parsed.value as StateListArgs["format"];
@@ -143,22 +132,9 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
   return { limit, ...(cursor ? { cursor } : {}), format, filters, selector };
 }
 
-function emitFailure(error: StateRetrievalFailure, format: "text" | "json" | "yaml", io: Io): number {
+function emitFailure(error: StateRetrievalFailure, _format: "text" | "json" | "yaml", io: Io): number {
   const out = io.out ?? ((text: string) => process.stdout.write(text));
-  if (format === "json" || format === "yaml") emitStructured(error.body, format, out);
-  else {
-    const details = error.body.error;
-    (io.err ?? ((text: string) => process.stderr.write(text)))(
-      [
-        `Error: ${details.message}`,
-        `Class: ${details.class}`,
-        `Syntax: ${details.syntax}`,
-        `Valid values: ${(details.valid_values ?? []).join("; ")}`,
-        `Example: ${details.example}`,
-        `Recovery: ${details.recovery}`,
-      ].join("\n") + "\n",
-    );
-  }
+  emitStructured(error.body, "json", out);
   return error.exitCode;
 }
 
@@ -177,8 +153,7 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
             ? listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
             : listTodoDocsEntities(projectRoot, artifactId as "todo" | "docs", args.limit, args.cursor, args.filters as JsonObject, { sourceRoot, format: args.format, selector: args.selector });
     const output = io.out ?? ((text: string) => process.stdout.write(text));
-    if (args.format === "text") output(artifactId === "progress" ? renderProgressEntityListText(response) : YAML.stringify(response));
-    else emitStructured(response, args.format, output);
+    emitStructured(response, "json", output);
     return 0;
   } catch (error) {
     if (error instanceof StateRetrievalFailure) {

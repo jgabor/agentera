@@ -140,6 +140,19 @@ describe("shared output policy", () => {
     expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
   });
 
+  it.each(["text", "yaml"])("rejects state mutation %s selectors before effects", (format) => {
+    withEntityProject((root) => {
+      const input = path.join(root, "progress.yaml");
+      fs.writeFileSync(input, "what: must not be read\n");
+      const before = fs.readdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"));
+      const result = capture(["state", "progress", "append", "--input", input, "--format", format]);
+      expect(result.rc).toBe(2);
+      expect(result.err).toBe("");
+      expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+      expect(fs.readdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"))).toEqual(before);
+    });
+  });
+
   it("does not expose a rejected format selector", () => {
     const rejected = "PRIVATE_FORMAT_TRAP";
     const result = capture(["report", "profile-grounding", `--format=${rejected}`]);

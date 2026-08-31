@@ -1,0 +1,15 @@
+id: mqmilawzwy
+artifact: progress
+record:
+  timestamp: 2026-08-31 07:14
+  type: feat
+  phase: build
+  what: Converted state operational output to JSON defaults and migrated the retrieval evidence consumer.
+  context:
+    intent: Convert state surfaces for plan nkvbedieaf task wwhdreldlf.
+    constraints: Preserved JSON schemas, state effects, identity, bounds, and writer semantics. Did not work on lifecycle replacement, guidance/package migration, or closeout.
+    unknowns: The generated legacy fixture mode in verify-task4-retrieval-evidence.mjs is no longer accepted by the current CLI; its active --live evidence path passes after JSON migration.
+    scope: State list/get/query/explain and typed writers, focused tests, and scripts/verify-task4-retrieval-evidence.mjs.
+  verified: Targeted state tests passed 149 tests. Full source verification passed 258 files and 4,260 tests with 2 skipped. Typecheck, build, local state read/explain and rejected YAML checks, live retrieval evidence (18,336 bytes), capability contract, compact, and package verification (24 tests) passed.
+  next: Orchestrate must evaluate task wwhdreldlf before any lifecycle transition; keep it in_progress.
+  publication_order: 282

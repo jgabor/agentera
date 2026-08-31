@@ -45,7 +45,7 @@ function run(root, args, expectedStatus = 0) {
   if (result.error) throw result.error;
   assert(
     result.status === expectedStatus,
-    `${args.join(" ")} exited ${result.status}; expected ${expectedStatus}: ${result.stderr}`,
+    `${args.join(" ")} exited ${result.status}; expected ${expectedStatus}: ${result.stdout}${result.stderr}`,
   );
   return result.stdout;
 }
@@ -86,8 +86,8 @@ function prepareFixture() {
   );
 }
 
-function parseYamlList(text) {
-  const payload = YAML.parse(text);
+function parseJsonList(text) {
+  const payload = JSON.parse(text);
   const required = [
     "schemaVersion", "command", "status", "entries", "counts", "order", "filters",
     "snapshot", "source", "source_contract", "retrieval", "omitted", "omitted_count", "omission_reason",
@@ -98,8 +98,8 @@ function parseYamlList(text) {
 
 function verifyLive() {
   assert(fs.existsSync(CLI), `built CLI not found at ${CLI}; run pnpm -C packages/cli build first`);
-  const bytes = Buffer.byteLength(run(process.cwd(), ["state", "plan", "list", "--limit", "100", "--format", "yaml"]), "utf8");
-  assert(bytes < MAX_SERIALIZED_BYTES, `live YAML response is ${bytes} bytes, not < ${MAX_SERIALIZED_BYTES}`);
+  const bytes = Buffer.byteLength(run(process.cwd(), ["state", "plan", "list", "--limit", "100"]), "utf8");
+  assert(bytes < MAX_SERIALIZED_BYTES, `live JSON response is ${bytes} bytes, not < ${MAX_SERIALIZED_BYTES}`);
   process.stdout.write(`${JSON.stringify({
     schemaVersion: "agentera.task4LiveSmoke.v1",
     assertion: "serialized_bytes < 32768",
@@ -112,14 +112,14 @@ function verifyFixture() {
   assert(fs.existsSync(CLI), `built CLI not found at ${CLI}; run pnpm -C packages/cli build first`);
   prepareFixture();
   try {
-    const args = ["state", "plan", "list", "--limit", "100", "--format", "yaml"];
+    const args = ["state", "plan", "list", "--limit", "100"];
     const firstText = run(FIXTURE_ROOT, args);
     const secondText = run(FIXTURE_ROOT, args);
     assert(firstText === secondText, "repeated deterministic fixture responses differ");
     const serializedBytes = Buffer.byteLength(firstText, "utf8");
-    assert(serializedBytes < MAX_SERIALIZED_BYTES, `fixture YAML response is ${serializedBytes} bytes, not < ${MAX_SERIALIZED_BYTES}`);
+    assert(serializedBytes < MAX_SERIALIZED_BYTES, `fixture JSON response is ${serializedBytes} bytes, not < ${MAX_SERIALIZED_BYTES}`);
 
-    const first = parseYamlList(firstText);
+    const first = parseJsonList(firstText);
     assert(first.command === "state plan list", "unexpected list command identity");
     assert(first.order === "created_desc_then_plan_id_asc", "unexpected plan ordering");
     assert(first.entries[0]?.stable_id === ACTIVE_ID && first.entries[1]?.stable_id === ARCHIVE_ID, "active/archive recency is unstable");
@@ -141,9 +141,9 @@ function verifyFixture() {
     let cursor = first.next_cursor;
     let continuationCount = 0;
     while (cursor) {
-      const continuedText = run(FIXTURE_ROOT, ["state", "plan", "list", "--limit", "100", "--cursor", cursor, "--format", "yaml"]);
-      assert(Buffer.byteLength(continuedText, "utf8") < MAX_SERIALIZED_BYTES, "continued YAML response is not strictly below budget");
-      const continued = parseYamlList(continuedText);
+      const continuedText = run(FIXTURE_ROOT, ["state", "plan", "list", "--limit", "100", "--cursor", cursor]);
+      assert(Buffer.byteLength(continuedText, "utf8") < MAX_SERIALIZED_BYTES, "continued JSON response is not strictly below budget");
+      const continued = parseJsonList(continuedText);
       assert(continued.entries.length > 0, "cursor recovery returned no entries");
       assert(continued.entries.every((entry) => !firstIds.has(entry.stable_id)), "cursor recovery duplicated a first-page identity");
       for (const entry of continued.entries) {
@@ -169,7 +169,7 @@ function verifyFixture() {
       root_runnable_command: "pnpm -C packages/cli build && node scripts/verify-task4-retrieval-evidence.mjs",
       deterministic_serialization: {
         repeated_bytes_equal: true,
-        format: "yaml",
+        format: "json",
         serialized_bytes: serializedBytes,
         sha256: createHash("sha256").update(firstText, "utf8").digest("hex"),
         assertion: "serialized_bytes < 32768",

@@ -47,7 +47,7 @@ function formatFromArgv(argv: string[]): "text" | "json" {
     if (argv[i] === "--format" && argv[i + 1] === "json") return "json";
     if (argv[i] === "--format=json") return "json";
   }
-  return "text";
+  return "json";
 }
 
 function invalid(body: InvalidInputErrorBody): never {
@@ -214,7 +214,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
   const values: Record<string, unknown> = {};
   const callerPayload: Record<string, unknown> = {};
   const occurrences = new Map<string, number>();
-  let format: "text" | "json" = "text";
+  let format: "text" | "json" = "json";
   let projectRoot = initialProjectRoot;
   let dryRun = false;
   let force = false;
@@ -258,11 +258,11 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       });
     i += parsed.consumed;
     if (parsed.name === "--format") {
-      if (parsed.value !== "text" && parsed.value !== "json")
+      if (parsed.value !== "json")
         invalid({
           class: "invalid_choice",
-          message: `argument --format: invalid choice: '${parsed.value}' (choose from 'text', 'json')`,
-          valid_values: ["text", "json"],
+          message: `argument --format: invalid choice: '${parsed.value}' (choose from 'json')`,
+          valid_values: ["json"],
         });
       format = parsed.value;
       continue;
@@ -390,7 +390,7 @@ function explainArgs(argv: string[]): {
   verb: string | null;
   all: boolean;
 } {
-  let format: "text" | "json" = "text";
+  let format: "text" | "json" = "json";
   let project = process.cwd();
   let verb: string | null = null;
   let all = false;
@@ -405,11 +405,11 @@ function explainArgs(argv: string[]): {
       invalid({ class: "missing_argument", message: `${parsed.name} requires a value` });
     i += parsed.consumed;
     if (parsed.name === "--format") {
-      if (parsed.value !== "text" && parsed.value !== "json")
+      if (parsed.value !== "json")
         invalid({
           class: "invalid_choice",
-          message: `argument --format: invalid choice: '${parsed.value}' (choose from 'text', 'json')`,
-          valid_values: ["text", "json"],
+          message: `argument --format: invalid choice: '${parsed.value}' (choose from 'json')`,
+          valid_values: ["json"],
         });
       format = parsed.value;
     } else if (parsed.name === "--project") project = path.resolve(parsed.value);

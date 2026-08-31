@@ -16,9 +16,7 @@ import { verbsForArtifact } from "../../state/write/operations.js";
 function canonicalReadCorrection(familyKey: Parameters<typeof entityListFamily>[0], argv: string[], io: Io): number {
   const family = entityListFamily(familyKey);
   const recoveryCommand = family.bareRecovery ?? family.example;
-  const format: "text" | "json" | "yaml" = argv.some((token, index) => token === "--format=yaml" || (token === "--format" && argv[index + 1] === "yaml"))
-    ? "yaml"
-    : detectTopLevelFormat(argv);
+  const format = detectTopLevelFormat(argv);
   const body = {
     schemaVersion: "agentera.stateFailure.v1",
     status: "fail",
@@ -32,8 +30,7 @@ function canonicalReadCorrection(familyKey: Parameters<typeof entityListFamily>[
       artifact: family.key,
     },
   } as const;
-  if (format === "json" || format === "yaml") emitStructured(body, format, io.out ?? ((text) => process.stdout.write(text)));
-  else (io.err ?? ((text) => process.stderr.write(text)))(`Error: ${body.error.message}\nSyntax: ${body.error.syntax}\nExample: ${body.error.example}\nRecovery: ${body.error.recovery}\n`);
+  emitStructured(body, format, io.out ?? ((text) => process.stdout.write(text)));
   return 2;
 }
 
@@ -73,7 +70,7 @@ export function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {
     dimension: null,
     status: null,
     limit: null,
-    format: "text",
+    format: "json",
     fields: null,
   };
   let i = 0;
@@ -93,8 +90,8 @@ export function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {
       if (!Number.isInteger(n)) return { error: `argument --limit: invalid int value: '${v}'` };
       args.limit = n;
     } else if ((v = value("--format")) !== null) {
-      if (v !== "text" && v !== "json" && v !== "yaml") {
-        return { error: `argument --format: invalid choice: '${v}' (choose from 'text', 'json', 'yaml')` };
+      if (v !== "json") {
+        return { error: `argument --format: invalid choice: '${v}' (choose from 'json')` };
       }
       args.format = v;
     } else if ((v = value("--fields")) !== null) args.fields = v;

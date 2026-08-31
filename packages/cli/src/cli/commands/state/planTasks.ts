@@ -1,5 +1,3 @@
-import YAML from "yaml";
-
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { getPlanTaskEntity, listPlanTaskEntities } from "../../../state/planEntities.js";
 import type { Io } from "../../dispatch/shared.js";
@@ -10,12 +8,8 @@ import { entityListFamily, entityListValidValues } from "../../../state/entityRe
 type Format = "text" | "json" | "yaml";
 
 function requestedFormat(argv: string[]): Format {
-  for (let index = 0; index < argv.length; index += 1) {
-    const token = argv[index];
-    const value = token === "--format" ? argv[index + 1] : token.startsWith("--format=") ? token.slice(9) : undefined;
-    if (value === "json" || value === "yaml") return value;
-  }
-  return "text";
+  void argv;
+  return "json";
 }
 
 function readValue(argv: string[], index: number, name: string): { value: string; next: number } {
@@ -51,7 +45,7 @@ function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
 
 function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: string; limit: number; cursor?: string; id?: string; selector: EntityListSelectorInput } {
   const family = entityListFamily("plan_tasks");
-  let format: Format = "text";
+  let format: Format = "json";
   let plan: string | undefined;
   let limit = family.bounds.default;
   let cursor: string | undefined;
@@ -80,7 +74,7 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: s
     catch (error) { throw failure((error as Error).message, verb); }
     index = parsed.next;
     if (name === "--format") {
-      if (!family.formats.includes(parsed.value)) throw failure(`invalid --format '${parsed.value}'`, verb);
+      if (parsed.value !== "json") throw failure(`invalid --format '${parsed.value}'`, verb);
       format = parsed.value as Format;
     } else if (name === "--limit") {
       if (!/^[1-9][0-9]*$/.test(parsed.value) || Number(parsed.value) < family.bounds.minimum || Number(parsed.value) > family.bounds.maximum) throw failure(`--limit must be an integer from ${family.bounds.minimum} through ${family.bounds.maximum}`, verb);
@@ -93,18 +87,8 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; plan?: s
   return { format, limit, ...(plan ? { plan } : {}), ...(cursor ? { cursor } : {}), ...(id ? { id } : {}), selector };
 }
 
-function emitFailure(error: StateRetrievalFailure, format: Format, io: Io): number {
-  if (format === "json" || format === "yaml") emitStructured(error.body, format, io.out ?? ((text) => process.stdout.write(text)));
-  else {
-    const detail = error.body.error;
-    (io.err ?? ((text) => process.stderr.write(text)))([
-      `Error: ${detail.message}`,
-      `Class: ${detail.class}`,
-      `Valid forms: ${(detail.valid_values ?? [detail.syntax]).join("; ")}`,
-      `Example: ${detail.example}`,
-      `Recovery: ${detail.recovery}`,
-    ].join("\n") + "\n");
-  }
+function emitFailure(error: StateRetrievalFailure, _format: Format, io: Io): number {
+  emitStructured(error.body, "json", io.out ?? ((text) => process.stdout.write(text)));
   return error.exitCode;
 }
 
@@ -118,8 +102,7 @@ export function runPlanTasks(argv: string[], io: Io): number {
       ? listPlanTaskEntities(process.cwd(), args.plan, args.limit, args.cursor, { format: args.format, selector: args.selector })
       : getPlanTaskEntity(process.cwd(), args.id!);
     const output = io.out ?? ((text: string) => process.stdout.write(text));
-    if (args.format === "json" || args.format === "yaml") emitStructured(response, args.format, output);
-    else output(YAML.stringify(response));
+    emitStructured(response, "json", output);
     return 0;
   } catch (error) {
     if (error instanceof StateRetrievalFailure) return emitFailure(error, format, io);
