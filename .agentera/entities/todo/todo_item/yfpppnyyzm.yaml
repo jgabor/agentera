@@ -17,12 +17,16 @@ record:
     - Relevant CLI, contract, package, and compact gates pass.
   release_blocker: true
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[feat:3.0.0] Make JSON the sole operational CLI output protocol"
+      status: resolved
+      order: 129
       severity: normal
-      status: open
-      order: 27
+  lifecycle:
+    operation: resolve
+    reason: Implemented and verified JSON-only operational output
+    date: 2026-08-31

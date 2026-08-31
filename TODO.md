@@ -39,7 +39,6 @@
 - [ ] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
 - [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
-- [ ] [id:yfpppnyyzm] [feat:3.0.0] Make JSON the sole operational CLI output protocol
 
 ## ⇢ Annoying
 
@@ -173,3 +172,4 @@
 - [x] [id:oyxoxajkvd] [fix:3.0.0] Correct nested check and state JSON error routing
 - [x] [id:ilohqcvysj] [fix:3.0.0] Stabilize usage JSON parity verification
 - [x] [id:wknsemowih] [fix:3.0.0] Restore output history and prime token compliance
+- [x] [id:yfpppnyyzm] [feat:3.0.0] Make JSON the sole operational CLI output protocol

@@ -101,7 +101,7 @@ function projectionDiagnosticMaxChars(projection: SourceContractProjection): num
 }
 
 function projectionMaxItems(projection: SourceContractProjection): number {
-  return projection === "normal" ? 10 : projection === "compact" ? 6 : 3;
+  return projection === "normal" ? 10 : projection === "compact" ? 1 : 3;
 }
 
 /** Keys owned by the state-presence contract. Unknown keys are caller data, not
@@ -519,6 +519,20 @@ function briefProgress(
   return out;
 }
 
+function briefTodo(todo: unknown): Record<string, unknown> {
+  if (!isObject(todo)) return {};
+  if (typeof todo.critical !== "number" || !isObject(todo.detail)) return todo;
+  const out = pick(todo, ["critical", "degraded", "normal", "annoying"]);
+  out.detail = {
+    ...pick(todo.detail, ["total", "returned", "omitted"]),
+    retrieval: {
+      list: STATE_FAMILY_FALLBACK_COMMANDS.todo,
+      get: preCutoverCommand("state todo get --id ID"),
+    },
+  };
+  return out;
+}
+
 function briefHealth(
   health: unknown,
   omitDegradedRetrieval = false,
@@ -696,6 +710,9 @@ function projectBriefBody(payload: Record<string, unknown>): Record<string, unkn
       case "progress":
         out[key] = briefProgress(value, hasCanonicalHistoryRetrieval(payload.history, "progress"));
         break;
+      case "todo":
+        out[key] = briefTodo(value);
+        break;
       case "health":
         out[key] = briefHealth(value, hasCanonicalHistoryRetrieval(payload.history, "health"));
         break;
@@ -766,7 +783,7 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
     out.startup = startup;
   }
   if ("health" in payload) out.health = briefHealth(payload.health, hasCanonicalHistoryRetrieval(payload.history, "health"), maxChars);
-  if ("todo" in payload) out.todo = payload.todo;
+  if ("todo" in payload) out.todo = briefTodo(payload.todo);
   if ("progress" in payload) out.progress = briefProgress(payload.progress, hasCanonicalHistoryRetrieval(payload.history, "progress"), maxChars);
   if ("attention" in payload) out.attention = briefAttention(payload.attention);
   if ("source" in payload) out.source = briefSource(payload.source);
@@ -788,7 +805,7 @@ function statusRoutingDegradedBody(
 ): Record<string, unknown> {
   return {
     ...degradedBody(payload, projection),
-    todo: payload.todo,
+    todo: briefTodo(payload.todo),
     attention: briefAttention(payload.attention),
   };
 }
