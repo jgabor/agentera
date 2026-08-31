@@ -64,7 +64,7 @@ export function runAppHome(argv: string[], io: Io, prog: string): number {
   const args: AppHomeArgs = {
     installRoot: null,
     home: null,
-    format: "text",
+    format: "json",
   };
   let i = 0;
   const value = makeArgvValueReader(argv, () => i, (n) => {
@@ -120,7 +120,7 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
     retiredResource: null,
     smoke: false,
     allowLiveModel: false,
-    format: "text",
+    format: "json",
   };
   let jsonFlag = false;
   let i = 0;
@@ -175,7 +175,7 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
 export function runUsage(argv: string[], io: Io, prog: string): number {
   const realOut = io.out ?? ((t: string) => process.stdout.write(t));
   const realErr = io.err ?? ((t: string) => process.stderr.write(t));
-  let format = "text";
+  let format = "json";
   let corpus: string | null = null;
   let project: string | null = null;
   let i = 0;
@@ -250,7 +250,7 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     verify: false,
     runtime: null,
     legacyCleanup: null,
-    format: "text",
+    format: "json",
     productV1Reset: false,
     authorization: null,
   };
@@ -532,7 +532,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
   }
   const args: ReportArgs = {
     action: null,
-    format: "text",
+    format: "json",
     project: null,
     sources: "active",
     dryRun: false,

@@ -1,0 +1,14 @@
+id: bojrgmplol
+artifact: progress
+record:
+  timestamp: 2026-08-31 06:25
+  type: feat
+  phase: build
+  what: Converted lifecycle and reporting handlers to JSON defaults while preserving the version text exception and lifecycle effects.
+  context:
+    intent: Convert doctor, app-home, usage, report, upgrade, lifecycle aliases, and version output behavior to the JSON-only operational contract.
+    constraints: Preserved payloads, streams, exit codes, approval, dry-run, effects, retries, privacy boundaries, and output bounds. Did not change state, check, active guidance, package surfaces, or final closeout behavior.
+    scope: packages/cli/src/cli/dispatch/lifecycle.ts and focused lifecycle/reporting tests.
+  verified: Targeted tests passed 45 tests. Full source tests passed 257 files and 4,249 tests with 2 skipped. Typecheck, build, changed local CLI assertions, capability contract, compact, and pack dry-run passed. Package verification failed twice at test/helpers/producerReadinessWorkflow.ts:658 because a private invalid format value appears in the structured error.
+  next: Orchestrate must evaluate task grrrvzgkcr before changing its in_progress state. The package privacy failure remains for its owning task.
+  publication_order: 279

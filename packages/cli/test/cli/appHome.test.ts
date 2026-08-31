@@ -47,10 +47,22 @@ describe("agentera app-home", () => {
     expect(payload.sourceLabel).toBe("default app home");
   });
 
-  it("rejects unknown flags", () => {
+  it("makes omitted and explicit JSON selectors equivalent", () => {
+    const home = path.join(tmp, "home");
+    let implicit = "";
+    let explicit = "";
+    const implicitRc = main(["node", "agentera", "app-home", "--home", home], { out: (t) => (implicit += t) });
+    const explicitRc = main(["node", "agentera", "app-home", "--home", home, "--format", "json"], { out: (t) => (explicit += t) });
+    expect({ rc: implicitRc, out: implicit }).toEqual({ rc: explicitRc, out: explicit });
+  });
+
+  it("rejects unknown flags with bounded JSON", () => {
+    let out = "";
     let err = "";
-    const rc = main(["node", "agentera", "app-home", "--bogus"], { err: (t) => (err += t) });
+    const rc = main(["node", "agentera", "app-home", "--bogus"], { out: (t) => (out += t), err: (t) => (err += t) });
     expect(rc).toBe(2);
-    expect(err).toContain("unrecognized");
+    expect(err).toBe("");
+    expect(JSON.parse(out).error.class).toBe("unrecognized_argument");
+    expect(Buffer.byteLength(out)).toBeLessThanOrEqual(32_768);
   });
 });

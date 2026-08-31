@@ -4,7 +4,7 @@ record:
   name: Convert lifecycle and reporting surfaces
   depends_on:
     - xwxcchoypp
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN doctor, app-home, report, usage, or upgrade WHEN invoked without a selector THEN existing JSON contracts return.
     - GIVEN --version WHEN invoked without a selector THEN it remains plain text and rejects format selectors.

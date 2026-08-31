@@ -107,13 +107,23 @@ describe("active shared-skill lifecycle contract", () => {
     expect(tree(root)).toEqual(before);
   });
 
+  it("rejects a non-JSON selector before an approved effect", () => {
+    const { root, home, project } = fixture();
+    const before = tree(root);
+    const result = capture(["upgrade", "--home", home, "--project", project, "--yes", "--format", "text"]);
+    expect(result.rc).toBe(2);
+    expect(result.err).toBe("");
+    expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+    expect(tree(root)).toEqual(before);
+  });
+
   it("keeps normal preview/apply bounded to historical plugin retirement", () => {
     const { root, home, project } = fixture();
     const forbidden = [".opencode", ".codex", ".cursor", ".github", ".claude-plugin"];
     for (const approval of ["--dry-run", "--yes"] as const) {
       const result = capture([
         "upgrade", "--home", home, "--install-root", REPO_ROOT, "--project", project,
-        approval, "--format", "json",
+        approval,
       ]);
       expect([0, 1]).toContain(result.rc);
       if (result.out) {

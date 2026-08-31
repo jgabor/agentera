@@ -74,6 +74,13 @@ describe("cli doctor", () => {
     expect(JSON.stringify(payload)).not.toContain("bundle");
   });
 
+  it("defaults the public doctor route to its JSON payload", () => {
+    const implicit = capture((io) => main(["node", "agentera", "doctor"], io));
+    const explicit = capture((io) => main(["node", "agentera", "doctor", "--format", "json"], io));
+    expect(implicit).toEqual(explicit);
+    expect(JSON.parse(implicit.out)).toHaveProperty("status");
+  });
+
   it("routes doctor and the --json deprecation alias", () => {
     const { err } = capture((io) => main(["node", "agentera", "doctor", "--json"], io));
     expect(err).toContain("Deprecation: agentera doctor --json is deprecated; use agentera doctor --format json");

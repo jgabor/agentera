@@ -47,6 +47,15 @@ describe("cli dispatch: --version / version command", () => {
     expect(JSON.parse(out).error).toMatchObject({ class: "unrecognized_argument" });
   });
 
+  it.each(["json", "text", "yaml"])("rejects --format %s after --version as JSON", (format) => {
+    const { rc, out, err } = capture((io) =>
+      main(["node", "agentera", "--version", "--format", format], io),
+    );
+    expect(rc).toBe(2);
+    expect(err).toBe("");
+    expect(JSON.parse(out).error).toMatchObject({ class: "unrecognized_argument" });
+  });
+
   it("rejects invalid --format value as JSON", () => {
     const { rc, out, err } = capture((io) =>
       main(["node", "agentera", "version", "--format", "yaml"], io),
