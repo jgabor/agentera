@@ -4,10 +4,20 @@ record:
   name: Convert startup and routing surfaces
   depends_on:
     - xwxcchoypp
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN prime, schema, route, or capability routing WHEN invoked without a selector THEN existing JSON contracts return.
     - GIVEN invalid, alias, or migration paths WHEN they fail THEN no plaintext diagnostic accompanies the JSON error.
     - GIVEN prime --guidance WHEN invoked correctly THEN it remains text-only.
     - GIVEN each distinct parser or emitter family WHEN tested THEN one success and one failure cover the rule.
   plan: nkvbedieaf
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-ggurxsngzw-1
+      source: orchestrate audit evaluation for task ggurxsngzw
+      recorded_at: 2026-08-31 06:13
+      writer_command: agentera state plan record-evaluation
