@@ -1,0 +1,16 @@
+id: qkvgtssunw
+artifact: progress
+record:
+  timestamp: 2026-09-01 17:04
+  type: feat
+  phase: build
+  what: Migrated routine development npm publication to GitHub Actions Trusted Publishing.
+  context:
+    intent: Publish the exact classified development tarball through GitHub OIDC without traditional npm credentials.
+    constraints: Keep replay credential-free, preserve allocation and registry race checks, and leave stable publication unchanged.
+    unknowns: The live OIDC exchange can only be proven by GitHub Actions run 9.
+    scope: Routine feat/v3 development publication workflow, coordinator, tests, and active release authorities.
+  discovered: Trusted Publishing authorizes forward npm publish but not npm dist-tag, so forward retag recovery must fail closed.
+  verified: Focused publication behavior, orchestration, authority parity, and release model tests passed.
+  next: Independent audit and the authorized run 9 push must prove the live npm OIDC exchange.
+  publication_order: 288

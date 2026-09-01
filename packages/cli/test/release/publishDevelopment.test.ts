@@ -14,6 +14,12 @@ import {
 const source = "a".repeat(40);
 const secret = "test-auth-material-that-must-not-leak";
 const coordinatorEnvironment = { PATH: process.env.PATH ?? "", SAFE_VALUE: "preserved" };
+const oidcEnvironment = {
+  ...coordinatorEnvironment,
+  GITHUB_ACTIONS: "true",
+  ACTIONS_ID_TOKEN_REQUEST_URL: "https://github.example/id-token",
+  ACTIONS_ID_TOKEN_REQUEST_TOKEN: "oidc-request-token",
+};
 let root: string;
 let options: { tarball: string; packageVersion: string; gitRef: string };
 let integrity: string;
@@ -37,18 +43,15 @@ function registry(currentNext: string, published: { integrity?: string; source?:
     view: vi.fn((_args: string[], environment: NodeJS.ProcessEnv) => {
       expect(environment).not.toHaveProperty("NPM_TOKEN");
       expect(environment).not.toHaveProperty("NODE_AUTH_TOKEN");
+      expect(environment).not.toHaveProperty("ACTIONS_ID_TOKEN_REQUEST_URL");
+      expect(environment).not.toHaveProperty("ACTIONS_ID_TOKEN_REQUEST_TOKEN");
+      expect(environment).not.toHaveProperty("GITHUB_ACTIONS");
       expect(environment.NPM_CONFIG_USERCONFIG).toBeTruthy();
       expect(fs.readFileSync(environment.NPM_CONFIG_USERCONFIG!, "utf8")).not.toContain("_auth");
       return values.shift();
     }),
     run: vi.fn((_command: string, _args: string[], _options: { env: NodeJS.ProcessEnv }) => {}),
   };
-}
-
-function temporaryAuthConfig(mode = 0o600) {
-  const authConfig = path.join(root, `auth-${Math.random()}.npmrc`);
-  fs.writeFileSync(authConfig, `//registry.npmjs.org/:_authToken=${secret}\n`, { mode });
-  return authConfig;
 }
 
 function classify(currentNext: string, published: { integrity?: string; source?: string }) {
@@ -84,33 +87,35 @@ describe("development publication", () => {
     expect(result.dependencies.view).toHaveBeenCalledTimes(3);
   });
 
-  it.each([
-    ["forward-publish", {}, "publish"],
-    ["forward-retag", { integrity: "exact", source }, "dist-tag"],
-  ])("mutates only after a %s classification", (_outcome, published, expectedCommand) => {
-    const exact = { ...published, ...(published.integrity ? { integrity } : {}) };
-    const { classification } = classify("3.0.0-dev.9", exact);
-    const mutation = registry("3.0.0-dev.9", exact);
-    const authConfig = temporaryAuthConfig();
+  it("publishes through OIDC only after a forward-publish classification", () => {
+    const { classification } = classify("3.0.0-dev.9", {});
+    const mutation = registry("3.0.0-dev.9", {});
     mutation.run.mockImplementation((_command, args, { env }) => {
-      expect(env.NPM_CONFIG_USERCONFIG).toBe(authConfig);
+      expect(env.GITHUB_ACTIONS).toBe("true");
+      expect(env.ACTIONS_ID_TOKEN_REQUEST_URL).toBe(oidcEnvironment.ACTIONS_ID_TOKEN_REQUEST_URL);
+      expect(env.ACTIONS_ID_TOKEN_REQUEST_TOKEN).toBe(oidcEnvironment.ACTIONS_ID_TOKEN_REQUEST_TOKEN);
       expect(env).not.toHaveProperty("NPM_TOKEN");
       expect(env).not.toHaveProperty("NODE_AUTH_TOKEN");
-      expect(fs.statSync(authConfig).mode & 0o777).toBe(0o600);
-      expect(fs.readFileSync(authConfig, "utf8")).toContain(secret);
+      expect(fs.readFileSync(env.NPM_CONFIG_USERCONFIG, "utf8")).toBe("registry=https://registry.npmjs.org/\n");
       expect(args.join(" ")).not.toContain(secret);
-      expect(args.join(" ")).not.toContain(authConfig);
     });
     mutateDevelopmentTarball(options, classification, {
       ...mutation,
-      authConfig,
-      environment: coordinatorEnvironment,
+      environment: oidcEnvironment,
     });
     expect(mutation.run).toHaveBeenCalledTimes(1);
-    expect(fs.existsSync(authConfig)).toBe(false);
     const args = mutation.run.mock.calls[0][1];
-    expect(args[0]).toBe(expectedCommand);
-    if (expectedCommand === "dist-tag") expect(args[1]).toBe("add");
+    expect(args[0]).toBe("publish");
+  });
+
+  it("fails closed when forward-retag would require npm dist-tag", () => {
+    const { classification } = classify("3.0.0-dev.9", { integrity, source });
+    const mutation = registry("3.0.0-dev.9", { integrity, source });
+    expect(() => mutateDevelopmentTarball(options, classification, {
+      ...mutation,
+      environment: coordinatorEnvironment,
+    })).toThrow("OIDC does not authorize npm dist-tag");
+    expect(mutation.run).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -134,16 +139,13 @@ describe("development publication", () => {
   ])("converges after a registry race becomes %s", (_label, currentNext) => {
     const { classification } = classify("3.0.0-dev.9", {});
     const mutation = registry(currentNext, { integrity, source });
-    const authConfig = temporaryAuthConfig();
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     expect(mutateDevelopmentTarball(options, classification, {
       ...mutation,
-      authConfig,
       environment: coordinatorEnvironment,
     }))
       .toContain("replay");
     expect(mutation.run).not.toHaveBeenCalled();
-    expect(fs.existsSync(authConfig)).toBe(false);
     expect(log.mock.calls.flat().join(" ")).not.toContain(secret);
     log.mockRestore();
   });
@@ -194,13 +196,18 @@ describe("development publication", () => {
     expect(mutation.run).not.toHaveBeenCalled();
   });
 
-  it("requires a temporary auth config only after a forward mutation recheck", () => {
+  it.each([
+    [{}, "GITHUB_ACTIONS=true"],
+    [{ ...oidcEnvironment, GITHUB_ACTIONS: "false" }, "GITHUB_ACTIONS=true"],
+    [{ ...oidcEnvironment, ACTIONS_ID_TOKEN_REQUEST_URL: " " }, "ACTIONS_ID_TOKEN_REQUEST_URL"],
+    [{ ...oidcEnvironment, ACTIONS_ID_TOKEN_REQUEST_TOKEN: "" }, "ACTIONS_ID_TOKEN_REQUEST_TOKEN"],
+  ])("rejects missing or malformed OIDC before npm mutation", (environment, message) => {
     const { classification } = classify("3.0.0-dev.9", {});
     const mutation = registry("3.0.0-dev.9", {});
     expect(() => mutateDevelopmentTarball(options, classification, {
       ...mutation,
-      environment: coordinatorEnvironment,
-    })).toThrow("temporary npm auth config is required");
+      environment: { ...coordinatorEnvironment, ...environment },
+    })).toThrow(message);
     expect(mutation.view).toHaveBeenCalledTimes(3);
     expect(mutation.run).not.toHaveBeenCalled();
   });
@@ -210,31 +217,25 @@ describe("development publication", () => {
     (key) => {
       const { classification } = classify("3.0.0-dev.9", {});
       const mutation = registry("3.0.0-dev.9", {});
-      const authConfig = temporaryAuthConfig();
       expect(() => mutateDevelopmentTarball(options, classification, {
         ...mutation,
-        authConfig,
         environment: { ...coordinatorEnvironment, [key]: secret },
       })).toThrow("coordinator environment contains npm credentials or auth configuration");
       expect(mutation.view).not.toHaveBeenCalled();
       expect(mutation.run).not.toHaveBeenCalled();
-      expect(fs.existsSync(authConfig)).toBe(false);
     },
   );
 
-  it("cleans auth material and does not expose it when the npm child fails", () => {
+  it("does not expose traditional credentials when the OIDC npm child fails", () => {
     const { classification } = classify("3.0.0-dev.9", {});
     const mutation = registry("3.0.0-dev.9", {});
-    const authConfig = temporaryAuthConfig();
     mutation.run.mockImplementation(() => {
       throw new Error("npm child failed");
     });
     expect(() => mutateDevelopmentTarball(options, classification, {
       ...mutation,
-      authConfig,
-      environment: coordinatorEnvironment,
+      environment: oidcEnvironment,
     })).toThrow("npm child failed");
-    expect(fs.existsSync(authConfig)).toBe(false);
     expect(JSON.stringify(mutation.run.mock.calls)).not.toContain(secret);
   });
 

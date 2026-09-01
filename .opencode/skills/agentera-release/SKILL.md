@@ -60,8 +60,8 @@ Before reporting that npm credentials are unavailable:
 Linked worktrees do not contain ignored credential files by default. An absent
 inherited `NPM_TOKEN` does not prove that no credential is available.
 
-The publication coordinator sanitizes inherited npm configuration and requires
-`NPM_TOKEN` in its environment only when an upload is necessary. For an
+The manual development and stable publication coordinator sanitizes inherited
+npm configuration and requires `NPM_TOKEN` only when an upload is necessary. For an
 explicitly authorized publication, inject the token from the established local
 credential source into the exact publication command. A `.env` or
 `.npmrc` is a credential source, not approval. The immutable artifact-bound
@@ -87,6 +87,14 @@ and publishes those exact bytes to `@next`. `queue: max` keeps up to 100 pending
 runs. A rerun reuses the same run number, candidate version, pushed SHA, and
 bytes; matching already-published bytes are a successful replay. Failed runs
 leave gaps, and later queued runs cannot move `@next` backward.
+
+Routine development publication uses GitHub Actions Trusted Publishing. The
+workflow grants `id-token: write`; an actual forward publish requires the
+GitHub OIDC request environment and passes it only to the isolated `npm publish`
+child. Traditional npm credentials and auth configs are rejected. Replay needs
+no OIDC. `forward-retag` fails closed because OIDC does not authorize
+`npm dist-tag`; use interactive npm 2FA or a later forward version. Manual
+development recovery and stable publication remain token-bearing.
 
 A user's explicit push authorization is single-use and is consumed by one
 `git push`. Local commits do not publish. After that push, stop. A failed or

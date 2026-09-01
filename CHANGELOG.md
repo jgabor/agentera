@@ -2,10 +2,10 @@
 
 ## [Unreleased]
 
+- Development `@next` publication now uses npm Trusted Publishing through GitHub OIDC, rejects traditional npm credentials, and fails closed when recovery would require `npm dist-tag`.
 - Operational commands now emit JSON by default; explicit `--format json` remains compatible, while operational text and YAML selectors are rejected.
 - Added private selected-term input for glossary advice. `prime --context <discuss|plan|build> --term-input <file|->` now returns initial advice in
-  `capability_context.glossary_advice`, and later no-review refreshes use
-  `report glossary-advice --term-input <file|->`. Structured `--input` remains
+  `capability_context.glossary_advice`, and later no-review refreshes use `report glossary-advice --term-input <file|->`. Structured `--input` remains
   the host-review and legacy path. Plan publication now uses one typed writer
   call, while explicit preview and apply reuse one temporary input.
 - Fixed confirmed project-glossary variant enforcement through the canonical read-only state validator, and aligned Discuss, Plan, Build, and Prime consumer declarations with their active integrations.

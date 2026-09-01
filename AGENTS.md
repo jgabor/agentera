@@ -113,6 +113,10 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
   package construction. It
   validates and smokes that exact tarball before publishing the same bytes. It
   does not edit the checkout or require a final metadata commit.
+- The routine development workflow uses npm Trusted Publishing with GitHub
+  OIDC. Only an actual forward `npm publish` receives the OIDC request
+  environment. Replay needs no OIDC, and `forward-retag` fails closed because
+  OIDC does not authorize `npm dist-tag`. Stable publication remains unchanged.
 - The `publish-next-${{ github.ref }}` concurrency group uses `queue: max`, which
   keeps up to 100 pending pushes. A rerun keeps the same run number, candidate
   version, pushed SHA, and bytes. Failed runs leave gaps; later queued runs get

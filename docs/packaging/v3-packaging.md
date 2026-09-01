@@ -295,8 +295,8 @@ In the manual development and stable paths, approval is an immutable
 integrity, registry, and public tag. Local receipts are deterministic cache
 records only. Manual CI mutation also requires the transferred package artifact
 and receipts plus a CI attestation from the source verification run. Stable
-publication from `main` retains explicit protected-environment review. OIDC
-provenance remains deferred.
+publication from `main` retains explicit protected-environment review. Its
+migration to OIDC remains deferred.
 
 The manual CI attestation binds `jgabor/agentera`, the
 `Publish development package (@next)` workflow,
@@ -304,6 +304,17 @@ The manual CI attestation binds `jgabor/agentera`, the
 the numeric source run ID. The full `refs/heads/...` contract is the branch
 authority. This attestation and approval flow is not part of routine `feat/v3`
 push publication.
+
+Routine `feat/v3` publication grants `contents: read` and `id-token: write` to
+the GitHub-hosted workflow. Classification has no credentials or OIDC. After a
+forward outcome, mutation rechecks the registry without OIDC. An actual forward
+publish then requires `GITHUB_ACTIONS=true` and non-empty
+`ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, and passes
+them only to `npm publish` with an isolated registry-only npm config. It rejects
+traditional npm tokens and auth-config variables. Exact and superseded replay
+need neither credentials nor OIDC. A `forward-retag` fails closed because npm
+Trusted Publishing does not authorize `npm dist-tag`; recover with interactive
+npm 2FA or a later forward version.
 
 After `.github/workflows/publish-stable.yml` lands on default `main`, its manual
 dispatch prepares, attests, and uploads one immutable candidate. The dependent
@@ -343,7 +354,8 @@ staged or promoted state replays without upload or backward tag movement. A
 failure or timeout stops later phases and never rolls back; retry the same
 coordinator with the same exact package artifact.
 
-Only the npm mutation child receives `NPM_TOKEN`, through a mode-`0600`
+In the separate manual development and stable paths, only the npm mutation
+child receives `NPM_TOKEN`, through a mode-`0600`
 temporary config. Tool-version probes, pack, registry inspection, receipt
 validation, and both smoke paths sanitize npm and pnpm variables and use new
 HOME, cache, and user/global configuration. Transaction phase output remains

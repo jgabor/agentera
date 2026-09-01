@@ -222,7 +222,7 @@ describe("package publication orchestration", () => {
     );
   });
 
-  it("classifies without credentials and mutates only a forward development outcome", () => {
+  it("classifies without credentials and preserves OIDC only for forward mutation", () => {
     expect(qualificationYaml).toMatch(/push:\n\s+branches:\n\s+- feat\/v3/);
     expect(qualificationYaml).not.toContain("workflow_dispatch");
     expect(qualificationYaml).toContain("queue: max");
@@ -238,10 +238,14 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml.match(/--package-version \"\$\{\{ steps\.version\.outputs\.value \}\}\"/g)).toHaveLength(3);
     expect(qualificationYaml).toContain("--git-ref \"${GITHUB_SHA}\"");
     expect(qualificationYaml.match(/agentera-\$\{\{ steps\.version\.outputs\.value \}\}\.tgz/g)).toHaveLength(2);
-    expect(qualificationYaml).toContain("NPM_TOKEN: ${{ secrets.NPM_TOKEN }}");
+    expect(qualificationYaml).not.toContain("secrets.NPM_TOKEN");
+    expect(qualificationYaml).not.toContain(":_authToken");
+    expect(qualificationYaml).not.toContain("--auth-config");
     expect(qualificationYaml).toContain("timeout-minutes: 8");
     expect(qualificationYaml.match(/timeout-minutes:/g)).toHaveLength(8);
     const workflow = YAML.parse(qualificationYaml);
+    expect(workflow.permissions).toEqual({ contents: "read", "id-token": "write" });
+    expect(workflow.jobs["publish-development"]["runs-on"]).toBe("ubuntu-24.04");
     const setupNode = workflow.jobs["publish-development"].steps.find(
       (step: { uses?: string }) => step.uses === "actions/setup-node@v5",
     );
@@ -251,10 +255,8 @@ describe("package publication orchestration", () => {
     );
     expect(construction.run).toContain("--package-version");
     const steps = workflow.jobs["publish-development"].steps;
-    const credentialSteps = steps.filter((step: { env?: Record<string, string> }) => step.env?.NPM_TOKEN);
-    expect(credentialSteps).toHaveLength(1);
-    expect(credentialSteps[0].name).toBe("Mutate npm only for a forward outcome");
-    expect(credentialSteps[0].if).toBe(
+    const mutation = steps.find((step: { name?: string }) => step.name === "Mutate npm only for a forward outcome");
+    expect(mutation.if).toBe(
       "steps.classification.outputs.outcome == 'forward-publish' || steps.classification.outputs.outcome == 'forward-retag'",
     );
     const classification = steps.find((step: { id?: string }) => step.id === "classification");
@@ -262,15 +264,11 @@ describe("package publication orchestration", () => {
     expect(classification.run).toContain('env -i PATH="${PATH}" node packages/cli/scripts/publish-development.mjs classify');
     expect(classification.run).toContain("publication-classification.json");
     expect(classification.run).toContain("exact-replay|superseded-replay|forward-publish|forward-retag");
-    const mutation = credentialSteps[0];
     expect(mutation.run).toContain("publication-classification.json");
-    expect(mutation.run).toContain("umask 077");
-    expect(mutation.run).toContain("_authToken=%s");
-    expect(mutation.run).toContain("trap 'rm -f");
     expect(mutation.run).toContain("unset NPM_TOKEN NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG");
-    expect(mutation.run).toContain('env -i PATH="${PATH}" node packages/cli/scripts/publish-development.mjs mutate');
-    expect(mutation.run).toContain('--auth-config "${auth_config}"');
-    expect(mutation.run.indexOf("unset NPM_TOKEN")).toBeLessThan(mutation.run.indexOf("env -i"));
+    expect(mutation.run).toContain("node packages/cli/scripts/publish-development.mjs mutate");
+    expect(mutation.run).not.toContain("env -i");
+    expect(mutation.run).not.toContain("auth_config");
     expect(publicationYaml).toContain("workflow_dispatch");
     expect(publicationYaml).toContain("candidate --adapter stable");
     for (const excluded of [

@@ -44,17 +44,23 @@ function requireCredentialFreeCoordinatorEnvironment(environment) {
   if (hasCredentials) throw new Error("development publication coordinator environment contains npm credentials or auth configuration");
 }
 
-function isolatedNpmEnvironment(root, environment = process.env, userConfig) {
+const OIDC_ENVIRONMENT_KEYS = [
+  "ACTIONS_ID_TOKEN_REQUEST_URL",
+  "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+  "GITHUB_ACTIONS",
+];
+
+function isolatedNpmEnvironment(root, environment = process.env, preserveOidc = false) {
   fs.mkdirSync(root, { recursive: true, mode: 0o700 });
   const home = path.join(root, "home");
   const cache = path.join(root, "cache");
-  const npmrc = userConfig ?? path.join(root, "npmrc");
+  const npmrc = path.join(root, "npmrc");
   const globalNpmrc = path.join(root, "global-npmrc");
   fs.mkdirSync(home, { mode: 0o700 });
   fs.mkdirSync(cache, { mode: 0o700 });
   fs.writeFileSync(globalNpmrc, "", { mode: 0o600 });
-  if (!userConfig) fs.writeFileSync(npmrc, "registry=https://registry.npmjs.org/\n", { mode: 0o600 });
-  return {
+  fs.writeFileSync(npmrc, "registry=https://registry.npmjs.org/\n", { mode: 0o600 });
+  const result = {
     ...npmChildEnvironment(environment, npmrc, globalNpmrc),
     HOME: home,
     NPM_CONFIG_CACHE: cache,
@@ -62,6 +68,16 @@ function isolatedNpmEnvironment(root, environment = process.env, userConfig) {
     NPM_CONFIG_FUND: "false",
     NPM_CONFIG_IGNORE_SCRIPTS: "true",
   };
+  if (!preserveOidc) for (const key of OIDC_ENVIRONMENT_KEYS) delete result[key];
+  return result;
+}
+
+function requireTrustedPublishingEnvironment(environment) {
+  if (environment.GITHUB_ACTIONS !== "true"
+    || !environment.ACTIONS_ID_TOKEN_REQUEST_URL?.trim()
+    || !environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN?.trim()) {
+    throw new Error("forward npm publish requires GitHub Actions Trusted Publishing: GITHUB_ACTIONS=true and non-empty ACTIONS_ID_TOKEN_REQUEST_URL and ACTIONS_ID_TOKEN_REQUEST_TOKEN");
+  }
 }
 
 function npmView(args, env) {
@@ -177,7 +193,6 @@ export function classifyDevelopmentTarball(options, dependencies = {}) {
 }
 
 export function mutateDevelopmentTarball(options, classification, dependencies = {}) {
-  const authConfig = dependencies.authConfig ?? options.authConfig;
   let root;
   try {
     const environment = dependencies.environment ?? process.env;
@@ -196,32 +211,26 @@ export function mutateDevelopmentTarball(options, classification, dependencies =
       console.log(`${value.package}@${value.version} became an ${state}; no mutation is needed`);
       return state;
     }
-    if (!authConfig) throw new Error("temporary npm auth config is required for npm mutation");
-    const authStat = fs.statSync(authConfig);
-    if (!authStat.isFile() || (authStat.mode & 0o777) !== 0o600) {
-      throw new Error("temporary npm auth config must be a mode-0600 regular file");
+    if (state === "forward-retag") {
+      throw new Error("Trusted Publishing OIDC does not authorize npm dist-tag. Recover with interactive npm 2FA or publish a later forward version");
     }
+    requireTrustedPublishingEnvironment(environment);
     const mutationEnv = isolatedNpmEnvironment(
       fs.mkdtempSync(path.join(root, "mutation-")),
       environment,
-      authConfig,
+      true,
     );
-    if (state === "forward-publish") {
-      execute("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], { env: mutationEnv });
-    } else {
-      execute("npm", ["dist-tag", "add", `${value.package}@${value.version}`, "next"], { env: mutationEnv });
-    }
+    execute("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], { env: mutationEnv });
     return state;
   } finally {
     if (root) fs.rmSync(root, { recursive: true, force: true });
-    if (authConfig) fs.rmSync(authConfig, { force: true });
   }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [command] = process.argv.slice(2);
-  if (!["validate", "classify", "mutate"].includes(command)) throw new Error("usage: publish-development.mjs <validate|classify|mutate> --tarball FILE --package-version VERSION --git-ref SHA [--classification FILE] [--auth-config FILE]");
-  const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref", "--classification", "--auth-config"] });
+  if (!["validate", "classify", "mutate"].includes(command)) throw new Error("usage: publish-development.mjs <validate|classify|mutate> --tarball FILE --package-version VERSION --git-ref SHA [--classification FILE]");
+  const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref", "--classification"] });
   const options = {
     tarball: path.resolve(flags.get("--tarball") ?? ""),
     packageVersion: flags.get("--package-version"),
@@ -239,10 +248,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     writeDevelopmentClassification(path.resolve(classificationFile), classification);
     console.log(classification.outcome);
   } else {
-    const authConfig = flags.get("--auth-config");
-    mutateDevelopmentTarball(
-      { ...options, ...(authConfig ? { authConfig: path.resolve(authConfig) } : {}) },
-      readDevelopmentClassification(path.resolve(classificationFile)),
-    );
+    mutateDevelopmentTarball(options, readDevelopmentClassification(path.resolve(classificationFile)));
   }
 }
