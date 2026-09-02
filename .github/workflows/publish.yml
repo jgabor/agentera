@@ -143,7 +143,7 @@ jobs:
       - name: Select fixed runner toolchain
         timeout-minutes: 1
         run: |
-          python_version="$(python3 -c 'import platform; print(platform.python_version())')"
+          python_version="$(/usr/bin/python3 -c 'import platform; print(platform.python_version())')"
           case "${python_version}" in 3.12.*) ;; *) printf 'Python 3.12 is required, found %s\n' "${python_version}" >&2; exit 1 ;; esac
           shopt -s nullglob
           node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
@@ -162,32 +162,53 @@ jobs:
             printf 'npm 11.5.1 or later is required, found %s\n' "${npm_version}" >&2
             exit 1
           fi
-          printf '%s\n' "${node_bins[0]}" >> "${GITHUB_PATH}"
       - name: Download and validate current-run candidate
         timeout-minutes: 1
         env:
           GH_TOKEN: ${{ github.token }}
-          EXPECTED_VERSION: ${{ needs.build-development.outputs.version }}
-          EXPECTED_OUTCOME: ${{ needs.build-development.outputs.outcome }}
+          API_URL_VALUE: ${{ github.api_url }}
+          REPOSITORY_VALUE: ${{ github.repository }}
+          RUN_ID_VALUE: ${{ github.run_id }}
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
+          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
         run: |
-          python3 - <<'PYTHON'
-          import json, os, pathlib, stat, urllib.request, zipfile
+          /usr/bin/python3 - <<'PYTHON'
+          import json, os, pathlib, re, stat, urllib.request, zipfile
 
           def fail(message):
               raise SystemExit(message)
           def required(name):
-              value = os.environ.get(name, "").strip()
+              value = os.environ.get(name, "")
               return value or fail(f"missing {name}")
 
-          repository = required("GITHUB_REPOSITORY")
-          run_id = required("GITHUB_RUN_ID")
+          repository = required("REPOSITORY_VALUE")
+          run_id = required("RUN_ID_VALUE")
+          api = required("API_URL_VALUE")
+          runner_temp_value = required("RUNNER_TEMP_VALUE")
+          version = required("EXPECTED_VERSION_VALUE")
+          git_ref = required("EXPECTED_GIT_REF_VALUE")
+          outcome = required("EXPECTED_OUTCOME_VALUE")
+          if repository != "jgabor/agentera":
+              fail("invalid repository binding")
+          if not re.fullmatch(r"[1-9][0-9]{0,19}", run_id):
+              fail("invalid run ID binding")
+          if api != "https://api.github.com":
+              fail("invalid API binding")
+          if (not re.fullmatch(r"/[A-Za-z0-9._/-]{0,1022}", runner_temp_value)
+                  or ".." in pathlib.PurePosixPath(runner_temp_value).parts):
+              fail("invalid runner temp binding")
+          if not re.fullmatch(r"3\.0\.0-dev\.(?:0|[1-9][0-9]{0,9})", version):
+              fail("invalid version binding")
+          if not re.fullmatch(r"[0-9a-f]{40}", git_ref):
+              fail("invalid source binding")
+          if outcome not in {"forward-publish", "forward-retag"}:
+              fail("invalid outcome binding")
           token = required("GH_TOKEN")
-          version = required("EXPECTED_VERSION")
-          outcome = required("EXPECTED_OUTCOME")
-          if not run_id.isdecimal() or outcome not in {"forward-publish", "forward-retag"}:
-              fail("invalid workflow binding")
+          if not re.fullmatch(r"[A-Za-z0-9_.-]{1,4096}", token):
+              fail("invalid token binding")
           artifact_name = "agentera-development-candidate"
-          api = required("GITHUB_API_URL").rstrip("/")
           headers = {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}",
                      "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "agentera-publication"}
           def request(url):
@@ -205,15 +226,17 @@ jobs:
               fail("expected exactly one current-run candidate artifact")
           artifact = artifacts[0]
           artifact_id = artifact.get("id")
+          if type(artifact_id) is not int or artifact_id <= 0 or artifact_id > 9_007_199_254_740_991:
+              fail("artifact ID is invalid or unbounded")
           expected_download = f"{api}/repos/{repository}/actions/artifacts/{artifact_id}/zip"
-          if (not isinstance(artifact_id, int) or artifact_id <= 0 or artifact.get("name") != artifact_name
+          if (artifact.get("name") != artifact_name
                   or artifact.get("expired") is not False or artifact.get("workflow_run", {}).get("id") != int(run_id)
                   or artifact.get("archive_download_url") != expected_download
                   or not isinstance(artifact.get("size_in_bytes"), int)
                   or artifact["size_in_bytes"] <= 0 or artifact["size_in_bytes"] > 26_214_400):
               fail("artifact identity or size does not match the current run")
 
-          root = pathlib.Path(required("RUNNER_TEMP")) / "agentera-development"
+          root = pathlib.Path(runner_temp_value) / "agentera-development"
           root.mkdir(mode=0o700)
           archive = root / "candidate.zip"
           with request(expected_download) as response, archive.open("wb") as output:
@@ -254,14 +277,22 @@ jobs:
           PYTHON
       - name: Write fixed registry guard
         timeout-minutes: 1
+        env:
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
         run: |
-          cat > "${RUNNER_TEMP}/agentera-publication-guard.mjs" <<'AGENTERA_GUARD'
+          if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]]; then
+            printf 'Invalid runner temp binding\n' >&2
+            exit 1
+          fi
+          guard_file="${RUNNER_TEMP_VALUE}/agentera-publication-guard.mjs"
+          cat > "${guard_file}" <<'AGENTERA_GUARD'
           import { spawnSync } from "node:child_process";
           import crypto from "node:crypto";
           import fs from "node:fs";
           import path from "node:path";
 
           const fail = (message) => { throw new Error(message); };
+          const registry = "https://registry.npmjs.org/";
           const required = (name) => process.env[name]?.trim() || fail(`missing ${name}`);
           const mode = required("GUARD_MODE");
           const artifactDir = required("ARTIFACT_DIR");
@@ -319,6 +350,16 @@ jobs:
           if (manifest.name !== "agentera" || manifest.version !== expectedVersion || manifest.agentera?.gitRef !== expectedGitRef) {
             fail("tarball package metadata does not match the workflow candidate");
           }
+          if (manifest.publishConfig !== undefined) {
+            const compatible = new Map([
+              ["access", "public"], ["tag", "next"], ["registry", registry],
+              ["provenance", true], ["ignore-scripts", true],
+            ]);
+            if (!manifest.publishConfig || typeof manifest.publishConfig !== "object" || Array.isArray(manifest.publishConfig)
+              || Object.entries(manifest.publishConfig).some(([key, value]) => !compatible.has(key) || compatible.get(key) !== value)) {
+              fail("tarball publishConfig conflicts with fixed publication policy");
+            }
+          }
 
           const guardRoot = path.join(required("RUNNER_TEMP"), "agentera-publication-guard");
           const home = path.join(guardRoot, "home");
@@ -352,7 +393,7 @@ jobs:
           }
 
           function view(args) {
-            const result = runNpm(["view", ...args, "--json"]);
+            const result = runNpm(["view", ...args, "--json", `--registry=${registry}`]);
             const diagnostic = `${result.stderr}\n${result.stdout}`;
             if (result.status !== 0 && /(?:E404|404 Not Found|No match found)/i.test(diagnostic)) return null;
             if (result.status !== 0) fail(`npm view failed: ${result.stderr.trim()}`);
@@ -423,46 +464,110 @@ jobs:
       - name: Recheck exact candidate and registry without OIDC
         id: registry-guard
         timeout-minutes: 1
+        env:
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
+          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
         run: |
+          if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]] \
+            || [[ ! "${EXPECTED_VERSION_VALUE}" =~ ^3\.0\.0-dev\.(0|[1-9][0-9]{0,9})$ ]] \
+            || [[ ! "${EXPECTED_GIT_REF_VALUE}" =~ ^[0-9a-f]{40}$ ]] \
+            || [[ ! "${GITHUB_OUTPUT}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${GITHUB_OUTPUT}/" == *"/../"* ]]; then
+            printf 'Invalid publication binding\n' >&2
+            exit 1
+          fi
+          case "${EXPECTED_OUTCOME_VALUE}" in forward-publish|forward-retag) ;; *) printf 'Invalid publication outcome\n' >&2; exit 1 ;; esac
+          shopt -s nullglob
+          node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
+          if [ "${#node_bins[@]}" -ne 1 ] || [[ ! "${node_bins[0]}" =~ ^/opt/hostedtoolcache/node/24\.[0-9]+\.[0-9]+/x64/bin$ ]]; then
+            printf 'Invalid fixed Node.js toolchain\n' >&2
+            exit 1
+          fi
+          artifact_dir="${RUNNER_TEMP_VALUE}/agentera-development"
+          tarball="${artifact_dir}/agentera-${EXPECTED_VERSION_VALUE}.tgz"
+          classification="${artifact_dir}/publication-classification.json"
+          guard_file="${RUNNER_TEMP_VALUE}/agentera-publication-guard.mjs"
           env -i \
             -u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN -u GITHUB_ACTIONS \
             -u NPM_TOKEN -u NODE_AUTH_TOKEN -u NPM_CONFIG_USERCONFIG -u npm_config_userconfig \
             -u NPM_CONFIG_GLOBALCONFIG -u npm_config_globalconfig -u NPM_CONFIG__AUTH -u npm_config__auth \
             -u NPM_CONFIG__AUTHTOKEN -u npm_config__authToken -u NPM_CONFIG__AUTH_TOKEN -u npm_config__auth_token \
-            PATH="${PATH}" HOME="${RUNNER_TEMP}/agentera-publication-guard/home" RUNNER_TEMP="${RUNNER_TEMP}" \
-            GUARD_MODE=pre ARTIFACT_DIR="${RUNNER_TEMP}/agentera-development" \
-            TARBALL="${RUNNER_TEMP}/agentera-development/agentera-${{ needs.build-development.outputs.version }}.tgz" \
-            CLASSIFICATION="${RUNNER_TEMP}/agentera-development/publication-classification.json" \
-            EXPECTED_VERSION="${{ needs.build-development.outputs.version }}" EXPECTED_GIT_REF="${GITHUB_SHA}" \
-            EXPECTED_OUTCOME="${{ needs.build-development.outputs.outcome }}" GITHUB_OUTPUT="${GITHUB_OUTPUT}" \
-            node "${RUNNER_TEMP}/agentera-publication-guard.mjs"
+            PATH="${node_bins[0]}:/usr/bin:/bin" HOME="${RUNNER_TEMP_VALUE}/agentera-publication-guard/home" RUNNER_TEMP="${RUNNER_TEMP_VALUE}" \
+            GUARD_MODE=pre ARTIFACT_DIR="${artifact_dir}" TARBALL="${tarball}" CLASSIFICATION="${classification}" \
+            EXPECTED_VERSION="${EXPECTED_VERSION_VALUE}" EXPECTED_GIT_REF="${EXPECTED_GIT_REF_VALUE}" \
+            EXPECTED_OUTCOME="${EXPECTED_OUTCOME_VALUE}" GITHUB_OUTPUT="${GITHUB_OUTPUT}" \
+            node "${guard_file}"
       - name: Publish exact tarball with Trusted Publishing
         if: steps.registry-guard.outputs.outcome == 'forward-publish'
         timeout-minutes: 1
+        env:
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          GUARD_OUTCOME_VALUE: ${{ steps.registry-guard.outputs.outcome }}
         run: |
+          if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]] \
+            || [[ ! "${EXPECTED_VERSION_VALUE}" =~ ^3\.0\.0-dev\.(0|[1-9][0-9]{0,9})$ ]] \
+            || [[ "${GUARD_OUTCOME_VALUE}" != "forward-publish" ]] \
+            || [[ "${GITHUB_ACTIONS}" != "true" ]] \
+            || [[ ! "${ACTIONS_ID_TOKEN_REQUEST_URL}" =~ ^https://[A-Za-z0-9._/?\&=%:+-]{1,2040}$ ]] \
+            || [[ ! "${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" =~ ^[A-Za-z0-9._-]{1,8192}$ ]]; then
+            printf 'Invalid publish binding\n' >&2
+            exit 1
+          fi
+          shopt -s nullglob
+          node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
+          if [ "${#node_bins[@]}" -ne 1 ] || [[ ! "${node_bins[0]}" =~ ^/opt/hostedtoolcache/node/24\.[0-9]+\.[0-9]+/x64/bin$ ]]; then
+            printf 'Invalid fixed Node.js toolchain\n' >&2
+            exit 1
+          fi
+          guard_root="${RUNNER_TEMP_VALUE}/agentera-publication-guard"
+          tarball="${RUNNER_TEMP_VALUE}/agentera-development/agentera-${EXPECTED_VERSION_VALUE}.tgz"
           env -i \
-            PATH="${PATH}" HOME="${RUNNER_TEMP}/agentera-publication-guard/home" \
+            PATH="${node_bins[0]}:/usr/bin:/bin" HOME="${guard_root}/home" \
             GITHUB_ACTIONS="${GITHUB_ACTIONS}" \
             ACTIONS_ID_TOKEN_REQUEST_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}" \
             ACTIONS_ID_TOKEN_REQUEST_TOKEN="${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
-            NPM_CONFIG_USERCONFIG="${RUNNER_TEMP}/agentera-publication-guard/npmrc" \
-            NPM_CONFIG_GLOBALCONFIG="${RUNNER_TEMP}/agentera-publication-guard/global-npmrc" \
-            NPM_CONFIG_CACHE="${RUNNER_TEMP}/agentera-publication-guard/cache" \
+            NPM_CONFIG_USERCONFIG="${guard_root}/npmrc" \
+            NPM_CONFIG_GLOBALCONFIG="${guard_root}/global-npmrc" \
+            NPM_CONFIG_CACHE="${guard_root}/cache" \
             NPM_CONFIG_AUDIT=false NPM_CONFIG_FUND=false NPM_CONFIG_IGNORE_SCRIPTS=true \
-            npm publish "${RUNNER_TEMP}/agentera-development/agentera-${{ needs.build-development.outputs.version }}.tgz" --access public --tag next --ignore-scripts
+            npm publish "${tarball}" --access public --tag next --ignore-scripts --registry=https://registry.npmjs.org/
       - name: Verify registry convergence without OIDC
         if: steps.registry-guard.outputs.outcome == 'forward-publish'
         timeout-minutes: 1
+        env:
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
+          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
+          GUARD_OUTCOME_VALUE: ${{ steps.registry-guard.outputs.outcome }}
         run: |
+          if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]] \
+            || [[ ! "${EXPECTED_VERSION_VALUE}" =~ ^3\.0\.0-dev\.(0|[1-9][0-9]{0,9})$ ]] \
+            || [[ ! "${EXPECTED_GIT_REF_VALUE}" =~ ^[0-9a-f]{40}$ ]] \
+            || [[ "${GUARD_OUTCOME_VALUE}" != "forward-publish" ]]; then
+            printf 'Invalid convergence binding\n' >&2
+            exit 1
+          fi
+          case "${EXPECTED_OUTCOME_VALUE}" in forward-publish|forward-retag) ;; *) printf 'Invalid publication outcome\n' >&2; exit 1 ;; esac
+          shopt -s nullglob
+          node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
+          if [ "${#node_bins[@]}" -ne 1 ] || [[ ! "${node_bins[0]}" =~ ^/opt/hostedtoolcache/node/24\.[0-9]+\.[0-9]+/x64/bin$ ]]; then
+            printf 'Invalid fixed Node.js toolchain\n' >&2
+            exit 1
+          fi
+          artifact_dir="${RUNNER_TEMP_VALUE}/agentera-development"
+          tarball="${artifact_dir}/agentera-${EXPECTED_VERSION_VALUE}.tgz"
+          classification="${artifact_dir}/publication-classification.json"
+          guard_file="${RUNNER_TEMP_VALUE}/agentera-publication-guard.mjs"
           env -i \
             -u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN -u GITHUB_ACTIONS \
             -u NPM_TOKEN -u NODE_AUTH_TOKEN -u NPM_CONFIG_USERCONFIG -u npm_config_userconfig \
             -u NPM_CONFIG_GLOBALCONFIG -u npm_config_globalconfig -u NPM_CONFIG__AUTH -u npm_config__auth \
             -u NPM_CONFIG__AUTHTOKEN -u npm_config__authToken -u NPM_CONFIG__AUTH_TOKEN -u npm_config__auth_token \
-            PATH="${PATH}" HOME="${RUNNER_TEMP}/agentera-publication-guard/home" RUNNER_TEMP="${RUNNER_TEMP}" \
-            GUARD_MODE=post ARTIFACT_DIR="${RUNNER_TEMP}/agentera-development" \
-            TARBALL="${RUNNER_TEMP}/agentera-development/agentera-${{ needs.build-development.outputs.version }}.tgz" \
-            CLASSIFICATION="${RUNNER_TEMP}/agentera-development/publication-classification.json" \
-            EXPECTED_VERSION="${{ needs.build-development.outputs.version }}" EXPECTED_GIT_REF="${GITHUB_SHA}" \
-            EXPECTED_OUTCOME="${{ needs.build-development.outputs.outcome }}" \
-            node "${RUNNER_TEMP}/agentera-publication-guard.mjs"
+            PATH="${node_bins[0]}:/usr/bin:/bin" HOME="${RUNNER_TEMP_VALUE}/agentera-publication-guard/home" RUNNER_TEMP="${RUNNER_TEMP_VALUE}" \
+            GUARD_MODE=post ARTIFACT_DIR="${artifact_dir}" TARBALL="${tarball}" CLASSIFICATION="${classification}" \
+            EXPECTED_VERSION="${EXPECTED_VERSION_VALUE}" EXPECTED_GIT_REF="${EXPECTED_GIT_REF_VALUE}" \
+            EXPECTED_OUTCOME="${EXPECTED_OUTCOME_VALUE}" \
+            node "${guard_file}"

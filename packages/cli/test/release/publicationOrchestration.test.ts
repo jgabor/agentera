@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -305,9 +306,36 @@ describe("package publication orchestration", () => {
     expect(toolchain.run).toContain("npm 11.5.1 or later is required");
     expect(download.env).toMatchObject({
       GH_TOKEN: "${{ github.token }}",
-      EXPECTED_VERSION: "${{ needs.build-development.outputs.version }}",
-      EXPECTED_OUTCOME: "${{ needs.build-development.outputs.outcome }}",
+      API_URL_VALUE: "${{ github.api_url }}",
+      REPOSITORY_VALUE: "${{ github.repository }}",
+      RUN_ID_VALUE: "${{ github.run_id }}",
+      RUNNER_TEMP_VALUE: "${{ runner.temp }}",
+      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
+      EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
     });
+    for (const step of publishSteps) {
+      expect(step.run ?? "").not.toContain("${{");
+      const syntax = spawnSync("bash", ["--noprofile", "--norc", "-n"], {
+        encoding: "utf8",
+        input: step.run ?? "",
+      });
+      expect(syntax.status, `${step.name}: ${syntax.stderr}`).toBe(0);
+    }
+    const dynamicEnvironmentValues = new Set(publishSteps.flatMap(
+      (step: { env?: Record<string, string> }) => Object.values(step.env ?? {}),
+    ));
+    expect([...dynamicEnvironmentValues]).toEqual(expect.arrayContaining([
+      "${{ github.token }}",
+      "${{ github.api_url }}",
+      "${{ github.repository }}",
+      "${{ github.run_id }}",
+      "${{ runner.temp }}",
+      "${{ needs.build-development.outputs.version }}",
+      "${{ github.sha }}",
+      "${{ needs.build-development.outputs.outcome }}",
+      "${{ steps.registry-guard.outputs.outcome }}",
+    ]));
     expect(download.run).toContain("/actions/runs/{run_id}/artifacts?name={artifact_name}&per_page=100");
     expect(download.run).toContain('document.get("total_count") != 1');
     expect(download.run).toContain('artifact.get("workflow_run", {}).get("id") != int(run_id)');
@@ -334,6 +362,8 @@ describe("package publication orchestration", () => {
     expect(writeGuard.run).toContain("classification.outcome !== expectedOutcome");
     expect(writeGuard.run).toContain("tarball integrity does not match the classification");
     expect(writeGuard.run).toContain("manifest.agentera?.gitRef !== expectedGitRef");
+    expect(writeGuard.run).toContain("tarball publishConfig conflicts with fixed publication policy");
+    expect(writeGuard.run).toContain('`--registry=${registry}`');
     expect(writeGuard.run).toContain("npm Trusted Publishing requires npm 11.5.1 or later");
     expect(writeGuard.run).toContain('if (outcome === "forward-retag")');
     expect(writeGuard.run).toContain("registry converged as");
@@ -363,12 +393,12 @@ describe("package publication orchestration", () => {
     expect(convergence.run).toContain("GUARD_MODE=post");
     expect(publish.if).toBe("steps.registry-guard.outputs.outcome == 'forward-publish'");
     expect(convergence.if).toBe("steps.registry-guard.outputs.outcome == 'forward-publish'");
-    expect(publish.run.trim().startsWith("env -i \\")).toBe(true);
+    expect(publish.run).toContain("env -i \\");
     expect(publish.run).toContain('GITHUB_ACTIONS="${GITHUB_ACTIONS}"');
     expect(publish.run).toContain('ACTIONS_ID_TOKEN_REQUEST_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}"');
     expect(publish.run).toContain('ACTIONS_ID_TOKEN_REQUEST_TOKEN="${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"');
     expect(publish.run).toContain("NPM_CONFIG_USERCONFIG=");
-    expect(publish.run).toContain("npm publish \"${RUNNER_TEMP}/agentera-development/agentera-${{ needs.build-development.outputs.version }}.tgz\" --access public --tag next --ignore-scripts");
+    expect(publish.run).toContain("npm publish \"${tarball}\" --access public --tag next --ignore-scripts --registry=https://registry.npmjs.org/");
     expect(publish.run).not.toContain("node ");
     expect(qualificationYaml.match(/ACTIONS_ID_TOKEN_REQUEST_URL="\$\{ACTIONS_ID_TOKEN_REQUEST_URL\}"/g)).toHaveLength(1);
     expect(qualificationYaml.match(/ACTIONS_ID_TOKEN_REQUEST_TOKEN="\$\{ACTIONS_ID_TOKEN_REQUEST_TOKEN\}"/g)).toHaveLength(1);
@@ -451,7 +481,6 @@ describe("package publication orchestration", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-artifact-api-test-"));
     const script = path.join(root, "download.py");
     const zip = path.join(root, "candidate.zip");
-    fs.writeFileSync(script, source!);
     const makeZip = (entry = "agentera-3.0.0-dev.90.tgz") => {
       const result = spawnSync("python3", ["-c", [
         "import stat, sys, zipfile",
@@ -478,6 +507,7 @@ describe("package publication orchestration", () => {
     const address = server.address();
     if (!address || typeof address === "string") throw new Error("test server did not bind");
     const api = `http://127.0.0.1:${address.port}`;
+    fs.writeFileSync(script, source!.replace('"https://api.github.com"', JSON.stringify(api)));
     const artifact = (overrides: Record<string, unknown> = {}) => ({
       id: 7,
       name: "agentera-development-candidate",
@@ -491,13 +521,14 @@ describe("package publication orchestration", () => {
       const temp = fs.mkdtempSync(path.join(root, "run-"));
       const child = spawn("python3", [script], {
         env: {
-          GITHUB_API_URL: api,
-          GITHUB_REPOSITORY: "jgabor/agentera",
-          GITHUB_RUN_ID: "42",
+          API_URL_VALUE: api,
+          REPOSITORY_VALUE: "jgabor/agentera",
+          RUN_ID_VALUE: "42",
           GH_TOKEN: "test-token",
-          EXPECTED_VERSION: "3.0.0-dev.90",
-          EXPECTED_OUTCOME: "forward-publish",
-          RUNNER_TEMP: temp,
+          EXPECTED_VERSION_VALUE: "3.0.0-dev.90",
+          EXPECTED_GIT_REF_VALUE: "a".repeat(40),
+          EXPECTED_OUTCOME_VALUE: "forward-publish",
+          RUNNER_TEMP_VALUE: temp,
         },
       });
       let stderr = "";
@@ -522,6 +553,117 @@ describe("package publication orchestration", () => {
       expect((await execute()).stderr).toContain("entries do not match");
     } finally {
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("treats hostile job outputs as inert data and stops before npm mutation", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    const step = workflow.jobs["publish-development"].steps.find(
+      (candidate: { name?: string }) => candidate.name === "Download and validate current-run candidate",
+    );
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-hostile-output-test-"));
+    try {
+      const fakeBin = path.join(root, "bin");
+      fs.mkdirSync(fakeBin);
+      const fakeNpm = path.join(fakeBin, "npm");
+      fs.writeFileSync(fakeNpm, "#!/bin/sh\n: > \"$NPM_MUTATION_MARKER\"\n", { mode: 0o755 });
+      const cases = [
+        ["EXPECTED_VERSION_VALUE", (marker: string) => `3.0.0-dev.90$(touch "${marker}")`],
+        ["EXPECTED_VERSION_VALUE", (marker: string) => `3.0.0-dev.90\`touch "${marker}"\``],
+        ["EXPECTED_VERSION_VALUE", (marker: string) => `3.0.0-dev.90\"; touch \"${marker}\"; #`],
+        ["EXPECTED_OUTCOME_VALUE", (marker: string) => `forward-publish\ntouch "${marker}"`],
+        ["EXPECTED_OUTCOME_VALUE", () => "../../../*?[hostile]"],
+      ] as const;
+      for (const [key, payload] of cases) {
+        const marker = path.join(root, `side-effect-${crypto.randomUUID()}`);
+        const environment = {
+          PATH: `${fakeBin}:/usr/bin:/bin`,
+          API_URL_VALUE: "https://api.github.com",
+          REPOSITORY_VALUE: "jgabor/agentera",
+          RUN_ID_VALUE: "42",
+          RUNNER_TEMP_VALUE: path.join(root, `runner-${crypto.randomUUID()}`),
+          EXPECTED_VERSION_VALUE: "3.0.0-dev.90",
+          EXPECTED_GIT_REF_VALUE: "a".repeat(40),
+          EXPECTED_OUTCOME_VALUE: "forward-publish",
+          GH_TOKEN: "test-token",
+          NPM_MUTATION_MARKER: marker,
+          [key]: payload(marker),
+        };
+        const result = spawnSync(
+          "bash",
+          ["--noprofile", "--norc", "-e", "-o", "pipefail", "-c", `${step.run}\nnpm publish ignored`],
+          { encoding: "utf8", env: environment },
+        );
+        expect(result.status, result.stderr).not.toBe(0);
+        expect(fs.existsSync(marker)).toBe(false);
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a conflicting candidate registry before invoking npm", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    const step = workflow.jobs["publish-development"].steps.find(
+      (candidate: { name?: string }) => candidate.name === "Write fixed registry guard",
+    );
+    const source = step.run.match(/<<'AGENTERA_GUARD'\n([\s\S]*?)\n\s*AGENTERA_GUARD/)?.[1];
+    expect(source).toBeTruthy();
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-publish-config-test-"));
+    try {
+      const artifactDir = path.join(root, "agentera-development");
+      const packageDir = path.join(root, "source", "package");
+      const fakeBin = path.join(root, "bin");
+      fs.mkdirSync(artifactDir);
+      fs.mkdirSync(packageDir, { recursive: true });
+      fs.mkdirSync(fakeBin);
+      const version = "3.0.0-dev.90";
+      const gitRef = "a".repeat(40);
+      fs.writeFileSync(path.join(packageDir, "package.json"), JSON.stringify({
+        name: "agentera",
+        version,
+        agentera: { gitRef },
+        publishConfig: { access: "public", tag: "next", registry: "https://evil.example/" },
+      }));
+      const tarball = path.join(artifactDir, `agentera-${version}.tgz`);
+      const packed = spawnSync("tar", ["-czf", tarball, "-C", path.join(root, "source"), "package"], {
+        encoding: "utf8",
+      });
+      expect(packed.status, packed.stderr).toBe(0);
+      const integrity = `sha512-${crypto.createHash("sha512").update(fs.readFileSync(tarball)).digest("base64")}`;
+      const classification = path.join(artifactDir, "publication-classification.json");
+      fs.writeFileSync(classification, JSON.stringify({
+        schemaVersion: "agentera.developmentPublicationClassification.v1",
+        outcome: "forward-publish",
+        package: "agentera",
+        version,
+        gitRef,
+        integrity,
+      }));
+      const guard = path.join(root, "guard.mjs");
+      fs.writeFileSync(guard, source!);
+      const npmMarker = path.join(root, "npm-invoked");
+      fs.writeFileSync(path.join(fakeBin, "npm"), `#!/bin/sh\n: > "${npmMarker}"\nexit 97\n`, { mode: 0o755 });
+      const result = spawnSync(process.execPath, [guard], {
+        encoding: "utf8",
+        env: {
+          PATH: `${fakeBin}:/usr/bin:/bin`,
+          RUNNER_TEMP: root,
+          GUARD_MODE: "pre",
+          ARTIFACT_DIR: artifactDir,
+          TARBALL: tarball,
+          CLASSIFICATION: classification,
+          EXPECTED_VERSION: version,
+          EXPECTED_GIT_REF: gitRef,
+          EXPECTED_OUTCOME: "forward-publish",
+          GITHUB_OUTPUT: path.join(root, "github-output"),
+        },
+      });
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("publishConfig conflicts with fixed publication policy");
+      expect(fs.existsSync(npmMarker)).toBe(false);
+    } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

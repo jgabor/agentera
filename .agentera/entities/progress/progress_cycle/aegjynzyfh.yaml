@@ -1,0 +1,15 @@
+id: aegjynzyfh
+artifact: progress
+record:
+  timestamp: 2026-09-02 21:17
+  type: fix
+  phase: build
+  what: Hardened the OIDC publication job against shell-source injection and candidate-controlled npm publication overrides.
+  context:
+    intent: Keep candidate values as bounded environment data and bind npm mutation to the official registry.
+    constraints: Preserve unrelated documentation, TODO, progress, plan, and authority changes; do not push, publish, land main, or change external settings.
+    scope: The unified publication workflow, executable release regressions, and required state record only.
+  discovered: GitHub substitutes job outputs in run source before the credentialed shell starts, and npm accepts publish-time configuration from a tarball manifest.
+  verified: Hostile output, fixed-workflow, and publication tests passed (63 focused and 294 release tests). Typecheck, build, package verification, dry run, compact, and capability contract passed. The broader source lane passed 4,275 tests but its live prime-budget test remains 5 GPT-5 tokens over because preserved uncommitted guidance is in the measured worktree.
+  next: Orchestrate must record the second evaluation verdict while task liejxtiwcp remains in_progress; reconcile the preserved prime briefing changes before the final source gate.
+  publication_order: 293
