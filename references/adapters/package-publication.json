@@ -2,13 +2,13 @@
   "schemaVersion": "agentera.packagePublication.v2",
   "owner": "repository/package scripts",
   "invariants": {
-    "preparation": "Preparation is pure and registry-independent. CI derives the development base release line from the checked-in manifest, allocates a candidate version from GITHUB_RUN_NUMBER plus 80, and changes only version and agentera.gitRef in an isolated construction manifest without changing the checkout. The manual readiness preparation path first validates a current normalized source receipt, then uses the committed manifest version and an explicit source commit. Stable preparation retains its separate source-provenance contract.",
+    "preparation": "Preparation is pure and registry-independent. CI derives the development base release line from the checked-in manifest, allocates a candidate version from GITHUB_RUN_NUMBER plus 89, and changes only version and agentera.gitRef in an isolated construction manifest without changing the checkout. The fixed offset makes publish.yml run 1 follow the prior workflow's dev.89 publication as dev.90. The manual readiness preparation path first validates a current normalized source receipt, then uses the committed manifest version and an explicit source commit. Stable preparation retains its separate source-provenance contract.",
     "sourceQualification": "Source verification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
     "candidateQualification": "Package verification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
     "publication": "Registry publication consumes the retained package artifact through one measured stage, independent staged package migration smoke, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source verification, or rolls a tag back.",
-    "approval": "Manual development and stable release machinery requires artifact-bound approval. The routine feat/v3 push path derives its immutable candidate version from the manifest base line and GITHUB_RUN_NUMBER, and its git ref from the push SHA, validates and smokes the exact isolated tarball, and publishes those bytes directly to next. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch.",
+    "approval": "Manual development and stable release machinery requires artifact-bound approval. The routine configured development ref push path derives its immutable candidate version from the manifest base line and GITHUB_RUN_NUMBER, and its git ref from the push SHA, validates and smokes the exact isolated tarball, and publishes those bytes directly to next. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch.",
     "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Development classification emits one bounded outcome bound to the exact tarball integrity, version, and git ref. Exact and superseded replay outcomes skip the mutation step. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
-    "credentials": "Routine development registry classification runs in a separate process without npm credentials or OIDC. Only a forward outcome starts mutation, which verifies the classification binding and rechecks registry state before an effect. An actual forward publish requires the GitHub Actions Trusted Publishing environment, and only its npm publish child receives the OIDC variables through an isolated registry-only user config; traditional npm credentials and auth configuration are rejected. Forward retag fails closed because OIDC does not authorize npm dist-tag. Manual development recovery and stable publication retain their token-bearing contracts. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
+    "credentials": "Routine development registry classification runs in a separate job without npm credentials or OIDC. The OIDC job checks out no source and executes no candidate-controlled script or package code. Its fixed workflow guard verifies the bounded classification, tarball metadata, integrity, version, source SHA, and immediate registry state with OIDC and inherited npm credentials/config removed from the process environment. Exact or superseded replay ends without upload, and forward retag fails closed because OIDC does not authorize npm dist-tag. Only the fixed npm publish exact-tarball command receives the OIDC request environment through an isolated registry-only user config and with lifecycle scripts disabled. A fixed credential-free guard then verifies registry convergence without dist-tag mutation. Manual development recovery and stable publication retain their token-bearing contracts. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
     "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
   },
   "packages": {
@@ -47,7 +47,7 @@
   },
   "versionCallerInventory": {
     "development": {
-      "authority": "CI candidate from GITHUB_RUN_NUMBER plus 80 on checked-in manifest base line",
+      "authority": "CI candidate from GITHUB_RUN_NUMBER plus 89 on checked-in manifest base line",
       "currentExplicitTargetCallers": [
         "packages/cli/scripts/pack-package.mjs#--package-version with --git-ref"
       ],
@@ -65,33 +65,40 @@
   "ci": {
     "repository": "jgabor/agentera",
     "developmentPublicationWorkflow": {
-      "name": "Publish development package (@next)",
-      "path": ".github/workflows/publish-next.yml",
-      "ref": "refs/heads/feat/v3"
+      "name": "Publish Agentera",
+      "path": ".github/workflows/publish.yml",
+      "refAuthority": "ci.developmentPush.ref"
     },
     "developmentPush": {
-      "trigger": "push to refs/heads/feat/v3",
+      "ref": "refs/heads/feat/v3",
+      "trigger": "push when GITHUB_REF exactly matches the checked-in development ref read from the repository default branch",
       "versionAuthority": "GITHUB_RUN_NUMBER plus runNumberOffset on packages/cli/package.json base line",
-      "runNumberOffset": 80,
+      "runNumberOffset": 89,
       "rules": [
-        "candidate version is the checked-in manifest base line with ordinal GITHUB_RUN_NUMBER plus 80",
+        "candidate version is the checked-in manifest base line with ordinal GITHUB_RUN_NUMBER plus 89; publish.yml run 1 is dev.90",
         "agentera.gitRef equals GITHUB_SHA",
         "the checkout manifest is not modified",
-        "one isolated tarball is built, validated for version and git ref, executable-smoked, and credential-free classified as exact-replay, superseded-replay, forward-publish, or forward-retag",
-        "the bounded classification binds the tarball integrity, version, and git ref; replay outcomes skip mutation and only forward outcomes start a Trusted Publishing mutation process",
-        "a forward publish requires GITHUB_ACTIONS=true and non-empty ACTIONS_ID_TOKEN_REQUEST_URL and ACTIONS_ID_TOKEN_REQUEST_TOKEN; the isolated npm publish child receives those OIDC variables and no traditional npm credentials",
+        "a contents-read build job without OIDC builds one isolated tarball, validates version and git ref, executable-smokes it, and credential-free classifies it as exact-replay, superseded-replay, forward-publish, or forward-retag",
+        "the tarball and bounded classification cross into the dependent OIDC job as one immutable same-run Actions artifact; the publication job checks out no source, downloads no executable helper, and does not rebuild or execute package code",
+        "a fixed workflow-owned guard runs without OIDC or inherited npm credentials/config and revalidates the bounded classification, tarball metadata, integrity, version, git ref, and immediate registry state without extracting or executing package code",
+        "exact and superseded replay remain successful no-upload outcomes; only a rechecked forward-publish outcome reaches one fixed npm publish exact-tarball command with GITHUB_ACTIONS and the two OIDC request variables, an isolated registry-only npm config, and lifecycle scripts disabled",
         "forward-retag fails closed because Trusted Publishing does not authorize npm dist-tag; recovery requires interactive npm 2FA or a later forward version",
-        "mutation verifies the classification binding and rechecks registry state, so a race that has become an exact or superseded replay converges without an upload or tag rollback",
+        "a fixed credential-free post-publish guard verifies exact package integrity, source SHA, and next-tag convergence without dist-tag mutation",
+        "the immediate pre-publish check minimizes but cannot eliminate the external npm registry race because npm offers no compare-and-publish operation; an npm publish conflict fails closed, and package-global concurrency prevents Agentera workflow runs from racing each other",
         "reruns reuse the same run number, candidate version, SHA, and bytes; identical already-published bytes succeed without another upload",
-        "failed runs leave version gaps; later queued runs have higher candidates and cannot move next backward"
+        "all pushes allocate workflow run numbers before routing, so nonselected and main pushes may leave permitted version gaps; later selected runs have higher candidates and cannot move next backward",
+        "landing fails closed until the authority and publish.yml exist on default main; land both there first, then ensure the selected development branch contains publish.yml before its publishing push"
       ],
       "approval": "The routine push workflow publishes the locally validated exact tarball to next without the manual qualification, receipt, attestation, benchmark, approval, or artifact-handoff framework.",
-      "concurrency": "The publish-next-${{ github.ref }} group uses queue: max, which keeps up to 100 pending runs and does not cancel an active or pending push."
+      "concurrency": "The package-global publish-agentera group uses queue: max, which keeps up to 100 pending runs and serializes future next and latest mutations."
     },
     "stablePublicationWorkflow": {
-      "name": "Publish stable package (@latest)",
-      "path": ".github/workflows/publish-stable.yml",
-      "ref": "refs/heads/main"
+      "name": "Future protected stable jobs in Publish Agentera",
+      "path": ".github/workflows/publish.yml",
+      "ref": "refs/heads/main",
+      "status": "not implemented",
+      "environment": "npm-publish",
+      "permissions": "no OIDC in build; id-token: write only in the dependent publication job"
     }
   },
   "qualification": {
@@ -408,7 +415,7 @@
   },
   "trust": {
     "local": "A same-principal source receipt is a deterministic cache only. It cannot authorize registry mutation.",
-    "ci": "Manual CI publication requires transferred artifacts, receipts, attestation, and artifact-bound approval. The routine feat/v3 push workflow is separate: it validates and smokes one local isolated tarball, then uses GitHub Actions Trusted Publishing OIDC for an actual forward npm publish. Stable main publication remains token-bearing, requires protected-environment review, and does not yet use OIDC."
+    "ci": "Manual CI publication requires transferred artifacts, receipts, attestation, and artifact-bound approval. The routine configured development ref push workflow is separate: it validates and smokes one local isolated tarball, then uses GitHub Actions Trusted Publishing OIDC for an actual forward npm publish. Stable main publication remains token-bearing, requires protected-environment review, and does not yet use OIDC."
   },
   "registryStateTable": [
     {

@@ -1,5 +1,6 @@
 const DEVELOPMENT_VERSION = /^(\d+)\.(\d+)\.(\d+)-dev\.(0|[1-9]\d*)$/;
-export const DEVELOPMENT_RUN_NUMBER_OFFSET = 80;
+// publish.yml started after publish-next.yml had published dev.89. Its first run must be dev.90.
+export const DEVELOPMENT_RUN_NUMBER_OFFSET = 89;
 
 function parseDevelopmentVersion(version, label) {
   const match = typeof version === "string" ? DEVELOPMENT_VERSION.exec(version) : null;

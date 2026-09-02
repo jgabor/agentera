@@ -1,0 +1,13 @@
+id: liejxtiwcp
+artifact: plan
+record:
+  name: Secure the complete OIDC publication job
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN the OIDC-enabled job WHEN inspected THEN it contains no checkout, third-party action, candidate script, downloaded executable, or package lifecycle execution.
+    - GIVEN a candidate artifact WHEN publication begins THEN fixed reviewed logic downloads only the current-run artifact and validates its bounded entries, metadata, SHA, version, integrity, and classification.
+    - GIVEN guard and convergence checks WHEN they run THEN their subprocesses receive no OIDC or traditional npm credentials.
+    - GIVEN replay, conflict, or retag-required registry state WHEN observed THEN it converges without upload or fails closed without backward tag movement.
+  plan: kmguevcmrp

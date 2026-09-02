@@ -163,6 +163,8 @@ export interface ReleaseReadinessContract {
 }
 
 export interface PackagePublicationModel {
+  developmentRef: string;
+  developmentRefAuthority: "ci.developmentPush.ref";
   sourceGates: SourceGateContract[];
   sourceDag: {
     batchA: string[];
@@ -199,6 +201,24 @@ const EXACT_COMMANDS: Record<string, readonly string[]> = {
 };
 
 function fail(message: string): never { throw new Error(`package publication contract: ${message}`); }
+function countStringValue(value: unknown, target: string): number {
+  if (typeof value === "string") return value === target ? 1 : 0;
+  if (!value || typeof value !== "object") return 0;
+  return Object.values(value).reduce((count, child) => count + countStringValue(child, target), 0);
+}
+function isCanonicalBranchRef(value: unknown): value is string {
+  if (typeof value !== "string" || !value.startsWith("refs/heads/")) return false;
+  const branch = value.slice("refs/heads/".length);
+  const components = branch.split("/");
+  return branch.length > 0
+    && !/[\x00-\x20\x7f]/.test(value)
+    && !["~", "^", ":", "?", "*", "[", "\\"].some((character) => value.includes(character))
+    && !value.includes("..")
+    && !value.includes("@{")
+    && !value.includes("//")
+    && !value.endsWith(".")
+    && components.every((component) => component.length > 0 && !component.startsWith(".") && !component.endsWith(".lock"));
+}
 function exactList(value: unknown, expected: readonly string[], label: string): string[] {
   if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) fail(`${label} must be a string list`);
   if (value.length !== new Set(value).size) fail(`${label} contains duplicates`);
@@ -240,14 +260,22 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
   ], "stable version callers");
   if (raw?.packages?.development?.versionAuthority !== "GITHUB_RUN_NUMBER plus governed offset on packages/cli/package.json base line"
     || raw?.packages?.development?.suiteVersionAuthority !== "packages/cli/package.json#agentera.suiteVersion"
-    || inventory?.development?.authority !== "CI candidate from GITHUB_RUN_NUMBER plus 80 on checked-in manifest base line"
+    || inventory?.development?.authority !== "CI candidate from GITHUB_RUN_NUMBER plus 89 on checked-in manifest base line"
     || inventory?.stable?.authority !== "explicit target-version"
     || inventory?.suite?.authority !== "packages/cli/package.json#agentera.suiteVersion"
     || inventory?.suite?.requiredVersion !== "3.0.0") fail("version authority or caller inventory is invalid");
   const developmentPush = raw?.ci?.developmentPush;
+  const developmentWorkflow = raw?.ci?.developmentPublicationWorkflow;
+  if (
+    !isCanonicalBranchRef(developmentPush?.ref)
+    || developmentPush.ref === "refs/heads/main"
+    || developmentWorkflow?.refAuthority !== "ci.developmentPush.ref"
+    || Object.hasOwn(developmentWorkflow ?? {}, "ref")
+    || countStringValue(raw, developmentPush.ref) !== 1
+  ) fail("development push ref authority is invalid");
   if (
     developmentPush?.versionAuthority !== "GITHUB_RUN_NUMBER plus runNumberOffset on packages/cli/package.json base line"
-    || developmentPush?.runNumberOffset !== 80
+    || developmentPush?.runNumberOffset !== 89
   ) fail("development push version authority is invalid");
   exactList(raw?.qualification?.candidate?.inputs, [
     "source_receipt", "metadata_commit", "source_commit", "adapter", "package", "registry",
@@ -369,6 +397,8 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
   if (bounds.maxOutputBytes > 196_608) fail("activation output bound must retain 25 percent headroom");
 
   return {
+    developmentRef: developmentPush.ref,
+    developmentRefAuthority: developmentWorkflow.refAuthority,
     sourceGates,
     sourceDag: {
       batchA, performanceBarrier, capacityBarrier, barrierB, generatedOverlapOrigins,

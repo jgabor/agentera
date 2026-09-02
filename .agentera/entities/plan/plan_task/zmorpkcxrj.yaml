@@ -1,0 +1,14 @@
+id: zmorpkcxrj
+artifact: plan
+record:
+  name: Verify the corrected release boundary and prepare landing commits
+  depends_on:
+    - liejxtiwcp
+    - ybvvkpnsue
+  status: pending
+  acceptance:
+    - GIVEN the corrected implementation WHEN focused and broad owners run THEN workflow, source, type, build, capability, state, compact, package, and dry-run checks pass.
+    - GIVEN landing preparation WHEN reviewed THEN default-main bootstrap content is separated from selected-branch implementation and state changes without losing exact workflow or authority bytes.
+    - GIVEN the workflow run sequence WHEN calculated THEN skipped main or nonselected runs are allowed gaps and the selected candidate remains deterministically newer than dev.89.
+    - GIVEN the worktree WHEN ready THEN intended changes are coherent and unrelated user state is preserved.
+  plan: kmguevcmrp

@@ -1,5 +1,6 @@
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
+import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 
@@ -16,11 +17,7 @@ import {
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const ciYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8");
 const qualificationYaml = fs.readFileSync(
-  path.join(REPO_ROOT, ".github/workflows/publish-next.yml"),
-  "utf8",
-);
-const publicationYaml = fs.readFileSync(
-  path.join(REPO_ROOT, ".github/workflows/publish-stable.yml"),
+  path.join(REPO_ROOT, ".github/workflows/publish.yml"),
   "utf8",
 );
 const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
@@ -66,7 +63,7 @@ describe("package publication orchestration", () => {
   });
 
   it("documents deterministic allocation and development version recovery", () => {
-    expect(packagingGuide).toContain("GITHUB_RUN_NUMBER + 80");
+    expect(packagingGuide).toContain("GITHUB_RUN_NUMBER + 89");
     expect(packagingGuide).toContain("Failed runs leave gaps");
     expect(packagingGuide).toContain("exact replay");
     expect(packagingGuide).toContain("npm already contains");
@@ -114,7 +111,7 @@ describe("package publication orchestration", () => {
 
   it("separates allocated CI construction from receipt-bound manual preparation", () => {
     expect(publicationContract.invariants.preparation).toContain(
-      "allocates a candidate version from GITHUB_RUN_NUMBER plus 80",
+      "allocates a candidate version from GITHUB_RUN_NUMBER plus 89",
     );
     expect(publicationContract.invariants.preparation).toContain(
       "manual readiness preparation path first validates a current normalized source receipt",
@@ -134,7 +131,7 @@ describe("package publication orchestration", () => {
       ["agent bootstrap", agentsGuide],
     ] as const) {
       expect(instructions, label).toContain("GITHUB_RUN_NUMBER");
-      expect(instructions, label).toMatch(/(?:plus|\+) 80/);
+      expect(instructions, label).toMatch(/(?:plus|\+) 89/);
       expect(instructions, label).toContain("GITHUB_SHA");
       expect(instructions, label).toContain("queue: max");
       expect(instructions, label).toContain("explicit push authorization");
@@ -162,9 +159,9 @@ describe("package publication orchestration", () => {
       ["verification skill", verificationSkill],
     ] as const) {
       const normalizedInstructions = instructions.replace(/\s+/g, " ");
-      expect(normalizedInstructions, label).toContain("GITHUB_RUN_NUMBER + 80");
-      expect(normalizedInstructions, label).toContain("runs 4, 5, and 6 map to");
-      expect(normalizedInstructions, label).toContain("`3.0.0-dev.84`, `3.0.0-dev.85`, and `3.0.0-dev.86`");
+      expect(normalizedInstructions, label).toContain("GITHUB_RUN_NUMBER + 89");
+      expect(normalizedInstructions, label).toContain("runs 1, 2, and 3 map to");
+      expect(normalizedInstructions, label).toContain("`3.0.0-dev.90`, `3.0.0-dev.91`, and `3.0.0-dev.92`");
       expect(normalizedInstructions, label).toContain("Only copied manifest `version` and `agentera.gitRef` change");
       expect(normalizedInstructions, label).toContain("no pre-push development version bump or metadata-only release commit");
       expect(normalizedInstructions, label).toContain("Failed runs can leave gaps");
@@ -178,14 +175,14 @@ describe("package publication orchestration", () => {
       expect(normalPushGuidance, label).not.toMatch(/(?:changes|sets) only\s+`agentera\.gitRef`/i);
     }
 
-    expect(changelog).toContain("deterministically allocates development versions");
+    expect(changelog).toContain("preserves deterministic allocation");
   });
 
-  it("passes the allocated candidate through construction, classification, and mutation", () => {
+  it("passes the allocated candidate through construction, classification, and guarded publication", () => {
     expect(qualificationYaml).toContain("allocateDevelopmentVersion");
     expect(qualificationYaml).toContain("process.env.GITHUB_RUN_NUMBER");
     expect(qualificationYaml).toContain('--package-version "${{ steps.version.outputs.value }}"');
-    expect(qualificationYaml.match(/--package-version "\$\{\{ steps\.version\.outputs\.value \}\}"/g)).toHaveLength(3);
+    expect(qualificationYaml.match(/--package-version "\$\{\{ steps\.version\.outputs\.value \}\}"/g)).toHaveLength(2);
     expect(qualificationYaml).not.toContain("require('./packages/cli/package.json').version");
   });
 
@@ -222,9 +219,15 @@ describe("package publication orchestration", () => {
     );
   });
 
-  it("classifies without credentials and preserves OIDC only for forward mutation", () => {
-    expect(qualificationYaml).toMatch(/push:\n\s+branches:\n\s+- feat\/v3/);
+  it("selects the development branch and separates immutable build from OIDC publication", () => {
+    const selectedRef = publicationContract.ci.developmentPush.ref;
+    expect(qualificationYaml).not.toContain("AGENTERA_" + "NEXT_BRANCH");
+    expect(qualificationYaml).not.toContain(selectedRef.slice("refs/heads/".length));
+    expect(qualificationYaml).not.toMatch(/fallback/i);
+    expect([qualificationYaml, JSON.stringify(publicationContract.ci)]
+      .reduce((count, surface) => count + surface.split(selectedRef).length - 1, 0)).toBe(1);
     expect(qualificationYaml).not.toContain("workflow_dispatch");
+    expect(qualificationYaml).toContain("group: publish-agentera");
     expect(qualificationYaml).toContain("queue: max");
     expect(qualificationYaml).not.toContain("cancel-in-progress");
     expect(qualificationYaml).not.toContain("github.run_number");
@@ -233,96 +236,309 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).toContain("GITHUB_SHA");
     expect(qualificationYaml).toContain("pack-package.mjs");
     expect(qualificationYaml).toContain("publish-development.mjs classify");
-    expect(qualificationYaml).toContain("publish-development.mjs mutate");
-    expect(qualificationYaml).not.toContain("publish-development.mjs publish");
-    expect(qualificationYaml.match(/--package-version \"\$\{\{ steps\.version\.outputs\.value \}\}\"/g)).toHaveLength(3);
+    expect(qualificationYaml).not.toContain("publish-development.mjs mutate");
+    expect(qualificationYaml.match(/--package-version \"\$\{\{ steps\.version\.outputs\.value \}\}\"/g)).toHaveLength(2);
     expect(qualificationYaml).toContain("--git-ref \"${GITHUB_SHA}\"");
-    expect(qualificationYaml.match(/agentera-\$\{\{ steps\.version\.outputs\.value \}\}\.tgz/g)).toHaveLength(2);
+    expect(qualificationYaml).toContain("agentera-development-candidate");
     expect(qualificationYaml).not.toContain("secrets.NPM_TOKEN");
     expect(qualificationYaml).not.toContain(":_authToken");
     expect(qualificationYaml).not.toContain("--auth-config");
-    expect(qualificationYaml).toContain("timeout-minutes: 8");
-    expect(qualificationYaml.match(/timeout-minutes:/g)).toHaveLength(8);
     const workflow = YAML.parse(qualificationYaml);
-    expect(workflow.permissions).toEqual({ contents: "read", "id-token": "write" });
-    expect(workflow.jobs["publish-development"]["runs-on"]).toBe("ubuntu-24.04");
-    const setupNode = workflow.jobs["publish-development"].steps.find(
-      (step: { uses?: string }) => step.uses === "actions/setup-node@v5",
-    );
-    expect(setupNode.with["package-manager-cache"]).toBe(false);
-    const construction = workflow.jobs["publish-development"].steps.find(
+    expect(workflow).not.toHaveProperty("permissions");
+    const route = workflow.jobs["route-development"];
+    expect(route.permissions).toEqual({ contents: "read" });
+    expect(route.permissions).not.toHaveProperty("id-token");
+    expect(route.outputs).toEqual({
+      selected: "${{ steps.route.outputs.selected }}",
+      ref: "${{ steps.route.outputs.ref }}",
+    });
+    const routeCheckout = route.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5");
+    expect(routeCheckout.with).toMatchObject({
+      ref: "${{ github.event.repository.default_branch }}",
+      path: "publication-authority",
+      "sparse-checkout": "references/adapters/package-publication.json",
+    });
+    expect(JSON.stringify(routeCheckout.with)).not.toContain("github.sha");
+    const routeStep = route.steps.find((step: { id?: string }) => step.id === "route");
+    expect(routeStep.run).toContain("configuredRef.startsWith('refs/heads/')");
+    expect(routeStep.run).toContain("['check-ref-format', configuredRef]");
+    expect(routeStep.run).toContain("configuredRef === 'refs/heads/main'");
+    expect(routeStep.run).toContain("configuredRef === process.env.GITHUB_REF");
+    expect(routeStep.run).toContain("selected=${selected}");
+    expect(workflow.jobs["build-development"].permissions).toEqual({ contents: "read" });
+    expect(workflow.jobs["build-development"].needs).toBe("route-development");
+    expect(workflow.jobs["build-development"].if).toBe("needs.route-development.outputs.selected == 'true'");
+    expect(workflow.jobs["publish-development"].permissions).toEqual({ actions: "read", "id-token": "write" });
+    expect(workflow.jobs["publish-development"].needs).toBe("build-development");
+    const buildSteps = workflow.jobs["build-development"].steps;
+    const publishSteps = workflow.jobs["publish-development"].steps;
+    const construction = buildSteps.find(
       (step: { name?: string }) => step.name === "Build one isolated package tarball",
     );
     expect(construction.run).toContain("--package-version");
-    const steps = workflow.jobs["publish-development"].steps;
-    const mutation = steps.find((step: { name?: string }) => step.name === "Mutate npm only for a forward outcome");
-    expect(mutation.if).toBe(
-      "steps.classification.outputs.outcome == 'forward-publish' || steps.classification.outputs.outcome == 'forward-retag'",
-    );
-    const classification = steps.find((step: { id?: string }) => step.id === "classification");
+    expect(publishSteps.some((step: { uses?: string }) => step.uses?.startsWith("actions/checkout@"))).toBe(false);
+    expect(JSON.stringify(publishSteps)).not.toContain("packages/cli/scripts");
+    const upload = buildSteps.find((step: { uses?: string }) => step.uses === "actions/upload-artifact@v4");
+    expect(upload.with).toMatchObject({ name: "agentera-development-candidate", "retention-days": 1 });
+    expect(upload.with.path.trim().split("\n")).toEqual([
+      "${{ runner.temp }}/agentera-development/agentera-${{ steps.version.outputs.value }}.tgz",
+      "${{ runner.temp }}/agentera-development/publication-classification.json",
+    ]);
+    const classification = buildSteps.find((step: { id?: string }) => step.id === "classification");
     expect(classification).not.toHaveProperty("env.NPM_TOKEN");
     expect(classification.run).toContain('env -i PATH="${PATH}" node packages/cli/scripts/publish-development.mjs classify');
     expect(classification.run).toContain("publication-classification.json");
     expect(classification.run).toContain("exact-replay|superseded-replay|forward-publish|forward-retag");
-    expect(mutation.run).toContain("publication-classification.json");
-    expect(mutation.run).toContain("unset NPM_TOKEN NODE_AUTH_TOKEN NPM_CONFIG_USERCONFIG");
-    expect(mutation.run).toContain("node packages/cli/scripts/publish-development.mjs mutate");
-    expect(mutation.run).not.toContain("env -i");
-    expect(mutation.run).not.toContain("auth_config");
-    expect(publicationYaml).toContain("workflow_dispatch");
-    expect(publicationYaml).toContain("candidate --adapter stable");
-    for (const excluded of [
-      "cli:qualify:source", "cli:qualify:dev", "release-qualification", "release-benchmark",
-      "upload-artifact", "download-artifact", "receipt", "attestation", "performance", "capacity", "migration",
-    ]) expect(qualificationYaml).not.toContain(excluded);
+
+    const toolchain = publishSteps.find((step: { name?: string }) => step.name === "Select fixed runner toolchain");
+    const download = publishSteps.find(
+      (step: { name?: string }) => step.name === "Download and validate current-run candidate",
+    );
+    const writeGuard = publishSteps.find((step: { name?: string }) => step.name === "Write fixed registry guard");
+    const guard = publishSteps.find((step: { id?: string }) => step.id === "registry-guard");
+    const publish = publishSteps.find((step: { name?: string }) => step.name === "Publish exact tarball with Trusted Publishing");
+    const convergence = publishSteps.find((step: { name?: string }) => step.name === "Verify registry convergence without OIDC");
+    expect(publishSteps.every((step: { uses?: string }) => !step.uses)).toBe(true);
+    expect(JSON.stringify(publishSteps)).not.toMatch(/actions\/checkout|packages\/cli\/|\.\/dist\/|npm (ci|install|pack|exec)/);
+    expect(toolchain.run).toContain("/opt/hostedtoolcache/node/24.*/x64/bin");
+    expect(toolchain.run).toContain("Exactly one preinstalled Node.js 24 toolchain is required");
+    expect(toolchain.run).toContain("npm 11.5.1 or later is required");
+    expect(download.env).toMatchObject({
+      GH_TOKEN: "${{ github.token }}",
+      EXPECTED_VERSION: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_OUTCOME: "${{ needs.build-development.outputs.outcome }}",
+    });
+    expect(download.run).toContain("/actions/runs/{run_id}/artifacts?name={artifact_name}&per_page=100");
+    expect(download.run).toContain('document.get("total_count") != 1');
+    expect(download.run).toContain('artifact.get("workflow_run", {}).get("id") != int(run_id)');
+    expect(download.run).toContain('artifact.get("archive_download_url") != expected_download');
+    expect(download.run).toContain('artifact["size_in_bytes"] > 26_214_400');
+    expect(download.run).toContain("artifact archive entries do not match the candidate contract");
+    expect(download.run).toContain('".." in path.parts');
+    expect(download.run).toContain("mode & 0o111");
+    expect(download.run).toContain("artifact entry exceeds its size bound");
+    const downloaderSource = download.run.match(/<<'PYTHON'\n([\s\S]*?)\n\s*PYTHON/)?.[1];
+    expect(downloaderSource).toBeTruthy();
+    const downloaderRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-workflow-download-test-"));
+    try {
+      const downloaderFile = path.join(downloaderRoot, "download.py");
+      fs.writeFileSync(downloaderFile, downloaderSource!);
+      const syntax = spawnSync("python3", ["-m", "py_compile", downloaderFile], { encoding: "utf8" });
+      expect(syntax.status, syntax.stderr).toBe(0);
+    } finally {
+      fs.rmSync(downloaderRoot, { recursive: true, force: true });
+    }
+    expect(writeGuard.run).toContain("AGENTERA_GUARD");
+    expect(writeGuard.run).toContain('spawnSync("tar", ["-xOzf", tarball, "package/package.json"]');
+    expect(writeGuard.run).toContain("downloaded artifact content must be regular and non-executable");
+    expect(writeGuard.run).toContain("classification.outcome !== expectedOutcome");
+    expect(writeGuard.run).toContain("tarball integrity does not match the classification");
+    expect(writeGuard.run).toContain("manifest.agentera?.gitRef !== expectedGitRef");
+    expect(writeGuard.run).toContain("npm Trusted Publishing requires npm 11.5.1 or later");
+    expect(writeGuard.run).toContain('if (outcome === "forward-retag")');
+    expect(writeGuard.run).toContain("registry converged as");
+    expect(writeGuard.run).not.toMatch(/from ["']\.\//);
+    expect(writeGuard.run).not.toContain("dist/bin/agentera");
+    const guardSource = writeGuard.run.match(/<<'AGENTERA_GUARD'\n([\s\S]*?)\n\s*AGENTERA_GUARD/)?.[1];
+    expect(guardSource).toBeTruthy();
+    const guardRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-workflow-guard-test-"));
+    try {
+      const guardFile = path.join(guardRoot, "guard.mjs");
+      fs.writeFileSync(guardFile, guardSource!);
+      const syntax = spawnSync(process.execPath, ["--check", guardFile], { encoding: "utf8" });
+      expect(syntax.status, syntax.stderr).toBe(0);
+    } finally {
+      fs.rmSync(guardRoot, { recursive: true, force: true });
+    }
+
+    for (const step of [guard, convergence]) {
+      expect(step.run).toContain("env -i");
+      expect(step.run).toContain("-u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN -u GITHUB_ACTIONS");
+      expect(step.run).toContain("-u NPM_TOKEN -u NODE_AUTH_TOKEN -u NPM_CONFIG_USERCONFIG");
+      expect(step.run).not.toContain('ACTIONS_ID_TOKEN_REQUEST_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}"');
+      expect(step.run).not.toContain('ACTIONS_ID_TOKEN_REQUEST_TOKEN="${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"');
+      expect(step.run).not.toContain('GITHUB_ACTIONS="${GITHUB_ACTIONS}"');
+    }
+    expect(guard.run).toContain("GUARD_MODE=pre");
+    expect(convergence.run).toContain("GUARD_MODE=post");
+    expect(publish.if).toBe("steps.registry-guard.outputs.outcome == 'forward-publish'");
+    expect(convergence.if).toBe("steps.registry-guard.outputs.outcome == 'forward-publish'");
+    expect(publish.run.trim().startsWith("env -i \\")).toBe(true);
+    expect(publish.run).toContain('GITHUB_ACTIONS="${GITHUB_ACTIONS}"');
+    expect(publish.run).toContain('ACTIONS_ID_TOKEN_REQUEST_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}"');
+    expect(publish.run).toContain('ACTIONS_ID_TOKEN_REQUEST_TOKEN="${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"');
+    expect(publish.run).toContain("NPM_CONFIG_USERCONFIG=");
+    expect(publish.run).toContain("npm publish \"${RUNNER_TEMP}/agentera-development/agentera-${{ needs.build-development.outputs.version }}.tgz\" --access public --tag next --ignore-scripts");
+    expect(publish.run).not.toContain("node ");
+    expect(qualificationYaml.match(/ACTIONS_ID_TOKEN_REQUEST_URL="\$\{ACTIONS_ID_TOKEN_REQUEST_URL\}"/g)).toHaveLength(1);
+    expect(qualificationYaml.match(/ACTIONS_ID_TOKEN_REQUEST_TOKEN="\$\{ACTIONS_ID_TOKEN_REQUEST_TOKEN\}"/g)).toHaveLength(1);
+    expect(qualificationYaml.match(/GITHUB_ACTIONS="\$\{GITHUB_ACTIONS\}"/g)).toHaveLength(1);
+    expect(qualificationYaml).not.toContain("NPM_TOKEN:");
+    expect(qualificationYaml).not.toContain("environment: npm-publish");
   });
 
-  it("prepares and revalidates one stable candidate before protected publication", () => {
-    expect(publicationYaml).not.toContain("inputs:");
-    expect(publicationYaml).toContain("ADAPTER: stable");
-    expect(publicationYaml).toContain("publication --adapter stable");
-    expect(publicationYaml).toContain("environment: npm-publish");
-    expect(publicationYaml).toContain("needs: prepare");
-    expect(publicationYaml).toContain("github.ref != 'refs/heads/main'");
-    expect(publicationYaml).toContain("actions/upload-artifact@v4");
-    expect(publicationYaml).toContain("actions/download-artifact@v4");
-    expect(publicationYaml).toContain("packages/cli/scripts/release-qualification.mjs");
+  it("fails routing closed for missing, malformed, main, pointer, or duplicated ref authority", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    const run = workflow.jobs["route-development"].steps.find((step: { id?: string }) => step.id === "route").run;
+    const source = run.match(/<<'NODE'\n([\s\S]*?)\n\s*NODE/)?.[1];
+    expect(source).toBeTruthy();
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-route-test-"));
+    try {
+      const authorityPath = path.join(root, "authority.json");
+      const outputPath = path.join(root, "output");
+      const execute = (document: string) => {
+        fs.rmSync(outputPath, { force: true });
+        fs.writeFileSync(authorityPath, document);
+        const result = spawnSync(process.execPath, ["--input-type=module", "-e", source!], {
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            AUTHORITY_PATH: authorityPath,
+            GITHUB_OUTPUT: outputPath,
+            GITHUB_REF: publicationContract.ci.developmentPush.ref,
+            GITHUB_REPOSITORY: "jgabor/agentera",
+          },
+        });
+        return {
+          result,
+          output: fs.existsSync(outputPath) ? fs.readFileSync(outputPath, "utf8") : "",
+        };
+      };
+      const expectClosed = (document: string) => {
+        const execution = execute(document);
+        expect(execution.result.status, execution.result.stderr).not.toBe(0);
+        expect(execution.output).toBe("");
+      };
+      const selectedRef = publicationContract.ci.developmentPush.ref;
+      const valid = execute(JSON.stringify(publicationContract));
+      expect(valid.result.status, valid.result.stderr).toBe(0);
+      expect(valid.output).toBe(`selected=true\nref=${selectedRef}\n`);
+      for (const broken of [
+        (copy: any) => { delete copy.ci.developmentPush.ref; },
+        (copy: any) => { copy.ci.developmentPush.ref = "development/topic"; },
+        (copy: any) => { copy.ci.developmentPush.ref = "refs/heads/main"; },
+        (copy: any) => { copy.ci.developmentPublicationWorkflow.refAuthority = "other.ref"; },
+      ]) {
+        const copy = structuredClone(publicationContract);
+        broken(copy);
+        expectClosed(JSON.stringify(copy));
+      }
+
+      const escapedRef = selectedRef.replaceAll("/", "\\/");
+      const escapedDuplicate = JSON.stringify(publicationContract).replace(
+        `"ref":"${selectedRef}"`,
+        `"ref":"${selectedRef}","escapedDuplicate":"${escapedRef}"`,
+      );
+      expect(escapedDuplicate.split(JSON.stringify(selectedRef))).toHaveLength(2);
+      expect(JSON.parse(escapedDuplicate).ci.developmentPush.escapedDuplicate).toBe(selectedRef);
+      expectClosed(escapedDuplicate);
+
+      const duplicateLocation = structuredClone(publicationContract);
+      duplicateLocation.trust.duplicateDevelopmentRef = selectedRef;
+      expectClosed(JSON.stringify(duplicateLocation));
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("selects and bounds the exact current-run artifact through the fixed API downloader", async () => {
+    const workflow = YAML.parse(qualificationYaml);
+    const step = workflow.jobs["publish-development"].steps.find(
+      (candidate: { name?: string }) => candidate.name === "Download and validate current-run candidate",
+    );
+    const source = step.run.match(/<<'PYTHON'\n([\s\S]*?)\n\s*PYTHON/)?.[1];
+    expect(source).toBeTruthy();
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-artifact-api-test-"));
+    const script = path.join(root, "download.py");
+    const zip = path.join(root, "candidate.zip");
+    fs.writeFileSync(script, source!);
+    const makeZip = (entry = "agentera-3.0.0-dev.90.tgz") => {
+      const result = spawnSync("python3", ["-c", [
+        "import stat, sys, zipfile",
+        "with zipfile.ZipFile(sys.argv[1], 'w') as z:",
+        " for name, data in [(sys.argv[2], b'tarball'), ('publication-classification.json', b'{}')]:",
+        "  entry = zipfile.ZipInfo(name); entry.external_attr = (stat.S_IFREG | 0o600) << 16",
+        "  z.writestr(entry, data)",
+      ].join("\n"), zip, entry], { encoding: "utf8" });
+      expect(result.status, result.stderr).toBe(0);
+      return fs.readFileSync(zip);
+    };
+    let archive = makeZip();
+    let response: unknown;
+    const server = http.createServer((request, reply) => {
+      if (request.url?.endsWith("/zip")) {
+        reply.writeHead(200, { "content-type": "application/zip" }).end(archive);
+      } else {
+        reply.writeHead(200, { "content-type": "application/json" }).end(
+          typeof response === "string" ? response : JSON.stringify(response),
+        );
+      }
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("test server did not bind");
+    const api = `http://127.0.0.1:${address.port}`;
+    const artifact = (overrides: Record<string, unknown> = {}) => ({
+      id: 7,
+      name: "agentera-development-candidate",
+      expired: false,
+      workflow_run: { id: 42 },
+      archive_download_url: `${api}/repos/jgabor/agentera/actions/artifacts/7/zip`,
+      size_in_bytes: archive.length,
+      ...overrides,
+    });
+    const execute = () => new Promise<{ code: number | null; stderr: string }>((resolve) => {
+      const temp = fs.mkdtempSync(path.join(root, "run-"));
+      const child = spawn("python3", [script], {
+        env: {
+          GITHUB_API_URL: api,
+          GITHUB_REPOSITORY: "jgabor/agentera",
+          GITHUB_RUN_ID: "42",
+          GH_TOKEN: "test-token",
+          EXPECTED_VERSION: "3.0.0-dev.90",
+          EXPECTED_OUTCOME: "forward-publish",
+          RUNNER_TEMP: temp,
+        },
+      });
+      let stderr = "";
+      child.stderr.on("data", (chunk) => { stderr += chunk; });
+      child.on("close", (code) => resolve({ code, stderr }));
+    });
+    try {
+      response = { total_count: 1, artifacts: [artifact()] };
+      const valid = await execute();
+      expect(valid.code, valid.stderr).toBe(0);
+      for (const invalid of [
+        "not json",
+        { total_count: 2, artifacts: [artifact(), artifact({ id: 8 })] },
+        { total_count: 1, artifacts: [artifact({ workflow_run: { id: 41 } })] },
+        { total_count: 1, artifacts: [artifact({ size_in_bytes: 26_214_401 })] },
+      ]) {
+        response = invalid;
+        expect((await execute()).code).not.toBe(0);
+      }
+      archive = makeZip("../agentera-3.0.0-dev.90.tgz");
+      response = { total_count: 1, artifacts: [artifact()] };
+      expect((await execute()).stderr).toContain("entries do not match");
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reserves the unified workflow for future protected stable publication", () => {
     expect(publicationContract.ci.developmentPublicationWorkflow).toEqual({
-      name: "Publish development package (@next)",
-      path: ".github/workflows/publish-next.yml",
-      ref: "refs/heads/feat/v3",
+      name: "Publish Agentera",
+      path: ".github/workflows/publish.yml",
+      refAuthority: "ci.developmentPush.ref",
     });
-    expect(publicationContract.ci.stablePublicationWorkflow).toEqual({
-      name: "Publish stable package (@latest)",
-      path: ".github/workflows/publish-stable.yml",
-      ref: "refs/heads/main",
+    expect(publicationContract.ci.stablePublicationWorkflow).toMatchObject({
+      path: ".github/workflows/publish.yml", ref: "refs/heads/main",
+      status: "not implemented", environment: "npm-publish",
     });
-    expect(publicationYaml).toContain("validateCandidateReceipt");
-    expect(publicationYaml).not.toContain("actions/github-script");
-    expect(publicationYaml).not.toContain("run-id:");
-    expect(publicationYaml.match(/release-candidate-\$\{\{ github\.run_id \}\}/g)).toHaveLength(2);
-    expect(publicationYaml).toContain("release-qualification.mjs approval");
-    expect(publicationYaml.match(/--source-run-id "\$\{GITHUB_RUN_ID\}"/g)).toHaveLength(2);
-    expect(publicationYaml).toContain("release-benchmark.mjs publication");
-    expect(publicationYaml).toContain("coordinator enforces <120s");
-    expect(publicationYaml).toContain("timeout-minutes: 3");
-    expect(publicationYaml).toContain("qualified-publication-receipt.json");
-    expect(publicationYaml).toContain('chmod 0444 "${RUNNER_TEMP}"/agentera-package/*.tgz');
-    expect(publicationYaml.indexOf("Verify committed source"))
-      .toBeLessThan(publicationYaml.indexOf("Verify stable package"));
-    expect(publicationYaml.indexOf("Attest stable package"))
-      .toBeLessThan(publicationYaml.indexOf("Upload stable release candidate"));
-    expect(publicationYaml.indexOf("Upload stable release candidate"))
-      .toBeLessThan(publicationYaml.indexOf("environment: npm-publish"));
-    expect(publicationYaml.indexOf("Recheck package receipt"))
-      .toBeLessThan(publicationYaml.indexOf("NPM_TOKEN"));
-    expect(publicationYaml.indexOf("Restore package file mode"))
-      .toBeLessThan(publicationYaml.indexOf("Recheck package receipt"));
-    expect(publicationYaml.indexOf("release-qualification.mjs approval"))
-      .toBeLessThan(publicationYaml.indexOf("release-benchmark.mjs publication"));
-    expect(publicationYaml).not.toContain("release-benchmark.mjs qualification --adapter");
-    expect(publicationYaml.match(/node-version-file: \.node-version/g)).toHaveLength(2);
-    expect(publicationYaml).toContain("COREPACK_HOME: ${{ runner.temp }}/corepack");
+    expect(packagingGuide).toMatch(/no-OIDC stable\s+build job/);
+    expect(packagingGuide).toContain("OIDC-only publication job");
+    expect(packagingGuide).toContain("environment claim remains blank");
   });
 
   it("keeps package verification benchmarking local after workflow removal", () => {
@@ -337,11 +553,11 @@ describe("package publication orchestration", () => {
   it("binds stable attestation identity to the default-branch publication workflow", () => {
     expect(publicationWorkflowIdentity("stable")).toEqual({
       repository: "jgabor/agentera",
-      workflow: "Publish stable package (@latest)",
-      workflowPath: ".github/workflows/publish-stable.yml",
+      workflow: "Future protected stable jobs in Publish Agentera",
+      workflowPath: ".github/workflows/publish.yml",
       ref: "refs/heads/main",
       branch: "main",
-      workflowRef: "jgabor/agentera/.github/workflows/publish-stable.yml@refs/heads/main",
+      workflowRef: "jgabor/agentera/.github/workflows/publish.yml@refs/heads/main",
     });
   });
 
@@ -362,14 +578,14 @@ describe("package publication orchestration", () => {
           GITHUB_ACTIONS: "true",
           GITHUB_SHA: head,
           GITHUB_REPOSITORY: "jgabor/agentera",
-          GITHUB_WORKFLOW: "Publish stable package (@latest)",
-          GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/publish-stable.yml@refs/heads/main",
+          GITHUB_WORKFLOW: "Future protected stable jobs in Publish Agentera",
+          GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/publish.yml@refs/heads/main",
           GITHUB_RUN_ID: "123",
         },
       });
       expect(attestation).toMatchObject({
-        workflow: "Publish stable package (@latest)",
-        workflowRef: "jgabor/agentera/.github/workflows/publish-stable.yml@refs/heads/main",
+        workflow: "Future protected stable jobs in Publish Agentera",
+        workflowRef: "jgabor/agentera/.github/workflows/publish.yml@refs/heads/main",
         metadataCommit: head,
         sourceCommit: "b".repeat(40),
       });

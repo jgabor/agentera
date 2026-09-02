@@ -1,0 +1,17 @@
+id: plsefaudah
+artifact: plan
+record:
+  name: Synchronize final publication state
+  depends_on:
+    - liejxtiwcp
+    - ybvvkpnsue
+    - zmorpkcxrj
+    - ghfialnrge
+    - pbpptjlpza
+  status: pending
+  acceptance:
+    - GIVEN live publication evidence WHEN state closes THEN plan tasks, progress, changelog, release TODOs, and health evidence agree.
+    - GIVEN final verification WHEN rerun after state writes THEN compact and bounded startup budgets pass.
+    - GIVEN closeout WHEN complete THEN no unauthorized push, publication, version, token, or npm trust mutation is claimed.
+    - GIVEN the completed plan WHEN read THEN future branch changes require only a reviewed update to the checked-in development ref authority.
+  plan: kmguevcmrp

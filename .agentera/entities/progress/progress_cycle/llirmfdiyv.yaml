@@ -1,0 +1,15 @@
+id: llirmfdiyv
+artifact: progress
+record:
+  timestamp: 2026-09-02 20:57
+  type: fix
+  phase: build
+  what: Restricted the development publication job to fixed reviewed workflow logic and exact current-run artifact validation.
+  context:
+    intent: Remove actions and mutable code execution from the job that holds GitHub OIDC capability.
+    constraints: Preserve deterministic allocation, checked-in routing, immutable construction, replay behavior, and stable publication boundaries.
+    unknowns: Live Trusted Publishing and registry race behavior remain unverified until an authorized selected-branch workflow runs.
+    scope: The unified publication workflow, focused publication regressions, and this task state.
+  verified: Focused publication tests passed 41 checks, the release test directory passed 292 checks, typecheck passed, and the local package build completed.
+  next: Orchestrate should evaluate Task 1 before documentation alignment and landing work; keep task liejxtiwcp in progress.
+  publication_order: 292

@@ -1219,7 +1219,7 @@ describe("release qualification receipts", () => {
     for (const [field, value] of Object.entries({
       repository: "other/repository",
       workflow: "Other workflow",
-      workflowRef: "jgabor/agentera/.github/workflows/other.yml@refs/heads/feat/v3",
+      workflowRef: "jgabor/agentera/.github/workflows/other.yml@refs/heads/other",
       runId: "456",
     })) {
       const substituted = { ...attestation, [field]: value };

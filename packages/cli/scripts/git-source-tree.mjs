@@ -113,7 +113,13 @@ export function gitSourceTreeDigest(repo, options = {}) {
     let bytes = indexedContent?.[index];
     if (source === "working") {
       const file = path.join(repo, entry.relative);
-      const stat = fs.lstatSync(file);
+      let stat;
+      try {
+        stat = fs.lstatSync(file);
+      } catch (error) {
+        if (error?.code === "ENOENT") continue;
+        throw error;
+      }
       mode = workingMode(stat, entry.mode, fileModeSupported, symlinksSupported);
       if (!mode) throw new Error(`${label} contains a non-file Git path at ${file}`);
       bytes = mode === "120000" && stat.isSymbolicLink()

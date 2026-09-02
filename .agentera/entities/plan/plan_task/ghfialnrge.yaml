@@ -1,0 +1,13 @@
+id: ghfialnrge
+artifact: plan
+record:
+  name: Land and verify the default-main publication bootstrap
+  depends_on:
+    - zmorpkcxrj
+  status: pending
+  acceptance:
+    - GIVEN fresh explicit main-push authorization WHEN the bootstrap lands THEN default main contains publish.yml and the sole checked-in development ref authority.
+    - GIVEN that main workflow run WHEN it completes THEN development jobs are skipped and neither @next nor @latest changes.
+    - GIVEN the default-main authority WHEN read afterward THEN it selects refs/heads/feat/v3 and rejects main.
+    - GIVEN any failure WHEN observed THEN no development push follows until the cause is corrected and separately authorized.
+  plan: kmguevcmrp

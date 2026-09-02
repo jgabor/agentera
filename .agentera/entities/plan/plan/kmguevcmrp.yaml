@@ -1,0 +1,35 @@
+id: kmguevcmrp
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-02
+    status: open
+    reviewed: 2026-09-02
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    revised: Reframed OIDC security around the entire credentialed job, not a claimed step-level permission boundary.
+    title: "Plan: Secure unified @next publication"
+  what: Correct the unified npm publication workflow so its OIDC-enabled job runs only fixed reviewed logic, align every active authority and document with that real boundary, land the checked-in development-ref authority on default main first, and then prove a selected feat/v3 push publishes a new @next version.
+  why: GitHub grants id-token permission to a whole job. The current workflow therefore exposes OIDC capability to setup and artifact actions despite claiming that only npm publish receives it. The remediation must remove untrusted or mutable execution from that job while retaining configuration-as-code routing, exact artifact binding, deterministic replay, and working development publication.
+  constraints: Preserve the current uncommitted workflow, authority, TODO, and progress work. Keep ci.developmentPush.ref as the sole branch authority. Do not rebind npm trust, use traditional tokens, invoke npm dist-tag, increase release versions outside governed allocation, implement stable publication jobs, or push/publish without a fresh explicit authorization for each external action.
+  overall_acceptance: GIVEN the corrected publication contract is landed in order WHEN default main receives the bootstrap and the selected feat/v3 commit is explicitly pushed THEN main performs no development mutation, the selected push publishes one version newer than dev.89 to @next from the exact pushed SHA with matching integrity and signed provenance, @latest remains unchanged, and all source, package, documentation, state, and security gates agree.
+  scope:
+    included:
+      - Unified publish.yml OIDC job and immutable candidate handoff
+      - Checked-in development ref authority and routing
+      - Publication workflow, security, replay, and registry-convergence tests
+      - Active publication authorities, maintainer guidance, changelog, TODO, and progress state
+      - Default-main bootstrap landing and selected feat/v3 publication verification
+    excluded:
+      - Stable main-to-latest job implementation
+      - npm Trusted Publisher reconfiguration
+      - Traditional token or npm dist-tag fallback
+      - Historical artifact rewrites
+      - Unrelated release or CLI cleanup
+  design: Keep candidate construction outside the credentialed boundary, reduce the OIDC-enabled boundary to fixed reviewed publication logic, validate the immutable artifact before effects, and use a staged landing sequence so default-main configuration authorizes exactly one selected non-main ref before that ref can publish.
+  unknowns:
+    - question: Which fixed GitHub-hosted runner toolchain can satisfy npm Trusted Publishing requirements without running a setup action inside the OIDC-enabled job?
+      affects_task: 1
+      resolve_by: Inventory the hosted runner before finalizing the job; use only a version-checked preinstalled toolchain or an equivalently pinned reviewed runtime, and fail closed when the minimum Node and npm versions are unavailable.
+  surprises:
+    []

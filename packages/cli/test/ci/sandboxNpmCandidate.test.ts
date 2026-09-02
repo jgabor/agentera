@@ -6,10 +6,6 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const workflow = fs.readFileSync(
-  path.join(REPO_ROOT, ".github/workflows/publish-stable.yml"),
-  "utf8",
-);
 const benchmark = fs.readFileSync(
   path.join(REPO_ROOT, "packages/cli/scripts/release-benchmark.mjs"),
   "utf8",
@@ -26,17 +22,14 @@ const scannerPath = path.join(REPO_ROOT, "scripts/sandbox/scan-python-leftovers.
 
 describe("staged package migration contract", () => {
   it("derives the exact package pin only after staging", () => {
-    expect(workflow).not.toMatch(/AGENTERA_NPM_PIN:\s*agentera@/);
     expect(benchmark).toContain("AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`");
     expect(benchmark).toContain("const candidateMigrationSmoke = adapterName === \"development\"");
     expect(benchmark).toContain("candidateMigrationSmoke,");
   });
 
-  it("keeps the public tag unchanged until the staged package migration smoke succeeds", () => {
-    expect(workflow).toContain("release-benchmark.mjs publication");
+  it("keeps the staged package migration smoke in the publication coordinator", () => {
     expect(benchmark).toContain("AGENTERA_SANDBOX_TIER: \"L2\"");
-    expect(workflow).toContain("release-candidate-${{ github.run_id }}");
-    expect(workflow).toContain("environment: npm-publish");
+    expect(benchmark).toContain("candidateMigrationSmoke");
   });
 
   it("gives the npm candidate npx smoke sandbox-owned user and global npm configuration", () => {

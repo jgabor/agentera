@@ -17,6 +17,8 @@ const mutate = (change: (copy: any) => void) => {
 describe("strict package publication model", () => {
   it("owns exactly eleven ordered gates with capacity after performance and before readers", () => {
     const model = validatePackagePublicationDocument(authority);
+    expect(model.developmentRef).toBe(authority.ci.developmentPush.ref);
+    expect(model.developmentRefAuthority).toBe("ci.developmentPush.ref");
     expect(model.sourceGates.map(({ name }) => name)).toEqual(SOURCE_GATE_IDS);
     expect(model.sourceDag.performanceBarrier).toEqual(["performance"]);
     expect(model.sourceDag.capacityBarrier).toEqual(["capacity"]);
@@ -35,7 +37,7 @@ describe("strict package publication model", () => {
     expect(model.sourceQualificationMs).toBe(2_400_000);
     expect(model.versionCallerInventory).toMatchObject({
       development: {
-        authority: "CI candidate from GITHUB_RUN_NUMBER plus 80 on checked-in manifest base line",
+        authority: "CI candidate from GITHUB_RUN_NUMBER plus 89 on checked-in manifest base line",
         currentExplicitTargetCallers: ["packages/cli/scripts/pack-package.mjs#--package-version with --git-ref"],
       },
       stable: { authority: "explicit target-version" },
@@ -44,9 +46,24 @@ describe("strict package publication model", () => {
     expect(mutate((copy) => { copy.benchmark.timeouts.sourceQualificationMs = 2_400_001; })).toThrow(/source qualification timeout/);
   });
 
+  it("accepts an arbitrary canonical non-main development ref without other changes", () => {
+    const copy = structuredClone(authority);
+    copy.ci.developmentPush.ref = "refs/heads/release/candidate-42";
+    expect(validatePackagePublicationDocument(copy).developmentRef).toBe(copy.ci.developmentPush.ref);
+  });
+
+  it("requires one canonical development ref at the governed pointer", () => {
+    expect(mutate((copy) => { delete copy.ci.developmentPush.ref; })).toThrow(/development push ref authority/);
+    expect(mutate((copy) => { copy.ci.developmentPush.ref = "development/topic"; })).toThrow(/development push ref authority/);
+    expect(mutate((copy) => { copy.ci.developmentPush.ref = "refs/heads/topic..invalid"; })).toThrow(/development push ref authority/);
+    expect(mutate((copy) => { copy.ci.developmentPush.ref = "refs/heads/main"; })).toThrow(/development push ref authority/);
+    expect(mutate((copy) => { copy.ci.developmentPublicationWorkflow.refAuthority = "other.ref"; })).toThrow(/development push ref authority/);
+    expect(mutate((copy) => { copy.trust.duplicateDevelopmentRef = copy.ci.developmentPush.ref; })).toThrow(/development push ref authority/);
+  });
+
   it("rejects reassigned development, stable, or suite version authority", () => {
     expect(mutate((copy) => { copy.ci.developmentPush.versionAuthority = "packages/cli/package.json#version"; })).toThrow(/development push version authority/);
-    expect(mutate((copy) => { copy.ci.developmentPush.runNumberOffset = 82; })).toThrow(/development push version authority/);
+    expect(mutate((copy) => { copy.ci.developmentPush.runNumberOffset = 88; })).toThrow(/development push version authority/);
     expect(mutate((copy) => { copy.versionCallerInventory.development.currentExplicitTargetCallers.push("obsolete caller"); })).toThrow(/development version callers/);
     expect(mutate((copy) => { copy.versionCallerInventory.stable.authority = "checked-in manifest"; })).toThrow(/version authority/);
   });

@@ -1,0 +1,13 @@
+id: ybvvkpnsue
+artifact: plan
+record:
+  name: Align publication authorities, documentation, and regressions
+  depends_on:
+    - liejxtiwcp
+  status: pending
+  acceptance:
+    - GIVEN active release guidance WHEN inspected THEN it describes job-level OIDC capability and the fixed-code boundary without claiming step-level permissions.
+    - GIVEN publication tests WHEN run THEN they reject any action, checkout, repository script, or executable candidate content inside the OIDC-enabled job.
+    - GIVEN checked-in branch routing WHEN tested THEN only ci.developmentPush.ref authorizes @next and malformed, duplicate, or main refs fail closed.
+    - GIVEN historical records WHEN inspected THEN they remain unchanged.
+  plan: kmguevcmrp

@@ -1761,13 +1761,18 @@ export function publicationWorkflowIdentity(kind = "development") {
   const workflow = kind === "stable"
     ? ci?.stablePublicationWorkflow
     : ci?.developmentPublicationWorkflow;
+  const ref = kind === "stable"
+    ? workflow?.ref
+    : workflow?.refAuthority === "ci.developmentPush.ref"
+      ? ci?.developmentPush?.ref
+      : undefined;
   if (
     !ci?.repository
     || !workflow?.name
     || !workflow?.path
-    || typeof workflow?.ref !== "string"
-    || !workflow.ref.startsWith("refs/heads/")
-    || workflow.ref.length === "refs/heads/".length
+    || typeof ref !== "string"
+    || !ref.startsWith("refs/heads/")
+    || ref.length === "refs/heads/".length
   ) {
     throw new Error("release publication contract has no publication workflow identity");
   }
@@ -1775,9 +1780,9 @@ export function publicationWorkflowIdentity(kind = "development") {
     repository: ci.repository,
     workflow: workflow.name,
     workflowPath: workflow.path,
-    ref: workflow.ref,
-    branch: workflow.ref.slice("refs/heads/".length),
-    workflowRef: `${ci.repository}/${workflow.path}@${workflow.ref}`,
+    ref,
+    branch: ref.slice("refs/heads/".length),
+    workflowRef: `${ci.repository}/${workflow.path}@${ref}`,
   };
 }
 
