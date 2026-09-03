@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: kmguevcmrp
   name: Publish corrected development candidate
-  status: pending
+  status: in_progress
   depends_on:
     - lddrupjrkm
   acceptance:

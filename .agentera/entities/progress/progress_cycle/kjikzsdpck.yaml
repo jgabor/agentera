@@ -1,0 +1,14 @@
+id: kjikzsdpck
+artifact: progress
+record:
+  timestamp: 2026-09-03 15:42
+  type: chore
+  phase: build
+  what: Published the corrected development candidate through the authorized feat/v3 push path.
+  context:
+    intent: Record durable registry and runtime convergence for the corrected development publication.
+    constraints: Keep the replacement task in progress; do not push the local evidence commit.
+    scope: Authorized development publication outcome and channel verification.
+  verified: Publish Agentera run 4 succeeded; npm next resolves to dev.93 with matching source identity, package integrity, and signed SLSA provenance; explicit npx version and default prime JSON passed; latest remains 0.0.2.
+  next: Evaluate task ixoxawhoug while preserving the two remaining push authorizations.
+  publication_order: 311
