@@ -1,0 +1,15 @@
+id: jzcpdgnqnr
+artifact: progress
+record:
+  timestamp: 2026-09-03 11:19
+  type: fix
+  phase: build
+  what: "Corrected the failed publication audit: CHANGELOG now states the job-level OIDC boundary, and tests allow only the six fixed reviewed publication steps."
+  context:
+    intent: Correct the two accepted audit findings without changing workflow behavior.
+    constraints: Preserve the corrected workflow, authorities, TODOs, history, and failed evaluation.
+    scope: CHANGELOG, publication orchestration regressions, and required state.
+  discovered: The prior path blacklist allowed the exact node scripts/evil.mjs reproduction and other repository-controlled commands.
+  verified: Publication orchestration passed 20/20, including hostile mutations. Prime measured 2,988/3,000 GPT-5 tokens. Typecheck, build, and package verification passed; package tests passed 25/25.
+  next: Obtain the second verdict for ybvvkpnsue; keep the task in_progress.
+  publication_order: 297

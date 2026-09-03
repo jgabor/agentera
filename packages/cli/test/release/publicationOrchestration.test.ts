@@ -48,6 +48,83 @@ const verificationSkill = fs.readFileSync(
 const agentsGuide = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
 const changelog = fs.readFileSync(path.join(REPO_ROOT, "CHANGELOG.md"), "utf8");
 
+const reviewedOidcPublicationSteps = [
+  {
+    name: "Select fixed runner toolchain",
+    "timeout-minutes": 1,
+    run: "sha256:b42037a540db7481cbe7f5089a688a84e898adcdb24574078c98b475a476451f",
+  },
+  {
+    name: "Download and validate current-run candidate",
+    "timeout-minutes": 1,
+    env: {
+      GH_TOKEN: "${{ github.token }}",
+      API_URL_VALUE: "${{ github.api_url }}",
+      REPOSITORY_VALUE: "${{ github.repository }}",
+      RUN_ID_VALUE: "${{ github.run_id }}",
+      RUNNER_TEMP_VALUE: "${{ runner.temp }}",
+      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
+      EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
+    },
+    run: "sha256:4ec9cbe34b298bcfd2cce4e83e4afa2db1563d90f07a02659024628a3c2306a9",
+  },
+  {
+    name: "Write fixed registry guard",
+    "timeout-minutes": 1,
+    env: { RUNNER_TEMP_VALUE: "${{ runner.temp }}" },
+    run: "sha256:5453a66d3f3d54b196ff167e46c296bef362e5b2fd9e9709c28a56fc62f307df",
+  },
+  {
+    name: "Recheck exact candidate and registry without OIDC",
+    id: "registry-guard",
+    "timeout-minutes": 1,
+    env: {
+      RUNNER_TEMP_VALUE: "${{ runner.temp }}",
+      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
+      EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
+    },
+    run: "sha256:fc39f6122768ad6895b5cbca8844102e7e95eabc8c39e2fe15305300afa08ceb",
+  },
+  {
+    name: "Publish exact tarball with Trusted Publishing",
+    if: "steps.registry-guard.outputs.outcome == 'forward-publish'",
+    "timeout-minutes": 1,
+    env: {
+      RUNNER_TEMP_VALUE: "${{ runner.temp }}",
+      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      GUARD_OUTCOME_VALUE: "${{ steps.registry-guard.outputs.outcome }}",
+    },
+    run: "sha256:7b93babec67d4368442418d3b8fcfa217039d9b3ae9dd54a08a6f55279bb4891",
+  },
+  {
+    name: "Verify registry convergence without OIDC",
+    if: "steps.registry-guard.outputs.outcome == 'forward-publish'",
+    "timeout-minutes": 1,
+    env: {
+      RUNNER_TEMP_VALUE: "${{ runner.temp }}",
+      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
+      EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
+      GUARD_OUTCOME_VALUE: "${{ steps.registry-guard.outputs.outcome }}",
+    },
+    run: "sha256:3735be7aea3a55197d09de3c6123d0609ae5002db4cdccbbfe4b2ed8a5e6bbcc",
+  },
+];
+
+function requireReviewedOidcPublicationSteps(workflow: any) {
+  const steps = workflow.jobs["publish-development"].steps.map((step: Record<string, unknown>) => ({
+    ...step,
+    ...(typeof step.run === "string" ? {
+      run: `sha256:${crypto.createHash("sha256").update(step.run).digest("hex")}`,
+    } : {}),
+  }));
+  if (canonicalJson(steps) !== canonicalJson(reviewedOidcPublicationSteps)) {
+    throw new Error("OIDC publication steps do not match the fixed reviewed step set");
+  }
+}
+
 describe("package publication orchestration", () => {
   it("prepares only the first checked-in development package version", () => {
     expect(developmentPackage.version).toBe("3.0.0-dev.84");
@@ -73,7 +150,13 @@ describe("package publication orchestration", () => {
   });
 
   it("documents the job-level OIDC boundary without stale publication guidance", () => {
-    for (const surface of [agentsGuide, releaseSkill, packagingGuide, publicationContract.invariants.credentials]) {
+    for (const surface of [
+      agentsGuide,
+      releaseSkill,
+      packagingGuide,
+      changelog,
+      publicationContract.invariants.credentials,
+    ]) {
       const prose = surface.replace(/\s+/g, " ");
       expect(prose).toMatch(/entire (?:dependent )?checkout-free, action-free (?:publication )?job has OIDC capability/);
       expect(prose).toContain("fixed reviewed workflow logic");
@@ -257,6 +340,7 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).not.toContain(":_authToken");
     expect(qualificationYaml).not.toContain("--auth-config");
     const workflow = YAML.parse(qualificationYaml);
+    requireReviewedOidcPublicationSteps(workflow);
     expect(workflow).not.toHaveProperty("permissions");
     const route = workflow.jobs["route-development"];
     expect(route.permissions).toEqual({ contents: "read" });
@@ -312,7 +396,6 @@ describe("package publication orchestration", () => {
     const publish = publishSteps.find((step: { name?: string }) => step.name === "Publish exact tarball with Trusted Publishing");
     const convergence = publishSteps.find((step: { name?: string }) => step.name === "Verify registry convergence without OIDC");
     expect(publishSteps.every((step: { uses?: string }) => !step.uses)).toBe(true);
-    expect(JSON.stringify(publishSteps)).not.toMatch(/actions\/checkout|packages\/cli\/|\.\/dist\/|npm (ci|install|pack|exec)/);
     expect(toolchain.run).toContain("/opt/hostedtoolcache/node/24.*/x64/bin");
     expect(toolchain.run).toContain("Exactly one preinstalled Node.js 24 toolchain is required");
     expect(toolchain.run).toContain("npm 11.5.1 or later is required");
@@ -417,6 +500,36 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml.match(/GITHUB_ACTIONS="\$\{GITHUB_ACTIONS\}"/g)).toHaveLength(1);
     expect(qualificationYaml).not.toContain("NPM_TOKEN:");
     expect(qualificationYaml).not.toContain("environment: npm-publish");
+  });
+
+  it("rejects repository-controlled commands added to the OIDC job", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    for (const command of [
+      "node scripts/evil.mjs",
+      "node packages/cli/scripts/evil.mjs",
+      "node ./scripts/evil.mjs",
+      "node /home/runner/work/agentera/agentera/scripts/evil.mjs",
+      "source scripts/evil.sh",
+      ". ./scripts/evil.sh",
+      "bash scripts/evil.sh",
+    ]) {
+      const mutated = structuredClone(workflow);
+      mutated.jobs["publish-development"].steps[0].run += `\n${command}`;
+      expect(() => requireReviewedOidcPublicationSteps(mutated), command).toThrow(
+        "OIDC publication steps do not match the fixed reviewed step set",
+      );
+    }
+  });
+
+  it("rejects an added arbitrary run step in the OIDC job", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    workflow.jobs["publish-development"].steps.push({
+      name: "Arbitrary command",
+      run: "printf 'not reviewed\\n'",
+    });
+    expect(() => requireReviewedOidcPublicationSteps(workflow)).toThrow(
+      "OIDC publication steps do not match the fixed reviewed step set",
+    );
   });
 
   it("fails routing closed for missing, malformed, main, pointer, or duplicated ref authority", () => {

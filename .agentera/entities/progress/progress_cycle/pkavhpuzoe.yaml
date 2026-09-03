@@ -1,0 +1,14 @@
+id: pkavhpuzoe
+artifact: progress
+record:
+  timestamp: 2026-09-03 11:19
+  type: fix
+  phase: build
+  what: Finalized the bounded publication correction.
+  context:
+    intent: Keep the verified correction within the prime budget.
+    constraints: Leave ybvvkpnsue in_progress and preserve its failed evaluation.
+    scope: Progress summary only.
+  verified: Compact passed after the detailed progress append.
+  next: Await the second verdict.
+  publication_order: 298

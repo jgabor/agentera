@@ -11,3 +11,13 @@ record:
     - GIVEN checked-in branch routing WHEN tested THEN only ci.developmentPush.ref authorizes @next and malformed, duplicate, or main refs fail closed.
     - GIVEN historical records WHEN inspected THEN they remain unchanged.
   plan: kmguevcmrp
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: CHANGELOG still claims OIDC is confined to one command although permission is job-scoped; regression tests do not reject root or other repository script paths inside the OIDC-enabled job.
+    provenance:
+      attempt_id: audit-ybvvkpnsue-1
+      source: orchestrate audit evaluation for task ybvvkpnsue
+      recorded_at: 2026-09-03 11:14
+      writer_command: agentera state plan record-evaluation

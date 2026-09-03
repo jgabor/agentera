@@ -25,7 +25,7 @@
 ### Changed
 
 - Retired external integrations now use a complete, authority-backed ownership inventory. Exact managed markers declare ownership for declared Codex descriptors, OpenCode agents, and OpenCode commands; removing the marker opts out, and marker text in unrelated resources does not qualify. Full and focused cleanup remain preview- and approval-gated, preserve unsafe or unowned resources, and prune declared empty directories without removing host namespaces.
-- The unified Trusted Publisher workflow now routes `@next` from the single checked-in `ci.developmentPush.ref` authority on default `main`, separates candidate construction from a checkout-free OIDC publication job through an immutable artifact, confines OIDC to the fixed lifecycle-disabled publish command between credential-free registry guards, and preserves deterministic allocation after the workflow rename with `GITHUB_RUN_NUMBER + 89`.
+- The unified Trusted Publisher workflow now routes `@next` from the single checked-in `ci.developmentPush.ref` authority on default `main` and separates candidate construction through an immutable artifact. The entire checkout-free, action-free publication job has OIDC capability and runs only fixed reviewed workflow logic; fixed guard children strip OIDC, and the fixed lifecycle-disabled publish child is the only child intentionally passed the request variables. It preserves deterministic allocation with `GITHUB_RUN_NUMBER + 89`.
 - Structured-input inventory now derives active writer, report, and startup identities from parser-consumed specifications,
   validates its envelope, routes, ownership, and closure counts, and returns bounded diagnostics for unreadable or malformed
   input without claiming recent-host usage.
